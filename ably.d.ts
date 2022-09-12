@@ -265,7 +265,7 @@ declare namespace Types {
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the events emitted by a [`Connection`]{@link} object. An event is either an `UPDATE` or a [`ConnectionState`]{@link ConnectionState}.
+   * Describes the events emitted by a [`Connection`]{@link Connection} object. An event is either an `UPDATE` or a [`ConnectionState`]{@link ConnectionState}.
    * END CANONICAL DOCSTRING
    */
   type ConnectionEvent =
@@ -1929,7 +1929,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains [`ConnectionState`]{@link} change information emitted by the [`Connection`]{@link} object.
+   * Contains [`ConnectionState`]{@link ConnectionState} change information emitted by the [`Connection`]{@link Connection} object.
    * END CANONICAL DOCSTRING
    */
   interface ConnectionStateChange {
@@ -2450,7 +2450,7 @@ declare namespace Types {
   // present both methods
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the [`Connection`]{@link} object emits events for connection state using the `EventEmitter` pattern.
+   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the [`Connection`]{@link Connection} object emits events for connection state using the `EventEmitter` pattern.
    * END CANONICAL DOCSTRING
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
