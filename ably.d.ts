@@ -4350,7 +4350,9 @@ declare namespace Types {
      */
     refType?: string;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Filters messages based on whether they contain an `extras.ref`.
+     * END CANONICAL DOCSTRING
      */
     isRef?: boolean;
     /**
