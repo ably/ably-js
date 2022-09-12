@@ -1368,6 +1368,10 @@ declare namespace Types {
      */
     opened: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The peak number of resources of this type used for this period.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Peak resources of this type used for this period.
      * END LEGACY DOCSTRING
