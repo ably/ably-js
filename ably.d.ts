@@ -5052,6 +5052,10 @@ declare namespace Types {
      */
     connections: StatsConnectionTypes;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.MessageTraffic`]{@link Stats.MessageTraffic} object containing the aggregate count of inbound message stats.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Breakdown of all inbound messages.
      * END LEGACY DOCSTRING
