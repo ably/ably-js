@@ -5034,6 +5034,10 @@ declare namespace Types {
      */
     all: StatsMessageTypes;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.RequestCount`]{@link Stats.RequestCount} object containing a breakdown of API Requests.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Breakdown of API requests received via the REST API.
      * END LEGACY DOCSTRING
