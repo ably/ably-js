@@ -1356,6 +1356,10 @@ declare namespace Types {
      */
     mean: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The minimum total resources of this type used for this period.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Minimum total resources of this type used for this period.
      * END LEGACY DOCSTRING
