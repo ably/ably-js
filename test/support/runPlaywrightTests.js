@@ -28,6 +28,10 @@ const runTests = async (browserType) => {
       console.log(detail);
     });
 
+    page.on('console', (msg) => {
+      console.log(msg.text());
+    });
+
     // Expose a function inside the playwright browser to exit with the right status code when tests pass/fail
     page.exposeFunction('onTestResult', ({ detail }) => {
       console.log(`${browserType.name()} tests complete: ${detail.passes}/${detail.total} passed`);

@@ -25,5 +25,4 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: npm run build
       - run: node scripts/cdn_deploy.js --skipCheckout --tag=${{ github.event.inputs.version }}

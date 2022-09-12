@@ -2194,6 +2194,13 @@ declare namespace Types {
      */
     unsubscribe(event?: string | Array<string>, listener?: messageCallback<Message>): void;
     /**
+     * Not yet documented.
+     *
+     * @param filter - Not yet documented.
+     * @param listener - Not yet documented.
+     */
+    unsubscribe(filter: MessageFilter, listener?: messageCallback<Message>): void;
+    /**
      * Unsubscribe the given listener (for any/all event names). This removes an earlier subscription.
      *
      * @param listener - Not yet documented.
@@ -2209,6 +2216,32 @@ declare namespace Types {
      * Not yet documented.
      */
     quickAck?: boolean;
+  };
+
+  /**
+   * Not yet documented.
+   */
+  type MessageFilter = {
+    /**
+     * Not yet documented.
+     */
+    name?: string;
+    /**
+     * Not yet documented.
+     */
+    refTimeserial?: string;
+    /**
+     * Not yet documented.
+     */
+    refType?: string;
+    /**
+     * Not yet documented.
+     */
+    isRef?: boolean;
+    /**
+     * Not yet documented.
+     */
+    clientId: string;
   };
 
   /**
@@ -2267,6 +2300,14 @@ declare namespace Types {
       listener?: messageCallback<Message>,
       callbackWhenAttached?: errorCallback
     ): void;
+    /**
+     * Not yet documented.
+     *
+     * @param filter - Not yet documented.
+     * @param listener - Not yet documented.
+     * @param callbackWhenAttached - Not yet documented.
+     */
+    subscribe(filter: MessageFilter, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * Subscribe to messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
@@ -2346,6 +2387,13 @@ declare namespace Types {
      * @param listener - Not yet documented.
      */
     subscribe(event: string | Array<string>, listener?: messageCallback<Message>): Promise<void>;
+    /**
+     * Not yet documented.
+     *
+     * @param filter - Not yet documented.
+     * @param listener - Not yet documented.
+     */
+    subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
      * Subscribe to messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
