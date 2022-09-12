@@ -4826,7 +4826,9 @@ declare namespace Types {
   // user should not be interacting with it - output of getDefaultParams should be used opaquely
 
   /**
-   * Not yet documented.
+   * BEGIN CANONICAL DOCSTRING
+   * Contains the properties used to generate a [`CipherParams`]{@link CipherParams} object.
+   * END CANONICAL DOCSTRING
    */
   type CipherParamOptions = {
     /**
