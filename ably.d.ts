@@ -4338,7 +4338,9 @@ declare namespace Types {
    */
   type MessageFilter = {
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Filters messages by a specific message `name`.
+     * END CANONICAL DOCSTRING
      */
     name?: string;
     /**
