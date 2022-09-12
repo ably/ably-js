@@ -3979,7 +3979,12 @@ declare namespace Types {
      */
     unsubscribe(events: Array<string>): void;
     /**
-     * Not yet documented.
+     * BEGIN CANONICAL DOCSTRING
+     * Deregisters all listeners to messages on this channel that match the supplied filter.
+     *
+     * @param MessageFilterObject - A [`MessageFilterObject`]{@link MessageFilterObject}.
+     * @param (Message) - An event listener function.
+     * END CANONICAL DOCSTRING
      *
      * @param filter - Not yet documented.
      * @param listener - Not yet documented.
