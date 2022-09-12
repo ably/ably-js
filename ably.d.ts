@@ -1358,6 +1358,10 @@ declare namespace Types {
      */
     min: number;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The total number of resources opened of this type.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Total resources of this type opened.
      * END LEGACY DOCSTRING
