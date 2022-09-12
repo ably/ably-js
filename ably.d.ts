@@ -1230,6 +1230,10 @@ declare namespace Types {
    */
   interface StatsMessageCount {
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * The count of all messages.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Count of all messages.
      * END LEGACY DOCSTRING
