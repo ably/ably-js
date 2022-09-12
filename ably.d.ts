@@ -5104,6 +5104,10 @@ declare namespace Types {
      */
     persisted: StatsMessageTypes;
     /**
+     * BEGIN CANONICAL DOCSTRING
+     * A [`Stats.RequestCount`]{@link Stats.RequestCount} object containing a breakdown of Ably Token requests.
+     * END CANONICAL DOCSTRING
+     *
      * BEGIN LEGACY DOCSTRING
      * Breakdown of Token requests received via the REST API.
      * END LEGACY DOCSTRING
