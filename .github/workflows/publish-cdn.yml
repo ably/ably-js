@@ -9,6 +9,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # These permissions are necessary to run the configure-aws-credentials action
     permissions:
       id-token: write
       contents: read
