@@ -1559,7 +1559,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the properties of a request for a token to Ably. Tokens are generated using [`requestToken`]{@link Auth#requestToken}.
+   * Contains the properties of a request for a token to Ably. Tokens are generated using [`AuthCallbacks.requestToken`]{@link AuthCallbacks#requestToken} or [`AuthPromise.requestToken`]{@link AuthPromise#requestToken}.
    * END CANONICAL DOCSTRING
    *
    * BEGIN LEGACY DOCSTRING
@@ -4340,7 +4340,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains properties to filter messages with when calling [`subscribe()`]{@link RealtimeChannel#subscribe}.
+   * Contains properties to filter messages with when calling [`RealtimeChannelCallbacks.subscribe()`]{@link RealtimeChannelCallbacks#subscribe} or [`RealtimeChannelPromise.subscribe()`]{@link RealtimeChannelPromise#subscribe}.
    * END CANONICAL DOCSTRING
    */
   type MessageFilter = {
