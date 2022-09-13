@@ -2400,7 +2400,7 @@ declare namespace Types {
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL API DEFAULT
-     * api-default .Minute
+     * api-default `StatsIntervalGranularity.MINUTE`
      * END CANONICAL API DEFAULT
      */
     unit?: StatsIntervalGranularity;
