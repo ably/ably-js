@@ -56,7 +56,7 @@ declare namespace Types {
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the possible states of a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object.
+   * Describes the possible states of a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object.
    * END CANONICAL DOCSTRING
    */
   type ChannelState =
@@ -123,7 +123,7 @@ declare namespace Types {
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the events emitted by a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object. An event is either an `UPDATE` or a [`ChannelState`]{@link ChannelState}.
+   * Describes the events emitted by a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object. An event is either an `UPDATE` or a [`ChannelState`]{@link ChannelState}.
    * END CANONICAL DOCSTRING
    */
   type ChannelEvent =
@@ -166,7 +166,7 @@ declare namespace Types {
     type DISCONNECTED = 'disconnected';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to [`connect()`]{@link Connection#connect}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
      * END CANONICAL DOCSTRING
      */
     type SUSPENDED = 'suspended';
@@ -178,20 +178,20 @@ declare namespace Types {
     type CLOSING = 'closing';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link Connection#connect}, which results in a new connection.
+     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}, which results in a new connection.
      * END CANONICAL DOCSTRING
      */
     type CLOSED = 'closed';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link Connection#connect}.
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}.
      * END CANONICAL DOCSTRING
      */
     type FAILED = 'failed';
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the realtime [`Connection`]{@link Connection} object states.
+   * Describes the realtime [`ConnectionBase`]{@link ConnectionBase} object states.
    * END CANONICAL DOCSTRING
    */
   type ConnectionState =
@@ -234,7 +234,7 @@ declare namespace Types {
     type DISCONNECTED = 'disconnected';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to [`connect()`]{@link Connection#connect}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
      * END CANONICAL DOCSTRING
      */
     type SUSPENDED = 'suspended';
@@ -246,13 +246,13 @@ declare namespace Types {
     type CLOSING = 'closing';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link Connection#connect}, which results in a new connection.
+     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}, which results in a new connection.
      * END CANONICAL DOCSTRING
      */
     type CLOSED = 'closed';
     /**
      * BEGIN CANONICAL DOCSTRING
-     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link Connection#connect}.
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to [`connect()`]{@link ConnectionBase#connect}.
      * END CANONICAL DOCSTRING
      */
     type FAILED = 'failed';
@@ -265,7 +265,7 @@ declare namespace Types {
   }
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Describes the events emitted by a [`Connection`]{@link Connection} object. An event is either an `UPDATE` or a [`ConnectionState`]{@link ConnectionState}.
+   * Describes the events emitted by a [`ConnectionBase`]{@link ConnectionBase} object. An event is either an `UPDATE` or a [`ConnectionState`]{@link ConnectionState}.
    * END CANONICAL DOCSTRING
    */
   type ConnectionEvent =
@@ -391,7 +391,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the details of a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object such as its ID and [`ChannelStatus`]{@link ChannelStatus}.
+   * Contains the details of a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object such as its ID and [`ChannelStatus`]{@link ChannelStatus}.
    * END CANONICAL DOCSTRING
    */
   interface ChannelDetails {
@@ -411,7 +411,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the status of a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object such as whether it is active and its [`ChannelOccupancy`]{@link ChannelOccupancy}.
+   * Contains the status of a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object such as whether it is active and its [`ChannelOccupancy`]{@link ChannelOccupancy}.
    * END CANONICAL DOCSTRING
    */
   interface ChannelStatus {
@@ -431,7 +431,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the metrics of a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object.
+   * Contains the metrics of a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object.
    * END CANONICAL DOCSTRING
    */
   interface ChannelOccupancy {
@@ -445,7 +445,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains the metrics associated with a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel}, such as the number of publishers, subscribers and connections it has.
+   * Contains the metrics associated with a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase}, such as the number of publishers, subscribers and connections it has.
    * END CANONICAL DOCSTRING
    */
   interface ChannelMetrics {
@@ -489,7 +489,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Passes additional client-specific properties to the REST [`constructor()`]{@link RestClient#constructor} or the Realtime [`constructor()`]{@link RealtimeClient#constructor}.
+   * Passes additional client-specific properties to the REST [`constructor()`]{@link RestBase#constructor} or the Realtime [`constructor()`]{@link RealtimeBase#constructor}.
    * END CANONICAL DOCSTRING
    *
    * BEGIN LEGACY DOCSTRING
@@ -499,7 +499,7 @@ declare namespace Types {
   interface ClientOptions extends AuthOptions {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the [`connect()`]{@link Connection#connect} method. The default is `true`.
+     * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the [`connect()`]{@link ConnectionBase#connect} method. The default is `true`.
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL DEFAULT INFO
@@ -1123,7 +1123,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Sets the properties to configure encryption for a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object.
+   * Sets the properties to configure encryption for a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object.
    * END CANONICAL DOCSTRING
    *
    * BEGIN LEGACY DOCSTRING
@@ -1700,7 +1700,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Passes additional properties to a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object, such as encryption, [`ChannelMode`]{@link ChannelMode} and channel parameters.
+   * Passes additional properties to a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object, such as encryption, [`ChannelMode`]{@link ChannelMode} and channel parameters.
    * END CANONICAL DOCSTRING
    *
    * BEGIN LEGACY DOCSTRING
@@ -1881,7 +1881,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains state change information emitted by [`RestChannel`]{@link RestChannel} and [`RealtimeChannel`]{@link RealtimeChannel} objects.
+   * Contains state change information emitted by [`ChannelBase`]{@link ChannelBase} and [`RealtimeChannelBase`]{@link RealtimeChannelBase} objects.
    * END CANONICAL DOCSTRING
    */
   interface ChannelStateChange {
@@ -1929,7 +1929,7 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Contains [`ConnectionState`]{@link ConnectionState} change information emitted by the [`Connection`]{@link Connection} object.
+   * Contains [`ConnectionState`]{@link ConnectionState} change information emitted by the [`ConnectionBase`]{@link ConnectionBase} object.
    * END CANONICAL DOCSTRING
    */
   interface ConnectionStateChange {
@@ -2450,7 +2450,7 @@ declare namespace Types {
   // present both methods
   /**
    * BEGIN CANONICAL DOCSTRING
-   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the [`Connection`]{@link Connection} object emits events for connection state using the `EventEmitter` pattern.
+   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the [`ConnectionBase`]{@link ConnectionBase} object emits events for connection state using the `EventEmitter` pattern.
    * END CANONICAL DOCSTRING
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
@@ -2932,13 +2932,13 @@ declare namespace Types {
     clientId: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Calls [`connection.close()`]{@link Connection#close} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to [`connect()`]{@link Connection#connect}.
+     * Calls [`connection.close()`]{@link ConnectionBase#close} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to [`connect()`]{@link ConnectionBase#connect}.
      * END CANONICAL DOCSTRING
      */
     close(): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Calls [`connection.connect()`]{@link Connection#connect} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the [`autoConnect`]{@link ClientOptions#autoConnect} property is disabled.
+     * Calls [`connection.connect()`]{@link ConnectionBase#connect} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the [`autoConnect`]{@link ClientOptions#autoConnect} property is disabled.
      * END CANONICAL DOCSTRING
      */
     connect(): void;
@@ -4777,18 +4777,18 @@ declare namespace Types {
 
   /**
    * BEGIN CANONICAL DOCSTRING
-   * Creates and destroys [`RestChannel`]{@link RestChannel} and [`RealtimeChannel`]{@link RealtimeChannel} objects.
+   * Creates and destroys [`ChannelBase`]{@link ChannelBase} and [`RealtimeChannelBase`]{@link RealtimeChannelBase} objects.
    * END CANONICAL DOCSTRING
    */
   class Channels<T> {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Creates a new [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object, with the specified [`ChannelOptions`]{@link ChannelOptions}, or returns the existing channel object.
+     * Creates a new [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object, with the specified [`ChannelOptions`]{@link ChannelOptions}, or returns the existing channel object.
      *
      * @param String - The channel name.
      * @param ChannelOptions - A [`ChannelOptions`]{@link ChannelOptions} object.
      *
-     * @returns A [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object.
+     * @returns A [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
@@ -4801,7 +4801,7 @@ declare namespace Types {
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Releases a [`RestChannel`]{@link RestChannel} or [`RealtimeChannel`]{@link RealtimeChannel} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the [`ChannelState`]{@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
+     * Releases a [`ChannelBase`]{@link ChannelBase} or [`RealtimeChannelBase`]{@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the [`ChannelState`]{@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *
      * @param String - The channel name.
      * END CANONICAL DOCSTRING
@@ -5312,7 +5312,7 @@ declare namespace Types {
     readonly state: ConnectionState;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Causes the connection to close, entering the [`CLOSING`]{@link ConnectionState#CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to [`connect()`]{@link Connection#connect}.
+     * Causes the connection to close, entering the [`CLOSING`]{@link ConnectionState#CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to [`connect()`]{@link ConnectionBase#connect}.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
