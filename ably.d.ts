@@ -4857,7 +4857,7 @@ declare namespace Types {
     encoding: string;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `push`, {@link DeltaExtras | `delta`}, {@link ReferenceExtras | `ref`} and `headers`.
+     * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `push`, `delta`, `ref` and `headers`.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
