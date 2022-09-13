@@ -721,7 +721,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * If the connection is still in the [`DISCONNECTED`]{@link ConnectionState#disconnected} state after this delay, the client library will attempt to reconnect automatically. The default is 15 seconds.
+     * If the connection is still in the [`DISCONNECTED`]{@link ConnectionState#DISCONNECTED} state after this delay, the client library will attempt to reconnect automatically. The default is 15 seconds.
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL DEFAULT INFO
@@ -736,7 +736,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * When the connection enters the [`SUSPENDED`]{@link ConnectionState#suspended} state, after this delay, if the state is still [`SUSPENDED`]{@link ConnectionState#suspended}, the client library attempts to reconnect automatically. The default is 30 seconds.
+     * When the connection enters the [`SUSPENDED`]{@link ConnectionState#SUSPENDED} state, after this delay, if the state is still [`SUSPENDED`]{@link ConnectionState#SUSPENDED}, the client library attempts to reconnect automatically. The default is 30 seconds.
      * END CANONICAL DOCSTRING
      *
      * BEGIN CANONICAL DEFAULT INFO
