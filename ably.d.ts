@@ -4298,7 +4298,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Deregisters all listeners to messages on this channel that match the supplied filter.
      *
-     * @param MessageFilterObject - A [`MessageFilterObject`]{@link MessageFilterObject}.
+     * @param MessageFilter - A [`MessageFilter`]{@link MessageFilter}.
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
      *
@@ -4498,7 +4498,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
      *
-     * @param MessageFilterObject - A [`MessageFilterObject`]{@link MessageFilterObject}.
+     * @param MessageFilter - A [`MessageFilter`]{@link MessageFilter}.
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
      *
@@ -4705,7 +4705,7 @@ declare namespace Types {
      * BEGIN CANONICAL DOCSTRING
      * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
      *
-     * @param MessageFilterObject - A [`MessageFilterObject`]{@link MessageFilterObject}.
+     * @param MessageFilter - A [`MessageFilter`]{@link MessageFilter}.
      * @param (Message) - An event listener function.
      * END CANONICAL DOCSTRING
      *
