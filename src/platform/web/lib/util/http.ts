@@ -12,6 +12,7 @@ import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
 import { createRequest, Request } from '../transport/jsonptransport';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 
 function shouldFallback(errorInfo: ErrorInfo) {
   const statusCode = errorInfo.statusCode as number;
@@ -49,6 +50,10 @@ const Http: typeof IHttp = class {
   constructor(options: NormalisedClientOptions) {
     this.options = options || {};
 
+    const connectivityCheckUrl = this.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
+    const connectivityCheckParams = this.options.connectivityCheckParams;
+    const connectivityUrlIsDefault = !this.options.connectivityCheckUrl;
+
     if (Platform.Config.xhrSupported) {
       this.supportsAuthHeaders = true;
       this.Request = function (
@@ -75,17 +80,27 @@ const Http: typeof IHttp = class {
       };
 
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
-        const upUrl = Defaults.connectivityCheckUrl;
-        Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
+        Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
         this.doUri(
           HttpMethods.Get,
           null as any,
-          upUrl,
+          connectivityCheckUrl,
           null,
-          null,
-          null,
-          function (err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
-            const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+          connectivityCheckParams
+          internetUpParams,
+          function (
+            err?: ErrorInfo | ErrnoException | null,
+            responseText?: unknown,
+            headers?: any,
+            packed?: boolean,
+            statusCode?: number
+          ) {
+            let result = false;
+            if (!connectivityUrlIsDefault) {
+              result = !err && isSuccessCode(statusCode as number);
+            } else {
+              result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+            }
             Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
             callback(null, result);
           }

@@ -9,6 +9,7 @@ import https from 'https';
 import Rest from 'common/lib/client/rest';
 import Realtime from 'common/lib/client/realtime';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 
 /***************************************************
  *
@@ -225,15 +226,28 @@ const Http: typeof IHttp = class {
   }
 
   checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
-    // TODO: fix this
+    const connectivityCheckUrl = this.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
+    const connectivityCheckParams = this.options.connectivityCheckParams;
+    const connectivityUrlIsDefault = !this.options.connectivityCheckUrl;
+
     this.doUri(
       HttpMethods.Get,
       null as any,
-      Defaults.connectivityCheckUrl,
+      connectivityCheckUrl,
       null,
       null,
-      null,
-      function (err?: ErrnoException | ErrorInfo | null, responseText?: unknown) {
+      connectivityCheckParams,
+      function (
+        err?: ErrnoException | ErrorInfo | null,
+        responseText?: unknown,
+        headers?: any,
+        packed?: boolean,
+        statusCode?: number
+      ) {
+        if (!err && !connectivityUrlIsDefault) {
+          callback(null, isSuccessCode(statusCode as number));
+          return;
+        }
         callback(null, !err && (responseText as Buffer | string)?.toString().trim() === 'yes');
       }
     );
