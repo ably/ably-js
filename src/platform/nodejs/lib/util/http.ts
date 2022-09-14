@@ -8,6 +8,7 @@ import http from 'http';
 import https from 'https';
 import Rest from 'common/lib/client/rest';
 import Realtime from 'common/lib/client/realtime';
+import { NormalisedClientOptions } from 'common/types/ClientOptions';
 
 /***************************************************
  *
@@ -91,6 +92,11 @@ const Http: typeof IHttp = class {
   _getHosts = getHosts;
   supportsAuthHeaders = true;
   supportsLinkHeaders = true;
+  options: NormalisedClientOptions;
+
+  constructor(options: NormalisedClientOptions) {
+    this.options = options || {};
+  }
 
   /* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
   do(

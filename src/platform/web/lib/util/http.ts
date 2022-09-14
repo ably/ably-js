@@ -11,6 +11,7 @@ import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
 import { createRequest, Request } from '../transport/jsonptransport';
+import { NormalisedClientOptions } from 'common/types/ClientOptions';
 
 function shouldFallback(errorInfo: ErrorInfo) {
   const statusCode = errorInfo.statusCode as number;
@@ -43,8 +44,11 @@ const Http: typeof IHttp = class {
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   checksInProgress: Array<StandardCallback<boolean>> | null = null;
+  options: NormalisedClientOptions;
 
-  constructor() {
+  constructor(options: NormalisedClientOptions) {
+    this.options = options || {};
+
     if (Platform.Config.xhrSupported) {
       this.supportsAuthHeaders = true;
       this.Request = function (
