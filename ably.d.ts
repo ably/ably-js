@@ -621,7 +621,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * DEPRECATED: this property is deprecated and will be removed in a future version. Enables default fallback hosts to be used.
+     * @deprecated This property is deprecated and will be removed in a future version. Enables default fallback hosts to be used.
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
