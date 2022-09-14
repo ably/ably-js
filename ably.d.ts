@@ -4496,7 +4496,7 @@ declare namespace Types {
     subscribe(events: Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel that match the supplied filter.
+     * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
      *
      * @param MessageFilterObject - A [`MessageFilterObject`]{@link MessageFilterObject}.
      * @param (Message) - An event listener function.
@@ -4703,7 +4703,7 @@ declare namespace Types {
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Registers a listener for messages on this channel that match the supplied filter.
+     * Registers a listener for messages on this channel that match the supplied filter. A callback may optionally be passed in to this call to be notified of success or failure of the channel [`attach()`]{@link RealtimeChannel#attach} operation.
      *
      * @param MessageFilterObject - A [`MessageFilterObject`]{@link MessageFilterObject}.
      * @param (Message) - An event listener function.
