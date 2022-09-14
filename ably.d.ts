@@ -2438,10 +2438,9 @@ declare namespace Types {
      *
      * @param name - Not yet documented.
      * @param data - Not yet documented.
-     * @param options - Not yet documented.
      * @param callback - Not yet documented.
      */
-    publish(name: string, data: any, options?: PublishOptions, callback?: errorCallback): void;
+    publish(name: string, data: any, callback?: errorCallback): void;
     /**
      * Not yet documented.
      *
@@ -2515,23 +2514,20 @@ declare namespace Types {
      *
      * @param name - Not yet documented.
      * @param data - Not yet documented.
-     * @param options - Not yet documented.
      */
-    publish(name: string, data: any, options?: PublishOptions): Promise<void>;
+    publish(name: string, data: any): Promise<void>;
     /**
      * Publish several messages on this channel. When publish is called with this client library, it won’t attempt to implicitly attach to the channel.
      *
      * @param messages - Not yet documented.
-     * @param options - Not yet documented.
      */
-    publish(messages: any[], options?: PublishOptions): Promise<void>;
+    publish(messages: any[]): Promise<void>;
     /**
      * Not yet documented.
      *
      * @param message - Not yet documented.
-     * @param options - Not yet documented.
      */
-    publish(message: any, options?: PublishOptions): Promise<void>;
+    publish(message: any): Promise<void>;
     /**
      * Not yet documented.
      *
