@@ -67,6 +67,23 @@ class Channels extends EventEmitter {
     });
   }
 
+  channelSerials(): { [ name: string ]: string } {
+    let serials: { [ name: string ]: string } = {};
+    for (const [name, channel] of Object.entries(this.all)) {
+      if (channel.channelSerial) {
+        serials[name] = channel.channelSerial;
+      }
+    }
+    return serials;
+  }
+
+  setRecoveryChannelSerials(channelSerials: { [ name: string ]: string }) {
+    for (const [name, serial] of Object.entries(channelSerials)) {
+      const channel = this.get(name);
+      channel.channelSerial = serial;
+    }
+  }
+
   onChannelMessage(msg: ProtocolMessage) {
     const channelName = msg.channel;
     if (channelName === undefined) {
@@ -153,7 +170,7 @@ class Channels extends EventEmitter {
     }
   }
 
-  get(name: string, channelOptions: ChannelOptions) {
+  get(name: string, channelOptions?: ChannelOptions) {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
