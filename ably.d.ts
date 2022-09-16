@@ -1908,7 +1908,7 @@ declare namespace Types {
 
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Controls the log output of the library. This is a function to handle each line of log output.
+     * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
      *
      * @param msg - The log message emitted by the library.
      * END CANONICAL DOCSTRING
