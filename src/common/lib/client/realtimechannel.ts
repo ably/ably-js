@@ -79,6 +79,7 @@ class RealtimeChannel extends Channel {
   stateTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
+  channelSerial?: string | null;
 
   constructor(realtime: Realtime, name: string, options: API.Types.ChannelOptions) {
     super(realtime, name, options);
@@ -112,6 +113,7 @@ class RealtimeChannel extends Channel {
     /* Only differences between this and the public event emitter is that this emits an
      * update event for all ATTACHEDs, whether resumed or not */
     this._allChannelChanges = new EventEmitter();
+    this.channelSerial = null;
   }
 
   static invalidStateError(state: string): ErrorInfo {
@@ -596,6 +598,14 @@ class RealtimeChannel extends Channel {
   }
 
   onMessage(message: ProtocolMessage): void {
+    if (
+      message.action === actions.ATTACHED ||
+      message.action === actions.MESSAGE ||
+      message.action === actions.PRESENCE
+    ) {
+      this.setChannelSerial(message.channelSerial);
+    }
+
     let syncChannelSerial,
       isSync = false;
     switch (message.action) {
@@ -1009,6 +1019,16 @@ class RealtimeChannel extends Channel {
       90001,
       400
     );
+  }
+
+  setChannelSerial(channelSerial?: string | null): void {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'RealtimeChannel.setChannelSerial()',
+      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.channelSerial
+    );
+
+    this.channelSerial = channelSerial;
   }
 }
 
