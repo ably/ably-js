@@ -1897,7 +1897,7 @@ declare namespace Types {
   interface LogInfo {
     /**
      * BEGIN CANONICAL DOCSTRING
-     * Controls the verbosity of the logs output from the library. Levels include `verbose`, `debug`, `info`, `warn` and `error`.
+     * Controls the verbosity of the logs output from the library. Valid values are: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
      * END CANONICAL DOCSTRING
      *
      * BEGIN LEGACY DOCSTRING
