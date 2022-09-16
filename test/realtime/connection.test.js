@@ -65,16 +65,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('connectionAttributes', function (done) {
       var realtime;
       try {
-        realtime = helper.AblyRealtime({ log: { level: 4 } });
+        realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
           try {
-            expect(realtime.connection.serial).to.equal(-1, 'verify serial is -1 on connect');
-            expect(realtime.connection.recoveryKey).to.equal(
-              realtime.connection.key +
-                ':' +
-                realtime.connection.serial +
-                ':' +
-                realtime.connection.connectionManager.msgSerial,
+            const recoveryKey = realtime.connection.getRecoveryKey();
+            const recoveryContext = JSON.parse(recoveryKey);
+            expect(recoveryContext.connectionKey).to.equal(
+              realtime.connection.key,
+              'verify correct recovery key'
+            );
+            expect(recoveryContext.msgSerial).to.equal(
+              realtime.connection.connectionManager.msgSerial,
               'verify correct recovery key'
             );
           } catch (err) {
@@ -93,23 +94,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 function (cb) {
                   channel.subscribe(function () {
                     setTimeout(function () {
-                      expect(realtime.connection.serial).to.equal(0, 'verify serial is 0 after message received');
-                      if (realtime.connection.serial !== 0) {
-                        var cm = realtime.connection.connectionManager;
-                        console.log(
-                          'connectionAttributes test: connection serial is ' +
-                            realtime.connection.serial +
-                            '; active transport' +
-                            (cm.activeProtocol && cm.activeProtocol.transport && cm.activeProtocol.transport.shortName)
-                        );
-                      }
-                      expect(realtime.connection.recoveryKey).to.equal(
-                        realtime.connection.key +
-                          ':' +
-                          realtime.connection.serial +
-                          ':' +
-                          realtime.connection.connectionManager.msgSerial,
-                        'verify recovery key still correct'
+                      const recoveryKey = realtime.connection.getRecoveryKey();
+                      const recoveryContext = JSON.parse(recoveryKey);
+                      expect(recoveryContext.connectionKey).to.equal(
+                        realtime.connection.key,
+                        'verify correct recovery key'
+                      );
+                      expect(recoveryContext.msgSerial).to.equal(
+                        realtime.connection.connectionManager.msgSerial,
+                        'verify correct recovery key'
                       );
                       cb();
                     }, 0);
@@ -117,10 +110,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 },
                 function (cb) {
                   channel.publish('name', 'data', cb);
-                  expect(realtime.connection.serial).to.equal(
-                    -1,
-                    'verify serial is -1 after publish begun but before message received'
-                  );
                 },
               ],
               function (err) {
@@ -131,7 +120,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 realtime.connection.close();
                 realtime.connection.whenState('closed', function () {
                   try {
-                    expect(realtime.connection.recoveryKey).to.equal(null, 'verify recovery key null after close');
+                    expect(realtime.connection.getRecoveryKey()).to.equal(null, 'verify recovery key null after close');
                     closeAndFinish(done, realtime);
                   } catch (err) {
                     closeAndFinish(done, realtime, err);
@@ -148,8 +137,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('unrecoverableConnection', function (done) {
-      var realtime,
-        fakeRecoveryKey = '_____!ablyjs_test_fake-key____:5:3';
+      var realtime;
+      const fakeRecoveryKey = JSON.stringify({
+        'connectionKey': '_____!ablyjs_test_fake-key____',
+        'msgSerial': '5',
+        'channelSerials': {},
+      });
       try {
         realtime = helper.AblyRealtime({ recover: fakeRecoveryKey });
         realtime.connection.on('connected', function (stateChange) {
@@ -162,7 +155,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               80008,
               'verify unrecoverable-connection error set in connection.errorReason'
             );
-            expect(realtime.connection.serial).to.equal(-1, 'verify serial is -1 (new connection), not 5');
             expect(realtime.connection.connectionManager.msgSerial).to.equal(
               0,
               'verify msgSerial is 0 (new connection), not 3'
@@ -188,7 +180,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * without being merged with new messages)
      */
     it('connectionQueuing', function (done) {
-      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport]}),
         channel = realtime.channels.get('connectionQueuing'),
         connectionManager = realtime.connection.connectionManager;
 

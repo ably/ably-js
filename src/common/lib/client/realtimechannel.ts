@@ -29,7 +29,7 @@ const noop = function () {};
 const statechangeOp = 'statechange';
 const syncOp = 'sync';
 
-function validateChannelOptions(options: API.Types.ChannelOptions) {
+function validateChannelOptions(options?: API.Types.ChannelOptions) {
   if (options && 'params' in options && !Utils.isObject(options.params)) {
     return new ErrorInfo('options.params must be an object', 40000, 400);
   }
@@ -81,7 +81,7 @@ class RealtimeChannel extends Channel {
   retryCount: number = 0;
   channelSerial?: string | null;
 
-  constructor(realtime: Realtime, name: string, options: API.Types.ChannelOptions) {
+  constructor(realtime: Realtime, name: string, options?: API.Types.ChannelOptions) {
     super(realtime, name, options);
     Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
     this.realtime = realtime;
@@ -141,7 +141,7 @@ class RealtimeChannel extends Channel {
     return args;
   }
 
-  setOptions(options: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
+  setOptions(options?: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
     if (!callback) {
       if (this.rest.options.promises) {
         return Utils.promisify(this, 'setOptions', arguments);
@@ -185,8 +185,8 @@ class RealtimeChannel extends Channel {
     }
   }
 
-  _shouldReattachToSetOptions(options: API.Types.ChannelOptions) {
-    return (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
+  _shouldReattachToSetOptions(options?: API.Types.ChannelOptions) {
+    return options && (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
   }
 
   publish(...args: any[]): void | Promise<void> {

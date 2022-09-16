@@ -26,7 +26,10 @@ define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably
     return new Ably.Rest(ablyClientOptions(options));
   }
 
-  function ablyRealtime(options) {
+  function ablyRealtime(options, promises) {
+    if (promises) {
+      return new Ably.Realtime.Promise(ablyClientOptions(options));
+    }
     return new Ably.Realtime(ablyClientOptions(options));
   }
 
