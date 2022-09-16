@@ -100,17 +100,10 @@ class Channels extends EventEmitter {
         channel.checkPendingState();
       } else if (channel.state === 'suspended') {
         channel.attach();
-      }
-    }
-  }
-
-  reattach(reason: ErrorInfo) {
-    for (const channelId in this.all) {
-      const channel = this.all[channelId];
-      /* NB this should not trigger for merely attaching channels, as they will
-       * be reattached anyway through the onTransportActive checkPendingState */
-      if (channel.state === 'attached') {
-        channel.requestState('attaching', reason);
+      } else if (channel.state === 'attached') {
+        // Note explicity request the state, channel.attach() would do nothing
+        // as its already attached.
+        channel.requestState('attaching');
       }
     }
   }
