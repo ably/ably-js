@@ -808,7 +808,7 @@ declare namespace Types {
     errorReason: ErrorInfo;
     id?: string;
     key?: string;
-    recoveryKey: string;
+    getRecoveryKey: () => string | null;
     serial: number;
     readonly state: ConnectionState;
     close: () => void;

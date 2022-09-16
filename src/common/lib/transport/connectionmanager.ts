@@ -114,10 +114,9 @@ export class TransportParams {
         params.resume = this.connectionKey as string;
         break;
       case 'recover': {
-        const match = (options.recover as string).split(':');
-        if (match) {
-          params.recover = match[0];
-          params.connectionSerial = match[1];
+        const recoveryContext = RecoveryContext.decode(options.recover);
+        if (recoveryContext) {
+          params.recover = recoveryContext.connectionKey;
         }
         break;
       }
@@ -163,6 +162,56 @@ export class TransportParams {
     result += ']';
 
     return result;
+  }
+}
+
+class RecoveryContext {
+  connectionKey: string;
+  msgSerial: number;
+  channelSerials: { [name: string]: string };
+
+  constructor(
+    connectionKey: string,
+    msgSerial: number,
+    channelSerials: { [name: string]: string }
+  ) {
+    this.connectionKey = connectionKey;
+    this.msgSerial = msgSerial;
+    this.channelSerials = channelSerials;
+  }
+
+  encode(): string {
+    return JSON.stringify(this);
+  }
+
+  static decode(recoveryKey: string): RecoveryContext | null {
+    try {
+      const dec = JSON.parse(recoveryKey);
+
+      const connectionKey = dec['connectionKey'];
+      if (typeof connectionKey !== 'string') {
+        return null;
+      }
+
+      const msgSerial = Number(dec['msgSerial']);
+      if (isNaN(msgSerial)) {
+        return null;
+      }
+
+      const channelSerials = dec['channelSerials'];
+      if (typeof channelSerials !== 'object') {
+        return null;
+      }
+      for (const [name, serial] of channelSerials) {
+        if (typeof name !== 'string' || typeof serial !== 'string') {
+          return null;
+        }
+      }
+
+      return new RecoveryContext(connectionKey, msgSerial, channelSerials);
+    } catch (e) {
+      return null;
+    }
   }
 }
 
@@ -442,9 +491,10 @@ class ConnectionManager extends EventEmitter {
           'ConnectionManager.getTransportParams()',
           'Transport recovery mode = recover; recoveryKey = ' + this.options.recover
         );
-        const match = (this.options.recover as string).split(':');
-        if (match && match[2]) {
-          this.msgSerial = Number(match[2]);
+
+        const recoveryContext = RecoveryContext.decode(this.options.recover);
+        if (recoveryContext) {
+          this.msgSerial = recoveryContext.msgSerial;
         }
       } else {
         Logger.logAction(
@@ -1232,21 +1282,24 @@ class ConnectionManager extends EventEmitter {
         return true;
       }
       this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-      this.setRecoveryKey();
     }
   }
 
   clearConnectionSerial(): void {
     this.realtime.connection.serial = this.connectionSerial = undefined;
-    this.clearRecoveryKey();
   }
 
-  setRecoveryKey(): void {
-    this.realtime.connection.recoveryKey = this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
-  }
+  getRecoveryKey(): string | null {
+    if (!this.connectionKey) {
+      return null;
+    }
 
-  clearRecoveryKey(): void {
-    this.realtime.connection.recoveryKey = null;
+    const recoveryContext = new RecoveryContext(
+      this.connectionKey,
+      this.msgSerial,
+      this.realtime.channels.channelSerials()
+    );
+    return recoveryContext.encode();
   }
 
   checkConnectionStateFreshness(): void {
@@ -1272,7 +1325,7 @@ class ConnectionManager extends EventEmitter {
    */
   persistConnection(): void {
     if (haveSessionStorage()) {
-      const recoveryKey = this.realtime.connection.recoveryKey;
+      const recoveryKey = this.getRecoveryKey();
       if (recoveryKey) {
         setSessionRecoverData({
           recoveryKey: recoveryKey,
@@ -1594,6 +1647,17 @@ class ConnectionManager extends EventEmitter {
     const connect = () => {
       this.checkConnectionStateFreshness();
       this.getTransportParams((transportParams: TransportParams) => {
+        if (transportParams.mode === 'recover' && transportParams.options.recover) {
+          const recoveryContext = RecoveryContext.decode(transportParams.options.recover);
+          if (recoveryContext) {
+            // Note this must set both the channelSerial of already attaching
+            // channels (though ATTACH won't have been sent yet as not
+            // connected) and save the channel serial for channels attached in
+            // the future.
+            this.realtime.channels.setRecoveryChannelSerials(recoveryContext.channelSerials);
+          }
+        }
+
         if (connectCount !== this.connectCounter) {
           return;
         }
@@ -2044,7 +2108,6 @@ class ConnectionManager extends EventEmitter {
      * so Ably can dedup if the previous send succeeded */
     if (pendingMessage.ackRequired && !pendingMessage.sendAttempted) {
       msg.msgSerial = this.msgSerial++;
-      this.setRecoveryKey();
     }
     try {
       (this.activeProtocol as Protocol).send(pendingMessage);
