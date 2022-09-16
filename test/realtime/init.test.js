@@ -34,7 +34,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             var transport = realtime.connection.connectionManager.activeProtocol.transport;
             var connectUri = helper.isWebsocket(transport) ? transport.uri : transport.recvRequest.uri;
             try {
-              expect(connectUri.indexOf('v=1.2') > -1, 'Check uri includes v=1.2').to.be.ok;
+              expect(connectUri.indexOf('v=2.0') > -1, 'Check uri includes v=2.0').to.be.ok;
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
