@@ -1165,22 +1165,12 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
       this.msgSerial = 0;
     }
-    /* but do need to reattach channels, for channels that were previously in
-     * the attached state even though the connection mode was 'clean' due to a
-     * freshness check - see https://github.com/ably/ably-js/issues/394 */
     if (this.connectionId !== connectionId) {
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.setConnection()',
-        'New connectionId; reattaching any attached channels'
+        'New connectionId'
       );
-      /* Wait till next tick before reattaching channels, so that connection
-       * state will be updated and so that it will be applied after
-       * Channels#onTransportUpdate, else channels will not have an ATTACHED
-       * sent twice (once from this and once from that). */
-      Platform.Config.nextTick(() => {
-        this.realtime.channels.reattach();
-      });
     } else if (this.options.checkChannelsOnResume) {
       /* For attached channels, set the attached msg indicator variable to false,
        * wait 30s, and check we got an attached for each one.
