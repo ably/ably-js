@@ -351,6 +351,7 @@ class RealtimeChannel extends Channel {
       action: actions.ATTACH,
       channel: this.name,
       params: this.channelOptions.params,
+      channelSerial: this.channelSerial,
     });
     if (this._requestedFlags) {
       attachMsg.encodeModesToFlags(this._requestedFlags);
