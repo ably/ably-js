@@ -1492,9 +1492,9 @@ declare namespace Types {
     /**
      * Creates an Ably client instance
      *
-     * @param key An Ably API Key
+     * @param keyOrToken An Ably API Key or token
      */
-    constructor(key: string);
+    constructor(keyOrToken: string);
     /**
      * Not yet documented.
      */
