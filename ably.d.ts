@@ -219,6 +219,12 @@ declare namespace Types {
      */
     connectivityCheckUrl?: string;
 
+    /**
+     * Disable the check used by the realtime client to check if the internet
+     * is available before connecting to a fallback host.
+     */
+    disableConnectivityCheck?: boolean;
+
     disconnectedRetryTimeout?: number;
     suspendedRetryTimeout?: number;
     closeOnUnload?: boolean;
