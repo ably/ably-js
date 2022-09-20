@@ -79,33 +79,43 @@ const Http: typeof IHttp = class {
         return req;
       };
 
-      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
-        Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
-        this.doUri(
-          HttpMethods.Get,
-          null as any,
-          connectivityCheckUrl,
-          null,
-          connectivityCheckParams
-          internetUpParams,
-          function (
-            err?: ErrorInfo | ErrnoException | null,
-            responseText?: unknown,
-            headers?: any,
-            packed?: boolean,
-            statusCode?: number
-          ) {
-            let result = false;
-            if (!connectivityUrlIsDefault) {
-              result = !err && isSuccessCode(statusCode as number);
-            } else {
-              result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+      if (this.options.disableConnectivityCheck) {
+        this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
+          callback(null, true);
+        };
+      } else {
+        this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+          Logger.logAction(
+            Logger.LOG_MICRO,
+            '(XHRRequest)Http.checkConnectivity()',
+            'Sending; ' + connectivityCheckUrl
+          );
+          this.doUri(
+            HttpMethods.Get,
+            null as any,
+            connectivityCheckUrl,
+            null,
+            null,
+            connectivityCheckParams,
+            function (
+              err?: ErrorInfo | ErrnoException | null,
+              responseText?: unknown,
+              headers?: any,
+              packed?: boolean,
+              statusCode?: number
+            ) {
+              let result = false;
+              if (!connectivityUrlIsDefault) {
+                result = !err && isSuccessCode(statusCode as number);
+              } else {
+                result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+              }
+              Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+              callback(null, result);
             }
-            Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-            callback(null, result);
-          }
-        );
-      };
+          );
+        };
+      }
     } else if (Platform.Config.jsonpSupported) {
       this.Request = function (
         method: HttpMethods,
@@ -132,36 +142,42 @@ const Http: typeof IHttp = class {
         return req;
       };
 
-      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) {
-        const upUrl = Defaults.jsonpInternetUpUrl;
+      if (this.options.disableConnectivityCheck) {
+        this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
+          callback(null, true);
+        };
+      } else {
+        this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) {
+          const upUrl = Defaults.jsonpInternetUpUrl;
 
-        if (this.checksInProgress) {
-          this.checksInProgress.push(callback);
-          return;
-        }
-        this.checksInProgress = [callback];
-        Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
+          if (this.checksInProgress) {
+            this.checksInProgress.push(callback);
+            return;
+          }
+          this.checksInProgress = [callback];
+          Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
 
-        const req = new Request(
-          'isTheInternetUp',
-          upUrl as string,
-          null,
-          null,
-          null,
-          XHRStates.REQ_SEND,
-          Defaults.TIMEOUTS
-        );
-        req.once('complete', (err: Error, response: string) => {
-          const result = !err && response;
-          Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
-          for (let i = 0; i < (this.checksInProgress as Array<StandardCallback<boolean>>).length; i++)
-            (this.checksInProgress as Array<StandardCallback<boolean>>)[i](null, result);
-          this.checksInProgress = null;
-        });
-        Platform.Config.nextTick(function () {
-          req.exec();
-        });
-      };
+          const req = new Request(
+            'isTheInternetUp',
+            upUrl as string,
+            null,
+            null,
+            null,
+            XHRStates.REQ_SEND,
+            Defaults.TIMEOUTS
+          );
+          req.once('complete', (err: Error, response: string) => {
+            const result = !err && response;
+            Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
+            for (let i = 0; i < (this.checksInProgress as Array<StandardCallback<boolean>>).length; i++)
+              (this.checksInProgress as Array<StandardCallback<boolean>>)[i](null, result);
+            this.checksInProgress = null;
+          });
+          Platform.Config.nextTick(function () {
+            req.exec();
+          });
+        };
+      }
     }
   }
 

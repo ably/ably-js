@@ -226,6 +226,10 @@ const Http: typeof IHttp = class {
   }
 
   checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
+    if (this.options.disableConnectivityCheck) {
+      callback(null, true);
+      return;
+    }
     const connectivityCheckUrl = this.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
     const connectivityCheckParams = this.options.connectivityCheckParams;
     const connectivityUrlIsDefault = !this.options.connectivityCheckUrl;
