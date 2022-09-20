@@ -95,7 +95,7 @@ class Rest {
         params = null;
       } else {
         if (this.options.promises) {
-          return Utils.promisify(this, 'stats', arguments) as Promise<PaginatedResult<Stats>>;
+          return Utils.promisify(this, 'stats', [params]) as Promise<PaginatedResult<Stats>>;
         }
         callback = noop;
       }
@@ -125,7 +125,7 @@ class Rest {
         params = null;
       } else {
         if (this.options.promises) {
-          return Utils.promisify(this, 'time', arguments) as Promise<number>;
+          return Utils.promisify(this, 'time', [params]) as Promise<number>;
         }
       }
     }
@@ -186,7 +186,9 @@ class Rest {
 
     if (callback === undefined) {
       if (this.options.promises) {
-        return Utils.promisify(this, 'request', arguments) as Promise<HttpPaginatedResponse<unknown>>;
+        return Utils.promisify(this, 'request', [method, path, params, body, customHeaders]) as Promise<
+          HttpPaginatedResponse<unknown>
+        >;
       }
       callback = noop;
     }
