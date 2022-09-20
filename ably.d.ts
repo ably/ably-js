@@ -234,7 +234,10 @@ declare namespace Types {
      **/
     authCallback?: (
       data: TokenParams,
-      callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void
+      callback: (
+        error: ErrorInfo | string | null,
+        tokenRequestOrDetails: TokenDetails | TokenRequest | string | null
+      ) => void
     ) => void;
     authHeaders?: { [index: string]: string };
     authMethod?: HTTPMethods;
