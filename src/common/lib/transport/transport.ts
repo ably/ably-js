@@ -32,8 +32,8 @@ const disconnectMessage = ProtocolMessage.fromValues({ action: actions.DISCONNEC
  * closed           error
  * failed           error
  * disposed
- * connected        null error, connectionSerial, connectionId, connectionDetails
- * sync             connectionSerial, connectionId
+ * connected        null error, connectionId, connectionDetails
+ * sync             connectionId
  * event            channel message object
  */
 
@@ -139,7 +139,7 @@ abstract class Transport extends EventEmitter {
         break;
       case actions.CONNECTED:
         this.onConnect(message);
-        this.emit('connected', message.error, message.connectionId, message.connectionDetails, message);
+        this.emit('connected', message.error, message.connectionId, message.connectionDetails);
         break;
       case actions.CLOSED:
         this.onClose(message);
