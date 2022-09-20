@@ -89,7 +89,6 @@ export class TransportParams {
   mode: string;
   format?: Utils.Format;
   connectionKey?: string;
-  connectionSerial?: number;
   stream?: any;
   heartbeats?: boolean;
 
@@ -99,8 +98,6 @@ export class TransportParams {
     this.mode = mode;
     this.connectionKey = connectionKey;
     this.format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-
-    this.connectionSerial = undefined;
   }
 
   getConnectParams(authParams: Record<string, unknown>): Record<string, string> {
@@ -152,9 +149,6 @@ export class TransportParams {
     }
     if (this.connectionKey) {
       result += ',connectionKey=' + this.connectionKey;
-    }
-    if (this.connectionSerial !== undefined) {
-      result += ',connectionSerial=' + this.connectionSerial;
     }
     if (this.format) {
       result += ',format=' + this.format;
@@ -238,7 +232,6 @@ class ConnectionManager extends EventEmitter {
   connectionDetails?: Record<string, any>;
   connectionId?: string;
   connectionKey?: string;
-  connectionSerial?: number;
   connectionStateTtl: number;
   maxIdleInterval: number | null;
   transports: string[];
@@ -337,7 +330,6 @@ class ConnectionManager extends EventEmitter {
     this.connectionDetails = undefined;
     this.connectionId = undefined;
     this.connectionKey = undefined;
-    this.connectionSerial = undefined;
     this.connectionStateTtl = timeouts.connectionStateTtl;
     this.maxIdleInterval = null;
 
@@ -443,11 +435,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   createTransportParams(host: string | null, mode: string): TransportParams {
-    const params = new TransportParams(this.options, host, mode, this.connectionKey);
-    if (this.connectionSerial !== undefined) {
-      params.connectionSerial = this.connectionSerial;
-    }
-    return params;
+    return new TransportParams(this.options, host, mode, this.connectionKey);
   }
 
   getTransportParams(callback: Function): void {
@@ -607,7 +595,7 @@ class ConnectionManager extends EventEmitter {
       Platform.Defaults.transportPreferenceOrder[Platform.Defaults.transportPreferenceOrder.length - 1];
     transport.once(
       'connected',
-      (error: ErrorInfo, connectionId: string, connectionDetails: Record<string, any>, message: ProtocolMessage) => {
+      (error: ErrorInfo, connectionId: string, connectionDetails: Record<string, any>) => {
         if (mode == 'upgrade' && this.activeProtocol) {
           /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
           if (
@@ -621,7 +609,6 @@ class ConnectionManager extends EventEmitter {
                 transport,
                 connectionId,
                 connectionDetails,
-                message.connectionSerial
               );
             }, this.options.timeouts.parallelUpgradeDelay);
           } else {
@@ -630,11 +617,10 @@ class ConnectionManager extends EventEmitter {
               transport,
               connectionId,
               connectionDetails,
-              message.connectionSerial
             );
           }
         } else {
-          this.activateTransport(error, transport, connectionId, connectionDetails, message.connectionSerial as number);
+          this.activateTransport(error, transport, connectionId, connectionDetails);
 
           /* allow connectImpl to start the upgrade process if needed, but allow
            * other event handlers, including activating the transport, to run first */
@@ -667,14 +653,12 @@ class ConnectionManager extends EventEmitter {
    * @param transport
    * @param connectionId
    * @param connectionDetails
-   * @param upgradeConnectionSerial
    */
   scheduleTransportActivation(
     error: ErrorInfo,
     transport: Transport,
     connectionId: string,
     connectionDetails: Record<string, any>,
-    upgradeConnectionSerial?: number
   ): void {
     const currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
       abandon = () => {
@@ -769,18 +753,13 @@ class ConnectionManager extends EventEmitter {
        * be a sync with the new connection serial. (And it
        * needs to be set in the library, which is done by activateTransport). */
       const connectionReset = connectionId !== this.connectionId,
-        syncSerial = (connectionReset ? upgradeConnectionSerial : this.connectionSerial) as number;
+        syncSerial = 0;
 
       if (connectionReset) {
         Logger.logAction(
           Logger.LOG_ERROR,
           'ConnectionManager.scheduleTransportActivation()',
-          'Upgrade resulted in new connectionId; resetting library connection serial from ' +
-            this.connectionSerial +
-            ' to ' +
-            syncSerial +
-            '; upgrade error was ' +
-            error
+          'Upgrade resulted in new connectionId; upgrade error was ' + error
         );
       }
 
@@ -812,7 +791,7 @@ class ConnectionManager extends EventEmitter {
             'ConnectionManager.scheduleTransportActivation()',
             'Activating transport; transport = ' + transport
           );
-          this.activateTransport(error, transport, connectionId, connectionDetails, postSyncSerial);
+          this.activateTransport(error, transport, connectionId, connectionDetails);
           /* Restore pre-sync state. If state has changed in the meantime,
            * don't touch it -- since the websocket transport waits a tick before
            * disposing itself, it's possible for it to have happily synced
@@ -875,14 +854,12 @@ class ConnectionManager extends EventEmitter {
    * @param transport the transport instance
    * @param connectionId the id of the new active connection
    * @param connectionDetails the details of the new active connection
-   * @param {number} connectionSerial the serial at the point activation
    */
   activateTransport(
     error: ErrorInfo,
     transport: Transport,
     connectionId: string,
     connectionDetails: Record<string, any>,
-    connectionSerial: number
   ): boolean {
     Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
     if (error) {
@@ -897,9 +874,6 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager.activateTransport()',
         'connectionDetails =  ' + JSON.stringify(connectionDetails)
       );
-    }
-    if (connectionSerial) {
-      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'serial =  ' + connectionSerial);
     }
 
     this.persistTransportPreference(transport);
@@ -949,7 +923,7 @@ class ConnectionManager extends EventEmitter {
 
     const connectionKey = connectionDetails.connectionKey;
     if (connectionKey && this.connectionKey != connectionKey) {
-      this.setConnection(connectionId, connectionDetails, connectionSerial, !!error);
+      this.setConnection(connectionId, connectionDetails, !!error);
     }
 
     /* Rebroadcast any new connectionDetails from the active transport, which
@@ -1185,9 +1159,6 @@ class ConnectionManager extends EventEmitter {
       connectionKey: this.connectionKey,
     });
 
-    if (requestedSyncSerial !== undefined) {
-      syncMessage.connectionSerial = requestedSyncSerial;
-    }
     transport.send(syncMessage);
 
     transport.once('sync', function (connectionId: string, syncSerial: number) {
@@ -1199,13 +1170,11 @@ class ConnectionManager extends EventEmitter {
   setConnection(
     connectionId: string,
     connectionDetails: Record<string, any>,
-    connectionSerial: number,
     hasConnectionError?: boolean
   ): void {
     /* if connectionKey changes but connectionId stays the same, then just a
      * transport change on the same connection. If connectionId changes, we're
-     * on a new connection, with implications for msgSerial and channel state,
-     * and resetting the connectionSerial */
+     * on a new connection, with implications for msgSerial and channel state */
     /* If no previous connectionId, don't reset the msgSerial as it may have
      * been set by recover data (unless the recover failed) */
     const prevConnId = this.connectionId,
@@ -1240,53 +1209,13 @@ class ConnectionManager extends EventEmitter {
     }
     this.realtime.connection.id = this.connectionId = connectionId;
     this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
-    const forceResetMessageSerial = connIdChanged || !prevConnId;
-    this.setConnectionSerial(connectionSerial, forceResetMessageSerial, false);
   }
 
   clearConnection(): void {
     this.realtime.connection.id = this.connectionId = undefined;
     this.realtime.connection.key = this.connectionKey = undefined;
-    this.clearConnectionSerial();
     this.msgSerial = 0;
     this.unpersistConnection();
-  }
-
-  /* force: set the connectionSerial even if it's less than the current
-   * connectionSerial. Used for new connections.
-   * Returns true iff the message was rejected as a duplicate. */
-  setConnectionSerial(connectionSerial: number, force?: boolean, fromChannelMessage?: boolean): void | true {
-    Logger.logAction(
-      Logger.LOG_MICRO,
-      'ConnectionManager.setConnectionSerial()',
-      'Updating connection serial; serial = ' +
-        connectionSerial +
-        '; force = ' +
-        force +
-        '; previous = ' +
-        this.connectionSerial
-    );
-    if (connectionSerial !== undefined) {
-      if (connectionSerial <= (this.connectionSerial as number) && !force) {
-        if (fromChannelMessage) {
-          Logger.logAction(
-            Logger.LOG_ERROR,
-            'ConnectionManager.setConnectionSerial()',
-            'received message with connectionSerial ' +
-              connectionSerial +
-              ', but current connectionSerial is ' +
-              this.connectionSerial +
-              '; assuming message is a duplicate and discarding it'
-          );
-        }
-        return true;
-      }
-      this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-    }
-  }
-
-  clearConnectionSerial(): void {
-    this.realtime.connection.serial = this.connectionSerial = undefined;
   }
 
   getRecoveryKey(): string | null {
@@ -2181,15 +2110,11 @@ class ConnectionManager extends EventEmitter {
      * idle), message can validly arrive on it even though it isn't active */
     if (onActiveTransport || onUpgradeTransport) {
       if (notControlMsg) {
-        const suppressed = this.setConnectionSerial(message.connectionSerial as number, false, true);
-        if (suppressed) {
-          return;
-        }
         if (ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
           Logger.logAction(
             Logger.LOG_ERROR,
             'ConnectionManager.onChannelMessage()',
-            'received message with different connectionSerial, but same message id as a previous; discarding; id = ' +
+            'received message with the same message id as a previous; discarding; id = ' +
               message.id
           );
           return;
