@@ -106,25 +106,26 @@ class RealtimePresence extends Presence {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
     }
-    return this._enterOrUpdateClient(undefined, data, 'enter', callback);
+    return this._enterOrUpdateClient(undefined, undefined, data, 'enter', callback);
   }
 
   update(data: unknown, callback: ErrCallback): void | Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
     }
-    return this._enterOrUpdateClient(undefined, data, 'update', callback);
+    return this._enterOrUpdateClient(undefined, undefined, data, 'update', callback);
   }
 
   enterClient(clientId: string, data: unknown, callback: ErrCallback): void | Promise<void> {
-    return this._enterOrUpdateClient(clientId, data, 'enter', callback);
+    return this._enterOrUpdateClient(undefined, clientId, data, 'enter', callback);
   }
 
   updateClient(clientId: string, data: unknown, callback: ErrCallback): void | Promise<void> {
-    return this._enterOrUpdateClient(clientId, data, 'update', callback);
+    return this._enterOrUpdateClient(undefined, clientId, data, 'update', callback);
   }
 
   _enterOrUpdateClient(
+    id: string | undefined,
     clientId: string | undefined,
     data: unknown,
     action: string,
@@ -136,7 +137,7 @@ class RealtimePresence extends Presence {
         data = null;
       } else {
         if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
+          return Utils.promisify(this, '_enterOrUpdateClient', [id, clientId, data, action]);
         }
         callback = noop;
       }
@@ -155,6 +156,7 @@ class RealtimePresence extends Presence {
     );
 
     const presence = PresenceMessage.fromValues({
+      id: id,
       action: action,
       data: data,
     });
@@ -465,8 +467,7 @@ class RealtimePresence extends Presence {
   }
 
   _ensureMyMembersPresent(): void {
-    const members = this.members,
-      myMembers = this._myMembers,
+    const myMembers = this._myMembers,
       reenterCb = (err?: ErrorInfo | null) => {
         if (err) {
           const msg = 'Presence auto-re-enter failed: ' + err.toString();
@@ -478,16 +479,13 @@ class RealtimePresence extends Presence {
       };
 
     for (const memberKey in myMembers.map) {
-      if (!(memberKey in members.map)) {
-        const entry = myMembers.map[memberKey];
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'RealtimePresence._ensureMyMembersPresent()',
-          'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
-        );
-        this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
-        delete myMembers.map[memberKey];
-      }
+      const entry = myMembers.map[memberKey];
+      Logger.logAction(
+        Logger.LOG_MICRO,
+        'RealtimePresence._ensureMyMembersPresent()',
+        'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
+      );
+      this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter', reenterCb);
     }
   }
 
