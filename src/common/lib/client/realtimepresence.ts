@@ -380,8 +380,6 @@ class RealtimePresence extends Presence {
     /* if this is the last (or only) message in a sequence of sync updates, end the sync */
     if (isSync && !syncCursor) {
       members.endSync();
-      /* RTP5c2: re-enter our own members if they haven't shown up in the sync */
-      this._ensureMyMembersPresent();
       this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
       this.channel.syncChannelSerial = null;
     }
@@ -405,8 +403,8 @@ class RealtimePresence extends Presence {
     } else {
       this._synthesizeLeaves(this.members.values());
       this.members.clear();
-      this._ensureMyMembersPresent();
     }
+    this._ensureMyMembersPresent();
 
     /* NB this must be after the _ensureMyMembersPresent call, which may add items to pendingPresence */
     const pendingPresence = this.pendingPresence,
