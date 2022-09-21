@@ -1,7 +1,7 @@
-# Hello there!
+# Ably JavaScript Client Library SDK API Reference for Callbacks
 
-This is the intro to the Ably SDK.
+You are currently viewing the callback-based variant of the Ably JavaScript Client Library SDK. View the promise-based variant [here](../promises/index.html).
 
-The entry points to this SDK are the [Rest](classes/Rest.html) and [Realtime](classes/Realtime.html) classes.
+The callback-based variant of the API implements the common Node.js error-first callback style. 
 
-**TODO proper content to come from tech writers (in [EDX-155](https://ably.atlassian.net/browse/EDX-155)) before this goes public**
+To get started with the Ably JavaScript Client Library SDK, follow the [Quickstart Guide](https://ably.com/docs/quick-start-guide) or view the introductions to the [realtime](https://ably.com/docs/realtime/usage) and [REST](https://ably.com/docs/rest/usage) interfaces.
