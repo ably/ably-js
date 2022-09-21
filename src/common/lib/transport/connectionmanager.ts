@@ -245,7 +245,6 @@ class ConnectionManager extends EventEmitter {
   host: string | null;
   lastAutoReconnectAttempt: number | null;
   lastActivity: number | null;
-  mostRecentMsg: ProtocolMessage | null;
   forceFallbackHost: boolean;
   connectCounter: number;
   transitionTimer?: number | NodeJS.Timeout | null;
@@ -351,7 +350,6 @@ class ConnectionManager extends EventEmitter {
     this.host = null;
     this.lastAutoReconnectAttempt = null;
     this.lastActivity = null;
-    this.mostRecentMsg = null;
     this.forceFallbackHost = false;
     this.connectCounter = 0;
 
@@ -2034,25 +2032,12 @@ class ConnectionManager extends EventEmitter {
 
   onChannelMessage(message: ProtocolMessage, transport: Transport): void {
     const onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
-      onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing,
-      notControlMsg = message.action === actions.MESSAGE || message.action === actions.PRESENCE;
+      onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
 
     /* As the lib now has a period where the upgrade transport is synced but
      * before it's become active (while waiting for the old one to become
      * idle), message can validly arrive on it even though it isn't active */
     if (onActiveTransport || onUpgradeTransport) {
-      if (notControlMsg) {
-        if (ProtocolMessage.isDuplicate(message, this.mostRecentMsg)) {
-          Logger.logAction(
-            Logger.LOG_ERROR,
-            'ConnectionManager.onChannelMessage()',
-            'received message with the same message id as a previous; discarding; id = ' +
-              message.id
-          );
-          return;
-        }
-        this.mostRecentMsg = message;
-      }
       this.realtime.channels.onChannelMessage(message);
     } else {
       // Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
