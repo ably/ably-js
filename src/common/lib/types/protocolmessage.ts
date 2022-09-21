@@ -160,37 +160,6 @@ class ProtocolMessage {
     result += ']';
     return result;
   };
-
-  /* Only valid for channel messages */
-  static isDuplicate = function (a: any, b: any): boolean {
-    if (a && b) {
-      if (
-        (a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
-        a.action === b.action &&
-        a.channel === b.channel &&
-        a.id === b.id
-      ) {
-        if (a.action === actions.PRESENCE) {
-          return true;
-        } else if (a.messages.length === b.messages.length) {
-          for (let i = 0; i < a.messages.length; i++) {
-            const aMessage = a.messages[i];
-            const bMessage = b.messages[i];
-            if (
-              (aMessage.extras && aMessage.extras.delta && aMessage.extras.delta.format) !==
-              (bMessage.extras && bMessage.extras.delta && bMessage.extras.delta.format)
-            ) {
-              return false;
-            }
-          }
-
-          return true;
-        }
-      }
-    }
-
-    return false;
-  };
 }
 
 export default ProtocolMessage;
