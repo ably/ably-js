@@ -33,7 +33,6 @@ const disconnectMessage = ProtocolMessage.fromValues({ action: actions.DISCONNEC
  * failed           error
  * disposed
  * connected        null error, connectionId, connectionDetails
- * sync             connectionId
  * event            channel message object
  */
 
@@ -154,12 +153,6 @@ abstract class Transport extends EventEmitter {
         this.emit('nack', message.msgSerial, message.count, message.error);
         break;
       case actions.SYNC:
-        if (message.connectionId !== undefined) {
-          /* a transport SYNC */
-          this.emit('sync', message.connectionId, message.connectionId);
-          break;
-        }
-        /* otherwise it's a channel SYNC, so handle it in the channel */
         this.connectionManager.onChannelMessage(message, this);
         break;
       case actions.AUTH:
