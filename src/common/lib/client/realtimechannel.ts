@@ -65,7 +65,6 @@ class RealtimeChannel extends Channel {
   errorReason: ErrorInfo | string | null;
   _requestedFlags: Array<API.Types.ChannelMode> | null;
   _mode?: null | number;
-  _attachedMsgIndicator: boolean;
   _attachResume: boolean;
   _decodingContext: { channelOptions: API.Types.ChannelOptions; plugins: any; baseEncodedPreviousPayload: undefined };
   _lastPayload: {
@@ -97,8 +96,6 @@ class RealtimeChannel extends Channel {
     this.errorReason = null;
     this._requestedFlags = null;
     this._mode = null;
-    /* Temporary; only used for the checkChannelsOnResume option */
-    this._attachedMsgIndicator = false;
     this._attachResume = false;
     this._decodingContext = {
       channelOptions: this.channelOptions,
@@ -611,7 +608,6 @@ class RealtimeChannel extends Channel {
       isSync = false;
     switch (message.action) {
       case actions.ATTACHED: {
-        this._attachedMsgIndicator = true;
         this.properties.attachSerial = message.channelSerial;
         this._mode = message.getMode();
         this.params = (message as any).params || {};
