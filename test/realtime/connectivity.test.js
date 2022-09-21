@@ -113,5 +113,19 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         });
       });
     });
+
+    it('disable_connectivity_check', function (done) {
+      new helper.AblyRealtime({
+        connectivityCheckUrl: 'notarealhost',
+        disableConnectivityCheck: true,
+      }).http.checkConnectivity(function (err, res) {
+        try {
+          expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+    });
   });
 });
