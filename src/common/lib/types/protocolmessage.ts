@@ -23,6 +23,7 @@ const actions = {
   MESSAGE: 15,
   SYNC: 16,
   AUTH: 17,
+  ACTIVATE: 18,
 };
 
 const ActionName: string[] = [];
