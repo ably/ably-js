@@ -701,7 +701,7 @@ class ConnectionManager extends EventEmitter {
     );
 
     const onReadyToUpgrade = (err?: ErrorInfo) => {
-      let oldProtocol: Protocol | null;
+      let oldProtocol: Protocol | null = null;
       if (err) {
         Logger.logAction(
           Logger.LOG_ERROR,
@@ -751,9 +751,7 @@ class ConnectionManager extends EventEmitter {
        * it's still an upgrade, realtime still expects a sync - it just needs to
        * be a sync with the new connection serial. (And it
        * needs to be set in the library, which is done by activateTransport). */
-      const connectionReset = connectionId !== this.connectionId,
-        syncSerial = 0;
-
+      const connectionReset = connectionId !== this.connectionId;
       if (connectionReset) {
         Logger.logAction(
           Logger.LOG_ERROR,
@@ -767,74 +765,57 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager.scheduleTransportActivation()',
         'Syncing transport; transport = ' + transport
       );
-      this.sync(transport, syncSerial, (syncErr: Error, connectionId: string, postSyncSerial: number) => {
-        /* If there's been some problem with syncing (and the connection hasn't
-         * closed or something in the meantime), we have a problem -- we can't
-         * just fall back on the old transport, as we don't know whether
-         * realtime got the sync -- if it did, the old transport is no longer
-         * valid. To be safe, we disconnect both and start again from scratch. */
-        if (syncErr) {
-          if (this.state === this.states.synchronizing) {
-            Logger.logAction(
-              Logger.LOG_ERROR,
-              'ConnectionManager.scheduleTransportActivation()',
-              'Unexpected error attempting to sync transport; transport = ' + transport + '; err = ' + syncErr
-            );
-            this.disconnectAllTransports();
-          }
-          return;
-        }
-        const finishUpgrade = () => {
+
+      const finishUpgrade = () => {
+        Logger.logAction(
+          Logger.LOG_MINOR,
+          'ConnectionManager.scheduleTransportActivation()',
+          'Activating transport; transport = ' + transport
+        );
+        this.activateTransport(error, transport, connectionId, connectionDetails);
+        /* Restore pre-sync state. If state has changed in the meantime,
+         * don't touch it -- since the websocket transport waits a tick before
+         * disposing itself, it's possible for it to have happily synced
+         * without err while, unknown to it, the connection has closed in the
+         * meantime and the ws transport is scheduled for death */
+        if (this.state === this.states.synchronizing) {
+          Logger.logAction(
+            Logger.LOG_MICRO,
+            'ConnectionManager.scheduleTransportActivation()',
+            'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport
+          );
+          this.state = this.states.connected;
+        } else {
           Logger.logAction(
             Logger.LOG_MINOR,
             'ConnectionManager.scheduleTransportActivation()',
-            'Activating transport; transport = ' + transport
+            'Pre-upgrade protocol idle, but state is now ' + this.state.state + ', so leaving unchanged'
           );
-          this.activateTransport(error, transport, connectionId, connectionDetails);
-          /* Restore pre-sync state. If state has changed in the meantime,
-           * don't touch it -- since the websocket transport waits a tick before
-           * disposing itself, it's possible for it to have happily synced
-           * without err while, unknown to it, the connection has closed in the
-           * meantime and the ws transport is scheduled for death */
-          if (this.state === this.states.synchronizing) {
-            Logger.logAction(
-              Logger.LOG_MICRO,
-              'ConnectionManager.scheduleTransportActivation()',
-              'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport
-            );
-            this.state = this.states.connected;
-          } else {
-            Logger.logAction(
-              Logger.LOG_MINOR,
-              'ConnectionManager.scheduleTransportActivation()',
-              'Pre-upgrade protocol idle, but state is now ' + this.state.state + ', so leaving unchanged'
-            );
-          }
-          if (this.state.sendEvents) {
-            this.sendQueuedMessages();
-          }
-        };
-
-        /* Wait until sync is done and old transport is idle before activating new transport. This
-         * guarantees that messages arrive at realtime in the same order they are sent.
-         *
-         * If a message times out on the old transport, since it's still the active transport the
-         * message will be requeued. deactivateTransport will see the pending transport and notify
-         * the `connecting` state without starting a new connection, so the new transport can take
-         * over once deactivateTransport clears the old protocol's queue.
-         *
-         * If there is no old protocol, that meant that we weren't in the connected state at the
-         * beginning of the sync - likely the base transport died just before the sync. So can just
-         * finish the upgrade. If we're actually in closing/failed rather than connecting, that's
-         * fine, activatetransport will deal with that. */
-        if (oldProtocol) {
-          /* Most of the time this will be already true: the new-transport sync will have given
-           * enough time for in-flight messages on the old transport to complete. */
-          oldProtocol.onceIdle(finishUpgrade);
-        } else {
-          finishUpgrade();
         }
-      });
+        if (this.state.sendEvents) {
+          this.sendQueuedMessages();
+        }
+      };
+
+      /* Wait until sync is done and old transport is idle before activating new transport. This
+       * guarantees that messages arrive at realtime in the same order they are sent.
+       *
+       * If a message times out on the old transport, since it's still the active transport the
+       * message will be requeued. deactivateTransport will see the pending transport and notify
+       * the `connecting` state without starting a new connection, so the new transport can take
+       * over once deactivateTransport clears the old protocol's queue.
+       *
+       * If there is no old protocol, that meant that we weren't in the connected state at the
+       * beginning of the sync - likely the base transport died just before the sync. So can just
+       * finish the upgrade. If we're actually in closing/failed rather than connecting, that's
+       * fine, activatetransport will deal with that. */
+      if (oldProtocol) {
+        /* Most of the time this will be already true: the new-transport sync will have given
+         * enough time for in-flight messages on the old transport to complete. */
+        oldProtocol.onceIdle(finishUpgrade);
+      } else {
+        finishUpgrade();
+      }
     };
 
     // No point waiting for pending attaches if there's no active transport, just sync and
@@ -1139,30 +1120,6 @@ class ConnectionManager extends EventEmitter {
         return !transport.isConnected;
       })
     );
-  }
-
-  /**
-   * Called when activating a new transport, to ensure message delivery
-   * on the new transport synchronises with the messages already received
-   */
-  sync(transport: Transport, requestedSyncSerial: number, callback: Function): void {
-    const timeout = setTimeout(function () {
-      transport.off('sync');
-      callback(new ErrorInfo('Timeout waiting for sync response', 50000, 500));
-    }, this.options.timeouts.realtimeRequestTimeout);
-
-    /* send sync request */
-    const syncMessage = ProtocolMessage.fromValues({
-      action: actions.SYNC,
-      connectionKey: this.connectionKey,
-    });
-
-    transport.send(syncMessage);
-
-    transport.once('sync', function (connectionId: string, syncSerial: number) {
-      clearTimeout(timeout);
-      callback(null, connectionId, syncSerial);
-    });
   }
 
   setConnection(
