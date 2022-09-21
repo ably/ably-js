@@ -802,6 +802,10 @@ class RealtimeChannel extends Channel {
     );
     this.clearStateTimer();
 
+    if (['detached', 'suspended', 'failed'].includes(state)) {
+      this.channelSerial = null;
+    }
+
     if (state === this.state) {
       return;
     }
