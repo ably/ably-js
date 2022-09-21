@@ -818,13 +818,7 @@ class ConnectionManager extends EventEmitter {
       }
     };
 
-    // No point waiting for pending attaches if there's no active transport, just sync and
-    // activate the new one immediately, attaches will be retried on the new one
-    if (currentTransport) {
-      this.realtime.channels.onceNopending(onReadyToUpgrade);
-    } else {
-      onReadyToUpgrade();
-    }
+    onReadyToUpgrade();
   }
 
   /**
@@ -884,8 +878,7 @@ class ConnectionManager extends EventEmitter {
     /* remove this transport from pending transports */
     Utils.arrDeleteValue(this.pendingTransports, transport);
 
-    /* if the transport is not connected (eg because it failed during a
-     * scheduleTransportActivation#onceNoPending wait) then don't activate it */
+    /* if the transport is not connected then don't activate it */
     if (!transport.isConnected) {
       Logger.logAction(
         Logger.LOG_MINOR,
