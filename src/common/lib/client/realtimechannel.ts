@@ -1000,8 +1000,7 @@ class RealtimeChannel extends Channel {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimeChannel.setChannelSerial()',
-      'Updating channel serial; serial = ' + channelSerial +
-      '; previous = ' + this.channelSerial
+      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.channelSerial
     );
 
     this.channelSerial = channelSerial;
