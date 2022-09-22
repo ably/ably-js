@@ -64,8 +64,8 @@ class Channels extends EventEmitter {
     });
   }
 
-  channelSerials(): { [ name: string ]: string } {
-    let serials: { [ name: string ]: string } = {};
+  channelSerials(): { [name: string]: string } {
+    let serials: { [name: string]: string } = {};
     for (const [name, channel] of Object.entries(this.all)) {
       if (channel.channelSerial) {
         serials[name] = channel.channelSerial;
@@ -74,7 +74,7 @@ class Channels extends EventEmitter {
     return serials;
   }
 
-  setRecoveryChannelSerials(channelSerials: { [ name: string ]: string }) {
+  setRecoveryChannelSerials(channelSerials: { [name: string]: string }) {
     for (const [name, serial] of Object.entries(channelSerials)) {
       const channel = this.get(name);
       channel.channelSerial = serial;
