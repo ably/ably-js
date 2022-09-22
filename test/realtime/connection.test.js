@@ -70,10 +70,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           try {
             const recoveryKey = realtime.connection.getRecoveryKey();
             const recoveryContext = JSON.parse(recoveryKey);
-            expect(recoveryContext.connectionKey).to.equal(
-              realtime.connection.key,
-              'verify correct recovery key'
-            );
+            expect(recoveryContext.connectionKey).to.equal(realtime.connection.key, 'verify correct recovery key');
             expect(recoveryContext.msgSerial).to.equal(
               realtime.connection.connectionManager.msgSerial,
               'verify correct recovery key'
@@ -139,9 +136,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('unrecoverableConnection', function (done) {
       var realtime;
       const fakeRecoveryKey = JSON.stringify({
-        'connectionKey': '_____!ablyjs_test_fake-key____',
-        'msgSerial': '5',
-        'channelSerials': {},
+        connectionKey: '_____!ablyjs_test_fake-key____',
+        msgSerial: '5',
+        channelSerials: {},
       });
       try {
         realtime = helper.AblyRealtime({ recover: fakeRecoveryKey });
@@ -180,7 +177,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * without being merged with new messages)
      */
     it('connectionQueuing', function (done) {
-      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport]}),
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channel = realtime.channels.get('connectionQueuing'),
         connectionManager = realtime.connection.connectionManager;
 

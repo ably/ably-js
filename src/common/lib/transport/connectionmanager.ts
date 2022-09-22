@@ -164,11 +164,7 @@ class RecoveryContext {
   msgSerial: number;
   channelSerials: { [name: string]: string };
 
-  constructor(
-    connectionKey: string,
-    msgSerial: number,
-    channelSerials: { [name: string]: string }
-  ) {
+  constructor(connectionKey: string, msgSerial: number, channelSerials: { [name: string]: string }) {
     this.connectionKey = connectionKey;
     this.msgSerial = msgSerial;
     this.channelSerials = channelSerials;
@@ -590,50 +586,37 @@ class ConnectionManager extends EventEmitter {
     this.pendingTransports.push(transport);
     const optimalTransport =
       Platform.Defaults.transportPreferenceOrder[Platform.Defaults.transportPreferenceOrder.length - 1];
-    transport.once(
-      'connected',
-      (error: ErrorInfo, connectionId: string, connectionDetails: Record<string, any>) => {
-        if (mode == 'upgrade' && this.activeProtocol) {
-          /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
-          if (
-            transport.shortName !== optimalTransport &&
-            Utils.arrIn(this.getUpgradePossibilities(), optimalTransport) &&
-            this.activeProtocol
-          ) {
-            setTimeout(() => {
-              this.scheduleTransportActivation(
-                error,
-                transport,
-                connectionId,
-                connectionDetails,
-              );
-            }, this.options.timeouts.parallelUpgradeDelay);
-          } else {
-            this.scheduleTransportActivation(
-              error,
-              transport,
-              connectionId,
-              connectionDetails,
-            );
-          }
+    transport.once('connected', (error: ErrorInfo, connectionId: string, connectionDetails: Record<string, any>) => {
+      if (mode == 'upgrade' && this.activeProtocol) {
+        /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
+        if (
+          transport.shortName !== optimalTransport &&
+          Utils.arrIn(this.getUpgradePossibilities(), optimalTransport) &&
+          this.activeProtocol
+        ) {
+          setTimeout(() => {
+            this.scheduleTransportActivation(error, transport, connectionId, connectionDetails);
+          }, this.options.timeouts.parallelUpgradeDelay);
         } else {
-          this.activateTransport(error, transport, connectionId, connectionDetails);
-
-          /* allow connectImpl to start the upgrade process if needed, but allow
-           * other event handlers, including activating the transport, to run first */
-          Platform.Config.nextTick(() => {
-            this.connectImpl(transportParams);
-          });
+          this.scheduleTransportActivation(error, transport, connectionId, connectionDetails);
         }
+      } else {
+        this.activateTransport(error, transport, connectionId, connectionDetails);
 
-        if (mode === 'recover' && this.options.recover) {
-          /* After a successful recovery, we unpersist, as a recovery key cannot
-           * be used more than once */
-          this.options.recover = null;
-          this.unpersistConnection();
-        }
+        /* allow connectImpl to start the upgrade process if needed, but allow
+         * other event handlers, including activating the transport, to run first */
+        Platform.Config.nextTick(() => {
+          this.connectImpl(transportParams);
+        });
       }
-    );
+
+      if (mode === 'recover' && this.options.recover) {
+        /* After a successful recovery, we unpersist, as a recovery key cannot
+         * be used more than once */
+        this.options.recover = null;
+        this.unpersistConnection();
+      }
+    });
 
     const self = this;
     transport.on(['disconnected', 'closed', 'failed'], function (this: { event: string }, error: ErrorInfo) {
@@ -655,7 +638,7 @@ class ConnectionManager extends EventEmitter {
     error: ErrorInfo,
     transport: Transport,
     connectionId: string,
-    connectionDetails: Record<string, any>,
+    connectionDetails: Record<string, any>
   ): void {
     const currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
       abandon = () => {
@@ -831,7 +814,7 @@ class ConnectionManager extends EventEmitter {
     error: ErrorInfo,
     transport: Transport,
     connectionId: string,
-    connectionDetails: Record<string, any>,
+    connectionDetails: Record<string, any>
   ): boolean {
     Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
     if (error) {
@@ -1113,11 +1096,7 @@ class ConnectionManager extends EventEmitter {
     );
   }
 
-  setConnection(
-    connectionId: string,
-    connectionDetails: Record<string, any>,
-    hasConnectionError?: boolean
-  ): void {
+  setConnection(connectionId: string, connectionDetails: Record<string, any>, hasConnectionError?: boolean): void {
     /* if connectionKey changes but connectionId stays the same, then just a
      * transport change on the same connection. If connectionId changes, we're
      * on a new connection, with implications for msgSerial and channel state */
@@ -1131,11 +1110,7 @@ class ConnectionManager extends EventEmitter {
       this.msgSerial = 0;
     }
     if (this.connectionId !== connectionId) {
-      Logger.logAction(
-        Logger.LOG_MINOR,
-        'ConnectionManager.setConnection()',
-        'New connectionId'
-      );
+      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId');
     }
     this.realtime.connection.id = this.connectionId = connectionId;
     this.realtime.connection.key = this.connectionKey = connectionDetails.connectionKey;
