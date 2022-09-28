@@ -1,7 +1,7 @@
-# Hello there!
+# Ably JavaScript Client Library SDK API Reference for Promises
 
-This is the intro to the Promise-based variant of the Ably SDK.
+You are currently viewing the promise-based variant of the Ably JavaScript Client Library SDK. View the callback-based variant [here](../default/index.html).
 
-The entry points to this SDK are the [Rest](classes/Rest.html) and [Realtime](classes/Realtime.html) classes.
+Passing callbacks to methods when using the promise-based variant of the API is still possible, however, if a method does not receive a callback then it will instead return a promise.
 
-**TODO proper content to come from tech writers (in [EDX-155](https://ably.atlassian.net/browse/EDX-155)) before this goes public**
+To get started with the Ably JavaScript Client Library SDK, follow the [Quickstart Guide](https://ably.com/docs/quick-start-guide) or view the introductions to the [realtime](https://ably.com/docs/realtime/usage) and [REST](https://ably.com/docs/rest/usage) interfaces.
