@@ -1,7 +1,7 @@
 import TransportNames from '../constants/TransportNames';
 
 export default interface IDefaults {
-  internetUpUrl: string;
+  connectivityCheckUrl: string;
   jsonpInternetUpUrl?: string;
   defaultTransports: TransportNames[];
   baseTransportOrder: TransportNames[];

@@ -75,7 +75,7 @@ const Http: typeof IHttp = class {
       };
 
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
-        const upUrl = Defaults.internetUpUrl;
+        const upUrl = Defaults.connectivityCheckUrl;
         Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
         this.doUri(
           HttpMethods.Get,

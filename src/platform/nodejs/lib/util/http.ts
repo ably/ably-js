@@ -229,7 +229,7 @@ const Http: typeof IHttp = class {
     this.doUri(
       HttpMethods.Get,
       null as any,
-      Defaults.internetUpUrl,
+      Defaults.connectivityCheckUrl,
       null,
       null,
       null,
