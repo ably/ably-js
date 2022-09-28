@@ -27,7 +27,9 @@ var Crypto = (function () {
       var words = bytes / 4,
         nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
       Platform.getRandomValues(nativeArray, function (err) {
-        callback(err, Platform.BufferUtils.toWordArray(nativeArray));
+        if (typeof callback !== 'undefined') {
+          callback(err, Platform.BufferUtils.toWordArray(nativeArray));
+        }
       });
     };
   } else {
@@ -204,7 +206,7 @@ var Crypto = (function () {
    * Generate a random encryption key from the supplied keylength (or the
    * default keyLength if none supplied) as a CryptoJS WordArray
    * @param keyLength (optional) the required keyLength in bits
-   * @param callback (err, key)
+   * @param callback (optional) (err, key)
    */
   Crypto.generateRandomKey = function (keyLength, callback) {
     if (arguments.length == 1 && typeof keyLength == 'function') {
