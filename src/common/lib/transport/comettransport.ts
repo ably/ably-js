@@ -207,7 +207,7 @@ abstract class CometTransport extends Transport {
 
     /* the connectionKey in a comet connected response is really
      * <instId>-<connectionKey> */
-    const connectionStr = message.connectionKey;
+    const connectionStr = message.connectionDetails?.connectionKey;
     Transport.prototype.onConnect.call(this, message);
 
     const baseConnectionUri = (this.baseUri as string) + connectionStr;
