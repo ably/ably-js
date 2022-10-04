@@ -582,46 +582,6 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       });
 
       /*
-       * Check that a lack of response to an upgrade sync doesn't stall things forever
-       */
-      it('unresponsive_upgrade_sync', function (done) {
-        var realtime = helper.AblyRealtime({ transports: helper.availableTransports, realtimeRequestTimeout: 2000 }),
-          connection = realtime.connection;
-
-        connection.connectionManager.on('transport.pending', function (transport) {
-          if (!helper.isWebsocket(transport)) return;
-
-          var originalOnProtocolMessage = transport.onProtocolMessage;
-          /* Stub out sync message one time */
-          transport.onProtocolMessage = function (message) {
-            if (message.action === 16) {
-              connection.connectionManager.off('transport.pending');
-              transport.onProtocolMessage = originalOnProtocolMessage;
-            } else {
-              originalOnProtocolMessage.call(transport, message);
-            }
-          };
-        });
-
-        connection.once('connected', function () {
-          connection.once('disconnected', function () {
-            connection.once('connected', function () {
-              if (helper.isWebsocket(connection.connectionManager.activeProtocol.getTransport())) {
-                /* Must be running multiple tests at once and another one set the transport preference */
-                closeAndFinish(done, realtime);
-              } else {
-                connection.connectionManager.on('transport.active', function (transport) {
-                  if (helper.isWebsocket(transport)) {
-                    closeAndFinish(done, realtime);
-                  }
-                });
-              }
-            });
-          });
-        });
-      });
-
-      /*
        * Check that after a successful upgrade, the transport pref is persisted,
        * and subsequent connections do not upgrade
        */
