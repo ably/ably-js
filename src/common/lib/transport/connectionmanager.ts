@@ -753,6 +753,15 @@ class ConnectionManager extends EventEmitter {
           'ConnectionManager.scheduleTransportActivation()',
           'Activating transport; transport = ' + transport
         );
+
+        // TODO(AD) make ACTIVATE once https://github.com/ably/realtime/pull/4352
+        // merged
+        transport.send(
+          ProtocolMessage.fromValues({
+            action: actions.SYNC,
+          })
+        );
+
         this.activateTransport(error, transport, connectionId, connectionDetails);
         /* Restore pre-sync state. If state has changed in the meantime,
          * don't touch it -- since the websocket transport waits a tick before
