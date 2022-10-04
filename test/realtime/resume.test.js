@@ -307,7 +307,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 connection.once('connected', function (stateChange) {
                   try {
                     expect(stateChange.reason && stateChange.reason.code).to.equal(
-                      80008,
+                      80018,
                       'Unable to recover connection correctly set in the stateChange'
                     );
                     expect(attachedChannel.state).to.equal('attaching', 'Attached channel went into attaching');
