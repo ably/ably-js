@@ -539,45 +539,39 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
           connectionManager = realtime.connection.connectionManager;
 
         realtime.connection.once('connected', function () {
-          channel.attach(function (err) {
-            if (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            /* Sabotage comet sending */
-            var transport = connectionManager.activeProtocol.getTransport();
-            try {
-              expect(helper.isComet(transport), 'Check active transport is still comet').to.be.ok;
-            } catch (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            transport.sendUri = helper.unroutableAddress;
+          /* Sabotage comet sending */
+          var transport = connectionManager.activeProtocol.getTransport();
+          try {
+            expect(helper.isComet(transport), 'Check active transport is still comet').to.be.ok;
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          transport.sendUri = helper.unroutableAddress;
 
-            async.parallel(
-              [
-                function (cb) {
-                  channel.subscribe('event', function () {
-                    cb();
-                  });
-                },
-                function (cb) {
-                  channel.publish('event', null, function (err) {
-                    try {
-                      expect(!err, 'Successfully published message').to.be.ok;
-                    } catch (err) {
-                      cb(err);
-                      return;
-                    }
-                    cb();
-                  });
-                },
-              ],
-              function (err) {
-                closeAndFinish(done, realtime, err);
-              }
-            );
-          });
+          async.parallel(
+            [
+              function (cb) {
+                channel.subscribe('event', function () {
+                  cb();
+                });
+              },
+              function (cb) {
+                channel.publish('event', null, function (err) {
+                  try {
+                    expect(!err, 'Successfully published message').to.be.ok;
+                  } catch (err) {
+                    cb(err);
+                    return;
+                  }
+                  cb();
+                });
+              },
+            ],
+            function (err) {
+              closeAndFinish(done, realtime, err);
+            }
+          );
         });
       });
 
