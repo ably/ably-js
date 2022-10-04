@@ -498,10 +498,10 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
             /* on upgrade failure */
             realtime.connection.once('update', function (stateChange) {
               try {
-                expect(stateChange.reason.code).to.equal(80008, 'Check correct (unrecoverable connection) error');
+                expect(stateChange.reason.code).to.equal(80018, 'Check correct (unrecoverable connection) error');
                 expect(stateChange.current).to.equal('connected', 'Check current is connected');
                 expect(realtime.connection.errorReason.code).to.equal(
-                  80008,
+                  80018,
                   'Check error set in connection.errorReason'
                 );
                 expect(realtime.connection.state).to.equal('connected', 'Check still connected');
