@@ -614,15 +614,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               },
             });
             var testData = 'Test data';
-            channel.subscribe(function (message) {
-              try {
-                expect(message.data).to.equal(testData, 'Check data');
-                closeAndFinish(done, realtime);
-              } catch (err) {
+            channel.attach(function (err) {
+              if (err) {
                 closeAndFinish(done, realtime, err);
+                return;
               }
+              channel.subscribe(function (message) {
+                try {
+                  expect(message.data).to.equal(testData, 'Check data');
+                  closeAndFinish(done, realtime);
+                } catch (err) {
+                  closeAndFinish(done, realtime, err);
+                }
+              });
+              channel.publish(undefined, testData);
             });
-            channel.publish(undefined, testData);
           });
           monitorConnection(done, realtime);
         } catch (err) {
