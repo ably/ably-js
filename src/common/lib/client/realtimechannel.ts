@@ -584,7 +584,11 @@ class RealtimeChannel extends Channel {
   }
 
   onMessage(message: ProtocolMessage): void {
-    if (message.action === actions.MESSAGE || message.action === actions.PRESENCE) {
+    if (
+      message.action === actions.ATTACHED ||
+      message.action === actions.MESSAGE ||
+      message.action === actions.PRESENCE
+    ) {
       this.setChannelSerial(message.channelSerial);
     }
 
