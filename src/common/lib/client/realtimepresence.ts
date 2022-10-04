@@ -28,8 +28,12 @@ interface RealtimeHistoryParams {
 
 const noop = function () {};
 
-function memberKey(item: PresenceMessage) {
+function extractMemberKey(item: PresenceMessage): string {
   return item.clientId + ':' + item.connectionId;
+}
+
+function extractConnectionIndependentMemberKey(item: PresenceMessage): string {
+  return item.clientId || '';
 }
 
 function getClientId(realtimePresence: RealtimePresence) {
@@ -96,8 +100,8 @@ class RealtimePresence extends Presence {
     super(channel);
     this.channel = channel;
     this.syncComplete = false;
-    this.members = new PresenceMap(this);
-    this._myMembers = new PresenceMap(this);
+    this.members = new PresenceMap(this, extractMemberKey);
+    this._myMembers = new PresenceMap(this, extractConnectionIndependentMemberKey); // RTP17h
     this.subscriptions = new EventEmitter();
     this.pendingPresence = [];
   }
@@ -551,10 +555,12 @@ class PresenceMap extends EventEmitter {
   residualMembers: Record<string, PresenceMessage> | null;
   syncInProgress: boolean;
   presence: RealtimePresence;
+  extractMemberKey: (pm: PresenceMessage) => string;
 
-  constructor(presence: RealtimePresence) {
+  constructor(presence: RealtimePresence, extractMemberKey: (pm: PresenceMessage) => string) {
     super();
     this.presence = presence;
+    this.extractMemberKey = extractMemberKey;
     this.map = Object.create(null);
     this.syncInProgress = false;
     this.residualMembers = null;
@@ -596,7 +602,7 @@ class PresenceMap extends EventEmitter {
       item.action = 'present';
     }
     const map = this.map,
-      key = memberKey(item);
+      key = this.extractMemberKey(item);
     /* we've seen this member, so do not remove it at the end of sync */
     if (this.residualMembers) delete this.residualMembers[key];
 
@@ -621,7 +627,7 @@ class PresenceMap extends EventEmitter {
 
   remove(item: PresenceMessage) {
     const map = this.map,
-      key = memberKey(item);
+      key = this.extractMemberKey(item);
     const existingItem = map[key];
 
     if (existingItem && !newerThan(item, existingItem)) {
