@@ -631,23 +631,27 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       const txRest = helper.AblyRest();
       const rxRealtime = helper.AblyRealtime({ transports: [helper.bestTransport] }, true);
 
-      const channelNames = Array(5).fill().map(() => String(Math.random()));
+      const channelNames = Array(5)
+        .fill()
+        .map(() => String(Math.random()));
       const rxChannels = channelNames.map((name) => rxRealtime.channels.get(name));
 
       await Promise.all(rxChannels.map((channel) => channel.attach()));
 
       // Do a few publishes on each channel so the channelSerial is set.
-      await Promise.all(channelNames.map(async (name) => {
-        const tx = txRest.channels.get(name);
-        const rx = rxRealtime.channels.get(name);
-        await rx.attach();
+      await Promise.all(
+        channelNames.map(async (name) => {
+          const tx = txRest.channels.get(name);
+          const rx = rxRealtime.channels.get(name);
+          await rx.attach();
 
-        for (let i = 0; i < NUM_MSGS; i++) {
-          const pSubscribe = rx.subscriptions.once();
-          await tx.publish(null, null);
-          await pSubscribe;
-        }
-      }));
+          for (let i = 0; i < NUM_MSGS; i++) {
+            const pSubscribe = rx.subscriptions.once();
+            await tx.publish(null, null);
+            await pSubscribe;
+          }
+        })
+      );
 
       // Get the recovery key before becoming suspended as it will be reset.
       const recoveryKey = rxRealtime.connection.getRecoveryKey();
@@ -666,22 +670,24 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       const rxRecoverChannels = channelNames.map((name) => rxRealtimeRecover.channels.get(name));
 
       // Attach recovered channels and check we receive the expected messages.
-      await Promise.all(rxRecoverChannels.map(async (channel) => {
-        await channel.attach();
+      await Promise.all(
+        rxRecoverChannels.map(async (channel) => {
+          await channel.attach();
 
-        await new Promise((resolve) => {
-          let recoveredCount = 0;
-          channel.subscribe((msg) => {
-            // Check we don't receive unexpected messages.
-            expect(msg.name).to.equal('sentWhileDisconnected');
+          await new Promise((resolve) => {
+            let recoveredCount = 0;
+            channel.subscribe((msg) => {
+              // Check we don't receive unexpected messages.
+              expect(msg.name).to.equal('sentWhileDisconnected');
 
-            recoveredCount++;
-            if (recoveredCount === NUM_MSGS) {
-              resolve();
-            }
+              recoveredCount++;
+              if (recoveredCount === NUM_MSGS) {
+                resolve();
+              }
+            });
           });
-        });
-      }));
+        })
+      );
 
       await rxRealtime.close();
       await rxRealtimeRecover.close();
