@@ -28,10 +28,6 @@ interface RealtimeHistoryParams {
 
 const noop = function () {};
 
-function memberKey(item: PresenceMessage) {
-  return item.clientId + ':' + item.connectionId;
-}
-
 function getClientId(realtimePresence: RealtimePresence) {
   return realtimePresence.channel.realtime.auth.clientId;
 }
@@ -97,7 +93,8 @@ class RealtimePresence extends Presence {
     this.channel = channel;
     this.syncComplete = false;
     this.members = new PresenceMap(this);
-    this._myMembers = new PresenceMap(this);
+    // Index my members by client ID only (RTP17h).
+    this._myMembers = new PresenceMap(this, true);
     this.subscriptions = new EventEmitter();
     this.pendingPresence = [];
   }
@@ -551,13 +548,15 @@ class PresenceMap extends EventEmitter {
   residualMembers: Record<string, PresenceMessage> | null;
   syncInProgress: boolean;
   presence: RealtimePresence;
+  keyByClientID: boolean;
 
-  constructor(presence: RealtimePresence) {
+  constructor(presence: RealtimePresence, keyByClientID = false) {
     super();
     this.presence = presence;
     this.map = Object.create(null);
     this.syncInProgress = false;
     this.residualMembers = null;
+    this.keyByClientID = keyByClientID;
   }
 
   get(key: string) {
@@ -595,8 +594,8 @@ class PresenceMap extends EventEmitter {
       item = PresenceMessage.fromValues(item);
       item.action = 'present';
     }
-    const map = this.map,
-      key = memberKey(item);
+    const map = this.map;
+    const key = this.memberKey(item);
     /* we've seen this member, so do not remove it at the end of sync */
     if (this.residualMembers) delete this.residualMembers[key];
 
@@ -620,8 +619,8 @@ class PresenceMap extends EventEmitter {
   }
 
   remove(item: PresenceMessage) {
-    const map = this.map,
-      key = memberKey(item);
+    const map = this.map;
+    const key = this.memberKey(item);
     const existingItem = map[key];
 
     if (existingItem && !newerThan(item, existingItem)) {
@@ -710,6 +709,13 @@ class PresenceMap extends EventEmitter {
     Logger.logAction(Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
     this.syncInProgress = inProgress;
     this.presence.syncComplete = !inProgress;
+  }
+
+  memberKey(item: PresenceMessage): string {
+    if (this.keyByClientID) {
+      return item.clientId || '';
+    }
+    return item.clientId + ':' + item.connectionId;
   }
 }
 
