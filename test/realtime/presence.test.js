@@ -1528,15 +1528,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* Now just wait for an enter! */
+            let enteredMembers = new Set();
             channel.presence.subscribe('enter', function (presmsg) {
-              try {
-                expect(presmsg.clientId).to.equal('two', 'Check expected clientId');
-              } catch (err) {
-                cb(err);
-                return;
+              enteredMembers.add(presmsg.clientId);
+              if (enteredMembers.size === 2) {
+                try {
+                  expect(enteredMembers.has('one')).to.equal(true, 'Check client one entered');
+                  expect(enteredMembers.has('two')).to.equal(true, 'Check client two entered');
+                  channel.presence.unsubscribe('enter');
+                  cb();
+                } catch (err) {
+                  cb(err);
+                  return;
+                }
               }
-              channel.presence.unsubscribe('enter');
-              cb();
             });
           },
           function (cb) {
@@ -1547,8 +1552,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               }
               try {
                 expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
-                expect(results.length).to.equal(2, 'Check correct number of results');
-                expect(extractClientIds(results)).deep.to.equal(['one', 'two'], 'check correct members');
+                expect(results.length).to.equal(3, 'Check correct number of results');
+                expect(extractClientIds(results)).deep.to.equal(['one', 'one', 'two'], 'check correct members');
                 expect(extractMember(results, 'one').data).to.equal('onedata', 'check correct data on one');
                 expect(extractMember(results, 'two').data).to.equal('twodata', 'check correct data on two');
               } catch (err) {
@@ -2022,7 +2027,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           function (cb) {
             mainChannel.presence.get(function (err, members) {
               try {
-                expect(members && members.length).to.equal(2, 'Check two expected members here');
+                expect(members && members.length).to.equal(3, 'Check three expected members here');
               } catch (err) {
                 cb(err);
                 return;
