@@ -71,8 +71,8 @@ class Channels extends EventEmitter {
   channelSerials(): { [name: string]: string } {
     let serials: { [name: string]: string } = {};
     for (const [name, channel] of Object.entries(this.all)) {
-      if (channel.channelSerial) {
-        serials[name] = channel.channelSerial;
+      if (channel.properties.channelSerial) {
+        serials[name] = channel.properties.channelSerial;
       }
     }
     return serials;
@@ -81,7 +81,7 @@ class Channels extends EventEmitter {
   setRecoveryChannelSerials(channelSerials: { [name: string]: string }) {
     for (const [name, serial] of Object.entries(channelSerials)) {
       if (name in this.all) {
-        this.all[name].channelSerial = serial;
+        this.all[name].properties.channelSerial = serial;
       }
       this.recoverySerials[name] = serial;
     }
@@ -153,7 +153,7 @@ class Channels extends EventEmitter {
     if (!channel) {
       channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
       if (name in this.recoverySerials) {
-        channel.channelSerial = this.recoverySerials[name];
+        channel.properties.channelSerial = this.recoverySerials[name];
       }
     } else if (channelOptions) {
       if (channel._shouldReattachToSetOptions(channelOptions)) {

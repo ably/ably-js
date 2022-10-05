@@ -59,7 +59,10 @@ class RealtimeChannel extends Channel {
     Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
   >;
   syncChannelSerial?: string | null;
-  properties: { attachSerial: string | null | undefined };
+  properties: {
+    attachSerial: string | null | undefined;
+    channelSerial: string | null | undefined;
+  };
   errorReason: ErrorInfo | string | null;
   _requestedFlags: Array<API.Types.ChannelMode> | null;
   _mode?: null | number;
@@ -76,7 +79,6 @@ class RealtimeChannel extends Channel {
   stateTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
-  channelSerial?: string | null;
 
   constructor(realtime: Realtime, name: string, options: API.Types.ChannelOptions) {
     super(realtime, name, options);
@@ -89,6 +91,7 @@ class RealtimeChannel extends Channel {
     this.syncChannelSerial = undefined;
     this.properties = {
       attachSerial: undefined,
+      channelSerial: undefined,
     };
     this.setOptions(options);
     this.errorReason = null;
@@ -108,7 +111,6 @@ class RealtimeChannel extends Channel {
     /* Only differences between this and the public event emitter is that this emits an
      * update event for all ATTACHEDs, whether resumed or not */
     this._allChannelChanges = new EventEmitter();
-    this.channelSerial = null;
   }
 
   static invalidStateError(state: string): ErrorInfo {
@@ -340,7 +342,7 @@ class RealtimeChannel extends Channel {
       action: actions.ATTACH,
       channel: this.name,
       params: this.channelOptions.params,
-      channelSerial: this.channelSerial,
+      channelSerial: this.properties.channelSerial,
     });
     if (this._requestedFlags) {
       attachMsg.encodeModesToFlags(this._requestedFlags);
@@ -584,6 +586,9 @@ class RealtimeChannel extends Channel {
   }
 
   onMessage(message: ProtocolMessage): void {
+    // Note setting channel serial here rather than the switch below to be
+    // explicit (as with fall throughs its easy to update from the wrong
+    // message).
     if (
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||
@@ -790,7 +795,7 @@ class RealtimeChannel extends Channel {
     this.clearStateTimer();
 
     if (['detached', 'suspended', 'failed'].includes(state)) {
-      this.channelSerial = null;
+      this.properties.channelSerial = null;
     }
 
     if (state === this.state) {
@@ -1004,13 +1009,13 @@ class RealtimeChannel extends Channel {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimeChannel.setChannelSerial()',
-      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.channelSerial
+      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.properties.channelSerial
     );
 
     // Only update the channel serial if its present (such as it won't be for
     // inbound occupancy) (RTP17h).
     if (channelSerial) {
-      this.channelSerial = channelSerial;
+      this.properties.channelSerial = channelSerial;
     }
   }
 }
