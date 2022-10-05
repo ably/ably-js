@@ -15,12 +15,15 @@ export type RequestCallback = (
 export type RequestParams = Record<string, string> | null;
 
 export declare class IHttp {
+  constructor(options: NormalisedClientOptions);
   static methods: Array<HttpMethods>;
   static methodsWithBody: Array<HttpMethods>;
   static methodsWithoutBody: Array<HttpMethods>;
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
   agent?: { http: http.Agent; https: https.Agent } | null;
+  options: NormalisedClientOptions;
+
   Request?: (
     method: HttpMethods,
     rest: Rest | null,

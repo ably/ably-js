@@ -30,5 +30,6 @@ export type NormalisedClientOptions = Modify<
     keySecret?: string;
     timeouts: Record<string, number>;
     maxMessageSize: number;
+    connectivityCheckParams: Record<string, string> | null;
   }
 >;

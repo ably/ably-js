@@ -78,7 +78,7 @@ class Rest {
     this._currentFallback = null;
 
     this.serverTimeOffset = null;
-    this.http = new Platform.Http();
+    this.http = new Platform.Http(normalOptions);
     this.auth = new Auth(this, normalOptions);
     this.channels = new Channels(this);
     this.push = new Push(this);
