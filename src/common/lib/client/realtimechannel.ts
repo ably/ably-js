@@ -1,4 +1,8 @@
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, {
+  MessageProtocolMessage,
+  PresenceProtocolMessage,
+  SyncProtocolMessage,
+} from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Channel from './channel';
@@ -586,22 +590,9 @@ class RealtimeChannel extends Channel {
   }
 
   onMessage(message: ProtocolMessage): void {
-    // Note setting channel serial here rather than the switch below to be
-    // explicit (as with fall throughs its easy to update from the wrong
-    // message).
-    if (
-      message.action === actions.ATTACHED ||
-      message.action === actions.MESSAGE ||
-      message.action === actions.PRESENCE
-    ) {
-      this.setChannelSerial(message.channelSerial);
-    }
-
-    let syncChannelSerial,
-      isSync = false;
     switch (message.action) {
       case actions.ATTACHED: {
-        this.properties.attachSerial = message.channelSerial;
+        this.setChannelSerial(message.channelSerial, true); // RTL15b
         this._mode = message.getMode();
         this.params = (message as any).params || {};
         const modesFromFlags = message.decodeModesFromFlags();
@@ -646,34 +637,20 @@ class RealtimeChannel extends Channel {
         break;
       }
 
-      case actions.SYNC:
+      case actions.SYNC: {
         /* syncs can have channelSerials, but might not if the sync is one page long */
-        isSync = true;
-        syncChannelSerial = this.syncChannelSerial = message.channelSerial;
-        /* syncs can happen on channels with no presence data as part of connection
-         * resuming, in which case protocol message has no presence property */
-        if (!message.presence) break;
-      // eslint-disable-next-line no-fallthrough
-      case actions.PRESENCE: {
-        const presence = message.presence as Array<PresenceMessage>;
-        const { id, connectionId, timestamp } = message;
-
-        const options = this.channelOptions;
-        let presenceMsg: PresenceMessage;
-        for (let i = 0; i < presence.length; i++) {
-          try {
-            presenceMsg = presence[i];
-            PresenceMessage.decode(presenceMsg, options);
-            if (!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
-            if (!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
-            if (!presenceMsg.id) presenceMsg.id = id + ':' + i;
-          } catch (e) {
-            Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', (e as Error).toString());
-          }
-        }
-        this.presence.setPresence(presence, isSync, syncChannelSerial as any);
+        const { presence, channelSerial } = message as SyncProtocolMessage;
+        this._processInboundPresence(presence, channelSerial);
         break;
       }
+
+      case actions.PRESENCE: {
+        this.setChannelSerial(message.channelSerial, false); // RTL15b
+        const { id, connectionId, timestamp, presence } = message as PresenceProtocolMessage;
+        this._processInboundPresence(presence, null, id, connectionId, timestamp);
+        break;
+      }
+
       case actions.MESSAGE: {
         //RTL17
         if (this.state !== 'attached') {
@@ -691,57 +668,9 @@ class RealtimeChannel extends Channel {
           return;
         }
 
-        const messages = message.messages as Array<Message>,
-          firstMessage = messages[0],
-          lastMessage = messages[messages.length - 1],
-          id = message.id,
-          connectionId = message.connectionId,
-          timestamp = message.timestamp;
-
-        if (
-          firstMessage.extras &&
-          firstMessage.extras.delta &&
-          firstMessage.extras.delta.from !== this._lastPayload.messageId
-        ) {
-          const msg =
-            'Delta message decode failure - previous message not available for message "' +
-            message.id +
-            '" on this channel "' +
-            this.name +
-            '".';
-          Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
-          this._startDecodeFailureRecovery(new ErrorInfo(msg, 40018, 400));
-          break;
-        }
-
-        for (let i = 0; i < messages.length; i++) {
-          const msg = messages[i];
-          try {
-            Message.decode(msg, this._decodingContext);
-          } catch (e) {
-            /* decrypt failed .. the most likely cause is that we have the wrong key */
-            Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', (e as Error).toString());
-            switch ((e as ErrorInfo).code) {
-              case 40018:
-                /* decode failure */
-                this._startDecodeFailureRecovery(e as ErrorInfo);
-                return;
-              case 40019:
-              /* No vcdiff plugin passed in - no point recovering, give up */
-              // eslint-disable-next-line no-fallthrough
-              case 40021:
-                /* Browser does not support deltas, similarly no point recovering */
-                this.notifyState('failed', e as ErrorInfo);
-                return;
-            }
-          }
-          if (!msg.connectionId) msg.connectionId = connectionId;
-          if (!msg.timestamp) msg.timestamp = timestamp;
-          if (!msg.id) msg.id = id + ':' + i;
-        }
-        this._lastPayload.messageId = lastMessage.id;
-        this._lastPayload.protocolMessageChannelSerial = message.channelSerial;
-        this.onEvent(messages);
+        this.setChannelSerial(message.channelSerial, false); // RTL15b
+        const { id, connectionId, timestamp, messages, channelSerial } = message as MessageProtocolMessage;
+        this._processInboundMessages(messages, id, connectionId, timestamp, channelSerial);
         break;
       }
 
@@ -765,6 +694,88 @@ class RealtimeChannel extends Channel {
         );
         this.connectionManager.abort(ConnectionErrors.unknownChannelErr);
     }
+  }
+
+  _processInboundMessages(
+    messages: Array<Message>,
+    id: string,
+    connectionId: string | undefined,
+    timestamp: number,
+    channelSerial: string
+  ) {
+    const firstMessage = messages[0],
+      lastMessage = messages[messages.length - 1];
+
+    if (
+      firstMessage.extras &&
+      firstMessage.extras.delta &&
+      firstMessage.extras.delta.from !== this._lastPayload.messageId
+    ) {
+      const msg =
+        'Delta message decode failure - previous message not available for message "' +
+        id +
+        '" on this channel "' +
+        this.name +
+        '".';
+      Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
+      this._startDecodeFailureRecovery(new ErrorInfo(msg, 40018, 400));
+      return;
+    }
+
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      try {
+        Message.decode(msg, this._decodingContext);
+      } catch (e) {
+        /* decrypt failed .. the most likely cause is that we have the wrong key */
+        Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', (e as Error).toString());
+        switch ((e as ErrorInfo).code) {
+          case 40018:
+            /* decode failure */
+            this._startDecodeFailureRecovery(e as ErrorInfo);
+            return;
+          case 40019:
+          /* No vcdiff plugin passed in - no point recovering, give up */
+          // eslint-disable-next-line no-fallthrough
+          case 40021:
+            /* Browser does not support deltas, similarly no point recovering */
+            this.notifyState('failed', e as ErrorInfo);
+            return;
+        }
+      }
+      if (!msg.connectionId) msg.connectionId = connectionId;
+      if (!msg.timestamp) msg.timestamp = timestamp;
+      if (!msg.id) msg.id = id + ':' + i;
+    }
+    this._lastPayload.messageId = lastMessage.id;
+    this._lastPayload.protocolMessageChannelSerial = channelSerial;
+    this.onEvent(messages);
+  }
+
+  _processInboundPresence(
+    presence: Array<PresenceMessage>,
+    syncChannelSerial: string | null,
+    id?: string,
+    connectionId?: string,
+    timestamp?: number
+  ) {
+    if (syncChannelSerial) {
+      this.syncChannelSerial = syncChannelSerial;
+    }
+    const options = this.channelOptions;
+    let presenceMsg: PresenceMessage;
+    for (let i = 0; i < presence.length; i++) {
+      try {
+        presenceMsg = presence[i];
+        PresenceMessage.decode(presenceMsg, options);
+        if (!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
+        if (!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
+        if (!presenceMsg.id) presenceMsg.id = id + ':' + i;
+      } catch (e) {
+        Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', (e as Error).toString());
+      }
+    }
+    this.presence.setPresence(presence, syncChannelSerial);
   }
 
   _startDecodeFailureRecovery(reason: ErrorInfo): void {
@@ -1005,17 +1016,22 @@ class RealtimeChannel extends Channel {
     );
   }
 
-  setChannelSerial(channelSerial?: string | null): void {
+  setChannelSerial(channelSerial: string | null | undefined, setAttachSerial: boolean): void {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimeChannel.setChannelSerial()',
-      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.properties.channelSerial
+      'Updating channel serial; serial = ' + channelSerial +
+        '; previous = ' + this.properties.channelSerial +
+        '; setAttachSerial = ' + setAttachSerial
     );
 
     // Only update the channel serial if its present (such as it won't be for
-    // inbound occupancy) (RTP17h).
+    // inbound occupancy) (RTL15b).
     if (channelSerial) {
       this.properties.channelSerial = channelSerial;
+    }
+    if (setAttachSerial) {
+      this.properties.attachSerial = channelSerial || null;
     }
   }
 }

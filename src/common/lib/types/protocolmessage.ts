@@ -4,32 +4,27 @@ import ErrorInfo from './errorinfo';
 import Message from './message';
 import PresenceMessage from './presencemessage';
 
-const actions = {
-  HEARTBEAT: 0,
-  ACK: 1,
-  NACK: 2,
-  CONNECT: 3,
-  CONNECTED: 4,
-  DISCONNECT: 5,
-  DISCONNECTED: 6,
-  CLOSE: 7,
-  CLOSED: 8,
-  ERROR: 9,
-  ATTACH: 10,
-  ATTACHED: 11,
-  DETACH: 12,
-  DETACHED: 13,
-  PRESENCE: 14,
-  MESSAGE: 15,
-  SYNC: 16,
-  AUTH: 17,
-  ACTIVATE: 18,
-};
-
-const ActionName: string[] = [];
-Object.keys(actions).forEach(function (name) {
-  ActionName[(actions as { [key: string]: number })[name]] = name;
-});
+enum Actions {
+  HEARTBEAT,
+  ACK,
+  NACK,
+  CONNECT,
+  CONNECTED,
+  DISCONNECT,
+  DISCONNECTED,
+  CLOSE,
+  CLOSED,
+  ERROR,
+  ATTACH,
+  ATTACHED,
+  DETACH,
+  DETACHED,
+  PRESENCE,
+  MESSAGE,
+  SYNC,
+  AUTH,
+  ACTIVATE,
+}
 
 const flags: { [key: string]: number } = {
   /* Channel attach state flags */
@@ -76,11 +71,9 @@ class ProtocolMessage {
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
 
-  static Action = actions;
+  static Action = Actions;
 
   static channelModes = ['PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE'];
-
-  static ActionName = ActionName;
 
   hasFlag = (flag: string): boolean => {
     return ((this.flags as number) & flags[flag]) > 0;
@@ -131,7 +124,7 @@ class ProtocolMessage {
 
   static stringify = function (msg: any): string {
     let result = '[ProtocolMessage';
-    if (msg.action !== undefined) result += '; action=' + ProtocolMessage.ActionName[msg.action] || msg.action;
+    if (msg.action !== undefined) result += '; action=' + Actions[msg.action] || msg.action;
 
     let attribute;
     for (let attribIndex = 0; attribIndex < simpleAttributes.length; attribIndex++) {
@@ -159,6 +152,29 @@ class ProtocolMessage {
     result += ']';
     return result;
   };
+}
+
+export interface MessageProtocolMessage extends ProtocolMessage {
+  action: Actions.MESSAGE;
+  messages: Message[];
+  id: string;
+  timestamp: number;
+  channelSerial: string;
+}
+
+export interface PresenceProtocolMessage extends ProtocolMessage {
+  action: Actions.PRESENCE;
+  presence: PresenceMessage[];
+  id: string;
+  timestamp: number;
+  connectionId: string;
+  channelSerial: string;
+}
+
+export interface SyncProtocolMessage extends ProtocolMessage {
+  action: Actions.SYNC;
+  presence: PresenceMessage[];
+  channelSerial: string;
 }
 
 export default ProtocolMessage;

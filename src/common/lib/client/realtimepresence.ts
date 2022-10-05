@@ -334,7 +334,7 @@ class RealtimePresence extends Presence {
     Presence.prototype._history.call(this, params, callback);
   }
 
-  setPresence(presenceSet: PresenceMessage[], isSync: boolean, syncChannelSerial?: string): void {
+  setPresence(presenceSet: PresenceMessage[], syncChannelSerial: string | null): void {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimePresence.setPresence()',
@@ -346,7 +346,7 @@ class RealtimePresence extends Presence {
       broadcastMessages = [],
       connId = this.channel.connectionManager.connectionId;
 
-    if (isSync) {
+    if (syncChannelSerial) {
       this.members.startSync();
       if (syncChannelSerial && (match = syncChannelSerial.match(/^[\w-]+:(.*)$/))) {
         syncCursor = match[1];
@@ -377,7 +377,7 @@ class RealtimePresence extends Presence {
       }
     }
     /* if this is the last (or only) message in a sequence of sync updates, end the sync */
-    if (isSync && !syncCursor) {
+    if (syncChannelSerial && !syncCursor) {
       members.endSync();
       this.channel.syncChannelSerial = null;
     }
