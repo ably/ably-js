@@ -1007,7 +1007,11 @@ class RealtimeChannel extends Channel {
       'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.channelSerial
     );
 
-    this.channelSerial = channelSerial;
+    // Only update the channel serial if its present (such as it won't be for
+    // inbound occupancy) (RTP17h).
+    if (channelSerial) {
+      this.channelSerial = channelSerial;
+    }
   }
 }
 
