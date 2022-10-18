@@ -2,7 +2,7 @@ import IDefaults from '../../../../common/types/IDefaults';
 import TransportNames from '../../../../common/constants/TransportNames';
 
 const Defaults: IDefaults = {
-  internetUpUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
+  connectivityCheckUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
   /* Note: order matters here: the base transport is the leftmost one in the
    * intersection of baseTransportOrder and the transports clientOption that's supported.
    * (For node this is the same as the transportPreferenceOrder, but for

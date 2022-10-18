@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.30](https://github.com/ably/ably-js/tree/1.2.30) (2022-10-05)
+- Add `connectivityCheckUrl` and `disableConnectivityCheck` client options [\#1051](https://github.com/ably/ably-js/pull/1051)
+- Fix EventEmitter.once when using array with promises [\#1046](https://github.com/ably/ably-js/pull/1046)
+- Allow null arguments in authCallback [\#1052](https://github.com/ably/ably-js/pull/1052)
+- Move channel state to attaching on new transport reattach when using promises [\#1053](https://github.com/ably/ably-js/pull/1053)
+
 ## [1.2.29](https://github.com/ably/ably-js/tree/1.2.29) (2022-08-08)
 - Fix upgrade bug that could lead to an indefinitely sync-pending transport [\#1041](https://github.com/ably/ably-js/pull/1041)
 - Always allow event queueing while connecting [\#1039](https://github.com/ably/ably-js/pull/1039)

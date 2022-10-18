@@ -479,6 +479,21 @@ declare namespace Types {
     useBinaryProtocol?: boolean;
 
     /**
+     * Override the URL used by the realtime client to check if the internet is available.
+     *
+     * In the event of a failure to connect to the primary endpoint, the client will send a
+     * GET request to this URL to check if the internet is available. If this request returns
+     * a success response the client will attempt to connect to a fallback host.
+     */
+    connectivityCheckUrl?: string;
+
+    /**
+     * Disable the check used by the realtime client to check if the internet
+     * is available before connecting to a fallback host.
+     */
+    disableConnectivityCheck?: boolean;
+
+    /**
      * If the connection is still in the {@link ConnectionState.DISCONNECTED} state after this delay in milliseconds, the client library will attempt to reconnect automatically. The default is 15 seconds.
      *
      * @defaultValue 15s
@@ -578,7 +593,10 @@ declare namespace Types {
        * @param error - Not yet documented.
        * @param tokenRequestOrDetails - Not yet documented.
        */
-      callback: (error: ErrorInfo | string, tokenRequestOrDetails: TokenDetails | TokenRequest | string) => void
+      callback: (
+        error: ErrorInfo | string | null,
+        tokenRequestOrDetails: TokenDetails | TokenRequest | string | null
+      ) => void
     ): void;
 
     /**
