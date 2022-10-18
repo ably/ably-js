@@ -1988,7 +1988,7 @@ declare namespace Types {
     /**
      * Retrieves the current members present on the channel and the metadata for each member, such as their [PresenceAction]{@link PresenceAction} and ID.
      *
-     * @param callback - A function which returns a [PaginatedResult]{@link PaginatedResult} object, containing an array of [PresenceMessage]{@link PresenceMessage} objects.
+     * @param callback - A function which, upon success, will be called with a [PaginatedResult]{@link PaginatedResult} object, containing an array of [PresenceMessage]{@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      */
     get(callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
