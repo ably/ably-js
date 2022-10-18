@@ -24,6 +24,12 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
-      - run: npm run test:node
+      - run: npm run test:node:junit
         env:
           CI: true
+      - name: Upload test results
+        if: always()
+        uses: ably-labs/test-observability-action@main
+        with:
+          server-url: 'https://test-observability.herokuapp.com'
+          server-auth: ${{ secrets.TEST_OBSERVABILITY_SERVER_AUTH_KEY }}
