@@ -4,7 +4,7 @@
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 /**
- * Not yet documented.
+ * Type definitions for Ably Realtime and REST client library.
  */
 declare namespace Types {
   /**
@@ -273,25 +273,25 @@ declare namespace Types {
     | StatsIntervalGranularity.MONTH;
 
   /**
-   * Not yet documented.
+   * HTTP Methods, used internally.
    */
   namespace HTTPMethods {
     /**
-     * Not yet documented.
+     * Represents a HTTP POST request.
      */
     type POST = 'POST';
     /**
-     * Not yet documented.
+     * Represents a HTTP GET request.
      */
     type GET = 'GET';
   }
   /**
-   * Not yet documented.
+   * HTTP Methods, used internally.
    */
   type HTTPMethods = HTTPMethods.GET | HTTPMethods.POST;
 
   /**
-   * Not yet documented.
+   * A type which specifies the valid transport names. [See here](https://faqs.ably.com/which-transports-are-supported) for more information.
    */
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
 
@@ -588,10 +588,10 @@ declare namespace Types {
     authCallback?(
       data: TokenParams,
       /**
-       * Not yet documented.
+       * A function which, upon success, the `authCallback` should call with one of: an Ably Token string (in plain text format); a signed `TokenRequest`; a `TokenDetails` (in JSON format); an [Ably JWT](https://ably.com/docs/core-features/authentication#ably-jwt). Upon failure, the `authCallback` should call this function with information about the error.
        *
-       * @param error - Not yet documented.
-       * @param tokenRequestOrDetails - Not yet documented.
+       * @param error - Should be `null` if the auth request completed successfully, or containing details of the error if not.
+       * @param tokenRequestOrDetails - A valid `TokenRequest`, `TokenDetails` or Ably JWT to be used for authentication.
        */
       callback: (
         error: ErrorInfo | string | null,
@@ -655,7 +655,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * Capabilities which are available for use within {@link TokenParams}.
    */
   type capabilityOp =
     | 'publish'
@@ -667,7 +667,7 @@ declare namespace Types {
     | 'push-subscribe'
     | 'push-admin';
   /**
-   * Not yet documented.
+   * Capabilities which are available for use within {@link TokenParams}.
    */
   type CapabilityOp = capabilityOp;
 
@@ -924,7 +924,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * [Channel Parameters](https://ably.com/docs/realtime/channels/channel-parameters/overview) used within {@link ChannelOptions}.
    */
   type ChannelParams = { [key: string]: string };
 
@@ -949,7 +949,7 @@ declare namespace Types {
      */
     type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
     /**
-     * Not yet documented.
+     * The client is resuming an existing connection.
      */
     type ATTACH_RESUME = 'ATTACH_RESUME';
   }
@@ -964,7 +964,7 @@ declare namespace Types {
     | ChannelMode.PRESENCE_SUBSCRIBE
     | ChannelMode.ATTACH_RESUME;
   /**
-   * Not yet documented.
+   * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
    */
   type ChannelModes = Array<ChannelMode>;
 
@@ -1103,7 +1103,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * Settings which control the log output of the library.
    */
   interface LogInfo {
     /**
@@ -1290,7 +1290,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * Valid states which a Push device may be in.
    */
   type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
 
@@ -1334,7 +1334,7 @@ declare namespace Types {
      */
     limit?: number;
     /**
-     * Not yet documented.
+     * Filter by the state of the device.
      */
     state?: DevicePushState;
   }
@@ -1422,75 +1422,75 @@ declare namespace Types {
 
   // Common Listeners
   /**
-   * Not yet documented.
+   * A standard callback format used in most areas of the callback API.
    *
-   * @param err - Not yet documented.
-   * @param result - Not yet documented.
+   * @param err - An error object if the request failed.
+   * @param result - The result of the request, if any.
    */
   type StandardCallback<T> = (err: ErrorInfo | null, result?: T) => void;
   /**
-   * Not yet documented.
+   * A {@link StandardCallback} which returns a {@link PaginatedResult}.
    */
   type paginatedResultCallback<T> = StandardCallback<PaginatedResult<T>>;
   /**
-   * Not yet documented.
+   * A callback which returns only a single argument, used for {@link RealtimeChannelBase} subscriptions.
    *
-   * @param message - Not yet documented.
+   * @param message - The message which triggered the callback.
    */
   type messageCallback<T> = (message: T) => void;
   /**
-   * Not yet documented.
+   * A callback which returns only an error, or null, when complete.
    *
-   * @param error - Not yet documented.
+   * @param error - The error if the request failed, or null not.
    */
   type errorCallback = (error?: ErrorInfo | null) => void;
   /**
-   * Not yet documented.
+   * The callback used by {@link RealtimeChannelCallbacks.whenState}.
    *
-   * @param changeStateChange - Not yet documented.
+   * @param changeStateChange - The state change that occurred.
    */
   type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
   /**
-   * Not yet documented.
+   * The callback used by {@link ConnectionCallbacks.whenState}.
    *
-   * @param connectionStateChange - Not yet documented.
+   * @param connectionStateChange - The state change that occurred.
    */
   type connectionEventCallback = (connectionStateChange: ConnectionStateChange) => void;
   /**
-   * Not yet documented.
+   * The callback used by {@link RestCallbacks.time} and {@link RealtimeCallbacks.time}.
    *
-   * @param timeCallback - Not yet documented.
+   * @param timeCallback - The time in milliseconds since the Unix epoch.
    */
   type timeCallback = StandardCallback<number>;
   /**
-   * Not yet documented.
+   * The callback used by {@link RealtimePresenceCallbacks.get}.
    *
-   * @param realtimePresenceGetCallback - Not yet documented.
+   * @param realtimePresenceGetCallback - An array of {@link PresenceMessage} objects.
    */
   type realtimePresenceGetCallback = StandardCallback<PresenceMessage[]>;
   /**
-   * Not yet documented.
+   * The callback used by {@link AuthCallbacks.authorize}.
    *
-   * @param tokenDetailsCallback - Not yet documented.
+   * @param tokenDetailsCallback - A {@link TokenDetails} object.
    */
   type tokenDetailsCallback = StandardCallback<TokenDetails>;
   /**
-   * Not yet documented.
+   * The callback used by {@link AuthCallbacks.createTokenRequest}.
    *
-   * @param tokenRequestCallback - Not yet documented.
+   * @param tokenRequestCallback - A {@link TokenRequest} object
    */
   type tokenRequestCallback = StandardCallback<TokenRequest>;
   /**
-   * Not yet documented.
+   * The callback used by {@link recoverConnectionCallback}.
    *
-   * @param shouldRecover - Not yet documented.
+   * @param shouldRecover - Whether the connection should be recovered.
    */
   type recoverConnectionCompletionCallback = (shouldRecover: boolean) => void;
   /**
-   * Not yet documented.
+   * Used in {@link ClientOptions} to configure connection recovery behaviour.
    *
-   * @param lastConnectionDetails - Not yet documented.
-   * @param callback - Not yet documented.
+   * @param lastConnectionDetails - Details of the connection used by the connection recovery process.
+   * @param callback - A callback which is called when a connection recovery attempt is complete.
    */
   type recoverConnectionCallback = (
     lastConnectionDetails: {
@@ -1542,10 +1542,10 @@ declare namespace Types {
      */
     on(event: EventType, callback: CallbackType): void;
     /**
-     * Not yet documented.
+     * Registers the provided listener for the specified events. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
      *
-     * @param events - Not yet documented.
-     * @param callback - Not yet documented.
+     * @param events - The named events to listen for.
+     * @param callback -  The event listener.
      */
     on(events: EventType[], callback: CallbackType): void;
     /**
@@ -1595,9 +1595,9 @@ declare namespace Types {
      */
     off(callback: CallbackType): void;
     /**
-     * Not yet documented.
+     * Returns the listeners for a specified `EventType`.
      *
-     * @param eventName - Not yet documented.
+     * @param eventName - The event name to retrieve the listeners for.
      */
     listeners(eventName?: EventType): CallbackType[] | null;
   }
@@ -1620,15 +1620,15 @@ declare namespace Types {
      */
     constructor(keyOrToken: string);
     /**
-     * Not yet documented.
+     * The cryptographic functions available in the library.
      */
     static Crypto: Types.Crypto;
     /**
-     * Not yet documented.
+     * Static utilities related to messages.
      */
     static Message: Types.MessageStatic;
     /**
-     * Not yet documented.
+     * Static utilities related to presence messages.
      */
     static PresenceMessage: Types.PresenceMessageStatic;
   }
@@ -1755,7 +1755,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * A base class used internally for Realtime APIs.
    */
   class RealtimeBase extends RestBase {
     /**
@@ -2044,22 +2044,22 @@ declare namespace Types {
      */
     unsubscribe(presence: PresenceAction, listener: messageCallback<PresenceMessage>): void;
     /**
-     * Not yet documented.
+     * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given array of {@link PresenceAction} objects.
      *
-     * @param presence - Not yet documented.
-     * @param listener - Not yet documented.
+     * @param presence - An array of {@link PresenceAction} objects to deregister the listener for.
+     * @param listener - An event listener function.
      */
     unsubscribe(presence: Array<PresenceAction>, listener: messageCallback<PresenceMessage>): void;
     /**
-     * Not yet documented.
+     * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for a specific {@link PresenceAction}
      *
-     * @param presence - Not yet documented.
+     * @param presence - A specific {@link PresenceAction} to deregister the listeners for.
      */
     unsubscribe(presence: PresenceAction): void;
     /**
-     * Not yet documented.
+     * Deregisters any listener that is registered to receive {@link PresenceMessage} on the channel for an array of {@link PresenceAction} objects
      *
-     * @param presence - Not yet documented.
+     * @param presence - An array of {@link PresenceAction} objects to deregister the listeners for.
      */
     unsubscribe(presence: Array<PresenceAction>): void;
     /**
@@ -2437,11 +2437,11 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * Optional parameters for message publishing.
    */
   type PublishOptions = {
     /**
-     * Not yet documented.
+     * See [here](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes).
      */
     quickAck?: boolean;
   };
@@ -2568,10 +2568,10 @@ declare namespace Types {
      */
     publish(name: string, data: any, callback?: errorCallback): void;
     /**
-     * Not yet documented.
+     * Calls the supplied function when the channel reaches the specified {@link ChannelState}.
      *
-     * @param targetState - Not yet documented.
-     * @param callback - Not yet documented.
+     * @param targetState - The state which should be reached.
+     * @param callback - A function which will be called when the channel has reached the specified {@link ChannelState} with a {@link ChannelStateChange} object as the first argument.
      */
     whenState(targetState: ChannelState, callback: channelEventCallback): void;
   }
@@ -2673,9 +2673,9 @@ declare namespace Types {
      */
     publish(message: any): Promise<void>;
     /**
-     * Not yet documented.
+     * Returns a promise which is resolved when the channel reaches the specified {@link ChannelState}.
      *
-     * @param targetState - Not yet documented.
+     * @param targetState - The state which should be reached.
      */
     whenState(targetState: ChannelState): Promise<ChannelStateChange>;
   }
@@ -2706,7 +2706,7 @@ declare namespace Types {
    */
   class Message {
     /**
-     * Not yet documented.
+     * @internal
      */
     constructor();
     /**
@@ -2762,7 +2762,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * Static utilities related to messages.
    */
   interface MessageStatic {
     /**
@@ -2790,7 +2790,7 @@ declare namespace Types {
    */
   class PresenceMessage {
     /**
-     * Not yet documented.
+     * @internal
      */
     constructor();
     /**
@@ -2838,7 +2838,7 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * Static utilities related to presence messages.
    */
   interface PresenceMessageStatic {
     /**
@@ -2858,11 +2858,12 @@ declare namespace Types {
   }
 
   /**
-   * Not yet documented.
+   * Cipher Key used in {@link CipherParamOptions}. If set to a `string`, the value must be base64 encoded.
    */
   type CipherKeyParam = ArrayBuffer | Uint8Array | string; // if string must be base64-encoded
   /**
-   * Not yet documented.
+   * @internal
+   * Typed differently depending on platform. (`WordArray` in browser, `Buffer` in node)
    */
   type CipherKey = unknown; // WordArray on browsers, Buffer on node, using unknown as
   // user should not be interacting with it - output of getDefaultParams should be used opaquely
@@ -2958,10 +2959,10 @@ declare namespace Types {
      */
     ping(callback?: Types.StandardCallback<number>): void;
     /**
-     * Not yet documented.
+     * Calls the supplied function when the connection reaches the specified {@link ConnectionState}.
      *
-     * @param targetState - Not yet documented.
-     * @param callback - Not yet documented.
+     * @param targetState - The state which should be reached.
+     * @param callback - A function which will be called when the connection has reached the specified {@link ConnectionState} with a {@link ConnectionStateChange} object as the first argument.
      */
     whenState(targetState: ConnectionState, callback: connectionEventCallback): void;
   }
@@ -2977,9 +2978,9 @@ declare namespace Types {
      */
     ping(): Promise<number>;
     /**
-     * Not yet documented.
+     * Returns a promise which is resolved when the connection reaches the specified {@link ConnectionState}.
      *
-     * @param targetState - Not yet documented.
+     * @param targetState - The state which should be reached.
      */
     whenState(targetState: ConnectionState): Promise<ConnectionStateChange>;
   }
@@ -3059,13 +3060,13 @@ declare namespace Types {
      */
     next(): Promise<PaginatedResult<T>>;
     /**
-     * Not yet documented.
+     * Returns the `PaginatedResult` for the current page of results.
      *
-     * @param results - Not yet documented.
+     * @param results - A function which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the function will be called with information about the error.
      */
     current(results: paginatedResultCallback<T>): void;
     /**
-     * Not yet documented.
+     * Returns the `PaginatedResult` for the current page of results.
      */
     current(): Promise<PaginatedResult<T>>;
     /**
