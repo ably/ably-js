@@ -2568,7 +2568,7 @@ declare namespace Types {
      */
     publish(name: string, data: any, callback?: errorCallback): void;
     /**
-     * Calls the supplied function when the channel reaches the specified {@link ChannelState}.
+     * Calls the supplied function when the channel reaches the specified {@link ChannelState}. If the channel is already in the specified state, the callback is called immediately.
      *
      * @param targetState - The state which should be reached.
      * @param callback - A function which will be called when the channel has reached the specified {@link ChannelState} with a {@link ChannelStateChange} object as the first argument.
@@ -2673,7 +2673,7 @@ declare namespace Types {
      */
     publish(message: any): Promise<void>;
     /**
-     * Returns a promise which is resolved when the channel reaches the specified {@link ChannelState}.
+     * Returns a promise which is resolved when the channel reaches the specified {@link ChannelState}. If the channel is already in the specified state, the promise is resolved immediately.
      *
      * @param targetState - The state which should be reached.
      */
@@ -2961,7 +2961,7 @@ declare namespace Types {
      */
     ping(callback?: Types.StandardCallback<number>): void;
     /**
-     * Calls the supplied function when the connection reaches the specified {@link ConnectionState}.
+     * Calls the supplied function when the connection reaches the specified {@link ConnectionState}. If the connection is already in the specified state, the callback is called immediately.
      *
      * @param targetState - The state which should be reached.
      * @param callback - A function which will be called when the connection has reached the specified {@link ConnectionState} with a {@link ConnectionStateChange} object as the first argument.
@@ -2980,7 +2980,7 @@ declare namespace Types {
      */
     ping(): Promise<number>;
     /**
-     * Returns a promise which is resolved when the connection reaches the specified {@link ConnectionState}.
+     * Returns a promise which is resolved when the connection reaches the specified {@link ConnectionState}. If the connection is already in the specified state, the promise is resolved immediately.
      *
      * @param targetState - The state which should be reached.
      */
