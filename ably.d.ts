@@ -2706,6 +2706,7 @@ declare namespace Types {
    */
   class Message {
     /**
+     * Constructor for internal use.
      * @internal
      */
     constructor();
@@ -2790,6 +2791,7 @@ declare namespace Types {
    */
   class PresenceMessage {
     /**
+     * Constructor for internal use.
      * @internal
      */
     constructor();
