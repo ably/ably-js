@@ -396,8 +396,8 @@ export const now =
     return new Date().getTime();
   };
 
-export function isErrorInfo(err: Error | ErrorInfo): err is ErrorInfo {
-  return err.constructor.name == 'ErrorInfo';
+export function isErrorInfo(err: unknown): err is ErrorInfo {
+  return typeof err == 'object' && err !== null && err.constructor.name == 'ErrorInfo';
 }
 
 export function inspectError(err: unknown): string {

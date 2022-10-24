@@ -1,0 +1,41 @@
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Install Package Dependencies
+        run: npm ci
+
+      - name: Build Documentation
+        run: npm run docs
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: eu-west-2
+          role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}:role/ably-sdk-builds-ably-js
+          role-session-name: "${{ github.run_id }}-${{ github.run_number }}"
+
+      - name: Upload Documentation
+        uses: ably/sdk-upload-action@v1
+        with:
+          sourcePath: docs/generated
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          artifactName: typedoc

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "treatWarningsAsErrors": true,
+  "includeVersion": true,
+  "validation": true,
+  "requiredToBeDocumented": [
+    "Accessor",
+    "Class",
+    "Constructor",
+    "Enum",
+    "EnumMember",
+    "Function",
+    "Interface",
+    "Method",
+    "Parameter",
+    "Property",
+    "TypeAlias",
+    "Variable",
+    "Namespace"
+  ]
+}
