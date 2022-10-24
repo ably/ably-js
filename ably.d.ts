@@ -1571,7 +1571,6 @@ declare namespace Types {
      * Returns a promise which resolves upon the first occurrence of a single named event specified as the `Event` argument.
      *
      * @param event - The named event to listen for.
-     *
      * @returns A promise which resolves upon the first occurrence of the named event.
      */
     once(event: EventType): Promise<ResultType>;
@@ -1724,7 +1723,6 @@ declare namespace Types {
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
-     *
      * @returns A promise which, upon success, will be fulfilled with an {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     request<T = any>(
@@ -1738,7 +1736,6 @@ declare namespace Types {
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link Types.StatsParams} interface.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     stats(params?: StatsParams | any): Promise<Types.PaginatedResult<Types.Stats>>;
@@ -1863,7 +1860,6 @@ declare namespace Types {
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
-     *
      * @returns A promise which, upon success, will be fulfilled with the {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     request<T = any>(
@@ -1877,7 +1873,6 @@ declare namespace Types {
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link Types.StatsParams} interface.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     stats(params?: StatsParams | any): Promise<Types.PaginatedResult<Types.Stats>>;
@@ -1950,7 +1945,6 @@ declare namespace Types {
      *
      * @param tokenParams - A {@link TokenParams} object.
      * @param authOptions - An {@link AuthOptions} object.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link TokenDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
@@ -1959,7 +1953,6 @@ declare namespace Types {
      *
      * @param tokenParams - A {@link TokenParams} object.
      * @param authOptions - An {@link AuthOptions} object.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link TokenRequest} object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     createTokenRequest(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenRequest>;
@@ -1968,7 +1961,6 @@ declare namespace Types {
      *
      * @param TokenParams - A {@link TokenParams} object.
      * @param authOptions - An {@link AuthOptions} object.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link TokenDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     requestToken(TokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
@@ -2014,7 +2006,6 @@ declare namespace Types {
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
      * @param params - A set of parameters which are used to specify which presence members should be retrieved.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     get(params?: RestPresenceParams): Promise<PaginatedResult<PresenceMessage>>;
@@ -2022,7 +2013,6 @@ declare namespace Types {
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param params - A set of parameters which are used to specify which messages should be retrieved.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     history(params?: RestHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
@@ -2166,7 +2156,6 @@ declare namespace Types {
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
      * @param params - A set of parameters which are used to specify which presence members should be retrieved.
-     *
      * @returns A promise which, upon success, will be fulfilled with an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     get(params?: RealtimePresenceParams): Promise<PresenceMessage[]>;
@@ -2174,7 +2163,6 @@ declare namespace Types {
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param params - A set of parameters which are used to specify which presence messages should be retrieved.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<PresenceMessage>>;
@@ -2183,7 +2171,6 @@ declare namespace Types {
      *
      * @param action - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
      * @param listener - An event listener function.
-     *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(
@@ -2194,7 +2181,6 @@ declare namespace Types {
      * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
      *
      * @param listener - An event listener function.
-     *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(listener?: messageCallback<PresenceMessage>): Promise<void>;
@@ -2202,7 +2188,6 @@ declare namespace Types {
      * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
      *
      * @param data - The payload associated with the presence member.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     enter(data?: any): Promise<void>;
@@ -2210,7 +2195,6 @@ declare namespace Types {
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
      * @param data - The payload to update for the presence member.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     update(data?: any): Promise<void>;
@@ -2218,7 +2202,6 @@ declare namespace Types {
      * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
      * @param data - The payload associated with the presence member.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     leave(data?: any): Promise<void>;
@@ -2227,7 +2210,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to enter into the presence set.
      * @param data - The payload associated with the presence member.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     enterClient(clientId: string, data?: any): Promise<void>;
@@ -2236,7 +2218,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to update in the presence set.
      * @param data - The payload to update for the presence member.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     updateClient(clientId: string, data?: any): Promise<void>;
@@ -2245,7 +2226,6 @@ declare namespace Types {
      *
      * @param clientId - The ID of the client to leave the presence set for.
      * @param data - The payload associated with the presence member.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     leaveClient(clientId: string, data?: any): Promise<void>;
@@ -2327,7 +2307,6 @@ declare namespace Types {
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param params - A set of parameters which are used to specify which messages should be retrieved.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     history(params?: RestHistoryParams): Promise<PaginatedResult<Message>>;
@@ -2336,7 +2315,6 @@ declare namespace Types {
      *
      * @param messages - An array of {@link Message} objects.
      * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     publish(messages: any[], options?: PublishOptions): Promise<void>;
@@ -2345,7 +2323,6 @@ declare namespace Types {
      *
      * @param message - A {@link Message} object.
      * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     publish(message: any, options?: PublishOptions): Promise<void>;
@@ -2355,7 +2332,6 @@ declare namespace Types {
      * @param name - The name of the message.
      * @param data - The payload of the message.
      * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     publish(name: string, data: any, options?: PublishOptions): Promise<void>;
@@ -2600,7 +2576,6 @@ declare namespace Types {
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param params - A set of parameters which are used to specify which presence members should be retrieved.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
@@ -2608,7 +2583,6 @@ declare namespace Types {
      * Sets the {@link ChannelOptions} for the channel.
      *
      * @param options - A {@link ChannelOptions} object.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     setOptions(options: ChannelOptions): Promise<void>;
@@ -2617,7 +2591,6 @@ declare namespace Types {
      *
      * @param event - The event name.
      * @param listener - An event listener function.
-     *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
@@ -2626,7 +2599,6 @@ declare namespace Types {
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
-     *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
@@ -2635,7 +2607,6 @@ declare namespace Types {
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
-
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
@@ -2643,7 +2614,6 @@ declare namespace Types {
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
      * @param callback - An event listener function.
-     *
      * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(callback: messageCallback<Message>): Promise<void>;
@@ -2652,7 +2622,6 @@ declare namespace Types {
      *
      * @param name - The event name.
      * @param data - The message payload.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     publish(name: string, data: any): Promise<void>;
@@ -2660,7 +2629,6 @@ declare namespace Types {
      * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
      * @param messages - An array of {@link Message} objects.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     publish(messages: any[]): Promise<void>;
@@ -2668,7 +2636,6 @@ declare namespace Types {
      * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
      * @param message - A {@link Message} object.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     publish(message: any): Promise<void>;
@@ -2689,7 +2656,6 @@ declare namespace Types {
      *
      * @param name - The channel name.
      * @param channelOptions - A {@link ChannelOptions} object.
-     *
      * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
      */
     get(name: string, channelOptions?: ChannelOptions): T;
@@ -2707,6 +2673,7 @@ declare namespace Types {
   class Message {
     /**
      * Constructor for internal use.
+     *
      * @internal
      */
     constructor();
@@ -2715,7 +2682,6 @@ declare namespace Types {
      *
      * @param JsonObject - A `Message`-like deserialized object.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     *
      * @returns A `Message` object.
      */
     static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
@@ -2724,7 +2690,6 @@ declare namespace Types {
      *
      * @param JsonArray - An array of `Message`-like deserialized objects.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     *
      * @returns An array of {@link Message} objects.
      */
     static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Message[];
@@ -2771,7 +2736,6 @@ declare namespace Types {
      *
      * @param JsonObject - A `Message`-like deserialized object.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     *
      * @returns A `Message` object.
      */
     fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
@@ -2780,7 +2744,6 @@ declare namespace Types {
      *
      * @param JsonArray - An array of `Message`-like deserialized objects.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     *
      * @returns An array of {@link Message} objects.
      */
     fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Message[];
@@ -2792,6 +2755,7 @@ declare namespace Types {
   class PresenceMessage {
     /**
      * Constructor for internal use.
+     *
      * @internal
      */
     constructor();
@@ -2864,8 +2828,9 @@ declare namespace Types {
    */
   type CipherKeyParam = ArrayBuffer | Uint8Array | string; // if string must be base64-encoded
   /**
-   * @internal
    * Typed differently depending on platform. (`WordArray` in browser, `Buffer` in node)
+   *
+   * @internal
    */
   type CipherKey = unknown; // WordArray on browsers, Buffer on node, using unknown as
   // user should not be interacting with it - output of getDefaultParams should be used opaquely
@@ -3170,7 +3135,6 @@ declare namespace Types {
      *
      * @param recipient - A JSON object containing the recipient details using `clientId`, `deviceId` or the underlying notifications service.
      * @param payload - A JSON object containing the push notification payload.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     publish(recipient: any, payload: any): Promise<void>;
@@ -3191,7 +3155,6 @@ declare namespace Types {
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
      *
      * @param deviceId - The unique ID of the device.
-     *
      * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
      */
     get(deviceId: string, callback: Types.StandardCallback<DeviceDetails>): void;
@@ -3240,7 +3203,6 @@ declare namespace Types {
      * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
      * @param deviceDetails - The {@link DeviceDetails} object to create or update.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link DeviceDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     save(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
@@ -3248,7 +3210,6 @@ declare namespace Types {
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
      *
      * @param deviceId - The unique ID of the device.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link DeviceDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     get(deviceId: string): Promise<DeviceDetails>;
@@ -3256,7 +3217,6 @@ declare namespace Types {
      * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
      *
      * @param deviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link DeviceDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     get(deviceDetails: DeviceDetails): Promise<DeviceDetails>;
@@ -3264,7 +3224,6 @@ declare namespace Types {
      * Retrieves all devices matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link DeviceDetails} objects.
      *
      * @param params - An object containing key-value pairs to filter devices by.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link DeviceDetails} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     list(params: DeviceRegistrationParams): Promise<PaginatedResult<DeviceDetails>>;
@@ -3272,7 +3231,6 @@ declare namespace Types {
      * Removes a device registered to receive push notifications from Ably using its `deviceId`.
      *
      * @param deviceId - The unique ID of the device.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     remove(deviceId: string): Promise<void>;
@@ -3280,7 +3238,6 @@ declare namespace Types {
      * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
      *
      * @param deviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     remove(deviceDetails: DeviceDetails): Promise<void>;
@@ -3288,7 +3245,6 @@ declare namespace Types {
      * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
      *
      * @param params - An object containing key-value pairs to filter devices by. This object’s {@link DeviceRegistrationParams.limit} property will be ignored.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     removeWhere(params: DeviceRegistrationParams): Promise<void>;
@@ -3343,7 +3299,6 @@ declare namespace Types {
      * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
      * @param subscription - A {@link PushChannelSubscription} object.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link PushChannelSubscription} object describing the new or updated subscriptions. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     save(subscription: PushChannelSubscription): Promise<PushChannelSubscription>;
@@ -3351,7 +3306,6 @@ declare namespace Types {
      * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
      *
      * @param params - An object containing key-value pairs to filter subscriptions by.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     list(params: PushChannelSubscriptionParams): Promise<PaginatedResult<PushChannelSubscription>>;
@@ -3359,7 +3313,6 @@ declare namespace Types {
      * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
      *
      * @param params - An object containing key-value pairs to filter channels by.
-     *
      * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of channel names. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     listChannels(params: PushChannelsParams): Promise<PaginatedResult<string>>;
@@ -3367,7 +3320,6 @@ declare namespace Types {
      * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
      *
      * @param subscription - A {@link PushChannelSubscription} object.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     remove(subscription: PushChannelSubscription): Promise<void>;
@@ -3375,7 +3327,6 @@ declare namespace Types {
      * Unsubscribes all devices from receiving push notifications on a channel that match the filter `params` provided.
      *
      * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, and optionally either `clientId` or `deviceId`.
-     *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     removeWhere(params: PushChannelSubscriptionParams): Promise<void>;

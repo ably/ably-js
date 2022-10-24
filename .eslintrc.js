@@ -54,4 +54,11 @@ module.exports = {
     "docs",
     "Gruntfile.js",
   ],
+  settings: {
+    jsdoc: {
+      tagNamePreference: {
+        'default': 'defaultValue',
+      },
+    },
+  },
 }
