@@ -2293,6 +2293,15 @@ declare namespace Types {
      * @param callback - A function which, upon success, will be called a {@link ChannelDetails} object. Upon failure, the function will be called with information about the error.
      */
     status(callback: StandardCallback<ChannelDetails>): void;
+    /**
+     * Publishes a single message to the channel with the given event name and payload.
+     *
+     * @param name - The name of the message.
+     * @param data - The payload of the message.
+     * @param timestamp - The time at which the message should be published
+     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with the scheduled message ID. If it failed, the function will be called with information about the error.
+     */
+    scheduleMessage(name: string, data: any, timestamp: number, callback?: StandardCallback<string>): void;
   }
 
   /**
@@ -2341,6 +2350,15 @@ declare namespace Types {
      * @returns A promise which, upon success, will be fulfilled a {@link ChannelDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     status(): Promise<ChannelDetails>;
+    /**
+     * Publishes a single message to the channel with the given event name and payload.
+     *
+     * @param name - The name of the message.
+     * @param data - The payload of the message.
+     * @param timestamp - The time at which the message should be published
+     * @returns A promise which, upon success, will be fulfilled with the scheduled message ID. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+     */
+    scheduleMessage(name: string, data: any, timestamp: number): Promise<string>;
   }
 
   /**
