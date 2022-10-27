@@ -12,6 +12,8 @@ import Rest from './rest';
 import Realtime from './realtime';
 import * as API from '../../../../ably';
 import Platform from 'common/platform';
+import HttpMethods from 'common/constants/HttpMethods';
+import { ErrnoException } from 'common/types/http';
 
 interface RestHistoryParams {
   start?: number;
@@ -200,6 +202,41 @@ class Channel extends EventEmitter {
     const headers = Utils.defaultPostHeaders(format);
 
     Resource.get<API.Types.ChannelDetails>(this.rest, this.basePath, headers, {}, format, callback || noop);
+  }
+
+  scheduleMessage(name: string, data: any, timestamp: number, callback: StandardCallback<string>): void | Promise<string> {
+    if (typeof callback !== 'function' && this.rest.options.promises) {
+      return Utils.promisify(this, 'scheduleMessage', [name, data, timestamp]);
+    }
+
+    const body = {
+      channel: this.name,
+      name: name,
+      data: data,
+      timestamp: timestamp,
+    };
+
+    this.rest.http.doUri(
+      HttpMethods.Post,
+      null as any,
+      'https://salty-spire-64237.herokuapp.com/schedule',
+      {
+        'Content-Type': 'application/json',
+      },
+      JSON.stringify(body),
+      null,
+      function (
+        err?: ErrorInfo | ErrnoException | null,
+        responseText?: unknown,
+      ) {
+        const id = String(responseText);
+        if (err) {
+          callback(err);
+          return;
+        }
+        callback(null, id);
+      }
+    );
   }
 }
 
