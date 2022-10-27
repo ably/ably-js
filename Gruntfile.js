@@ -107,11 +107,11 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all']);
+  grunt.registerTask('build', ['webpack:all']);
 
-  grunt.registerTask('build:node', ['checkGitSubmodules', 'webpack:node']);
+  grunt.registerTask('build:node', ['webpack:node']);
 
-  grunt.registerTask('build:browser', ['checkGitSubmodules', 'webpack:browser']);
+  grunt.registerTask('build:browser', ['webpack:browser']);
 
   grunt.registerTask('check-closure-compiler', ['build', 'closureCompiler:ably.js']);
 
