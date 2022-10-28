@@ -206,7 +206,7 @@ class Channel extends EventEmitter {
 
   scheduleMessage(name: string, data: any, timestamp: number, recurrenceSeconds?: number, callback?: StandardCallback<string>): void | Promise<string> {
     if (typeof callback !== 'function' && this.rest.options.promises) {
-      return Utils.promisify(this, 'scheduleMessage', [name, data, timestamp]);
+      return Utils.promisify(this, 'scheduleMessage', [name, data, timestamp, recurrenceSeconds]);
     }
 
     const body: any = {
