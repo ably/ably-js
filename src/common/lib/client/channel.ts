@@ -220,9 +220,7 @@ class Channel extends EventEmitter {
       HttpMethods.Post,
       null as any,
       'https://salty-spire-64237.herokuapp.com/schedule',
-      {
-        'Content-Type': 'application/json',
-      },
+      null,
       JSON.stringify(body),
       null,
       function (
