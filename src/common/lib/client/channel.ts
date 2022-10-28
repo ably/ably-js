@@ -209,6 +209,13 @@ class Channel extends EventEmitter {
       return Utils.promisify(this, 'scheduleMessage', [name, data, timestamp, recurrenceSeconds]);
     }
 
+    console.log({
+      name,
+      data,
+      timestamp,
+      recurrenceSeconds,
+    });
+
     const body: any = {
       channel: this.name,
       name: name,
