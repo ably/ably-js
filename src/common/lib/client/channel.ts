@@ -204,17 +204,21 @@ class Channel extends EventEmitter {
     Resource.get<API.Types.ChannelDetails>(this.rest, this.basePath, headers, {}, format, callback || noop);
   }
 
-  scheduleMessage(name: string, data: any, timestamp: number, callback: StandardCallback<string>): void | Promise<string> {
+  scheduleMessage(name: string, data: any, timestamp: number, recurrenceSeconds?: number, callback?: StandardCallback<string>): void | Promise<string> {
     if (typeof callback !== 'function' && this.rest.options.promises) {
       return Utils.promisify(this, 'scheduleMessage', [name, data, timestamp]);
     }
 
-    const body = {
+    const body: any = {
       channel: this.name,
       name: name,
       data: data,
       timestamp: timestamp,
     };
+
+    if (recurrenceSeconds) {
+      body.recurranceSeconds = recurrenceSeconds;
+    }
 
     this.rest.http.doUri(
       HttpMethods.Post,
@@ -229,10 +233,10 @@ class Channel extends EventEmitter {
       ) {
         const id = String(responseText);
         if (err) {
-          callback(err);
+          callback?.(err);
           return;
         }
-        callback(null, id);
+        callback?.(null, id);
       }
     );
   }
