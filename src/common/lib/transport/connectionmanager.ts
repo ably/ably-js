@@ -1117,6 +1117,8 @@ class ConnectionManager extends EventEmitter {
     if (connIdChanged || recoverFailure) {
       Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
       this.msgSerial = 0;
+      // RTN19a2 -- in the event of a new connectionId, previous msgSerials are meaningless
+      this.queuedMessages.resetSendAttempted();
     }
     if (this.connectionId !== connectionId) {
       Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'New connectionId');
