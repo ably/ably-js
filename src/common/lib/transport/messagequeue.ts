@@ -65,7 +65,7 @@ class MessageQueue extends EventEmitter {
   }
 
   resetSendAttempted(): void {
-    for(let msg of this.messages) {
+    for (let msg of this.messages) {
       msg.sendAttempted = false;
     }
   }

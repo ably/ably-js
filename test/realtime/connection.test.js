@@ -117,7 +117,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 realtime.connection.close();
                 realtime.connection.whenState('closed', function () {
                   try {
-                    expect(realtime.connection.createRecoveryKey()).to.equal(null, 'verify recovery key null after close');
+                    expect(realtime.connection.createRecoveryKey()).to.equal(
+                      null,
+                      'verify recovery key null after close'
+                    );
                     closeAndFinish(done, realtime);
                   } catch (err) {
                     closeAndFinish(done, realtime, err);
