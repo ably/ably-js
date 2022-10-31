@@ -467,7 +467,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 cb(err);
                 return;
               }
-              recoveryKey = connection.getRecoveryKey();
+              recoveryKey = connection.createRecoveryKey();
               cb();
             });
           },
@@ -654,7 +654,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
 
       // Get the recovery key before becoming suspended as it will be reset.
-      const recoveryKey = rxRealtime.connection.getRecoveryKey();
+      const recoveryKey = rxRealtime.connection.createRecoveryKey();
 
       await new Promise((resolve) => helper.becomeSuspended(rxRealtime, resolve));
 
