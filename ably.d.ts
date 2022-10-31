@@ -2989,7 +2989,7 @@ declare namespace Types {
     /**
      * The recovery key string can be used by another client to recover this connection's state in the recover client options property. See [connection state recover options](https://ably.com/docs/realtime/connection#connection-state-recover-options) for more information.
      */
-    getRecoveryKey: () => string | null;
+    createRecoveryKey: () => string | null;
     /**
      * The serial number of the last message to be received on this connection, used automatically by the library when recovering or resuming a connection. When recovering a connection explicitly, the `recoveryKey` is used in the recover client options as it contains both the key and the last message serial.
      */

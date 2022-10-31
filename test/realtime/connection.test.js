@@ -68,7 +68,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
           try {
-            const recoveryKey = realtime.connection.getRecoveryKey();
+            const recoveryKey = realtime.connection.createRecoveryKey();
             const recoveryContext = JSON.parse(recoveryKey);
             expect(recoveryContext.connectionKey).to.equal(realtime.connection.key, 'verify correct recovery key');
             expect(recoveryContext.msgSerial).to.equal(
@@ -91,7 +91,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 function (cb) {
                   channel.subscribe(function () {
                     setTimeout(function () {
-                      const recoveryKey = realtime.connection.getRecoveryKey();
+                      const recoveryKey = realtime.connection.createRecoveryKey();
                       const recoveryContext = JSON.parse(recoveryKey);
                       expect(recoveryContext.connectionKey).to.equal(
                         realtime.connection.key,
@@ -117,7 +117,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 realtime.connection.close();
                 realtime.connection.whenState('closed', function () {
                   try {
-                    expect(realtime.connection.getRecoveryKey()).to.equal(null, 'verify recovery key null after close');
+                    expect(realtime.connection.createRecoveryKey()).to.equal(null, 'verify recovery key null after close');
                     closeAndFinish(done, realtime);
                   } catch (err) {
                     closeAndFinish(done, realtime, err);

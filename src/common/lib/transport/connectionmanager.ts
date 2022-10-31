@@ -1132,7 +1132,7 @@ class ConnectionManager extends EventEmitter {
     this.unpersistConnection();
   }
 
-  getRecoveryKey(): string | null {
+  createRecoveryKey(): string | null {
     if (!this.connectionKey) {
       return null;
     }
@@ -1168,7 +1168,7 @@ class ConnectionManager extends EventEmitter {
    */
   persistConnection(): void {
     if (haveSessionStorage()) {
-      const recoveryKey = this.getRecoveryKey();
+      const recoveryKey = this.createRecoveryKey();
       if (recoveryKey) {
         setSessionRecoverData({
           recoveryKey: recoveryKey,
