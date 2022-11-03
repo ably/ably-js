@@ -164,6 +164,16 @@ function getTimeouts(options: ClientOptions) {
   return timeouts;
 }
 
+export function getAgentString(options: ClientOptions): string {
+  let agentStr = Defaults.agent;
+  if (options.agents) {
+    for (var agent in options.agents) {
+      agentStr += ' ' + agent + '/' + options.agents[agent];
+    }
+  }
+  return agentStr;
+}
+
 export function objectifyOptions(options: ClientOptions | string): ClientOptions {
   if (typeof options == 'string') {
     return options.indexOf(':') == -1 ? { token: options } : { key: options };
@@ -287,12 +297,6 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
       '{promises: true} was specified, but no Promise constructor found; disabling promises'
     );
     options.promises = false;
-  }
-
-  if (options.agents) {
-    for (var key in options.agents) {
-      Defaults.agent += ' ' + key + '/' + options.agents[key];
-    }
   }
 
   let connectivityCheckParams = null;

@@ -92,7 +92,7 @@ class Channel extends EventEmitter {
     const rest = this.rest,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(format);
+      headers = Utils.defaultGetHeaders(rest.options, format);
 
     if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
 
@@ -148,7 +148,7 @@ class Channel extends EventEmitter {
       options = rest.options,
       format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       idempotentRestPublishing = rest.options.idempotentRestPublishing,
-      headers = Utils.defaultPostHeaders(format);
+      headers = Utils.defaultPostHeaders(rest.options, format);
 
     if (options.headers) Utils.mixin(headers, options.headers);
 
@@ -197,7 +197,7 @@ class Channel extends EventEmitter {
     }
 
     const format = this.rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-    const headers = Utils.defaultPostHeaders(format);
+    const headers = Utils.defaultPostHeaders(this.rest.options, format);
 
     Resource.get<API.Types.ChannelDetails>(this.rest, this.basePath, headers, {}, format, callback || noop);
   }

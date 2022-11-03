@@ -1,6 +1,7 @@
 import Platform from 'common/platform';
-import Defaults from './defaults';
+import Defaults, { getAgentString } from './defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
+import { NormalisedClientOptions } from 'common/types/ClientOptions';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -346,16 +347,16 @@ const contentTypes = {
   msgpack: 'application/x-msgpack',
 };
 
-export function defaultGetHeaders(format?: Format): Record<string, string> {
+export function defaultGetHeaders(options: NormalisedClientOptions, format?: Format): Record<string, string> {
   const accept = contentTypes[format || Format.json];
   return {
     accept: accept,
     'X-Ably-Version': Defaults.apiVersion,
-    'Ably-Agent': Defaults.agent,
+    'Ably-Agent': getAgentString(options),
   };
 }
 
-export function defaultPostHeaders(format?: Format): Record<string, string> {
+export function defaultPostHeaders(options: NormalisedClientOptions, format?: Format): Record<string, string> {
   let contentType;
   const accept = (contentType = contentTypes[format || Format.json]);
 
@@ -363,7 +364,7 @@ export function defaultPostHeaders(format?: Format): Record<string, string> {
     accept: accept,
     'content-type': contentType,
     'X-Ably-Version': Defaults.apiVersion,
-    'Ably-Agent': Defaults.agent,
+    'Ably-Agent': getAgentString(options),
   };
 }
 

@@ -1,7 +1,7 @@
 import ProtocolMessage from 'common/lib/types/protocolmessage';
 import * as Utils from 'common/lib/util/utils';
 import Protocol, { PendingMessage } from './protocol';
-import Defaults from 'common/lib/util/defaults';
+import Defaults, { getAgentString } from 'common/lib/util/defaults';
 import Platform from 'common/platform';
 import EventEmitter from '../util/eventemitter';
 import MessageQueue from './messagequeue';
@@ -142,7 +142,7 @@ export class TransportParams {
       params.heartbeats = this.heartbeats;
     }
     params.v = Defaults.apiVersion;
-    params.agent = encodeURIComponent(Defaults.agent);
+    params.agent = encodeURIComponent(getAgentString(this.options));
     if (options.transportParams !== undefined) {
       Utils.mixin(params, options.transportParams);
     }
