@@ -19,8 +19,9 @@ jobs:
         run: >
           git config --global url."https://github.com/".insteadOf
           ssh://git@github.com/
-      - uses: microsoft/playwright-github-action@v1
       - run: npm ci
+      - name: Install playwright dependencies
+        run: sudo npx playwright install-deps
       - env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
         run: npm run test:playwright
