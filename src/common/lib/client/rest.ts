@@ -100,7 +100,7 @@ class Rest {
         callback = noop;
       }
     }
-    const headers = Utils.defaultGetHeaders(),
+    const headers = Utils.defaultGetHeaders(this.options),
       format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.http.supportsLinkHeaders ? undefined : format;
 
@@ -132,7 +132,7 @@ class Rest {
 
     const _callback = callback || noop;
 
-    const headers = Utils.defaultGetHeaders();
+    const headers = Utils.defaultGetHeaders(this.options);
     if (this.options.headers) Utils.mixin(headers, this.options.headers);
     const timeUri = (host: string) => {
       return this.authority(host) + '/time';
@@ -182,7 +182,8 @@ class Rest {
       envelope = this.http.supportsLinkHeaders ? undefined : format;
     params = params || {};
     const _method = method.toLowerCase() as HttpMethods;
-    const headers = _method == 'get' ? Utils.defaultGetHeaders(format) : Utils.defaultPostHeaders(format);
+    const headers =
+      _method == 'get' ? Utils.defaultGetHeaders(this.options, format) : Utils.defaultPostHeaders(this.options, format);
 
     if (callback === undefined) {
       if (this.options.promises) {

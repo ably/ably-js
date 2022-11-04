@@ -609,7 +609,7 @@ class Auth {
           return client.baseUri(host) + path;
         };
 
-      const requestHeaders = Utils.defaultPostHeaders();
+      const requestHeaders = Utils.defaultPostHeaders(this.client.options);
       if (authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
       Logger.logAction(
         Logger.LOG_MICRO,
