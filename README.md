@@ -16,7 +16,7 @@ This SDK supports the following platforms:
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
-**Node.js:** version 8.17 or newer. (1.1.x versions work on Node.js 4.5 or newer).
+**Node.js:** version 8.17 or newer. (1.1.x versions work on Node.js 4.5 or newer). We do not currently provide an ESM bundle, please [contact us](https://www.ably.com/contact) if you would would like to use ably-js in a NodeJS ESM project.
 
 **React Native:** We aim to support all platforms supported by React Native. If you find any issues please raise an issue or [contact us](https://www.ably.com/contact).
 
@@ -307,6 +307,20 @@ channel.setOptions({cipher: {key: <key>}}, function() {
 	// New encryption settings are in effect
 })
 ```
+
+### Message interactions
+
+Message Interactions allow you to interact with messages previously sent to a channel. Once a channel is enabled with Message Interactions, messages received by that channel will contain a unique `timeSerial` that can be referenced by later messages.
+
+Example emoji reaction to a message:
+
+```javascript
+function sendReaction(emoji) {
+    channel.publish('event_name', { body: emoji, extras: { ref: { type: "com.ably.reaction", timeserial: "1656424960320-1" } } })
+}
+```
+
+See https://www.ably.com/docs/realtime/messages#message-interactions for more detail.
 
 ## Using the REST API
 

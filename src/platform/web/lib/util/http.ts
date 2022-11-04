@@ -12,6 +12,9 @@ import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
 import { createRequest, Request } from '../transport/jsonptransport';
 import fetchRequest from '../transport/fetchrequest';
+import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import { isSuccessCode } from 'common/constants/HttpStatusCodes';
+
 
 function shouldFallback(errorInfo: ErrorInfo) {
   const statusCode = errorInfo.statusCode as number;
@@ -44,9 +47,18 @@ const Http: typeof IHttp = class {
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   checksInProgress: Array<StandardCallback<boolean>> | null = null;
+  options: NormalisedClientOptions;
+
+  constructor(options: NormalisedClientOptions) {
+    this.options = options || {};
+
+    const connectivityCheckUrl = this.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
+    const connectivityCheckParams = this.options.connectivityCheckParams;
+    const connectivityUrlIsDefault = !this.options.connectivityCheckUrl;
 
   constructor() {
    if (Platform.Config.xhrSupported) {
+    if (Platform.Config.xhrSupported) {
       this.supportsAuthHeaders = true;
       this.Request = function (
         method: HttpMethods,
@@ -71,23 +83,43 @@ const Http: typeof IHttp = class {
         return req;
       };
 
-      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
-        const upUrl = Defaults.internetUpUrl;
-        Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Sending; ' + upUrl);
-        this.doUri(
-          HttpMethods.Get,
-          null as any,
-          upUrl,
-          null,
-          null,
-          null,
-          function (err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
-            const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-            Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-            callback(null, result);
-          }
-        );
-      };
+      if (this.options.disableConnectivityCheck) {
+        this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
+          callback(null, true);
+        };
+      } else {
+        this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+          Logger.logAction(
+            Logger.LOG_MICRO,
+            '(XHRRequest)Http.checkConnectivity()',
+            'Sending; ' + connectivityCheckUrl
+          );
+          this.doUri(
+            HttpMethods.Get,
+            null as any,
+            connectivityCheckUrl,
+            null,
+            null,
+            connectivityCheckParams,
+            function (
+              err?: ErrorInfo | ErrnoException | null,
+              responseText?: unknown,
+              headers?: any,
+              packed?: boolean,
+              statusCode?: number
+            ) {
+              let result = false;
+              if (!connectivityUrlIsDefault) {
+                result = !err && isSuccessCode(statusCode as number);
+              } else {
+                result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+              }
+              Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+              callback(null, result);
+            }
+          );
+        };
+      }
     } else if (Platform.Config.jsonpSupported) {
       this.Request = function (
         method: HttpMethods,
@@ -114,36 +146,41 @@ const Http: typeof IHttp = class {
         return req;
       };
 
-      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) {
-        const upUrl = Defaults.jsonpInternetUpUrl;
+      if (this.options.disableConnectivityCheck) {
+        this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
+          callback(null, true);
+        };
+      } else {
+        this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) {
+          const upUrl = Defaults.jsonpInternetUpUrl;
 
-        if (this.checksInProgress) {
-          this.checksInProgress.push(callback);
-          return;
-        }
-        this.checksInProgress = [callback];
-        Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
+          if (this.checksInProgress) {
+            this.checksInProgress.push(callback);
+            return;
+          }
+          this.checksInProgress = [callback];
+          Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
 
         const req = new Request(
-          'isTheInternetUp',
-          upUrl as string,
-          null,
-          null,
-          null,
-          XHRStates.REQ_SEND,
-          Defaults.TIMEOUTS
-        );
-        req.once('complete', (err: Error, response: string) => {
-          const result = !err && response;
-          Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
-          for (let i = 0; i < (this.checksInProgress as Array<StandardCallback<boolean>>).length; i++)
-            (this.checksInProgress as Array<StandardCallback<boolean>>)[i](null, result);
-          this.checksInProgress = null;
-        });
-        Platform.Config.nextTick(function () {
-          req.exec();
-        });
-      };
+            'isTheInternetUp',
+            upUrl as string,
+            null,
+            null,
+            null,
+            XHRStates.REQ_SEND,
+            Defaults.TIMEOUTS
+          );
+          req.once('complete', (err: Error, response: string) => {
+            const result = !err && response;
+            Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
+            for (let i = 0; i < (this.checksInProgress as Array<StandardCallback<boolean>>).length; i++)
+              (this.checksInProgress as Array<StandardCallback<boolean>>)[i](null, result);
+            this.checksInProgress = null;
+          });
+          Platform.Config.nextTick(function () {
+            req.exec();
+          });
+        };
     } else if (Platform.Config.fetchSupported) {
       this.supportsAuthHeaders = true;
       this.Request = fetchRequest;

@@ -1,6 +1,5 @@
 import * as Utils from '../../../../common/lib/util/utils';
 import CometTransport from '../../../../common/lib/transport/comettransport';
-import Logger from '../../../../common/lib/util/logger';
 import Platform from '../../../../common/platform';
 import XHRRequest from './xhrrequest';
 
@@ -16,20 +15,6 @@ var XHRStreamingTransport = function (connectionManager) {
 
   XHRStreamingTransport.isAvailable = function () {
     return Platform.Config.xhrSupported && Platform.Config.streamingSupported && Platform.Config.allowComet;
-  };
-
-  XHRStreamingTransport.tryConnect = function (connectionManager, auth, params, callback) {
-    var transport = new XHRStreamingTransport(connectionManager, auth, params);
-    var errorCb = function (err) {
-      callback({ event: this.event, error: err });
-    };
-    transport.on(['failed', 'disconnected'], errorCb);
-    transport.on('preconnect', function () {
-      Logger.logAction(Logger.LOG_MINOR, 'XHRStreamingTransport.tryConnect()', 'viable transport ' + transport);
-      transport.off(['failed', 'disconnected'], errorCb);
-      callback(null, transport);
-    });
-    transport.connect();
   };
 
   XHRStreamingTransport.prototype.toString = function () {

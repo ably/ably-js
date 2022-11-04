@@ -17,7 +17,6 @@ class Connection extends EventEmitter {
   key?: string;
   id?: string;
   serial: undefined;
-  timeSerial: undefined;
   recoveryKey?: string | null;
   errorReason: ErrorInfo | null;
 
@@ -29,7 +28,6 @@ class Connection extends EventEmitter {
     this.key = undefined;
     this.id = undefined;
     this.serial = undefined;
-    this.timeSerial = undefined;
     this.recoveryKey = undefined;
     this.errorReason = null;
 

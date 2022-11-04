@@ -60,8 +60,8 @@ class Channels extends EventEmitter {
   constructor(realtime: Realtime) {
     super();
     this.realtime = realtime;
-    this.all = {};
-    this.inProgress = {};
+    this.all = Object.create(null);
+    this.inProgress = Object.create(null);
     realtime.connection.connectionManager.on('transport.active', () => {
       this.onTransportActive();
     });
@@ -99,7 +99,7 @@ class Channels extends EventEmitter {
       if (channel.state === 'attaching' || channel.state === 'detaching') {
         channel.checkPendingState();
       } else if (channel.state === 'suspended') {
-        channel.attach();
+        channel._attach(false, null);
       }
     }
   }

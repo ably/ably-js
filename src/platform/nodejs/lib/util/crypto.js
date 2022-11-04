@@ -174,7 +174,7 @@ var Crypto = (function () {
    * Generate a random encryption key from the supplied keylength (or the
    * default keyLength if none supplied) as a Buffer
    * @param keyLength (optional) the required keyLength in bits
-   * @param callback (err, key)
+   * @param callback (optional) (err, key)
    */
   Crypto.generateRandomKey = function (keyLength, callback) {
     if (arguments.length == 1 && typeof keyLength == 'function') {

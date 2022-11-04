@@ -468,6 +468,32 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               closeAndFinish(done, realtime, err);
             });
         });
+
+        it('anyEventsWithOnce', function (done) {
+          var realtime = helper.AblyRealtime({ autoConnect: false }),
+            eventEmitter = realtime.connection;
+
+          const p = eventEmitter.once();
+          eventEmitter.emit('b');
+          p.then(function () {
+            closeAndFinish(done, realtime);
+          }).catch(function (err) {
+            closeAndFinish(done, realtime, err);
+          });
+        });
+
+        it('arrayOfEventsWithOnce', function (done) {
+          var realtime = helper.AblyRealtime({ autoConnect: false }),
+            eventEmitter = realtime.connection;
+
+          const p = eventEmitter.once(['a', 'b', 'c']);
+          eventEmitter.emit('b');
+          p.then(function () {
+            closeAndFinish(done, realtime);
+          }).catch(function (err) {
+            closeAndFinish(done, realtime, err);
+          });
+        });
       });
     }
   });

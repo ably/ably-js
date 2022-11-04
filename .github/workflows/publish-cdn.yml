@@ -9,6 +9,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # These permissions are necessary to run the configure-aws-credentials action
     permissions:
       id-token: write
       contents: read
@@ -25,5 +26,4 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: npm run build
       - run: node scripts/cdn_deploy.js --skipCheckout --tag=${{ github.event.inputs.version }}

@@ -295,6 +295,17 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     }
   }
 
+  let connectivityCheckParams = null;
+  let connectivityCheckUrl = options.connectivityCheckUrl;
+  if (options.connectivityCheckUrl) {
+    let [uri, qs] = options.connectivityCheckUrl.split('?');
+    connectivityCheckParams = qs ? Utils.parseQueryString(qs) : {};
+    if (uri.indexOf('://') === -1) {
+      uri = 'https://' + uri;
+    }
+    connectivityCheckUrl = uri;
+  }
+
   return {
     ...options,
     useBinaryProtocol:
@@ -305,6 +316,8 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     restHost,
     maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
     timeouts,
+    connectivityCheckParams,
+    connectivityCheckUrl,
   };
 }
 
