@@ -4,7 +4,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
   var rest;
   var expect = chai.expect;
 
-  describe('rest/http/fetch', function(){
+  describe('rest/http/fetch', function () {
     this.timeout(60 * 1000);
     before(function (done) {
       Ably.Rest.Platform.Config.xhrSupported = false;
@@ -19,15 +19,15 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
-    after((done)=>{
+    after((done) => {
       Ably.Rest.Platform.Config.xhrSupported = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest();
       Ably.Rest.Platform.Config.jsonpSupported = typeof document !== 'undefined';
       done();
     });
 
-    it('Should use fetch when XHR and JSONP are not supported', function(done){
+    it('Should use fetch when XHR and JSONP are not supported', function (done) {
       let oldFetch = window.fetch;
-      window.fetch = ()=>{
+      window.fetch = () => {
         done();
         window.fetch = oldFetch;
       };
@@ -35,17 +35,17 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       channel.publish('test', 'Testing fetch support');
     });
 
-    it('Should succeed in using fetch to publish a message', function(done){
+    it('Should succeed in using fetch to publish a message', function (done) {
       const channel = rest.channels.get('http_test_channel');
-      channel.publish('test', 'Testing fetch support', (err)=>{
+      channel.publish('test', 'Testing fetch support', (err) => {
         expect(err).to.not.exist;
         done();
       });
     });
 
-    it('Should pass errors correctly', function(done){
+    it('Should pass errors correctly', function (done) {
       const channel = rest.channels.get('');
-      channel.publish('test', 'Invalid message', (err)=>{
+      channel.publish('test', 'Invalid message', (err) => {
         expect(err).to.exist;
         done();
       });
