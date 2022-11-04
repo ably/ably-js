@@ -15,7 +15,6 @@ import fetchRequest from '../transport/fetchrequest';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 
-
 function shouldFallback(errorInfo: ErrorInfo) {
   const statusCode = errorInfo.statusCode as number;
   /* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
@@ -55,9 +54,6 @@ const Http: typeof IHttp = class {
     const connectivityCheckUrl = this.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
     const connectivityCheckParams = this.options.connectivityCheckParams;
     const connectivityUrlIsDefault = !this.options.connectivityCheckUrl;
-
-  constructor() {
-   if (Platform.Config.xhrSupported) {
     if (Platform.Config.xhrSupported) {
       this.supportsAuthHeaders = true;
       this.Request = function (
@@ -82,7 +78,6 @@ const Http: typeof IHttp = class {
         req.exec();
         return req;
       };
-
       if (this.options.disableConnectivityCheck) {
         this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
           callback(null, true);
@@ -161,7 +156,7 @@ const Http: typeof IHttp = class {
           this.checksInProgress = [callback];
           Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
 
-        const req = new Request(
+          const req = new Request(
             'isTheInternetUp',
             upUrl as string,
             null,
@@ -181,16 +176,16 @@ const Http: typeof IHttp = class {
             req.exec();
           });
         };
+      }
     } else if (Platform.Config.fetchSupported) {
       this.supportsAuthHeaders = true;
       this.Request = fetchRequest;
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
-        const upUrl = Defaults.internetUpUrl;
-        Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + upUrl);
+        Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
         this.doUri(
           HttpMethods.Get,
           null as any,
-          upUrl,
+          connectivityCheckUrl,
           null,
           null,
           null,
@@ -201,11 +196,11 @@ const Http: typeof IHttp = class {
           }
         );
       };
-    }else{
-     this.Request = (method, rest, uri, headers, params, body, callback) => {
-       callback(new ErrorInfo("no supported HTTP transports available", null, 400), null);
-     }
-   }
+    } else {
+      this.Request = (method, rest, uri, headers, params, body, callback) => {
+        callback(new ErrorInfo('no supported HTTP transports available', null, 400), null);
+      };
+    }
   }
 
   /* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
