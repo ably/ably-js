@@ -1,3 +1,4 @@
+name: Test NodeJS
 on:
   pull_request:
   push:
