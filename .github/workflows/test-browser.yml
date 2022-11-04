@@ -1,3 +1,4 @@
+name: Test browser
 on:
   pull_request:
   push:
@@ -5,7 +6,7 @@ on:
       - main
 
 jobs:
-  test-playwright:
+  test-browser:
     runs-on: ubuntu-20.04
     continue-on-error: true
     strategy:

@@ -1,3 +1,4 @@
+name: Bundle size report
 on:
   pull_request:
   push:
