@@ -29,14 +29,14 @@ export interface IPlatform {
   nextTick: process.nextTick;
   inspect: (value: unknown) => string;
   stringByteSize: Buffer.byteLength;
-  addEventListener: typeof global.addEventListener | null;
+  addEventListener?: typeof window.addEventListener | typeof global.addEventListener | null;
   Promise: typeof Promise;
   getRandomValues?: (arr: TypedArray, callback?: (error?: Error | null) => void) => void;
   userAgent?: string | null;
   inherits?: typeof import('util').inherits;
-  addEventListener?: typeof window.addEventListener;
   currentUrl?: string;
   noUpgrade?: boolean | string;
+  fetchSupported?: boolean;
   xhrSupported?: boolean;
   jsonpSupported?: boolean;
   allowComet?: boolean;

@@ -239,4 +239,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       heartbeatWithTransport(done);
     });
   });
+
+
 });

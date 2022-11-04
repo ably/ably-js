@@ -5,6 +5,7 @@ import { RequestCallback, RequestParams } from 'common/types/http';
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import * as Utils from 'common/lib/util/utils';
+import { getGlobalObject } from "common/lib/util/utils";
 
 function isAblyError(responseBody: unknown, headers: Headers): responseBody is { error?: ErrorInfo } {
   return !!headers.get('x-ably-errorcode');
@@ -38,9 +39,7 @@ export default function fetchRequest(
     rest ? rest.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
   );
 
-  console.log({ uri, _method, headers, body });
-
-  fetch(uri + '?' + new URLSearchParams(params || {}), {
+  getGlobalObject().fetch(uri + '?' + new URLSearchParams(params || {}), {
     method: _method,
     headers: fetchHeaders,
     body: body as any,
@@ -49,67 +48,29 @@ export default function fetchRequest(
     .then((res) => {
       clearTimeout(timeout);
       const contentType = res.headers.get('Content-Type');
-      console.log(`Request to ${uri + '?' + new URLSearchParams(params || {})}`);
-      console.log(`Response status: ${res.status} with Content-Type: ${contentType}`);
-      if (!res.ok) {
-        if (!contentType) {
-          // TODO
-          callback(new ErrorInfo('Not implemented', null, res.status), null, res.headers, true, res.status);
-          return;
+      let prom;
+      if(contentType && contentType.indexOf('application/x-msgpack') > -1){
+        prom = res.arrayBuffer();
+      }else if(contentType && contentType.indexOf("application/json") > -1) {
+        prom = res.json();
+      }else{
+        prom = res.text();
+      }
+      prom.then((body) => {
+        const packed = !!contentType && contentType.indexOf('application/x-msgpack') === -1;
+        if(!res.ok) {
+          const err =
+            getAblyError(body, res.headers) ||
+            new ErrorInfo(
+              'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
+              null,
+              res.status
+            );
+          callback(err, body, res.headers, packed, res.status);
+        }else{
+          callback(null, body, res.headers, packed, res.status);
         }
-        if (contentType && contentType.indexOf('application/json') > -1) {
-          res.json().then((body) => {
-            console.log('here');
-            console.log(body);
-            const err =
-              getAblyError(body, res.headers) ||
-              new ErrorInfo(
-                'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
-                null,
-                res.status
-              );
-            callback(err, body, res.headers, true, res.status);
-          });
-        } else {
-          // TODO
-          callback(new ErrorInfo('Not implemented', 50000));
-        }
-        return;
-      }
-      if (!contentType) {
-        callback(null, body, res.headers, true, res.status);
-        return;
-      }
-      if (contentType.indexOf('application/json') > -1) {
-        res.text().then((text) => {
-          console.log({ text });
-          const body = JSON.parse(text);
-          callback(null, body, res.headers, true, res.status);
-        });
-        // res
-        //   .json()
-        //   .then((body) => {
-        //     callback(null, body, res.headers, true, res.status);
-        //     return;
-        //   })
-        //   .catch((err) => {
-        //     console.log(err);
-        //     res.text().then((body) => {
-        //       console.log(body);
-        //     });
-        //   });
-      }
-      if (contentType.indexOf('application/x-msgpack') > -1) {
-        res.arrayBuffer().then((body) => {
-          callback(null, body, res.headers, false, res.status);
-        });
-      }
-      if (contentType.indexOf('text/plain') > -1 || contentType.indexOf('application/jwt') > -1) {
-        res.text().then((body) => {
-          callback(null, body, res.headers, true);
-          return;
-        });
-      }
+      });
     })
     .catch((err) => {
       clearTimeout(timeout);

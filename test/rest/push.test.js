@@ -30,7 +30,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     },
   };
 
-  describe.only('rest/push', function () {
+  describe('rest/push', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
@@ -39,7 +39,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    it.only('Get subscriptions', function (done) {
+    it('Get subscriptions', function (done) {
       var subscribes = [];
       var deletes = [];
       var subsByChannel = {};
