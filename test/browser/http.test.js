@@ -6,7 +6,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
   describe('rest/http/fetch', function () {
     this.timeout(60 * 1000);
+    let initialXhrSupported, initialJsonpSupported;
     before(function (done) {
+      initialXhrSupported = Ably.Rest.Platform.Config.xhrSupported;
+      initialJsonpSupported = Ably.Rest.Platform.Config.jsonpSupported;
       Ably.Rest.Platform.Config.xhrSupported = false;
       Ably.Rest.Platform.Config.jsonpSupported = false;
       helper.setupApp(function () {
@@ -16,8 +19,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     after((done) => {
-      Ably.Rest.Platform.Config.xhrSupported = window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest();
-      Ably.Rest.Platform.Config.jsonpSupported = typeof document !== 'undefined';
+      Ably.Rest.Platform.Config.xhrSupported = initialXhrSupported;
+      Ably.Rest.Platform.Config.jsonpSupported = initialJsonpSupported;
       done();
     });
 
