@@ -10,11 +10,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       Ably.Rest.Platform.Config.xhrSupported = false;
       Ably.Rest.Platform.Config.jsonpSupported = false;
       helper.setupApp(function () {
-        rest = helper.AblyRest({
-          agents: {
-            'custom-agent': '0.1.2',
-          },
-        });
+        rest = helper.AblyRest();
         done();
       });
     });
