@@ -2,6 +2,24 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.31](https://github.com/ably/ably-js/tree/1.2.31) (2022-11-08)
+
+In the latest release of ably-js, we’ve added jsdoc comments for the public methods and properties provided by the SDK so you can quickly access the descriptions directly in your code editor using Intelligent code completion features like Intellisense in VSCode.
+
+We have also implemented the fetch API as a fallback HTTP transport so that ably-js is now fully functional in a service worker context.
+
+**How do I give feedback?**
+This docs update and further planned changes are based on feedback from customers like you. So if you’d like to share any other requests or feedback, please [reach out to us](https://ably.com/contact) and help us make Ably better for everyone.
+
+- Add JSDoc annotations to `ably.d.ts` [\#897](https://github.com/ably/ably-js/pull/897)
+- Implement fetch as fallback if XHR and JSONP unsupported [\#1019](https://github.com/ably/ably-js/pull/1019)
+- [EDX-158] Generate docs with TypeDoc and upload to sdk.ably.com [\#1017](https://github.com/ably/ably-js/pull/1017)
+- [EDX-149] Add canonical docstring comments [\#1026](https://github.com/ably/ably-js/pull/1026)
+- [EDX-207] Add intro blurb to generated documentation [\#1055](https://github.com/ably/ably-js/pull/1055)
+- Add missing/undocumented docstrings [\#1064](https://github.com/ably/ably-js/pull/1064)
+- fix: stop mutating `Defaults.agent` on client init [\#1068](https://github.com/ably/ably-js/pull/1068)
+
+
 ## [1.2.30](https://github.com/ably/ably-js/tree/1.2.30) (2022-10-05)
 - Add `connectivityCheckUrl` and `disableConnectivityCheck` client options [\#1051](https://github.com/ably/ably-js/pull/1051)
 - Fix EventEmitter.once when using array with promises [\#1046](https://github.com/ably/ably-js/pull/1046)
