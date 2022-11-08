@@ -11,6 +11,7 @@ import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
 import { createRequest, Request } from '../transport/jsonptransport';
+import fetchRequest from '../transport/fetchrequest';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 
@@ -53,7 +54,6 @@ const Http: typeof IHttp = class {
     const connectivityCheckUrl = this.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
     const connectivityCheckParams = this.options.connectivityCheckParams;
     const connectivityUrlIsDefault = !this.options.connectivityCheckUrl;
-
     if (Platform.Config.xhrSupported) {
       this.supportsAuthHeaders = true;
       this.Request = function (
@@ -78,7 +78,6 @@ const Http: typeof IHttp = class {
         req.exec();
         return req;
       };
-
       if (this.options.disableConnectivityCheck) {
         this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
           callback(null, true);
@@ -178,6 +177,29 @@ const Http: typeof IHttp = class {
           });
         };
       }
+    } else if (Platform.Config.fetchSupported) {
+      this.supportsAuthHeaders = true;
+      this.Request = fetchRequest;
+      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+        Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
+        this.doUri(
+          HttpMethods.Get,
+          null as any,
+          connectivityCheckUrl,
+          null,
+          null,
+          null,
+          function (err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
+            const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+            Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
+            callback(null, result);
+          }
+        );
+      };
+    } else {
+      this.Request = (method, rest, uri, headers, params, body, callback) => {
+        callback(new ErrorInfo('no supported HTTP transports available', null, 400), null);
+      };
     }
   }
 

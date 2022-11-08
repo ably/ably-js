@@ -32,6 +32,7 @@ const Platform: IPlatform = {
   noUpgrade: userAgent && !!userAgent.match(/MSIE\s8\.0/),
   binaryType: 'arraybuffer',
   WebSocket: globalObject.WebSocket,
+  fetchSupported: !!globalObject.fetch,
   xhrSupported: globalObject.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
   jsonpSupported: typeof document !== 'undefined',
   allowComet: allowComet(),
