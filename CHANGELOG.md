@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.32](https://github.com/ably/ably-js/tree/1.2.32) (2022-11-09)
+- fix: add EventEmitter.off signature with no args [\#1073](https://github.com/ably/ably-js/pull/1073)
+
 ## [1.2.31](https://github.com/ably/ably-js/tree/1.2.31) (2022-11-08)
 
 In the latest release of ably-js, we’ve added jsdoc comments for the public methods and properties provided by the SDK so you can quickly access the descriptions directly in your code editor using Intelligent code completion features like Intellisense in VSCode.
