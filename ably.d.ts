@@ -2299,6 +2299,12 @@ declare namespace Types {
      */
     history(params?: RestHistoryParams, callback?: paginatedResultCallback<Message>): void;
     /**
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     *
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
+     */
+    history(callback?: paginatedResultCallback<Message>): void;
+    /**
      * Publishes a single message to the channel with the given event name and payload.
      *
      * @param name - The name of the message.
