@@ -1915,6 +1915,19 @@ declare namespace Types {
      */
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback): void;
     /**
+     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} passed in as the new default, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} object passed in entirely replaces, as opposed to being merged with, the current client library saved value.
+     *
+     * @param tokenParams - A {@link TokenParams} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
+     */
+    authorize(tokenParams?: TokenParams, callback?: tokenDetailsCallback): void;
+    /**
+     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained.
+     *
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
+     */
+    authorize(callback?: tokenDetailsCallback): void;
+    /**
      * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
      * @param tokenParams - A {@link TokenParams} object.
@@ -1927,6 +1940,19 @@ declare namespace Types {
       callback?: tokenRequestCallback
     ): void;
     /**
+     * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenParams} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. When the {@link TokenRequest} is omitted or `null`, the default token parameters for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     *
+     * @param tokenParams - A {@link TokenParams} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
+     */
+    createTokenRequest(tokenParams?: TokenParams | null, callback?: tokenRequestCallback): void;
+    /**
+     * Creates and signs an Ably {@link TokenRequest} based on the the client library stored {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. The default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     *
+     * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
+     */
+    createTokenRequest(callback?: tokenRequestCallback): void;
+    /**
      * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
      * @param TokenParams - A {@link TokenParams} object.
@@ -1938,6 +1964,19 @@ declare namespace Types {
       authOptions?: AuthOptions | null,
       callback?: tokenDetailsCallback
     ): void;
+    /**
+     * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams}. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     *
+     * @param TokenParams - A {@link TokenParams} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
+     */
+    requestToken(TokenParams?: TokenParams | null, callback?: tokenDetailsCallback): void;
+    /**
+     * Calls the `requestToken` REST API endpoint to obtain an Ably Token. The default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     *
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
+     */
+    requestToken(callback?: tokenDetailsCallback): void;
   }
 
   /**
