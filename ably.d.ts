@@ -1594,6 +1594,10 @@ declare namespace Types {
      */
     off(callback: CallbackType): void;
     /**
+     * Deregisters all registrations, for all events and listeners.
+     */
+    off(): void;
+    /**
      * Returns the listeners for a specified `EventType`.
      *
      * @param eventName - The event name to retrieve the listeners for.
