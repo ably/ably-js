@@ -1915,6 +1915,19 @@ declare namespace Types {
      */
     authorize(tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback): void;
     /**
+     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} passed in as the new default, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} object passed in entirely replaces, as opposed to being merged with, the current client library saved value.
+     *
+     * @param tokenParams - A {@link TokenParams} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
+     */
+    authorize(tokenParams?: TokenParams, callback?: tokenDetailsCallback): void;
+    /**
+     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained.
+     *
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
+     */
+    authorize(callback?: tokenDetailsCallback): void;
+    /**
      * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
      * @param tokenParams - A {@link TokenParams} object.
@@ -1927,6 +1940,19 @@ declare namespace Types {
       callback?: tokenRequestCallback
     ): void;
     /**
+     * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenParams} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. When the {@link TokenRequest} is omitted or `null`, the default token parameters for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     *
+     * @param tokenParams - A {@link TokenParams} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
+     */
+    createTokenRequest(tokenParams?: TokenParams | null, callback?: tokenRequestCallback): void;
+    /**
+     * Creates and signs an Ably {@link TokenRequest} based on the the client library stored {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. The default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     *
+     * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
+     */
+    createTokenRequest(callback?: tokenRequestCallback): void;
+    /**
      * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
      *
      * @param TokenParams - A {@link TokenParams} object.
@@ -1938,6 +1964,19 @@ declare namespace Types {
       authOptions?: AuthOptions | null,
       callback?: tokenDetailsCallback
     ): void;
+    /**
+     * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams}. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     *
+     * @param TokenParams - A {@link TokenParams} object.
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
+     */
+    requestToken(TokenParams?: TokenParams | null, callback?: tokenDetailsCallback): void;
+    /**
+     * Calls the `requestToken` REST API endpoint to obtain an Ably Token. The default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
+     *
+     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
+     */
+    requestToken(callback?: tokenDetailsCallback): void;
   }
 
   /**
@@ -2080,12 +2119,24 @@ declare namespace Types {
      */
     get(params?: RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
     /**
+     * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
+     *
+     * @param callback - A function which, upon success, will be called with an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
+     */
+    get(callback?: realtimePresenceGetCallback): void;
+    /**
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param params - A set of parameters which are used to specify which presence messages should be retrieved.
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
+    /**
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
+     *
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
+     */
+    history(callback?: paginatedResultCallback<PresenceMessage>): void;
     /**
      * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set.
      *
@@ -2106,12 +2157,18 @@ declare namespace Types {
      */
     subscribe(listener: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
     /**
-     * Enters the presence set for the channel, optionally passing a `data` payload. A `clientId` is required to be present on a channel.
+     * Enters the presence set for the channel, passing a `data` payload. A `clientId` is required to be present on a channel.
      *
      * @param data - The payload associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     enter(data?: any, callback?: errorCallback): void;
+    /**
+     * Enters the presence set for the channel. A `clientId` is required to be present on a channel.
+     *
+     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     */
+    enter(callback?: errorCallback): void;
     /**
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
@@ -2127,6 +2184,12 @@ declare namespace Types {
      */
     leave(data?: any, callback?: errorCallback): void;
     /**
+     * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
+     *
+     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     */
+    leave(callback?: errorCallback): void;
+    /**
      * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to enter into the presence set.
@@ -2134,6 +2197,13 @@ declare namespace Types {
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     enterClient(clientId: string, data?: any, callback?: errorCallback): void;
+    /**
+     * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
+     *
+     * @param clientId - The ID of the client to enter into the presence set.
+     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     */
+    enterClient(clientId: string, callback?: errorCallback): void;
     /**
      * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
@@ -2150,6 +2220,13 @@ declare namespace Types {
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     leaveClient(clientId: string, data?: any, callback?: errorCallback): void;
+    /**
+     * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
+     *
+     * @param clientId - The ID of the client to leave the presence set for.
+     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     */
+    leaveClient(clientId: string, callback?: errorCallback): void;
   }
 
   /**
@@ -2260,6 +2337,12 @@ declare namespace Types {
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
      */
     history(params?: RestHistoryParams, callback?: paginatedResultCallback<Message>): void;
+    /**
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     *
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
+     */
+    history(callback?: paginatedResultCallback<Message>): void;
     /**
      * Publishes a single message to the channel with the given event name and payload.
      *
@@ -2479,6 +2562,12 @@ declare namespace Types {
      * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
      */
     history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<Message>): void;
+    /**
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     *
+     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
+     */
+    history(callback?: paginatedResultCallback<Message>): void;
     /**
      * Sets the {@link ChannelOptions} for the channel.
      *
