@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.33](https://github.com/ably/ably-js/tree/1.2.33) (2022-11-11)
+- Fix some callback typings [\#1075](https://github.com/ably/ably-js/pull/1075)
+
 ## [1.2.32](https://github.com/ably/ably-js/tree/1.2.32) (2022-11-09)
 - fix: add EventEmitter.off signature with no args [\#1073](https://github.com/ably/ably-js/pull/1073)
 
