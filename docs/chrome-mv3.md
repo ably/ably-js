@@ -1,7 +1,7 @@
 # Using Ably in a Chrome Extension with Manifest v3
 
 In Manifest V3, Chrome extensions can [no longer use background pages in favor of service workers](https://developer.chrome.com/docs/extensions/mv3/migrating_to_service_workers/).
-Chrome will [mark a service worker as inactive even if an active websocket connection is made](https://bugs.chromium.org/p/chromium/issues/detail?id=1152255).
+Chrome will [mark a service worker as inactive even if an active WebSocket connection is made](https://bugs.chromium.org/p/chromium/issues/detail?id=1152255).
 This causes Ably to disconnect and new messages will not be received.
 Unfortunately, this appears to be intended design so workarounds are needed to keep the service worker alive in order to continue receiving messages. Multiple workarounds are available, depending on your use-case.
 
