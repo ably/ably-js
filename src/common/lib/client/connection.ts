@@ -71,6 +71,10 @@ class Connection extends EventEmitter {
     this.connectionManager.requestState({ state: 'closing' });
   }
 
+  get recoveryKey(): string | null {
+    return this.createRecoveryKey();
+  }
+
   createRecoveryKey(): string | null {
     return this.connectionManager.createRecoveryKey();
   }
