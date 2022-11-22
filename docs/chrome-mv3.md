@@ -1,13 +1,15 @@
 # Using Ably in a Chrome Extension with Manifest v3
 
-In Manifest V3, Chrome Extensions can [no longer use background pages in favour of Service Workers](https://developer.chrome.com/docs/extensions/mv3/migrating_to_service_workers/).
-Chrome will [mark a Service Worker as inactive even if an active websocket connection is made](https://bugs.chromium.org/p/chromium/issues/detail?id=1152255).
+In Manifest V3, Chrome extensions can [no longer use background pages in favor of service workers](https://developer.chrome.com/docs/extensions/mv3/migrating_to_service_workers/).
+Chrome will [mark a service worker as inactive even if an active websocket connection is made](https://bugs.chromium.org/p/chromium/issues/detail?id=1152255).
 This causes Ably to disconnect and new messages will not be received.
-Unfortunately, this appears to be intended design so workarounds are needed to keep the Service Worker alive in order to continue receiving messages. Multiple workarounds are available, depending on your use-case.
+Unfortunately, this appears to be intended design so workarounds are needed to keep the service worker alive in order to continue receiving messages. Multiple workarounds are available, depending on your use-case.
 
 
 ### Using alarms
-Alarms will extend the activity timer of a Service Worker or wake up an inactive Service Worker.
+Alarms will reset the service worker's inactivity timer, or wake up an inactive service worker.
+The alarm must have a period of less than 5 minutes in order to keep a service worker active consistently.
+The minimum period required depends on the actions that your service worker performs, but it has to be at most 4.9 minutes.
 Requires permission `alarms` to be added to manifest.json:
 ```json
 {
@@ -27,7 +29,7 @@ chrome.alarms.onAlarm.addListener(() => {
 
 
 ### Connecting to a nativeMessaging host
-If your Chrome Extension connects to a native application, a Service Worker which is attached to a native application will not be marked as inactive as long as the native application is alive. To ensure that the native application exiting does not mark your Service Worker as inactive, make sure the connection can survive a restart of the native application.
+If your Chrome extension connects to a native application, a service worker which is attached to a native application will not be marked as inactive as long as the native application is alive. To ensure that the native application exiting does not mark your service worker as inactive, make sure the connection can survive a restart of the native application.
 
 ```js
 var port = chrome.runtime.connectNative('com.example.extension');
@@ -40,7 +42,7 @@ port.onDisconnect.addListener(function() {
 [More Info](https://developer.chrome.com/docs/apps/nativeMessaging/)
 
 ### Connecting to a tab
-If your Chrome Extension requires broad host permissions (e.g. `*://*/*`), connecting to a tab will keep your Service Worker active.
+If your Chrome extension requires broad host permissions (e.g. `*://*/*`), connecting to a tab will keep your service worker active.
 Requires `scripting` permission to be added to manifest.json:
 ```json
 {
@@ -74,11 +76,12 @@ function connect() {
   chrome.runtime.connect({name: 'keepAlive'})
     .onDisconnect.addListener(connect);
 }
-
 ```
 
+[More Info](https://developer.chrome.com/docs/extensions/reference/scripting/)
+
 ### Connecting to a port
-If you connect to a port, the Service Worker's inactivity timer will be reset. However, the port must be reconnected at an interval less than 5 minutes or the SW will be marked as inactive.
+If you connect to a port, the service worker's inactivity timer will be reset. However, the port must be reconnected at an interval less than 5 minutes or the SW will be marked as inactive.
 
 ```js
 chrome.runtime.onConnect.addListener(port => {
@@ -103,4 +106,5 @@ function deleteTimer(port) {
 [More Info](https://developer.chrome.com/docs/extensions/reference/runtime/#method-connect)
 
 ### Enterprise Extensions
-[Enterprise extensions will continue to work on manifest v2 until January 2024](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/). If your extension is installed as part of an enterprise policy, this means that you will have an extra year to continue using manifest v2.
+[Enterprise extensions will continue to work on manifest v2 until January 2024](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset/).
+If your extension is installed as part of an enterprise policy, this means that you will have until January 2024 to continue using manifest v2.
