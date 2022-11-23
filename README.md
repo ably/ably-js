@@ -559,7 +559,7 @@ const ablyRestPromiseExample = async () => {
   // Fetching the Ably service time
   const time = await client.time();
   console.log(`Ably service time: ${time}`);
-  
+
   client.close();
 };
 
