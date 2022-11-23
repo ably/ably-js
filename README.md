@@ -559,7 +559,7 @@ const ablyRestPromiseExample = async () => {
   // Fetching the Ably service time
   const time = await client.time();
   console.log(`Ably service time: ${time}`);
-  
+
   client.close();
 };
 
@@ -588,6 +588,11 @@ This library currently does not support being the [target of a push notification
 #### Browser-specific issues
 
 - ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.com/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
+
+#### Manifest v3 Chrome Extensions
+Chrome extensions built with Manifest v3 require service workers instead of background pages.
+This is supported in Ably via the [Web Worker build](#supported-platforms), however [workarounds](docs/chrome-mv3.md) are required to ensure Chrome does not mark the service worker as inactive.
+
 
 ## Contributing
 
