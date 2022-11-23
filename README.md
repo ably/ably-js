@@ -590,8 +590,8 @@ This library currently does not support being the [target of a push notification
 - ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.com/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
 
 #### Manifest v3 Chrome Extensions
-Chrome extensions built with manifest v3 require Service Workers instead of background pages.
-This is supported in Ably via the [Web Worker build](#supported-platforms), however [workarounds](docs/chrome-mv3.md) are required to ensure Chrome does not mark the Service Worker as inactive.
+Chrome extensions built with Manifest v3 require service workers instead of background pages.
+This is supported in Ably via the [Web Worker build](#supported-platforms), however [workarounds](docs/chrome-mv3.md) are required to ensure Chrome does not mark the service worker as inactive.
 
 
 ## Contributing
