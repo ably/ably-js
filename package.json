@@ -1,5 +1,5 @@
 {
-  "name": "ably",
+  "name": "ably-1.2.34-pre-release",
   "description": "Realtime client library for Ably, the realtime messaging service",
   "version": "1.2.34",
   "license": "Apache-2.0",
@@ -100,7 +100,7 @@
     "lint:fix": "eslint --fix .",
     "check-closure-compiler": "grunt check-closure-compiler",
     "prepare": "npm run build",
-    "format": "prettier --write --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js docs/chrome-mv3.md",
+    "format": "prettier --write --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
     "format:check": "prettier --check --ignore-path .gitignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js",
