@@ -1,0 +1,7 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily" # weekdays (Monday to Friday)
+    labels: [ ] # prevent the default `dependencies` label from being added to pull requests
