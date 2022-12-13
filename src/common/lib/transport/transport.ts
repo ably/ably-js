@@ -156,7 +156,7 @@ abstract class Transport extends EventEmitter {
       case actions.SYNC:
         if (message.connectionId !== undefined) {
           /* a transport SYNC */
-          this.emit('sync', message.connectionId, message);
+          this.emit('sync', message.connectionId, message.connectionId);
           break;
         }
         /* otherwise it's a channel SYNC, so handle it in the channel */
