@@ -100,6 +100,10 @@ class Channels extends EventEmitter {
         channel.checkPendingState();
       } else if (channel.state === 'suspended') {
         channel._attach(false, null);
+      } else if (channel.state === 'attached') {
+        // Note explicity request the state, channel.attach() would do nothing
+        // as its already attached.
+        channel.requestState('attaching');
       }
     }
   }
