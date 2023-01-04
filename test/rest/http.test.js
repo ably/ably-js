@@ -50,8 +50,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         }
       }
 
-      var do_inner = Ably.Realtime.Platform.Http.do;
-      Ably.Rest.Platform.Http.do = testRequestHandler;
+      rest.http.do = testRequestHandler;
 
       // Call all methods that use rest http calls
       rest.auth.requestToken();
@@ -60,9 +59,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var channel = rest.channels.get('http_test_channel');
       channel.publish('test', 'Testing http headers');
       channel.presence.get();
-
-      // Clean interceptors from Http.do
-      Ably.Rest.Platform.Http.do = do_inner;
 
       done();
     });
