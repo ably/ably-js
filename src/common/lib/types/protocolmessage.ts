@@ -70,7 +70,7 @@ class ProtocolMessage {
   connectionKey?: string;
   connectionSerial?: number;
   channel?: string;
-  channelSerial?: number | null;
+  channelSerial?: string | null;
   msgSerial?: number;
   messages?: Message[];
   presence?: PresenceMessage[];
