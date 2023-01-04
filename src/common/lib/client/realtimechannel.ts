@@ -61,7 +61,10 @@ class RealtimeChannel extends Channel {
     Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
   >;
   syncChannelSerial?: string | null;
-  properties: { attachSerial: string | null | undefined };
+  properties: {
+    attachSerial: string | null | undefined;
+    channelSerial: string | null | undefined;
+  };
   errorReason: ErrorInfo | string | null;
   _requestedFlags: Array<API.Types.ChannelMode> | null;
   _mode?: null | number;
@@ -91,6 +94,7 @@ class RealtimeChannel extends Channel {
     this.syncChannelSerial = undefined;
     this.properties = {
       attachSerial: undefined,
+      channelSerial: undefined,
     };
     this.setOptions(options);
     this.errorReason = null;
@@ -349,6 +353,9 @@ class RealtimeChannel extends Channel {
       action: actions.ATTACH,
       channel: this.name,
       params: this.channelOptions.params,
+      // RTL4c1: Includes the channel serial to resume from a previous message
+      // or attachment.
+      channelSerial: this.properties.channelSerial,
     });
     if (this._requestedFlags) {
       attachMsg.encodeModesToFlags(this._requestedFlags);
@@ -596,6 +603,15 @@ class RealtimeChannel extends Channel {
   }
 
   onMessage(message: ProtocolMessage): void {
+    if (
+      message.action === actions.ATTACHED ||
+      message.action === actions.MESSAGE ||
+      message.action === actions.PRESENCE
+    ) {
+      // RTL15b
+      this.setChannelSerial(message.channelSerial);
+    }
+
     let syncChannelSerial,
       isSync = false;
     switch (message.action) {
@@ -794,6 +810,11 @@ class RealtimeChannel extends Channel {
       'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state
     );
     this.clearStateTimer();
+
+    // RTP5a1
+    if (['detached', 'suspended', 'failed'].includes(state)) {
+      this.properties.channelSerial = null;
+    }
 
     if (state === this.state) {
       return;
@@ -1009,6 +1030,20 @@ class RealtimeChannel extends Channel {
       90001,
       400
     );
+  }
+
+  setChannelSerial(channelSerial?: string | null): void {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'RealtimeChannel.setChannelSerial()',
+      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.properties.channelSerial
+    );
+
+    // RTP17h: Only update the channel serial if its present (it won't always
+    // be set).
+    if (channelSerial) {
+      this.properties.channelSerial = channelSerial;
+    }
   }
 }
 
