@@ -16,7 +16,6 @@ class Connection extends EventEmitter {
   state: string;
   key?: string;
   id?: string;
-  serial: undefined;
   errorReason: ErrorInfo | null;
 
   constructor(ably: Realtime, options: NormalisedClientOptions) {
@@ -26,7 +25,6 @@ class Connection extends EventEmitter {
     this.state = this.connectionManager.state.state;
     this.key = undefined;
     this.id = undefined;
-    this.serial = undefined;
     this.errorReason = null;
 
     this.connectionManager.on('connectionstate', (stateChange: ConnectionStateChange) => {
