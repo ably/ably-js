@@ -139,7 +139,7 @@ class Channels extends EventEmitter {
     }
   }
 
-  get(name: string, channelOptions: ChannelOptions) {
+  get(name: string, channelOptions?: ChannelOptions) {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
