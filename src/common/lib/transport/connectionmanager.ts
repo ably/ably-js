@@ -1240,21 +1240,11 @@ class ConnectionManager extends EventEmitter {
         return true;
       }
       this.realtime.connection.serial = this.connectionSerial = connectionSerial;
-      this.setRecoveryKey();
     }
   }
 
   clearConnectionSerial(): void {
     this.realtime.connection.serial = this.connectionSerial = undefined;
-    this.clearRecoveryKey();
-  }
-
-  setRecoveryKey(): void {
-    this.realtime.connection.recoveryKey = this.connectionKey + ':' + this.connectionSerial + ':' + this.msgSerial;
-  }
-
-  clearRecoveryKey(): void {
-    this.realtime.connection.recoveryKey = null;
   }
 
   checkConnectionStateFreshness(): void {
@@ -1280,7 +1270,7 @@ class ConnectionManager extends EventEmitter {
    */
   persistConnection(): void {
     if (haveSessionStorage()) {
-      const recoveryKey = this.realtime.connection.recoveryKey;
+      const recoveryKey = this.createRecoveryKey();
       if (recoveryKey) {
         setSessionRecoverData({
           recoveryKey: recoveryKey,
@@ -2059,7 +2049,6 @@ class ConnectionManager extends EventEmitter {
      * so Ably can dedup if the previous send succeeded */
     if (pendingMessage.ackRequired && !pendingMessage.sendAttempted) {
       msg.msgSerial = this.msgSerial++;
-      this.setRecoveryKey();
     }
     try {
       (this.activeProtocol as Protocol).send(pendingMessage);
