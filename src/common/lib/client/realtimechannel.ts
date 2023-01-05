@@ -410,9 +410,6 @@ class RealtimeChannel extends Channel {
   }
 
   detachImpl(callback?: ErrCallback): void {
-    if (this.connectionManager.mostRecentMsg && this.connectionManager.mostRecentMsg.channel === this.name) {
-      this.connectionManager.mostRecentMsg = null;
-    }
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
     const msg = ProtocolMessage.fromValues({ action: actions.DETACH, channel: this.name });
     this.sendMessage(msg, callback || noop);
