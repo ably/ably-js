@@ -63,7 +63,7 @@ class Channel extends EventEmitter {
     this.channelOptions = normaliseChannelOptions(channelOptions);
   }
 
-  setOptions(options: ChannelOptions): void {
+  setOptions(options?: ChannelOptions): void {
     this.channelOptions = normaliseChannelOptions(options);
   }
 
