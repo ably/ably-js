@@ -83,6 +83,20 @@ function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number
   return true;
 }
 
+type RecoveryContext = {
+  connectionKey: string;
+  msgSerial: number;
+  channelSerials: { [name: string]: string };
+};
+
+function decodeRecoveryKey(recoveryKey: string): RecoveryContext | null {
+  try {
+    return JSON.parse(recoveryKey);
+  } catch (e) {
+    return null;
+  }
+}
+
 export class TransportParams {
   options: ClientOptions;
   host: string | null;
@@ -114,9 +128,9 @@ export class TransportParams {
         params.resume = this.connectionKey as string;
         break;
       case 'recover': {
-        const match = (options.recover as string).split(':');
-        if (match) {
-          params.recover = match[0];
+        const recoveryContext = decodeRecoveryKey(options.recover);
+        if (recoveryContext) {
+          params.recover = recoveryContext.connectionKey;
         }
         break;
       }
@@ -440,9 +454,9 @@ class ConnectionManager extends EventEmitter {
           'ConnectionManager.getTransportParams()',
           'Transport recovery mode = recover; recoveryKey = ' + this.options.recover
         );
-        const match = (this.options.recover as string).split(':');
-        if (match && match[2]) {
-          this.msgSerial = Number(match[2]);
+        const recoveryContext = decodeRecoveryKey(this.options.recover);
+        if (recoveryContext) {
+          this.msgSerial = recoveryContext.msgSerial;
         }
       } else {
         Logger.logAction(
@@ -1588,6 +1602,13 @@ class ConnectionManager extends EventEmitter {
     const connect = () => {
       this.checkConnectionStateFreshness();
       this.getTransportParams((transportParams: TransportParams) => {
+        if (transportParams.mode === 'recover' && transportParams.options.recover) {
+          const recoveryContext = decodeRecoveryKey(transportParams.options.recover);
+          if (recoveryContext) {
+            this.realtime.channels.recoverChannels(recoveryContext.channelSerials);
+          }
+        }
+
         if (connectCount !== this.connectCounter) {
           return;
         }
