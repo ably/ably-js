@@ -26,8 +26,6 @@ interface RealtimeHistoryParams {
 
 const actions = ProtocolMessage.Action;
 const noop = function () {};
-const statechangeOp = 'statechange';
-const syncOp = 'sync';
 
 function validateChannelOptions(options?: API.Types.ChannelOptions) {
   if (options && 'params' in options && !Utils.isObject(options.params)) {
@@ -122,11 +120,6 @@ class RealtimeChannel extends Channel {
       message: 'Channel operation failed as channel state is ' + state,
     };
   }
-
-  static progressOps = {
-    statechange: statechangeOp,
-    sync: syncOp,
-  };
 
   static processListenerArgs(args: unknown[]): any[] {
     /* [event], listener, [callback] */
@@ -345,7 +338,6 @@ class RealtimeChannel extends Channel {
 
   attachImpl(): void {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-    this.setInProgress(statechangeOp, true);
     const attachMsg = ProtocolMessage.fromValues({
       action: actions.ATTACH,
       channel: this.name,
@@ -422,7 +414,6 @@ class RealtimeChannel extends Channel {
       this.connectionManager.mostRecentMsg = null;
     }
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-    this.setInProgress(statechangeOp, true);
     const msg = ProtocolMessage.fromValues({ action: actions.DETACH, channel: this.name });
     this.sendMessage(msg, callback || noop);
   }
@@ -621,9 +612,6 @@ class RealtimeChannel extends Channel {
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         if (this.state === 'attached') {
-          /* attached operations to change options set the inprogress mutex, but leave
-           * channel in the attached state */
-          this.setInProgress(statechangeOp, false);
           if (!resumed) {
             /* On a loss of continuity, the presence set needs to be re-synced */
             this.presence.onAttached(hasPresence);
@@ -839,11 +827,6 @@ class RealtimeChannel extends Channel {
     /* Note: we don't set inProgress for pending states until the request is actually in progress */
     if (state === 'attached') {
       this.onAttached();
-      this.setInProgress(syncOp, hasPresence);
-      this.setInProgress(statechangeOp, false);
-    } else if (state === 'detached' || state === 'failed' || state === 'suspended') {
-      this.setInProgress(statechangeOp, false);
-      this.setInProgress(syncOp, false);
     }
 
     if (state === 'attached') {
@@ -963,10 +946,6 @@ class RealtimeChannel extends Channel {
       clearTimeout(this.retryTimer as NodeJS.Timeout);
       this.retryTimer = null;
     }
-  }
-
-  setInProgress(operation: string, value: unknown): void {
-    this.rest.channels.setInProgress(this, operation, value);
   }
 
   history = function (
