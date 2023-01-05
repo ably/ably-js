@@ -28,10 +28,6 @@ interface RealtimeHistoryParams {
 
 const noop = function () {};
 
-function memberKey(item: PresenceMessage) {
-  return item.clientId + ':' + item.connectionId;
-}
-
 function getClientId(realtimePresence: RealtimePresence) {
   return realtimePresence.channel.realtime.auth.clientId;
 }
@@ -96,8 +92,9 @@ class RealtimePresence extends Presence {
     super(channel);
     this.channel = channel;
     this.syncComplete = false;
-    this.members = new PresenceMap(this);
-    this._myMembers = new PresenceMap(this);
+    this.members = new PresenceMap(this, (item) => item.clientId + ':' + item.connectionId);
+    // RTP17h: Store own members by clientId only.
+    this._myMembers = new PresenceMap(this, (item) => item.clientId!);
     this.subscriptions = new EventEmitter();
     this.pendingPresence = [];
   }
@@ -561,13 +558,15 @@ class PresenceMap extends EventEmitter {
   residualMembers: Record<string, PresenceMessage> | null;
   syncInProgress: boolean;
   presence: RealtimePresence;
+  memberKey: (item: PresenceMessage) => string;
 
-  constructor(presence: RealtimePresence) {
+  constructor(presence: RealtimePresence, memberKey: (item: PresenceMessage) => string) {
     super();
     this.presence = presence;
     this.map = Object.create(null);
     this.syncInProgress = false;
     this.residualMembers = null;
+    this.memberKey = memberKey;
   }
 
   get(key: string) {
@@ -606,7 +605,7 @@ class PresenceMap extends EventEmitter {
       item.action = 'present';
     }
     const map = this.map,
-      key = memberKey(item);
+      key = this.memberKey(item);
     /* we've seen this member, so do not remove it at the end of sync */
     if (this.residualMembers) delete this.residualMembers[key];
 
@@ -631,7 +630,7 @@ class PresenceMap extends EventEmitter {
 
   remove(item: PresenceMessage) {
     const map = this.map,
-      key = memberKey(item);
+      key = this.memberKey(item);
     const existingItem = map[key];
 
     if (existingItem && !newerThan(item, existingItem)) {
