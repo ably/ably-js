@@ -381,7 +381,6 @@ class RealtimePresence extends Presence {
     /* if this is the last (or only) message in a sequence of sync updates, end the sync */
     if (isSync && !syncCursor) {
       members.endSync();
-      this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
       this.channel.syncChannelSerial = null;
     }
 
