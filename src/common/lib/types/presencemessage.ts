@@ -47,6 +47,7 @@ class PresenceMessage {
    * @return {*}
    */
   toJSON(): {
+    id?: string;
     clientId?: string;
     action: number;
     data: string | Buffer | Uint8Array;
@@ -70,6 +71,7 @@ class PresenceMessage {
       }
     }
     return {
+      id: this.id,
       clientId: this.clientId,
       /* Convert presence action back to an int for sending to Ably */
       action: toActionValue(this.action as string),

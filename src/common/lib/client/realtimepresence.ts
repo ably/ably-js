@@ -106,25 +106,26 @@ class RealtimePresence extends Presence {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
     }
-    return this._enterOrUpdateClient(undefined, data, 'enter', callback);
+    return this._enterOrUpdateClient(undefined, undefined, data, 'enter', callback);
   }
 
   update(data: unknown, callback: ErrCallback): void | Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
     }
-    return this._enterOrUpdateClient(undefined, data, 'update', callback);
+    return this._enterOrUpdateClient(undefined, undefined, data, 'update', callback);
   }
 
   enterClient(clientId: string, data: unknown, callback: ErrCallback): void | Promise<void> {
-    return this._enterOrUpdateClient(clientId, data, 'enter', callback);
+    return this._enterOrUpdateClient(undefined, clientId, data, 'enter', callback);
   }
 
   updateClient(clientId: string, data: unknown, callback: ErrCallback): void | Promise<void> {
-    return this._enterOrUpdateClient(clientId, data, 'update', callback);
+    return this._enterOrUpdateClient(undefined, clientId, data, 'update', callback);
   }
 
   _enterOrUpdateClient(
+    id: string | undefined,
     clientId: string | undefined,
     data: unknown,
     action: string,
@@ -136,7 +137,7 @@ class RealtimePresence extends Presence {
         data = null;
       } else {
         if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
+          return Utils.promisify(this, '_enterOrUpdateClient', [id, clientId, data, action]);
         }
         callback = noop;
       }
@@ -151,13 +152,16 @@ class RealtimePresence extends Presence {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimePresence.' + action + 'Client()',
-      'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this))
+      'channel = ' + channel.name + ', id = ' + id + ', client = ' + (clientId || '(implicit) ' + getClientId(this))
     );
 
     const presence = PresenceMessage.fromValues({
       action: action,
       data: data,
     });
+    if (id) {
+      presence.id = id;
+    }
     if (clientId) {
       presence.clientId = clientId;
     }
@@ -487,7 +491,9 @@ class RealtimePresence extends Presence {
           'RealtimePresence._ensureMyMembersPresent()',
           'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
         );
-        this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
+        // RTP17g: Send ENTER containing the member id, clientId and data
+        // attributes.
+        this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter', reenterCb);
         delete myMembers.map[memberKey];
       }
     }
