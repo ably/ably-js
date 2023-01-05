@@ -67,6 +67,17 @@ class Channels extends EventEmitter {
     });
   }
 
+  channelSerials(): { [name: string]: string } {
+    let serials: { [name: string]: string } = {};
+    for (const name of Utils.keysArray(this.all, true)) {
+      const channel = this.all[name];
+      if (channel.properties.channelSerial) {
+        serials[name] = channel.properties.channelSerial;
+      }
+    }
+    return serials;
+  }
+
   onChannelMessage(msg: ProtocolMessage) {
     const channelName = msg.channel;
     if (channelName === undefined) {
