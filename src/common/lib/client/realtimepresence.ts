@@ -494,7 +494,6 @@ class RealtimePresence extends Presence {
         // RTP17g: Send ENTER containing the member id, clientId and data
         // attributes.
         this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter', reenterCb);
-        delete myMembers.map[memberKey];
       }
     }
   }
