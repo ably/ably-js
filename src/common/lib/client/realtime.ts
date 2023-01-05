@@ -108,17 +108,6 @@ class Channels extends EventEmitter {
     }
   }
 
-  reattach(reason: ErrorInfo) {
-    for (const channelId in this.all) {
-      const channel = this.all[channelId];
-      /* NB this should not trigger for merely attaching channels, as they will
-       * be reattached anyway through the onTransportActive checkPendingState */
-      if (channel.state === 'attached') {
-        channel.requestState('attaching', reason);
-      }
-    }
-  }
-
   /* Connection interruptions (ie when the connection will no longer queue
    * events) imply connection state changes for any channel which is either
    * attached, pending, or will attempt to become attached in the future */
