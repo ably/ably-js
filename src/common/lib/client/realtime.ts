@@ -78,6 +78,14 @@ class Channels extends EventEmitter {
     return serials;
   }
 
+  // recoverChannels gets the given channels and sets their channel serials.
+  recoverChannels(channelSerials: { [name: string]: string }) {
+    for (const name of Utils.keysArray(channelSerials, true)) {
+      const channel = this.get(name);
+      channel.properties.channelSerial = channelSerials[name];
+    }
+  }
+
   onChannelMessage(msg: ProtocolMessage) {
     const channelName = msg.channel;
     if (channelName === undefined) {
