@@ -468,8 +468,7 @@ class RealtimePresence extends Presence {
   }
 
   _ensureMyMembersPresent(): void {
-    const members = this.members,
-      myMembers = this._myMembers,
+    const myMembers = this._myMembers,
       reenterCb = (err?: ErrorInfo | null) => {
         if (err) {
           const msg = 'Presence auto-re-enter failed: ' + err.toString();
@@ -481,17 +480,15 @@ class RealtimePresence extends Presence {
       };
 
     for (const memberKey in myMembers.map) {
-      if (!(memberKey in members.map)) {
-        const entry = myMembers.map[memberKey];
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'RealtimePresence._ensureMyMembersPresent()',
-          'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
-        );
-        // RTP17g: Send ENTER containing the member id, clientId and data
-        // attributes.
-        this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter', reenterCb);
-      }
+      const entry = myMembers.map[memberKey];
+      Logger.logAction(
+        Logger.LOG_MICRO,
+        'RealtimePresence._ensureMyMembersPresent()',
+        'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
+      );
+      // RTP17g: Send ENTER containing the member id, clientId and data
+      // attributes.
+      this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter', reenterCb);
     }
   }
 
