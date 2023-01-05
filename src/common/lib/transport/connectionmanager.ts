@@ -1183,6 +1183,19 @@ class ConnectionManager extends EventEmitter {
     this.unpersistConnection();
   }
 
+  createRecoveryKey(): string | null {
+    // RTN16g2.
+    if (!this.connectionKey) {
+      return null;
+    }
+
+    return JSON.stringify({
+      connectionKey: this.connectionKey,
+      msgSerial: this.msgSerial,
+      channelSerials: this.realtime.channels.channelSerials(),
+    });
+  }
+
   /* force: set the connectionSerial even if it's less than the current
    * connectionSerial. Used for new connections.
    * Returns true iff the message was rejected as a duplicate. */
