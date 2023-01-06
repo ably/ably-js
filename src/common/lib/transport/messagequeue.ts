@@ -64,6 +64,12 @@ class MessageQueue extends EventEmitter {
     this.completeMessages(0, Number.MAX_SAFE_INTEGER || Number.MAX_VALUE, err);
   }
 
+  resetSendAttempted(): void {
+    for (let msg of this.messages) {
+      msg.sendAttempted = false;
+    }
+  }
+
   clear(): void {
     Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.clear()', 'clearing ' + this.messages.length + ' messages');
     this.messages = [];
