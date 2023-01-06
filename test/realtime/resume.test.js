@@ -624,5 +624,139 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         closeAndFinish(done, [sender_realtime, receiver_realtime, resumed_receiver_realtime], err);
       }
     });
+
+    // Tests recovering multiple channels only receives the expected messages.
+    it('recover multiple channels', function (done) {
+      const NUM_MSGS = 5;
+
+      const txRest = helper.AblyRest();
+      const rxRealtime = helper.AblyRealtime(
+        {
+          transports: [helper.bestTransport],
+        },
+        true
+      );
+
+      const channelNames = Array(5)
+        .fill()
+        .map(() => String(Math.random()));
+      const rxChannels = channelNames.map((name) => rxRealtime.channels.get(name));
+
+      function attachChannels(callback) {
+        async.each(rxChannels, (channel, cb) => channel.attach(cb), callback);
+      }
+
+      function publishSubscribeWhileConnectedOnce(callback) {
+        async.each(
+          channelNames,
+          (name, cb) => {
+            const tx = txRest.channels.get(name);
+            const rx = rxRealtime.channels.get(name);
+            sendAndAwait(null, tx, rx, cb);
+          },
+          callback
+        );
+      }
+
+      function publishSubscribeWhileConnected(callback) {
+        async.each(
+          Array(NUM_MSGS).fill(0),
+          (_, cb) => {
+            publishSubscribeWhileConnectedOnce(cb);
+          },
+          callback
+        );
+      }
+
+      function publishSubscribeWhileDisconnectedOnce(callback) {
+        async.each(
+          channelNames,
+          (name, cb) => {
+            const tx = txRest.channels.get(name);
+            tx.publish('sentWhileDisconnected', null, cb);
+          },
+          callback
+        );
+      }
+
+      function publishSubscribeWhileDisconnected(callback) {
+        async.each(
+          Array(NUM_MSGS).fill(0),
+          (_, cb) => {
+            publishSubscribeWhileDisconnectedOnce(cb);
+          },
+          callback
+        );
+      }
+
+      let rxRealtimeRecover;
+      let rxRecoverChannels;
+
+      function subscribeRecoveredMessages(callback) {
+        async.each(
+          rxRecoverChannels,
+          (channel, cb) => {
+            let recoveredCount = 0;
+            channel.subscribe((msg) => {
+              expect(msg.name).to.equal('sentWhileDisconnected');
+
+              recoveredCount++;
+
+              if (recoveredCount === NUM_MSGS) {
+                cb();
+              }
+            });
+          },
+          callback
+        );
+      }
+
+      // Connection information from the original connection.
+      let connectionId;
+      let connectionKey;
+      let recoveryKey;
+
+      attachChannels(function (err) {
+        if (err) {
+          closeAndFinish(done, rxRealtime, err);
+          return;
+        }
+
+        publishSubscribeWhileConnected(function (err) {
+          if (err) {
+            closeAndFinish(done, rxRealtime, err);
+            return;
+          }
+
+          connectionId = rxRealtime.connection.id;
+          connectionKey = rxRealtime.connection.key;
+          recoveryKey = rxRealtime.connection.recoveryKey;
+
+          publishSubscribeWhileDisconnected(function (err) {
+            if (err) {
+              closeAndFinish(done, rxRealtime, err);
+              return;
+            }
+
+            rxRealtimeRecover = helper.AblyRealtime({ recover: recoveryKey });
+            rxRecoverChannels = channelNames.map((name) => rxRealtimeRecover.channels.get(name));
+
+            subscribeRecoveredMessages(function (err) {
+              if (err) {
+                closeAndFinish(done, [rxRealtime, rxRealtimeRecover], err);
+                return;
+              }
+
+              // RTN16d: After recovery expect the connection ID to be the same but the
+              // key should have updated.
+              expect(rxRealtimeRecover.connection.id).to.equal(connectionId);
+              expect(rxRealtimeRecover.connection.key).to.not.equal(connectionKey);
+
+              closeAndFinish(done, [rxRealtime, rxRealtimeRecover]);
+            });
+          });
+        });
+      });
+    });
   });
 });
