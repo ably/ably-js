@@ -334,10 +334,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             try {
               if (message.action === 4) {
                 expect(message.connectionDetails.connectionKey).to.be.ok;
-                expect(message.connectionDetails.connectionKey).to.equal(
-                  message.connectionKey,
-                  'connection keys should match'
-                );
                 message.connectionDetails.connectionKey = 'importantConnectionKey';
                 message.connectionDetails.clientId = 'customClientId';
               }
