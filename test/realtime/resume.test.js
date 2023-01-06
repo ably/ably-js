@@ -297,7 +297,6 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 /* Sabotage the resume */
                 (connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____'),
                   (connection.connectionManager.connectionId = 'ablyjs_tes');
-                connection.connectionManager.connectionSerial = 17;
                 connection.connectionManager.msgSerial = 15;
                 connection.once('disconnected', function () {
                   cb();
@@ -308,16 +307,12 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 connection.once('connected', function (stateChange) {
                   try {
                     expect(stateChange.reason && stateChange.reason.code).to.equal(
-                      80008,
+                      80018,
                       'Unable to recover connection correctly set in the stateChange'
                     );
                     expect(attachedChannel.state).to.equal('attaching', 'Attached channel went into attaching');
                     expect(suspendedChannel.state).to.equal('attaching', 'Suspended channel went into attaching');
                     expect(connection.connectionManager.msgSerial).to.equal(0, 'Check msgSerial is reset to 0');
-                    expect(connection.connectionManager.connectionSerial).to.equal(
-                      -1,
-                      'Check connectionSerial is reset by the new CONNECTED'
-                    );
                     expect(
                       connection.connectionManager.connectionId !== 'ablyjs_tes',
                       'Check connectionId is set by the new CONNECTED'
