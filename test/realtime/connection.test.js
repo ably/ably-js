@@ -134,11 +134,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         realtime.connection.on('connected', function (stateChange) {
           try {
             expect(stateChange.reason.code).to.equal(
-              80008,
+              80018,
               'verify unrecoverable-connection error set in stateChange.reason'
             );
             expect(realtime.connection.errorReason.code).to.equal(
-              80008,
+              80018,
               'verify unrecoverable-connection error set in connection.errorReason'
             );
             expect(realtime.connection.connectionManager.msgSerial).to.equal(
