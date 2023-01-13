@@ -25,7 +25,9 @@ import { isSuccessCode } from 'common/constants/HttpStatusCodes';
  *
  ***************************************************/
 
-let globalAgent: { http: http.Agent; https: https.Agent };
+type AgentPair = { http: http.Agent; https: https.Agent };
+
+const globalAgentPool: Record<string, AgentPair> = {};
 
 const handler = function (uri: string, params: unknown, callback?: RequestCallback) {
   return function (err: ErrnoException | null, response?: Response, body?: unknown) {
@@ -194,26 +196,17 @@ const Http: typeof IHttp = class {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
-    const userAgentOptions = rest && rest.options.restAgentOptions;
-    const agentOptions = userAgentOptions || Defaults.restAgentOptions;
-    // const doOptions: RequestOptions = {uri, headers: headers ?? undefined, encoding: null, agentOptions: agentOptions};
+    const agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
     const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
     if (!this.agent) {
-      if (!userAgentOptions) {
-        if (globalAgent) {
-          this.agent = globalAgent;
-        } else {
-          this.agent = globalAgent = {
-            http: new http.Agent(agentOptions),
-            https: new https.Agent(agentOptions),
-          };
-        }
-      } else {
-        this.agent = {
+      const agentOptionsHash = JSON.stringify(agentOptions);
+      if (!globalAgentPool[agentOptionsHash]) {
+        globalAgentPool[agentOptionsHash] = {
           http: new http.Agent(agentOptions),
           https: new https.Agent(agentOptions),
         };
       }
+      this.agent = globalAgentPool[agentOptionsHash];
     }
 
     if (body) {
