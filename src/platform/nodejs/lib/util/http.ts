@@ -10,6 +10,7 @@ import Rest from 'common/lib/client/rest';
 import Realtime from 'common/lib/client/realtime';
 import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
+import { shallowEquals } from 'common/lib/util/utils';
 
 /***************************************************
  *
@@ -25,9 +26,7 @@ import { isSuccessCode } from 'common/constants/HttpStatusCodes';
  *
  ***************************************************/
 
-type AgentPair = { http: http.Agent; https: https.Agent };
-
-const globalAgentPool: Record<string, AgentPair> = {};
+const globalAgentPool: Array<{ options: RestAgentOptions; agents: Agents }> = [];
 
 const handler = function (uri: string, params: unknown, callback?: RequestCallback) {
   return function (err: ErrnoException | null, response?: Response, body?: unknown) {
@@ -198,15 +197,21 @@ const Http: typeof IHttp = class {
      * foreverAgent to keep the TCP stream alive between requests where possible */
     const agentOptions = (rest && rest.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
     const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
+
     if (!this.agent) {
-      const agentOptionsHash = JSON.stringify(agentOptions);
-      if (!globalAgentPool[agentOptionsHash]) {
-        globalAgentPool[agentOptionsHash] = {
+      const persistedAgent = globalAgentPool.find((x) => shallowEquals(agentOptions, x.options))?.agents;
+      if (persistedAgent) {
+        this.agent = persistedAgent;
+      } else {
+        this.agent = {
           http: new http.Agent(agentOptions),
           https: new https.Agent(agentOptions),
         };
+        globalAgentPool.push({
+          options: agentOptions,
+          agents: this.agent,
+        });
       }
-      this.agent = globalAgentPool[agentOptionsHash];
     }
 
     if (body) {
