@@ -1,8 +1,13 @@
 import { Modify } from './utils';
 import * as API from '../../../ably';
 
+export type RestAgentOptions = {
+  keepAlive: boolean;
+  maxSockets: number;
+};
+
 export default interface ClientOptions extends API.Types.ClientOptions {
-  restAgentOptions?: { keepAlive: boolean; maxSockets: number };
+  restAgentOptions?: RestAgentOptions;
   pushFullWait?: boolean;
   checkChannelsOnResume?: boolean;
   agents?: string[];

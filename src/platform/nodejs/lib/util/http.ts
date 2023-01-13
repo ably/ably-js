@@ -8,7 +8,7 @@ import http from 'http';
 import https from 'https';
 import Rest from 'common/lib/client/rest';
 import Realtime from 'common/lib/client/realtime';
-import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 
 /***************************************************
@@ -196,7 +196,7 @@ const Http: typeof IHttp = class {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
-    const agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
+    const agentOptions = (rest && rest.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
     const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
     if (!this.agent) {
       const agentOptionsHash = JSON.stringify(agentOptions);
