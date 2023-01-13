@@ -540,3 +540,7 @@ export function getGlobalObject() {
 
   return self;
 }
+
+export function shallowEquals(source: Record<string, unknown>, target: Record<string, unknown>) {
+  return Object.keys(source).every((key) => source[key] === target[key]);
+}
