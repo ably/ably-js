@@ -1,4 +1,5 @@
 import TransportNames from '../constants/TransportNames';
+import { RestAgentOptions } from './ClientOptions';
 
 export default interface IDefaults {
   connectivityCheckUrl: string;
@@ -7,5 +8,5 @@ export default interface IDefaults {
   baseTransportOrder: TransportNames[];
   transportPreferenceOrder: TransportNames[];
   upgradeTransports: TransportNames[];
-  restAgentOptions?: { keepAlive: boolean; maxSockets: number };
+  restAgentOptions?: RestAgentOptions;
 }

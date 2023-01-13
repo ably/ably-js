@@ -1,8 +1,7 @@
 import HttpMethods from '../constants/HttpMethods';
 import Rest from '../lib/client/rest';
 import ErrorInfo from '../lib/types/errorinfo';
-import http from 'http';
-import https from 'https';
+import { Agents } from 'got';
 
 export type PathParameter = string | ((host: string) => string);
 export type RequestCallback = (
@@ -21,7 +20,7 @@ export declare class IHttp {
   static methodsWithoutBody: Array<HttpMethods>;
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
-  agent?: { http: http.Agent; https: https.Agent } | null;
+  agent?: Agents | null;
   options: NormalisedClientOptions;
 
   Request?: (

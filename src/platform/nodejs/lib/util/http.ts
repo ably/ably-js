@@ -3,13 +3,14 @@ import Defaults from 'common/lib/util/defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { ErrnoException, IHttp, PathParameter, RequestCallback, RequestParams } from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
-import got, { Response, Options, CancelableRequest } from 'got';
+import got, { Response, Options, CancelableRequest, Agents } from 'got';
 import http from 'http';
 import https from 'https';
 import Rest from 'common/lib/client/rest';
 import Realtime from 'common/lib/client/realtime';
-import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
+import { shallowEquals } from 'common/lib/util/utils';
 
 /***************************************************
  *
@@ -24,6 +25,8 @@ import { isSuccessCode } from 'common/constants/HttpStatusCodes';
  * influence the handling of any subsequent request.
  *
  ***************************************************/
+
+const globalAgentPool: Array<{ options: RestAgentOptions; agents: Agents }> = [];
 
 const handler = function (uri: string, params: unknown, callback?: RequestCallback) {
   return function (err: ErrnoException | null, response?: Response, body?: unknown) {
@@ -89,7 +92,7 @@ const Http: typeof IHttp = class {
   static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
-  agent: { http: http.Agent; https: https.Agent } | null = null;
+  agent: Agents | null = null;
   _getHosts = getHosts;
   supportsAuthHeaders = true;
   supportsLinkHeaders = true;
@@ -192,14 +195,23 @@ const Http: typeof IHttp = class {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
-    const agentOptions = (rest && rest.options.restAgentOptions) || Defaults.restAgentOptions;
-    // const doOptions: RequestOptions = {uri, headers: headers ?? undefined, encoding: null, agentOptions: agentOptions};
+    const agentOptions = (rest && rest.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
     const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
+
     if (!this.agent) {
-      this.agent = {
-        http: new http.Agent(agentOptions),
-        https: new https.Agent(agentOptions),
-      };
+      const persistedAgent = globalAgentPool.find((x) => shallowEquals(agentOptions, x.options))?.agents;
+      if (persistedAgent) {
+        this.agent = persistedAgent;
+      } else {
+        this.agent = {
+          http: new http.Agent(agentOptions),
+          https: new https.Agent(agentOptions),
+        };
+        globalAgentPool.push({
+          options: agentOptions,
+          agents: this.agent,
+        });
+      }
     }
 
     if (body) {
