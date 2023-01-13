@@ -3,7 +3,7 @@ import Defaults from 'common/lib/util/defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { ErrnoException, IHttp, PathParameter, RequestCallback, RequestParams } from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
-import got, { Response, Options, CancelableRequest } from 'got';
+import got, { Response, Options, CancelableRequest, Agents } from 'got';
 import http from 'http';
 import https from 'https';
 import Rest from 'common/lib/client/rest';
@@ -93,7 +93,7 @@ const Http: typeof IHttp = class {
   static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
-  agent: { http: http.Agent; https: https.Agent } | null = null;
+  agent: Agents | null = null;
   _getHosts = getHosts;
   supportsAuthHeaders = true;
   supportsLinkHeaders = true;
