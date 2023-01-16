@@ -161,17 +161,23 @@ class RealtimeChannel extends Channel {
        * rejecting messages until we have confirmation that the options have changed,
        * which would unnecessarily lose message continuity. */
       this.attachImpl();
-      this._allChannelChanges.once(function (this: { event: string }, stateChange: ConnectionStateChange) {
-        switch (this.event) {
-          case 'update':
-          case 'attached':
-            _callback?.(null);
-            return;
-          default:
-            _callback?.(stateChange.reason);
-            return;
+      // Ignore 'attaching' -- could be just due to to a resume & reattach, should not
+      // call back setOptions until we're definitely attached with the new options (or
+      // else in a terminal state)
+      this._allChannelChanges.once(
+        ['attached', 'update', 'detached', 'failed'],
+        function (this: { event: string }, stateChange: ConnectionStateChange) {
+          switch (this.event) {
+            case 'update':
+            case 'attached':
+              _callback?.(null);
+              return;
+            default:
+              _callback?.(stateChange.reason);
+              return;
+          }
         }
-      });
+      );
     } else {
       _callback();
     }

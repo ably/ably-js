@@ -708,7 +708,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 },
                 function (cb) {
                   var channelUpdated = false;
-                  channel._allChannelChanges.on('update', function () {
+                  // attached or update: in case this is happening in parallel with
+                  // a transport upgrade, we might flip to attaching, meaning it'll come
+                  // through as attached not update
+                  channel._allChannelChanges.on(['attached', 'update'], function () {
                     channelUpdated = true;
                   });
 
@@ -737,7 +740,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 },
                 function (cb) {
                   var channelUpdated = false;
-                  channel._allChannelChanges.on('update', function () {
+                  channel._allChannelChanges.on(['attached', 'update'], function () {
                     channelUpdated = true;
                   });
 
