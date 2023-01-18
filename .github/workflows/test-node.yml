@@ -12,6 +12,11 @@ jobs:
       fail-fast: false
       matrix:
         node-version: [14.x, 16.x, 18.x]
+        # see https://github.com/webpack/webpack/issues/14532#issuecomment-947513562
+        # safe to remove once we are using webpack v5
+        include:
+          - node-version: 18.x
+            node-options: --openssl-legacy-provider
     steps:
       - uses: actions/checkout@v2
         with:
@@ -24,7 +29,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      - run: npm run test:node
+      - run: NODE_OPTIONS=${{ matrix.node-options }} npm ci
+      - run: NODE_OPTIONS=${{ matrix.node-options }} npm run test:node
         env:
           CI: true
