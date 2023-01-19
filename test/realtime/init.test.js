@@ -130,7 +130,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         realtime = helper.AblyRealtime({
           key: keyStr,
           useTokenAuth: true,
-          defaultTokenParams: { clientId: '*', ttl: 12345 },
+          defaultTokenParams: { clientId: '*', ttl: 123456 },
         });
         expect(realtime.auth.clientId).to.equal(undefined);
         realtime.connection.on('connected', function () {
@@ -138,7 +138,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             expect(realtime.auth.tokenDetails.clientId).to.equal('*');
             /* auth.clientId now does inherit the value '*' -- RSA7b4 */
             expect(realtime.auth.clientId).to.equal('*');
-            expect(realtime.auth.tokenDetails.expires - realtime.auth.tokenDetails.issued).to.equal(12345);
+            expect(realtime.auth.tokenDetails.expires - realtime.auth.tokenDetails.issued).to.equal(123456);
           } catch (err) {
             closeAndFinish(done, realtime, err);
             return;
