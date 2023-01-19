@@ -131,10 +131,14 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           key: keyStr,
           useTokenAuth: true,
           defaultTokenParams: { clientId: '*', ttl: 12345 },
+		  log: {level:5}
         });
+		console.log('realtime.auth.clientId', realtime.auth.clientId);
         expect(realtime.auth.clientId).to.equal(undefined);
         realtime.connection.on('connected', function () {
+		  console.log('on connected');
           try {
+			console.log('realtime.auth.tokenDetails.clientId', realtime.auth.tokenDetails.clientId);
             expect(realtime.auth.tokenDetails.clientId).to.equal('*');
             /* auth.clientId now does inherit the value '*' -- RSA7b4 */
             expect(realtime.auth.clientId).to.equal('*');
