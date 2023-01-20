@@ -49,6 +49,8 @@ class Space {
   }
 
   enter(data: any, callback: errorCallback){
+    if(!data || typeof data !== "object")
+      return callback({message: "Data must be a JSON serializable Object", code:40000, statusCode: 400});
     this.channel.presence.enter(data, callback);
   }
 

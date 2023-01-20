@@ -10,7 +10,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    describe.only('get', ()=>{
+    describe('get', ()=>{
 
       it('should create a space if it does not exist', (done)=>{
         let realtime, err;
@@ -25,7 +25,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }finally{
           helper.closeAndFinish(done, realtime, err);
         }
-
       });
 
       it('should return an existing space', (done)=>{
@@ -71,12 +70,45 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     describe('enter', ()=>{
-      it('should successfully enter the space with the provided data', ()=>{
+      it('should successfully enter the space with the provided data', (done)=>{
+        let realtime, err;
+        try {
+          realtime = helper.AblyRealtime();
+          let space = realtime.spaces.get("test_space", {});
 
+          realtime.channels.get("_ably_space_test_space").presence.subscribe("enter", (d)=>{
+            expect(d.data.name).to.equal("Example");
+          });
+
+          space.enter({name: "Example"}, (err)=>{
+            expect(err).to.equal(undefined);
+          });
+        }catch(e){
+          err = e;
+        }finally{
+          helper.closeAndFinish(done, realtime, err);
+        }
       });
 
-      it('should fail if invalid data is passed', ()=>{
+      it.only('should fail if invalid data is passed', (done)=>{
+        let realtime, err;
+        try {
+          realtime = helper.AblyRealtime();
+          let space = realtime.spaces.get("test_space", {});
 
+          let callback = (err)=>{
+            expect(err.code).to.equal(40000);
+          };
+
+          space.enter(6, callback);
+          space.enter(null, callback);
+          space.enter(false, callback);
+          space.enter(true, callback);
+        }catch(e){
+          err = e;
+        }finally{
+          helper.closeAndFinish(done, realtime, err);
+        }
       });
 
       it('should fail you try and enter a space that you are already in', ()=>{
