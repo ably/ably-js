@@ -1,5 +1,9 @@
 import Realtime from "./realtime";
 import RealtimeChannel from "./realtimechannel";
+import ErrorInfo from "../types/errorinfo";
+import PresenceMessage from "../types/presencemessage";
+import { Types } from "../../../../ably";
+import errorCallback = Types.errorCallback;
 
 
 class Spaces {
@@ -44,6 +48,21 @@ class Space {
     this.channel = this.realtime.channels.get(`_ably_space_${name}`);
   }
 
+  enter(data: any, callback: errorCallback){
+    this.channel.presence.enter(data, callback);
+  }
+
+  leave(callback: errorCallback){
+    this.channel.presence.leave(undefined, callback);
+  }
+
+  members(callback: (err: ErrorInfo | undefined, members: unknown[])=>void){
+    let members = this.channel.presence.members.list({});
+    callback(undefined, members.map((value: PresenceMessage)=>({
+      id: value.id,
+      data: value.data,
+    })));
+  }
 }
 
 type SpaceOptions = {

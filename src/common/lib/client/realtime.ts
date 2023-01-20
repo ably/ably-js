@@ -14,10 +14,13 @@ import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';
+import Spaces from "./space";
 
 class Realtime extends Rest {
   channels: any;
   connection: Connection;
+
+  spaces: Spaces;
 
   constructor(options: ClientOptions) {
     super(options);
@@ -25,6 +28,7 @@ class Realtime extends Rest {
     this.connection = new Connection(this, this.options);
     this.channels = new Channels(this);
     if (options.autoConnect !== false) this.connect();
+    this.spaces = new Spaces(this);
   }
 
   connect(): void {
@@ -64,7 +68,7 @@ class Channels extends EventEmitter {
     this.inProgress = Object.create(null);
     realtime.connection.connectionManager.on('transport.active', () => {
       this.onTransportActive();
-    });
+    })
   }
 
   onChannelMessage(msg: ProtocolMessage) {
