@@ -20,6 +20,7 @@ const baseConfig = {
   },
   output: {
     path: path.resolve(__dirname, 'build'),
+    hashFunction: 'sha-256',
     library: 'Ably',
     libraryTarget: 'umd',
     libraryExport: 'default',
