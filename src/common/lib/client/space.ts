@@ -13,7 +13,7 @@ class Spaces {
   }
 
   get(name: string, options: SpaceOptions): Space {
-    if(name.length === 0){
+    if(typeof name !== "string" || name.length === 0){
       throw new Error("Spaces must have a non-empty name");
     }
     // TODO: updating options

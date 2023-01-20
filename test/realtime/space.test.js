@@ -10,9 +10,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    describe('get', ()=>{
+    describe.only('get', ()=>{
 
-      it.only('should create a space if it does not exist', (done)=>{
+      it('should create a space if it does not exist', (done)=>{
         let realtime, err;
         try {
           realtime = helper.AblyRealtime();
@@ -46,8 +46,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         let realtime, err;
         try {
           realtime = helper.AblyRealtime();
-          expect(realtime.spaces.get("", {})).to.not.be.ok;
-
+          expect(()=>realtime.spaces.get("", {})).to.throw();
         }catch(e){
           err = e;
         }finally{
@@ -55,8 +54,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
       });
 
-      it('should validate the channel name', ()=>{
+      it('should validate the space name', (done)=>{
+        let realtime, err;
+        try {
+          realtime = helper.AblyRealtime();
+          expect(()=>realtime.spaces.get(false, {})).to.throw();
+          expect(()=>realtime.spaces.get({}, {})).to.throw();
+          expect(()=>realtime.spaces.get(null, {})).to.throw();
 
+        }catch(e){
+          err = e;
+        }finally{
+          helper.closeAndFinish(done, realtime, err);
+        }
       });
     });
 
