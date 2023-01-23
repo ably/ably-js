@@ -209,6 +209,56 @@ define([
         return res;
       };
 
+  var createListenerChannel = function (channelName, callback) {
+    var channel, realtime;
+    try {
+      realtime = clientModule.AblyRealtime();
+      realtime.connection.on('connected', function () {
+        channel = realtime.channels.get(channelName);
+        channel.attach(function (err) {
+          callback(err, realtime, channel);
+        });
+      });
+    } catch (err) {
+      callback(err, realtime);
+    }
+  };
+
+  var runTestWithEventListener = function (done, channel, eventListener, testRunner) {
+    try {
+      createListenerChannel(channel, function (err, listenerRealtime, presenceChannel) {
+        if (err) {
+          closeAndFinish(done, listenerRealtime, err);
+          return;
+        }
+
+        async.parallel(
+          [
+            function (cb) {
+              try {
+                eventListener(presenceChannel, cb);
+              } catch (err) {
+                cb(err);
+              }
+            },
+            testRunner,
+          ],
+          function (err, res) {
+            if (err) {
+              closeAndFinish(done, realtime, err);
+              return;
+            }
+            // testRunner might or might not call back with an open realtime
+            var openConnections = res[1] && res[1].close ? [listenerRealtime, res[1]] : listenerRealtime;
+            closeAndFinish(done, openConnections);
+          }
+        );
+      });
+    } catch (err) {
+      done(err);
+    }
+  };
+
   return (module.exports = {
     setupApp: testAppModule.setup,
     tearDownApp: testAppModule.tearDown,
@@ -222,6 +272,7 @@ define([
 
     loadTestData: testAppManager.loadJsonData,
     testResourcesPath: testAppManager.testResourcesPath,
+    runTestWithEventListener: runTestWithEventListener,
 
     displayError: displayError,
     monitorConnection: monitorConnection,

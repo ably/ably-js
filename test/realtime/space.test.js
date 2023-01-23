@@ -1,4 +1,20 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, { expect }) {
+
+  // Adapted from presence.test.js
+  const listenerFor = function (eventName, expectedClientId) {
+    return function (channel, callback) {
+      const presenceHandler = function (presmsg) {
+        if (this.event === eventName) {
+          if (expectedClientId !== undefined) {
+            expect(presmsg.clientId).to.equal(expectedClientId, 'Verify correct clientId');
+          }
+          channel.presence.unsubscribe(presenceHandler);
+          callback();
+        }
+      };
+      channel.presence.subscribe(presenceHandler);
+    };
+  };
   describe('realtime/space', () => {
     before(function (done) {
       helper.setupApp(function (err) {
@@ -128,7 +144,42 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     describe('leave', () => {
-      it('should successfully leave the space', () => {});
+      
+      it.only('should successfully leave the space', (done) => {
+        let clientRealtime, err;
+        try {
+          // Adapted from /realtime/presence.test.js
+          const channelName = 'enterAndLeave';
+          const enterAndLeave = (cb) => {
+            clientRealtime = helper.AblyRealtime();
+            clientRealtime.connection.on('connected', function () {
+              /* get channel, attach, and enter */
+              const clientChannel = clientRealtime.channels.get(channelName);
+              clientChannel.attach(function (err) {
+                if (err) {
+                  cb(err, clientRealtime);
+                  return;
+                }
+                clientChannel.presence.enter('Test client data (leave0)', function (err) {
+                  if (err) {
+                    cb(err, clientRealtime);
+                    return;
+                  }
+                });
+                clientChannel.presence.leave(function (err) {
+                  cb(err, clientRealtime);
+                });
+              });
+            });
+          };
+    
+          helper.runTestWithEventListener(() => {}, channelName, listenerFor('leave'), enterAndLeave);
+        } catch (e) {
+          err = e;
+        } finally {
+          helper.closeAndFinish(done, clientRealtime, err);
+        }
+      });
 
       it('should fail if you leave a space that you have not entered', () => {});
     });

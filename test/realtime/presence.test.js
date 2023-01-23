@@ -25,21 +25,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var testClientId = 'testclient',
     testClientId2 = 'testclient2';
 
-  var createListenerChannel = function (channelName, callback) {
-    var channel, realtime;
-    try {
-      realtime = helper.AblyRealtime();
-      realtime.connection.on('connected', function () {
-        channel = realtime.channels.get(channelName);
-        channel.attach(function (err) {
-          callback(err, realtime, channel);
-        });
-      });
-    } catch (err) {
-      callback(err, realtime);
-    }
-  };
-
   var listenerFor = function (eventName, expectedClientId) {
     return function (channel, callback) {
       var presenceHandler = function (presmsg) {
@@ -53,41 +38,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
       channel.presence.subscribe(presenceHandler);
     };
-  };
-
-  var runTestWithEventListener = function (done, channel, eventListener, testRunner) {
-    try {
-      createListenerChannel(channel, function (err, listenerRealtime, presenceChannel) {
-        if (err) {
-          closeAndFinish(done, listenerRealtime, err);
-          return;
-        }
-
-        async.parallel(
-          [
-            function (cb) {
-              try {
-                eventListener(presenceChannel, cb);
-              } catch (err) {
-                cb(err);
-              }
-            },
-            testRunner,
-          ],
-          function (err, res) {
-            if (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            // testRunner might or might not call back with an open realtime
-            var openConnections = res[1] && res[1].close ? [listenerRealtime, res[1]] : listenerRealtime;
-            closeAndFinish(done, openConnections);
-          }
-        );
-      });
-    } catch (err) {
-      done(err);
-    }
   };
 
   describe('realtime/presence', function () {
@@ -159,7 +109,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), attachAndEnter);
+      helper.runTestWithEventListener(done, channelName, listenerFor('enter'), attachAndEnter);
     });
 
     /*
@@ -179,7 +129,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutAttach);
+      helper.runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutAttach);
     });
 
     /*
@@ -196,7 +146,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutConnect);
+      helper.runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutConnect);
     });
 
     /*
@@ -287,7 +237,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithCallback);
+      helper.runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithCallback);
     });
 
     /*
@@ -312,7 +262,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithNothing);
+      helper.runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithNothing);
     });
 
     /*
@@ -337,7 +287,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithData);
+      helper.runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithData);
     });
 
     /*
@@ -411,7 +361,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, secondEventListener, enterDetachEnter);
+      helper.runTestWithEventListener(done, channelName, secondEventListener, enterDetachEnter);
     });
 
     /*
@@ -472,7 +422,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('leave'), enterAndLeave);
+      helper.runTestWithEventListener(done, channelName, listenerFor('leave'), enterAndLeave);
     });
 
     /*
@@ -520,7 +470,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterUpdate);
+      helper.runTestWithEventListener(done, channelName, eventListener, enterUpdate);
     });
 
     /*
@@ -568,7 +518,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterGet);
+      helper.runTestWithEventListener(done, channelName, eventListener, enterGet);
     });
 
     /*
@@ -691,7 +641,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterLeaveGet);
+      helper.runTestWithEventListener(done, channelName, eventListener, enterLeaveGet);
     });
 
     /*
@@ -1045,7 +995,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, secondEnterListener, enterAfterClose);
+      helper.runTestWithEventListener(done, channelName, secondEnterListener, enterAfterClose);
     });
 
     /*
@@ -1148,7 +1098,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterOn);
+      helper.runTestWithEventListener(done, channelName, eventListener, enterOn);
     });
 
     /*
@@ -1247,7 +1197,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, realtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
+      helper.runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
     });
 
     /*
@@ -1286,7 +1236,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         });
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
+      helper.runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
     });
 
     /*
