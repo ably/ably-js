@@ -1,5 +1,5 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, { expect }) {
-  describe.only('realtime/space', () => {
+  describe('realtime/space', () => {
     before(function (done) {
       helper.setupApp(function (err) {
         if (err) {
@@ -107,7 +107,24 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
       });
 
-      it('should fail you try and enter a space that you are already in', () => {});
+      it('should fail if try and enter a space that you are already in', (done) => {
+        let realtime, err;
+        try {
+          realtime = helper.AblyRealtime();
+          let space = realtime.spaces.get('test_space', {});
+
+          let callback = (err) => {
+            expect(err.message).to.equal('Client has already entered the space');
+          };
+
+          space.enter({}, function () {});
+          space.enter({}, callback);
+        } catch (e) {
+          err = e;
+        } finally {
+          helper.closeAndFinish(done, realtime, err);
+        }
+      });
     });
 
     describe('leave', () => {

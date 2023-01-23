@@ -42,12 +42,28 @@ class Space {
     this.channel = this.realtime.channels.get(`_ably_space_${name}`);
   }
 
-  enter(data: any, callback: errorCallback) {
+  enter(data: unknown, callback: errorCallback) {
     if (!data || typeof data !== 'object') {
       return callback({ message: 'Data must be a JSON serializable Object', code: 40000, statusCode: 400 });
     }
 
-    this.channel.presence.enter(data, callback);
+    let clientId = this.realtime.auth.clientId || undefined;
+    let presence = this.channel.presence;
+
+    // TODO: Discuss if we actually want change this behaviour in contrast to presence (enter becomes an update)
+    presence.get({ clientId }, function (err: ErrorInfo, members: PresenceMessage[] | undefined) {
+      if (err) {
+        return callback({ message: 'Could not retrive the members set for space', code: 40000, statusCode: 400 });
+      }
+
+      if (members && members.length === 1) {
+        // TODO: Work on error messages and their codes
+        // TODO: Do we want to fail here or just inform the user
+        return callback({ message: 'Client has already entered the space', code: 40000, statusCode: 400 });
+      } else {
+        return presence.enter(data, callback);
+      }
+    });
   }
 
   leave(callback: errorCallback) {
