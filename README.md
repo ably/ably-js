@@ -585,6 +585,8 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 
 This library currently does not support being the [target of a push notification](https://www.ably.com/docs/general/push/activate-subscribe) (i.e. web push).
 
+This library does not support node 18 without explicitly allowing legacy OpenSSL providers. Legacy OpenSSL providers may be allowed by passing the `--openssl-legacy-provider` flag when you run your application.
+
 #### Browser-specific issues
 
 - ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.com/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
