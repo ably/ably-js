@@ -14,7 +14,7 @@ import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';
-import Spaces from "./space";
+import Spaces from './space';
 
 class Realtime extends Rest {
   channels: any;
@@ -68,7 +68,7 @@ class Channels extends EventEmitter {
     this.inProgress = Object.create(null);
     realtime.connection.connectionManager.on('transport.active', () => {
       this.onTransportActive();
-    })
+    });
   }
 
   onChannelMessage(msg: ProtocolMessage) {

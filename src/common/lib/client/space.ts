@@ -70,7 +70,6 @@ class Space {
     let clientId = this.realtime.auth.clientId || undefined;
     let presence = this.channel.presence;
 
-
     presence.get({ clientId }, function (err: ErrorInfo, members: PresenceMessage[] | undefined) {
       if (err) {
         return callback({ message: 'Could not retrieve the members set for space', code: 40000, statusCode: 400 });
@@ -79,7 +78,11 @@ class Space {
       if (members && members.length >= 1) {
         return presence.leave(undefined, callback);
       } else {
-        return callback({ message: 'Member not present in space, leave operation redundant', code: 40000, statusCode: 404 });
+        return callback({
+          message: 'Member not present in space, leave operation redundant',
+          code: 40000,
+          statusCode: 404,
+        });
       }
     });
   }
