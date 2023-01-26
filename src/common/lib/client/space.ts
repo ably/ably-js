@@ -53,7 +53,7 @@ class Space {
     // TODO: Discuss if we actually want change this behaviour in contrast to presence (enter becomes an update)
     presence.get({ clientId }, function (err: ErrorInfo, members: PresenceMessage[] | undefined) {
       if (err) {
-        return callback({ message: 'Could not retrive the members set for space', code: 40000, statusCode: 400 });
+        return callback({ message: 'Could not retrieve the members set for space', code: 40000, statusCode: 400 });
       }
 
       if (members && members.length === 1) {
@@ -67,7 +67,21 @@ class Space {
   }
 
   leave(callback: errorCallback) {
-    this.channel.presence.leave(undefined, callback);
+    let clientId = this.realtime.auth.clientId || undefined;
+    let presence = this.channel.presence;
+
+
+    presence.get({ clientId }, function (err: ErrorInfo, members: PresenceMessage[] | undefined) {
+      if (err) {
+        return callback({ message: 'Could not retrieve the members set for space', code: 40000, statusCode: 400 });
+      }
+
+      if (members && members.length >= 1) {
+        return presence.leave(undefined, callback);
+      } else {
+        return callback({ message: 'Member not present in space, leave operation redundant', code: 40000, statusCode: 404 });
+      }
+    });
   }
 
   members(callback: (err: ErrorInfo | undefined, members: unknown[]) => void) {
