@@ -114,7 +114,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           let space = realtime.spaces.get('test_space', {});
 
           let callback = (err) => {
-            expect(err?.message).to.equal('Client has already entered the space');
+            expect(err && err.message).to.equal('Client has already entered the space');
             helper.closeAndFinish(done, realtime, undefined);
           };
 
