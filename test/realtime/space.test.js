@@ -108,7 +108,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       it('should fail if try and enter a space that you are already in', (done) => {
-        let realtime, err;
+        let realtime;
         try {
           realtime = helper.AblyRealtime({clientId: 'test'});
           let space = realtime.spaces.get('test_space', {});
@@ -126,7 +126,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     describe('leave', () => {
-      it('should successfully leave the space', () => {});
+      it('should successfully leave the space',  (done) => {
+        let realtime;
+        try {
+          realtime = helper.AblyRealtime({clientId: 'test'});
+          let space = realtime.spaces.get('test_space', {});
+
+          let callback = (err) => {
+            expect(err?.message).to.equal(undefined);
+            helper.closeAndFinish(done, realtime, undefined);
+          };
+
+          space.enter({}, () => setTimeout(() => space.leave(callback), 0));
+        } catch (e) {
+          helper.closeAndFinish(done, realtime, e);
+        }
+      });
 
       it('should fail if you leave a space that you have not entered', () => {});
     });
