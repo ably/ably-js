@@ -143,7 +143,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
       });
 
-      it('should fail if you leave a space that you have not entered', () => {});
+      it('should fail if you leave a space that you have not entered', (done) => {
+        let realtime;
+        try {
+          realtime = helper.AblyRealtime({clientId: 'test'});
+          let space = realtime.spaces.get('test_space', {});
+
+          let callback = (err) => {
+            expect(err?.message).to.equal('Member not present in space, leave operation redundant');
+            helper.closeAndFinish(done, realtime, undefined);
+          };
+
+          space.leave(callback);
+        } catch (e) {
+          helper.closeAndFinish(done, realtime, e);
+        }
+      });
     });
   });
 });
