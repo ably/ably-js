@@ -116,11 +116,14 @@ class Space extends Eventemitter {
   }
 
   private updateMemberState(clientId: string | undefined, isConnected: boolean, data?: {[key: string]: any}) {
-    if(!clientId)return;
+    const implicitClientId = clientId ?? this.realtime.auth.clientId;
+    if(!implicitClientId) {
+      return;
+    }
     let member = this.members.find((m)=>m.clientId===clientId);
     if(!member) {
       this.emit("memberUpdate", member);
-      return this.createMember(clientId, isConnected, data || {});
+      return this.createMember(implicitClientId, isConnected, data || {});
     }
     member.isConnected = isConnected;
     if(data){

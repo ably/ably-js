@@ -160,5 +160,25 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
       });
     });
+
+    describe.only('watchMembers', () => {
+      it('emits an event on enter without any extant members', (done) => {
+        const realtime = helper.AblyRealtime({ clientId: 'test' });
+        try {
+          const space = realtime.spaces.get('test_space', {});
+          
+          const callback = () => {};
+
+          space.on('memberUpdate', (member) => {
+            expect(member).to.equal(undefined);
+            helper.closeAndFinish(done, realtime, undefined);
+          });
+          setTimeout(() => space.enter({}, callback), 100);
+        } catch (e) {
+          helper.closeAndFinish(done, realtime, e);
+        }
+
+      });
+    });
   });
 });
