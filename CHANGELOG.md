@@ -2,7 +2,7 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
-## [1.2.34](https://github.com/ably/ably-js/tree/1.2.34) (2022-12-13)
+## [1.2.34](https://github.com/ably/ably-js/tree/1.2.34) (2023-01-30)
 - Implement ably-js protocol v2 [\#1110](https://github.com/ably/ably-js/pull/1110)
 - Add global HTTP agent pool (fixes memory leak when creating several rest clients) [\#1113](https://github.com/ably/ably-js/pull/1113)
 
