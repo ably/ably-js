@@ -3,6 +3,10 @@
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
 ## [1.2.34](https://github.com/ably/ably-js/tree/1.2.34) (2022-12-13)
+- Implement ably-js protocol v2 [\#1110](https://github.com/ably/ably-js/pull/1110)
+- Add global HTTP agent pool (fixes memory leak when creating several rest clients) [\#1113](https://github.com/ably/ably-js/pull/1113)
+
+## [1.2.34](https://github.com/ably/ably-js/tree/1.2.34) (2022-12-13)
 - fix incorrect sync event signature in base Transport class (fixes an issue with react-native realtime connections) [\#1094](https://github.com/ably/ably-js/pull/1094)
 
 ## [1.2.33](https://github.com/ably/ably-js/tree/1.2.33) (2022-11-11)
