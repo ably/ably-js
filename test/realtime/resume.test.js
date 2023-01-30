@@ -444,7 +444,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * TODO: enable once realtime supports this
      */
     it('channel_resumed_flag', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         realtimeTwo,
         recoveryKey,
         connection = realtime.connection,
