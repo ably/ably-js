@@ -53,7 +53,10 @@ define([
       return;
     }
     if (Object.prototype.toString.call(realtime) == '[object Array]') {
-      closeAndFinishSeveral(done, realtime, err);
+      var realtimes = utils.arrFilter(realtime, function (rt) {
+        return rt !== undefined;
+      });
+      closeAndFinishSeveral(done, realtimes, err);
       return;
     }
     callbackOnClose(realtime, function () {
