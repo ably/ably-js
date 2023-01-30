@@ -21,15 +21,13 @@ interface RealtimeHistoryParams {
   direction?: string;
   limit?: number;
   untilAttach?: boolean;
-  from_serial?: number;
+  from_serial?: string;
 }
 
 const actions = ProtocolMessage.Action;
 const noop = function () {};
-const statechangeOp = 'statechange';
-const syncOp = 'sync';
 
-function validateChannelOptions(options: API.Types.ChannelOptions) {
+function validateChannelOptions(options?: API.Types.ChannelOptions) {
   if (options && 'params' in options && !Utils.isObject(options.params)) {
     return new ErrorInfo('options.params must be an object', 40000, 400);
   }
@@ -60,17 +58,19 @@ class RealtimeChannel extends Channel {
     API.Types.messageCallback<Message>,
     Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
   >;
-  syncChannelSerial?: number | null;
-  properties: { attachSerial: number | null | undefined };
+  syncChannelSerial?: string | null;
+  properties: {
+    attachSerial: string | null | undefined;
+    channelSerial: string | null | undefined;
+  };
   errorReason: ErrorInfo | string | null;
   _requestedFlags: Array<API.Types.ChannelMode> | null;
   _mode?: null | number;
-  _attachedMsgIndicator: boolean;
   _attachResume: boolean;
   _decodingContext: { channelOptions: API.Types.ChannelOptions; plugins: any; baseEncodedPreviousPayload: undefined };
   _lastPayload: {
     messageId?: string | null;
-    protocolMessageChannelSerial?: number | null;
+    protocolMessageChannelSerial?: string | null;
     decodeFailureRecoveryInProgress: null | boolean;
   };
   _allChannelChanges: EventEmitter;
@@ -80,7 +80,7 @@ class RealtimeChannel extends Channel {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
 
-  constructor(realtime: Realtime, name: string, options: API.Types.ChannelOptions) {
+  constructor(realtime: Realtime, name: string, options?: API.Types.ChannelOptions) {
     super(realtime, name, options);
     Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
     this.realtime = realtime;
@@ -91,13 +91,12 @@ class RealtimeChannel extends Channel {
     this.syncChannelSerial = undefined;
     this.properties = {
       attachSerial: undefined,
+      channelSerial: undefined,
     };
     this.setOptions(options);
     this.errorReason = null;
     this._requestedFlags = null;
     this._mode = null;
-    /* Temporary; only used for the checkChannelsOnResume option */
-    this._attachedMsgIndicator = false;
     this._attachResume = false;
     this._decodingContext = {
       channelOptions: this.channelOptions,
@@ -122,11 +121,6 @@ class RealtimeChannel extends Channel {
     };
   }
 
-  static progressOps = {
-    statechange: statechangeOp,
-    sync: syncOp,
-  };
-
   static processListenerArgs(args: unknown[]): any[] {
     /* [event], listener, [callback] */
     args = Array.prototype.slice.call(args);
@@ -139,7 +133,7 @@ class RealtimeChannel extends Channel {
     return args;
   }
 
-  setOptions(options: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
+  setOptions(options?: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
     if (!callback) {
       if (this.rest.options.promises) {
         return Utils.promisify(this, 'setOptions', arguments);
@@ -167,24 +161,30 @@ class RealtimeChannel extends Channel {
        * rejecting messages until we have confirmation that the options have changed,
        * which would unnecessarily lose message continuity. */
       this.attachImpl();
-      this._allChannelChanges.once(function (this: { event: string }, stateChange: ConnectionStateChange) {
-        switch (this.event) {
-          case 'update':
-          case 'attached':
-            _callback?.(null);
-            return;
-          default:
-            _callback?.(stateChange.reason);
-            return;
+      // Ignore 'attaching' -- could be just due to to a resume & reattach, should not
+      // call back setOptions until we're definitely attached with the new options (or
+      // else in a terminal state)
+      this._allChannelChanges.once(
+        ['attached', 'update', 'detached', 'failed'],
+        function (this: { event: string }, stateChange: ConnectionStateChange) {
+          switch (this.event) {
+            case 'update':
+            case 'attached':
+              _callback?.(null);
+              return;
+            default:
+              _callback?.(stateChange.reason);
+              return;
+          }
         }
-      });
+      );
     } else {
       _callback();
     }
   }
 
-  _shouldReattachToSetOptions(options: API.Types.ChannelOptions) {
-    return (this.state === 'attached' || this.state === 'attaching') && (options.params || options.modes);
+  _shouldReattachToSetOptions(options?: API.Types.ChannelOptions) {
+    return (this.state === 'attached' || this.state === 'attaching') && (options?.params || options?.modes);
   }
 
   publish(...args: any[]): void | Promise<void> {
@@ -344,11 +344,13 @@ class RealtimeChannel extends Channel {
 
   attachImpl(): void {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-    this.setInProgress(statechangeOp, true);
     const attachMsg = ProtocolMessage.fromValues({
       action: actions.ATTACH,
       channel: this.name,
       params: this.channelOptions.params,
+      // RTL4c1: Includes the channel serial to resume from a previous message
+      // or attachment.
+      channelSerial: this.properties.channelSerial,
     });
     if (this._requestedFlags) {
       attachMsg.encodeModesToFlags(this._requestedFlags);
@@ -414,11 +416,7 @@ class RealtimeChannel extends Channel {
   }
 
   detachImpl(callback?: ErrCallback): void {
-    if (this.connectionManager.mostRecentMsg && this.connectionManager.mostRecentMsg.channel === this.name) {
-      this.connectionManager.mostRecentMsg = null;
-    }
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-    this.setInProgress(statechangeOp, true);
     const msg = ProtocolMessage.fromValues({ action: actions.DETACH, channel: this.name });
     this.sendMessage(msg, callback || noop);
   }
@@ -596,11 +594,19 @@ class RealtimeChannel extends Channel {
   }
 
   onMessage(message: ProtocolMessage): void {
+    if (
+      message.action === actions.ATTACHED ||
+      message.action === actions.MESSAGE ||
+      message.action === actions.PRESENCE
+    ) {
+      // RTL15b
+      this.setChannelSerial(message.channelSerial);
+    }
+
     let syncChannelSerial,
       isSync = false;
     switch (message.action) {
       case actions.ATTACHED: {
-        this._attachedMsgIndicator = true;
         this.properties.attachSerial = message.channelSerial;
         this._mode = message.getMode();
         this.params = (message as any).params || {};
@@ -609,9 +615,6 @@ class RealtimeChannel extends Channel {
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         if (this.state === 'attached') {
-          /* attached operations to change options set the inprogress mutex, but leave
-           * channel in the attached state */
-          this.setInProgress(statechangeOp, false);
           if (!resumed) {
             /* On a loss of continuity, the presence set needs to be re-synced */
             this.presence.onAttached(hasPresence);
@@ -795,6 +798,11 @@ class RealtimeChannel extends Channel {
     );
     this.clearStateTimer();
 
+    // RTP5a1
+    if (Utils.arrIn(['detached', 'suspended', 'failed'], state)) {
+      this.properties.channelSerial = null;
+    }
+
     if (state === this.state) {
       return;
     }
@@ -822,11 +830,6 @@ class RealtimeChannel extends Channel {
     /* Note: we don't set inProgress for pending states until the request is actually in progress */
     if (state === 'attached') {
       this.onAttached();
-      this.setInProgress(syncOp, hasPresence);
-      this.setInProgress(statechangeOp, false);
-    } else if (state === 'detached' || state === 'failed' || state === 'suspended') {
-      this.setInProgress(statechangeOp, false);
-      this.setInProgress(syncOp, false);
     }
 
     if (state === 'attached') {
@@ -948,10 +951,6 @@ class RealtimeChannel extends Channel {
     }
   }
 
-  setInProgress(operation: string, value: unknown): void {
-    this.rest.channels.setInProgress(this, operation, value);
-  }
-
   history = function (
     this: RealtimeChannel,
     params: RealtimeHistoryParams | null,
@@ -1009,6 +1008,20 @@ class RealtimeChannel extends Channel {
       90001,
       400
     );
+  }
+
+  setChannelSerial(channelSerial?: string | null): void {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'RealtimeChannel.setChannelSerial()',
+      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.properties.channelSerial
+    );
+
+    // RTP17h: Only update the channel serial if its present (it won't always
+    // be set).
+    if (channelSerial) {
+      this.properties.channelSerial = channelSerial;
+    }
   }
 }
 

@@ -498,10 +498,10 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
             /* on upgrade failure */
             realtime.connection.once('update', function (stateChange) {
               try {
-                expect(stateChange.reason.code).to.equal(80008, 'Check correct (unrecoverable connection) error');
+                expect(stateChange.reason.code).to.equal(80018, 'Check correct (unrecoverable connection) error');
                 expect(stateChange.current).to.equal('connected', 'Check current is connected');
                 expect(realtime.connection.errorReason.code).to.equal(
-                  80008,
+                  80018,
                   'Check error set in connection.errorReason'
                 );
                 expect(realtime.connection.state).to.equal('connected', 'Check still connected');
@@ -539,85 +539,39 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
           connectionManager = realtime.connection.connectionManager;
 
         realtime.connection.once('connected', function () {
-          channel.attach(function (err) {
-            if (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            /* Sabotage comet sending */
-            var transport = connectionManager.activeProtocol.getTransport();
-            try {
-              expect(helper.isComet(transport), 'Check active transport is still comet').to.be.ok;
-            } catch (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            transport.sendUri = helper.unroutableAddress;
+          /* Sabotage comet sending */
+          var transport = connectionManager.activeProtocol.getTransport();
+          try {
+            expect(helper.isComet(transport), 'Check active transport is still comet').to.be.ok;
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          transport.sendUri = helper.unroutableAddress;
 
-            async.parallel(
-              [
-                function (cb) {
-                  channel.subscribe('event', function () {
-                    cb();
-                  });
-                },
-                function (cb) {
-                  channel.publish('event', null, function (err) {
-                    try {
-                      expect(!err, 'Successfully published message').to.be.ok;
-                    } catch (err) {
-                      cb(err);
-                      return;
-                    }
-                    cb();
-                  });
-                },
-              ],
-              function (err) {
-                closeAndFinish(done, realtime, err);
-              }
-            );
-          });
-        });
-      });
-
-      /*
-       * Check that a lack of response to an upgrade sync doesn't stall things forever
-       */
-      it('unresponsive_upgrade_sync', function (done) {
-        var realtime = helper.AblyRealtime({ transports: helper.availableTransports, realtimeRequestTimeout: 2000 }),
-          connection = realtime.connection;
-
-        connection.connectionManager.on('transport.pending', function (transport) {
-          if (!helper.isWebsocket(transport)) return;
-
-          var originalOnProtocolMessage = transport.onProtocolMessage;
-          /* Stub out sync message one time */
-          transport.onProtocolMessage = function (message) {
-            if (message.action === 16) {
-              connection.connectionManager.off('transport.pending');
-              transport.onProtocolMessage = originalOnProtocolMessage;
-            } else {
-              originalOnProtocolMessage.call(transport, message);
-            }
-          };
-        });
-
-        connection.once('connected', function () {
-          connection.once('disconnected', function () {
-            connection.once('connected', function () {
-              if (helper.isWebsocket(connection.connectionManager.activeProtocol.getTransport())) {
-                /* Must be running multiple tests at once and another one set the transport preference */
-                closeAndFinish(done, realtime);
-              } else {
-                connection.connectionManager.on('transport.active', function (transport) {
-                  if (helper.isWebsocket(transport)) {
-                    closeAndFinish(done, realtime);
-                  }
+          async.parallel(
+            [
+              function (cb) {
+                channel.subscribe('event', function () {
+                  cb();
                 });
-              }
-            });
-          });
+              },
+              function (cb) {
+                channel.publish('event', null, function (err) {
+                  try {
+                    expect(!err, 'Successfully published message').to.be.ok;
+                  } catch (err) {
+                    cb(err);
+                    return;
+                  }
+                  cb();
+                });
+              },
+            ],
+            function (err) {
+              closeAndFinish(done, realtime, err);
+            }
+          );
         });
       });
 

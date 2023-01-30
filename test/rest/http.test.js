@@ -30,7 +30,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
           // This test should not directly validate version against Defaults.version, as
           // ultimately the version header has been derived from that value.
-          expect(headers['X-Ably-Version']).to.equal('1.2', 'Verify current version number');
+          expect(headers['X-Ably-Version']).to.equal('2', 'Verify current version number');
           expect(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent').to.be.ok;
           expect(headers['Ably-Agent'].indexOf('custom-agent/0.1.2') > -1, 'Verify custom agent').to.be.ok;
 
@@ -50,8 +50,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         }
       }
 
-      var do_inner = Ably.Realtime.Platform.Http.do;
-      Ably.Rest.Platform.Http.do = testRequestHandler;
+      rest.http.do = testRequestHandler;
 
       // Call all methods that use rest http calls
       rest.auth.requestToken();
@@ -60,9 +59,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var channel = rest.channels.get('http_test_channel');
       channel.publish('test', 'Testing http headers');
       channel.presence.get();
-
-      // Clean interceptors from Http.do
-      Ably.Rest.Platform.Http.do = do_inner;
 
       done();
     });

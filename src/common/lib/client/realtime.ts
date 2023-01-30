@@ -8,7 +8,6 @@ import Defaults from '../util/defaults';
 import ErrorInfo from '../types/errorinfo';
 import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
-import { ErrCallback } from '../../types/utils';
 import ClientOptions, { DeprecatedClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
@@ -55,16 +54,33 @@ class Realtime extends Rest {
 class Channels extends EventEmitter {
   realtime: Realtime;
   all: Record<string, RealtimeChannel>;
-  inProgress: Record<string, RealtimeChannel>;
 
   constructor(realtime: Realtime) {
     super();
     this.realtime = realtime;
     this.all = Object.create(null);
-    this.inProgress = Object.create(null);
     realtime.connection.connectionManager.on('transport.active', () => {
       this.onTransportActive();
     });
+  }
+
+  channelSerials(): { [name: string]: string } {
+    let serials: { [name: string]: string } = {};
+    for (const name of Utils.keysArray(this.all, true)) {
+      const channel = this.all[name];
+      if (channel.properties.channelSerial) {
+        serials[name] = channel.properties.channelSerial;
+      }
+    }
+    return serials;
+  }
+
+  // recoverChannels gets the given channels and sets their channel serials.
+  recoverChannels(channelSerials: { [name: string]: string }) {
+    for (const name of Utils.keysArray(channelSerials, true)) {
+      const channel = this.get(name);
+      channel.properties.channelSerial = channelSerials[name];
+    }
   }
 
   onChannelMessage(msg: ProtocolMessage) {
@@ -90,9 +106,7 @@ class Channels extends EventEmitter {
   }
 
   /* called when a transport becomes connected; reattempt attach/detach
-   * for channels that are attaching or detaching.
-   * Note that this does not use inProgress as inProgress is only channels which have already made
-   * at least one attempt to attach/detach */
+   * for channels that are attaching or detaching. */
   onTransportActive() {
     for (const channelName in this.all) {
       const channel = this.all[channelName];
@@ -100,40 +114,9 @@ class Channels extends EventEmitter {
         channel.checkPendingState();
       } else if (channel.state === 'suspended') {
         channel._attach(false, null);
-      }
-    }
-  }
-
-  reattach(reason: ErrorInfo) {
-    for (const channelId in this.all) {
-      const channel = this.all[channelId];
-      /* NB this should not trigger for merely attaching channels, as they will
-       * be reattached anyway through the onTransportActive checkPendingState */
-      if (channel.state === 'attached') {
-        channel.requestState('attaching', reason);
-      }
-    }
-  }
-
-  resetAttachedMsgIndicators() {
-    for (const channelId in this.all) {
-      const channel = this.all[channelId];
-      if (channel.state === 'attached') {
-        channel._attachedMsgIndicator = false;
-      }
-    }
-  }
-
-  checkAttachedMsgIndicators(connectionId: string) {
-    for (const channelId in this.all) {
-      const channel = this.all[channelId];
-      if (channel.state === 'attached' && channel._attachedMsgIndicator === false) {
-        const msg =
-          '30s after a resume, found channel which has not received an attached; channelId = ' +
-          channelId +
-          '; connectionId = ' +
-          connectionId;
-        Logger.logAction(Logger.LOG_ERROR, 'Channels.checkAttachedMsgIndicators()', msg);
+      } else if (channel.state === 'attached') {
+        // Note explicity request the state, channel.attach() would do nothing
+        // as its already attached.
         channel.requestState('attaching');
       }
     }
@@ -160,7 +143,7 @@ class Channels extends EventEmitter {
     }
   }
 
-  get(name: string, channelOptions: ChannelOptions) {
+  get(name: string, channelOptions?: ChannelOptions) {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
@@ -191,37 +174,6 @@ class Channels extends EventEmitter {
       throw releaseErr;
     }
     delete this.all[name];
-    delete this.inProgress[name];
-  }
-
-  /* Records operations currently pending on a transport; used by connectionManager to decide when
-   * it's safe to upgrade. Note that a channel might be in the attaching state without any pending
-   * operations (eg if attached while the connection state is connecting) - such a channel must not
-   * hold up an upgrade, so is not considered inProgress.
-   * Operation is currently one of either 'statechange' or 'sync' */
-  setInProgress(channel: RealtimeChannel, operation: string, inProgress: boolean) {
-    this.inProgress[channel.name] = this.inProgress[channel.name] || {};
-    (this.inProgress[channel.name] as any)[operation] = inProgress;
-    if (!inProgress && this.hasNopending()) {
-      this.emit('nopending');
-    }
-  }
-
-  onceNopending(listener: ErrCallback) {
-    if (this.hasNopending()) {
-      listener();
-      return;
-    }
-    this.once('nopending', listener);
-  }
-
-  hasNopending() {
-    return Utils.arrEvery(
-      Utils.valuesArray(this.inProgress, true) as any,
-      function (operations: Record<string, unknown>) {
-        return !Utils.containsValue(operations, true);
-      }
-    );
   }
 }
 

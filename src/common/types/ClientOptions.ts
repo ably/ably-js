@@ -9,7 +9,6 @@ export type RestAgentOptions = {
 export default interface ClientOptions extends API.Types.ClientOptions {
   restAgentOptions?: RestAgentOptions;
   pushFullWait?: boolean;
-  checkChannelsOnResume?: boolean;
   agents?: string[];
 }
 

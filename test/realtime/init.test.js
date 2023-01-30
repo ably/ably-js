@@ -34,7 +34,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             var transport = realtime.connection.connectionManager.activeProtocol.transport;
             var connectUri = helper.isWebsocket(transport) ? transport.uri : transport.recvRequest.uri;
             try {
-              expect(connectUri.indexOf('v=1.2') > -1, 'Check uri includes v=1.2').to.be.ok;
+              expect(connectUri.indexOf('v=2') > -1, 'Check uri includes v=2').to.be.ok;
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -130,7 +130,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         realtime = helper.AblyRealtime({
           key: keyStr,
           useTokenAuth: true,
-          defaultTokenParams: { clientId: '*', ttl: 12345 },
+          defaultTokenParams: { clientId: '*', ttl: 123456 },
         });
         expect(realtime.auth.clientId).to.equal(undefined);
         realtime.connection.on('connected', function () {
@@ -138,7 +138,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             expect(realtime.auth.tokenDetails.clientId).to.equal('*');
             /* auth.clientId now does inherit the value '*' -- RSA7b4 */
             expect(realtime.auth.clientId).to.equal('*');
-            expect(realtime.auth.tokenDetails.expires - realtime.auth.tokenDetails.issued).to.equal(12345);
+            expect(realtime.auth.tokenDetails.expires - realtime.auth.tokenDetails.issued).to.equal(123456);
           } catch (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -334,10 +334,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             try {
               if (message.action === 4) {
                 expect(message.connectionDetails.connectionKey).to.be.ok;
-                expect(message.connectionDetails.connectionKey).to.equal(
-                  message.connectionKey,
-                  'connection keys should match'
-                );
                 message.connectionDetails.connectionKey = 'importantConnectionKey';
                 message.connectionDetails.clientId = 'customClientId';
               }

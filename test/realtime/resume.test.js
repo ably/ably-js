@@ -297,7 +297,6 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 /* Sabotage the resume */
                 (connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____'),
                   (connection.connectionManager.connectionId = 'ablyjs_tes');
-                connection.connectionManager.connectionSerial = 17;
                 connection.connectionManager.msgSerial = 15;
                 connection.once('disconnected', function () {
                   cb();
@@ -308,16 +307,12 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 connection.once('connected', function (stateChange) {
                   try {
                     expect(stateChange.reason && stateChange.reason.code).to.equal(
-                      80008,
+                      80018,
                       'Unable to recover connection correctly set in the stateChange'
                     );
                     expect(attachedChannel.state).to.equal('attaching', 'Attached channel went into attaching');
                     expect(suspendedChannel.state).to.equal('attaching', 'Suspended channel went into attaching');
                     expect(connection.connectionManager.msgSerial).to.equal(0, 'Check msgSerial is reset to 0');
-                    expect(connection.connectionManager.connectionSerial).to.equal(
-                      -1,
-                      'Check connectionSerial is reset by the new CONNECTED'
-                    );
                     expect(
                       connection.connectionManager.connectionId !== 'ablyjs_tes',
                       'Check connectionId is set by the new CONNECTED'
@@ -628,6 +623,140 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       } catch (err) {
         closeAndFinish(done, [sender_realtime, receiver_realtime, resumed_receiver_realtime], err);
       }
+    });
+
+    // Tests recovering multiple channels only receives the expected messages.
+    it('recover multiple channels', function (done) {
+      const NUM_MSGS = 5;
+
+      const txRest = helper.AblyRest();
+      const rxRealtime = helper.AblyRealtime(
+        {
+          transports: [helper.bestTransport],
+        },
+        true
+      );
+
+      const channelNames = Array(5)
+        .fill()
+        .map(() => String(Math.random()));
+      const rxChannels = channelNames.map((name) => rxRealtime.channels.get(name));
+
+      function attachChannels(callback) {
+        async.each(rxChannels, (channel, cb) => channel.attach(cb), callback);
+      }
+
+      function publishSubscribeWhileConnectedOnce(callback) {
+        async.each(
+          channelNames,
+          (name, cb) => {
+            const tx = txRest.channels.get(name);
+            const rx = rxRealtime.channels.get(name);
+            sendAndAwait(null, tx, rx, cb);
+          },
+          callback
+        );
+      }
+
+      function publishSubscribeWhileConnected(callback) {
+        async.each(
+          Array(NUM_MSGS).fill(0),
+          (_, cb) => {
+            publishSubscribeWhileConnectedOnce(cb);
+          },
+          callback
+        );
+      }
+
+      function publishSubscribeWhileDisconnectedOnce(callback) {
+        async.each(
+          channelNames,
+          (name, cb) => {
+            const tx = txRest.channels.get(name);
+            tx.publish('sentWhileDisconnected', null, cb);
+          },
+          callback
+        );
+      }
+
+      function publishSubscribeWhileDisconnected(callback) {
+        async.each(
+          Array(NUM_MSGS).fill(0),
+          (_, cb) => {
+            publishSubscribeWhileDisconnectedOnce(cb);
+          },
+          callback
+        );
+      }
+
+      let rxRealtimeRecover;
+      let rxRecoverChannels;
+
+      function subscribeRecoveredMessages(callback) {
+        async.each(
+          rxRecoverChannels,
+          (channel, cb) => {
+            let recoveredCount = 0;
+            channel.subscribe((msg) => {
+              expect(msg.name).to.equal('sentWhileDisconnected');
+
+              recoveredCount++;
+
+              if (recoveredCount === NUM_MSGS) {
+                cb();
+              }
+            });
+          },
+          callback
+        );
+      }
+
+      // Connection information from the original connection.
+      let connectionId;
+      let connectionKey;
+      let recoveryKey;
+
+      attachChannels(function (err) {
+        if (err) {
+          closeAndFinish(done, rxRealtime, err);
+          return;
+        }
+
+        publishSubscribeWhileConnected(function (err) {
+          if (err) {
+            closeAndFinish(done, rxRealtime, err);
+            return;
+          }
+
+          connectionId = rxRealtime.connection.id;
+          connectionKey = rxRealtime.connection.key;
+          recoveryKey = rxRealtime.connection.recoveryKey;
+
+          publishSubscribeWhileDisconnected(function (err) {
+            if (err) {
+              closeAndFinish(done, rxRealtime, err);
+              return;
+            }
+
+            rxRealtimeRecover = helper.AblyRealtime({ recover: recoveryKey });
+            rxRecoverChannels = channelNames.map((name) => rxRealtimeRecover.channels.get(name));
+
+            subscribeRecoveredMessages(function (err) {
+              if (err) {
+                closeAndFinish(done, [rxRealtime, rxRealtimeRecover], err);
+                return;
+              }
+
+              // RTN16d: After recovery expect the connection ID to be the same but the
+              // key should have updated.
+              expect(rxRealtimeRecover.connection.id).to.equal(connectionId);
+              expect(rxRealtimeRecover.connection.key).to.not.equal(connectionKey);
+
+              closeAndFinish(done, [rxRealtime, rxRealtimeRecover]);
+            });
+          });
+        });
+      });
     });
   });
 });

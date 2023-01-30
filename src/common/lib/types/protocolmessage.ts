@@ -23,6 +23,7 @@ const actions = {
   MESSAGE: 15,
   SYNC: 16,
   AUTH: 17,
+  ACTIVATE: 18,
 };
 
 const ActionName: string[] = [];
@@ -56,8 +57,7 @@ function toStringArray(array?: any[]): string {
   return '[ ' + result.join(', ') + ' ]';
 }
 
-const simpleAttributes =
-  'id channel channelSerial connectionId connectionKey connectionSerial count msgSerial timestamp'.split(' ');
+const simpleAttributes = 'id channel channelSerial connectionId connectionKey count msgSerial timestamp'.split(' ');
 
 class ProtocolMessage {
   action?: number;
@@ -68,9 +68,8 @@ class ProtocolMessage {
   error?: ErrorInfo;
   connectionId?: string;
   connectionKey?: string;
-  connectionSerial?: number;
   channel?: string;
-  channelSerial?: number | null;
+  channelSerial?: string | null;
   msgSerial?: number;
   messages?: Message[];
   presence?: PresenceMessage[];
@@ -159,37 +158,6 @@ class ProtocolMessage {
     }
     result += ']';
     return result;
-  };
-
-  /* Only valid for channel messages */
-  static isDuplicate = function (a: any, b: any): boolean {
-    if (a && b) {
-      if (
-        (a.action === actions.MESSAGE || a.action === actions.PRESENCE) &&
-        a.action === b.action &&
-        a.channel === b.channel &&
-        a.id === b.id
-      ) {
-        if (a.action === actions.PRESENCE) {
-          return true;
-        } else if (a.messages.length === b.messages.length) {
-          for (let i = 0; i < a.messages.length; i++) {
-            const aMessage = a.messages[i];
-            const bMessage = b.messages[i];
-            if (
-              (aMessage.extras && aMessage.extras.delta && aMessage.extras.delta.format) !==
-              (bMessage.extras && bMessage.extras.delta && bMessage.extras.delta.format)
-            ) {
-              return false;
-            }
-          }
-
-          return true;
-        }
-      }
-    }
-
-    return false;
   };
 }
 

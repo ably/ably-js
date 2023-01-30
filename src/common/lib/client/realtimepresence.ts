@@ -23,14 +23,10 @@ interface RealtimeHistoryParams {
   direction?: string;
   limit?: number;
   untilAttach?: boolean;
-  from_serial?: number | null;
+  from_serial?: string | null;
 }
 
 const noop = function () {};
-
-function memberKey(item: PresenceMessage) {
-  return item.clientId + ':' + item.connectionId;
-}
 
 function getClientId(realtimePresence: RealtimePresence) {
   return realtimePresence.channel.realtime.auth.clientId;
@@ -96,8 +92,9 @@ class RealtimePresence extends Presence {
     super(channel);
     this.channel = channel;
     this.syncComplete = false;
-    this.members = new PresenceMap(this);
-    this._myMembers = new PresenceMap(this);
+    this.members = new PresenceMap(this, (item) => item.clientId + ':' + item.connectionId);
+    // RTP17h: Store own members by clientId only.
+    this._myMembers = new PresenceMap(this, (item) => item.clientId!);
     this.subscriptions = new EventEmitter();
     this.pendingPresence = [];
   }
@@ -106,25 +103,26 @@ class RealtimePresence extends Presence {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
     }
-    return this._enterOrUpdateClient(undefined, data, 'enter', callback);
+    return this._enterOrUpdateClient(undefined, undefined, data, 'enter', callback);
   }
 
   update(data: unknown, callback: ErrCallback): void | Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
     }
-    return this._enterOrUpdateClient(undefined, data, 'update', callback);
+    return this._enterOrUpdateClient(undefined, undefined, data, 'update', callback);
   }
 
   enterClient(clientId: string, data: unknown, callback: ErrCallback): void | Promise<void> {
-    return this._enterOrUpdateClient(clientId, data, 'enter', callback);
+    return this._enterOrUpdateClient(undefined, clientId, data, 'enter', callback);
   }
 
   updateClient(clientId: string, data: unknown, callback: ErrCallback): void | Promise<void> {
-    return this._enterOrUpdateClient(clientId, data, 'update', callback);
+    return this._enterOrUpdateClient(undefined, clientId, data, 'update', callback);
   }
 
   _enterOrUpdateClient(
+    id: string | undefined,
     clientId: string | undefined,
     data: unknown,
     action: string,
@@ -136,7 +134,7 @@ class RealtimePresence extends Presence {
         data = null;
       } else {
         if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, '_enterOrUpdateClient', [clientId, data, action]);
+          return Utils.promisify(this, '_enterOrUpdateClient', [id, clientId, data, action]);
         }
         callback = noop;
       }
@@ -151,13 +149,16 @@ class RealtimePresence extends Presence {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimePresence.' + action + 'Client()',
-      'channel = ' + channel.name + ', client = ' + (clientId || '(implicit) ' + getClientId(this))
+      'channel = ' + channel.name + ', id = ' + id + ', client = ' + (clientId || '(implicit) ' + getClientId(this))
     );
 
     const presence = PresenceMessage.fromValues({
       action: action,
       data: data,
     });
+    if (id) {
+      presence.id = id;
+    }
     if (clientId) {
       presence.clientId = clientId;
     }
@@ -380,9 +381,6 @@ class RealtimePresence extends Presence {
     /* if this is the last (or only) message in a sequence of sync updates, end the sync */
     if (isSync && !syncCursor) {
       members.endSync();
-      /* RTP5c2: re-enter our own members if they haven't shown up in the sync */
-      this._ensureMyMembersPresent();
-      this.channel.setInProgress(RealtimeChannel.progressOps.sync, false);
       this.channel.syncChannelSerial = null;
     }
 
@@ -405,8 +403,10 @@ class RealtimePresence extends Presence {
     } else {
       this._synthesizeLeaves(this.members.values());
       this.members.clear();
-      this._ensureMyMembersPresent();
     }
+
+    // RTP17f: Re-enter own members when moving into the attached state.
+    this._ensureMyMembersPresent();
 
     /* NB this must be after the _ensureMyMembersPresent call, which may add items to pendingPresence */
     const pendingPresence = this.pendingPresence,
@@ -467,8 +467,7 @@ class RealtimePresence extends Presence {
   }
 
   _ensureMyMembersPresent(): void {
-    const members = this.members,
-      myMembers = this._myMembers,
+    const myMembers = this._myMembers,
       reenterCb = (err?: ErrorInfo | null) => {
         if (err) {
           const msg = 'Presence auto-re-enter failed: ' + err.toString();
@@ -480,16 +479,15 @@ class RealtimePresence extends Presence {
       };
 
     for (const memberKey in myMembers.map) {
-      if (!(memberKey in members.map)) {
-        const entry = myMembers.map[memberKey];
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'RealtimePresence._ensureMyMembersPresent()',
-          'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
-        );
-        this._enterOrUpdateClient(entry.clientId, entry.data, 'enter', reenterCb);
-        delete myMembers.map[memberKey];
-      }
+      const entry = myMembers.map[memberKey];
+      Logger.logAction(
+        Logger.LOG_MICRO,
+        'RealtimePresence._ensureMyMembersPresent()',
+        'Auto-reentering clientId "' + entry.clientId + '" into the presence set'
+      );
+      // RTP17g: Send ENTER containing the member id, clientId and data
+      // attributes.
+      this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter', reenterCb);
     }
   }
 
@@ -556,13 +554,15 @@ class PresenceMap extends EventEmitter {
   residualMembers: Record<string, PresenceMessage> | null;
   syncInProgress: boolean;
   presence: RealtimePresence;
+  memberKey: (item: PresenceMessage) => string;
 
-  constructor(presence: RealtimePresence) {
+  constructor(presence: RealtimePresence, memberKey: (item: PresenceMessage) => string) {
     super();
     this.presence = presence;
     this.map = Object.create(null);
     this.syncInProgress = false;
     this.residualMembers = null;
+    this.memberKey = memberKey;
   }
 
   get(key: string) {
@@ -601,7 +601,7 @@ class PresenceMap extends EventEmitter {
       item.action = 'present';
     }
     const map = this.map,
-      key = memberKey(item);
+      key = this.memberKey(item);
     /* we've seen this member, so do not remove it at the end of sync */
     if (this.residualMembers) delete this.residualMembers[key];
 
@@ -626,7 +626,7 @@ class PresenceMap extends EventEmitter {
 
   remove(item: PresenceMessage) {
     const map = this.map,
-      key = memberKey(item);
+      key = this.memberKey(item);
     const existingItem = map[key];
 
     if (existingItem && !newerThan(item, existingItem)) {

@@ -16,8 +16,6 @@ class Connection extends EventEmitter {
   state: string;
   key?: string;
   id?: string;
-  serial: undefined;
-  recoveryKey?: string | null;
   errorReason: ErrorInfo | null;
 
   constructor(ably: Realtime, options: NormalisedClientOptions) {
@@ -27,8 +25,6 @@ class Connection extends EventEmitter {
     this.state = this.connectionManager.state.state;
     this.key = undefined;
     this.id = undefined;
-    this.serial = undefined;
-    this.recoveryKey = undefined;
     this.errorReason = null;
 
     this.connectionManager.on('connectionstate', (stateChange: ConnectionStateChange) => {
@@ -73,6 +69,14 @@ class Connection extends EventEmitter {
   close(): void {
     Logger.logAction(Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
     this.connectionManager.requestState({ state: 'closing' });
+  }
+
+  get recoveryKey(): string | null {
+    return this.createRecoveryKey();
+  }
+
+  createRecoveryKey(): string | null {
+    return this.connectionManager.createRecoveryKey();
   }
 }
 
