@@ -9,6 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "importHelpers": true,
+    "sourceMap": true,
     "baseUrl": "./src"
   }
 }

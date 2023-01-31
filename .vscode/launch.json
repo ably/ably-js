@@ -1,7 +1,4 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -9,12 +6,11 @@
             "request": "launch",
             "name": "Debug Test",
             "env": {
-                "ABLY_ENV": "sandbox",
+                "ABLY_ENV": "sandbox"
             },
             "cwd": "${workspaceFolder}",
             "runtimeExecutable": "node",
-            "runtimeArgs": ["--inspect-brk=9229", "node_modules/.bin/grunt", "test:node", "--test=${relativeFile}"],
-            "port": 9229
+            "runtimeArgs": ["--inspect-brk=9229", "node_modules/.bin/grunt", "test:node"],
         }
     ]
 }

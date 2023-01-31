@@ -4,7 +4,7 @@ import ErrorInfo from '../types/errorinfo';
 import PresenceMessage from '../types/presencemessage';
 import { Types } from '../../../../ably';
 import errorCallback = Types.errorCallback;
-import Eventemitter from "../util/eventemitter";
+import Eventemitter from '../util/eventemitter';
 
 class Spaces {
   spaces: Record<string, Space>;
@@ -44,8 +44,6 @@ class Space extends Eventemitter {
 
     // The channel name prefix here should be unique to avoid conflicts with non-space channels
     this.channel = this.realtime.channels.get(`_ably_space_${name}`);
-
-
   }
 
   enter(data: unknown, callback: errorCallback) {
@@ -68,7 +66,7 @@ class Space extends Eventemitter {
         return callback({ message: 'Client has already entered the space', code: 40000, statusCode: 400 });
       } else {
         this.syncMembers();
-        return presence.enter(data, callback);
+        return presence.enter(JSON.stringify(data), callback);
       }
     });
   }
@@ -94,47 +92,54 @@ class Space extends Eventemitter {
     });
   }
 
-  private syncMembers(){
-    this.members = this.channel.presence.members.list({}).filter((m)=>m.clientId).map((m)=>({
-      clientId: m.clientId || "",
-      lastEventTimestamp: new Date(),
-      isConnected: true,
-      data: JSON.parse(m.data as string),
-    }));
+  private syncMembers() {
+    this.channel.presence.members
+      .list({})
+      .filter((m) => m.clientId)
+      .map((m) => ({
+        clientId: m.clientId || "",
+        lastEventTimestamp: new Date(),
+        isConnected: true,
+        data: JSON.parse(m.data as string),
+      }));
 
-    this.channel.presence.members.on('enter', (message: PresenceMessage)=>{
-      this.updateMemberState(message.clientId, true, JSON.parse(message.data as string));
+    this.channel.presence.subscribe('enter', (message: PresenceMessage) => {
+      this.updateMemberState(message.clientId, true, JSON.parse(message.data?.toString() as string));
     });
 
-    this.channel.presence.members.on('leave', (message: PresenceMessage)=>{
+    this.channel.presence.subscribe('leave', (message: PresenceMessage) => {
       this.updateMemberState(message.clientId, false);
     });
 
-    this.channel.presence.members.on('update', (message: PresenceMessage)=>{
+    this.channel.presence.subscribe('update', (message: PresenceMessage) => {
       this.updateMemberState(message.clientId, true, JSON.parse(message.data as string));
     });
   }
 
-  private updateMemberState(clientId: string | undefined, isConnected: boolean, data?: {[key: string]: any}) {
-    if(!clientId)return;
-    let member = this.members.find((m)=>m.clientId===clientId);
-    if(!member) {
-      this.emit("memberUpdate", this.members);
-      return this.createMember(clientId, isConnected, data || {});
+  private updateMemberState(clientId: string | undefined, isConnected: boolean, data?: { [key: string]: any }) {
+    const implicitClientId = clientId ?? this.realtime.auth.clientId;
+    if (!implicitClientId) {
+      return;
     }
-    member.isConnected = isConnected;
-    if(data){
-      // Member data is completely overridden
-      member.data = data;
+    let member = this.members.find((m) => m.clientId === clientId);
+    if (!member) {
+      this.createMember(implicitClientId, isConnected, data || {});
+    }else {
+      member.isConnected = isConnected;
+      if (data) {
+        // Member data is completely overridden, except lastEventTimestamp which is updated
+        member.data = {
+          ...data,
+          lastEventTimestamp: new Date(),
+        };
+      }
     }
-    member.lastEventTimestamp = new Date();
     this.emit("memberUpdate", this.members);
   }
 
-  private createMember(clientId: string, isConnected: boolean, data: {[key: string]: any}){
-    this.members.push({clientId, isConnected, data, lastEventTimestamp: new Date()});
+  private createMember(clientId: string, isConnected: boolean, data: { [key: string]: any }) {
+    this.members.push({ clientId, isConnected, data, lastEventTimestamp: new Date() });
   }
-
 }
 
 type SpaceOptions = {
@@ -142,10 +147,10 @@ type SpaceOptions = {
 };
 
 type SpaceMember = {
-  clientId: string,
-  lastEventTimestamp: Date,
-  isConnected: boolean,
-  data: {[key: string]: any},
-}
+  clientId: string;
+  lastEventTimestamp: Date;
+  isConnected: boolean;
+  data: { [key: string]: any };
+};
 
 export default Spaces;
