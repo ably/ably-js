@@ -95,8 +95,8 @@ class Space extends Eventemitter {
   }
 
   private syncMembers(){
-    this.channel.presence.members.list({}).filter((m)=>m.clientId).map((m)=>({
-      clientId: m.clientId,
+    this.members = this.channel.presence.members.list({}).filter((m)=>m.clientId).map((m)=>({
+      clientId: m.clientId || "",
       lastEventTimestamp: new Date(),
       isConnected: true,
       data: JSON.parse(m.data as string),
@@ -119,7 +119,7 @@ class Space extends Eventemitter {
     if(!clientId)return;
     let member = this.members.find((m)=>m.clientId===clientId);
     if(!member) {
-      this.emit("memberUpdate", member);
+      this.emit("memberUpdate", this.members);
       return this.createMember(clientId, isConnected, data || {});
     }
     member.isConnected = isConnected;
@@ -127,7 +127,8 @@ class Space extends Eventemitter {
       // Member data is completely overridden
       member.data = data;
     }
-    this.emit("memberUpdate", member);
+    member.lastEventTimestamp = new Date();
+    this.emit("memberUpdate", this.members);
   }
 
   private createMember(clientId: string, isConnected: boolean, data: {[key: string]: any}){
