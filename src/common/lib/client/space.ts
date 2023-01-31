@@ -68,7 +68,7 @@ class Space extends Eventemitter {
         return callback({ message: 'Client has already entered the space', code: 40000, statusCode: 400 });
       } else {
         this.syncMembers();
-        return presence.enter(data, callback);
+        return presence.enter(JSON.stringify(data), callback);
       }
     });
   }
@@ -102,15 +102,15 @@ class Space extends Eventemitter {
       data: JSON.parse(m.data as string),
     }));
 
-    this.channel.presence.on('enter', (message: PresenceMessage)=>{
+    this.channel.presence.subscribe('enter', (message: PresenceMessage)=>{
       this.updateMemberState(message.clientId, true, JSON.parse(message.data?.toString() as string));
     });
 
-    this.channel.presence.on('leave', (message: PresenceMessage)=>{
+    this.channel.presence.subscribe('leave', (message: PresenceMessage)=>{
       this.updateMemberState(message.clientId, false);
     });
 
-    this.channel.presence.on('update', (message: PresenceMessage)=>{
+    this.channel.presence.subscribe('update', (message: PresenceMessage)=>{
       this.updateMemberState(message.clientId, true, JSON.parse(message.data as string));
     });
   }
@@ -127,8 +127,11 @@ class Space extends Eventemitter {
     }
     member.isConnected = isConnected;
     if(data){
-      // Member data is completely overridden
-      member.data = data;
+      // Member data is completely overridden, except lastEventTimestamp which is updated
+      member.data = {
+        ...data,
+        lastEventTimestamp: new Date(),
+      };
     }
     this.emit("memberUpdate", member);
   }
