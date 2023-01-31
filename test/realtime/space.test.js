@@ -133,7 +133,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           let space = realtime.spaces.get('test_space', {});
 
           let callback = (err) => {
-            expect(err && err.message).to.equal(undefined);
+            expect(err && err.message).to.equal(null);
             helper.closeAndFinish(done, realtime, undefined);
           };
 
@@ -161,15 +161,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    describe.only('watchMembers', () => {
+    describe('watchMembers', () => {
       it('emits an event on enter without any extant members', (done) => {
         const realtime = helper.AblyRealtime({ clientId: 'test' });
         try {
           const space = realtime.spaces.get('test_space', {});
-          
-          const callback = (err, data) => {
 
-          };
+          const callback = (err, data) => {};
 
           space.on('memberUpdate', (member) => {
             expect(member).to.equal(undefined);
@@ -179,7 +177,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         } catch (e) {
           helper.closeAndFinish(done, realtime, e);
         }
-
       });
     });
   });
