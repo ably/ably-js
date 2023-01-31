@@ -167,13 +167,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         try {
           const space = realtime.spaces.get('test_space', {});
           
-          const callback = () => {};
+          const callback = (err, data) => {
+
+          };
 
           space.on('memberUpdate', (member) => {
             expect(member).to.equal(undefined);
             helper.closeAndFinish(done, realtime, undefined);
           });
-          setTimeout(() => space.enter({}, callback), 100);
+          space.enter({}, callback);
         } catch (e) {
           helper.closeAndFinish(done, realtime, e);
         }

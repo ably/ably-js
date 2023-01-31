@@ -102,15 +102,15 @@ class Space extends Eventemitter {
       data: JSON.parse(m.data as string),
     }));
 
-    this.channel.presence.members.on('enter', (message: PresenceMessage)=>{
-      this.updateMemberState(message.clientId, true, JSON.parse(message.data as string));
+    this.channel.presence.on('enter', (message: PresenceMessage)=>{
+      this.updateMemberState(message.clientId, true, JSON.parse(message.data?.toString() as string));
     });
 
-    this.channel.presence.members.on('leave', (message: PresenceMessage)=>{
+    this.channel.presence.on('leave', (message: PresenceMessage)=>{
       this.updateMemberState(message.clientId, false);
     });
 
-    this.channel.presence.members.on('update', (message: PresenceMessage)=>{
+    this.channel.presence.on('update', (message: PresenceMessage)=>{
       this.updateMemberState(message.clientId, true, JSON.parse(message.data as string));
     });
   }
