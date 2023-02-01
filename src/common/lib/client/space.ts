@@ -102,7 +102,6 @@ class Space extends Eventemitter {
         isConnected: true,
         data: JSON.parse(m.data as string),
       }));
-
   }
 
   private subscribeToPresenceEvents() {
@@ -140,7 +139,7 @@ class Space extends Eventemitter {
         };
       }
     }
-    this.emit("memberUpdate", this.members);
+    this.emit('memberUpdate', this.members);
   }
 
   private createMember(clientId: string, isConnected: boolean, data: { [key: string]: any }) {
