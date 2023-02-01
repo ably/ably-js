@@ -1,4 +1,4 @@
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, { expect }) {
+define(['ably', 'shared_helper', 'async', 'sinon', 'chai'], function (Ably, helper, async, sinon, { expect }) {
   describe('realtime/space', () => {
     before(function (done) {
       helper.setupApp(function (err) {
@@ -167,13 +167,33 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         try {
           const space = realtime.spaces.get('test_space', {});
 
-          const callback = (err, data) => {};
+          const callback = () => {};
 
-          space.on('memberUpdate', (member) => {
-            expect(member).to.equal(undefined);
+          space.on('memberUpdate', (members) => {
+            expect(members[0].clientId).to.equal('test');
+            expect(members[0].isConnected).to.equal(true);
             helper.closeAndFinish(done, realtime, undefined);
           });
           space.enter({}, callback);
+        } catch (e) {
+          helper.closeAndFinish(done, realtime, e);
+        }
+      });
+
+      it('emits an event on leave', (done) => {
+        const realtime = helper.AblyRealtime({ clientId: 'test' });
+        try {
+          const space = realtime.spaces.get('test_space', {});
+
+          const callback = () => {};
+          const leaveSpaceCallback = () => setTimeout(() => space.leave(callback), 0);
+
+          space.on('memberUpdate', (members) => {
+            expect(members[0].clientId).to.equal('test');
+            expect(members[0].isConnected).to.equal(false);
+            helper.closeAndFinish(done, realtime, undefined);
+          });
+          space.enter({}, leaveSpaceCallback);
         } catch (e) {
           helper.closeAndFinish(done, realtime, e);
         }

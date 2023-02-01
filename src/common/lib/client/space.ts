@@ -66,6 +66,7 @@ class Space extends Eventemitter {
         return callback({ message: 'Client has already entered the space', code: 40000, statusCode: 400 });
       } else {
         this.syncMembers();
+        this.subscribeToPresenceEvents();
         return presence.enter(JSON.stringify(data), callback);
       }
     });
@@ -93,18 +94,20 @@ class Space extends Eventemitter {
   }
 
   private syncMembers() {
-    this.channel.presence.members
+    this.members = this.channel.presence.members
       .list({})
       .filter((m) => m.clientId)
       .map((m) => ({
-        clientId: m.clientId || "",
-        lastEventTimestamp: new Date(),
+        clientId: m.clientId as string,
         isConnected: true,
         data: JSON.parse(m.data as string),
       }));
 
+  }
+
+  private subscribeToPresenceEvents() {
     this.channel.presence.subscribe('enter', (message: PresenceMessage) => {
-      this.updateMemberState(message.clientId, true, JSON.parse(message.data?.toString() as string));
+      this.updateMemberState(message.clientId, true, JSON.parse(message.data as string));
     });
 
     this.channel.presence.subscribe('leave', (message: PresenceMessage) => {
@@ -118,13 +121,16 @@ class Space extends Eventemitter {
 
   private updateMemberState(clientId: string | undefined, isConnected: boolean, data?: { [key: string]: any }) {
     const implicitClientId = clientId ?? this.realtime.auth.clientId;
+
     if (!implicitClientId) {
       return;
     }
+
     let member = this.members.find((m) => m.clientId === clientId);
+
     if (!member) {
       this.createMember(implicitClientId, isConnected, data || {});
-    }else {
+    } else {
       member.isConnected = isConnected;
       if (data) {
         // Member data is completely overridden, except lastEventTimestamp which is updated
@@ -138,7 +144,7 @@ class Space extends Eventemitter {
   }
 
   private createMember(clientId: string, isConnected: boolean, data: { [key: string]: any }) {
-    this.members.push({ clientId, isConnected, data, lastEventTimestamp: new Date() });
+    this.members.push({ clientId, isConnected, data });
   }
 }
 
@@ -148,7 +154,6 @@ type SpaceOptions = {
 
 type SpaceMember = {
   clientId: string;
-  lastEventTimestamp: Date;
   isConnected: boolean;
   data: { [key: string]: any };
 };
