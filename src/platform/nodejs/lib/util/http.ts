@@ -223,6 +223,10 @@ const Http: typeof IHttp = class {
 
     doOptions.url = uri;
     doOptions.timeout = { request: ((rest && rest.options.timeouts) || Defaults.TIMEOUTS).httpRequestTimeout };
+    // We have our own logic that retries appropriate statuscodes to fallback endpoints,
+    // with timeouts constructed appropriately. Don't want `got` doing its own retries to
+    // the same endpoint, inappropriately retrying 429s, etc
+    doOptions.retry = { limit: 0 };
 
     (got[method](doOptions) as CancelableRequest<Response>)
       .then((res: Response) => {
