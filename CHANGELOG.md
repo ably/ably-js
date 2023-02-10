@@ -2,7 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
-## [1.2.34](https://github.com/ably/ably-js/tree/1.2.34) (2023-01-30)
+## [1.2.36](https://github.com/ably/ably-js/tree/1.2.36) (2023-02-10)
+- fix(Node/http): prevent got from using its own retry mechanism [\#1122](https://github.com/ably/ably-js/pull/1122)
+- deps: update `http-cache-semantics` dependency [\#1123](https://github.com/ably/ably-js/pull/1123)
+
+## [1.2.35](https://github.com/ably/ably-js/tree/1.2.35) (2023-01-30)
 - Implement ably-js protocol v2 [\#1110](https://github.com/ably/ably-js/pull/1110)
 - Add global HTTP agent pool (fixes memory leak when creating several rest clients) [\#1113](https://github.com/ably/ably-js/pull/1113)
 
