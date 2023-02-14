@@ -3,7 +3,7 @@ import Defaults from 'common/lib/util/defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { ErrnoException, IHttp, PathParameter, RequestCallback, RequestParams } from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
-import got, { Response, Options, CancelableRequest, Agents } from 'got';
+import got, { Response, Options, CancelableRequest, Agents, HTTPError as GotHTTPError } from 'got';
 import http from 'http';
 import https from 'https';
 import Rest from 'common/lib/client/rest';
@@ -196,7 +196,10 @@ const Http: typeof IHttp = class {
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
     const agentOptions = (rest && rest.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
-    const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
+    const doOptions: Partial<Options> = { responseType: 'buffer' };
+    if (headers) {
+      doOptions.headers = headers;
+    }
 
     if (!this.agent) {
       const persistedAgent = globalAgentPool.find((x) => shallowEquals(agentOptions, x.options))?.agents;
@@ -233,7 +236,7 @@ const Http: typeof IHttp = class {
         handler(uri, params, callback)(null, res, res.body);
       })
       .catch((err: ErrnoException) => {
-        if (err instanceof got.HTTPError) {
+        if (err instanceof GotHTTPError) {
           handler(uri, params, callback)(null, err.response, err.response.body);
           return;
         }
