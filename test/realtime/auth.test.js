@@ -358,8 +358,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         clientRealtime = helper.AblyRealtime({ token: tokenDetails, clientId: 'WRONG' });
         clientRealtime.connection.once('failed', function (stateChange) {
           try {
-            expect(stateChange.reason.code).to.equal(80019);
-            expect(stateChange.reason.cause.code).to.equal(40102);
+            expect(stateChange.reason.code).to.equal(40102);
             clientRealtime.close();
             done();
           } catch (err) {

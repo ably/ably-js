@@ -2081,6 +2081,8 @@ class ConnectionManager extends EventEmitter {
     if (err.code === 40171) {
       /* No way to reauth */
       this.notifyState({ state: 'failed', error: err });
+    } else if (err.code === 40102) {
+      this.notifyState({ state: 'failed', error: err });
     } else if (err.statusCode === HttpStatusCodes.Forbidden) {
       const msg = 'Client configured authentication provider returned 403; failing the connection';
       Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
