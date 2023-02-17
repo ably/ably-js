@@ -9,6 +9,9 @@ export default class ErrorInfo extends Error {
 
   constructor(message: string, code: number | null, statusCode?: number, cause?: string | Error | ErrorInfo) {
     super(message);
+    if (typeof Object.setPrototypeOf !== 'undefined') {
+      Object.setPrototypeOf(this, ErrorInfo.prototype);
+    }
     this.code = code;
     this.statusCode = statusCode;
     this.cause = cause;
