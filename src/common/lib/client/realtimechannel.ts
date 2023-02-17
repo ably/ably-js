@@ -114,11 +114,7 @@ class RealtimeChannel extends Channel {
   }
 
   static invalidStateError(state: string): ErrorInfo {
-    return {
-      statusCode: 400,
-      code: 90001,
-      message: 'Channel operation failed as channel state is ' + state,
-    };
+    return new ErrorInfo('Channel operation failed as channel state is ' + state, 90001, 400);
   }
 
   static processListenerArgs(args: unknown[]): any[] {
