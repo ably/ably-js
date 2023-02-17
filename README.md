@@ -316,7 +316,7 @@ Example emoji reaction to a message:
 
 ```javascript
 function sendReaction(emoji) {
-    channel.publish('event_name', { body: emoji, extras: { ref: { type: "com.ably.reaction", timeserial: "1656424960320-1" } } })
+    channel.publish({ name: 'event_name', data: emoji, extras: { ref: { type: "com.ably.reaction", timeserial: "1656424960320-1" } } })
 }
 ```
 
