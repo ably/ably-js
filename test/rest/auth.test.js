@@ -697,11 +697,11 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
         var rest = helper.AblyRest({ promises: true });
 
         var promise1 = rest.auth.requestToken();
-        var promise2 = rest.auth.requestToken({ ttl: 100 });
-        var promise3 = rest.auth.requestToken({ ttl: 100 }, { key: helper.getTestApp().keys[1].keyStr });
+        var promise2 = rest.auth.requestToken({ ttl: 200 });
+        var promise3 = rest.auth.requestToken({ ttl: 200 }, { key: helper.getTestApp().keys[1].keyStr });
         var promise4 = rest.auth.createTokenRequest();
-        var promise5 = rest.auth.createTokenRequest({ ttl: 100 });
-        var promise6 = rest.auth.requestToken({ ttl: 100 }, { key: 'bad' })['catch'](function (err) {
+        var promise5 = rest.auth.createTokenRequest({ ttl: 200 });
+        var promise6 = rest.auth.requestToken({ ttl: 200 }, { key: 'bad' })['catch'](function (err) {
           expect(true, 'Token attempt with bad key was rejected').to.be.ok;
         });
 
