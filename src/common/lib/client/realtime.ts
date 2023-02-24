@@ -161,6 +161,18 @@ class Channels extends EventEmitter {
     return channel;
   }
 
+  getWithFilter(name: string, filter: string, channelOptions?: ChannelOptions) {
+    // We need to preserve any channel parameters from the channel name, but
+    // do not support filters on channels with existing qualifiers.
+    // TODO not sure if we need to handle scopes eg [app:abc?rewind=1]foo
+    const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/
+    const match = name.match(regex);
+    if (match[2]) {
+      throw new Error(`cannot use a filter with a ${match[2]} channel`);
+    }
+    return this.channels.get(`[filter=${encodeURIComponent(filter)}${match[3] || ''}]${match[4]}`, channelOptions);
+  };
+
   /* Included to support certain niche use-cases; most users should ignore this.
    * Please do not use this unless you know what you're doing */
   release(name: string) {
