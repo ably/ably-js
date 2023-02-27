@@ -1,0 +1,115 @@
+%YAML 1.2
+---
+common-version: 1.2.0
+compliance:
+  Agent Identifier:
+    Agents:
+    Runtime:
+  Authentication:
+    API Key:
+    Token:
+      Callback:
+      Literal:
+      URL:
+        Query Time:
+  Debugging:
+    Error Information:
+    Logs:
+  Protocol:
+    JSON:
+    Maximum Message Size:
+    MessagePack:
+  Realtime:
+    Authentication:
+      Get Confirmed Client Identifier:
+    Channel:
+      Attach:
+      Encryption:
+      History:
+      Mode:
+      Presence:
+        Enter:
+            Client:
+        Get:
+        History:
+        Subscribe:
+        Update:
+            Client:
+      Publish:
+      Retry Timeout:
+      State Events:
+      Subscribe:
+        Deltas:
+        Rewind:
+    Connection:
+      Disconnected Retry Timeout:
+      Get Identifier:
+      Incremental Backoff:
+      Lifecycle Control:
+      Ping:
+      Recovery:
+      State Events:
+      Suspended Retry Timeout:
+    Message Echoes:
+    Message Queuing:
+    Transport Parameters:
+  REST:
+    Authentication:
+      Authorize:
+      Create Token Request:
+      Get Client Identifier:
+      Request Token:
+    Channel:
+      Encryption:
+      Existence Check:
+      Get:
+      History:
+      Name:
+      Presence:
+        History:
+        Member List:
+      Publish:
+        Idempotence:
+        Parameters for Query String:
+      Release:
+      Status:
+        Channel Details:
+    Opaque Request:
+    Push Notifications Administration:
+      Channel Subscription:
+        List:
+        List Channels:
+        Remove:
+        Save:
+      Device Registration:
+        Get:
+        List:
+        Remove:
+        Save:
+      Publish:
+    Request Timeout:
+    Service:
+      Get Time:
+    Statistics:
+      Query:
+    Support Hyperlink on Request Failure:
+  Service:
+    Environment:
+    Fallbacks:
+      Hosts:
+      Internet Up Check:
+      REST Follows Realtime:
+      Retry Count:
+      Retry Duration:
+      Retry Timeout:
+    Host:
+  Testing:
+    Disable TLS:
+    TCP Insecure Port:
+    TCP Secure Port:
+  Transport:
+    Connection Open Timeout:
+    HTTP/2:
+      .caveats: 'Supported in browser'
+    Maximum Frame Size:
+
