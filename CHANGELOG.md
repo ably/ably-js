@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.37](https://github.com/ably/ably-js/tree/1.2.37) (2023-02-27)
+- make ErrorInfo extend Error [\#1129](https://github.com/ably/ably-js/pull/1129)
+- improve error message for clientId mismatch from user auth provider [\#1128](https://github.com/ably/ably-js/pull/1128)
+- fix: don't send credentials in webworker FetchInit [\#1132](https://github.com/ably/ably-js/pull/1132)
+
 ## [1.2.36](https://github.com/ably/ably-js/tree/1.2.36) (2023-02-10)
 - fix(Node/http): prevent got from using its own retry mechanism [\#1122](https://github.com/ably/ably-js/pull/1122)
 - deps: update `http-cache-semantics` dependency [\#1123](https://github.com/ably/ably-js/pull/1123)
