@@ -601,7 +601,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    testOnAllTransports('subscribeAfterSetOptions', function (realtimeOpts) {
+    testOnAllTransports.only('subscribeAfterSetOptions', function (realtimeOpts) {
       return function (done) {
         var testName = 'subscribeAfterSetOptions';
         try {

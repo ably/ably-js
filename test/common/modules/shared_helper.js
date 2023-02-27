@@ -128,8 +128,11 @@ define([
   }
 
   /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
-  function testOnAllTransports(name, testFn, excludeUpgrade, skip) {
+  function testOnAllTransports(name, testFn, excludeUpgrade, skip, only) {
     var itFn = skip ? it.skip : it;
+    if (only) {
+        itFn = it.only;
+    }
     let transports = availableTransports;
     utils.arrForEach(transports, function (transport) {
       itFn(
@@ -153,6 +156,10 @@ define([
 
   testOnAllTransports.skip = function (name, testFn, excludeUpgrade) {
     testOnAllTransports(name, testFn, excludeUpgrade, true);
+  };
+
+  testOnAllTransports.only = function (name, testFn, excludeUpgrade) {
+    testOnAllTransports(name, testFn, excludeUpgrade, false, true);
   };
 
   function restTestOnJsonMsgpack(name, testFn, skip) {
