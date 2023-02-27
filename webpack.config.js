@@ -158,6 +158,9 @@ const browserMinConfig = {
 const webworkerConfig = {
   target: 'webworker',
   ...browserConfig,
+  entry: {
+    index: platformPath('web', 'index-webworker.ts'),
+  },
   output: {
     ...baseConfig.output,
     filename: 'ably-webworker.min.js',
