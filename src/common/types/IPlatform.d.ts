@@ -49,4 +49,5 @@ export interface IPlatform {
     byteLength: number,
     callback: (err: Error, result: boolean | CryptoJS.lib.WordArray) => void
   ) => void;
+  isWebworker?: boolean;
 }

@@ -39,13 +39,18 @@ export default function fetchRequest(
     rest ? rest.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
   );
 
+  const requestInit: RequestInit = {
+    method: _method,
+    headers: fetchHeaders,
+    body: body as any,
+  };
+
+  if (!Platform.Config.isWebworker) {
+    requestInit.credentials = fetchHeaders.has('authorization') ? 'include' : 'same-origin';
+  }
+
   getGlobalObject()
-    .fetch(uri + '?' + new URLSearchParams(params || {}), {
-      method: _method,
-      headers: fetchHeaders,
-      body: body as any,
-      credentials: fetchHeaders.has('authorization') ? 'include' : 'same-origin',
-    })
+    .fetch(uri + '?' + new URLSearchParams(params || {}), requestInit)
     .then((res) => {
       clearTimeout(timeout);
       const contentType = res.headers.get('Content-Type');
