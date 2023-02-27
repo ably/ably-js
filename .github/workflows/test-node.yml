@@ -25,6 +25,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
-      - run: npm run test:node
+      - run: while npx grunt mocha; do :; done
         env:
           CI: true
+          ABLY_LOG_LEVEL: 4
