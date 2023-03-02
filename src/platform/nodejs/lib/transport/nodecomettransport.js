@@ -194,6 +194,7 @@ var NodeCometTransport = function (connectionManager) {
     this.streamComplete = false;
 
     function onChunk(chunk) {
+      console.log('readStream recv: ' + chunk);
       try {
         chunk = JSON.parse(chunk);
       } catch (e) {
@@ -251,6 +252,7 @@ var NodeCometTransport = function (connectionManager) {
         var body = Buffer.concat(chunks),
           statusCode = res.statusCode;
 
+        console.log('readFully recv: ' + body);
         try {
           body = JSON.parse(String(body));
         } catch (e) {
