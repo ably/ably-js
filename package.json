@@ -26,7 +26,7 @@
   ],
   "dependencies": {
     "@ably/msgpack-js": "^0.4.0",
-    "got": "^11.8.2",
+    "got": "^12.6.0",
     "ws": "^5.1"
   },
   "devDependencies": {
