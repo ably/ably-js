@@ -59,7 +59,7 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
       });
       break;
     default:
-      callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError(channel.state)));
+      callback(ErrorInfo.fromValues(channel.invalidStateError()));
   }
 }
 
@@ -248,7 +248,7 @@ class RealtimePresence extends Presence {
         break;
       }
       default:
-        callback?.(RealtimeChannel.invalidStateError(channel.state));
+        callback?.(channel.invalidStateError());
     }
   }
 
@@ -533,7 +533,7 @@ class RealtimePresence extends Presence {
     }
 
     if (channel.state === 'failed') {
-      callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
+      callback(ErrorInfo.fromValues(channel.invalidStateError()));
       return;
     }
 

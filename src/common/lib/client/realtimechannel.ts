@@ -113,8 +113,13 @@ class RealtimeChannel extends Channel {
     this._allChannelChanges = new EventEmitter();
   }
 
-  static invalidStateError(state: string): ErrorInfo {
-    return new ErrorInfo('Channel operation failed as channel state is ' + state, 90001, 400);
+  invalidStateError(): ErrorInfo {
+    return new ErrorInfo(
+      'Channel operation failed as channel state is ' + this.state,
+      90001,
+      400,
+      this.errorReason || undefined
+    );
   }
 
   static processListenerArgs(args: unknown[]): any[] {
@@ -244,7 +249,7 @@ class RealtimeChannel extends Channel {
     switch (state) {
       case 'failed':
       case 'suspended':
-        callback(ErrorInfo.fromValues(RealtimeChannel.invalidStateError(state)));
+        callback(ErrorInfo.fromValues(this.invalidStateError()));
         break;
       default: {
         Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
@@ -425,7 +430,7 @@ class RealtimeChannel extends Channel {
     }
 
     if (this.state === 'failed') {
-      callback?.(ErrorInfo.fromValues(RealtimeChannel.invalidStateError('failed')));
+      callback?.(ErrorInfo.fromValues(this.invalidStateError()));
       return;
     }
 
