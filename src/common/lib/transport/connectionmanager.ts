@@ -364,8 +364,18 @@ class ConnectionManager extends EventEmitter {
             'reattempting connection'
           );
           this.requestState({ state: 'connecting' });
+        } else if (this.state == this.states.connecting) {
+          // RTN20c: if 'online' event recieved while CONNECTING, abandon connection attempt and retry
+          this.pendingTransports.forEach(function (transport) {
+            // Detach transport listeners to avoid connection state side effects from calling dispose
+            transport.off();
+          });
+          this.disconnectAllTransports();
+
+          this.startConnect();
         }
       });
+
       addEventListener('offline', () => {
         if (this.state == this.states.connected) {
           Logger.logAction(
