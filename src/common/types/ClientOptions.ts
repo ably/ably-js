@@ -9,7 +9,7 @@ export type RestAgentOptions = {
 export default interface ClientOptions extends API.Types.ClientOptions {
   restAgentOptions?: RestAgentOptions;
   pushFullWait?: boolean;
-  agents?: string[];
+  agents?: Record<string, string | undefined>;
 }
 
 export type DeprecatedClientOptions = Modify<
