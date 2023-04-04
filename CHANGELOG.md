@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.38](https://github.com/ably/ably-js/tree/1.2.38) (2023-04-04)
+- retry connection attempt if 'online' event received whilst connecting [\#1171](https://github.com/ably/ably-js/pull/1171)
+- populate invalid state `ErrorInfo.cause` with the current `errorReason`, if set [\#1169](https://github.com/ably/ably-js/pull/1169)
+- fix: align exposed type of `ErrorInfo` with internal type, extending `Error` [\#1142](https://github.com/ably/ably-js/pull/1142)
+- fix: avoid global scope `TextEncoder` access [\#1157](https://github.com/ably/ably-js/pull/1157)
+
 ## [1.2.37](https://github.com/ably/ably-js/tree/1.2.37) (2023-02-27)
 - make ErrorInfo extend Error [\#1129](https://github.com/ably/ably-js/pull/1129)
 - improve error message for clientId mismatch from user auth provider [\#1128](https://github.com/ably/ably-js/pull/1128)
