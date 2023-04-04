@@ -36,8 +36,8 @@ define([
     return result;
   }
 
-  function monitorConnection(done, realtime) {
-    utils.arrForEach(['failed', 'suspended'], function (state) {
+  function monitorConnection(done, realtime, states) {
+    utils.arrForEach(states || ['failed', 'suspended'], function (state) {
       realtime.connection.on(state, function () {
         done(new Error('Connection monitoring: state changed to ' + state + ', aborting test'));
         realtime.close();

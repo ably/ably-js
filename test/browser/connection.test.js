@@ -182,6 +182,35 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      it('device_going_online_causes_connecting_connection_to_retry_attempt', function (done) {
+        var realtime = helper.AblyRealtime({}),
+          connection = realtime.connection,
+          onlineEvent = new Event('online', { bubbles: true }),
+          oldTransport,
+          newTransport;
+
+        monitorConnection(done, realtime, ['failed', 'disconnected', 'suspended']);
+
+        /* Sabotage the connection attempt by emitting onlineEvent when transport is pending */
+        connection.connectionManager.once('transport.pending', function (transport) {
+          oldTransport = transport;
+          document.dispatchEvent(onlineEvent);
+
+          connection.connectionManager.once('transport.pending', function (transport) {
+            newTransport = transport;
+          });
+        });
+
+        connection.on('connected', function () {
+          /* Ensure that the original pending transport has been disposed of and superseded */
+          expect(oldTransport.isDisposed).to.be.ok;
+          expect(newTransport.isDisposed).to.not.be.ok;
+          expect(oldTransport).to.not.equal(newTransport);
+          expect(realtime.connection.connectionManager.activeProtocol.transport).to.equal(newTransport);
+          closeAndFinish(done, realtime);
+        });
+      });
+
       /* uses internal realtime knowledge of the format of the connection key to
        * check if a connection key is the result of a successful recovery of another */
       function sameConnection(keyA, keyB) {
