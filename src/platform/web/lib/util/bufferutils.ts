@@ -162,8 +162,8 @@ class BufferUtils implements IBufferUtils {
   }
 
   utf8Encode(string: string) {
-    if (TextEncoder) {
-      return new TextEncoder().encode(string).buffer;
+    if (Platform.Config.TextEncoder) {
+      return new Platform.Config.TextEncoder().encode(string).buffer;
     }
     return parseUtf8(string);
   }
