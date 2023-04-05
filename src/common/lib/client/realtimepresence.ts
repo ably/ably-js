@@ -66,7 +66,8 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
 function newerThan(item: PresenceMessage, existing: PresenceMessage) {
   /* RTP2b1: if either is synthesised, compare by timestamp */
   if (item.isSynthesized() || existing.isSynthesized()) {
-    return (item.timestamp as number) > (existing.timestamp as number);
+    // RTP2b1a: if equal, prefer the newly-arrived one
+    return (item.timestamp as number) >= (existing.timestamp as number);
   }
 
   /* RTP2b2 */
