@@ -549,7 +549,12 @@ export function shallowEquals(source: Record<string, unknown>, target: Record<st
 }
 
 export function matchDerivedChannel(name: string) {
-  const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/;
+  /**
+   * This warning is triggered because the RegExp uses nested quantifiers,
+   * but it does not create any situation where the regex engine has to
+   * explore a large number of possible matches so it’s safe to ignore
+   */
+  const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/; // eslint-disable-line
   const match = name.match(regex)
   if (!match || !match.length || match.length < 5) {
     throw new Error(`regex match failed`);
