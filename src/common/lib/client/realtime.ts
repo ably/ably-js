@@ -143,8 +143,15 @@ class Channels extends EventEmitter {
     }
   }
 
-  get(name: string, channelOptions?: ChannelOptions) {
+  get(name: string, deriveOptions?: API.Types.DeriveOptions, channelOptions?: ChannelOptions) {
     name = String(name);
+    if (deriveOptions) {
+      if (deriveOptions.filter) {
+      const filter = encodeURIComponent(deriveOptions.filter)
+      const match = Utils.matchDerivedChannel(name)
+      name = `[filter=${filter}${match}`
+      }
+    }
     let channel = this.all[name];
     if (!channel) {
       channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);

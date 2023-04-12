@@ -1183,5 +1183,47 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
       });
     }
+
+    it('subscribes to filtered channel', function (done) {
+      var testData = {
+        name: 'filtered',
+        data: 'This should be filtered',
+        extras: {
+            headers: {
+                name: "value1",
+                number: 26095,
+                bool: true,
+            }
+        }
+      }
+      var filterOption = {
+        filter: 'name == `"filtered"` && headers.number == `26095`'
+      }
+      try {
+        /* set up realtime */
+        var realtime = helper.AblyRealtime();
+
+        realtime.connection.on('connected', function () {
+          var rtChannel = realtime.channels.get('filter_test', filterOption);
+
+            /* subscribe to event */
+            rtChannel.subscribe('filtered', function (msg) {
+              try {
+                expect(msg.data).to.equal(testData.data, 'Unexpected msg text received');
+              } catch (err) {
+                closeAndFinish(done, realtime, err);
+                return;
+              }
+              closeAndFinish(done, realtime);
+            });
+
+            rtChannel.publish("filtered", "no filter on message");
+            rtChannel.publish(testData);
+          });
+        monitorConnection(done, realtime);
+      } catch (err) {
+        closeAndFinish(done, realtime, err);
+      }
+    });
   });
 });

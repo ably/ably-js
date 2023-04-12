@@ -994,6 +994,17 @@ declare namespace Types {
    * - {@link ChannelCallbacks.history}
    * - {@link ChannelPromise.history}
    */
+
+  /**
+   * Passes an attachment to a {@link ChannelBase} name to give a new derived channel
+   */
+  interface DeriveOptions {
+    /**
+     * The filter string to be used to derive new channel.
+     */
+    filter?: string;
+  }
+
   interface RestHistoryParams {
     /**
      * The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -2748,10 +2759,11 @@ declare namespace Types {
      * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
      *
      * @param name - The channel name.
+     * @param deriveOptions - A {@link deriveOptions} object.
      * @param channelOptions - A {@link ChannelOptions} object.
      * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
      */
-    get(name: string, channelOptions?: ChannelOptions): T;
+    get(name: string, derive?: DeriveOptions, channelOptions?: ChannelOptions): T;
     /**
      * Releases a {@link ChannelBase} or {@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *

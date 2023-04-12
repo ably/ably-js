@@ -547,3 +547,15 @@ export function shallowEquals(source: Record<string, unknown>, target: Record<st
     Object.keys(target).every((key) => target[key] === source[key])
   );
 }
+
+export function matchDerivedChannel(name: string) {
+  const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/;
+  const match = name.match(regex)
+  if (!match || !match.length || match.length < 5) {
+    throw new Error(`regex match failed`);
+  }
+  if (match[2]) {
+    throw new Error(`cannot use a derived option with a ${match[2]} channel`);
+  }
+  return `${match[3] || ""}]${match[4]}`
+}
