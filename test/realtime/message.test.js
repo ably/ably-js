@@ -1204,7 +1204,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var realtime = helper.AblyRealtime();
 
         realtime.connection.on('connected', function () {
-          var rtChannel = realtime.channels.get('filter_test', filterOption);
+          var rtChannel = realtime.channels.getDerived('chan', filterOption);
 
             /* subscribe to event */
             rtChannel.subscribe('filtered', function (msg) {

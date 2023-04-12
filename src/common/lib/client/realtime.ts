@@ -143,15 +143,8 @@ class Channels extends EventEmitter {
     }
   }
 
-  get(name: string, deriveOptions?: API.Types.DeriveOptions, channelOptions?: ChannelOptions) {
+  get(name: string, channelOptions?: ChannelOptions) {
     name = String(name);
-    if (deriveOptions) {
-      if (deriveOptions.filter) {
-      const filter = encodeURIComponent(deriveOptions.filter)
-      const match = Utils.matchDerivedChannel(name)
-      name = `[filter=${filter}${match}`
-      }
-    }
     let channel = this.all[name];
     if (!channel) {
       channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
@@ -166,6 +159,19 @@ class Channels extends EventEmitter {
       channel.setOptions(channelOptions);
     }
     return channel;
+  }
+
+  getDerived(name: string, deriveOptions: API.Types.DeriveOptions, channelOptions?: ChannelOptions) {
+    name = String(name);
+    if (deriveOptions.filter) {
+      const filter = encodeURIComponent(deriveOptions.filter)
+      const match = Utils.matchDerivedChannel(name)
+      name = `[filter=${filter}${match}`
+    }
+    if (channelOptions) {
+      return this.get(name, channelOptions)
+    }
+    return this.get(name)
   }
 
   /* Included to support certain niche use-cases; most users should ignore this.

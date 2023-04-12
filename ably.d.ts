@@ -986,14 +986,6 @@ declare namespace Types {
     modes?: ChannelModes;
   }
 
-  /**
-   * The `RestHistoryParams` interface describes the parameters accepted by the following methods:
-   *
-   * - {@link PresenceCallbacks.history}
-   * - {@link PresencePromise.history}
-   * - {@link ChannelCallbacks.history}
-   * - {@link ChannelPromise.history}
-   */
 
   /**
    * Passes an attachment to a {@link ChannelBase} name to give a new derived channel
@@ -1005,6 +997,14 @@ declare namespace Types {
     filter?: string;
   }
 
+  /**
+   * The `RestHistoryParams` interface describes the parameters accepted by the following methods:
+   *
+   * - {@link PresenceCallbacks.history}
+   * - {@link PresencePromise.history}
+   * - {@link ChannelCallbacks.history}
+   * - {@link ChannelPromise.history}
+   */
   interface RestHistoryParams {
     /**
      * The time from which messages are retrieved, specified as milliseconds since the Unix epoch.
@@ -2759,11 +2759,20 @@ declare namespace Types {
      * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
      *
      * @param name - The channel name.
-     * @param deriveOptions - A {@link deriveOptions} object.
      * @param channelOptions - A {@link ChannelOptions} object.
      * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
      */
-    get(name: string, derive?: DeriveOptions, channelOptions?: ChannelOptions): T;
+    get(name: string, channelOptions?: ChannelOptions): T;
+    /**
+     * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified channel {@link DeriveOptions}
+     * and {@link ChannelOptions}, or returns the existing channel object.
+     *
+     * @param name - The channel name.
+     * @param deriveOptions - A {@link DeriveOptions} object.
+     * @param channelOptions - A {@link ChannelOptions} object.
+     * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
+     */
+    getDerived(name: string, deriveOptions: DeriveOptions, channelOptions?: ChannelOptions): T;
     /**
      * Releases a {@link ChannelBase} or {@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *
