@@ -2,6 +2,9 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.39](https://github.com/ably/ably-js/tree/1.2.39) (2023-04-13)
+- bump got dependency to `^11.8.5` [\#1189](https://github.com/ably/ably-js/pull/1189)
+
 ## [1.2.38](https://github.com/ably/ably-js/tree/1.2.38) (2023-04-04)
 - retry connection attempt if 'online' event received whilst connecting [\#1171](https://github.com/ably/ably-js/pull/1171)
 - populate invalid state `ErrorInfo.cause` with the current `errorReason`, if set [\#1169](https://github.com/ably/ably-js/pull/1169)
