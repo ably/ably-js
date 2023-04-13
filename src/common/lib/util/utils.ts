@@ -561,11 +561,11 @@ export function matchDerivedChannel(name: string) {
   const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/; // eslint-disable-line
   const match = name.match(regex);
   if (!match || !match.length || match.length < 5) {
-    new ErrorInfo('regex match failed', 400, 40010);
+    throw new ErrorInfo('regex match failed', 400, 40010);
   }
   // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
   if (match![2]) {
-    new ErrorInfo(`cannot use a derived option with a ${match![2]} channel`, 400, 40010);
+    throw new ErrorInfo(`cannot use a derived option with a ${match![2]} channel`, 400, 40010);
   }
   // Return match values to be added to derive channel quantifier.
   return `${match![3] || ''}]${match![4]}`;
