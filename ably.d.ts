@@ -986,13 +986,12 @@ declare namespace Types {
     modes?: ChannelModes;
   }
 
-
   /**
    * Passes an attachment to a {@link ChannelBase} name to give a new derived channel
    */
   interface DeriveOptions {
     /**
-     * The filter string to be used to derive new channel.
+     * The JMESPath Query filter string to be used to derive new channel.
      */
     filter?: string;
   }

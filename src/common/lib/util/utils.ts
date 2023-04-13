@@ -550,17 +550,23 @@ export function shallowEquals(source: Record<string, unknown>, target: Record<st
 
 export function matchDerivedChannel(name: string) {
   /**
-   * This warning is triggered because the RegExp uses nested quantifiers,
+   * This regex check is to retain existing channel params if any e.g [?rewind=1]foo to
+   * [filter=xyz?rewind=1]foo. This is to keep channel compatibility around use of
+   * channel params that work with derived channels.
+   *
+   * This eslint unsafe regex warning is triggered because the RegExp uses nested quantifiers,
    * but it does not create any situation where the regex engine has to
    * explore a large number of possible matches so it’s safe to ignore
    */
   const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/; // eslint-disable-line
-  const match = name.match(regex)
+  const match = name.match(regex);
   if (!match || !match.length || match.length < 5) {
-    throw new Error(`regex match failed`);
+    new ErrorInfo('regex match failed', 400, 40010);
   }
-  if (match[2]) {
-    throw new Error(`cannot use a derived option with a ${match[2]} channel`);
+  // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
+  if (match![2]) {
+    new ErrorInfo(`cannot use a derived option with a ${match![2]} channel`, 400, 40010);
   }
-  return `${match[3] || ""}]${match[4]}`
+  // Return match values to be added to derive channel quantifier.
+  return `${match![3] || ''}]${match![4]}`;
 }

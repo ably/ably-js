@@ -1189,40 +1189,43 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         name: 'filtered',
         data: 'This should be filtered',
         extras: {
-            headers: {
-                name: "value1",
-                number: 26095,
-                bool: true,
-            }
-        }
-      }
+          headers: {
+            name: 'value1',
+            number: 26095,
+            bool: true,
+          },
+        },
+      };
       var filterOption = {
-        filter: 'name == `"filtered"` && headers.number == `26095`'
-      }
+        filter: 'name == `"filtered"` && headers.number == `26095`',
+      };
       try {
         /* set up realtime */
-        var realtime = helper.AblyRealtime();
+        var realtime = helper.AblyRealtime({ key: helper.getTestApp().keys[5].keyStr });
         var rest = helper.AblyRest();
 
         realtime.connection.on('connected', function () {
           var rtChannel = realtime.channels.getDerived('chan', filterOption);
 
-            /* subscribe to event */
-            rtChannel.subscribe('filtered', function (msg) {
-              try {
-                expect(msg.data).to.equal(testData.data, 'Unexpected msg text received');
-                expect(msg.extras.headers.name).to.equal(testData.extras.headers.name, 'Unexpected header value received');
-              } catch (err) {
-                closeAndFinish(done, realtime, err);
-                return;
-              }
-              closeAndFinish(done, realtime);
-            });
-
-            var restChannel = rest.channels.get('chan');
-            restChannel.publish("filtered", "no filter on message");
-            restChannel.publish(testData);
+          /* subscribe to event */
+          rtChannel.subscribe('filtered', function (msg) {
+            try {
+              expect(msg.data).to.equal(testData.data, 'Unexpected msg text received');
+              expect(msg.extras.headers.name).to.equal(
+                testData.extras.headers.name,
+                'Unexpected header value received'
+              );
+            } catch (err) {
+              closeAndFinish(done, realtime, err);
+              return;
+            }
+            closeAndFinish(done, realtime);
           });
+
+          var restChannel = rest.channels.get('chan');
+          restChannel.publish('filtered', 'no filter on message');
+          restChannel.publish(testData);
+        });
         monitorConnection(done, realtime);
       } catch (err) {
         closeAndFinish(done, realtime, err);

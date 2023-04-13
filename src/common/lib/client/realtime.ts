@@ -162,16 +162,12 @@ class Channels extends EventEmitter {
   }
 
   getDerived(name: string, deriveOptions: API.Types.DeriveOptions, channelOptions?: ChannelOptions) {
-    name = String(name);
     if (deriveOptions.filter) {
-      const filter = encodeURIComponent(deriveOptions.filter)
-      const match = Utils.matchDerivedChannel(name)
-      name = `[filter=${filter}${match}`
+      const filter = encodeURIComponent(deriveOptions.filter);
+      const match = Utils.matchDerivedChannel(name);
+      name = `[filter=${filter}${match}`;
     }
-    if (channelOptions) {
-      return this.get(name, channelOptions)
-    }
-    return this.get(name)
+    return this.get(name, channelOptions);
   }
 
   /* Included to support certain niche use-cases; most users should ignore this.
