@@ -1202,6 +1202,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         /* set up realtime */
         var realtime = helper.AblyRealtime();
+        var rest = helper.AblyRest();
 
         realtime.connection.on('connected', function () {
           var rtChannel = realtime.channels.getDerived('chan', filterOption);
@@ -1210,6 +1211,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             rtChannel.subscribe('filtered', function (msg) {
               try {
                 expect(msg.data).to.equal(testData.data, 'Unexpected msg text received');
+                expect(msg.extras.headers.name).to.equal(testData.extras.headers.name, 'Unexpected header value received');
               } catch (err) {
                 closeAndFinish(done, realtime, err);
                 return;
@@ -1217,8 +1219,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               closeAndFinish(done, realtime);
             });
 
-            rtChannel.publish("filtered", "no filter on message");
-            rtChannel.publish(testData);
+            var restChannel = rest.channels.get('chan');
+            restChannel.publish("filtered", "no filter on message");
+            restChannel.publish(testData);
           });
         monitorConnection(done, realtime);
       } catch (err) {
