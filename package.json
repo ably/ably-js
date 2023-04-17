@@ -55,7 +55,7 @@
     "grunt-closure-tools": "^1.0.0",
     "grunt-contrib-concat": "~0.5",
     "grunt-shell": "~1.1",
-    "grunt-webpack": "^4.0.2",
+    "grunt-webpack": "^5.0.0",
     "hexy": "~0.2",
     "kexec": "ably-forks/node-kexec#update-for-node-12",
     "minimist": "^1.2.5",
