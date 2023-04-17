@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-/**
- * Webpack v4 is used as Webpack v5 does not offer support for ES3 and creates issues for ES3 support such as discarding string literal keyword property names.
- */
 const path = require('path');
 const { BannerPlugin } = require('webpack');
 const banner = require('./src/fragments/license');
@@ -30,7 +27,7 @@ const baseConfig = {
       { test: /\.ts$/, loader: 'ts-loader' },
     ],
   },
-  target: 'web',
+  target: ['web', 'es5'],
   externals: {
     request: false,
     ws: false,
@@ -57,7 +54,7 @@ const nodeConfig = {
     ...baseConfig.output,
     filename: 'ably-node.js',
   },
-  target: 'node',
+  target: ['node', 'es5'],
   externals: {
     got: true,
     ws: true,
@@ -76,9 +73,11 @@ const browserConfig = {
   entry: {
     index: platformPath('web'),
   },
-  node: {
-    crypto: 'empty',
-    Buffer: false,
+  resolve: {
+    ...baseConfig.resolve,
+    fallback: {
+      crypto: false,
+    },
   },
   externals: {
     'crypto-js': true,
@@ -98,9 +97,11 @@ const nativeScriptConfig = {
   entry: {
     index: platformPath('nativescript'),
   },
-  node: {
-    crypto: 'empty',
-    Buffer: false,
+  resolve: {
+    ...baseConfig.resolve,
+    fallback: {
+      crypto: false,
+    },
   },
   externals: {
     request: false,
@@ -125,10 +126,9 @@ const reactNativeConfig = {
   resolve: {
     extensions: ['.js', '.ts'],
     plugins: [new TsconfigPathsPlugin()],
-  },
-  node: {
-    crypto: 'empty',
-    Buffer: false,
+    fallback: {
+      crypto: false,
+    },
   },
   externals: {
     request: false,
@@ -156,7 +156,7 @@ const browserMinConfig = {
 };
 
 const webworkerConfig = {
-  target: 'webworker',
+  target: ['webworker', 'es5'],
   ...browserConfig,
   entry: {
     index: platformPath('web', 'index-webworker.ts'),
