@@ -987,7 +987,7 @@ declare namespace Types {
   }
 
   /**
-   * Passes an attachment to a {@link ChannelBase} name to give a new derived channel
+   * Passes additional properties to a {@link RealtimeChannelBase} name to produce a new derived channel
    */
   interface DeriveOptions {
     /**
@@ -2769,7 +2769,7 @@ declare namespace Types {
      * @param name - The channel name.
      * @param deriveOptions - A {@link DeriveOptions} object.
      * @param channelOptions - A {@link ChannelOptions} object.
-     * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
+     * @returns A {@link RealtimeChannelBase} object.
      */
     getDerived(name: string, deriveOptions: DeriveOptions, channelOptions?: ChannelOptions): T;
     /**

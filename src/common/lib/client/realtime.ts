@@ -165,7 +165,7 @@ class Channels extends EventEmitter {
     if (deriveOptions.filter) {
       const filter = encodeURIComponent(deriveOptions.filter);
       const match = Utils.matchDerivedChannel(name);
-      name = `[filter=${filter}${match}`;
+      name = `[filter=${filter}${match.qualifierParam}]${match.channelName}`;
     }
     return this.get(name, channelOptions);
   }
