@@ -272,7 +272,7 @@ var NodeCometTransport = function (connectionManager) {
         var err = body.error && ErrorInfo.fromValues(body.error);
         if (!err) {
           err = new ErrorInfo(
-            'Error response received from server: ' + statusCode + ', body was: ' + Utils.inspect(body),
+            'Error response received from server: ' + statusCode + ', body was: ' + util.inspect(body),
             null,
             statusCode
           );
