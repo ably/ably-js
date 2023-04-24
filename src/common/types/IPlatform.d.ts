@@ -38,7 +38,6 @@ export interface IPlatform {
   noUpgrade?: boolean | string;
   fetchSupported?: boolean;
   xhrSupported?: boolean;
-  jsonpSupported?: boolean;
   allowComet?: boolean;
   streamingSupported?: boolean;
   ArrayBuffer?: typeof ArrayBuffer | false;

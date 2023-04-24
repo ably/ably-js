@@ -367,6 +367,7 @@ abstract class CometTransport extends Transport {
     return responseData;
   }
 
+  // TODO what's going on here?
   /* For comet, we could do the auth update by aborting the current recv and
    * starting a new one with the new token, that'd be sufficient for realtime.
    * Problem is JSONP - you can't cancel truly abort a recv once started. So

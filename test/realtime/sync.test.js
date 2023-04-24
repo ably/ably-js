@@ -537,91 +537,88 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* JSONP can't cope with entering 110 people in one go. */
-    if (helper.bestTransport !== 'jsonp') {
-      /*
-       * Do a 110-member sync, so split into two sync messages. Inject a normal
-       * presence enter between the syncs. Check everything was entered correctly
-       */
-      it('presence_sync_interruptus', function (done) {
-        var channelName = 'presence_sync_interruptus';
-        var interrupterClientId = 'dark_horse';
-        var enterer = helper.AblyRealtime();
-        var syncer = helper.AblyRealtime();
-        var entererChannel = enterer.channels.get(channelName);
-        var syncerChannel = syncer.channels.get(channelName);
+    /*
+     * Do a 110-member sync, so split into two sync messages. Inject a normal
+     * presence enter between the syncs. Check everything was entered correctly
+     */
+    it('presence_sync_interruptus', function (done) {
+      var channelName = 'presence_sync_interruptus';
+      var interrupterClientId = 'dark_horse';
+      var enterer = helper.AblyRealtime();
+      var syncer = helper.AblyRealtime();
+      var entererChannel = enterer.channels.get(channelName);
+      var syncerChannel = syncer.channels.get(channelName);
 
-        function waitForBothConnect(cb) {
-          async.parallel(
-            [
-              function (connectCb) {
-                enterer.connection.on('connected', connectCb);
-              },
-              function (connectCb) {
-                syncer.connection.on('connected', connectCb);
-              },
-            ],
-            function () {
-              cb();
-            }
-          );
-        }
-
-        async.series(
+      function waitForBothConnect(cb) {
+        async.parallel(
           [
-            waitForBothConnect,
-            function (cb) {
-              entererChannel.attach(cb);
+            function (connectCb) {
+              enterer.connection.on('connected', connectCb);
             },
-            function (cb) {
-              async.times(
-                110,
-                function (i, presCb) {
-                  entererChannel.presence.enterClient(i.toString(), null, presCb);
-                },
-                cb
-              );
-            },
-            function (cb) {
-              var originalOnMessage = syncerChannel.onMessage;
-              syncerChannel.onMessage = function (message) {
-                originalOnMessage.apply(this, arguments);
-                /* Inject an additional presence message after the first sync */
-                if (message.action === 16) {
-                  syncerChannel.onMessage = originalOnMessage;
-                  syncerChannel.onMessage({
-                    action: 14,
-                    id: 'messageid:0',
-                    connectionId: 'connid',
-                    timestamp: 2000000000000,
-                    presence: [
-                      {
-                        clientId: interrupterClientId,
-                        action: 'enter',
-                      },
-                    ],
-                  });
-                }
-              };
-              syncerChannel.attach(cb);
-            },
-            function (cb) {
-              syncerChannel.presence.get(function (err, presenceSet) {
-                try {
-                  expect(presenceSet && presenceSet.length).to.equal(111, 'Check everyone’s in presence set');
-                } catch (err) {
-                  cb(err);
-                  return;
-                }
-                cb(err);
-              });
+            function (connectCb) {
+              syncer.connection.on('connected', connectCb);
             },
           ],
-          function (err) {
-            closeAndFinish(done, [enterer, syncer], err);
+          function () {
+            cb();
           }
         );
-      });
-    }
+      }
+
+      async.series(
+        [
+          waitForBothConnect,
+          function (cb) {
+            entererChannel.attach(cb);
+          },
+          function (cb) {
+            async.times(
+              110,
+              function (i, presCb) {
+                entererChannel.presence.enterClient(i.toString(), null, presCb);
+              },
+              cb
+            );
+          },
+          function (cb) {
+            var originalOnMessage = syncerChannel.onMessage;
+            syncerChannel.onMessage = function (message) {
+              originalOnMessage.apply(this, arguments);
+              /* Inject an additional presence message after the first sync */
+              if (message.action === 16) {
+                syncerChannel.onMessage = originalOnMessage;
+                syncerChannel.onMessage({
+                  action: 14,
+                  id: 'messageid:0',
+                  connectionId: 'connid',
+                  timestamp: 2000000000000,
+                  presence: [
+                    {
+                      clientId: interrupterClientId,
+                      action: 'enter',
+                    },
+                  ],
+                });
+              }
+            };
+            syncerChannel.attach(cb);
+          },
+          function (cb) {
+            syncerChannel.presence.get(function (err, presenceSet) {
+              try {
+                expect(presenceSet && presenceSet.length).to.equal(111, 'Check everyone’s in presence set');
+              } catch (err) {
+                cb(err);
+                return;
+              }
+              cb(err);
+            });
+          },
+        ],
+        function (err) {
+          closeAndFinish(done, [enterer, syncer], err);
+        }
+      );
+    });
   });
 });

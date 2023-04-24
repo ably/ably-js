@@ -58,10 +58,6 @@ define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF
     }
   }
 
-  function schemeMatchesCurrent(scheme) {
-    return scheme === window.location.protocol.slice(0, -1);
-  }
-
   function httpReqFunction() {
     if (isNativescript) {
       return function (options, callback) {
@@ -89,32 +85,6 @@ define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF
         var uri;
 
         uri = options.scheme + '://' + options.host + ':' + options.port + options.path;
-
-        if (xhr.isXDR && !schemeMatchesCurrent(options.scheme)) {
-          /* Can't use XDR for cross-scheme. For some requests could just force
-           * the same scheme and be done with it, but not for authenticated
-           * requests to ably, can't use basic auth for non-tls endpoints.
-           * Luckily ably can handle jsonp, so just use the ably Http method,
-           * which will use the jsonp transport. Can't just do this all the time
-           * as the local express webserver serves files statically, so can't do
-           * jsonp. */
-          if (options.method === 'DELETE') {
-            /* Ignore DELETEs -- can't be done with jsonp at the moment, and
-             * simulation apps self-delete after a while */
-            callback();
-          } else {
-            new ably.Rest.Platform.Http().doUri(
-              options.method,
-              null,
-              uri,
-              options.headers,
-              options.body,
-              options.paramsIfNoHeaders || {},
-              callback
-            );
-          }
-          return;
-        }
 
         xhr.open(options.method, uri);
         if (options.headers && !xhr.isXDR) {

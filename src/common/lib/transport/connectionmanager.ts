@@ -300,9 +300,7 @@ class ConnectionManager extends EventEmitter {
       ConnectionManager.supportedTransports
     );
     /* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
-     * that's both requested and supported. Normally this will be xhr_polling;
-     * if xhr isn't supported it will be jsonp. If the user has forced a
-     * transport, it'll just be that one. */
+     * that's both requested and supported. */
     this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
     this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
     this.transportPreference = null;

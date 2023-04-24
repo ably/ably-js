@@ -459,28 +459,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var realtime = helper.AblyRealtime(realtimeOptions);
         realtime.connection.on(function (stateChange) {
           if (stateChange.previous !== 'initialized') {
-            if (helper.bestTransport === 'jsonp') {
-              try {
-                // auth endpoints don't envelope, so we assume the 'least harmful' option, which is a disconnection with concomitant retry
-                expect(stateChange.current).to.equal('disconnected', 'Check connection goes to the expected state');
-                // jsonp doesn't let you examine the statuscode
-                expect(stateChange.reason.statusCode).to.equal(401, 'Check correct cause error code');
-              } catch (err) {
-                done(err);
-              }
-            } else {
-              try {
-                expect(stateChange.current).to.equal(
-                  expectFailure ? 'failed' : 'disconnected',
-                  'Check connection goes to the expected state'
-                );
-                expect(stateChange.reason.statusCode).to.equal(
-                  expectFailure ? 403 : 401,
-                  'Check correct cause error code'
-                );
-              } catch (err) {
-                done(err);
-              }
+            try {
+              expect(stateChange.current).to.equal(
+                expectFailure ? 'failed' : 'disconnected',
+                'Check connection goes to the expected state'
+              );
+              expect(stateChange.reason.statusCode).to.equal(
+                expectFailure ? 403 : 401,
+                'Check correct cause error code'
+              );
+            } catch (err) {
+              done(err);
             }
             try {
               expect(stateChange.reason.code).to.equal(80019, 'Check correct error code');
@@ -615,46 +604,43 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       )
     );
 
-    /* auth endpoints don't envelope, so this won't work with jsonp */
-    if (helper.bestTransport !== 'jsonp') {
-      it('authUrl_403_previously_active', function (done) {
-        var realtime,
-          rest = helper.AblyRest();
-        rest.auth.requestToken(null, null, function (err, tokenDetails) {
-          if (err) {
-            closeAndFinish(done, realtime, err);
-            return;
-          }
+    it('authUrl_403_previously_active', function (done) {
+      var realtime,
+        rest = helper.AblyRest();
+      rest.auth.requestToken(null, null, function (err, tokenDetails) {
+        if (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
 
-          var authPath = echoServer + '/?type=json&body=' + encodeURIComponent(JSON.stringify(tokenDetails));
+        var authPath = echoServer + '/?type=json&body=' + encodeURIComponent(JSON.stringify(tokenDetails));
 
-          realtime = helper.AblyRealtime({ authUrl: authPath });
+        realtime = helper.AblyRealtime({ authUrl: authPath });
 
-          realtime.connection.on('connected', function () {
-            /* replace the authUrl and reauth */
-            realtime.auth.authorize(
-              null,
-              { authUrl: echoServer + '/respondwith?status=403' },
-              function (err, tokenDetails) {
-                try {
-                  expect(err && err.statusCode).to.equal(403, 'Check err statusCode');
-                  expect(err && err.code).to.equal(40300, 'Check err code');
-                  expect(realtime.connection.state).to.equal('failed', 'Check connection goes to the failed state');
-                  expect(realtime.connection.errorReason && realtime.connection.errorReason.statusCode).to.equal(
-                    403,
-                    'Check correct cause error code'
-                  );
-                  expect(realtime.connection.errorReason.code).to.equal(80019, 'Check correct connection error code');
-                  closeAndFinish(done, realtime);
-                } catch (err) {
-                  closeAndFinish(done, realtime, err);
-                }
+        realtime.connection.on('connected', function () {
+          /* replace the authUrl and reauth */
+          realtime.auth.authorize(
+            null,
+            { authUrl: echoServer + '/respondwith?status=403' },
+            function (err, tokenDetails) {
+              try {
+                expect(err && err.statusCode).to.equal(403, 'Check err statusCode');
+                expect(err && err.code).to.equal(40300, 'Check err code');
+                expect(realtime.connection.state).to.equal('failed', 'Check connection goes to the failed state');
+                expect(realtime.connection.errorReason && realtime.connection.errorReason.statusCode).to.equal(
+                  403,
+                  'Check correct cause error code'
+                );
+                expect(realtime.connection.errorReason.code).to.equal(80019, 'Check correct connection error code');
+                closeAndFinish(done, realtime);
+              } catch (err) {
+                closeAndFinish(done, realtime, err);
               }
-            );
-          });
+            }
+          );
         });
       });
-    }
+    });
 
     /*
      * Check state change reason is propogated during a disconnect
