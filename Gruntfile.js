@@ -58,8 +58,8 @@ module.exports = function (grunt) {
       compilerOpts: {
         compilation_level: 'SIMPLE_OPTIMIZATIONS',
         /* By default, the compiler assumes you're using es6 and transpiles to
-         * es3, adding various (unnecessary and undesired) polyfills. Specify
-         * both in and out to es3 to avoid transpilation */
+         * es5, adding various (unnecessary and undesired) polyfills. Specify
+         * both in and out to es5 to avoid transpilation */
         language_in: 'ECMASCRIPT5',
         language_out: 'ECMASCRIPT5',
         strict_mode_input: true,
