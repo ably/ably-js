@@ -26,7 +26,6 @@ var Platform = {
   WebSocket: WebSocket,
   xhrSupported: XMLHttpRequest,
   allowComet: true,
-  jsonpSupported: false,
   streamingSupported: false,
   useProtocolHeartbeats: true,
   createHmac: null,

@@ -200,27 +200,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     }
 
-    var jsonpTransport = 'jsonp';
-    if (isTransportAvailable(jsonpTransport)) {
-      it('jsonpbase0', function (done) {
-        connectionWithTransport(done, jsonpTransport);
-      });
-
-      /*
-       * Publish and subscribe, json transport
-       */
-      it('jsonppublish0', function (done) {
-        publishWithTransport(done, jsonpTransport);
-      });
-
-      /*
-       * Check heartbeat
-       */
-      it('jsonpheartbeat0', function (done) {
-        heartbeatWithTransport(done, jsonpTransport);
-      });
-    }
-
     it('auto_transport_base0', function (done) {
       connectionWithTransport(done);
     });

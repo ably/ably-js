@@ -10,7 +10,6 @@ import XHRRequest from '../transport/xhrrequest';
 import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
-import { createRequest, Request } from '../transport/jsonptransport';
 import fetchRequest from '../transport/fetchrequest';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
@@ -113,68 +112,6 @@ const Http: typeof IHttp = class {
               callback(null, result);
             }
           );
-        };
-      }
-    } else if (Platform.Config.jsonpSupported) {
-      this.Request = function (
-        method: HttpMethods,
-        rest: Rest | null,
-        uri: string,
-        headers: Record<string, string> | null,
-        params: RequestParams,
-        body: unknown,
-        callback: RequestCallback
-      ) {
-        const req = createRequest(
-          uri,
-          headers,
-          params,
-          body,
-          XHRStates.REQ_SEND,
-          rest && rest.options.timeouts,
-          method
-        );
-        req.once('complete', callback);
-        Platform.Config.nextTick(function () {
-          req.exec();
-        });
-        return req;
-      };
-
-      if (this.options.disableConnectivityCheck) {
-        this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
-          callback(null, true);
-        };
-      } else {
-        this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) {
-          const upUrl = Defaults.jsonpInternetUpUrl;
-
-          if (this.checksInProgress) {
-            this.checksInProgress.push(callback);
-            return;
-          }
-          this.checksInProgress = [callback];
-          Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Sending; ' + upUrl);
-
-          const req = new Request(
-            'isTheInternetUp',
-            upUrl as string,
-            null,
-            null,
-            null,
-            XHRStates.REQ_SEND,
-            Defaults.TIMEOUTS
-          );
-          req.once('complete', (err: Error, response: string) => {
-            const result = !err && response;
-            Logger.logAction(Logger.LOG_MICRO, '(JSONP)Http.checkConnectivity()', 'Result: ' + result);
-            for (let i = 0; i < (this.checksInProgress as Array<StandardCallback<boolean>>).length; i++)
-              (this.checksInProgress as Array<StandardCallback<boolean>>)[i](null, result);
-            this.checksInProgress = null;
-          });
-          Platform.Config.nextTick(function () {
-            req.exec();
-          });
         };
       }
     } else if (Platform.Config.fetchSupported) {

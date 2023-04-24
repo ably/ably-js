@@ -300,9 +300,7 @@ class ConnectionManager extends EventEmitter {
       ConnectionManager.supportedTransports
     );
     /* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
-     * that's both requested and supported. Normally this will be xhr_polling;
-     * if xhr isn't supported it will be jsonp. If the user has forced a
-     * transport, it'll just be that one. */
+     * that's both requested and supported. */
     this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
     this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
     this.transportPreference = null;
@@ -1497,9 +1495,7 @@ class ConnectionManager extends EventEmitter {
    *   needed (will only be in the case where the preference is xhrs and the
    *   browser supports ws).
    * - base: we try to connect with the best transport that we think will
-   *   never fail for this browser (usually this is xhr_polling; for very old
-   *   browsers will be jsonp, for node will be comet). If it doesn't work, we
-   *   try fallback hosts.
+   *   never fail for this platform. If it doesn't work, we try fallback hosts.
    * - upgrade: given a connected transport, we see if there are any better
    *   ones, and if so, try to upgrade to them.
    *
