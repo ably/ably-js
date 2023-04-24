@@ -1156,7 +1156,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   getStateError(): ErrorInfo {
-    return (ConnectionErrors as Record<string, ErrorInfo>)[this.state.state];
+    return (ConnectionErrors as Record<string, () => ErrorInfo>)[this.state.state]?.();
   }
 
   activeState(): boolean | void {
@@ -1330,7 +1330,7 @@ class ConnectionManager extends EventEmitter {
       this.state.state,
       newState.state,
       retryDelay,
-      indicated.error || (ConnectionErrors as Record<string, ErrorInfo>)[newState.state]
+      indicated.error || (ConnectionErrors as Partial<Record<string, () => ErrorInfo>>)[newState.state]?.()
     );
 
     if (retryImmediately) {
@@ -1411,7 +1411,7 @@ class ConnectionManager extends EventEmitter {
         this.state.state,
         newState.state,
         null,
-        request.error || (ConnectionErrors as Record<string, ErrorInfo>)[newState.state]
+        request.error || (ConnectionErrors as Partial<Record<string, () => ErrorInfo>>)[newState.state]?.()
       );
 
     this.enactStateChange(change);

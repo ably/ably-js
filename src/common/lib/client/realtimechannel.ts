@@ -768,7 +768,7 @@ class RealtimeChannel extends Channel {
           'RealtimeChannel.onMessage()',
           'Fatal protocol error: unrecognised action (' + message.action + ')'
         );
-        this.connectionManager.abort(ConnectionErrors.unknownChannelErr);
+        this.connectionManager.abort(ConnectionErrors.unknownChannelErr());
     }
   }
 

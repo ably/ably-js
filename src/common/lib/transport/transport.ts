@@ -78,7 +78,7 @@ abstract class Transport extends EventEmitter {
     if (this.isConnected) {
       this.requestClose();
     }
-    this.finish('closed', ConnectionErrors.closed);
+    this.finish('closed', ConnectionErrors.closed());
   }
 
   disconnect(err?: Error | ErrorInfo): void {
@@ -87,7 +87,7 @@ abstract class Transport extends EventEmitter {
     if (this.isConnected) {
       this.requestDisconnect();
     }
-    this.finish('disconnected', err || ConnectionErrors.disconnected);
+    this.finish('disconnected', err || ConnectionErrors.disconnected());
   }
 
   fail(err: ErrorInfo): void {
@@ -95,7 +95,7 @@ abstract class Transport extends EventEmitter {
     if (this.isConnected) {
       this.requestDisconnect();
     }
-    this.finish('failed', err || ConnectionErrors.failed);
+    this.finish('failed', err || ConnectionErrors.failed());
   }
 
   finish(event: string, err?: Error | ErrorInfo): void {
