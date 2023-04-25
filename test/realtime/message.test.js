@@ -1185,36 +1185,103 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     }
 
     it('subscribes to filtered channel', function (done) {
-      var testData = {
-        name: 'filtered',
-        data: 'This should be filtered',
-        extras: {
-          headers: {
-            name: 'value1',
-            number: 26095,
-            bool: true,
+      var testData = [
+        {
+          name: 'filtered',
+          data: 'This message can be filtered',
+          extras: {
+            headers: {
+              name: 'Lorem Choo',
+              number: 26095,
+              bool: true,
+            },
           },
         },
-      };
+        {
+          name: 'filtered',
+          data: 'Random data with no extras for filter',
+        },
+        {
+          name: 'filtered',
+          data: 'Another filtered message',
+          extras: {
+            headers: {
+              name: 'John Bull',
+              number: 26095,
+              bool: false,
+            },
+          },
+        },
+        {
+          name: 'filtered',
+          data: 'No header on message',
+        },
+        {
+          name: 'end',
+          data: 'last message check',
+        },
+      ];
+
       var filterOption = {
         filter: 'name == `"filtered"` && headers.number == `26095`',
       };
+
       try {
         /* set up realtime */
         var realtime = helper.AblyRealtime({ key: helper.getTestApp().keys[5].keyStr });
         var rest = helper.AblyRest();
 
         realtime.connection.on('connected', function () {
-          var rtChannel = realtime.channels.getDerived('chan', filterOption);
+          var rtFilteredChannel = realtime.channels.getDerived('chan', filterOption);
+          var rtUnFilteredChannel = realtime.channels.get('chan');
 
+          var filteredMessages = [];
+          var unFilteredMessages = [];
           /* subscribe to event */
-          rtChannel.subscribe('filtered', function (msg) {
+          rtFilteredChannel.subscribe('filtered', function (msg) {
             try {
-              expect(msg.data).to.equal(testData.data, 'Unexpected msg text received');
-              expect(msg.extras.headers.name).to.equal(
-                testData.extras.headers.name,
+              // Push received filtered messages into an array
+              filteredMessages.push(msg);
+            } catch (err) {
+              closeAndFinish(done, realtime, err);
+              return;
+            }
+          });
+
+          rtUnFilteredChannel.subscribe('filtered', function (msg) {
+            try {
+              // Push received unfiltered messages into an array
+              unFilteredMessages.push(msg);
+            } catch (err) {
+              closeAndFinish(done, realtime, err);
+              return;
+            }
+          });
+
+          // Subscription to check all messages were received as expected
+          rtUnFilteredChannel.subscribe('end', function (msg) {
+            try {
+              expect(msg.data).to.equal(testData[4].data, 'Unexpected msg data received');
+
+              // Check that we receive expected messages on filtered channel
+              expect(filteredMessages.length).to.equal(2, 'Expect only two filtered message to be received');
+              expect(filteredMessages[0].data).to.equal(testData[0].data, 'Unexpected data received');
+              expect(filteredMessages[1].data).to.equal(testData[2].data, 'Unexpected data received');
+              expect(filteredMessages[0].extras.headers.name).to.equal(
+                testData[0].extras.headers.name,
                 'Unexpected header value received'
               );
+              expect(filteredMessages[1].extras.headers.name).to.equal(
+                testData[2].extras.headers.name,
+                'Unexpected header value received'
+              );
+
+              // Check that we receive expected messages on unfiltered channel
+              expect(unFilteredMessages.length).to.equal(4, 'Expect only 4 unfiltered message to be received');
+              expect(unFilteredMessages[0].data).to.equal(testData[0].data, 'Unexpected data received');
+              expect(unFilteredMessages[1].data).to.equal(testData[1].data, 'Unexpected data received');
+              expect(unFilteredMessages[2].data).to.equal(testData[2].data, 'Unexpected data received');
+              expect(unFilteredMessages[3].data).to.equal(testData[3].data, 'Unexpected data received');
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -1223,7 +1290,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
 
           var restChannel = rest.channels.get('chan');
-          restChannel.publish('filtered', 'no filter on message');
           restChannel.publish(testData);
         });
         monitorConnection(done, realtime);
