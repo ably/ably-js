@@ -182,12 +182,6 @@ export function objectifyOptions(options: ClientOptions | string): ClientOptions
 }
 
 export function normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions {
-  /* Deprecated options */
-  if (options.queueEvents) {
-    Logger.deprecated('queueEvents', 'queueMessages');
-    options.queueMessages = options.queueEvents;
-  }
-
   if (options.fallbackHostsUseDefault) {
     /* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
     if (options.fallbackHosts) {
