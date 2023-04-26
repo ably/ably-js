@@ -15,7 +15,6 @@ export default interface ClientOptions extends API.Types.ClientOptions {
 export type DeprecatedClientOptions = Modify<
   ClientOptions,
   {
-    host?: string;
     wsHost?: string;
     queueEvents?: boolean;
     promises?: boolean;

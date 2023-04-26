@@ -163,10 +163,9 @@ define(['ably', 'chai'], function (Ably, chai) {
     });
 
     /* will emit a warning */
-    it('Init with deprecated host and wsHost options', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ host: 'test.org', wsHost: 'ws.test.org' });
+    it('Init with deprecated wsHost option', function () {
+      var normalisedOptions = Defaults.normaliseOptions({ wsHost: 'ws.test.org' });
 
-      expect(normalisedOptions.restHost).to.equal('test.org');
       expect(normalisedOptions.realtimeHost).to.equal('ws.test.org');
       expect(normalisedOptions.port).to.equal(80);
       expect(normalisedOptions.tlsPort).to.equal(443);
@@ -175,7 +174,6 @@ define(['ably', 'chai'], function (Ably, chai) {
 
       expect(Defaults.getHosts(normalisedOptions)).to.deep.equal([normalisedOptions.restHost]);
       expect(Defaults.getHost(normalisedOptions, 'test.org', false)).to.deep.equal('test.org');
-      expect(Defaults.getHost(normalisedOptions, 'test.org', true)).to.deep.equal('ws.test.org');
 
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
     });
