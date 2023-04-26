@@ -392,7 +392,21 @@ declare namespace Types {
     environment?: string;
 
     /**
+     * Controls the verbosity of the logs output from the library. Valid values are: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
+     */
+    logLevel?: number;
+
+    /**
+     * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
+     *
+     * @param msg - The log message emitted by the library.
+     */
+    logHandler?: (msg: string) => void;
+
+    /**
      * Parameters to control the log output of the library, such as the log handler and log level.
+     *
+     * @deprecated This property is deprecated and will be removed in a future version. Use the {@link ClientOptions.logLevel} and {@link ClientOptions.logHandler} client options instead.
      */
     log?: LogInfo;
 
@@ -1128,15 +1142,21 @@ declare namespace Types {
 
   /**
    * Settings which control the log output of the library.
+   *
+   * @deprecated This type is deprecated and will be removed in a future version. Use the {@link ClientOptions.logLevel} and {@link ClientOptions.logHandler} client options instead.
    */
   interface LogInfo {
     /**
      * Controls the verbosity of the logs output from the library. Valid values are: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
+     *
+     * @deprecated This property is deprecated and will be removed in a future version. Use the {@link ClientOptions.logLevel} client option instead.
      */
     level?: number;
 
     /**
      * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
+     *
+     * @deprecated This property is deprecated and will be removed in a future version. Use the {@link ClientOptions.logHandler} client option instead.
      *
      * @param msg - The log message emitted by the library.
      */
