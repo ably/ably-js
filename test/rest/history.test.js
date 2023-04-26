@@ -446,7 +446,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
     if (typeof Promise !== 'undefined') {
       it('historyPromise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
+        var rest = helper.AblyRest({ internal: { promises: true } });
         var testchannel = rest.channels.get('persisted:history_promise');
 
         testchannel

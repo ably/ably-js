@@ -160,7 +160,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /* TO3l8; CD2C; RSL1i */
     it('Should error when publishing message larger than maxMessageSize', function (done) {
       /* No connectionDetails mechanism for REST, so just pass the override into the constructor */
-      var realtime = helper.AblyRest({ maxMessageSize: 64 }),
+      var realtime = helper.AblyRest({ internal: { maxMessageSize: 64 } }),
         channel = realtime.channels.get('maxMessageSize');
 
       channel.publish('foo', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', function (err) {
@@ -292,7 +292,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     if (typeof Promise !== undefined) {
       it('Rest publish promise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
+        var rest = helper.AblyRest({ internal: { promises: true } });
         var channel = rest.channels.get('publishpromise');
 
         channel

@@ -12,16 +12,21 @@ export default interface ClientOptions extends API.Types.ClientOptions {
   agents?: string[];
 }
 
-export type DeprecatedClientOptions = Modify<
+/**
+ * Properties which internal and test code wish to be able to pass to the public constructor of `Rest` and `Realtime` in order to modify the behaviour of those classes.
+ */
+export type InternalClientOptions = Modify<
   ClientOptions,
   {
-    promises?: boolean;
-    maxMessageSize?: number;
+    internal?: {
+      promises?: boolean;
+      maxMessageSize?: number;
+    };
   }
 >;
 
 export type NormalisedClientOptions = Modify<
-  DeprecatedClientOptions,
+  InternalClientOptions,
   {
     realtimeHost: string;
     restHost: string;
@@ -31,5 +36,6 @@ export type NormalisedClientOptions = Modify<
     maxMessageSize: number;
     connectivityCheckParams: Record<string, string> | null;
     headers: Record<string, string>;
+    promises: boolean;
   }
 >;

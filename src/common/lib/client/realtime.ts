@@ -8,7 +8,7 @@ import Defaults from '../util/defaults';
 import ErrorInfo from '../types/errorinfo';
 import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
-import ClientOptions, { DeprecatedClientOptions } from '../../types/ClientOptions';
+import ClientOptions, { InternalClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
@@ -36,9 +36,9 @@ class Realtime extends Rest {
     this.connection.close();
   }
 
-  static Promise = function (options: DeprecatedClientOptions): Realtime {
+  static Promise = function (options: InternalClientOptions): Realtime {
     options = Defaults.objectifyOptions(options);
-    options.promises = true;
+    options.internal = { ...options.internal, promises: true };
     return new Realtime(options);
   };
 

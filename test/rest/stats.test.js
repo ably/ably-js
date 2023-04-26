@@ -602,7 +602,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     if (typeof Promise !== 'undefined') {
       it('stats_promise', function (done) {
-        var client = helper.AblyRest({ promises: true });
+        var client = helper.AblyRest({ internal: { promises: true } });
 
         client
           .stats()

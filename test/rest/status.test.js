@@ -42,7 +42,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     if (typeof Promise !== 'undefined') {
       it('statusPromise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
+        var rest = helper.AblyRest({ internal: { promises: true } });
         var channel = rest.channels.get('statusPromise');
         channel
           .status()

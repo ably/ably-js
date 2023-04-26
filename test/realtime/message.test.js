@@ -1141,7 +1141,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     if (typeof Promise !== 'undefined') {
       it('publishpromise', function (done) {
-        var realtime = helper.AblyRealtime({ promises: true });
+        var realtime = helper.AblyRealtime({ internal: { promises: true } });
         var channel = realtime.channels.get('publishpromise');
 
         var publishPromise = realtime.connection

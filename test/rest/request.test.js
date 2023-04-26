@@ -240,7 +240,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
     if (typeof Promise !== 'undefined') {
       it('request_promise', function (done) {
-        var client = helper.AblyRest({ promises: true });
+        var client = helper.AblyRest({ internal: { promises: true } });
 
         client
           .request('get', '/time', null, null, null)

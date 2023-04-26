@@ -694,7 +694,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
 
     if (typeof Promise !== 'undefined') {
       it('Promise based auth', function (done) {
-        var rest = helper.AblyRest({ promises: true });
+        var rest = helper.AblyRest({ internal: { promises: true } });
 
         var promise1 = rest.auth.requestToken();
         var promise2 = rest.auth.requestToken({ ttl: 200 });

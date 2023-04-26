@@ -148,7 +148,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     if (typeof Promise !== 'undefined') {
       it('presencePromise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
+        var rest = helper.AblyRest({ internal: { promises: true } });
         var channel = rest.channels.get('some_channel');
 
         channel.presence

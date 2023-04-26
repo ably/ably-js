@@ -38,7 +38,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     if (typeof Promise !== 'undefined') {
       it('timePromise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
+        var rest = helper.AblyRest({ internal: { promises: true } });
         rest
           .time()
           .then(function () {

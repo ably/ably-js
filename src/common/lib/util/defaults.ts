@@ -3,7 +3,7 @@ import * as Utils from './utils';
 import Logger from './logger';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { version } from '../../../../package.json';
-import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
+import ClientOptions, { InternalClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
 import IDefaults from '../../types/IDefaults';
 
 let agent = 'ably-js/' + version;
@@ -41,7 +41,7 @@ type CompleteDefaults = IDefaults & {
   checkHost(host: string): void;
   getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
   objectifyOptions(options: ClientOptions | string): ClientOptions;
-  normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions;
+  normaliseOptions(options: InternalClientOptions): NormalisedClientOptions;
 };
 
 const Defaults = {
@@ -181,7 +181,7 @@ export function objectifyOptions(options: ClientOptions | string): ClientOptions
   return options;
 }
 
-export function normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions {
+export function normaliseOptions(options: InternalClientOptions): NormalisedClientOptions {
   if (options.fallbackHostsUseDefault) {
     /* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
     if (options.fallbackHosts) {
@@ -276,13 +276,13 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     options.idempotentRestPublishing = true;
   }
 
-  if (options.promises && !Platform.Config.Promise) {
+  if (options.internal?.promises && !Platform.Config.Promise) {
     Logger.logAction(
       Logger.LOG_ERROR,
       'Defaults.normaliseOptions',
       '{promises: true} was specified, but no Promise constructor found; disabling promises'
     );
-    options.promises = false;
+    options.internal.promises = false;
   }
 
   let connectivityCheckParams = null;
@@ -304,11 +304,12 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
         : Platform.Config.preferBinary,
     realtimeHost,
     restHost,
-    maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
+    maxMessageSize: options.internal?.maxMessageSize || Defaults.maxMessageSize,
     timeouts,
     connectivityCheckParams,
     connectivityCheckUrl,
     headers,
+    promises: options.internal?.promises ?? false,
   };
 }
 
