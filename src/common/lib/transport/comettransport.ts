@@ -211,11 +211,7 @@ abstract class CometTransport extends Transport {
     Transport.prototype.onConnect.call(this, message);
 
     const baseConnectionUri = (this.baseUri as string) + connectionStr;
-    Logger.logAction(
-      Logger.LOG_MICRO,
-      'CometTransport.onConnect()',
-      'baseUri = ' + baseConnectionUri + '; connectionKey = ' + message.connectionKey
-    );
+    Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri);
     this.sendUri = baseConnectionUri + '/send';
     this.recvUri = baseConnectionUri + '/recv';
     this.closeUri = baseConnectionUri + '/close';
