@@ -6,7 +6,7 @@ var fs = require('fs'),
   kexec = require('kexec');
 
 module.exports = function (grunt) {
-  var test = grunt.option('test'),
+  var file = grunt.option('file'),
     debug = grunt.option('debug'),
     inspector = grunt.option('inspector'),
     fgrep = grunt.option('fgrep'),
@@ -32,13 +32,13 @@ module.exports = function (grunt) {
 
   grunt.registerTask(
     'mocha',
-    'Run the Mocha test suite.\nOptions:\n  --test [tests] e.g. --test test/rest/auth.test.js\n  --debug will debug using standard node debugger\n  --inspector will start with node inspector',
+    'Run the Mocha test suite.\nOptions:\n  --file=<file> e.g. --file=test/rest/auth.test.js\n  --debug will debug using standard node debugger\n  --inspector will start with node inspector',
     function () {
       var runTests = getRelativePath(helpers).concat(['test/realtime/*.test.js', 'test/rest/*.test.js']).join(' ');
-      grunt.log.writeln('Running Mocha test suite against ' + (test ? test : 'all tests'));
+      grunt.log.writeln('Running Mocha test suite against ' + (file ? file : 'all tests'));
 
-      if (test) {
-        runTests = getRelativePath(helpers).concat(resolveTests(test)).join(' ');
+      if (file) {
+        runTests = getRelativePath(helpers).concat(resolveTests(file)).join(' ');
       }
 
       if (fgrep) {

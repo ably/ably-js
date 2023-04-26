@@ -40,9 +40,9 @@ Run the Mocha test suite
 
     npm run test:node
 
-Or run just one or more test files
+Or run just one test file
 
-    npm run test:node -- --test=test/realtime/auth.test.js
+    npm run test:node -- --file=test/realtime/auth.test.js
 
 ### Debugging the mocha tests locally with a debugger
 
