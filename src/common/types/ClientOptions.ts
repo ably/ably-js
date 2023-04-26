@@ -16,7 +16,6 @@ export type DeprecatedClientOptions = Modify<
   ClientOptions,
   {
     promises?: boolean;
-    headers?: Record<string, string>;
     maxMessageSize?: number;
   }
 >;
@@ -31,5 +30,6 @@ export type NormalisedClientOptions = Modify<
     timeouts: Record<string, number>;
     maxMessageSize: number;
     connectivityCheckParams: Record<string, string> | null;
+    headers: Record<string, string>;
   }
 >;

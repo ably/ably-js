@@ -267,8 +267,8 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     options.useBinaryProtocol = Platform.Config.preferBinary;
   }
 
+  const headers: Record<string, string> = {};
   if (options.clientId) {
-    const headers = (options.headers = options.headers || {});
     headers['X-Ably-ClientId'] = Platform.BufferUtils.base64Encode(Platform.BufferUtils.utf8Encode(options.clientId));
   }
 
@@ -308,6 +308,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     timeouts,
     connectivityCheckParams,
     connectivityCheckUrl,
+    headers,
   };
 }
 

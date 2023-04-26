@@ -39,7 +39,7 @@ class Presence extends EventEmitter {
       envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
       headers = Utils.defaultGetHeaders(rest.options, format);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     const options = this.channel.channelOptions;
     new PaginatedResource(rest, this.basePath, headers, envelope, function (
@@ -81,7 +81,7 @@ class Presence extends EventEmitter {
       envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
       headers = Utils.defaultGetHeaders(rest.options, format);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     const options = this.channel.channelOptions;
     new PaginatedResource(rest, this.basePath + '/history', headers, envelope, function (

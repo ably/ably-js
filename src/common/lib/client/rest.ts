@@ -102,7 +102,7 @@ class Rest {
       format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.http.supportsLinkHeaders ? undefined : format;
 
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+    Utils.mixin(headers, this.options.headers);
 
     new PaginatedResource(this, '/stats', headers, envelope, function (
       body: unknown,
@@ -195,9 +195,7 @@ class Rest {
     if (typeof body !== 'string') {
       body = encoder(body);
     }
-    if (this.options.headers) {
-      Utils.mixin(headers, this.options.headers);
-    }
+    Utils.mixin(headers, this.options.headers);
     if (customHeaders) {
       Utils.mixin(headers, customHeaders);
     }
