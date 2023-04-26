@@ -25,7 +25,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         restHost: helper.unroutableHost,
         fallbackHosts: [goodHost],
         httpRequestTimeout: 3000,
-        log: { level: 4 },
+        logLevel: 4,
       });
       var validUntil;
       async.series(
