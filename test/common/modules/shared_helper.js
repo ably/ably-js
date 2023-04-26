@@ -213,7 +213,9 @@ define([
 
     Ably: clientModule.Ably,
     AblyRest: clientModule.AblyRest,
+    AblyRestPromise: clientModule.AblyRestPromise,
     AblyRealtime: clientModule.AblyRealtime,
+    AblyRealtimePromise: clientModule.AblyRealtimePromise,
     Utils: utils,
 
     loadTestData: testAppManager.loadJsonData,
