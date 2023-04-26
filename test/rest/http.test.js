@@ -9,7 +9,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     this.timeout(60 * 1000);
     before(function (done) {
       helper.setupApp(function () {
-        rest = helper.AblyRest({
+        rest = helper.AblyRestPromise({
           agents: {
             'custom-agent': '0.1.2',
           },
@@ -21,46 +21,44 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     /**
      * RSC7a
      */
-    it('Should send X-Ably-Version and Ably-Agent headers in get/post requests', function (done) {
-      //Intercept Http.do with test
-      function testRequestHandler(_, __, ___, headers) {
-        try {
-          expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
-          expect('Ably-Agent' in headers, 'Verify agent header exists').to.be.ok;
+    it('Should send X-Ably-Version and Ably-Agent headers in get/post requests', async function () {
+      var originalDo = rest.http.do;
 
-          // This test should not directly validate version against Defaults.version, as
-          // ultimately the version header has been derived from that value.
-          expect(headers['X-Ably-Version']).to.equal('2', 'Verify current version number');
-          expect(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent').to.be.ok;
-          expect(headers['Ably-Agent'].indexOf('custom-agent/0.1.2') > -1, 'Verify custom agent').to.be.ok;
+      // Intercept Http.do with test
+      function testRequestHandler(method, rest, path, headers, body, params, callback) {
+        expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
+        expect('Ably-Agent' in headers, 'Verify agent header exists').to.be.ok;
 
-          // We don't test on NativeScript so a check for that platform is excluded here
-          if (typeof document !== 'undefined') {
-            // browser
-            expect(headers['Ably-Agent'].indexOf('browser') > -1, 'Verify agent').to.be.ok;
-          } else if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
-            // reactnative
-            expect(headers['Ably-Agent'].indexOf('reactnative') > -1, 'Verify agent').to.be.ok;
-          } else {
-            // node
-            expect(headers['Ably-Agent'].indexOf('nodejs') > -1, 'Verify agent').to.be.ok;
-          }
-        } catch (err) {
-          done(err);
+        // This test should not directly validate version against Defaults.version, as
+        // ultimately the version header has been derived from that value.
+        expect(headers['X-Ably-Version']).to.equal('2', 'Verify current version number');
+        expect(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent').to.be.ok;
+        expect(headers['Ably-Agent'].indexOf('custom-agent/0.1.2') > -1, 'Verify custom agent').to.be.ok;
+
+        // We don't test on NativeScript so a check for that platform is excluded here
+        if (typeof document !== 'undefined') {
+          // browser
+          expect(headers['Ably-Agent'].indexOf('browser') > -1, 'Verify agent').to.be.ok;
+        } else if (typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
+          // reactnative
+          expect(headers['Ably-Agent'].indexOf('reactnative') > -1, 'Verify agent').to.be.ok;
+        } else {
+          // node
+          expect(headers['Ably-Agent'].indexOf('nodejs') > -1, 'Verify agent').to.be.ok;
         }
+
+        originalDo.call(rest.http, method, rest, path, headers, body, params, callback);
       }
 
       rest.http.do = testRequestHandler;
 
       // Call all methods that use rest http calls
-      rest.auth.requestToken();
-      rest.time();
-      rest.stats();
+      await rest.auth.requestToken();
+      await rest.time();
+      await rest.stats();
       var channel = rest.channels.get('http_test_channel');
-      channel.publish('test', 'Testing http headers');
-      channel.presence.get();
-
-      done();
+      await channel.publish('test', 'Testing http headers');
+      await channel.presence.get();
     });
   });
 });
