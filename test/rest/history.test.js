@@ -236,41 +236,5 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       expect(message.data).to.equal(badMessage.data, 'Verify data preserved');
       expect(message.encoding).to.equal(badMessage.encoding, 'Verify encoding preserved');
     });
-
-    if (typeof Promise !== 'undefined') {
-      it('historyPromise', function (done) {
-        var rest = helper.AblyRest({ internal: { promises: true } });
-        var testchannel = rest.channels.get('persisted:history_promise');
-
-        testchannel
-          .publish('one', null)
-          .then(function () {
-            return testchannel.publish('two', null);
-          })
-          .then(function () {
-            return testchannel.history({ limit: 1, direction: 'forwards' });
-          })
-          .then(function (resultPage) {
-            expect(resultPage.items.length).to.equal(1);
-            expect(resultPage.items[0].name).to.equal('one');
-            return resultPage.first();
-          })
-          .then(function (resultPage) {
-            expect(resultPage.items[0].name).to.equal('one');
-            return resultPage.current();
-          })
-          .then(function (resultPage) {
-            expect(resultPage.items[0].name).to.equal('one');
-            return resultPage.next();
-          })
-          .then(function (resultPage) {
-            expect(resultPage.items[0].name).to.equal('two');
-            done();
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
   });
 });
