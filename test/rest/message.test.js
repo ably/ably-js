@@ -179,34 +179,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(page.items[1].id).to.equal(idTwo, 'Check message id 1 preserved in history');
     });
 
-    if (typeof Promise !== undefined) {
-      it('Rest publish promise', function (done) {
-        var rest = helper.AblyRestPromise({ internal: { promises: true } });
-        var channel = rest.channels.get('publishpromise');
-
-        channel
-          .publish('name', 'data')
-          .then(function () {
-            return channel.history();
-          })
-          .then(function (page) {
-            var message = page.items[0];
-            try {
-              expect(
-                message.data == 'data',
-                'Check publish and history promise methods both worked as expected'
-              ).to.be.ok;
-              done();
-            } catch (err) {
-              done(err);
-            }
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
-
     it('Rest publish params', async function () {
       var rest = helper.AblyRestPromise(),
         channel = rest.channels.get('publish_params');
