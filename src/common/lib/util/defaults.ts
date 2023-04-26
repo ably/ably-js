@@ -183,10 +183,6 @@ export function objectifyOptions(options: ClientOptions | string): ClientOptions
 
 export function normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions {
   /* Deprecated options */
-  if (options.wsHost) {
-    Logger.deprecated('wsHost', 'realtimeHost');
-    options.realtimeHost = options.wsHost;
-  }
   if (options.queueEvents) {
     Logger.deprecated('queueEvents', 'queueMessages');
     options.queueMessages = options.queueEvents;
