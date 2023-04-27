@@ -1323,7 +1323,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /* Check that only the last authorize matters */
     it('multiple_concurrent_authorize', function (done) {
       var realtime = helper.AblyRealtime({
-        log: { level: 4 },
+        logLevel: 4,
         useTokenAuth: true,
         defaultTokenParams: { capability: { wrong: ['*'] } },
       });

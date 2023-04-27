@@ -392,9 +392,16 @@ declare namespace Types {
     environment?: string;
 
     /**
-     * Parameters to control the log output of the library, such as the log handler and log level.
+     * Controls the verbosity of the logs output from the library. Valid values are: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
      */
-    log?: LogInfo;
+    logLevel?: number;
+
+    /**
+     * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
+     *
+     * @param msg - The log message emitted by the library.
+     */
+    logHandler?: (msg: string) => void;
 
     /**
      * Enables a non-default Ably port to be specified. For development environments only. The default value is 80.
@@ -1100,23 +1107,6 @@ declare namespace Types {
      * When `true`, ensures message history is up until the point of the channel being attached. See [continuous history](https://ably.com/docs/realtime/history#continuous-history) for more info. Requires the `direction` to be `backwards`. If the channel is not attached, or if `direction` is set to `forwards`, this option results in an error.
      */
     untilAttach?: boolean;
-  }
-
-  /**
-   * Settings which control the log output of the library.
-   */
-  interface LogInfo {
-    /**
-     * Controls the verbosity of the logs output from the library. Valid values are: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
-     */
-    level?: number;
-
-    /**
-     * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
-     *
-     * @param msg - The log message emitted by the library.
-     */
-    handler?: (msg: string) => void;
   }
 
   /**

@@ -40,9 +40,7 @@ class Rest {
     }
     const optionsObj = Defaults.objectifyOptions(options);
 
-    if (optionsObj.log) {
-      Logger.setLog(optionsObj.log.level, optionsObj.log.handler);
-    }
+    Logger.setLog(optionsObj.logLevel, optionsObj.logHandler);
     Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Platform.Config.inspect(options));
 
     const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));

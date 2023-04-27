@@ -65,7 +65,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('connectionAttributes', function (done) {
       var realtime;
       try {
-        realtime = helper.AblyRealtime({ log: { level: 4 } });
+        realtime = helper.AblyRealtime({ logLevel: 4 });
         realtime.connection.on('connected', function () {
           try {
             const recoveryContext = JSON.parse(realtime.connection.recoveryKey);
