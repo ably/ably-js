@@ -13,7 +13,7 @@
     "./build/ably-node.js": "./build/ably-reactnative.js"
   },
   "browser": {
-    "./build/ably-node.js": "./build/ably-commonjs.js"
+    "./build/ably-node.js": "./build/ably.js"
   },
   "files": [
     "build/**",
