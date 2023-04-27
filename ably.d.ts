@@ -1503,16 +1503,6 @@ declare namespace Types {
     },
     callback: recoverConnectionCompletionCallback
   ) => void;
-  /**
-   * @ignore
-   * @deprecated No longer used by this library - kept here since it used to be part of our public API. Will be removed in next major version release.
-   */
-  type fromEncoded<T> = (JsonObject: any, channelOptions?: ChannelOptions) => T;
-  /**
-   * @ignore
-   * @deprecated No longer used by this library - kept here since it used to be part of our public API. Will be removed in next major version release.
-   */
-  type fromEncodedArray<T> = (JsonArray: any[], channelOptions?: ChannelOptions) => T[];
 
   // Internal Classes
 
