@@ -39,7 +39,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    it('Get subscriptions', function (done) {
+    it('Get subscriptions', async function () {
       var subscribes = [];
       var deletes = [];
       var subsByChannel = {};
@@ -51,58 +51,31 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
           subsByChannel[sub.channel].push(sub);
 
-          var rest = helper.AblyRest({ clientId: sub.clientId });
-          subscribes.push(function (callback) {
-            rest.push.admin.channelSubscriptions.save(sub, callback);
-          });
-          deletes.push(function (callback) {
-            rest.push.admin.channelSubscriptions.remove(sub, callback);
-          });
+          var rest = helper.AblyRestPromise({ clientId: sub.clientId });
+          subscribes.push(() => rest.push.admin.channelSubscriptions.save(sub));
+          deletes.push(() => rest.push.admin.channelSubscriptions.remove(sub));
         })(i);
       }
 
-      var rest = helper.AblyRest();
+      var rest = helper.AblyRestPromise();
 
-      async.series(
-        [
-          function (callback) {
-            async.parallel(subscribes, callback);
-          },
-          function (callback) {
-            rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo1' }, callback);
-          },
-          function (callback) {
-            rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo2' }, callback);
-          },
-          function (callback) {
-            async.parallel(deletes, callback);
-          },
-        ],
-        function (err, result) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            testIncludesUnordered(untyped(result[1].items), untyped(subsByChannel['pushenabled:foo1']));
-            testIncludesUnordered(untyped(result[2].items), untyped(subsByChannel['pushenabled:foo2']));
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      await Promise.all(subscribes.map((sub) => sub()));
+
+      var res1 = await rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo1' });
+      var res2 = await rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo2' });
+
+      await Promise.all(deletes.map((del) => del()));
+
+      testIncludesUnordered(untyped(res1.items), untyped(subsByChannel['pushenabled:foo1']));
+      testIncludesUnordered(untyped(res2.items), untyped(subsByChannel['pushenabled:foo2']));
     });
 
-    it('Publish', function (done) {
-      var realtime = helper.AblyRealtime();
+    it('Publish', async function () {
+      try {
+        var realtime = helper.AblyRealtimePromise();
 
-      var channel = realtime.channels.get('pushenabled:foo');
-      channel.attach(function (err) {
-        if (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
+        var channel = realtime.channels.get('pushenabled:foo');
+        await channel.attach();
 
         var pushPayload = {
           notification: { title: 'Test message', body: 'Test message body' },
@@ -117,29 +90,34 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           ablyUrl: baseUri,
         };
 
-        channel.subscribe('__ably_push__', function (msg) {
-          var receivedPushPayload = JSON.parse(msg.data);
-          try {
+        var prom = new Promise(function (resolve, reject) {
+          channel.subscribe('__ably_push__', function (msg) {
             expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
             expect(receivedPushPayload.notification.title).to.deep.equal(pushPayload.notification.title);
             expect(receivedPushPayload.notification.body).to.deep.equal(pushPayload.notification.body);
-            closeAndFinish(done, realtime);
-          } catch (err) {
-            closeAndFinish(done, realtime, err);
-          }
+            resolve();
+          });
         });
 
-        realtime.push.admin.publish(pushRecipient, pushPayload, function (err) {
-          if (err) {
-            closeAndFinish(done, realtime, err);
-          }
-        });
-      });
+        await realtime.push.admin.publish(pushRecipient, pushPayload);
+        realtime.close();
+      } catch (err) {
+        realtime.close();
+        throw err;
+      }
     });
 
     if (typeof Promise !== 'undefined') {
+<<<<<<< HEAD
       it('Publish promise', function (done) {
         var realtime = helper.AblyRealtime({ internal: { promises: true } });
+||||||| parent of 8295a1a8 (test: convert rest push tests to Promise API)
+      it('Publish promise', function (done) {
+        var realtime = helper.AblyRealtime({ promises: true });
+=======
+      it('Publish promise', async function () {
+        var realtime = helper.AblyRealtime({ promises: true });
+>>>>>>> 8295a1a8 (test: convert rest push tests to Promise API)
         var channelName = 'pushenabled:publish_promise';
         var channel = realtime.channels.get(channelName);
         channel.attach(function (err) {
@@ -185,43 +163,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     }
 
-    it('deviceRegistrations save', function (done) {
-      var rest = helper.AblyRest();
+    it('deviceRegistrations save', async function () {
+      var rest = helper.AblyRestPromise();
 
-      async.series(
-        [
-          function (callback) {
-            rest.push.admin.deviceRegistrations.save(testDevice, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.get(testDevice.id, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.remove(testDevice.id, callback);
-          },
-        ],
-        function (err, result) {
-          if (err) {
-            done(err);
-            return;
-          }
-          var saved = result[0];
-          var got = result[1];
-          try {
-            expect(got.push.state).to.equal('ACTIVE');
-            delete got.metadata; // Ignore these properties for testing
-            delete got.push.state;
-            testIncludesUnordered(untyped(got), testDevice_withoutSecret);
-            testIncludesUnordered(untyped(saved), testDevice_withoutSecret);
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      var saved = await rest.push.admin.deviceRegistrations.save(testDevice);
+      var got = await rest.push.admin.deviceRegistrations.get(testDevice.id);
+      await rest.push.admin.deviceRegistrations.remove(testDevice.id);
+
+      expect(got.push.state).to.equal('ACTIVE');
+      delete got.metadata; // Ignore these properties for testing
+      delete got.push.state;
+      testIncludesUnordered(untyped(got), testDevice_withoutSecret);
+      testIncludesUnordered(untyped(saved), testDevice_withoutSecret);
     });
 
-    it('deviceRegistrations get and list', function (done) {
+    it('deviceRegistrations get and list', async function () {
       var registrations = [];
       var deletes = [];
       var devices = [];
@@ -262,113 +218,65 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           devices.push(device);
           devices_withoutSecret.push(device_withoutSecret);
 
-          var rest = helper.AblyRest({ clientId: device.clientId });
-          registrations.push(function (callback) {
-            rest.push.admin.deviceRegistrations.save(device, callback);
+          var rest = helper.AblyRestPromise({ clientId: device.clientId });
+          registrations.push(function () {
+            return rest.push.admin.deviceRegistrations.save(device);
           });
-          deletes.push(function (callback) {
-            rest.push.admin.deviceRegistrations.remove('device' + (i + 1), callback);
+          deletes.push(function () {
+            return rest.push.admin.deviceRegistrations.remove('device' + (i + 1));
           });
         })(i);
       }
 
-      var rest = helper.AblyRest();
+      var rest = helper.AblyRestPromise();
 
-      async.series(
-        [
-          function (callback) {
-            async.parallel(registrations, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.list(null, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.list({ clientId: 'testClient1' }, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.list({ clientId: 'testClient2' }, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.get(devices[0].id, callback);
-          },
-          function (callback) {
-            async.parallel(
-              [
-                function (callback) {
-                  rest.push.admin.deviceRegistrations.removeWhere({ clientId: 'testClient1' }, callback);
-                },
-                function (callback) {
-                  rest.push.admin.deviceRegistrations.removeWhere({ clientId: 'testClient2' }, callback);
-                },
-              ],
-              callback
-            );
-          },
-          function (callback) {
-            async.parallel(deletes, callback);
-          },
-        ],
-        function (err, result) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            expect(numberOfDevices).to.equal(result[0].length);
-            testIncludesUnordered(untyped(result[1].items), untyped(devices_withoutSecret));
-            testIncludesUnordered(untyped(result[2].items), untyped(devicesByClientId['testClient1']));
-            testIncludesUnordered(untyped(result[3].items), untyped(devicesByClientId['testClient2']));
-            testIncludesUnordered(untyped(result[4]), untyped(devices[0]));
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      var res0 = await Promise.all(registrations.map((x) => x()));
+      var res1 = await rest.push.admin.deviceRegistrations.list(null);
+      var res2 = await rest.push.admin.deviceRegistrations.list({ clientId: 'testClient1' });
+      var res3 = await rest.push.admin.deviceRegistrations.list({ clientId: 'testClient2' });
+      var res4 = await rest.push.admin.deviceRegistrations.get(devices[0].id);
+
+      await Promise.all([
+        rest.push.admin.deviceRegistrations.removeWhere({ clientId: 'testClient1' }),
+        rest.push.admin.deviceRegistrations.removeWhere({ clientId: 'testClient2' }),
+      ]);
+
+      await Promise.all(deletes.map((x) => x()));
+
+      expect(numberOfDevices).to.equal(res0.length);
+      testIncludesUnordered(untyped(res1.items), untyped(devices_withoutSecret));
+      testIncludesUnordered(untyped(res2.items), untyped(devicesByClientId['testClient1']));
+      testIncludesUnordered(untyped(res3.items), untyped(devicesByClientId['testClient2']));
+      testIncludesUnordered(untyped(res4), untyped(devices[0]));
     });
 
-    it('deviceRegistrations remove removeWhere', function (done) {
-      var rest = helper.AblyRest();
+    it('deviceRegistrations remove removeWhere', async function () {
+      var rest = helper.AblyRestPromise();
 
-      async.series(
-        [
-          function (callback) {
-            rest.push.admin.deviceRegistrations.save(testDevice, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.remove(testDevice.id, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.get(testDevice.id, function (err, result) {
-              expect(err && err.statusCode).to.equal(404, 'Check device reg not found after removal');
-              callback(null);
-            });
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.save(testDevice, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.removeWhere({ deviceId: testDevice.id }, callback);
-          },
-          function (callback) {
-            rest.push.admin.deviceRegistrations.get(testDevice.id, function (err, result) {
-              expect(err && err.statusCode).to.equal(404, 'Check device reg not found after removal');
-              callback(null);
-            });
-          },
-        ],
-        function (err, result) {
-          if (err) {
-            done(err);
-          }
-          done();
-        }
-      );
+      await rest.push.admin.deviceRegistrations.save(testDevice);
+      await rest.push.admin.deviceRegistrations.remove(testDevice.id);
+
+      try {
+        await rest.push.admin.deviceRegistrations.get(testDevice.id);
+        expect.fail('Expected push.admin.deviceRegistrations.get() to throw');
+      } catch (err) {
+        expect(err.statusCode).to.equal(404, 'Check device reg not found after removal');
+      }
+
+      await rest.push.admin.deviceRegistrations.save(testDevice);
+      await rest.push.admin.deviceRegistrations.removeWhere({ deviceId: testDevice.id });
+
+      try {
+        await rest.push.admin.deviceRegistrations.get(testDevice.id);
+        expect.fail('Expected push.admin.deviceRegistrations.get() to throw');
+      } catch (err) {
+        expect(err.statusCode).to.equal(404, 'Check device reg not found after removal');
+      }
     });
 
     if (typeof Promise !== undefined) {
       it('deviceRegistrations promise', function (done) {
-        var rest = helper.AblyRest({ internal: { promises: true } });
+        var rest = helper.AblyRestPromise({ internal: { promises: true } });
 
         /* save */
         rest.push.admin.deviceRegistrations
@@ -404,43 +312,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     }
 
-    it('channelSubscriptions save', function (done) {
-      var rest = helper.AblyRest({ clientId: 'testClient' });
+    it('channelSubscriptions save', async function () {
+      var rest = helper.AblyRestPromise({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
 
-      async.series(
-        [
-          function (callback) {
-            rest.push.admin.channelSubscriptions.save(subscription, callback);
-          },
-          function (callback) {
-            rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo' }, callback);
-          },
-          function (callback) {
-            rest.push.admin.channelSubscriptions.remove(subscription, callback);
-          },
-        ],
-        function (err, result) {
-          if (err) {
-            done(err);
-            return;
-          }
-          var saved = result[0];
-          var sub = result[1].items[0];
-          try {
-            expect(subscription.clientId).to.equal(saved.clientId);
-            expect(subscription.channel).to.equal(saved.channel);
-            expect(subscription.clientId).to.equal(sub.clientId);
-            expect(subscription.channel).to.equal(sub.channel);
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      var saved = await rest.push.admin.channelSubscriptions.save(subscription);
+      var result = await rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo' });
+      var sub = result.items[0];
+      await rest.push.admin.channelSubscriptions.remove(subscription);
+
+      expect(subscription.clientId).to.equal(saved.clientId);
+      expect(subscription.channel).to.equal(saved.channel);
+      expect(subscription.clientId).to.equal(sub.clientId);
+      expect(subscription.channel).to.equal(sub.channel);
     });
 
-    it('channelSubscriptions get', function (done) {
+    it('channelSubscriptions get', async function () {
       var subscribes = [];
       var deletes = [];
       var subsByChannel = {};
@@ -452,121 +339,75 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
           subsByChannel[sub.channel].push(sub);
 
-          var rest = helper.AblyRest();
-          subscribes.push(function (callback) {
-            rest.push.admin.channelSubscriptions.save(sub, callback);
+          var rest = helper.AblyRestPromise();
+          subscribes.push(function () {
+            return rest.push.admin.channelSubscriptions.save(sub);
           });
-          deletes.push(function (callback) {
-            rest.push.admin.channelSubscriptions.remove({ clientId: 'testClient' + i }, callback);
+          deletes.push(function () {
+            return rest.push.admin.channelSubscriptions.remove({ clientId: 'testClient' + i });
           });
         })(i);
       }
 
-      var rest = helper.AblyRest();
+      var rest = helper.AblyRestPromise();
 
-      async.series(
-        [
-          function (callback) {
-            async.parallel(subscribes, callback);
-          },
-          function (callback) {
-            rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo1' }, callback);
-          },
-          function (callback) {
-            rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo2' }, callback);
-          },
-          function (callback) {
-            async.parallel(deletes, callback);
-          },
-        ],
-        function (err, result) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            testIncludesUnordered(untyped(result[1].items), untyped(subsByChannel['pushenabled:foo1']));
-            testIncludesUnordered(untyped(result[2].items), untyped(subsByChannel['pushenabled:foo2']));
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      await Promise.all(subscribes.map((x) => x()));
+
+      var res1 = await rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo1' });
+      var res2 = await rest.push.admin.channelSubscriptions.list({ channel: 'pushenabled:foo2' });
+
+      await Promise.all(deletes.map((x) => x()));
+
+      testIncludesUnordered(untyped(res1.items), untyped(subsByChannel['pushenabled:foo1']));
+      testIncludesUnordered(untyped(res2.items), untyped(subsByChannel['pushenabled:foo2']));
     });
 
-    exports.push_channelSubscriptions_remove = function (test) {
-      var rest = helper.AblyRest({ clientId: 'testClient' });
+    it('push_channelSubscriptions_remove', async function () {
+      var rest = helper.AblyRestPromise({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
 
-      async.series(
-        [
-          function (callback) {
-            rest.push.admin.channelSubscriptions.save(subscription, callback);
-          },
-          function (callback) {
-            rest.push.admin.channelSubscriptions.remove(subscription, callback);
-          },
-        ],
-        function (err, result) {
-          if (err) {
-            test.ok(false, err.message);
-            test.done();
-            return;
-          }
-          test.done();
-        }
-      );
-    };
+      await rest.push.admin.channelSubscriptions.save(subscription);
+      await rest.push.admin.channelSubscriptions.remove(subscription);
+    });
 
-    it('channelSubscriptions listChannels', function (done) {
+    it('channelSubscriptions listChannels', async function () {
       var subscribes = [];
       var deletes = [];
       for (var i = 0; i < 5; i++) {
         (function (i) {
           var sub = { channel: 'pushenabled:listChannels' + ((i % 2) + 1), clientId: 'testClient' + ((i % 3) + 1) };
-          var rest = helper.AblyRest({ clientId: sub.clientId });
+          var rest = helper.AblyRestPromise({ clientId: sub.clientId });
           subscribes.push(function (callback) {
-            rest.push.admin.channelSubscriptions.save(sub, callback);
+            return rest.push.admin.channelSubscriptions.save(sub);
           });
-          deletes.push(function (callback) {
-            rest.push.admin.channelSubscriptions.remove(sub, callback);
+          deletes.push(function () {
+            return rest.push.admin.channelSubscriptions.remove(sub);
           });
         })(i);
       }
 
-      var rest = helper.AblyRest();
+      var rest = helper.AblyRestPromise();
 
-      async.series(
-        [
-          function (callback) {
-            async.parallel(subscribes, callback);
-          },
-          function (callback) {
-            rest.push.admin.channelSubscriptions.listChannels(null, callback);
-          },
-          function (callback) {
-            async.parallel(deletes, callback);
-          },
-        ],
-        function (err, result) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            testIncludesUnordered(['pushenabled:listChannels1', 'pushenabled:listChannels2'], result[1].items);
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      await Promise.all(subscribes.map((x) => x()));
+
+      var result = await rest.push.admin.channelSubscriptions.listChannels(null);
+
+      await Promise.all(deletes.map((x) => x()));
+
+      testIncludesUnordered(['pushenabled:listChannels1', 'pushenabled:listChannels2'], result.items);
     });
 
     if (typeof Promise !== 'undefined') {
+<<<<<<< HEAD
       it('channelSubscriptions promise', function (done) {
         var rest = helper.AblyRest({ internal: { promises: true } });
+||||||| parent of 8295a1a8 (test: convert rest push tests to Promise API)
+      it('channelSubscriptions promise', function (done) {
+        var rest = helper.AblyRest({ promises: true });
+=======
+      it('channelSubscriptions promise', async function () {
+        var rest = helper.AblyRestPromise({ promises: true });
+>>>>>>> 8295a1a8 (test: convert rest push tests to Promise API)
         var channelId = 'pushenabled:channelsubscriptions_promise';
         var subscription = { clientId: 'testClient', channel: channelId };
 
