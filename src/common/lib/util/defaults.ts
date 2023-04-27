@@ -182,14 +182,6 @@ export function objectifyOptions(options: ClientOptions | string): ClientOptions
 }
 
 export function normaliseOptions(options: InternalClientOptions): NormalisedClientOptions {
-  /* options.recover as a boolean is deprecated, and therefore is not part of the public typing */
-  if ((options.recover as any) === true) {
-    Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
-    options.recover = function (lastConnectionDetails: unknown, cb: (shouldRecover: boolean) => void) {
-      cb(true);
-    };
-  }
-
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
     Logger.logAction(
       Logger.LOG_ERROR,
