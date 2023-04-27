@@ -321,7 +321,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     }
 
-    /* Check that the connectionKey in ConnectionDetails takes precedence over connectionKey in ProtocolMessage,
+    /* Check that the connectionKey in ConnectionDetails updates the client connectionKey,
 	   and clientId in ConnectionDetails updates the client clientId */
     it('init_and_connection_details', function (done) {
       try {

@@ -57,7 +57,7 @@ function toStringArray(array?: any[]): string {
   return '[ ' + result.join(', ') + ' ]';
 }
 
-const simpleAttributes = 'id channel channelSerial connectionId connectionKey count msgSerial timestamp'.split(' ');
+const simpleAttributes = 'id channel channelSerial connectionId count msgSerial timestamp'.split(' ');
 
 class ProtocolMessage {
   action?: number;
@@ -67,7 +67,6 @@ class ProtocolMessage {
   count?: number;
   error?: ErrorInfo;
   connectionId?: string;
-  connectionKey?: string;
   channel?: string;
   channelSerial?: string | null;
   msgSerial?: number;
