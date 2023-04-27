@@ -168,6 +168,7 @@ class Rest {
   request(
     method: string,
     path: string,
+    version: number,
     params: RequestParams,
     body: unknown,
     customHeaders: Record<string, string>,
@@ -182,12 +183,12 @@ class Rest {
     const _method = method.toLowerCase() as HttpMethods;
     const headers =
       _method == 'get'
-        ? Utils.defaultGetHeaders(this.options, { format })
-        : Utils.defaultPostHeaders(this.options, { format });
+        ? Utils.defaultGetHeaders(this.options, { format, protocolVersion: version })
+        : Utils.defaultPostHeaders(this.options, { format, protocolVersion: version });
 
     if (callback === undefined) {
       if (this.options.promises) {
-        return Utils.promisify(this, 'request', [method, path, params, body, customHeaders]) as Promise<
+        return Utils.promisify(this, 'request', [method, path, version, params, body, customHeaders]) as Promise<
           HttpPaginatedResponse<unknown>
         >;
       }

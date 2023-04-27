@@ -1,11 +1,12 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var rest;
   var expect = chai.expect;
   var utils = helper.Utils;
   var echoServerHost = 'echo.ably.io';
   var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
+  var Defaults = Ably.Rest.Platform.Defaults;
 
   describe('rest/request', function () {
     this.timeout(60 * 1000);
@@ -21,8 +22,26 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     });
 
+    restTestOnJsonMsgpack('request_version', function (done, rest) {
+      const version = 150; // arbitrarily chosen
+
+      function testRequestHandler(_, __, ___, headers) {
+        try {
+          expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
+          expect(headers['X-Ably-Version']).to.equal(version.toString(), 'Verify version number sent in request');
+          done();
+        } catch (err) {
+          done(err);
+        }
+      }
+
+      rest.http.do = testRequestHandler;
+
+      rest.request('get', '/time' /* arbitrarily chosen */, version, null, null, null, function (err, res) {});
+    });
+
     restTestOnJsonMsgpack('request_time', function (done, rest) {
-      rest.request('get', '/time', null, null, null, function (err, res) {
+      rest.request('get', '/time', Defaults.protocolVersion, null, null, null, function (err, res) {
         try {
           expect(!err, err && helper.displayError(err)).to.be.ok;
           expect(res.statusCode).to.equal(200, 'Check statusCode');
@@ -40,27 +59,35 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       /* NB: can't just use /invalid or something as the CORS preflight will
        * fail. Need something superficially a valid path but where the actual
        * request fails */
-      rest.request('get', '/keys/ablyjs.test/requestToken', null, null, null, function (err, res) {
-        try {
-          expect(err).to.equal(
-            null,
-            'Check that we do not get an error response for a failure that returns an actual ably error code'
-          );
-          expect(res.success).to.equal(false, 'Check res.success is false for a failure');
-          expect(res.statusCode).to.equal(404, 'Check HPR.statusCode is 404');
-          expect(res.errorCode).to.equal(40400, 'Check HPR.errorCode is 40400');
-          expect(res.errorMessage, 'Check have an HPR.errorMessage').to.be.ok;
-          done();
-        } catch (err) {
-          done(err);
+      rest.request(
+        'get',
+        '/keys/ablyjs.test/requestToken',
+        Defaults.protocolVersion,
+        null,
+        null,
+        null,
+        function (err, res) {
+          try {
+            expect(err).to.equal(
+              null,
+              'Check that we do not get an error response for a failure that returns an actual ably error code'
+            );
+            expect(res.success).to.equal(false, 'Check res.success is false for a failure');
+            expect(res.statusCode).to.equal(404, 'Check HPR.statusCode is 404');
+            expect(res.errorCode).to.equal(40400, 'Check HPR.errorCode is 40400');
+            expect(res.errorMessage, 'Check have an HPR.errorMessage').to.be.ok;
+            done();
+          } catch (err) {
+            done(err);
+          }
         }
-      });
+      );
     });
 
     /* With a network issue, should get an actual err, not an HttpPaginatedResponse with error members */
     it('request_network_error', function (done) {
       rest = helper.AblyRest({ restHost: helper.unroutableAddress });
-      rest.request('get', '/time', null, null, null, function (err, res) {
+      rest.request('get', '/time', Defaults.protocolVersion, null, null, null, function (err, res) {
         try {
           expect(err, 'Check get an err').to.be.ok;
           expect(!res, 'Check do not get a res').to.be.ok;
@@ -80,7 +107,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       async.waterfall(
         [
           function (cb) {
-            rest.request('post', channelPath, null, msgone, null, function (err, res) {
+            rest.request('post', channelPath, Defaults.protocolVersion, null, msgone, null, function (err, res) {
               try {
                 expect(!err, err && helper.displayError(err)).to.be.ok;
                 expect(res.statusCode).to.equal(201, 'Check statusCode is 201');
@@ -93,7 +120,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             });
           },
           function (cb) {
-            rest.request('post', channelPath, null, msgtwo, null, function (err, res) {
+            rest.request('post', channelPath, Defaults.protocolVersion, null, msgtwo, null, function (err, res) {
               try {
                 expect(!err, err && helper.displayError(err)).to.be.ok;
                 expect(res.statusCode).to.equal(201, 'Check statusCode is 201');
@@ -105,19 +132,27 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             });
           },
           function (cb) {
-            rest.request('get', channelPath, { limit: 1, direction: 'forwards' }, null, null, function (err, res) {
-              try {
-                expect(!err, err && helper.displayError(err)).to.be.ok;
-                expect(res.statusCode).to.equal(200, 'Check statusCode is 200');
-                expect(res.items.length).to.equal(1, 'Check only one msg returned');
-                expect(res.items[0].name).to.equal(msgone.name, 'Check name is as expected');
-                expect(res.items[0].data).to.equal(msgone.data, 'Check data is as expected');
-                expect(res.hasNext, 'Check hasNext is true').to.be.ok;
-                cb(null, res.next);
-              } catch (err) {
-                cb(err);
+            rest.request(
+              'get',
+              channelPath,
+              Defaults.protocolVersion,
+              { limit: 1, direction: 'forwards' },
+              null,
+              null,
+              function (err, res) {
+                try {
+                  expect(!err, err && helper.displayError(err)).to.be.ok;
+                  expect(res.statusCode).to.equal(200, 'Check statusCode is 200');
+                  expect(res.items.length).to.equal(1, 'Check only one msg returned');
+                  expect(res.items[0].name).to.equal(msgone.name, 'Check name is as expected');
+                  expect(res.items[0].data).to.equal(msgone.data, 'Check data is as expected');
+                  expect(res.hasNext, 'Check hasNext is true').to.be.ok;
+                  cb(null, res.next);
+                } catch (err) {
+                  cb(err);
+                }
               }
-            });
+            );
           },
           function (next, cb) {
             next(function (err, res) {
@@ -162,7 +197,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     restTestOnJsonMsgpack('request_batch_api_success', function (done, rest, name) {
       var body = { channels: [name + '1', name + '2'], messages: { data: 'foo' } };
 
-      rest.request('POST', '/messages', {}, body, {}, function (err, res) {
+      rest.request('POST', '/messages', Defaults.protocolVersion, {}, body, {}, function (err, res) {
         try {
           expect(err).to.equal(null, 'Check that we do not get an error response for a success');
           expect(res.success).to.equal(true, 'Check res.success is true for a success');
@@ -189,7 +224,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     restTestOnJsonMsgpack.skip('request_batch_api_partial_success', function (done, rest, name) {
       var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
 
-      rest.request('POST', '/messages', {}, body, {}, function (err, res) {
+      rest.request('POST', '/messages', Defaults.protocolVersion, {}, body, {}, function (err, res) {
         try {
           expect(err).to.equal(null, 'Check that we do not get an error response for a partial success');
           expect(res.success).to.equal(false, 'Check res.success is false for a partial failure');
@@ -223,7 +258,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     utils.arrForEach(['put', 'patch', 'delete'], function (method) {
       it('check' + method, function (done) {
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
-        restEcho.request(method, '/methods', {}, {}, {}, function (err, res) {
+        restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {}, function (err, res) {
           if (err) {
             done(err);
           } else {
@@ -243,7 +278,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         var client = helper.AblyRest({ internal: { promises: true } });
 
         client
-          .request('get', '/time', null, null, null)
+          .request('get', '/time', Defaults.protocolVersion, null, null, null)
           .then(function (res) {
             expect(res.statusCode).to.equal(200, 'Check statusCode');
             expect(res.success).to.equal(true, 'Check success');
