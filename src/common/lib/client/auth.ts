@@ -313,11 +313,6 @@ class Auth {
     );
   }
 
-  authorise(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions, callback: Function): void {
-    Logger.deprecated('Auth.authorise', 'Auth.authorize');
-    this.authorize(tokenParams, authOptions, callback);
-  }
-
   /* For internal use, eg by connectionManager - useful when want to call back
    * as soon as we have the new token, rather than waiting for it to take
    * effect on the connection as #authorize does */
