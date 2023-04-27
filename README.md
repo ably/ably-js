@@ -78,7 +78,7 @@ For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using t
 
 WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require('ably')` (or if using typescript or ES6 modules, `import * as Ably from 'ably';`). If your webpack target is set to 'browser', this will automatically use the browser commonjs distribution.
 
-If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably-commonjs.js` static file directly: `require('ably/browser/static/ably-commonjs.js');` (or `import * as Ably from 'ably/browser/static/ably-commonjs.js'` for typescript / ES6 modules).
+If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably-commonjs.js` static file directly: `require('ably/build/ably-commonjs.js');` (or `import * as Ably from 'ably/build/ably-commonjs.js'` for typescript / ES6 modules).
 
 ### TypeScript
 
