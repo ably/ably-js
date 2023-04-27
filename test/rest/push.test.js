@@ -107,62 +107,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    if (typeof Promise !== 'undefined') {
-<<<<<<< HEAD
-      it('Publish promise', function (done) {
-        var realtime = helper.AblyRealtime({ internal: { promises: true } });
-||||||| parent of 8295a1a8 (test: convert rest push tests to Promise API)
-      it('Publish promise', function (done) {
-        var realtime = helper.AblyRealtime({ promises: true });
-=======
-      it('Publish promise', async function () {
-        var realtime = helper.AblyRealtime({ promises: true });
->>>>>>> 8295a1a8 (test: convert rest push tests to Promise API)
-        var channelName = 'pushenabled:publish_promise';
-        var channel = realtime.channels.get(channelName);
-        channel.attach(function (err) {
-          if (err) {
-            closeAndFinish(done, realtime, err);
-            return;
-          }
-
-          var pushPayload = {
-            notification: { title: 'Test message', body: 'Test message body' },
-            data: { foo: 'bar' },
-          };
-
-          var baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
-          var pushRecipient = {
-            transportType: 'ablyChannel',
-            channel: 'pushenabled:foo',
-            ablyKey: realtime.options.key,
-            ablyUrl: baseUri,
-          };
-
-          channel.subscribe('__ably_push__', function (msg) {
-            var receivedPushPayload = JSON.parse(msg.data);
-            try {
-              expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
-              expect(receivedPushPayload.notification.title).to.deep.equal(pushPayload.notification.title);
-              expect(receivedPushPayload.notification.body).to.deep.equal(pushPayload.notification.body);
-              closeAndFinish(done, realtime, err);
-            } catch (err) {
-              done(err);
-            }
-          });
-
-          realtime.push.admin
-            .publish(pushRecipient, pushPayload)
-            .then(function () {
-              closeAndFinish(done, realtime);
-            })
-            ['catch'](function (err) {
-              closeAndFinish(done, realtime, err);
-            });
-        });
-      });
-    }
-
     it('deviceRegistrations save', async function () {
       var rest = helper.AblyRestPromise();
 
@@ -274,44 +218,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    if (typeof Promise !== undefined) {
-      it('deviceRegistrations promise', function (done) {
-        var rest = helper.AblyRestPromise({ internal: { promises: true } });
-
-        /* save */
-        rest.push.admin.deviceRegistrations
-          .save(testDevice)
-          .then(function (saved) {
-            expect(saved.push.state).to.equal('ACTIVE');
-            testIncludesUnordered(untyped(saved), testDevice_withoutSecret);
-            /* get */
-            return rest.push.admin.deviceRegistrations.get(testDevice.id);
-          })
-          .then(function (got) {
-            expect(got.push.state).to.equal('ACTIVE');
-            delete got.metadata; // Ignore these properties for testing
-            delete got.push.state;
-            testIncludesUnordered(untyped(got), testDevice_withoutSecret);
-            /* list */
-            return rest.push.admin.deviceRegistrations.list({ clientId: testDevice.clientId });
-          })
-          .then(function (result) {
-            expect(result.items.length).to.equal(1);
-            var got = result.items[0];
-            expect(got.push.state).to.equal('ACTIVE');
-            testIncludesUnordered(untyped(got), testDevice_withoutSecret);
-            /* remove */
-            return rest.push.admin.deviceRegistrations.removeWhere({ deviceId: testDevice.id });
-          })
-          .then(function () {
-            done();
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
-
     it('channelSubscriptions save', async function () {
       var rest = helper.AblyRestPromise({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
@@ -396,46 +302,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       testIncludesUnordered(['pushenabled:listChannels1', 'pushenabled:listChannels2'], result.items);
     });
-
-    if (typeof Promise !== 'undefined') {
-<<<<<<< HEAD
-      it('channelSubscriptions promise', function (done) {
-        var rest = helper.AblyRest({ internal: { promises: true } });
-||||||| parent of 8295a1a8 (test: convert rest push tests to Promise API)
-      it('channelSubscriptions promise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
-=======
-      it('channelSubscriptions promise', async function () {
-        var rest = helper.AblyRestPromise({ promises: true });
->>>>>>> 8295a1a8 (test: convert rest push tests to Promise API)
-        var channelId = 'pushenabled:channelsubscriptions_promise';
-        var subscription = { clientId: 'testClient', channel: channelId };
-
-        rest.push.admin.channelSubscriptions
-          .save(subscription)
-          .then(function (saved) {
-            expect(subscription.clientId).to.equal(saved.clientId);
-            expect(subscription.channel).to.equal(saved.channel);
-            return rest.push.admin.channelSubscriptions.list({ channel: channelId });
-          })
-          .then(function (result) {
-            var sub = result.items[0];
-            expect(subscription.clientId).to.equal(sub.clientId);
-            expect(subscription.channel).to.equal(sub.channel);
-            return rest.push.admin.channelSubscriptions.listChannels(null);
-          })
-          .then(function (result) {
-            expect(Utils.arrIn(result.items, channelId)).to.be.ok;
-            return rest.push.admin.channelSubscriptions.remove(subscription);
-          })
-          .then(function () {
-            done();
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
 
     function untyped(x) {
       return JSON.parse(JSON.stringify(x));
