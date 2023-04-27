@@ -12,28 +12,18 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           done(err);
           return;
         }
-        rest = helper.AblyRest();
+        rest = helper.AblyRestPromise();
         done();
       });
     });
 
-    it('time0', function (done) {
-      rest.time(function (err, serverTime) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          var localFiveMinutesAgo = utils.now() - 5 * 60 * 1000;
-          expect(
-            serverTime > localFiveMinutesAgo,
-            'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks'
-          ).to.be.ok;
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+    it('time0', async function () {
+      var serverTime = await rest.time();
+      var localFiveMinutesAgo = utils.now() - 5 * 60 * 1000;
+      expect(
+        serverTime > localFiveMinutesAgo,
+        'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks'
+      ).to.be.ok;
     });
 
     if (typeof Promise !== 'undefined') {
