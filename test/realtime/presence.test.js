@@ -1119,39 +1119,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     /*
-     * Check that old deprecated on/off methods still work
-     */
-    it('presenceOn', function (done) {
-      var channelName = 'enterOn';
-      var testData = 'some data';
-      var eventListener = function (channel, callback) {
-        var presenceHandler = function () {
-          callback();
-        };
-        channel.presence.on(presenceHandler);
-      };
-      var enterOn = function (cb) {
-        var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
-        clientRealtime.connection.on('connected', function () {
-          /* get channel, attach, and enter */
-          var clientChannel = clientRealtime.channels.get(channelName);
-          clientChannel.attach(function (err) {
-            if (err) {
-              cb(err, clientRealtime);
-              return;
-            }
-            clientChannel.presence.enter(testData, function (err) {
-              cb(err, clientRealtime);
-            });
-          });
-        });
-        monitorConnection(done, clientRealtime);
-      };
-
-      runTestWithEventListener(done, channelName, eventListener, enterOn);
-    });
-
-    /*
      * Check that encodable presence messages are encoded correctly
      */
     it('presenceEncoding', function (done) {
