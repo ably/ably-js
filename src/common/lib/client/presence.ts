@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import PaginatedResource from './paginatedresource';
+import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import PresenceMessage from '../types/presencemessage';
 import { CipherOptions } from '../types/message';
 import { PaginatedResultCallback } from '../../types/utils';
@@ -51,12 +51,18 @@ class Presence extends EventEmitter {
     }).get(params, callback);
   }
 
-  history(params: any, callback: PaginatedResultCallback<PresenceMessage>): void {
+  history(
+    params: any,
+    callback: PaginatedResultCallback<PresenceMessage>
+  ): void | Promise<PaginatedResult<PresenceMessage>> {
     Logger.logAction(Logger.LOG_MICRO, 'Presence.history()', 'channel = ' + this.channel.name);
-    this._history(params, callback);
+    return this._history(params, callback);
   }
 
-  _history(params: any, callback: PaginatedResultCallback<PresenceMessage>): void | Promise<PresenceMessage> {
+  _history(
+    params: any,
+    callback: PaginatedResultCallback<PresenceMessage>
+  ): void | Promise<PaginatedResult<PresenceMessage>> {
     /* params and callback are optional; see if params contains the callback */
     if (callback === undefined) {
       if (typeof params == 'function') {
@@ -64,11 +70,12 @@ class Presence extends EventEmitter {
         params = null;
       } else {
         if (this.channel.rest.options.promises) {
-          return Utils.promisify(this, '_history', arguments);
+          return Utils.promisify(this, '_history', [params]);
         }
         callback = noop;
       }
     }
+
     const rest = this.channel.rest,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
