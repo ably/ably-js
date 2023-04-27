@@ -37,7 +37,7 @@ class Presence extends EventEmitter {
     const rest = this.channel.rest,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(rest.options, format);
+      headers = Utils.defaultGetHeaders(rest.options, { format });
 
     Utils.mixin(headers, rest.options.headers);
 
@@ -79,7 +79,7 @@ class Presence extends EventEmitter {
     const rest = this.channel.rest,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(rest.options, format);
+      headers = Utils.defaultGetHeaders(rest.options, { format });
 
     Utils.mixin(headers, rest.options.headers);
 

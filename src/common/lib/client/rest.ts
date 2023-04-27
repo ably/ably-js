@@ -181,7 +181,9 @@ class Rest {
     params = params || {};
     const _method = method.toLowerCase() as HttpMethods;
     const headers =
-      _method == 'get' ? Utils.defaultGetHeaders(this.options, format) : Utils.defaultPostHeaders(this.options, format);
+      _method == 'get'
+        ? Utils.defaultGetHeaders(this.options, { format })
+        : Utils.defaultPostHeaders(this.options, { format });
 
     if (callback === undefined) {
       if (this.options.promises) {
