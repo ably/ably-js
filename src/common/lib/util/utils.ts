@@ -81,15 +81,6 @@ export function isEmpty(ob: Record<string, unknown> | unknown[]): boolean {
   return true;
 }
 
-export function isOnlyPropIn(ob: Record<string, unknown>, property: string): boolean {
-  for (const prop in ob) {
-    if (prop !== property) {
-      return false;
-    }
-  }
-  return true;
-}
-
 /*
  * Determine whether or not an argument to an overloaded function is
  * undefined (missing) or null.

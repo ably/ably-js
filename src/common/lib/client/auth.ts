@@ -284,19 +284,6 @@ class Auth {
       throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
     }
 
-    if (_authOptions && 'force' in _authOptions) {
-      Logger.logAction(
-        Logger.LOG_ERROR,
-        'Auth.authorize',
-        'Deprecation warning: specifying {force: true} in authOptions is no longer necessary, authorize() now always gets a new token. Please remove this, as in version 1.0 and later, having a non-null authOptions will overwrite stored library authOptions, which may not be what you want'
-      );
-      /* Emulate the old behaviour: if 'force' was the only member of authOptions,
-       * set it to null so it doesn't overwrite stored. TODO: remove in version 1.0 */
-      if (Utils.isOnlyPropIn(_authOptions, 'force')) {
-        _authOptions = null;
-      }
-    }
-
     this._forceNewToken(
       tokenParams as API.Types.TokenParams,
       _authOptions,
