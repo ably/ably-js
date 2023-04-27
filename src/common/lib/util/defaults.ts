@@ -30,7 +30,7 @@ type CompleteDefaults = IDefaults & {
   httpMaxRetryCount: number;
   maxMessageSize: number;
   version: string;
-  protocolVersion: string;
+  protocolVersion: number;
   agent: string;
   getHost(options: ClientOptions, host?: string | null, ws?: boolean): string;
   getPort(options: ClientOptions, tls?: boolean): number | undefined;
@@ -76,7 +76,7 @@ const Defaults = {
   maxMessageSize: 65536,
 
   version,
-  protocolVersion: '2',
+  protocolVersion: 2,
   agent,
   getHost,
   getPort,
