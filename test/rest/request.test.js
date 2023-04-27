@@ -17,7 +17,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           done(err);
           return;
         }
-        rest = helper.AblyRest({ useBinaryProtocol: false });
+        rest = helper.AblyRestPromise({ useBinaryProtocol: false });
         done();
       });
     });
@@ -173,24 +173,5 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         expect(res.items[0] && res.items[0].method).to.equal(method);
       });
     });
-
-    if (typeof Promise !== 'undefined') {
-      it('request_promise', function (done) {
-        var client = helper.AblyRest({ internal: { promises: true } });
-
-        client
-          .request('get', '/time', Defaults.protocolVersion, null, null, null)
-          .then(function (res) {
-            expect(res.statusCode).to.equal(200, 'Check statusCode');
-            expect(res.success).to.equal(true, 'Check success');
-            expect(utils.isArray(res.items), true, 'Check array returned').to.be.ok;
-            expect(res.items.length).to.equal(1, 'Check array was of length 1');
-            done();
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
   });
 });
