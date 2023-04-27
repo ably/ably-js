@@ -197,12 +197,6 @@ export function normaliseOptions(options: InternalClientOptions): NormalisedClie
     options.closeOnUnload = !options.recover;
   }
 
-  if (options.transports && Utils.arrIn(options.transports, 'xhr')) {
-    Logger.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
-    Utils.arrDeleteValue(options.transports, 'xhr');
-    options.transports.push('xhr_streaming');
-  }
-
   if (!('queueMessages' in options)) options.queueMessages = true;
 
   /* infer hosts and fallbacks based on the configured environment */
