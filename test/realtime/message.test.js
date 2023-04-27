@@ -1188,7 +1188,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var testData = [
         {
           name: 'filtered',
-          data: 'This message can be filtered',
+          data: 'These headers match the JMESPath expression so this message should not be filtered',
           extras: {
             headers: {
               name: 'Lorem Choo',
@@ -1203,7 +1203,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         },
         {
           name: 'filtered',
-          data: 'Another filtered message',
+          data: 'This message should also not be filtered',
           extras: {
             headers: {
               name: 'John Bull',
@@ -1215,6 +1215,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         {
           name: 'filtered',
           data: 'No header on message',
+        },
+        {
+          name: 'filtered',
+          data: 'Cannot be filtered because it does not meet filter condition on headers.number',
+          extras: {
+            headers: {
+              name: 'John Bull',
+              number: 12345,
+              bool: false,
+            },
+          },
         },
         {
           name: 'end',
@@ -1233,12 +1244,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         realtime.connection.on('connected', function () {
           var rtFilteredChannel = realtime.channels.getDerived('chan', filterOption);
-          var rtUnFilteredChannel = realtime.channels.get('chan');
+          var rtUnfilteredChannel = realtime.channels.get('chan');
 
           var filteredMessages = [];
           var unFilteredMessages = [];
           /* subscribe to event */
-          rtFilteredChannel.subscribe('filtered', function (msg) {
+          rtFilteredChannel.subscribe(function (msg) {
             try {
               // Push received filtered messages into an array
               filteredMessages.push(msg);
@@ -1248,7 +1259,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             }
           });
 
-          rtUnFilteredChannel.subscribe('filtered', function (msg) {
+          rtUnfilteredChannel.subscribe(function (msg) {
             try {
               // Push received unfiltered messages into an array
               unFilteredMessages.push(msg);
@@ -1259,9 +1270,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
 
           // Subscription to check all messages were received as expected
-          rtUnFilteredChannel.subscribe('end', function (msg) {
+          rtUnfilteredChannel.subscribe('end', function (msg) {
             try {
-              expect(msg.data).to.equal(testData[4].data, 'Unexpected msg data received');
+              expect(msg.data).to.equal(testData[5].data, 'Unexpected msg data received');
 
               // Check that we receive expected messages on filtered channel
               expect(filteredMessages.length).to.equal(2, 'Expect only two filtered message to be received');
@@ -1275,13 +1286,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 testData[2].extras.headers.name,
                 'Unexpected header value received'
               );
+              var count = 0;
+              // Check that message with header that doesn't meet filtering condition is not received.
+              for (msg of filteredMessages) {
+                expect(msg.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
+              }
 
               // Check that we receive expected messages on unfiltered channel
-              expect(unFilteredMessages.length).to.equal(4, 'Expect only 4 unfiltered message to be received');
+              expect(unFilteredMessages.length).to.equal(6, 'Expect only 6 unfiltered message to be received');
               expect(unFilteredMessages[0].data).to.equal(testData[0].data, 'Unexpected data received');
               expect(unFilteredMessages[1].data).to.equal(testData[1].data, 'Unexpected data received');
               expect(unFilteredMessages[2].data).to.equal(testData[2].data, 'Unexpected data received');
               expect(unFilteredMessages[3].data).to.equal(testData[3].data, 'Unexpected data received');
+              expect(unFilteredMessages[4].data).to.equal(testData[4].data, 'Unexpected data received');
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
