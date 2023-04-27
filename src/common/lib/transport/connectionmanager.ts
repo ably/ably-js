@@ -1755,15 +1755,15 @@ class ConnectionManager extends EventEmitter {
         const activeTransport = this.activeProtocol?.getTransport();
         if (activeTransport && activeTransport.onAuthUpdated) {
           activeTransport.onAuthUpdated(tokenDetails);
+        } else {
+          const authMsg = ProtocolMessage.fromValues({
+            action: actions.AUTH,
+            auth: {
+              accessToken: tokenDetails.token,
+            },
+          });
+          this.send(authMsg);
         }
-
-        const authMsg = ProtocolMessage.fromValues({
-          action: actions.AUTH,
-          auth: {
-            accessToken: tokenDetails.token,
-          },
-        });
-        this.send(authMsg);
 
         /* The answer will come back as either a connectiondetails event
          * (realtime sends a CONNECTED to acknowledge the reauth) or a

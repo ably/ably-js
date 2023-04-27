@@ -381,6 +381,12 @@ abstract class CometTransport extends Transport {
    */
   onAuthUpdated = (tokenDetails: API.Types.TokenDetails): void => {
     this.authParams = { access_token: tokenDetails.token };
+    if (this.recvRequest) {
+      this.recvRequest.abort();
+      Platform.Config.nextTick(() => {
+        this.recv();
+      });
+    }
   };
 }
 
