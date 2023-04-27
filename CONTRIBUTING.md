@@ -6,7 +6,6 @@
 2. When pulling to local, make sure to also pull the `ably-common` repo (`git submodule init && git submodule update`)
 3. Create your feature branch (`git checkout -b my-new-feature`)
 4. Commit your changes (`git commit -am 'Add some feature'`)
-   Note: don't commit files generated in `browser/static/*`, unless you are about to make a release.
 5. Ensure you have added suitable tests and the test suite is passing(`npm test`)
 6. Ensure the [type definitions](https://github.com/ably/ably-js/blob/main/ably.d.ts) have been updated if the public API has changed
 7. Ensure you stick to the version of JS used by the library (currently ES5). (The minfication task (`npm run grunt -- closureCompiler:ably.js`) will enforce that you stick to ES5 syntax, but will not enforce that you don't use, for example, new methods)

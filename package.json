@@ -81,7 +81,7 @@
   "jspm": {
     "registry": "npm",
     "directories": {
-      "lib": "browser/static"
+      "lib": "build"
     },
     "main": "ably"
   },
