@@ -179,24 +179,45 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     }
 
-    var xhrTransport = 'xhr';
-    if (isTransportAvailable(xhrTransport)) {
-      it('xhrbase0', function (done) {
-        connectionWithTransport(done, xhrTransport);
+    var xhrStreamingTransport = 'xhr_streaming';
+    if (isTransportAvailable(xhrStreamingTransport)) {
+      it('xhrstreamingbase0', function (done) {
+        connectionWithTransport(done, xhrStreamingTransport);
       });
 
       /*
        * Publish and subscribe, json transport
        */
-      it('xhrppublish0', function (done) {
-        publishWithTransport(done, xhrTransport);
+      it('xhrstreamingpublish0', function (done) {
+        publishWithTransport(done, xhrStreamingTransport);
       });
 
       /*
        * Check heartbeat
        */
-      it('xhrheartbeat0', function (done) {
-        heartbeatWithTransport(done, xhrTransport);
+      it('xhrstreamingheartbeat0', function (done) {
+        heartbeatWithTransport(done, xhrStreamingTransport);
+      });
+    }
+
+    var xhrPollingTransport = 'xhr_polling';
+    if (isTransportAvailable(xhrPollingTransport)) {
+      it('xhrpollingbase0', function (done) {
+        connectionWithTransport(done, xhrPollingTransport);
+      });
+
+      /*
+       * Publish and subscribe, json transport
+       */
+      it('xhrpollingpublish0', function (done) {
+        publishWithTransport(done, xhrPollingTransport);
+      });
+
+      /*
+       * Check heartbeat
+       */
+      it('xhrpollingheartbeat0', function (done) {
+        heartbeatWithTransport(done, xhrPollingTransport);
       });
     }
 
