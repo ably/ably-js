@@ -15,29 +15,23 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           done(err);
           return;
         }
-        rest = helper.AblyRest();
+        rest = helper.AblyRestPromise();
         done();
       });
     });
 
-    it('status0', function (done) {
+    it('status0', async function () {
       var channel = rest.channels.get('status0');
-      channel.status(function (err, channelDetails) {
-        try {
-          expect(channelDetails.channelId).to.equal('status0');
-          expect(channelDetails.status.isActive).to.be.a('boolean');
-          var metrics = channelDetails.status.occupancy.metrics;
-          expect(metrics.connections).to.be.a('number');
-          expect(metrics.presenceConnections).to.be.a('number');
-          expect(metrics.presenceMembers).to.be.a('number');
-          expect(metrics.presenceSubscribers).to.be.a('number');
-          expect(metrics.publishers).to.be.a('number');
-          expect(metrics.subscribers).to.be.a('number');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var channelDetails = await channel.status();
+      expect(channelDetails.channelId).to.equal('status0');
+      expect(channelDetails.status.isActive).to.be.a('boolean');
+      var metrics = channelDetails.status.occupancy.metrics;
+      expect(metrics.connections).to.be.a('number');
+      expect(metrics.presenceConnections).to.be.a('number');
+      expect(metrics.presenceMembers).to.be.a('number');
+      expect(metrics.presenceSubscribers).to.be.a('number');
+      expect(metrics.publishers).to.be.a('number');
+      expect(metrics.subscribers).to.be.a('number');
     });
 
     if (typeof Promise !== 'undefined') {
