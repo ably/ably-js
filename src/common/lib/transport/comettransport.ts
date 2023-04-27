@@ -192,7 +192,7 @@ abstract class CometTransport extends Transport {
       }
       /* In almost all cases the transport will be finished before it's
        * disposed. Finish here just to make sure. */
-      this.finish('disconnected', ConnectionErrors.disconnected);
+      this.finish('disconnected', ConnectionErrors.disconnected());
       Platform.Config.nextTick(() => {
         this.emit('disposed');
       });
