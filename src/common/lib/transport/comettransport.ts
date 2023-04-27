@@ -367,12 +367,18 @@ abstract class CometTransport extends Transport {
     return responseData;
   }
 
-  /* For comet, we could do the auth update by aborting the current recv and
-   * starting a new one with the new token, that'd be sufficient for realtime.
-   * Problem is JSONP - you can't cancel truly abort a recv once started. So
-   * we need to send an AUTH for jsonp. In which case it's simpler to keep all
-   * comet transports the same and do it for all of them. So we send the AUTH
-   * instead, and don't need to abort the recv */
+  /* Historical comment, back from when we supported JSONP:
+   *
+   * > For comet, we could do the auth update by aborting the current recv and
+   * > starting a new one with the new token, that'd be sufficient for realtime.
+   * > Problem is JSONP - you can't cancel truly abort a recv once started. So
+   * > we need to send an AUTH for jsonp. In which case it's simpler to keep all
+   * > comet transports the same and do it for all of them. So we send the AUTH
+   * > instead, and don't need to abort the recv
+   *
+   * Now that we’ve dropped JSONP support, we may be able to revisit the above;
+   * see https://github.com/ably/ably-js/issues/1214.
+   */
   onAuthUpdated = (tokenDetails: API.Types.TokenDetails): void => {
     this.authParams = { access_token: tokenDetails.token };
   };

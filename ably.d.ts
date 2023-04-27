@@ -293,7 +293,7 @@ declare namespace Types {
   /**
    * A type which specifies the valid transport names. [See here](https://faqs.ably.com/which-transports-are-supported) for more information.
    */
-  type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'jsonp' | 'comet';
+  type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'comet';
 
   /**
    * Contains the details of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as its ID and {@link ChannelStatus}.
@@ -525,7 +525,7 @@ declare namespace Types {
     transportParams?: { [k: string]: string | number };
 
     /**
-     * An array of transports to use, in descending order of preference. In the browser environment the available transports are: `web_socket`, `xhr`, and `jsonp`.
+     * An array of transports to use, in descending order of preference. In the browser environment the available transports are: `web_socket` and `xhr`.
      */
     transports?: Transport[];
 

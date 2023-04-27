@@ -10,7 +10,6 @@ const Platform: IPlatform = {
   WebSocket: WebSocket,
   xhrSupported: true,
   allowComet: true,
-  jsonpSupported: false,
   streamingSupported: true,
   useProtocolHeartbeats: true,
   createHmac: null,

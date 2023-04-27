@@ -34,7 +34,6 @@ const Platform: IPlatform = {
   WebSocket: globalObject.WebSocket,
   fetchSupported: !!globalObject.fetch,
   xhrSupported: globalObject.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
-  jsonpSupported: typeof document !== 'undefined',
   allowComet: allowComet(),
   streamingSupported: true,
   useProtocolHeartbeats: true,

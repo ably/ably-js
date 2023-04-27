@@ -6,12 +6,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
   describe('rest/http/fetch', function () {
     this.timeout(60 * 1000);
-    let initialXhrSupported, initialJsonpSupported;
+    let initialXhrSupported;
     before(function (done) {
       initialXhrSupported = Ably.Rest.Platform.Config.xhrSupported;
-      initialJsonpSupported = Ably.Rest.Platform.Config.jsonpSupported;
       Ably.Rest.Platform.Config.xhrSupported = false;
-      Ably.Rest.Platform.Config.jsonpSupported = false;
       helper.setupApp(function () {
         rest = helper.AblyRest();
         done();
@@ -20,11 +18,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     after((done) => {
       Ably.Rest.Platform.Config.xhrSupported = initialXhrSupported;
-      Ably.Rest.Platform.Config.jsonpSupported = initialJsonpSupported;
       done();
     });
 
-    it('Should use fetch when XHR and JSONP are not supported', function (done) {
+    it('Should use fetch when XHR is not supported', function (done) {
       let oldFetch = window.fetch;
       window.fetch = () => {
         done();

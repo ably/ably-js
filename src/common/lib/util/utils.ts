@@ -341,7 +341,6 @@ export function allSame(arr: Array<Record<string, unknown>>, prop: string): bool
 
 const contentTypes = {
   json: 'application/json',
-  jsonp: 'application/javascript',
   xml: 'application/xml',
   html: 'text/html',
   msgpack: 'application/x-msgpack',
