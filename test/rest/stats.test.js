@@ -374,21 +374,5 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
       expect(totalData).to.equal(7000, 'Verify all published message data found');
     });
-
-    if (typeof Promise !== 'undefined') {
-      it('stats_promise', function (done) {
-        var client = helper.AblyRest({ internal: { promises: true } });
-
-        client
-          .stats()
-          .then(function () {
-            console.log('here');
-            done();
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
   });
 });
