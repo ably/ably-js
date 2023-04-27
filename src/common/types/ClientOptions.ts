@@ -21,7 +21,6 @@ export type DeprecatedClientOptions = Modify<
     promises?: boolean;
     headers?: Record<string, string>;
     maxMessageSize?: number;
-    timeouts?: Record<string, number>;
   }
 >;
 
