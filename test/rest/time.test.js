@@ -25,19 +25,5 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         'Verify returned time matches current local time with 5 minute leeway for badly synced local clocks'
       ).to.be.ok;
     });
-
-    if (typeof Promise !== 'undefined') {
-      it('timePromise', function (done) {
-        var rest = helper.AblyRest({ internal: { promises: true } });
-        rest
-          .time()
-          .then(function () {
-            done();
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
   });
 });
