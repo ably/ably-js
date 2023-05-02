@@ -341,7 +341,7 @@ export function defaultGetHeaders(options: NormalisedClientOptions, format?: For
   const accept = contentTypes[format || Format.json];
   return {
     accept: accept,
-    'X-Ably-Version': Defaults.apiVersion,
+    'X-Ably-Version': Defaults.protocolVersion.toString(),
     'Ably-Agent': getAgentString(options),
   };
 }
@@ -353,7 +353,7 @@ export function defaultPostHeaders(options: NormalisedClientOptions, format?: Fo
   return {
     accept: accept,
     'content-type': contentType,
-    'X-Ably-Version': Defaults.apiVersion,
+    'X-Ably-Version': Defaults.protocolVersion.toString(),
     'Ably-Agent': getAgentString(options),
   };
 }
