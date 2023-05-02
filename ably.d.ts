@@ -439,11 +439,6 @@ declare namespace Types {
     fallbackHosts?: string[];
 
     /**
-     * @deprecated This property is deprecated and will be removed in a future version. Enables default fallback hosts to be used.
-     */
-    fallbackHostsUseDefault?: boolean;
-
-    /**
      * Set of configurable options to set on the HTTP(S) agent used for REST requests.
      *
      * See the [NodeJS docs](https://nodejs.org/api/http.html#new-agentoptions) for descriptions of these options.

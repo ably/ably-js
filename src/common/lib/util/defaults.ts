@@ -182,43 +182,6 @@ export function objectifyOptions(options: ClientOptions | string): ClientOptions
 }
 
 export function normaliseOptions(options: InternalClientOptions): NormalisedClientOptions {
-  if (options.fallbackHostsUseDefault) {
-    /* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
-    if (options.fallbackHosts) {
-      const msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
-      Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
-      throw new ErrorInfo(msg, 40000, 400);
-    }
-
-    /* default fallbacks can't be used with custom ports */
-    if (options.port || options.tlsPort) {
-      const msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
-      Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
-      throw new ErrorInfo(msg, 40000, 400);
-    }
-
-    /* emit an appropriate deprecation warning */
-    if (options.environment) {
-      Logger.deprecatedWithMsg(
-        'fallbackHostsUseDefault',
-        'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.'
-      );
-    } else {
-      Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
-    }
-
-    /* use the default fallback hosts as requested */
-    options.fallbackHosts = Defaults.FALLBACK_HOSTS;
-  }
-
-  /* options.recover as a boolean is deprecated, and therefore is not part of the public typing */
-  if ((options.recover as any) === true) {
-    Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
-    options.recover = function (lastConnectionDetails: unknown, cb: (shouldRecover: boolean) => void) {
-      cb(true);
-    };
-  }
-
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
     Logger.logAction(
       Logger.LOG_ERROR,
@@ -232,12 +195,6 @@ export function normaliseOptions(options: InternalClientOptions): NormalisedClie
     /* Have closeOnUnload default to true unless we have any indication that
      * the user may want to recover the connection */
     options.closeOnUnload = !options.recover;
-  }
-
-  if (options.transports && Utils.arrIn(options.transports, 'xhr')) {
-    Logger.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
-    Utils.arrDeleteValue(options.transports, 'xhr');
-    options.transports.push('xhr_streaming');
   }
 
   if (!('queueMessages' in options)) options.queueMessages = true;

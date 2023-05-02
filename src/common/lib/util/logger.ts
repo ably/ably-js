@@ -104,18 +104,6 @@ class Logger {
     }
   };
 
-  static deprecated = function (original: string, replacement: string) {
-    Logger.deprecatedWithMsg(original, "Please use '" + replacement + "' instead.");
-  };
-
-  static deprecatedWithMsg = (funcName: string, msg: string) => {
-    if (Logger.shouldLog(LogLevels.Error)) {
-      Logger.logErrorHandler(
-        "Ably: Deprecation warning - '" + funcName + "' is deprecated and will be removed from a future version. " + msg
-      );
-    }
-  };
-
   /* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */
   static shouldLog = (level: LogLevels) => {

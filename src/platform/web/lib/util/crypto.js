@@ -158,20 +158,6 @@ var Crypto = (function () {
    */
   Crypto.getDefaultParams = function (params) {
     var key;
-    /* Backward compatibility */
-    if (typeof params === 'function' || typeof params === 'string') {
-      Logger.deprecated('Crypto.getDefaultParams(key, callback)', 'Crypto.getDefaultParams({key: key})');
-      if (typeof params === 'function') {
-        Crypto.generateRandomKey(function (key) {
-          params(null, Crypto.getDefaultParams({ key: key }));
-        });
-      } else if (typeof arguments[1] === 'function') {
-        arguments[1](null, Crypto.getDefaultParams({ key: params }));
-      } else {
-        throw new Error('Invalid arguments for Crypto.getDefaultParams');
-      }
-      return;
-    }
 
     if (!params.key) {
       throw new Error('Crypto.getDefaultParams: a key is required');

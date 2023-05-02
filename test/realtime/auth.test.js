@@ -972,14 +972,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           'Check authorize completely replaces stored authOptions with passed in ones'
         );
 
-        /* TODO remove for lib version 1.0 */
-        realtime.auth.authorize(null, { authUrl: 'http://invalid' });
-        realtime.auth.authorize(null, { force: true });
-        expect(realtime.auth.authOptions.authUrl).to.equal(
-          'http://invalid',
-          'Check authorize does *not* replace stored authOptions when the only option is "force" in 0.9, for compatibility with 0.8'
-        );
-
         closeAndFinish(done, realtime);
       } catch (err) {
         closeAndFinish(done, realtime, err);

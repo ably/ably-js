@@ -507,18 +507,6 @@ class RealtimePresence extends Presence {
     });
   }
 
-  /* Deprecated */
-  on(...args: unknown[]): void {
-    Logger.deprecated('presence.on', 'presence.subscribe');
-    this.subscribe(...args);
-  }
-
-  /* Deprecated */
-  off(...args: unknown[]): void {
-    Logger.deprecated('presence.off', 'presence.unsubscribe');
-    this.unsubscribe(...args);
-  }
-
   subscribe(..._args: unknown[] /* [event], listener, [callback] */): void | Promise<void> {
     const args = RealtimeChannel.processListenerArgs(_args);
     const event = args[0];
