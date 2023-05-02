@@ -139,7 +139,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     if (typeof Promise !== 'undefined') {
       it('Publish promise', function (done) {
-        var realtime = helper.AblyRealtime({ promises: true });
+        var realtime = helper.AblyRealtime({ internal: { promises: true } });
         var channelName = 'pushenabled:publish_promise';
         var channel = realtime.channels.get(channelName);
         channel.attach(function (err) {
@@ -368,7 +368,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     if (typeof Promise !== undefined) {
       it('deviceRegistrations promise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
+        var rest = helper.AblyRest({ internal: { promises: true } });
 
         /* save */
         rest.push.admin.deviceRegistrations
@@ -566,7 +566,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     if (typeof Promise !== 'undefined') {
       it('channelSubscriptions promise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
+        var rest = helper.AblyRest({ internal: { promises: true } });
         var channelId = 'pushenabled:channelsubscriptions_promise';
         var subscription = { clientId: 'testClient', channel: channelId };
 

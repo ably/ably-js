@@ -286,7 +286,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     if (typeof Promise !== 'undefined') {
       describe('connection_promise', function () {
         it('ping', function (done) {
-          var client = helper.AblyRealtime({ promises: true });
+          var client = helper.AblyRealtime({ internal: { promises: true } });
 
           client.connection
             .once('connected')

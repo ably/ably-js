@@ -162,24 +162,6 @@ define(['ably', 'chai'], function (Ably, chai) {
       }, "Check fallbackHostsUseDefault and tlsPort can't both be set").to.throw;
     });
 
-    /* will emit a warning */
-    it('Init with deprecated host and wsHost options', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ host: 'test.org', wsHost: 'ws.test.org' });
-
-      expect(normalisedOptions.restHost).to.equal('test.org');
-      expect(normalisedOptions.realtimeHost).to.equal('ws.test.org');
-      expect(normalisedOptions.port).to.equal(80);
-      expect(normalisedOptions.tlsPort).to.equal(443);
-      expect(normalisedOptions.fallbackHosts).to.equal(undefined);
-      expect(normalisedOptions.tls).to.equal(true);
-
-      expect(Defaults.getHosts(normalisedOptions)).to.deep.equal([normalisedOptions.restHost]);
-      expect(Defaults.getHost(normalisedOptions, 'test.org', false)).to.deep.equal('test.org');
-      expect(Defaults.getHost(normalisedOptions, 'test.org', true)).to.deep.equal('ws.test.org');
-
-      expect(Defaults.getPort(normalisedOptions)).to.equal(443);
-    });
-
     it('Init with no endpoint-related options and given default environment', function () {
       Defaults.ENVIRONMENT = 'sandbox';
       var normalisedOptions = Defaults.normaliseOptions({});

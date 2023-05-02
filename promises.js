@@ -3,7 +3,11 @@ function promisifyOptions(options) {
   if (typeof options == 'string') {
     options = options.indexOf(':') == -1 ? { token: options } : { key: options };
   }
-  options.promises = true;
+  if (options.internal === undefined) {
+    options.internal = { promises: true }
+  } else {
+    options.internal.promises = true
+  }
   return options;
 }
 

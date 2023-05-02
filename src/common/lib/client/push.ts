@@ -44,7 +44,7 @@ class Admin {
       callback = noop;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
@@ -74,7 +74,7 @@ class DeviceRegistrations {
       callback = noop;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
@@ -124,7 +124,7 @@ class DeviceRegistrations {
       return;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     Resource.get(
       rest,
@@ -159,7 +159,7 @@ class DeviceRegistrations {
       callback = noop;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function (
       body: any,
@@ -195,7 +195,7 @@ class DeviceRegistrations {
       return;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
@@ -221,7 +221,7 @@ class DeviceRegistrations {
       callback = noop;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
@@ -250,7 +250,7 @@ class ChannelSubscriptions {
       callback = noop;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
@@ -284,7 +284,7 @@ class ChannelSubscriptions {
       callback = noop;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function (
       body: any,
@@ -307,7 +307,7 @@ class ChannelSubscriptions {
       callback = noop;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
@@ -330,7 +330,7 @@ class ChannelSubscriptions {
       callback = noop;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 

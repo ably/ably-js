@@ -94,7 +94,7 @@ class Channel extends EventEmitter {
       envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
       headers = Utils.defaultGetHeaders(rest.options, format);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, rest.options.headers);
 
     const options = this.channelOptions;
     new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function (
@@ -150,7 +150,7 @@ class Channel extends EventEmitter {
       idempotentRestPublishing = rest.options.idempotentRestPublishing,
       headers = Utils.defaultPostHeaders(rest.options, format);
 
-    if (options.headers) Utils.mixin(headers, options.headers);
+    Utils.mixin(headers, options.headers);
 
     if (idempotentRestPublishing && allEmptyIds(messages)) {
       const msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);

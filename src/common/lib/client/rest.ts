@@ -11,7 +11,7 @@ import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import { ErrnoException, IHttp, RequestParams } from '../../types/http';
-import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
+import ClientOptions, { InternalClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
 
 import Platform from '../../platform';
 import Message from '../types/message';
@@ -102,7 +102,7 @@ class Rest {
       format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.http.supportsLinkHeaders ? undefined : format;
 
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+    Utils.mixin(headers, this.options.headers);
 
     new PaginatedResource(this, '/stats', headers, envelope, function (
       body: unknown,
@@ -195,9 +195,7 @@ class Rest {
     if (typeof body !== 'string') {
       body = encoder(body);
     }
-    if (this.options.headers) {
-      Utils.mixin(headers, this.options.headers);
-    }
+    Utils.mixin(headers, this.options.headers);
     if (customHeaders) {
       Utils.mixin(headers, customHeaders);
     }
@@ -230,9 +228,9 @@ class Rest {
     Logger.setLog(logOptions.level, logOptions.handler);
   }
 
-  static Promise = function (options: DeprecatedClientOptions): Rest {
+  static Promise = function (options: InternalClientOptions): Rest {
     options = Defaults.objectifyOptions(options);
-    options.promises = true;
+    options.internal = { ...options.internal, promises: true };
     return new Rest(options);
   };
 
