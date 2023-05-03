@@ -337,23 +337,50 @@ const contentTypes = {
   msgpack: 'application/x-msgpack',
 };
 
-export function defaultGetHeaders(options: NormalisedClientOptions, format?: Format): Record<string, string> {
-  const accept = contentTypes[format || Format.json];
+export enum Format {
+  msgpack = 'msgpack',
+  json = 'json',
+}
+
+export interface HeadersOptions {
+  format?: Format;
+  protocolVersion?: number;
+}
+
+const defaultHeadersOptions: Required<HeadersOptions> = {
+  format: Format.json,
+  protocolVersion: Defaults.protocolVersion,
+};
+
+export function defaultGetHeaders(
+  options: NormalisedClientOptions,
+  {
+    format = defaultHeadersOptions.format,
+    protocolVersion = defaultHeadersOptions.protocolVersion,
+  }: HeadersOptions = {}
+): Record<string, string> {
+  const accept = contentTypes[format];
   return {
     accept: accept,
-    'X-Ably-Version': Defaults.protocolVersion.toString(),
+    'X-Ably-Version': protocolVersion.toString(),
     'Ably-Agent': getAgentString(options),
   };
 }
 
-export function defaultPostHeaders(options: NormalisedClientOptions, format?: Format): Record<string, string> {
+export function defaultPostHeaders(
+  options: NormalisedClientOptions,
+  {
+    format = defaultHeadersOptions.format,
+    protocolVersion = defaultHeadersOptions.protocolVersion,
+  }: HeadersOptions = {}
+): Record<string, string> {
   let contentType;
-  const accept = (contentType = contentTypes[format || Format.json]);
+  const accept = (contentType = contentTypes[format]);
 
   return {
     accept: accept,
     'content-type': contentType,
-    'X-Ably-Version': Defaults.protocolVersion.toString(),
+    'X-Ably-Version': protocolVersion.toString(),
     'Ably-Agent': getAgentString(options),
   };
 }
@@ -484,11 +511,6 @@ export function promisify<T>(ob: Record<string, any>, fnName: string, args: IArg
       err ? reject(err) : resolve(res as T);
     });
   });
-}
-
-export enum Format {
-  msgpack = 'msgpack',
-  json = 'json',
 }
 
 export function decodeBody<T>(body: unknown, format?: Format | null): T {

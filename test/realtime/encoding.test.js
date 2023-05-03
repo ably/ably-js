@@ -7,6 +7,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var displayError = helper.displayError;
   var encodingFixturesPath = helper.testResourcesPath + 'messages-encoding.json';
   var closeAndFinish = helper.closeAndFinish;
+  var Defaults = Ably.Rest.Platform.Defaults;
 
   describe('realtime/encoding', function () {
     this.timeout(60 * 1000);
@@ -98,6 +99,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       realtime.request(
                         'post',
                         channelPath,
+                        Defaults.protocolVersion,
                         null,
                         { name: name, data: encodingSpec.data, encoding: encodingSpec.encoding },
                         null,
@@ -174,39 +176,47 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       eachOfCb(err);
                       return;
                     }
-                    realtime.request('get', channelPath, null, null, null, function (err, resultPage) {
-                      if (err) {
-                        eachOfCb(err);
-                        return;
-                      }
-                      try {
-                        var msgs = helper.arrFilter(resultPage.items, function (m) {
-                          return m.name === name;
-                        });
-                        expect(msgs.length).to.equal(
-                          2,
-                          'Check expected number of results (one from json rt, one from binary rt)'
-                        );
-                        expect(msgs[0].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
-                        expect(msgs[1].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
-                        if (msgs[0].encoding === 'json') {
-                          expect(JSON.parse(encodingSpec.data)).to.deep.equal(
-                            JSON.parse(msgs[0].data),
-                            'Check data matches'
-                          );
-                          expect(JSON.parse(encodingSpec.data)).to.deep.equal(
-                            JSON.parse(msgs[1].data),
-                            'Check data matches'
-                          );
-                        } else {
-                          expect(encodingSpec.data).to.equal(msgs[0].data, 'Check data matches');
-                          expect(encodingSpec.data).to.equal(msgs[1].data, 'Check data matches');
+                    realtime.request(
+                      'get',
+                      channelPath,
+                      Defaults.protocolVersion,
+                      null,
+                      null,
+                      null,
+                      function (err, resultPage) {
+                        if (err) {
+                          eachOfCb(err);
+                          return;
                         }
-                        eachOfCb();
-                      } catch (err) {
-                        eachOfCb(err);
+                        try {
+                          var msgs = helper.arrFilter(resultPage.items, function (m) {
+                            return m.name === name;
+                          });
+                          expect(msgs.length).to.equal(
+                            2,
+                            'Check expected number of results (one from json rt, one from binary rt)'
+                          );
+                          expect(msgs[0].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
+                          expect(msgs[1].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
+                          if (msgs[0].encoding === 'json') {
+                            expect(JSON.parse(encodingSpec.data)).to.deep.equal(
+                              JSON.parse(msgs[0].data),
+                              'Check data matches'
+                            );
+                            expect(JSON.parse(encodingSpec.data)).to.deep.equal(
+                              JSON.parse(msgs[1].data),
+                              'Check data matches'
+                            );
+                          } else {
+                            expect(encodingSpec.data).to.equal(msgs[0].data, 'Check data matches');
+                            expect(encodingSpec.data).to.equal(msgs[1].data, 'Check data matches');
+                          }
+                          eachOfCb();
+                        } catch (err) {
+                          eachOfCb(err);
+                        }
                       }
-                    });
+                    );
                   }
                 );
               },
