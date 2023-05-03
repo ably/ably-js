@@ -1,9 +1,9 @@
-import { TypedArray, IPlatform } from '../../common/types/IPlatform';
+import { TypedArray, IPlatformConfig } from '../../common/types/IPlatformConfig';
 import crypto from 'crypto';
 import WebSocket from 'ws';
 import util from 'util';
 
-const Platform: IPlatform = {
+const Config: IPlatformConfig = {
   agent: 'nodejs/' + process.versions.node,
   logTimestamps: true,
   userAgent: null,
@@ -29,4 +29,4 @@ const Platform: IPlatform = {
   Promise: global && global.Promise,
 };
 
-export default Platform;
+export default Config;

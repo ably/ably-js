@@ -1,4 +1,4 @@
-import { TypedArray } from 'common/types/IPlatform';
+import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils, { Bufferlike, NodeBufferlike } from 'common/types/IBufferUtils';
 
 class BufferUtils implements IBufferUtils {

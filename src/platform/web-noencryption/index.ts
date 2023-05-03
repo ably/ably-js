@@ -7,7 +7,7 @@ import Platform from '../../common/platform';
 import BufferUtils from '../web/lib/util/bufferutils';
 // @ts-ignore
 import Http from '../web/lib/util/http';
-import Config from '../web/platform';
+import Config from '../web/config';
 // @ts-ignore
 import Transports from '../web/lib/transport';
 import Logger from '../../common/lib/util/logger';

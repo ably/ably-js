@@ -8,7 +8,7 @@ import BufferUtils from './lib/util/bufferutils';
 // @ts-ignore
 import Crypto from './lib/util/crypto';
 import Http from './lib/util/http';
-import Config from './platform';
+import Config from './config';
 // @ts-ignore
 import Transports from './lib/transport';
 import Logger from '../../common/lib/util/logger';

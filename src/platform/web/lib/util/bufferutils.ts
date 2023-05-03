@@ -3,7 +3,7 @@ import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/build/
 import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
-import { TypedArray } from 'common/types/IPlatform';
+import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils from 'common/types/IBufferUtils';
 import { Bufferlike } from 'common/types/IBufferUtils';
 

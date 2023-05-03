@@ -1,4 +1,4 @@
-import { TypedArray } from './IPlatform';
+import { TypedArray } from './IPlatformConfig';
 import WordArray from 'crypto-js/build/lib-typedarrays';
 
 export type NodeBufferlike = Buffer | ArrayBuffer | TypedArray;
