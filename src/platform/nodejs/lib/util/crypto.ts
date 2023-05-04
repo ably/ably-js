@@ -2,8 +2,23 @@
 import Logger from '../../../../common/lib/util/logger';
 import crypto from 'crypto';
 import ErrorInfo from '../../../../common/lib/types/errorinfo';
+import * as API from '../../../../../ably';
+import ICrypto, { IGetCipherParams } from '../../../../common/types/ICrypto';
+import ICipher from '../../../../common/types/ICipher';
+import { CryptoDataTypes } from '../../../../common/types/cryptoDataTypes';
+import { Cipher as NodeCipher, CipherKey as NodeCipherKey } from 'crypto';
+import BufferUtils, { Bufferlike, Output as BufferUtilsOutput } from './bufferutils';
 
-var CryptoFactory = function (bufferUtils) {
+// The type to which ably-forks/msgpack-js deserializes elements of the `bin` or `ext` type
+type MessagePackBinaryType = Buffer;
+
+type IV = CryptoDataTypes.IV<BufferUtilsOutput>;
+type InputPlaintext = CryptoDataTypes.InputPlaintext<Bufferlike, BufferUtilsOutput>;
+type OutputCiphertext = Buffer;
+type InputCiphertext = CryptoDataTypes.InputCiphertext<MessagePackBinaryType, BufferUtilsOutput>;
+type OutputPlaintext = Buffer;
+
+var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
   var DEFAULT_ALGORITHM = 'aes';
   var DEFAULT_KEYLENGTH = 256; // bits
   var DEFAULT_MODE = 'cbc';
@@ -14,7 +29,9 @@ var CryptoFactory = function (bufferUtils) {
    * @param bytes
    * @param callback (optional)
    */
-  function generateRandom(bytes, callback) {
+  function generateRandom(bytes: number): Buffer;
+  function generateRandom(bytes: number, callback: (err: Error | null, buf: Buffer) => void): void;
+  function generateRandom(bytes: number, callback?: (err: Error | null, buf: Buffer) => void) {
     return callback === undefined ? crypto.randomBytes(bytes) : crypto.randomBytes(bytes, callback);
   }
 
@@ -24,7 +41,7 @@ var CryptoFactory = function (bufferUtils) {
    * @param plaintextLength
    * @return
    */
-  function getPaddedLength(plaintextLength) {
+  function getPaddedLength(plaintextLength: number) {
     return (plaintextLength + DEFAULT_BLOCKLENGTH) & -DEFAULT_BLOCKLENGTH;
   }
 
@@ -32,7 +49,7 @@ var CryptoFactory = function (bufferUtils) {
    * Internal: checks that the cipherParams are a valid combination. Currently
    * just checks that the calculated keyLength is a valid one for aes-cbc
    */
-  function validateCipherParams(params) {
+  function validateCipherParams(params: API.Types.CipherParams) {
     if (params.algorithm === 'aes' && params.mode === 'cbc') {
       if (params.keyLength === 128 || params.keyLength === 256) {
         return;
@@ -45,7 +62,7 @@ var CryptoFactory = function (bufferUtils) {
     }
   }
 
-  function normaliseBase64(string) {
+  function normaliseBase64(string: string) {
     /* url-safe base64 strings use _ and - instread of / and + */
     return string.replace('_', '/').replace('-', '+');
   }
@@ -53,7 +70,7 @@ var CryptoFactory = function (bufferUtils) {
   /**
    * Internal: obtain the pkcs5 padding string for a given padded length;
    */
-  function filledBuffer(length, value) {
+  function filledBuffer(length: number, value: number) {
     var result = Buffer.alloc(length);
     result.fill(value);
     return result;
@@ -66,8 +83,20 @@ var CryptoFactory = function (bufferUtils) {
    * @param bufferOrString
    * @returns {Buffer}
    */
-  function toBuffer(bufferOrString) {
+  function toBuffer(bufferOrString: Buffer | string) {
     return typeof bufferOrString == 'string' ? Buffer.from(bufferOrString, 'binary') : bufferOrString;
+  }
+
+  interface _CipherParams extends API.Types.CipherParams {
+    algorithm: string;
+    keyLength: number;
+    mode: string;
+    key: NodeCipherKey;
+    iv: unknown;
+  }
+
+  interface _CipherParamsConstructor {
+    new (algorithm: string, keyLength: number, mode: string, key: NodeCipherKey): _CipherParams;
   }
 
   /**
@@ -80,19 +109,31 @@ var CryptoFactory = function (bufferUtils) {
    * Clients may instance a CipherParams directly and populate it, or may
    * query the implementation to obtain a default system CipherParams.
    */
-  function CipherParams(algorithm, keyLength, mode, key) {
+  const CipherParams = function (
+    this: _CipherParams,
+    algorithm: string,
+    keyLength: number,
+    mode: string,
+    key: NodeCipherKey
+  ) {
     this.algorithm = algorithm;
     this.keyLength = keyLength;
     this.mode = mode;
     this.key = key;
     this.iv = null;
-  }
+  } as unknown as _CipherParamsConstructor;
 
-  function isInstCipherParams(params) {
+  function isInstCipherParams(
+    params: API.Types.CipherParams | API.Types.CipherParamOptions
+  ): params is API.Types.CipherParams {
     /* In node, can't use instanceof CipherParams due to the vm context problem (see
      * https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).
      * So just test for presence of all necessary attributes */
     return params.algorithm && params.key && params.keyLength && params.mode ? true : false;
+  }
+
+  interface _CryptoConstructor {
+    new (): ICrypto<IV, InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext>;
   }
 
   /**
@@ -112,7 +153,7 @@ var CryptoFactory = function (bufferUtils) {
    * concatenated with the resulting raw ciphertext to construct the "ciphertext"
    * data passed to the recipient.
    */
-  function Crypto() {}
+  const Crypto = function () {} as unknown as _CryptoConstructor;
 
   Crypto.prototype.CipherParams = CipherParams;
 
@@ -125,8 +166,8 @@ var CryptoFactory = function (bufferUtils) {
    * base64-encoded string. May optionally also contain: algorithm (defaults to
    * AES), mode (defaults to 'cbc')
    */
-  Crypto.prototype.getDefaultParams = function (params) {
-    var key;
+  Crypto.prototype.getDefaultParams = function (params: API.Types.CipherParamOptions) {
+    var key: Buffer;
 
     if (!params.key) {
       throw new Error('Crypto.getDefaultParams: a key is required');
@@ -162,7 +203,10 @@ var CryptoFactory = function (bufferUtils) {
    * @param keyLength (optional) the required keyLength in bits
    * @param callback (optional) (err, key)
    */
-  Crypto.prototype.generateRandomKey = function (keyLength, callback) {
+  Crypto.prototype.generateRandomKey = function (
+    keyLength?: number,
+    callback?: API.Types.StandardCallback<API.Types.CipherKey>
+  ) {
     if (arguments.length == 1 && typeof keyLength == 'function') {
       callback = keyLength;
       keyLength = undefined;
@@ -180,23 +224,42 @@ var CryptoFactory = function (bufferUtils) {
    * @param params either a CipherParams instance or some subset of its
    * fields that includes a key
    */
-  Crypto.prototype.getCipher = function (params) {
-    var cipherParams = isInstCipherParams(params) ? params : this.getDefaultParams(params);
+  Crypto.prototype.getCipher = function (params: IGetCipherParams<IV>) {
+    var cipherParams = isInstCipherParams(params) ? (params as _CipherParams) : this.getDefaultParams(params);
 
     var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
-    return { cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv) };
+    return {
+      cipherParams: cipherParams,
+      cipher: new CBCCipher(cipherParams, iv),
+    };
   };
 
-  function CBCCipher(params, iv) {
-    var algorithm = (this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode);
-    var key = (this.key = params.key);
-    // eslint-disable-next-line no-redeclare
-    var iv = (this.iv = iv);
-    this.encryptCipher = crypto.createCipheriv(algorithm, key, iv);
-    this.blockLength = iv.length;
+  interface _CBCCipher extends ICipher<InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext> {
+    algorithm: string;
+    key: NodeCipherKey;
+    iv: Buffer | null;
+    encryptCipher: NodeCipher;
+    blockLength: number;
+    getIv: () => Buffer;
   }
 
-  CBCCipher.prototype.encrypt = function (plaintext, callback) {
+  interface _CBCCipherConstructor {
+    new (params: _CipherParams, iv: Buffer): _CBCCipher;
+  }
+
+  const CBCCipher = function CBCCipher(this: _CBCCipher, params: _CipherParams, iv: Buffer) {
+    this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
+    this.key = params.key;
+    this.iv = iv;
+    this.encryptCipher = crypto.createCipheriv(this.algorithm, this.key, this.iv);
+    this.blockLength = this.iv.length;
+  } as unknown as _CBCCipherConstructor;
+
+  CBCCipher.prototype.encrypt = function (
+    this: _CBCCipher,
+    plaintext: InputPlaintext,
+    callback: (error: Error | null, data: OutputCiphertext | null) => void
+  ) {
     Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
     var plaintextBuffer = bufferUtils.toBuffer(plaintext);
     var plaintextLength = plaintextBuffer.length,
@@ -209,7 +272,7 @@ var CryptoFactory = function (bufferUtils) {
     return callback(null, ciphertext);
   };
 
-  CBCCipher.prototype.decrypt = function (ciphertext) {
+  CBCCipher.prototype.decrypt = function (this: _CBCCipher, ciphertext: InputCiphertext) {
     var blockLength = this.blockLength,
       decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
       plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
@@ -218,7 +281,7 @@ var CryptoFactory = function (bufferUtils) {
     return plaintext;
   };
 
-  CBCCipher.prototype.getIv = function () {
+  CBCCipher.prototype.getIv = function (this: _CBCCipher) {
     if (this.iv) {
       var iv = this.iv;
       this.iv = null;
