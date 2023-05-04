@@ -198,7 +198,7 @@ const Http: typeof IHttp = class {
       };
     } else {
       this.Request = (method, rest, uri, headers, params, body, callback) => {
-        callback(new ErrorInfo('no supported HTTP transports available', null, 400), null);
+        callback(new ErrorInfo('no supported HTTP transports available', 50000, 400), null);
       };
     }
   }
@@ -225,7 +225,7 @@ const Http: typeof IHttp = class {
       if (currentFallback.validUntil > Utils.now()) {
         /* Use stored fallback */
         if (!this.Request) {
-          callback?.(new ErrorInfo('Request invoked before assigned to', null, 500));
+          callback?.(new ErrorInfo('Request invoked before assigned to', 50000, 500));
           return;
         }
         this.Request(
@@ -301,7 +301,7 @@ const Http: typeof IHttp = class {
     callback: RequestCallback
   ): void {
     if (!this.Request) {
-      callback(new ErrorInfo('Request invoked before assigned to', null, 500));
+      callback(new ErrorInfo('Request invoked before assigned to', 50000, 500));
       return;
     }
     this.Request(method, rest, uri, headers, params, body, callback);

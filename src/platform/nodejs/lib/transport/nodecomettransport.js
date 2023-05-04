@@ -144,7 +144,7 @@ var NodeCometTransport = function (connectionManager) {
     req.on(
       'error',
       (this.onReqError = function (err) {
-        err = new ErrorInfo('Request error: ' + err.message, null, 400);
+        err = new ErrorInfo('Request error: ' + err.message, 50000, 400);
         clearTimeout(timer);
         self.timer = null;
         self.complete(err);
@@ -166,7 +166,7 @@ var NodeCometTransport = function (connectionManager) {
       res.on(
         'error',
         (self.onResError = function (err) {
-          err = new ErrorInfo('Response error: ' + err.message, null, 400);
+          err = new ErrorInfo('Response error: ' + err.message, 50000, 400);
           self.complete(err);
         })
       );
@@ -199,7 +199,7 @@ var NodeCometTransport = function (connectionManager) {
       } catch (e) {
         var msg = 'Malformed response body from server: ' + e.message;
         Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readStream()', msg);
-        self.complete(new ErrorInfo(msg, null, 400));
+        self.complete(new ErrorInfo(msg, 50000, 400));
         return;
       }
       self.emit('data', chunk);
@@ -256,7 +256,7 @@ var NodeCometTransport = function (connectionManager) {
         } catch (e) {
           var msg = 'Malformed response body from server: ' + e.message;
           Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readFully()', msg);
-          self.complete(new ErrorInfo(msg, null, 400));
+          self.complete(new ErrorInfo(msg, 50000, 400));
           return;
         }
 
@@ -273,7 +273,7 @@ var NodeCometTransport = function (connectionManager) {
         if (!err) {
           err = new ErrorInfo(
             'Error response received from server: ' + statusCode + ', body was: ' + util.inspect(body),
-            null,
+            50000,
             statusCode
           );
         }

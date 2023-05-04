@@ -34,7 +34,7 @@ export default function fetchRequest(
   const timeout = setTimeout(
     () => {
       controller.abort();
-      callback(new ErrorInfo('Request timed out', null, 408));
+      callback(new ErrorInfo('Request timed out', 50003, 408));
     },
     rest ? rest.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
   );
@@ -69,7 +69,7 @@ export default function fetchRequest(
             getAblyError(body, res.headers) ||
             new ErrorInfo(
               'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
-              null,
+              50000,
               res.status
             );
           callback(err, body, res.headers, packed, res.status);

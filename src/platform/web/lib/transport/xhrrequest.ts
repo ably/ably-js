@@ -196,7 +196,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       let errorMessage = message + ' (event type: ' + errorEvent.type + ')';
       if (this?.xhr?.statusText) errorMessage += ', current statusText is ' + this.xhr.statusText;
       Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
-      this.complete(new ErrorInfo(errorMessage, code, statusCode));
+      this.complete(new ErrorInfo(errorMessage, code ?? 50000, statusCode));
     };
     xhr.onerror = function (errorEvent) {
       errorHandler(errorEvent, 'XHR error occurred', null, 400);
@@ -265,7 +265,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
           headers = getHeadersAsObject(xhr);
         }
       } catch (e) {
-        this.complete(new ErrorInfo('Malformed response body from server: ' + (e as Error).message, null, 400));
+        this.complete(new ErrorInfo('Malformed response body from server: ' + (e as Error).message, 50000, 400));
         return;
       }
 
@@ -285,7 +285,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
             statusCode +
             ' body was: ' +
             Platform.Config.inspect(parsedResponse),
-          null,
+          50000,
           statusCode
         );
       }
@@ -307,7 +307,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       try {
         chunk = JSON.parse(chunk);
       } catch (e) {
-        this.complete(new ErrorInfo('Malformed response body from server: ' + (e as Error).message, null, 400));
+        this.complete(new ErrorInfo('Malformed response body from server: ' + (e as Error).message, 50000, 400));
         return;
       }
       this.emit('data', chunk);

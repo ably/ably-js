@@ -1634,7 +1634,7 @@ class ConnectionManager extends EventEmitter {
        * there is a problem with the ably host, or there is a general connectivity
        * problem */
       if (!this.realtime.http.checkConnectivity) {
-        giveUp(new ErrorInfo('Internal error: Http.checkConnectivity not set', null, 500));
+        giveUp(new ErrorInfo('Internal error: Http.checkConnectivity not set', 50000, 500));
         return;
       }
       this.realtime.http.checkConnectivity((err?: ErrorInfo | null, connectivity?: boolean) => {
