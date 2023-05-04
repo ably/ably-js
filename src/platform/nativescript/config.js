@@ -18,7 +18,7 @@ if (global.android) {
   };
 }
 
-var Platform = {
+var Config = {
   agent: 'nativescript',
   logTimestamps: true,
   noUpgrade: false,
@@ -61,4 +61,4 @@ var Platform = {
   },
 };
 
-export default Platform;
+export default Config;

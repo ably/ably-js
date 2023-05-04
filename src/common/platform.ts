@@ -1,4 +1,4 @@
-import { IPlatform } from './types/IPlatform';
+import { IPlatformConfig } from './types/IPlatformConfig';
 import { IHttp } from './types/http';
 import ConnectionManager from './lib/transport/connectionmanager';
 import IDefaults from './types/IDefaults';
@@ -7,7 +7,7 @@ import IBufferUtils from './types/IBufferUtils';
 import Transport from './lib/transport/transport';
 
 export default class Platform {
-  static Config: IPlatform;
+  static Config: IPlatformConfig;
   static BufferUtils: IBufferUtils;
   static Crypto: any; //Not typed
   static Http: typeof IHttp;
