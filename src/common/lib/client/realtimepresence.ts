@@ -3,7 +3,7 @@ import Presence from './presence';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import PresenceMessage from '../types/presencemessage';
-import ErrorInfo from '../types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
@@ -164,7 +164,7 @@ class RealtimePresence extends Presence {
       presence.clientId = clientId;
     }
 
-    PresenceMessage.encode(presence, channel.channelOptions as CipherOptions, (err: ErrorInfo) => {
+    PresenceMessage.encode(presence, channel.channelOptions as CipherOptions, (err: IPartialErrorInfo) => {
       if (err) {
         callback(err);
         return;
@@ -184,7 +184,10 @@ class RealtimePresence extends Presence {
           });
           break;
         default:
-          err = new ErrorInfo('Unable to ' + action + ' presence channel while in ' + channel.state + ' state', 90001);
+          err = new PartialErrorInfo(
+            'Unable to ' + action + ' presence channel while in ' + channel.state + ' state',
+            90001
+          );
           err.code = 90001;
           callback(err);
       }
@@ -244,7 +247,7 @@ class RealtimePresence extends Presence {
       case 'failed': {
         /* we're not attached; therefore we let any entered status
          * timeout by itself instead of attaching just in order to leave */
-        const err = new ErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
+        const err = new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
         callback?.(err);
         break;
       }

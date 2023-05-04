@@ -1,6 +1,6 @@
 import * as Utils from 'common/lib/util/utils';
 import EventEmitter from 'common/lib/util/eventemitter';
-import ErrorInfo from 'common/lib/types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types/errorinfo';
 import Logger from 'common/lib/util/logger';
 import Defaults from 'common/lib/util/defaults';
 import HttpMethods from 'common/constants/HttpMethods';
@@ -129,7 +129,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
   }
 
   complete(
-    err?: ErrorInfo | null,
+    err?: IPartialErrorInfo | null,
     body?: unknown,
     headers?: Record<string, string> | null,
     unpacked?: boolean | null,
@@ -196,7 +196,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       let errorMessage = message + ' (event type: ' + errorEvent.type + ')';
       if (this?.xhr?.statusText) errorMessage += ', current statusText is ' + this.xhr.statusText;
       Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
-      this.complete(new ErrorInfo(errorMessage, code, statusCode));
+      this.complete(new PartialErrorInfo(errorMessage, code, statusCode));
     };
     xhr.onerror = function (errorEvent) {
       errorHandler(errorEvent, 'XHR error occurred', null, 400);
@@ -265,7 +265,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
           headers = getHeadersAsObject(xhr);
         }
       } catch (e) {
-        this.complete(new ErrorInfo('Malformed response body from server: ' + (e as Error).message, null, 400));
+        this.complete(new PartialErrorInfo('Malformed response body from server: ' + (e as Error).message, null, 400));
         return;
       }
 
@@ -278,9 +278,9 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
         return;
       }
 
-      let err = getAblyError(parsedResponse, headers);
+      let err: IPartialErrorInfo | undefined = getAblyError(parsedResponse, headers);
       if (!err) {
-        err = new ErrorInfo(
+        err = new PartialErrorInfo(
           'Error response received from server: ' +
             statusCode +
             ' body was: ' +
@@ -307,7 +307,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       try {
         chunk = JSON.parse(chunk);
       } catch (e) {
-        this.complete(new ErrorInfo('Malformed response body from server: ' + (e as Error).message, null, 400));
+        this.complete(new PartialErrorInfo('Malformed response body from server: ' + (e as Error).message, null, 400));
         return;
       }
       this.emit('data', chunk);

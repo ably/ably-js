@@ -2,7 +2,7 @@ import * as Utils from 'common/lib/util/utils';
 import CometTransport from 'common/lib/transport/comettransport';
 import Platform from 'common/platform';
 import EventEmitter from 'common/lib/util/eventemitter';
-import ErrorInfo from 'common/lib/types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types/errorinfo';
 import Defaults from 'common/lib/util/defaults';
 import Logger from 'common/lib/util/logger';
 import Auth from 'common/lib/client/auth';
@@ -164,7 +164,9 @@ export class Request extends EventEmitter {
     script.type = 'text/javascript';
     script.charset = 'UTF-8';
     script.onerror = (err: string | Event) => {
-      this.complete(new ErrorInfo('JSONP script error (event: ' + Platform.Config.inspect(err) + ')', null, 400));
+      this.complete(
+        new PartialErrorInfo('JSONP script error (event: ' + Platform.Config.inspect(err) + ')', null, 400)
+      );
     };
 
     type JSONPResponse = {
@@ -182,7 +184,7 @@ export class Request extends EventEmitter {
         if (message.statusCode == 204) {
           this.complete(null, null, null, message.statusCode);
         } else if (!response) {
-          this.complete(new ErrorInfo('Invalid server response: no envelope detected', null, 500));
+          this.complete(new PartialErrorInfo('Invalid server response: no envelope detected', null, 500));
         } else if (message.statusCode < 400 || Utils.isArray(response)) {
           /* If response is an array, it's an array of protocol messages -- even if
            * it contains an error action (hence the nonsuccess statuscode), we can
@@ -190,7 +192,8 @@ export class Request extends EventEmitter {
            * onProtocolMessage to decide what to do */
           this.complete(null, response, message.headers, message.statusCode);
         } else {
-          const err = response.error || new ErrorInfo('Error response received from server', null, message.statusCode);
+          const err =
+            response.error || new PartialErrorInfo('Error response received from server', null, message.statusCode);
           this.complete(err);
         }
       } else {
@@ -206,7 +209,12 @@ export class Request extends EventEmitter {
     (head as HTMLHeadElement).insertBefore(script, (head as HTMLHeadElement).firstChild);
   }
 
-  complete(err?: ErrorInfo | null, body?: unknown, headers?: Record<string, string> | null, statusCode?: number) {
+  complete(
+    err?: IPartialErrorInfo | null,
+    body?: unknown,
+    headers?: Record<string, string> | null,
+    statusCode?: number
+  ) {
     headers = headers || {};
     if (!this.requestComplete) {
       this.requestComplete = true;

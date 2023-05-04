@@ -1,6 +1,6 @@
 import HttpMethods from 'common/constants/HttpMethods';
 import Rest from 'common/lib/client/rest';
-import ErrorInfo from 'common/lib/types/errorinfo';
+import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
 import { RequestCallback, RequestParams } from 'common/types/http';
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
@@ -34,7 +34,7 @@ export default function fetchRequest(
   const timeout = setTimeout(
     () => {
       controller.abort();
-      callback(new ErrorInfo('Request timed out', null, 408));
+      callback(new PartialErrorInfo('Request timed out', null, 408));
     },
     rest ? rest.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
   );
@@ -67,7 +67,7 @@ export default function fetchRequest(
         if (!res.ok) {
           const err =
             getAblyError(body, res.headers) ||
-            new ErrorInfo(
+            new PartialErrorInfo(
               'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
               null,
               res.status

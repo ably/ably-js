@@ -1,13 +1,32 @@
 import Platform from 'common/platform';
 import * as Utils from '../util/utils';
+import * as API from '../../../../ably';
 
-export default class ErrorInfo extends Error {
+export interface IPartialErrorInfo extends Error {
   code: number | null;
   statusCode?: number;
   cause?: string | Error | ErrorInfo;
   href?: string;
+}
 
-  constructor(message: string, code: number | null, statusCode?: number, cause?: string | Error | ErrorInfo) {
+function toString(err: ErrorInfo | PartialErrorInfo) {
+  let result = '[' + err.constructor.name;
+  if (err.message) result += ': ' + err.message;
+  if (err.statusCode) result += '; statusCode=' + err.statusCode;
+  if (err.code) result += '; code=' + err.code;
+  if (err.cause) result += '; cause=' + Utils.inspectError(err.cause);
+  if (err.href && !(err.message && err.message.indexOf('help.ably.io') > -1)) result += '; see ' + err.href + ' ';
+  result += ']';
+  return result;
+}
+
+export default class ErrorInfo extends Error implements IPartialErrorInfo, API.Types.ErrorInfo {
+  code: number;
+  statusCode: number;
+  cause?: string | Error | ErrorInfo;
+  href?: string;
+
+  constructor(message: string, code: number, statusCode: number, cause?: string | Error | ErrorInfo) {
     super(message);
     if (typeof Object.setPrototypeOf !== 'undefined') {
       Object.setPrototypeOf(this, ErrorInfo.prototype);
@@ -18,14 +37,7 @@ export default class ErrorInfo extends Error {
   }
 
   toString(): string {
-    let result = '[' + this.constructor.name;
-    if (this.message) result += ': ' + this.message;
-    if (this.statusCode) result += '; statusCode=' + this.statusCode;
-    if (this.code) result += '; code=' + this.code;
-    if (this.cause) result += '; cause=' + Utils.inspectError(this.cause);
-    if (this.href && !(this.message && this.message.indexOf('help.ably.io') > -1)) result += '; see ' + this.href + ' ';
-    result += ']';
-    return result;
+    return toString(this);
   }
 
   static fromValues(values: Record<string, unknown> | ErrorInfo | Error): ErrorInfo {
@@ -38,5 +50,26 @@ export default class ErrorInfo extends Error {
       result.href = 'https://help.ably.io/error/' + result.code;
     }
     return result;
+  }
+}
+
+export class PartialErrorInfo extends Error implements IPartialErrorInfo {
+  code: number | null;
+  statusCode?: number;
+  cause?: string | Error | ErrorInfo;
+  href?: string;
+
+  constructor(message: string, code: number | null, statusCode?: number, cause?: string | Error | ErrorInfo) {
+    super(message);
+    if (typeof Object.setPrototypeOf !== 'undefined') {
+      Object.setPrototypeOf(this, PartialErrorInfo.prototype);
+    }
+    this.code = code;
+    this.statusCode = statusCode;
+    this.cause = cause;
+  }
+
+  toString(): string {
+    return toString(this);
   }
 }
