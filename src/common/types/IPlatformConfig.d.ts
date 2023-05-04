@@ -14,7 +14,7 @@ interface MsgPack {
   decode(buffer: Buffer): any;
 }
 
-export interface IPlatform {
+export interface IPlatformConfig {
   agent: string;
   logTimestamps: boolean;
   binaryType: BinaryType;

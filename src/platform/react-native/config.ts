@@ -1,8 +1,8 @@
 import msgpack from '../web/lib/util/msgpack';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
-import { IPlatform } from '../../common/types/IPlatform';
+import { IPlatformConfig } from '../../common/types/IPlatformConfig';
 
-const Platform: IPlatform = {
+const Platform: IPlatformConfig = {
   agent: 'reactnative',
   logTimestamps: true,
   noUpgrade: false,

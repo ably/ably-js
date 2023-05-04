@@ -9,7 +9,7 @@ import BufferUtils from '../web/lib/util/bufferutils';
 import Crypto from '../web/lib/util/crypto';
 import Http from '../web/lib/util/http';
 // @ts-ignore
-import Config from './platform';
+import Config from './config';
 // @ts-ignore
 import Transports from '../web/lib/transport';
 import Logger from '../../common/lib/util/logger';

@@ -1,5 +1,5 @@
 import msgpack from './lib/util/msgpack';
-import { IPlatform, TypedArray } from '../../common/types/IPlatform';
+import { IPlatformConfig, TypedArray } from '../../common/types/IPlatformConfig';
 import * as Utils from 'common/lib/util/utils';
 
 // Workaround for salesforce lightning locker compat
@@ -24,7 +24,7 @@ function allowComet() {
 const userAgent = globalObject.navigator && globalObject.navigator.userAgent.toString();
 const currentUrl = globalObject.location && globalObject.location.href;
 
-const Platform: IPlatform = {
+const Config: IPlatformConfig = {
   agent: 'browser',
   logTimestamps: true,
   userAgent: userAgent,
@@ -74,4 +74,4 @@ const Platform: IPlatform = {
   })(globalObject.crypto || msCrypto),
 };
 
-export default Platform;
+export default Config;
