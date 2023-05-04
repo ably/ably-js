@@ -3,11 +3,11 @@ import * as Utils from '../util/utils';
 
 export default class ErrorInfo extends Error {
   code: number;
-  statusCode?: number;
+  statusCode: number;
   cause?: string | Error | ErrorInfo;
   href?: string;
 
-  constructor(message: string, code: number, statusCode?: number, cause?: string | Error | ErrorInfo) {
+  constructor(message: string, code: number, statusCode: number, cause?: string | Error | ErrorInfo) {
     super(message);
     if (typeof Object.setPrototypeOf !== 'undefined') {
       Object.setPrototypeOf(this, ErrorInfo.prototype);

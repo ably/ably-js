@@ -184,7 +184,11 @@ class RealtimePresence extends Presence {
           });
           break;
         default:
-          err = new ErrorInfo('Unable to ' + action + ' presence channel while in ' + channel.state + ' state', 90001);
+          err = new ErrorInfo(
+            'Unable to ' + action + ' presence channel while in ' + channel.state + ' state',
+            90001,
+            500
+          );
           err.code = 90001;
           callback(err);
       }
@@ -244,7 +248,7 @@ class RealtimePresence extends Presence {
       case 'failed': {
         /* we're not attached; therefore we let any entered status
          * timeout by itself instead of attaching just in order to leave */
-        const err = new ErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
+        const err = new ErrorInfo('Unable to leave presence channel (incompatible state)', 90001, 500);
         callback?.(err);
         break;
       }

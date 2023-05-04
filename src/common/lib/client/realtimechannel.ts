@@ -563,7 +563,7 @@ class RealtimeChannel extends Channel {
       case 'initialized':
       case 'detaching':
       case 'detached':
-        throw new ErrorInfo('Unable to sync to channel; not attached', 40000);
+        throw new ErrorInfo('Unable to sync to channel; not attached', 40000, 500);
       default:
     }
     const connectionManager = this.connectionManager;

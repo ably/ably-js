@@ -41,14 +41,14 @@ function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | nul
         if (Utils.isErrorInfo(e)) {
           callback(e);
         } else {
-          callback(new ErrorInfo(Utils.inspectError(e), 50000));
+          callback(new ErrorInfo(Utils.inspectError(e), 50000, 500));
         }
         return;
       }
     }
 
     if (!body) {
-      callback(new ErrorInfo('unenvelope(): Response body is missing', 50000));
+      callback(new ErrorInfo('unenvelope(): Response body is missing', 50000, 500));
       return;
     }
 
