@@ -15,7 +15,7 @@ var Crypto = (function () {
    * @param callback (optional)
    */
   function generateRandom(bytes, callback) {
-    return crypto.randomBytes(bytes, callback);
+    return callback === undefined ? crypto.randomBytes(bytes) : crypto.randomBytes(bytes, callback);
   }
 
   /**
