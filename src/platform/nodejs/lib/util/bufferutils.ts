@@ -10,7 +10,7 @@ class BufferUtils implements IBufferUtils {
   }
 
   base64Encode(buffer: Bufferlike): string {
-    return this.toBuffer(buffer).toString('base64');
+    return this.toUint8Array(buffer).toString('base64');
   }
 
   bufferCompare(buffer1: Buffer, buffer2: Buffer): number {
@@ -28,7 +28,7 @@ class BufferUtils implements IBufferUtils {
   }
 
   hexEncode(buffer: Bufferlike): string {
-    return this.toBuffer(buffer).toString('hex');
+    return this.toUint8Array(buffer).toString('hex');
   }
 
   isArrayBuffer(ob: unknown) {
@@ -42,10 +42,10 @@ class BufferUtils implements IBufferUtils {
   }
 
   toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
-    return this.toBuffer(buffer).buffer;
+    return this.toUint8Array(buffer).buffer;
   }
 
-  toBuffer(buffer: Bufferlike): Buffer {
+  toUint8Array(buffer: Bufferlike): Buffer {
     if (Buffer.isBuffer(buffer)) {
       return buffer;
     }
@@ -53,14 +53,14 @@ class BufferUtils implements IBufferUtils {
   }
 
   typedArrayToBuffer(typedArray: TypedArray): Buffer {
-    return this.toBuffer(typedArray.buffer as Buffer);
+    return this.toUint8Array(typedArray.buffer as Buffer);
   }
 
   utf8Decode(buffer: Bufferlike): string {
     if (!this.isBuffer(buffer)) {
       throw new Error('Expected input of utf8Decode to be a buffer, arraybuffer, or view');
     }
-    return this.toBuffer(buffer).toString('utf8');
+    return this.toUint8Array(buffer).toString('utf8');
   }
 
   utf8Encode(string: string): Buffer {

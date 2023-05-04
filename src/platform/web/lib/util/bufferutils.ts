@@ -8,7 +8,7 @@ import IBufferUtils from 'common/types/IBufferUtils';
 import { Bufferlike } from 'common/types/IBufferUtils';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
- * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
+ * if supported, else a CryptoJS WordArray. The exception is toUint8Array, which
  * returns a Uint8Array (and won't work on browsers too old to support it) */
 
 class BufferUtils implements IBufferUtils {
@@ -95,7 +95,7 @@ class BufferUtils implements IBufferUtils {
   }
 
   /* In browsers, returns a Uint8Array */
-  toBuffer(buffer: Bufferlike): Uint8Array {
+  toUint8Array(buffer: Bufferlike): Uint8Array {
     if (!ArrayBuffer) {
       throw new Error("Can't convert to Buffer: browser does not support the necessary types");
     }
@@ -121,14 +121,14 @@ class BufferUtils implements IBufferUtils {
       return uint8View;
     }
 
-    throw new Error('BufferUtils.toBuffer expected an arraybuffer, typed array, or CryptoJS wordarray');
+    throw new Error('BufferUtils.toUint8Array expected an arraybuffer, typed array, or CryptoJS wordarray');
   }
 
   toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
     if (this.isArrayBuffer(buffer)) {
       return buffer as ArrayBuffer;
     }
-    return this.toBuffer(buffer).buffer;
+    return this.toUint8Array(buffer).buffer;
   }
 
   toWordArray(buffer: TypedArray | WordArray | number[] | ArrayBuffer) {
@@ -142,7 +142,7 @@ class BufferUtils implements IBufferUtils {
     if (this.isWordArray(buffer)) {
       return stringifyBase64(buffer);
     }
-    return this.uint8ViewToBase64(this.toBuffer(buffer));
+    return this.uint8ViewToBase64(this.toUint8Array(buffer));
   }
 
   base64Decode(str: string): Buffer | ArrayBuffer | WordArray {

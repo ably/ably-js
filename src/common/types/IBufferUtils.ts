@@ -12,8 +12,7 @@ export default interface IBufferUtils {
   base64CharSet: string;
   hexCharSet: string;
   isBuffer: (buffer: unknown) => buffer is Bufferlike;
-  // On browser this returns a Uint8Array, on node a Buffer
-  toBuffer: (buffer: Bufferlike) => Buffer | Uint8Array;
+  toUint8Array: (buffer: Bufferlike) => Uint8Array;
   toArrayBuffer: (buffer: Bufferlike) => ArrayBuffer;
   base64Encode: (buffer: Bufferlike) => string;
   base64Decode: (string: string) => Buffer | BrowserBufferlike;

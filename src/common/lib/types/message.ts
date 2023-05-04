@@ -98,10 +98,10 @@ class Message {
         encoding = encoding ? encoding + '/base64' : 'base64';
         data = Platform.BufferUtils.base64Encode(data);
       } else {
-        /* Called by msgpack. toBuffer returns a datatype understandable by
+        /* Called by msgpack. toUint8Array returns a datatype understandable by
          * that platform's msgpack implementation (Buffer in node, Uint8Array
          * in browsers) */
-        data = Platform.BufferUtils.toBuffer(data);
+        data = Platform.BufferUtils.toUint8Array(data);
       }
     }
     return {
@@ -271,8 +271,8 @@ class Message {
                 /* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers. (also, if we
                  * don't have a TextDecoder, deltaBase might be a WordArray here, so need
                  * to process it into a buffer anyway) */
-                deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
-                data = Platform.BufferUtils.toBuffer(data);
+                deltaBase = Platform.BufferUtils.toUint8Array(deltaBase as Buffer);
+                data = Platform.BufferUtils.toUint8Array(data);
 
                 data = Platform.BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
                 lastPayload = data;

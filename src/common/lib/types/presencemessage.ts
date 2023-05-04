@@ -64,10 +64,8 @@ class PresenceMessage {
         encoding = encoding ? encoding + '/base64' : 'base64';
         data = Platform.BufferUtils.base64Encode(data);
       } else {
-        /* Called by msgpack. toBuffer returns a datatype understandable by
-         * that platform's msgpack implementation (Buffer in node, Uint8Array
-         * in browsers) */
-        data = Platform.BufferUtils.toBuffer(data);
+        /* Called by msgpack. */
+        data = Platform.BufferUtils.toUint8Array(data);
       }
     }
     return {

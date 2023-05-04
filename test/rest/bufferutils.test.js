@@ -38,7 +38,7 @@ define(['ably', 'chai'], function (Ably, chai) {
         expect(BufferUtils.utf8Encode(testString).constructor).to.equal(Buffer);
         expect(BufferUtils.hexDecode(testHex).constructor).to.equal(Buffer);
         expect(BufferUtils.base64Decode(testBase64).constructor).to.equal(Buffer);
-        expect(BufferUtils.toBuffer(BufferUtils.utf8Encode(testString)).constructor).to.equal(Buffer);
+        expect(BufferUtils.toUint8Array(BufferUtils.utf8Encode(testString)).constructor).to.equal(Buffer);
         expect(BufferUtils.toArrayBuffer(BufferUtils.utf8Encode(testString)).constructor).to.equal(ArrayBuffer);
       } else if (typeof ArrayBuffer !== 'undefined') {
         /* modern browsers */
@@ -49,7 +49,7 @@ define(['ably', 'chai'], function (Ably, chai) {
         }
         expect(BufferUtils.hexDecode(testHex).constructor).to.equal(ArrayBuffer);
         expect(BufferUtils.base64Decode(testBase64).constructor).to.equal(ArrayBuffer);
-        expect(BufferUtils.toBuffer(BufferUtils.utf8Encode(testString)).constructor).to.equal(Uint8Array);
+        expect(BufferUtils.toUint8Array(BufferUtils.utf8Encode(testString)).constructor).to.equal(Uint8Array);
         expect(BufferUtils.toArrayBuffer(BufferUtils.utf8Encode(testString)).constructor).to.equal(ArrayBuffer);
       } else {
         /* legacy browsers */
