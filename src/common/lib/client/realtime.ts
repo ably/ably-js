@@ -163,7 +163,7 @@ class Channels extends EventEmitter {
 
   getDerived(name: string, deriveOptions: API.Types.DeriveOptions, channelOptions?: ChannelOptions) {
     if (deriveOptions.filter) {
-      const filter = encodeURIComponent(deriveOptions.filter);
+      const filter = btoa(deriveOptions.filter);
       const match = Utils.matchDerivedChannel(name);
       name = `[filter=${filter}${match.qualifierParam}]${match.channelName}`;
     }

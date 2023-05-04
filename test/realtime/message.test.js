@@ -1218,7 +1218,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         },
         {
           name: 'filtered',
-          data: 'Cannot be filtered because it does not meet filter condition on headers.number',
+          data: 'Can be filtered because it does not meet filter condition on headers.number',
           extras: {
             headers: {
               name: 'John Bull',
@@ -1272,7 +1272,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // Subscription to check all messages were received as expected
           rtUnfilteredChannel.subscribe('end', function (msg) {
             try {
-              expect(msg.data).to.equal(testData[5].data, 'Unexpected msg data received');
+              expect(msg.data).to.equal(testData[testData.length - 1].data, 'Unexpected msg data received');
 
               // Check that we receive expected messages on filtered channel
               expect(filteredMessages.length).to.equal(2, 'Expect only two filtered message to be received');
@@ -1286,7 +1286,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 testData[2].extras.headers.name,
                 'Unexpected header value received'
               );
-              var count = 0;
               // Check that message with header that doesn't meet filtering condition is not received.
               for (msg of filteredMessages) {
                 expect(msg.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
