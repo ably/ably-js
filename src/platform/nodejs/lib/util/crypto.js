@@ -113,7 +113,7 @@ var Crypto = (function () {
     /* In node, can't use instanceof CipherParams due to the vm context problem (see
      * https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).
      * So just test for presence of all necessary attributes */
-    return params.algorithm && params.key && params.keyLength && params.mode;
+    return params.algorithm && params.key && params.keyLength && params.mode ? true : false;
   }
 
   /**
