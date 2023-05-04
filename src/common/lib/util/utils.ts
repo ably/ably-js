@@ -573,3 +573,11 @@ export function matchDerivedChannel(name: string) {
     channelName: match[4],
   };
 }
+
+export function base64Encode(value: string) {
+  try {
+    return btoa(value);
+  } catch (err) {
+    return Buffer.from(value).toString('base64');
+  }
+}
