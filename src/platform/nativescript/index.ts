@@ -18,8 +18,6 @@ import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
-import Message from 'common/lib/types/message';
-import PresenceMessage from 'common/lib/types/presencemessage';
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
@@ -30,10 +28,6 @@ Platform.WebStorage = WebStorage;
 
 Rest.Crypto = Crypto;
 Realtime.Crypto = Crypto;
-
-Rest.Message = Message;
-
-Rest.PresenceMessage = PresenceMessage;
 
 Logger.initLogHandlers();
 

@@ -14,8 +14,6 @@ import Transports from './lib/transport';
 import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import PlatformDefaults from './lib/util/defaults';
-import Message from 'common/lib/types/message';
-import PresenceMessage from 'common/lib/types/presencemessage';
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
@@ -26,10 +24,6 @@ Platform.WebStorage = null;
 
 Rest.Crypto = Crypto;
 Realtime.Crypto = Crypto;
-
-Rest.Message = Message;
-
-Rest.PresenceMessage = PresenceMessage;
 
 Logger.initLogHandlers();
 
