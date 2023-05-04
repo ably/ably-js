@@ -3,8 +3,23 @@ import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import CryptoJS from 'crypto-js/build';
 import Logger from '../../../../common/lib/util/logger';
 import ErrorInfo from 'common/lib/types/errorinfo';
+import * as API from '../../../../../ably';
+import ICryptoStatic, { IGetCipherParams } from '../../../../common/types/ICryptoStatic';
+import ICipher from '../../../../common/types/ICipher';
+import { CryptoDataTypes } from '../../../../common/types/cryptoDataTypes';
+import BufferUtils, { Bufferlike, Output as BufferUtilsOutput } from './bufferutils';
+import { IPlatformConfig } from 'common/types/IPlatformConfig';
 
-var CryptoFactory = function (config, bufferUtils) {
+// The type to which ./msgpack.ts deserializes elements of the `bin` or `ext` type
+type MessagePackBinaryType = ArrayBuffer;
+
+type IV = CryptoDataTypes.IV<BufferUtilsOutput>;
+type InputPlaintext = CryptoDataTypes.InputPlaintext<Bufferlike, BufferUtilsOutput>;
+type OutputCiphertext = WordArray;
+type InputCiphertext = CryptoDataTypes.InputCiphertext<MessagePackBinaryType, BufferUtilsOutput>;
+type OutputPlaintext = WordArray;
+
+var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof BufferUtils) {
   var DEFAULT_ALGORITHM = 'aes';
   var DEFAULT_KEYLENGTH = 256; // bits
   var DEFAULT_MODE = 'cbc';
@@ -18,7 +33,7 @@ var CryptoFactory = function (config, bufferUtils) {
    * @param bytes
    * @param callback
    */
-  var generateRandom;
+  var generateRandom: (byteLength: number, callback: (error: Error | null, result: WordArray | null) => void) => void;
   if (config.getRandomWordArray) {
     generateRandom = config.getRandomWordArray;
   } else if (typeof Uint32Array !== 'undefined' && config.getRandomValues) {
@@ -26,7 +41,7 @@ var CryptoFactory = function (config, bufferUtils) {
     generateRandom = function (bytes, callback) {
       var words = bytes / 4,
         nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
-      config.getRandomValues(nativeArray, function (err) {
+      config.getRandomValues!(nativeArray, function (err) {
         if (typeof callback !== 'undefined') {
           callback(err, bufferUtils.toWordArray(nativeArray));
         }
@@ -59,7 +74,7 @@ var CryptoFactory = function (config, bufferUtils) {
    * @param plaintextLength
    * @return
    */
-  function getPaddedLength(plaintextLength) {
+  function getPaddedLength(plaintextLength: number) {
     return (plaintextLength + DEFAULT_BLOCKLENGTH) & -DEFAULT_BLOCKLENGTH;
   }
 
@@ -67,7 +82,7 @@ var CryptoFactory = function (config, bufferUtils) {
    * Internal: checks that the cipherParams are a valid combination. Currently
    * just checks that the calculated keyLength is a valid one for aes-cbc
    */
-  function validateCipherParams(params) {
+  function validateCipherParams(params: API.Types.CipherParams) {
     if (params.algorithm === 'aes' && params.mode === 'cbc') {
       if (params.keyLength === 128 || params.keyLength === 256) {
         return;
@@ -80,7 +95,7 @@ var CryptoFactory = function (config, bufferUtils) {
     }
   }
 
-  function normaliseBase64(string) {
+  function normaliseBase64(string: string) {
     /* url-safe base64 strings use _ and - instread of / and + */
     return string.replace('_', '/').replace('-', '+');
   }
@@ -108,6 +123,24 @@ var CryptoFactory = function (config, bufferUtils) {
     WordArray.create([0x10101010, 0x10101010, 0x10101010, 0x10101010], 16),
   ];
 
+  function isCipherParams(
+    params: API.Types.CipherParams | API.Types.CipherParamOptions
+  ): params is API.Types.CipherParams {
+    // Although API.Types.CipherParams is an interface, the documentation for its `key` property makes it clear that the only valid way to form one is by using getDefaultParams. The implementation of getDefaultParams returns an instance of CipherParams.
+    return params instanceof CipherParams;
+  }
+
+  interface _CipherParams extends API.Types.CipherParams {
+    algorithm: string;
+    keyLength: number;
+    mode: string;
+    key: WordArray;
+  }
+
+  interface _CipherParamsConstructor {
+    new (algorithm: string, keyLength: number, mode: string, key: WordArray): _CipherParams;
+  }
+
   /**
    * A class encapsulating the client-specifiable parameters for
    * the cipher.
@@ -119,11 +152,23 @@ var CryptoFactory = function (config, bufferUtils) {
    * Crypto.getDefaultParams helper, which will fill in any fields not supplied
    * with default values and validation the result.
    */
-  function CipherParams(algorithm, keyLength, mode, key) {
+  const CipherParams = function (
+    this: _CipherParams,
+    algorithm: string,
+    keyLength: number,
+    mode: string,
+    key: WordArray
+  ) {
     this.algorithm = algorithm;
     this.keyLength = keyLength;
     this.mode = mode;
     this.key = key;
+  } as unknown as _CipherParamsConstructor;
+
+  interface _CryptoStatic
+    extends ICryptoStatic<IV, InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext> {
+    CipherParams: typeof CipherParams;
+    getDefaultParams(params: API.Types.CipherParamOptions): _CipherParams;
   }
 
   /**
@@ -144,7 +189,7 @@ var CryptoFactory = function (config, bufferUtils) {
    * concatenated with the resulting raw ciphertext to construct the "ciphertext"
    * data passed to the recipient.
    */
-  function Crypto() {}
+  const Crypto = function () {} as unknown as _CryptoStatic;
 
   Crypto.CipherParams = CipherParams;
 
@@ -157,8 +202,8 @@ var CryptoFactory = function (config, bufferUtils) {
    * base64-encoded string. May optionally also contain: algorithm (defaults to
    * AES), mode (defaults to 'cbc')
    */
-  Crypto.getDefaultParams = function (params) {
-    var key;
+  Crypto.getDefaultParams = function (params: API.Types.CipherParamOptions) {
+    var key: WordArray;
 
     if (!params.key) {
       throw new Error('Crypto.getDefaultParams: a key is required');
@@ -194,7 +239,7 @@ var CryptoFactory = function (config, bufferUtils) {
    * @param keyLength (optional) the required keyLength in bits
    * @param callback (optional) (err, key)
    */
-  Crypto.generateRandomKey = function (keyLength, callback) {
+  Crypto.generateRandomKey = function (keyLength?: number, callback?: API.Types.StandardCallback<API.Types.CipherKey>) {
     if (arguments.length == 1 && typeof keyLength == 'function') {
       callback = keyLength;
       keyLength = undefined;
@@ -212,24 +257,51 @@ var CryptoFactory = function (config, bufferUtils) {
    * @param params either a CipherParams instance or some subset of its
    * fields that includes a key
    */
-  Crypto.getCipher = function (params) {
-    var cipherParams = params instanceof CipherParams ? params : Crypto.getDefaultParams(params);
+  Crypto.getCipher = function (params: IGetCipherParams<IV>) {
+    var cipherParams = isCipherParams(params) ? (params as _CipherParams) : Crypto.getDefaultParams(params);
 
-    return { cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, DEFAULT_BLOCKLENGTH_WORDS, params.iv) };
+    return {
+      cipherParams: cipherParams,
+      cipher: new CBCCipher(cipherParams, DEFAULT_BLOCKLENGTH_WORDS, params.iv ?? null),
+    };
   };
 
-  function CBCCipher(params, blockLengthWords, iv) {
+  // This is the only way I could think of to get a reference to the Cipher type, which doesn’t seem to be exported by CryptoJS’s type definitions file.
+  type CryptoJSCipher = ReturnType<typeof CryptoJS.algo.AES.createEncryptor>;
+
+  interface _CBCCipher extends ICipher<InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext> {
+    algorithm: string;
+    // All of the keys in the CryptoJS.algo namespace whose value is a CipherStatic.
+    cjsAlgorithm: 'AES' | 'DES' | 'TripleDES' | 'RC4' | 'RC4Drop' | 'Rabbit' | 'RabbitLegacy';
+    key: WordArray;
+    iv: WordArray | null;
+    blockLengthWords: number;
+    encryptCipher: CryptoJSCipher | null;
+    getIv: (callback: (error: Error | null, iv: WordArray | null) => void) => void;
+  }
+
+  interface _CBCCipherConstructor {
+    new (params: _CipherParams, blockLengthWords: number, iv: IV | null): _CBCCipher;
+  }
+
+  const CBCCipher = function (this: _CBCCipher, params: _CipherParams, blockLengthWords: number, iv: IV | null) {
     this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
-    this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
+    // We trust that we can handle the algorithm specified by the user — this is the same as the pre-TypeScript behaviour.
+    this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '') as typeof this.cjsAlgorithm;
     this.key = bufferUtils.toWordArray(params.key);
     this.iv = iv ? bufferUtils.toWordArray(iv).clone() : null;
     this.blockLengthWords = blockLengthWords;
-  }
+    this.encryptCipher = null;
+  } as unknown as _CBCCipherConstructor;
 
-  CBCCipher.prototype.encrypt = function (plaintext, callback) {
+  CBCCipher.prototype.encrypt = function (
+    this: _CBCCipher,
+    plaintext: InputPlaintext,
+    callback: (error: Error | null, data: OutputCiphertext | null) => void
+  ) {
     Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-    plaintext = bufferUtils.toWordArray(plaintext);
-    var plaintextLength = plaintext.sigBytes,
+    const plaintextWordArray = bufferUtils.toWordArray(plaintext);
+    var plaintextLength = plaintextWordArray.sigBytes,
       paddedLength = getPaddedLength(plaintextLength),
       self = this;
 
@@ -239,8 +311,10 @@ var CryptoFactory = function (config, bufferUtils) {
           callback(err, null);
           return;
         }
-        var cipherOut = self.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
-        var ciphertext = iv.concat(cipherOut);
+        var cipherOut = self.encryptCipher!.process(
+          plaintextWordArray.concat(pkcs5Padding[paddedLength - plaintextLength])
+        );
+        var ciphertext = iv!.concat(cipherOut);
         callback(null, ciphertext);
       });
     };
@@ -255,7 +329,7 @@ var CryptoFactory = function (config, bufferUtils) {
             callback(err, null);
             return;
           }
-          self.encryptCipher = CryptoJS.algo[self.cjsAlgorithm].createEncryptor(self.key, { iv: iv });
+          self.encryptCipher = CryptoJS.algo[self.cjsAlgorithm].createEncryptor(self.key, { iv: iv! });
           self.iv = iv;
           then();
         });
@@ -265,7 +339,7 @@ var CryptoFactory = function (config, bufferUtils) {
     }
   };
 
-  CBCCipher.prototype.decrypt = function (ciphertext) {
+  CBCCipher.prototype.decrypt = function (this: _CBCCipher, ciphertext: InputCiphertext) {
     Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
     ciphertext = bufferUtils.toWordArray(ciphertext);
     var blockLengthWords = this.blockLengthWords,
@@ -281,7 +355,10 @@ var CryptoFactory = function (config, bufferUtils) {
     return plaintext;
   };
 
-  CBCCipher.prototype.getIv = function (callback) {
+  CBCCipher.prototype.getIv = function (
+    this: _CBCCipher,
+    callback: (error: Error | null, iv: WordArray | null) => void
+  ) {
     if (this.iv) {
       var iv = this.iv;
       this.iv = null;
@@ -298,7 +375,7 @@ var CryptoFactory = function (config, bufferUtils) {
         callback(err, null);
         return;
       }
-      callback(null, self.encryptCipher.process(randomBlock));
+      callback(null, self.encryptCipher!.process(randomBlock!));
     });
   };
 

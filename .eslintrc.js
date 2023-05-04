@@ -26,6 +26,10 @@ module.exports = {
     // see https://github.com/nodesecurity/eslint-plugin-security/issues/21
     "security/detect-object-injection": "off",
     "@typescript-eslint/no-var-requires": "error",
+    // Use typescript-eslint’s version of the no-redeclare rule, which isn’t triggered by overload signatures.
+    // TODO remove this once we start using the full @typescript-eslint/recommended ruleset in #958
+    'no-redeclare': 'off',
+    '@typescript-eslint/no-redeclare': 'error',
   },
   overrides: [
     {
