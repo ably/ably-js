@@ -162,6 +162,20 @@ define([
     restTestOnJsonMsgpack(name, testFn, true);
   };
 
+  function restTestOnJsonMsgpackAsync(name, testFn, skip) {
+    var itFn = skip ? it.skip : it;
+    itFn(name + ' with binary protocol', async function () {
+      await testFn(new clientModule.AblyRestPromise({ useBinaryProtocol: true }), name + '_binary');
+    });
+    itFn(name + ' with text protocol', async function () {
+      await testFn(new clientModule.AblyRestPromise({ useBinaryProtocol: false }), name + '_text');
+    });
+  }
+
+  restTestOnJsonMsgpackAsync.skip = function (name, testFn) {
+    restTestOnJsonMsgpackAsync(name, testFn, true);
+  };
+
   function clearTransportPreference() {
     if (isBrowser && window.localStorage) {
       window.localStorage.removeItem('ably-transport-preference');
@@ -228,6 +242,7 @@ define([
     becomeSuspended: becomeSuspended,
     testOnAllTransports: testOnAllTransports,
     restTestOnJsonMsgpack: restTestOnJsonMsgpack,
+    restTestOnJsonMsgpackAsync: restTestOnJsonMsgpackAsync,
     availableTransports: availableTransports,
     bestTransport: bestTransport,
     clearTransportPreference: clearTransportPreference,
