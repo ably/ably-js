@@ -5,13 +5,15 @@ import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
 import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils from 'common/types/IBufferUtils';
-import { Bufferlike } from 'common/types/IBufferUtils';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
  * if supported, else a CryptoJS WordArray. The exception is toUint8Array, which
  * returns a Uint8Array (and won't work on browsers too old to support it) */
 
-class BufferUtils implements IBufferUtils {
+export type Bufferlike = ArrayBuffer | WordArray;
+export type Output = Bufferlike;
+
+class BufferUtils implements IBufferUtils<Bufferlike, Output> {
   base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet = '0123456789abcdef';
 

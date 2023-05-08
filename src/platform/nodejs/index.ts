@@ -1,7 +1,10 @@
 // Common
 import Rest from '../../common/lib/client/rest';
 import Realtime from '../../common/lib/client/realtime';
-import Platform from '../../common/platform';
+import Platform, {
+  Bufferlike as PlatformBufferlike,
+  BufferUtilsOutput as PlatformBufferUtilsOutput,
+} from '../../common/platform';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
@@ -17,9 +20,10 @@ import ConnectionManager from '../../common/lib/transport/connectionmanager';
 import PlatformDefaults from './lib/util/defaults';
 import Message from 'common/lib/types/message';
 import PresenceMessage from 'common/lib/types/presencemessage';
+import IBufferUtils from 'common/types/IBufferUtils';
 
 Platform.Crypto = Crypto;
-Platform.BufferUtils = BufferUtils;
+Platform.BufferUtils = BufferUtils as IBufferUtils<PlatformBufferlike, PlatformBufferUtilsOutput>;
 Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = Transports;

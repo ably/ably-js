@@ -1,7 +1,10 @@
 import { TypedArray } from 'common/types/IPlatformConfig';
-import IBufferUtils, { Bufferlike, NodeBufferlike } from 'common/types/IBufferUtils';
+import IBufferUtils from 'common/types/IBufferUtils';
 
-class BufferUtils implements IBufferUtils {
+export type Bufferlike = Buffer | ArrayBuffer | TypedArray;
+export type Output = Buffer;
+
+class BufferUtils implements IBufferUtils<Bufferlike, Output> {
   base64CharSet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet: string = '0123456789abcdef';
 
@@ -20,7 +23,7 @@ class BufferUtils implements IBufferUtils {
   }
 
   byteLength(buffer: Bufferlike): number {
-    return (buffer as NodeBufferlike).byteLength;
+    return buffer.byteLength;
   }
 
   hexDecode(string: string): Buffer {
