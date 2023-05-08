@@ -1,11 +1,16 @@
 import { TypedArray } from 'common/types/IPlatformConfig';
-import IBufferUtils, { Bufferlike, NodeBufferlike } from 'common/types/IBufferUtils';
+import IBufferUtils from 'common/types/IBufferUtils';
 
-class BufferUtils implements IBufferUtils {
+export type Bufferlike = Buffer | ArrayBuffer | TypedArray;
+export type Output = Buffer;
+export type ToBufferOutput = Buffer;
+export type ComparableBuffer = Buffer;
+
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer> {
   base64CharSet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet: string = '0123456789abcdef';
 
-  base64Decode(string: string): Buffer {
+  base64Decode(string: string): Output {
     return Buffer.from(string, 'base64');
   }
 
@@ -13,17 +18,17 @@ class BufferUtils implements IBufferUtils {
     return this.toBuffer(buffer).toString('base64');
   }
 
-  bufferCompare(buffer1: Buffer, buffer2: Buffer): number {
+  bufferCompare(buffer1: ComparableBuffer, buffer2: ComparableBuffer): number {
     if (!buffer1) return -1;
     if (!buffer2) return 1;
     return buffer1.compare(buffer2);
   }
 
   byteLength(buffer: Bufferlike): number {
-    return (buffer as NodeBufferlike).byteLength;
+    return buffer.byteLength;
   }
 
-  hexDecode(string: string): Buffer {
+  hexDecode(string: string): Output {
     return Buffer.from(string, 'hex');
   }
 
@@ -45,11 +50,11 @@ class BufferUtils implements IBufferUtils {
     return this.toBuffer(buffer).buffer;
   }
 
-  toBuffer(buffer: Bufferlike): Buffer {
+  toBuffer(buffer: Bufferlike): ToBufferOutput {
     if (Buffer.isBuffer(buffer)) {
       return buffer;
     }
-    return Buffer.from(buffer as TypedArray);
+    return Buffer.from(buffer);
   }
 
   typedArrayToBuffer(typedArray: TypedArray): Buffer {
@@ -63,7 +68,7 @@ class BufferUtils implements IBufferUtils {
     return this.toBuffer(buffer).toString('utf8');
   }
 
-  utf8Encode(string: string): Buffer {
+  utf8Encode(string: string): Output {
     return Buffer.from(string, 'utf8');
   }
 }
