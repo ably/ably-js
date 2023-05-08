@@ -23,7 +23,13 @@ export default class Platform {
      can in reality handle.
    */
   static BufferUtils: IBufferUtils<Bufferlike, BufferUtilsOutput, ToBufferOutput, ComparableBuffer>;
-  static Crypto: any; //Not typed
+  /*
+     This should be an object that implements the ICrypto interface, but (for the
+     same reasons as described in the BufferUtils comment above) Platform doesn’t
+     currently allow us to express the generic parameters, hence keeping the type
+     as `any`.
+   */
+  static Crypto: any;
   static Http: typeof IHttp;
   static Transports: Array<(connectionManager: typeof ConnectionManager) => Transport>;
   static Defaults: IDefaults;
