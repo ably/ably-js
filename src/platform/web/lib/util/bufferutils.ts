@@ -92,7 +92,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output> {
     return bytes.buffer;
   }
 
-  isBuffer(buffer: unknown): buffer is ArrayBuffer | WordArray | TypedArray {
+  isBuffer(buffer: unknown): buffer is Bufferlike {
     return this.isArrayBuffer(buffer) || this.isWordArray(buffer) || this.isTypedArray(buffer);
   }
 
@@ -147,7 +147,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output> {
     return this.uint8ViewToBase64(this.toUint8Array(buffer));
   }
 
-  base64Decode(str: string): Buffer | ArrayBuffer | WordArray {
+  base64Decode(str: string): Output {
     if (ArrayBuffer && Platform.Config.atob) {
       return this.base64ToArrayBuffer(str);
     }

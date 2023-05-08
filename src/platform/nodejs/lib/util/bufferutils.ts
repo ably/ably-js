@@ -8,7 +8,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output> {
   base64CharSet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet: string = '0123456789abcdef';
 
-  base64Decode(string: string): Buffer {
+  base64Decode(string: string): Output {
     return Buffer.from(string, 'base64');
   }
 
@@ -26,7 +26,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output> {
     return buffer.byteLength;
   }
 
-  hexDecode(string: string): Buffer {
+  hexDecode(string: string): Output {
     return Buffer.from(string, 'hex');
   }
 
@@ -66,7 +66,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output> {
     return this.toUint8Array(buffer).toString('utf8');
   }
 
-  utf8Encode(string: string): Buffer {
+  utf8Encode(string: string): Output {
     return Buffer.from(string, 'utf8');
   }
 }
