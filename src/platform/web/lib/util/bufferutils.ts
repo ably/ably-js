@@ -186,7 +186,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output> {
     return stringifyUtf8(buffer);
   }
 
-  bufferCompare(buffer1: TypedArray, buffer2: TypedArray) {
+  bufferCompare(buffer1: Bufferlike, buffer2: Bufferlike) {
     if (!buffer1) return -1;
     if (!buffer2) return 1;
     const wordArray1 = this.toWordArray(buffer1);

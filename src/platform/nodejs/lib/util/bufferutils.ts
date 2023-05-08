@@ -16,10 +16,10 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output> {
     return this.toUint8Array(buffer).toString('base64');
   }
 
-  bufferCompare(buffer1: Buffer, buffer2: Buffer): number {
+  bufferCompare(buffer1: Bufferlike, buffer2: Bufferlike): number {
     if (!buffer1) return -1;
     if (!buffer2) return 1;
-    return buffer1.compare(buffer2);
+    return this.toUint8Array(buffer1).compare(this.toUint8Array(buffer2));
   }
 
   byteLength(buffer: Bufferlike): number {

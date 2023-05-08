@@ -12,7 +12,7 @@ export default interface IBufferUtils<Bufferlike, Output> {
   hexDecode: (string: string) => Output;
   utf8Encode: (string: string) => Output;
   utf8Decode: (buffer: Bufferlike) => string;
-  bufferCompare: (buffer1: Buffer, buffer2: Buffer) => number;
+  bufferCompare: (buffer1: Bufferlike, buffer2: Bufferlike) => number;
   byteLength: (buffer: Bufferlike) => number;
   typedArrayToBuffer: (typedArray: TypedArray) => Bufferlike;
 }
