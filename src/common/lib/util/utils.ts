@@ -178,7 +178,7 @@ export function arrIntersect<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   return result;
 }
 
-export function arrIntersectOb<T>(arr: Array<T>, ob: Record<string, unknown>): T[] {
+export function arrIntersectOb(arr: Array<string>, ob: Record<string, unknown>): string[] {
   const result = [];
   for (let i = 0; i < arr.length; i++) {
     const member = arr[i];
