@@ -14,8 +14,9 @@ export type Bufferlike = WordArray | ArrayBuffer | TypedArray;
 export type Output = Bufferlike;
 export type ToBufferOutput = Uint8Array;
 export type ComparableBuffer = ArrayBuffer;
+export type WordArrayLike = WordArray;
 
-class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer> {
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer, WordArrayLike> {
   base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet = '0123456789abcdef';
 
