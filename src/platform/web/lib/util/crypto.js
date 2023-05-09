@@ -297,7 +297,7 @@ var CryptoFactory = function (config, bufferUtils) {
     var self = this;
     generateRandom(DEFAULT_BLOCKLENGTH, function (err, randomBlock) {
       if (err) {
-        callback(err);
+        callback(err, null);
         return;
       }
       callback(null, self.encryptCipher.process(randomBlock));
