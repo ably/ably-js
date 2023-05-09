@@ -12,6 +12,7 @@ type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
 type BufferUtilsOutput = WebBufferUtils.Output | NodeBufferUtils.Output;
 type ToBufferOutput = WebBufferUtils.ToBufferOutput | NodeBufferUtils.ToBufferOutput;
 type ComparableBuffer = WebBufferUtils.ComparableBuffer | NodeBufferUtils.ComparableBuffer;
+type WordArrayLike = WebBufferUtils.WordArrayLike | NodeBufferUtils.WordArrayLike;
 
 export default class Platform {
   static Config: IPlatformConfig;
@@ -22,7 +23,7 @@ export default class Platform {
      BufferUtils object that accepts a broader range of data types than it
      can in reality handle.
    */
-  static BufferUtils: IBufferUtils<Bufferlike, BufferUtilsOutput, ToBufferOutput, ComparableBuffer>;
+  static BufferUtils: IBufferUtils<Bufferlike, BufferUtilsOutput, ToBufferOutput, ComparableBuffer, WordArrayLike>;
   /*
      This should be a class whose static methods implement the ICryptoStatic
      interface, but (for the same reasons as described in the BufferUtils
