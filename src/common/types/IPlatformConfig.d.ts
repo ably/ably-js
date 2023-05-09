@@ -46,7 +46,7 @@ export interface IPlatformConfig {
   TextDecoder?: typeof TextDecoder;
   getRandomWordArray?: (
     byteLength: number,
-    callback: (err: Error, result: boolean | CryptoJS.lib.WordArray) => void
+    callback: (err: Error | null, result: CryptoJS.lib.WordArray | null) => void
   ) => void;
   isWebworker?: boolean;
 }

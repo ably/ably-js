@@ -34,9 +34,9 @@ const Platform: IPlatformConfig = {
   TextDecoder: global.TextDecoder,
   Promise: global.Promise,
   getRandomWordArray: (function (RNRandomBytes) {
-    return function (byteLength: number, callback: Function) {
-      RNRandomBytes.randomBytes(byteLength, function (err: Error, base64String: string) {
-        callback(err, !err && parseBase64(base64String));
+    return function (byteLength: number, callback: (err: Error | null, result: CryptoJS.lib.WordArray | null) => void) {
+      RNRandomBytes.randomBytes(byteLength, function (err: Error | null, base64String: string | null) {
+        callback(err, base64String ? parseBase64(base64String) : null);
       });
     };
     // Installing @types/react-native would fix this but conflicts with @types/node
