@@ -139,11 +139,11 @@ var CryptoFactory = function (config, bufferUtils) {
    * Crypto.getDefaultParams helper, which will fill in any fields not supplied
    * with default values and validation the result.
    */
-  function CipherParams() {
-    this.algorithm = null;
-    this.keyLength = null;
-    this.mode = null;
-    this.key = null;
+  function CipherParams(algorithm, keyLength, mode, key) {
+    this.algorithm = algorithm;
+    this.keyLength = keyLength;
+    this.mode = mode;
+    this.key = key;
   }
   Crypto.CipherParams = CipherParams;
 
@@ -169,11 +169,10 @@ var CryptoFactory = function (config, bufferUtils) {
       key = bufferUtils.toWordArray(params.key); // Expect key to be an Array, ArrayBuffer, or WordArray at this point
     }
 
-    var cipherParams = new CipherParams();
-    cipherParams.key = key;
-    cipherParams.algorithm = params.algorithm || DEFAULT_ALGORITHM;
-    cipherParams.keyLength = key.words.length * (4 * 8);
-    cipherParams.mode = params.mode || DEFAULT_MODE;
+    var algorithm = params.algorithm || DEFAULT_ALGORITHM;
+    var keyLength = key.words.length * (4 * 8);
+    var mode = params.mode || DEFAULT_MODE;
+    var cipherParams = new CipherParams(algorithm, keyLength, mode, key);
 
     if (params.keyLength && params.keyLength !== cipherParams.keyLength) {
       throw new Error(

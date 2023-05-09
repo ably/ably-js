@@ -100,11 +100,11 @@ var Crypto = (function () {
    * Clients may instance a CipherParams directly and populate it, or may
    * query the implementation to obtain a default system CipherParams.
    */
-  function CipherParams() {
-    this.algorithm = null;
-    this.keyLength = null;
-    this.mode = null;
-    this.key = null;
+  function CipherParams(algorithm, keyLength, mode, key) {
+    this.algorithm = algorithm;
+    this.keyLength = keyLength;
+    this.mode = mode;
+    this.key = key;
     this.iv = null;
   }
   Crypto.CipherParams = CipherParams;
@@ -140,11 +140,10 @@ var Crypto = (function () {
       key = params.key;
     }
 
-    var cipherParams = new CipherParams();
-    cipherParams.key = key;
-    cipherParams.algorithm = params.algorithm || DEFAULT_ALGORITHM;
-    cipherParams.keyLength = key.length * 8;
-    cipherParams.mode = params.mode || DEFAULT_MODE;
+    var algorithm = params.algorithm || DEFAULT_ALGORITHM;
+    var keyLength = key.length * 8;
+    var mode = params.mode || DEFAULT_MODE;
+    var cipherParams = new CipherParams(algorithm, keyLength, mode, key);
 
     if (params.keyLength && params.keyLength !== cipherParams.keyLength) {
       throw new Error(
