@@ -238,7 +238,7 @@ var CryptoFactory = function (config, bufferUtils) {
     var then = function () {
       self.getIv(function (err, iv) {
         if (err) {
-          callback(err);
+          callback(err, null);
           return;
         }
         var cipherOut = self.encryptCipher.process(plaintext.concat(pkcs5Padding[paddedLength - plaintextLength]));
@@ -254,7 +254,7 @@ var CryptoFactory = function (config, bufferUtils) {
       } else {
         generateRandom(DEFAULT_BLOCKLENGTH, function (err, iv) {
           if (err) {
-            callback(err);
+            callback(err, null);
             return;
           }
           self.encryptCipher = CryptoJS.algo[self.cjsAlgorithm].createEncryptor(self.key, { iv: iv });
