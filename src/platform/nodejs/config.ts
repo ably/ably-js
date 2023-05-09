@@ -19,7 +19,7 @@ const Config: IPlatformConfig = {
   stringByteSize: Buffer.byteLength,
   inherits: util.inherits,
   addEventListener: null,
-  getRandomValues: function (arr: TypedArray, callback?: (err?: Error | null) => void): void {
+  getRandomValues: function (arr: TypedArray, callback?: (err: Error | null) => void): void {
     const bytes = crypto.randomBytes(arr.length);
     arr.set(bytes);
     if (callback) {
