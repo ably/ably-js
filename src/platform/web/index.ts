@@ -13,12 +13,9 @@ import Config from './config';
 import Transports from './lib/transport';
 import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
-import ConnectionManager from '../../common/lib/transport/connectionmanager';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
 import msgpack from './lib/util/msgpack';
-import Message from 'common/lib/types/message';
-import PresenceMessage from 'common/lib/types/presencemessage';
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
@@ -29,14 +26,6 @@ Platform.WebStorage = WebStorage;
 
 Rest.Crypto = Crypto;
 Realtime.Crypto = Crypto;
-
-Rest.Message = Message;
-Realtime.Message = Message;
-
-Rest.PresenceMessage = PresenceMessage;
-Realtime.PresenceMessage = PresenceMessage;
-
-Realtime.ConnectionManager = ConnectionManager;
 
 Logger.initLogHandlers();
 
