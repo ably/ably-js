@@ -240,8 +240,8 @@ class Rest {
   static Callbacks = Rest;
   static Platform = Platform;
   static Crypto?: typeof Platform.Crypto;
-  static Message?: typeof Message;
-  static PresenceMessage?: typeof PresenceMessage;
+  static Message = Message;
+  static PresenceMessage = PresenceMessage;
 }
 
 class Channels {
