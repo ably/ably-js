@@ -2,6 +2,8 @@ import Platform from 'common/platform';
 import Defaults, { getAgentString } from './defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
+import { parse as parseUtf8 } from 'crypto-js/build/enc-utf8';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -574,10 +576,9 @@ export function matchDerivedChannel(name: string) {
   };
 }
 
-export function base64Encode(value: string) {
-  try {
-    return btoa(value);
-  } catch (err) {
-    return Buffer.from(value).toString('base64');
+export function toBase64(str: string) {
+  if (Platform.Config.createHmac) {
+    return Buffer.from(str, 'ascii').toString('base64');
   }
+  return stringifyBase64(parseUtf8(str));
 }
