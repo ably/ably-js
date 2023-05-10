@@ -26,8 +26,8 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
-Rest.Crypto = Crypto;
-Realtime.Crypto = Crypto;
+Rest.Crypto = null;
+Realtime.Crypto = null;
 
 Rest.Message = Message;
 Realtime.Message = Message;
