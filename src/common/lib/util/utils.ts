@@ -2,6 +2,8 @@ import Platform from 'common/platform';
 import Defaults, { getAgentString } from './defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
+import { parse as parseUtf8 } from 'crypto-js/build/enc-utf8';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -546,4 +548,37 @@ export function shallowEquals(source: Record<string, unknown>, target: Record<st
     Object.keys(source).every((key) => source[key] === target[key]) &&
     Object.keys(target).every((key) => target[key] === source[key])
   );
+}
+
+export function matchDerivedChannel(name: string) {
+  /**
+   * This regex check is to retain existing channel params if any e.g [?rewind=1]foo to
+   * [filter=xyz?rewind=1]foo. This is to keep channel compatibility around use of
+   * channel params that work with derived channels.
+   *
+   * This eslint unsafe regex warning is triggered because the RegExp uses nested quantifiers,
+   * but it does not create any situation where the regex engine has to
+   * explore a large number of possible matches so it’s safe to ignore
+   */
+  const regex = /^(\[([^?]*)(?:(.*))\])?(.+)$/; // eslint-disable-line
+  const match = name.match(regex);
+  if (!match || !match.length || match.length < 5) {
+    throw new ErrorInfo('regex match failed', 400, 40010);
+  }
+  // Fail if there is already a channel qualifier, eg [meta]foo should fail instead of just overriding with [filter=xyz]foo
+  if (match![2]) {
+    throw new ErrorInfo(`cannot use a derived option with a ${match[2]} channel`, 400, 40010);
+  }
+  // Return match values to be added to derive channel quantifier.
+  return {
+    qualifierParam: match[3] || '',
+    channelName: match[4],
+  };
+}
+
+export function toBase64(str: string) {
+  if (Platform.Config.createHmac) {
+    return Buffer.from(str, 'ascii').toString('base64');
+  }
+  return stringifyBase64(parseUtf8(str));
 }
