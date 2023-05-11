@@ -1291,13 +1291,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 expect(msg.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
               }
 
-              // Check that we receive expected messages on unfiltered channel
+              // Check that we receive expected messages on unfiltered channel, including the `end` event message
               expect(unFilteredMessages.length).to.equal(6, 'Expect only 6 unfiltered message to be received');
-              expect(unFilteredMessages[0].data).to.equal(testData[0].data, 'Unexpected data received');
-              expect(unFilteredMessages[1].data).to.equal(testData[1].data, 'Unexpected data received');
-              expect(unFilteredMessages[2].data).to.equal(testData[2].data, 'Unexpected data received');
-              expect(unFilteredMessages[3].data).to.equal(testData[3].data, 'Unexpected data received');
-              expect(unFilteredMessages[4].data).to.equal(testData[4].data, 'Unexpected data received');
+              for (var i = 0; i < unFilteredMessages.length; i++) {
+                expect(unFilteredMessages[i].data).to.equal(testData[i].data, 'Unexpected data received');
+              }
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
