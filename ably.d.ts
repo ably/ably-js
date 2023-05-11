@@ -1636,7 +1636,7 @@ declare namespace Types {
      *
      * @param method - The request method to use, such as `GET`, `POST`.
      * @param path - The request path.
-     * @param version - The major version of the Ably REST API to use. For more information about REST API versioning, see [this section of the REST API reference](https://ably.com/docs/api/rest-api#versioning).
+     * @param version - The major version of the Ably REST API to use. See the [REST API reference](https://ably.com/docs/api/rest-api#versioning) for information on versioning.
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
@@ -1701,7 +1701,7 @@ declare namespace Types {
      *
      * @param method - The request method to use, such as `GET`, `POST`.
      * @param path - The request path.
-     * @param version - The major version of the Ably REST API to use. For more information about REST API versioning, see [this section of the REST API reference](https://ably.com/docs/api/rest-api#versioning).
+     * @param version - The major version of the Ably REST API to use. See the [REST API reference](https://ably.com/docs/api/rest-api#versioning) for information on versioning.
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
@@ -1781,7 +1781,7 @@ declare namespace Types {
      *
      * @param method - The request method to use, such as `GET`, `POST`.
      * @param path - The request path.
-     * @param version - The major version of the Ably REST API to use. For more information about REST API versioning, see [this section of the REST API reference](https://ably.com/docs/api/rest-api#versioning).
+     * @param version - The major version of the Ably REST API to use. See the [REST API reference](https://ably.com/docs/api/rest-api#versioning) for information on versioning.
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
@@ -1842,7 +1842,7 @@ declare namespace Types {
      *
      * @param method - The request method to use, such as `GET`, `POST`.
      * @param path - The request path.
-     * @param version - The major version of the Ably REST API to use. For more information about REST API versioning, see [this section of the REST API reference](https://ably.com/docs/api/rest-api#versioning).
+     * @param version - The major version of the Ably REST API to use. See the [REST API reference](https://ably.com/docs/api/rest-api#versioning) for information on versioning.
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
