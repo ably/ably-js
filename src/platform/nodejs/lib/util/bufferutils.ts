@@ -78,6 +78,11 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
   toWordArray(buffer: TypedArray | WordArrayLike | number[] | ArrayBuffer): never {
     throw new Error('Not implemented');
   }
+
+  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+  isWordArray(val: unknown): val is never {
+    return false;
+  }
 }
 
 export default new BufferUtils();
