@@ -4,6 +4,7 @@ import Multicaster from '../util/multicaster';
 import ErrorInfo from '../types/errorinfo';
 import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
+import { parse as parseUtf8 } from 'crypto-js/build/enc-utf8';
 import { createHmac } from 'crypto';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
@@ -41,6 +42,13 @@ function normaliseAuthcallbackError(err: any) {
   }
   return err;
 }
+
+let toBase64 = (str: string): string => {
+  if (Platform.Config.createHmac) {
+    return Buffer.from(str, 'ascii').toString('base64');
+  }
+  return stringifyBase64(parseUtf8(str));
+};
 
 let hmac = (text: string, key: string): string => {
   if (Platform.Config.createHmac) {
@@ -878,7 +886,7 @@ class Auth {
         if (!tokenDetails) {
           throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
         }
-        callback(null, { authorization: 'Bearer ' + Utils.toBase64(tokenDetails.token) });
+        callback(null, { authorization: 'Bearer ' + toBase64(tokenDetails.token) });
       });
     }
   }
@@ -908,7 +916,7 @@ class Auth {
   _saveBasicOptions(authOptions: API.Types.AuthOptions) {
     this.method = 'basic';
     this.key = authOptions.key;
-    this.basicKey = Utils.toBase64(authOptions.key as string);
+    this.basicKey = toBase64(authOptions.key as string);
     this.authOptions = authOptions || {};
     if ('clientId' in authOptions) {
       this._userSetClientId(authOptions.clientId);
