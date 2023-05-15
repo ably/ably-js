@@ -31,6 +31,7 @@ const Platform: IPlatformConfig = {
      * message */
     return (typeof TextDecoder !== 'undefined' && new TextEncoder().encode(str).length) || str.length;
   },
+  encodeWsUri: global.encodeURI,
   TextEncoder: global.TextEncoder,
   TextDecoder: global.TextDecoder,
   Promise: global.Promise,

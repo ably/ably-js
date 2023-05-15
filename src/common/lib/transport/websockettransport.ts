@@ -37,7 +37,7 @@ class WebSocketTransport extends Transport {
     if (connectParams) {
       for (const key in connectParams) uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
     }
-    this.uri = uri;
+    this.uri = Platform.Config.encodeWsUri ? Platform.Config.encodeWsUri(uri) : uri;
     return new Platform.Config.WebSocket(uri);
   }
 
