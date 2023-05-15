@@ -76,6 +76,7 @@ const browserConfig = {
   node: {
     crypto: 'empty',
     Buffer: false,
+    global: false,
   },
   externals: {
     'crypto-js': true,
