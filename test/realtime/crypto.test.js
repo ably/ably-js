@@ -137,9 +137,25 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
         var params = Crypto.getDefaultParams({ key: key });
         try {
-          expect(params.key).to.equal(key);
+          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
           expect(params.algorithm).to.equal('aes', 'check default algorithm');
           expect(params.mode).to.equal('cbc', 'check default mode');
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+    });
+
+    it('getDefaultParams_ArrayBuffer_key', function (done) {
+      Crypto.generateRandomKey(function (err, key) {
+        if (err) {
+          done(err);
+        }
+        var arrayBufferKey = Ably.Realtime.Platform.BufferUtils.toArrayBuffer(key);
+        var params = Crypto.getDefaultParams({ key: arrayBufferKey });
+        try {
+          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
           done();
         } catch (err) {
           done(err);
@@ -187,7 +203,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
         try {
           var params = Crypto.getDefaultParams({ key: key, algorithm: 'foo', mode: 'bar' });
-          expect(params.key).to.equal(key);
+          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
           expect(params.algorithm).to.equal('foo');
           expect(params.mode).to.equal('bar');
           expect(params.keyLength).to.equal(64);

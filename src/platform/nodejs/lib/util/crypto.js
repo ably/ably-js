@@ -135,7 +135,7 @@ var Crypto = (function () {
     if (typeof params.key === 'string') {
       key = Platform.BufferUtils.base64Decode(normaliseBase64(params.key));
     } else {
-      key = params.key;
+      key = Buffer.from(params.key);
     }
 
     var cipherParams = new CipherParams();
