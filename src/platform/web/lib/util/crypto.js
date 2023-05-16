@@ -109,6 +109,24 @@ var CryptoFactory = function (config, bufferUtils) {
   ];
 
   /**
+   * A class encapsulating the client-specifiable parameters for
+   * the cipher.
+   *
+   * algorithm is the name of the algorithm in the default system provider,
+   * or the lower-cased version of it; eg "aes" or "AES".
+   *
+   * Clients are recommended to not call this directly, but instead to use the
+   * Crypto.getDefaultParams helper, which will fill in any fields not supplied
+   * with default values and validation the result.
+   */
+  function CipherParams(algorithm, keyLength, mode, key) {
+    this.algorithm = algorithm;
+    this.keyLength = keyLength;
+    this.mode = mode;
+    this.key = key;
+  }
+
+  /**
    * Utility classes and interfaces for message payload encryption.
    *
    * This class supports AES/CBC/PKCS5 with a default keylength of 128 bits
@@ -128,23 +146,6 @@ var CryptoFactory = function (config, bufferUtils) {
    */
   function Crypto() {}
 
-  /**
-   * A class encapsulating the client-specifiable parameters for
-   * the cipher.
-   *
-   * algorithm is the name of the algorithm in the default system provider,
-   * or the lower-cased version of it; eg "aes" or "AES".
-   *
-   * Clients are recommended to not call this directly, but instead to use the
-   * Crypto.getDefaultParams helper, which will fill in any fields not supplied
-   * with default values and validation the result.
-   */
-  function CipherParams(algorithm, keyLength, mode, key) {
-    this.algorithm = algorithm;
-    this.keyLength = keyLength;
-    this.mode = mode;
-    this.key = key;
-  }
   Crypto.CipherParams = CipherParams;
 
   /**
