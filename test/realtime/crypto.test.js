@@ -166,6 +166,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    it('getDefaultParams_ArrayBuffer_key', function (done) {
+      Crypto.generateRandomKey(function (err, key) {
+        if (err) {
+          done(err);
+        }
+        var arrayBufferKey = Ably.Realtime.Platform.BufferUtils.toArrayBuffer(key);
+        var params = Crypto.getDefaultParams({ key: arrayBufferKey });
+        try {
+          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+    });
+
     it('getDefaultParams_base64_key', function (done) {
       Crypto.generateRandomKey(function (err, key) {
         if (err) {
