@@ -71,6 +71,31 @@ var CryptoFactory = function (bufferUtils) {
   }
 
   /**
+   * A class encapsulating the client-specifiable parameters for
+   * the cipher.
+   *
+   * algorithm is the name of the algorithm in the default system provider,
+   * or the lower-cased version of it; eg "aes" or "AES".
+   *
+   * Clients may instance a CipherParams directly and populate it, or may
+   * query the implementation to obtain a default system CipherParams.
+   */
+  function CipherParams(algorithm, keyLength, mode, key) {
+    this.algorithm = algorithm;
+    this.keyLength = keyLength;
+    this.mode = mode;
+    this.key = key;
+    this.iv = null;
+  }
+
+  function isInstCipherParams(params) {
+    /* In node, can't use instanceof CipherParams due to the vm context problem (see
+     * https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).
+     * So just test for presence of all necessary attributes */
+    return params.algorithm && params.key && params.keyLength && params.mode ? true : false;
+  }
+
+  /**
    * Utility classes and interfaces for message payload encryption.
    *
    * This class supports AES/CBC/PKCS5 with a default keylength of 128 bits
@@ -89,31 +114,7 @@ var CryptoFactory = function (bufferUtils) {
    */
   function Crypto() {}
 
-  /**
-   * A class encapsulating the client-specifiable parameters for
-   * the cipher.
-   *
-   * algorithm is the name of the algorithm in the default system provider,
-   * or the lower-cased version of it; eg "aes" or "AES".
-   *
-   * Clients may instance a CipherParams directly and populate it, or may
-   * query the implementation to obtain a default system CipherParams.
-   */
-  function CipherParams(algorithm, keyLength, mode, key) {
-    this.algorithm = algorithm;
-    this.keyLength = keyLength;
-    this.mode = mode;
-    this.key = key;
-    this.iv = null;
-  }
   Crypto.CipherParams = CipherParams;
-
-  function isInstCipherParams(params) {
-    /* In node, can't use instanceof CipherParams due to the vm context problem (see
-     * https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).
-     * So just test for presence of all necessary attributes */
-    return params.algorithm && params.key && params.keyLength && params.mode ? true : false;
-  }
 
   /**
    * Obtain a complete CipherParams instance from the provided params, filling
