@@ -1,10 +1,9 @@
 'use strict';
 import Logger from '../../../../common/lib/util/logger';
-import Platform from '../../../../common/platform';
 import crypto from 'crypto';
 import ErrorInfo from '../../../../common/lib/types/errorinfo';
 
-var Crypto = (function () {
+var CryptoFactory = function (bufferUtils) {
   var DEFAULT_ALGORITHM = 'aes';
   var DEFAULT_KEYLENGTH = 256; // bits
   var DEFAULT_MODE = 'cbc';
@@ -133,7 +132,7 @@ var Crypto = (function () {
     }
 
     if (typeof params.key === 'string') {
-      key = Platform.BufferUtils.base64Decode(normaliseBase64(params.key));
+      key = bufferUtils.base64Decode(normaliseBase64(params.key));
     } else {
       key = Buffer.from(params.key);
     }
@@ -198,7 +197,7 @@ var Crypto = (function () {
 
   CBCCipher.prototype.encrypt = function (plaintext, callback) {
     Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-    var plaintextBuffer = Platform.BufferUtils.toBuffer(plaintext);
+    var plaintextBuffer = bufferUtils.toBuffer(plaintext);
     var plaintextLength = plaintextBuffer.length,
       paddedLength = getPaddedLength(plaintextLength),
       iv = this.getIv();
@@ -233,6 +232,6 @@ var Crypto = (function () {
   };
 
   return Crypto;
-})();
+};
 
-export default Crypto;
+export default CryptoFactory;
