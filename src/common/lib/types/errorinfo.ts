@@ -1,7 +1,8 @@
 import Platform from 'common/platform';
 import * as Utils from '../util/utils';
+import * as API from '../../../../ably';
 
-export default class ErrorInfo extends Error {
+export default class ErrorInfo extends Error implements API.Types.ErrorInfo {
   code: number;
   statusCode: number;
   cause?: string | Error | ErrorInfo;
