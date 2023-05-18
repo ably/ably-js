@@ -53,7 +53,7 @@ class BufferUtils implements IBufferUtils {
   }
 
   typedArrayToBuffer(typedArray: TypedArray): Buffer {
-    return this.toBuffer(typedArray.buffer as Buffer);
+    return this.toBuffer(typedArray.buffer);
   }
 
   utf8Decode(buffer: Bufferlike): string {

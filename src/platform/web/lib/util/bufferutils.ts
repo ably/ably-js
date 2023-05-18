@@ -101,11 +101,11 @@ class BufferUtils implements IBufferUtils {
     }
 
     if (this.isArrayBuffer(buffer)) {
-      return new Uint8Array(buffer as ArrayBuffer);
+      return new Uint8Array(buffer);
     }
 
     if (this.isTypedArray(buffer)) {
-      return new Uint8Array((buffer as TypedArray).buffer);
+      return new Uint8Array(buffer.buffer);
     }
 
     if (this.isWordArray(buffer)) {
@@ -126,7 +126,7 @@ class BufferUtils implements IBufferUtils {
 
   toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
     if (this.isArrayBuffer(buffer)) {
-      return buffer as ArrayBuffer;
+      return buffer;
     }
     return this.toBuffer(buffer).buffer;
   }
@@ -153,7 +153,7 @@ class BufferUtils implements IBufferUtils {
   }
 
   hexEncode(buffer: Bufferlike) {
-    return stringifyHex(this.toWordArray(buffer as ArrayBuffer));
+    return stringifyHex(this.toWordArray(buffer));
   }
 
   hexDecode(string: string) {
