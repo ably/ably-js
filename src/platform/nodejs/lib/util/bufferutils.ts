@@ -42,7 +42,8 @@ class BufferUtils implements IBufferUtils {
   }
 
   toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
-    return this.toBuffer(buffer).buffer;
+    const nodeBuffer = this.toBuffer(buffer);
+    return nodeBuffer.buffer.slice(nodeBuffer.byteOffset, nodeBuffer.byteOffset + nodeBuffer.byteLength);
   }
 
   toBuffer(buffer: Bufferlike): Buffer {
