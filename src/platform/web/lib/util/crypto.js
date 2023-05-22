@@ -2,6 +2,7 @@ import WordArray from 'crypto-js/build/lib-typedarrays';
 import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import CryptoJS from 'crypto-js/build';
 import Logger from '../../../../common/lib/util/logger';
+import ErrorInfo from 'common/lib/types/errorinfo';
 
 var CryptoFactory = function (config, bufferUtils) {
   var DEFAULT_ALGORITHM = 'aes';
@@ -212,7 +213,12 @@ var CryptoFactory = function (config, bufferUtils) {
       callback = keyLength;
       keyLength = undefined;
     }
-    generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, callback);
+
+    generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
+      if (callback !== undefined) {
+        callback(err ? ErrorInfo.fromValues(err) : null, buf);
+      }
+    });
   };
 
   /**
