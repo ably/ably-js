@@ -104,18 +104,13 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
     key: NodeCipherKey;
     iv: unknown;
 
-    constructor(
-    algorithm: string,
-    keyLength: number,
-    mode: string,
-    key: NodeCipherKey
-  ) {
-    this.algorithm = algorithm;
-    this.keyLength = keyLength;
-    this.mode = mode;
-    this.key = key;
-    this.iv = null;
-  }
+    constructor(algorithm: string, keyLength: number, mode: string, key: NodeCipherKey) {
+      this.algorithm = algorithm;
+      this.keyLength = keyLength;
+      this.mode = mode;
+      this.key = key;
+      this.iv = null;
+    }
   }
 
   function isInstCipherParams(
@@ -145,83 +140,81 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
    * data passed to the recipient.
    */
   class Crypto implements ICrypto<IV, InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext> {
+    CipherParams = CipherParams;
 
-  CipherParams = CipherParams;
+    /**
+     * Obtain a complete CipherParams instance from the provided params, filling
+     * in any not provided with default values, calculating a keyLength from
+     * the supplied key, and validating the result.
+     * @param params an object containing at a minimum a `key` key with value the
+     * key, as either a binary (ArrayBuffer, Array, WordArray) or a
+     * base64-encoded string. May optionally also contain: algorithm (defaults to
+     * AES), mode (defaults to 'cbc')
+     */
+    getDefaultParams(params: API.Types.CipherParamOptions) {
+      var key: Buffer;
 
-  /**
-   * Obtain a complete CipherParams instance from the provided params, filling
-   * in any not provided with default values, calculating a keyLength from
-   * the supplied key, and validating the result.
-   * @param params an object containing at a minimum a `key` key with value the
-   * key, as either a binary (ArrayBuffer, Array, WordArray) or a
-   * base64-encoded string. May optionally also contain: algorithm (defaults to
-   * AES), mode (defaults to 'cbc')
-   */
-  getDefaultParams(params: API.Types.CipherParamOptions) {
-    var key: Buffer;
-
-    if (!params.key) {
-      throw new Error('Crypto.getDefaultParams: a key is required');
-    }
-
-    if (typeof params.key === 'string') {
-      key = bufferUtils.base64Decode(normaliseBase64(params.key));
-    } else {
-      key = Buffer.from(params.key);
-    }
-
-    var algorithm = params.algorithm || DEFAULT_ALGORITHM;
-    var keyLength = key.length * 8;
-    var mode = params.mode || DEFAULT_MODE;
-    var cipherParams = new CipherParams(algorithm, keyLength, mode, key);
-
-    if (params.keyLength && params.keyLength !== cipherParams.keyLength) {
-      throw new Error(
-        'Crypto.getDefaultParams: a keyLength of ' +
-          params.keyLength +
-          ' was specified, but the key actually has length ' +
-          cipherParams.keyLength
-      );
-    }
-
-    validateCipherParams(cipherParams);
-    return cipherParams;
-  }
-
-  /**
-   * Generate a random encryption key from the supplied keylength (or the
-   * default keyLength if none supplied) as a Buffer
-   * @param keyLength (optional) the required keyLength in bits
-   * @param callback (optional) (err, key)
-   */
-  generateRandomKey(keyLength?: number, callback?: API.Types.StandardCallback<API.Types.CipherKey>) {
-    if (arguments.length == 1 && typeof keyLength == 'function') {
-      callback = keyLength;
-      keyLength = undefined;
-    }
-
-    generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
-      if (callback !== undefined) {
-        callback(err ? ErrorInfo.fromValues(err) : null, buf);
+      if (!params.key) {
+        throw new Error('Crypto.getDefaultParams: a key is required');
       }
-    });
-  }
 
-  /**
-   * Internal; get a ChannelCipher instance based on the given cipherParams
-   * @param params either a CipherParams instance or some subset of its
-   * fields that includes a key
-   */
-  getCipher(params: IGetCipherParams<IV>) {
-    var cipherParams = isInstCipherParams(params) ? (params as CipherParams) : this.getDefaultParams(params);
+      if (typeof params.key === 'string') {
+        key = bufferUtils.base64Decode(normaliseBase64(params.key));
+      } else {
+        key = Buffer.from(params.key);
+      }
 
-    var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
-    return {
-      cipherParams: cipherParams,
-      cipher: new CBCCipher(cipherParams, iv),
-    };
-  }
+      var algorithm = params.algorithm || DEFAULT_ALGORITHM;
+      var keyLength = key.length * 8;
+      var mode = params.mode || DEFAULT_MODE;
+      var cipherParams = new CipherParams(algorithm, keyLength, mode, key);
 
+      if (params.keyLength && params.keyLength !== cipherParams.keyLength) {
+        throw new Error(
+          'Crypto.getDefaultParams: a keyLength of ' +
+            params.keyLength +
+            ' was specified, but the key actually has length ' +
+            cipherParams.keyLength
+        );
+      }
+
+      validateCipherParams(cipherParams);
+      return cipherParams;
+    }
+
+    /**
+     * Generate a random encryption key from the supplied keylength (or the
+     * default keyLength if none supplied) as a Buffer
+     * @param keyLength (optional) the required keyLength in bits
+     * @param callback (optional) (err, key)
+     */
+    generateRandomKey(keyLength?: number, callback?: API.Types.StandardCallback<API.Types.CipherKey>) {
+      if (arguments.length == 1 && typeof keyLength == 'function') {
+        callback = keyLength;
+        keyLength = undefined;
+      }
+
+      generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
+        if (callback !== undefined) {
+          callback(err ? ErrorInfo.fromValues(err) : null, buf);
+        }
+      });
+    }
+
+    /**
+     * Internal; get a ChannelCipher instance based on the given cipherParams
+     * @param params either a CipherParams instance or some subset of its
+     * fields that includes a key
+     */
+    getCipher(params: IGetCipherParams<IV>) {
+      var cipherParams = isInstCipherParams(params) ? (params as CipherParams) : this.getDefaultParams(params);
+
+      var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
+      return {
+        cipherParams: cipherParams,
+        cipher: new CBCCipher(cipherParams, iv),
+      };
+    }
   }
 
   class CBCCipher implements ICipher<InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext> {
@@ -231,49 +224,49 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
     encryptCipher: NodeCipher;
     blockLength: number;
 
-  constructor(params: CipherParams, iv: Buffer) {
-    this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
-    this.key = params.key;
-    this.iv = iv;
-    this.encryptCipher = crypto.createCipheriv(this.algorithm, this.key, this.iv);
-    this.blockLength = this.iv.length;
-  }
-
-  encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data: OutputPlaintext | null) => void) {
-    Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-    var plaintextBuffer = bufferUtils.toBuffer(plaintext);
-    var plaintextLength = plaintextBuffer.length,
-      paddedLength = getPaddedLength(plaintextLength),
-      iv = this.getIv();
-    var cipherOut = this.encryptCipher.update(
-      Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
-    );
-    var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
-    return callback(null, ciphertext);
-  }
-
-  decrypt(ciphertext: InputCiphertext) {
-    var blockLength = this.blockLength,
-      decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
-      plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
-      final = decryptCipher.final();
-    if (final && final.length) plaintext = Buffer.concat([plaintext, toBuffer(final)]);
-    return plaintext;
-  }
-
-  getIv() {
-    if (this.iv) {
-      var iv = this.iv;
-      this.iv = null;
-      return iv;
+    constructor(params: CipherParams, iv: Buffer) {
+      this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
+      this.key = params.key;
+      this.iv = iv;
+      this.encryptCipher = crypto.createCipheriv(this.algorithm, this.key, this.iv);
+      this.blockLength = this.iv.length;
     }
 
-    var randomBlock = generateRandom(DEFAULT_BLOCKLENGTH);
-    /* Since the iv for a new block is the ciphertext of the last, this
-     * sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
-     * returning it */
-    return toBuffer(this.encryptCipher.update(randomBlock));
-  }
+    encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data: OutputPlaintext | null) => void) {
+      Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+      var plaintextBuffer = bufferUtils.toBuffer(plaintext);
+      var plaintextLength = plaintextBuffer.length,
+        paddedLength = getPaddedLength(plaintextLength),
+        iv = this.getIv();
+      var cipherOut = this.encryptCipher.update(
+        Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
+      );
+      var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
+      return callback(null, ciphertext);
+    }
+
+    decrypt(ciphertext: InputCiphertext) {
+      var blockLength = this.blockLength,
+        decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
+        plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
+        final = decryptCipher.final();
+      if (final && final.length) plaintext = Buffer.concat([plaintext, toBuffer(final)]);
+      return plaintext;
+    }
+
+    getIv() {
+      if (this.iv) {
+        var iv = this.iv;
+        this.iv = null;
+        return iv;
+      }
+
+      var randomBlock = generateRandom(DEFAULT_BLOCKLENGTH);
+      /* Since the iv for a new block is the ciphertext of the last, this
+       * sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
+       * returning it */
+      return toBuffer(this.encryptCipher.update(randomBlock));
+    }
   }
 
   return new Crypto();
