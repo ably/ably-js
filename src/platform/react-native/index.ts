@@ -17,7 +17,7 @@ import WebStorage from '../web/lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
 
-const Config = configFactory();
+const Config = configFactory(BufferUtils);
 
 const Crypto = CryptoFactory(Config, BufferUtils);
 

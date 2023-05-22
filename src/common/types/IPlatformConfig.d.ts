@@ -33,9 +33,9 @@ export interface IPlatformConfig {
   atob?: typeof atob | null;
   TextEncoder?: typeof TextEncoder;
   TextDecoder?: typeof TextDecoder;
-  getRandomWordArray?: (
+  getRandomArrayBuffer?: (
     byteLength: number,
-    callback: (err: Error | null, result: CryptoJS.lib.WordArray | null) => void
+    callback: (err: Error | null, result: ArrayBuffer | null) => void
   ) => void;
   isWebworker?: boolean;
 }
