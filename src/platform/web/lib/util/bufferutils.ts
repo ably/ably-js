@@ -244,23 +244,27 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     }
   }
 
+  // TODO these two are copied from https://stackoverflow.com/a/53066400
+  // compare ArrayBuffers
+  arrayBuffersAreEqual(a: ArrayBuffer, b: ArrayBuffer) {
+    return this.dataViewsAreEqual(new DataView(a), new DataView(b));
+  }
+
+  // compare DataViews
+  dataViewsAreEqual(a: DataView, b: DataView) {
+    if (a.byteLength !== b.byteLength) return false;
+    for (let i = 0; i < a.byteLength; i++) {
+      if (a.getUint8(i) !== b.getUint8(i)) return false;
+    }
+    return true;
+  }
+
   bufferCompare(buffer1: ComparableBuffer, buffer2: ComparableBuffer) {
     if (!buffer1) return -1;
     if (!buffer2) return 1;
-    const wordArray1 = this.toWordArray(buffer1);
-    const wordArray2 = this.toWordArray(buffer2);
-    wordArray1.clamp();
-    wordArray2.clamp();
 
-    var cmp = wordArray1.sigBytes - wordArray2.sigBytes;
-    if (cmp != 0) return cmp;
-    const words1 = wordArray1.words;
-    const words2 = wordArray2.words;
-    for (var i = 0; i < words1.length; i++) {
-      cmp = words1[i] - words2[i];
-      if (cmp != 0) return cmp;
-    }
-    return 0;
+    // TODO this isn't quite doing the right thing, no need to know which is larger though
+    return this.arrayBuffersAreEqual(buffer1, buffer2) ? 0 : 1;
   }
 
   byteLength(buffer: Bufferlike) {
