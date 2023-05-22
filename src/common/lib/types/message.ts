@@ -345,7 +345,6 @@ class Message {
   }
 
   static fromEncodedArray(encodedArray: Array<unknown>, options: CipherOptions): Message[] {
-    normalizeCipherOptions(options);
     return encodedArray.map(function (encoded) {
       return Message.fromEncoded(encoded, options);
     });
