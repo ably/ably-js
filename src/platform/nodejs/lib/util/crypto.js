@@ -114,7 +114,7 @@ var CryptoFactory = function (bufferUtils) {
    */
   function Crypto() {}
 
-  Crypto.CipherParams = CipherParams;
+  Crypto.prototype.CipherParams = CipherParams;
 
   /**
    * Obtain a complete CipherParams instance from the provided params, filling
@@ -125,7 +125,7 @@ var CryptoFactory = function (bufferUtils) {
    * base64-encoded string. May optionally also contain: algorithm (defaults to
    * AES), mode (defaults to 'cbc')
    */
-  Crypto.getDefaultParams = function (params) {
+  Crypto.prototype.getDefaultParams = function (params) {
     var key;
 
     if (!params.key) {
@@ -162,7 +162,7 @@ var CryptoFactory = function (bufferUtils) {
    * @param keyLength (optional) the required keyLength in bits
    * @param callback (optional) (err, key)
    */
-  Crypto.generateRandomKey = function (keyLength, callback) {
+  Crypto.prototype.generateRandomKey = function (keyLength, callback) {
     if (arguments.length == 1 && typeof keyLength == 'function') {
       callback = keyLength;
       keyLength = undefined;
@@ -180,8 +180,8 @@ var CryptoFactory = function (bufferUtils) {
    * @param params either a CipherParams instance or some subset of its
    * fields that includes a key
    */
-  Crypto.getCipher = function (params) {
-    var cipherParams = isInstCipherParams(params) ? params : Crypto.getDefaultParams(params);
+  Crypto.prototype.getCipher = function (params) {
+    var cipherParams = isInstCipherParams(params) ? params : this.getDefaultParams(params);
 
     var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
     return { cipherParams: cipherParams, cipher: new CBCCipher(cipherParams, iv) };
@@ -232,7 +232,7 @@ var CryptoFactory = function (bufferUtils) {
     return toBuffer(this.encryptCipher.update(randomBlock));
   };
 
-  return Crypto;
+  return new Crypto();
 };
 
 export default CryptoFactory;

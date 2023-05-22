@@ -12,7 +12,7 @@ define(['ably', 'chai'], function (Ably, chai) {
     });
 
     it('Crypto', function () {
-      expect(typeof Ably.Realtime.Crypto).to.equal('function');
+      expect(typeof Ably.Realtime.Crypto).to.equal('object');
       expect(typeof Ably.Realtime.Crypto.getDefaultParams).to.equal('function');
       expect(typeof Ably.Realtime.Crypto.generateRandomKey).to.equal('function');
     });
