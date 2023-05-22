@@ -269,9 +269,7 @@ class Message {
                   deltaBase = Platform.BufferUtils.utf8Encode(deltaBase);
                 }
 
-                /* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers. (also, if we
-                 * don't have a TextDecoder, deltaBase might be a WordArray here, so need
-                 * to process it into a buffer anyway) */
+                // vcdiff expects Uint8Arrays, can't copy with ArrayBuffers.
                 deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
                 data = Platform.BufferUtils.toBuffer(data);
 

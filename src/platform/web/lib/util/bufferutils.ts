@@ -1,15 +1,12 @@
-import { parse as parseHex, stringify as stringifyHex } from 'crypto-js/build/enc-hex';
-import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/build/enc-utf8';
-import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
 import IBufferUtils from 'common/types/IBufferUtils';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
- * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
- * returns a Uint8Array (and won't work on browsers too old to support it) */
+ * The exception is toBuffer, which returns a Uint8Array (and won't work on
+ * browsers too old to support it) */
 
-export type Bufferlike = WordArray | BufferSource;
+export type Bufferlike = BufferSource;
 export type Output = Bufferlike;
 export type ToBufferOutput = Uint8Array;
 export type WordArrayLike = WordArray;
@@ -86,7 +83,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return buffer instanceof ArrayBuffer || this.isWordArray(buffer) || ArrayBuffer.isView(buffer);
+    return buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer);
   }
 
   /* In browsers, returns a Uint8Array */
@@ -103,6 +100,13 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
       return new Uint8Array(buffer.buffer);
     }
 
+    throw new Error('BufferUtils.toBuffer expected an ArrayBuffer or a view onto one');
+  }
+
+  toArrayBuffer(buffer: Bufferlike | WordArrayLike): ArrayBuffer {
+    if (buffer instanceof ArrayBuffer) {
+      return buffer;
+    }
     if (this.isWordArray(buffer)) {
       /* Backported from unreleased CryptoJS
        * https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
@@ -115,14 +119,6 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
 
       return uint8View;
     }
-
-    throw new Error('BufferUtils.toBuffer expected an arraybuffer, typed array, or CryptoJS wordarray');
-  }
-
-  toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
-    if (buffer instanceof ArrayBuffer) {
-      return buffer;
-    }
     return this.toBuffer(buffer).buffer;
   }
 
@@ -134,33 +130,46 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   base64Encode(buffer: Bufferlike) {
-    if (this.isWordArray(buffer)) {
-      return stringifyBase64(buffer);
-    }
     return this.uint8ViewToBase64(this.toBuffer(buffer));
   }
 
   base64Decode(str: string): Output {
     if (ArrayBuffer && Platform.Config.atob) {
       return this.base64ToArrayBuffer(str);
+    } else {
+      throw new Error('Expected ArrayBuffer to exist and Platform.Config.atob to be configured');
     }
-    return parseBase64(str);
   }
 
   hexEncode(buffer: Bufferlike) {
-    return stringifyHex(this.toWordArray(buffer));
+    const arrayBuffer =
+      buffer instanceof ArrayBuffer
+        ? buffer
+        : buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    return uint8Array.reduce((accum, byte) => accum + byte.toString(16).padStart(2, '0'), '');
   }
 
-  hexDecode(string: string) {
-    var wordArray = parseHex(string);
-    return ArrayBuffer ? this.toArrayBuffer(wordArray) : wordArray;
+  hexDecode(hexEncodedBytes: string) {
+    if (hexEncodedBytes.length % 2 !== 0) {
+      throw new Error("Can't create a byte array from a hex string of odd length");
+    }
+
+    const uint8Array = new Uint8Array(hexEncodedBytes.length / 2);
+
+    for (let i = 0; i < uint8Array.length; i++) {
+      uint8Array[i] = parseInt(hexEncodedBytes.slice(2 * i, 2 * (i + 1)), 16);
+    }
+
+    return uint8Array.buffer.slice(uint8Array.byteOffset, uint8Array.byteOffset + uint8Array.byteLength);
   }
 
   utf8Encode(string: string) {
     if (Platform.Config.TextEncoder) {
       return new Platform.Config.TextEncoder().encode(string).buffer;
+    } else {
+      throw new Error('Expected TextEncoder to be configured');
     }
-    return parseUtf8(string);
   }
 
   /* For utf8 decoding we apply slightly stricter input validation than to
@@ -170,13 +179,13 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
    * to utf8-decode a string to another string is almost certainly a mistake */
   utf8Decode(buffer: Bufferlike) {
     if (!this.isBuffer(buffer)) {
-      throw new Error('Expected input of utf8decode to be an arraybuffer, typed array, or CryptoJS wordarray');
+      throw new Error('Expected input of utf8decode to be an arraybuffer or typed array');
     }
-    if (TextDecoder && !this.isWordArray(buffer)) {
+    if (TextDecoder) {
       return new TextDecoder().decode(buffer);
+    } else {
+      throw new Error('Expected TextDecoder to be configured');
     }
-    buffer = this.toWordArray(buffer);
-    return stringifyUtf8(buffer);
   }
 
   bufferCompare(buffer1: Bufferlike, buffer2: Bufferlike) {
@@ -201,8 +210,6 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   byteLength(buffer: Bufferlike) {
     if (buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer)) {
       return buffer.byteLength;
-    } else if (this.isWordArray(buffer)) {
-      return buffer.sigBytes;
     }
     return -1;
   }
