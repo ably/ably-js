@@ -1,8 +1,8 @@
 import msgpack from '../web/lib/util/msgpack';
-import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import { IPlatformConfig } from '../../common/types/IPlatformConfig';
+import BufferUtils from '../web/lib/util/bufferutils';
 
-export default function (): IPlatformConfig {
+export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
   return {
     agent: 'reactnative',
     logTimestamps: true,
@@ -34,13 +34,10 @@ export default function (): IPlatformConfig {
     TextEncoder: global.TextEncoder,
     TextDecoder: global.TextDecoder,
     Promise: global.Promise,
-    getRandomWordArray: (function (RNRandomBytes) {
-      return function (
-        byteLength: number,
-        callback: (err: Error | null, result: CryptoJS.lib.WordArray | null) => void
-      ) {
+    getRandomArrayBuffer: (function (RNRandomBytes) {
+      return function (byteLength: number, callback: (err: Error | null, result: ArrayBuffer | null) => void) {
         RNRandomBytes.randomBytes(byteLength, function (err: Error | null, base64String: string | null) {
-          callback(err, base64String ? parseBase64(base64String) : null);
+          callback(err, base64String ? bufferUtils.toArrayBuffer(bufferUtils.base64Decode(base64String)) : null);
         });
       };
       // Installing @types/react-native would fix this but conflicts with @types/node
