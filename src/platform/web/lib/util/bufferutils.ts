@@ -190,16 +190,16 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
 
   areBuffersEqual(buffer1: Bufferlike, buffer2: Bufferlike) {
     if (!buffer1 || !buffer2) return false;
-    const wordArray1 = this.toWordArray(buffer1);
-    const wordArray2 = this.toWordArray(buffer2);
-    wordArray1.clamp();
-    wordArray2.clamp();
+    const arrayBuffer1 = this.toArrayBuffer(buffer1);
+    const arrayBuffer2 = this.toArrayBuffer(buffer2);
 
-    if (wordArray1.sigBytes != wordArray2.sigBytes) return false;
-    const words1 = wordArray1.words;
-    const words2 = wordArray2.words;
-    for (var i = 0; i < words1.length; i++) {
-      if (words1[i] != words2[i]) return false;
+    if (arrayBuffer1.byteLength != arrayBuffer2.byteLength) return false;
+
+    const bytes1 = new Uint8Array(arrayBuffer1);
+    const bytes2 = new Uint8Array(arrayBuffer2);
+
+    for (var i = 0; i < bytes1.length; i++) {
+      if (bytes1[i] != bytes2[i]) return false;
     }
     return true;
   }
