@@ -1,5 +1,4 @@
 import WordArray from 'crypto-js/build/lib-typedarrays';
-import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import CryptoJS from 'crypto-js/build';
 import Logger from '../../../../common/lib/util/logger';
 import ErrorInfo from 'common/lib/types/errorinfo';
@@ -26,20 +25,15 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
   var DEFAULT_BLOCKLENGTH = 16; // bytes
   var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
   var UINT32_SUP = 0x100000000;
-  var INT32_SUP = 0x80000000;
 
   /**
    * Internal: generate an array of secure random words corresponding to the given length of bytes
    * @param bytes
    * @param callback
    */
-  var generateRandom: (byteLength: number, callback: (error: Error | null, result: WordArray | null) => void) => void;
+  var generateRandom: (byteLength: number, callback: (error: Error | null, result: ArrayBuffer | null) => void) => void;
   if (config.getRandomArrayBuffer) {
-    generateRandom = (byteLength, callback) => {
-      config.getRandomArrayBuffer!(byteLength, (error, result) => {
-        callback(error, result ? bufferUtils.toWordArray(result) : null);
-      });
-    };
+    generateRandom = config.getRandomArrayBuffer;
   } else if (typeof Uint32Array !== 'undefined' && config.getRandomValues) {
     var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
     generateRandom = function (bytes, callback) {
@@ -47,7 +41,7 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
         nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
       config.getRandomValues!(nativeArray, function (err) {
         if (typeof callback !== 'undefined') {
-          callback(err, bufferUtils.toWordArray(nativeArray));
+          callback(err, bufferUtils.toArrayBuffer(nativeArray));
         }
       });
     };
@@ -59,16 +53,12 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
         'Warning: the browser you are using does not support secure cryptographically secure randomness generation; falling back to insecure Math.random()'
       );
       var words = bytes / 4,
-        array = new Array(words);
+        array = new Uint32Array(words);
       for (var i = 0; i < words; i++) {
-        /* cryptojs wordarrays use signed ints. When WordArray.create is fed a
-         * Uint32Array unsigned are converted to signed automatically, but when
-         * fed a normal array they aren't, so need to do so ourselves by
-         * subtracting INT32_SUP */
-        array[i] = Math.floor(Math.random() * UINT32_SUP) - INT32_SUP;
+        array[i] = Math.floor(Math.random() * UINT32_SUP);
       }
 
-      callback(null, WordArray.create(array));
+      callback(null, bufferUtils.toArrayBuffer(array));
     };
   }
 
@@ -149,9 +139,9 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
     algorithm: string;
     keyLength: number;
     mode: string;
-    key: WordArray;
+    key: ArrayBuffer;
 
-    constructor(algorithm: string, keyLength: number, mode: string, key: WordArray) {
+    constructor(algorithm: string, keyLength: number, mode: string, key: ArrayBuffer) {
       this.algorithm = algorithm;
       this.keyLength = keyLength;
       this.mode = mode;
@@ -190,20 +180,22 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
      * AES), mode (defaults to 'cbc')
      */
     static getDefaultParams(params: API.Types.CipherParamOptions) {
-      var key: WordArray;
+      var key: ArrayBuffer;
 
       if (!params.key) {
         throw new Error('Crypto.getDefaultParams: a key is required');
       }
 
       if (typeof params.key === 'string') {
-        key = parseBase64(normaliseBase64(params.key));
+        key = bufferUtils.toArrayBuffer(bufferUtils.base64Decode(normaliseBase64(params.key)));
+      } else if (params.key instanceof ArrayBuffer) {
+        key = params.key;
       } else {
-        key = bufferUtils.toWordArray(params.key); // Expect key to be an Array, ArrayBuffer, or WordArray at this point
+        key = bufferUtils.toArrayBuffer(params.key);
       }
 
       var algorithm = params.algorithm || DEFAULT_ALGORITHM;
-      var keyLength = key.words.length * (4 * 8);
+      var keyLength = key.byteLength * 8;
       var mode = params.mode || DEFAULT_MODE;
       var cipherParams = new CipherParams(algorithm, keyLength, mode, key);
 
@@ -309,8 +301,9 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
               callback(err, null);
               return;
             }
-            self.encryptCipher = CryptoJS.algo[self.cjsAlgorithm].createEncryptor(self.key, { iv: iv! });
-            self.iv = iv;
+            const ivWordArray = bufferUtils.toWordArray(iv!);
+            self.encryptCipher = CryptoJS.algo[self.cjsAlgorithm].createEncryptor(self.key, { iv: ivWordArray });
+            self.iv = ivWordArray;
             then();
           });
         }
@@ -352,7 +345,8 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
           callback(err, null);
           return;
         }
-        callback(null, self.encryptCipher!.process(randomBlock!));
+        const randomBlockWordArray = bufferUtils.toWordArray(randomBlock!);
+        callback(null, self.encryptCipher!.process(randomBlockWordArray));
       });
     }
   }

@@ -124,8 +124,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           return;
         }
         try {
-          /* .length for a nodejs buffer, .sigbytes for a browser CryptoJS WordArray */
-          expect(key.length || key.sigBytes).to.equal(8, 'generated key is the correct length');
+          /* .length for a nodejs buffer, .byteLength for a browser ArrayBuffer */
+          expect(key.length || key.byteLength).to.equal(8, 'generated key is the correct length');
           done();
         } catch (err) {
           done(err);
@@ -141,7 +141,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           return;
         }
         try {
-          expect(key.length || key.sigBytes).to.equal(32, 'generated key is the default length');
+          expect(key.length || key.byteLength).to.equal(32, 'generated key is the default length');
           done();
         } catch (err) {
           done(err);
