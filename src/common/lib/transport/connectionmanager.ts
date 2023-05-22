@@ -8,7 +8,7 @@ import MessageQueue from './messagequeue';
 import Logger from '../util/logger';
 import ConnectionStateChange from 'common/lib/client/connectionstatechange';
 import ConnectionErrors, { isRetriable } from './connectionerrors';
-import ErrorInfo from 'common/lib/types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types/errorinfo';
 import Auth from 'common/lib/client/auth';
 import Message from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
@@ -182,7 +182,7 @@ type ConnectionState = {
   retryDelay?: number;
   forceQueueEvents?: boolean;
   retryImmediately?: boolean;
-  error?: ErrorInfo;
+  error?: IPartialErrorInfo;
 };
 
 class ConnectionManager extends EventEmitter {
@@ -190,7 +190,7 @@ class ConnectionManager extends EventEmitter {
   options: ClientOptions;
   states: Record<string, ConnectionState>;
   state: ConnectionState;
-  errorReason: ErrorInfo | string | null;
+  errorReason: IPartialErrorInfo | string | null;
   queuedMessages: MessageQueue;
   msgSerial: number;
   connectionDetails?: Record<string, any>;
@@ -1151,7 +1151,7 @@ class ConnectionManager extends EventEmitter {
    * state management
    *********************/
 
-  getError(): ErrorInfo | string {
+  getError(): IPartialErrorInfo | string {
     return this.errorReason || this.getStateError();
   }
 
@@ -1596,7 +1596,7 @@ class ConnectionManager extends EventEmitter {
    * @param transportParams
    */
   connectBase(transportParams: TransportParams, connectCount?: number): void {
-    const giveUp = (err: ErrorInfo) => {
+    const giveUp = (err: IPartialErrorInfo) => {
       this.notifyState({ state: this.states.connecting.failState as string, error: err });
     };
     const candidateHosts = this.httpHosts.slice();
@@ -1634,7 +1634,7 @@ class ConnectionManager extends EventEmitter {
        * there is a problem with the ably host, or there is a general connectivity
        * problem */
       if (!this.realtime.http.checkConnectivity) {
-        giveUp(new ErrorInfo('Internal error: Http.checkConnectivity not set', null, 500));
+        giveUp(new PartialErrorInfo('Internal error: Http.checkConnectivity not set', null, 500));
         return;
       }
       this.realtime.http.checkConnectivity((err?: ErrorInfo | null, connectivity?: boolean) => {

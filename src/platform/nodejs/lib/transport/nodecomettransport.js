@@ -2,7 +2,7 @@
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import Logger from '../../../../common/lib/util/logger';
 import * as Utils from '../../../../common/lib/util/utils';
-import ErrorInfo from '../../../../common/lib/types/errorinfo';
+import ErrorInfo, { PartialErrorInfo } from '../../../../common/lib/types/errorinfo';
 import EventEmitter from '../../../../common/lib/util/eventemitter';
 import HttpStatusCodes from '../../../../common/constants/HttpStatusCodes';
 import XHRStates from '../../../../common/constants/XHRStates';
@@ -144,7 +144,7 @@ var NodeCometTransport = function (connectionManager) {
     req.on(
       'error',
       (this.onReqError = function (err) {
-        err = new ErrorInfo('Request error: ' + err.message, null, 400);
+        err = new PartialErrorInfo('Request error: ' + err.message, null, 400);
         clearTimeout(timer);
         self.timer = null;
         self.complete(err);
@@ -166,7 +166,7 @@ var NodeCometTransport = function (connectionManager) {
       res.on(
         'error',
         (self.onResError = function (err) {
-          err = new ErrorInfo('Response error: ' + err.message, null, 400);
+          err = new PartialErrorInfo('Response error: ' + err.message, null, 400);
           self.complete(err);
         })
       );
@@ -199,7 +199,7 @@ var NodeCometTransport = function (connectionManager) {
       } catch (e) {
         var msg = 'Malformed response body from server: ' + e.message;
         Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readStream()', msg);
-        self.complete(new ErrorInfo(msg, null, 400));
+        self.complete(new PartialErrorInfo(msg, null, 400));
         return;
       }
       self.emit('data', chunk);
@@ -256,7 +256,7 @@ var NodeCometTransport = function (connectionManager) {
         } catch (e) {
           var msg = 'Malformed response body from server: ' + e.message;
           Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readFully()', msg);
-          self.complete(new ErrorInfo(msg, null, 400));
+          self.complete(new PartialErrorInfo(msg, null, 400));
           return;
         }
 
@@ -271,7 +271,7 @@ var NodeCometTransport = function (connectionManager) {
 
         var err = body.error && ErrorInfo.fromValues(body.error);
         if (!err) {
-          err = new ErrorInfo(
+          err = new PartialErrorInfo(
             'Error response received from server: ' + statusCode + ', body was: ' + util.inspect(body),
             null,
             statusCode

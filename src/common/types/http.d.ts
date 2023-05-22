@@ -5,7 +5,7 @@ import { Agents } from 'got';
 
 export type PathParameter = string | ((host: string) => string);
 export type RequestCallback = (
-  error?: ErrnoException | ErrorInfo | null,
+  error?: ErrnoException | IPartialErrorInfo | null,
   body?: unknown,
   headers?: IncomingHttpHeaders,
   packed?: boolean,

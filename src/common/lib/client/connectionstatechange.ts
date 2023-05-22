@@ -1,12 +1,12 @@
-import ErrorInfo from '../types/errorinfo';
+import { IPartialErrorInfo } from '../types/errorinfo';
 
 class ConnectionStateChange {
   previous?: string;
   current?: string;
   retryIn?: number;
-  reason?: ErrorInfo;
+  reason?: IPartialErrorInfo;
 
-  constructor(previous?: string, current?: string, retryIn?: number | null, reason?: ErrorInfo) {
+  constructor(previous?: string, current?: string, retryIn?: number | null, reason?: IPartialErrorInfo) {
     this.previous = previous;
     this.current = current;
     if (retryIn) this.retryIn = retryIn;

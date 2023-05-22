@@ -1,7 +1,7 @@
 import Platform from 'common/platform';
 import * as Utils from 'common/lib/util/utils';
 import Defaults from 'common/lib/util/defaults';
-import ErrorInfo from 'common/lib/types/errorinfo';
+import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
 import { ErrnoException, IHttp, RequestCallback, RequestParams } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import Rest from 'common/lib/client/rest';
@@ -198,7 +198,7 @@ const Http: typeof IHttp = class {
       };
     } else {
       this.Request = (method, rest, uri, headers, params, body, callback) => {
-        callback(new ErrorInfo('no supported HTTP transports available', null, 400), null);
+        callback(new PartialErrorInfo('no supported HTTP transports available', null, 400), null);
       };
     }
   }
@@ -225,7 +225,7 @@ const Http: typeof IHttp = class {
       if (currentFallback.validUntil > Utils.now()) {
         /* Use stored fallback */
         if (!this.Request) {
-          callback?.(new ErrorInfo('Request invoked before assigned to', null, 500));
+          callback?.(new PartialErrorInfo('Request invoked before assigned to', null, 500));
           return;
         }
         this.Request(
@@ -301,7 +301,7 @@ const Http: typeof IHttp = class {
     callback: RequestCallback
   ): void {
     if (!this.Request) {
-      callback(new ErrorInfo('Request invoked before assigned to', null, 500));
+      callback(new PartialErrorInfo('Request invoked before assigned to', null, 500));
       return;
     }
     this.Request(method, rest, uri, headers, params, body, callback);
