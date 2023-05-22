@@ -268,7 +268,7 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
         throw new Error('AES is the only supported encryption algorithm');
       }
       this.cjsAlgorithm = cjsAlgorithm;
-      this.key = bufferUtils.toWordArray(params.key);
+      this.key = bufferUtils.isWordArray(params.key) ? params.key : bufferUtils.toWordArray(params.key);
       this.iv = iv ? bufferUtils.toWordArray(iv).clone() : null;
       this.blockLengthWords = blockLengthWords;
       this.encryptCipher = null;
@@ -317,9 +317,9 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
 
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
-      ciphertext = bufferUtils.toWordArray(ciphertext);
+      const ciphertextWordArray = bufferUtils.toWordArray(ciphertext);
       var blockLengthWords = this.blockLengthWords,
-        ciphertextWords = ciphertext.words,
+        ciphertextWords = ciphertextWordArray.words,
         iv = WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
         ciphertextBody = WordArray.create(ciphertextWords.slice(blockLengthWords));
 

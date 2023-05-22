@@ -1,16 +1,13 @@
-import { parse as parseHex, stringify as stringifyHex } from 'crypto-js/build/enc-hex';
-import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/build/enc-utf8';
-import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
 import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils from 'common/types/IBufferUtils';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
- * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
- * returns a Uint8Array (and won't work on browsers too old to support it) */
+ * The exception is toBuffer, which returns a Uint8Array (and won't work on
+ * browsers too old to support it) */
 
-export type Bufferlike = WordArray | ArrayBuffer | TypedArray;
+export type Bufferlike = ArrayBuffer | TypedArray;
 export type Output = Bufferlike;
 export type ToBufferOutput = Uint8Array;
 export type ComparableBuffer = ArrayBuffer;
@@ -96,7 +93,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
   }
 
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return this.isArrayBuffer(buffer) || this.isWordArray(buffer) || this.isTypedArray(buffer);
+    return this.isArrayBuffer(buffer) || this.isTypedArray(buffer);
   }
 
   /* In browsers, returns a Uint8Array */
@@ -109,29 +106,34 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
       return new Uint8Array(buffer);
     }
 
-    if (this.isTypedArray(buffer)) {
-      return new Uint8Array(buffer.buffer);
-    }
+    // TODO is a TypedArray an ArrayBuffer? what's going on here?
 
-    if (this.isWordArray(buffer)) {
-      /* Backported from unreleased CryptoJS
-       * https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
-      var arrayBuffer = new ArrayBuffer(buffer.sigBytes);
-      var uint8View = new Uint8Array(arrayBuffer);
+    //if (this.isTypedArray(buffer)) {
+    //return new Uint8Array(buffer.buffer);
+    //}
 
-      for (var i = 0; i < buffer.sigBytes; i++) {
-        uint8View[i] = (buffer.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-      }
-
-      return uint8View;
-    }
-
-    throw new Error('BufferUtils.toBuffer expected an arraybuffer, typed array, or CryptoJS wordarray');
+    throw new Error('BufferUtils.toBuffer expected an arraybuffer or typed array');
   }
 
-  toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
+  wordArrayToBuffer(wordArray: WordArrayLike) {
+    /* Backported from unreleased CryptoJS
+     * https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
+    var arrayBuffer = new ArrayBuffer(wordArray.sigBytes);
+    var uint8View = new Uint8Array(arrayBuffer);
+
+    for (var i = 0; i < wordArray.sigBytes; i++) {
+      uint8View[i] = (wordArray.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    }
+
+    return uint8View;
+  }
+
+  toArrayBuffer(buffer: Bufferlike | WordArrayLike): ArrayBuffer {
     if (this.isArrayBuffer(buffer)) {
       return buffer;
+    }
+    if (this.isWordArray(buffer)) {
+      return this.wordArrayToBuffer(buffer);
     }
     return this.toBuffer(buffer).buffer;
   }
@@ -144,33 +146,86 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
   }
 
   base64Encode(buffer: Bufferlike) {
-    if (this.isWordArray(buffer)) {
-      return stringifyBase64(buffer);
-    }
     return this.uint8ViewToBase64(this.toBuffer(buffer));
   }
 
   base64Decode(str: string): Output {
     if (ArrayBuffer && Platform.Config.atob) {
       return this.base64ToArrayBuffer(str);
+    } else {
+      throw new Error('Expected ArrayBuffer to exist and Platform.Config.atob to be configured');
     }
-    return parseBase64(str);
+  }
+
+  // TODO inspect, https://github.com/LinusU/array-buffer-to-hex/blob/fbff172a0d666d53ed95e65d19a6ee9b4009f1b9/index.js
+  arrayBufferToHex(arrayBuffer: ArrayBuffer) {
+    if (typeof arrayBuffer !== 'object' || arrayBuffer === null || typeof arrayBuffer.byteLength !== 'number') {
+      throw new TypeError('Expected input to be an ArrayBuffer');
+    }
+
+    var view = new Uint8Array(arrayBuffer);
+    var result = '';
+    var value;
+
+    for (var i = 0; i < view.length; i++) {
+      value = view[i].toString(16);
+      result += value.length === 1 ? '0' + value : value;
+    }
+
+    return result;
   }
 
   hexEncode(buffer: Bufferlike) {
-    return stringifyHex(this.toWordArray(buffer));
+    // TODO is TypedArray a type of ArrayBuffer? what's going on here? or are the types confused?
+    return this.arrayBufferToHex(buffer);
+  }
+
+  // TODO inspect, https://gist.github.com/don/871170d88cf6b9007f7663fdbc23fe09
+  /**
+   * Convert a hex string to an ArrayBuffer.
+   *
+   * @param hexString - hex representation of bytes
+   * @return The bytes in an ArrayBuffer.
+   */
+  hexStringToArrayBuffer(hexString: string) {
+    // remove the leading 0x
+    hexString = hexString.replace(/^0x/, '');
+
+    // ensure even number of characters
+    if (hexString.length % 2 != 0) {
+      console.log('WARNING: expecting an even number of characters in the hexString');
+    }
+
+    // check for some non-hex characters
+    var bad = hexString.match(/[G-Z\s]/i);
+    if (bad) {
+      console.log('WARNING: found non-hex characters', bad);
+    }
+
+    // split the string into pairs of octets
+    var pairs = hexString.match(/[\dA-F]{2}/gi)!;
+
+    // convert the octets to integers
+    var integers = pairs.map(function (s) {
+      return parseInt(s, 16);
+    });
+
+    var array = new Uint8Array(integers);
+    console.log(array);
+
+    return array.buffer;
   }
 
   hexDecode(string: string) {
-    var wordArray = parseHex(string);
-    return ArrayBuffer ? this.toArrayBuffer(wordArray) : wordArray;
+    return this.hexStringToArrayBuffer(string);
   }
 
   utf8Encode(string: string) {
     if (Platform.Config.TextEncoder) {
       return new Platform.Config.TextEncoder().encode(string).buffer;
+    } else {
+      throw new Error('Expected TextEncoder to be configured');
     }
-    return parseUtf8(string);
   }
 
   /* For utf8 decoding we apply slightly stricter input validation than to
@@ -180,13 +235,13 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
    * to utf8-decode a string to another string is almost certainly a mistake */
   utf8Decode(buffer: Bufferlike) {
     if (!this.isBuffer(buffer)) {
-      throw new Error('Expected input of utf8decode to be an arraybuffer, typed array, or CryptoJS wordarray');
+      throw new Error('Expected input of utf8decode to be an arraybuffer or typed array');
     }
-    if (TextDecoder && !this.isWordArray(buffer)) {
+    if (TextDecoder) {
       return new TextDecoder().decode(buffer);
+    } else {
+      throw new Error('Expected TextDecoder to be configured');
     }
-    buffer = this.toWordArray(buffer);
-    return stringifyUtf8(buffer);
   }
 
   bufferCompare(buffer1: ComparableBuffer, buffer2: ComparableBuffer) {
@@ -211,8 +266,6 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
   byteLength(buffer: Bufferlike) {
     if (this.isArrayBuffer(buffer) || this.isTypedArray(buffer)) {
       return buffer.byteLength;
-    } else if (this.isWordArray(buffer)) {
-      return buffer.sigBytes;
     }
     return -1;
   }

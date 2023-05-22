@@ -47,7 +47,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     return Buffer.isBuffer(buffer) || this.isArrayBuffer(buffer) || ArrayBuffer.isView(buffer);
   }
 
-  toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
+  toArrayBuffer(buffer: Bufferlike | WordArrayLike): ArrayBuffer {
     const nodeBuffer = this.toBuffer(buffer);
     return nodeBuffer.buffer.slice(nodeBuffer.byteOffset, nodeBuffer.byteOffset + nodeBuffer.byteLength);
   }
