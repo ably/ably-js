@@ -4,7 +4,7 @@ import ErrorInfo from './errorinfo';
 import { ChannelOptions } from '../../types/channel';
 import PresenceMessage from './presencemessage';
 import * as Utils from '../util/utils';
-import { BrowserBufferlike } from '../../types/IBufferUtils';
+import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/bufferutils';
 
 export type CipherOptions = {
   channelCipher: {

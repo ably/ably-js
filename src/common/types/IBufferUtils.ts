@@ -1,27 +1,19 @@
 import { TypedArray } from './IPlatformConfig';
-import WordArray from 'crypto-js/build/lib-typedarrays';
 
-export type NodeBufferlike = Buffer | ArrayBuffer | TypedArray;
-// As browsers don't support Buffer, ArrayBuffer is used if supported, and WordArray if not
-export type BrowserBufferlike = ArrayBuffer | WordArray;
-
-// A Buffer or a type which can be converted to a buffer
-export type Bufferlike = NodeBufferlike | BrowserBufferlike;
-
-export default interface IBufferUtils {
+export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer> {
   base64CharSet: string;
   hexCharSet: string;
   isBuffer: (buffer: unknown) => buffer is Bufferlike;
   // On browser this returns a Uint8Array, on node a Buffer
-  toBuffer: (buffer: Bufferlike) => Buffer | Uint8Array;
+  toBuffer: (buffer: Bufferlike) => ToBufferOutput;
   toArrayBuffer: (buffer: Bufferlike) => ArrayBuffer;
   base64Encode: (buffer: Bufferlike) => string;
-  base64Decode: (string: string) => Buffer | BrowserBufferlike;
+  base64Decode: (string: string) => Output;
   hexEncode: (buffer: Bufferlike) => string;
-  hexDecode: (string: string) => Buffer | BrowserBufferlike;
-  utf8Encode: (string: string) => Buffer | BrowserBufferlike;
+  hexDecode: (string: string) => Output;
+  utf8Encode: (string: string) => Output;
   utf8Decode: (buffer: Bufferlike) => string;
-  bufferCompare: (buffer1: Buffer, buffer2: Buffer) => number;
+  bufferCompare: (buffer1: ComparableBuffer, buffer2: ComparableBuffer) => number;
   byteLength: (buffer: Bufferlike) => number;
   typedArrayToBuffer: (typedArray: TypedArray) => Bufferlike;
 }

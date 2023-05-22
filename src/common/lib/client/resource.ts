@@ -3,7 +3,7 @@ import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Auth from './auth';
 import HttpMethods from '../../constants/HttpMethods';
-import ErrorInfo from '../types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import Rest from './rest';
 import { ErrnoException } from '../../types/http';
 
@@ -38,17 +38,17 @@ function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | nul
       try {
         body = Utils.decodeBody(body, format);
       } catch (e) {
-        if (Utils.isErrorInfo(e)) {
+        if (Utils.isErrorInfoOrPartialErrorInfo(e)) {
           callback(e);
         } else {
-          callback(new ErrorInfo(Utils.inspectError(e), null));
+          callback(new PartialErrorInfo(Utils.inspectError(e), null));
         }
         return;
       }
     }
 
     if (!body) {
-      callback(new ErrorInfo('unenvelope(): Response body is missing', null));
+      callback(new PartialErrorInfo('unenvelope(): Response body is missing', null));
       return;
     }
 
@@ -123,7 +123,7 @@ function logResponseHandler<T>(
 }
 
 export type ResourceCallback<T = unknown> = (
-  err: ErrorInfo | null,
+  err: IPartialErrorInfo | null,
   body?: T,
   headers?: Record<string, string>,
   unpacked?: boolean,

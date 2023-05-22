@@ -6,7 +6,7 @@ import Logger from '../util/logger';
 import RealtimePresence from './realtimepresence';
 import Message, { CipherOptions } from '../types/message';
 import ChannelStateChange from './channelstatechange';
-import ErrorInfo from '../types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import PresenceMessage from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
@@ -142,7 +142,7 @@ class RealtimeChannel extends Channel {
     }
     const _callback =
       callback ||
-      function (err?: ErrorInfo | null) {
+      function (err?: IPartialErrorInfo | null) {
         if (err) {
           Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setOptions()', 'Set options failed: ' + err.toString());
         }
@@ -551,7 +551,7 @@ class RealtimeChannel extends Channel {
       case 'initialized':
       case 'detaching':
       case 'detached':
-        throw new ErrorInfo('Unable to sync to channel; not attached', 40000);
+        throw new PartialErrorInfo('Unable to sync to channel; not attached', 40000);
       default:
     }
     const connectionManager = this.connectionManager;

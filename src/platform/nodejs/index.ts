@@ -16,7 +16,7 @@ import { getDefaults } from '../../common/lib/util/defaults';
 import PlatformDefaults from './lib/util/defaults';
 
 Platform.Crypto = Crypto;
-Platform.BufferUtils = BufferUtils;
+Platform.BufferUtils = BufferUtils as typeof Platform.BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = Transports;

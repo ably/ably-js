@@ -1,7 +1,7 @@
 import Logger from '../util/logger';
 import * as Utils from '../util/utils';
 import Multicaster from '../util/multicaster';
-import ErrorInfo from '../types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import { parse as parseUtf8 } from 'crypto-js/build/enc-utf8';
@@ -25,9 +25,9 @@ function isRealtime(client: Rest | Realtime): client is Realtime {
   return !!(client as Realtime).connection;
 }
 
-/* A client auth callback may give errors in any number of formats; normalise to an errorinfo */
+/* A client auth callback may give errors in any number of formats; normalise to an ErrorInfo or PartialErrorInfo */
 function normaliseAuthcallbackError(err: any) {
-  if (!Utils.isErrorInfo(err)) {
+  if (!Utils.isErrorInfoOrPartialErrorInfo(err)) {
     return new ErrorInfo(Utils.inspectError(err), err.code || 40170, err.statusCode || 401);
   }
   /* network errors will not have an inherent error code */
@@ -1040,7 +1040,7 @@ class Auth {
     );
   }
 
-  static isTokenErr(error: ErrorInfo) {
+  static isTokenErr(error: IPartialErrorInfo) {
     return error.code && error.code >= 40140 && error.code < 40150;
   }
 }

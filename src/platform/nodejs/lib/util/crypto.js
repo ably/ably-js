@@ -2,6 +2,7 @@
 import Logger from '../../../../common/lib/util/logger';
 import Platform from '../../../../common/platform';
 import crypto from 'crypto';
+import ErrorInfo from '../../../../common/lib/types/errorinfo';
 
 var Crypto = (function () {
   var DEFAULT_ALGORITHM = 'aes';
@@ -15,7 +16,7 @@ var Crypto = (function () {
    * @param callback (optional)
    */
   function generateRandom(bytes, callback) {
-    return crypto.randomBytes(bytes, callback);
+    return callback === undefined ? crypto.randomBytes(bytes) : crypto.randomBytes(bytes, callback);
   }
 
   /**
@@ -167,7 +168,12 @@ var Crypto = (function () {
       callback = keyLength;
       keyLength = undefined;
     }
-    generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, callback);
+
+    generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
+      if (callback !== undefined) {
+        callback(err ? ErrorInfo.fromValues(err) : null, buf);
+      }
+    });
   };
 
   /**

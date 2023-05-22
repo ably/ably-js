@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Resource from './resource';
-import ErrorInfo from '../types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
 import Rest from './rest';
 
@@ -26,7 +26,7 @@ function parseRelLinks(linkHeader: string | Array<string>) {
   return relParams;
 }
 
-function returnErrOnly(err: ErrorInfo, body: unknown, useHPR?: boolean) {
+function returnErrOnly(err: IPartialErrorInfo, body: unknown, useHPR?: boolean) {
   /* If using httpPaginatedResponse, errors from Ably are returned as part of
    * the HPR, only do callback(err) for network errors etc. which don't
    * return a body and/or have no ably-originated error code (non-numeric
@@ -133,7 +133,7 @@ class PaginatedResource {
   }
 
   handlePage<T>(
-    err: ErrorInfo | null,
+    err: IPartialErrorInfo | null,
     body: unknown,
     headers: Record<string, string> | undefined,
     unpacked: boolean | undefined,
@@ -252,7 +252,7 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
     headers: Record<string, string>,
     statusCode: number,
     relParams: any,
-    err: ErrorInfo | null
+    err: IPartialErrorInfo | null
   ) {
     super(resource, items, relParams);
     this.statusCode = statusCode;

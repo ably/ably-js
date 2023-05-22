@@ -1,6 +1,6 @@
 import Platform from 'common/platform';
 import Defaults, { getAgentString } from './defaults';
-import ErrorInfo from 'common/lib/types/errorinfo';
+import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
@@ -414,12 +414,20 @@ export const now =
     return new Date().getTime();
   };
 
-export function isErrorInfo(err: unknown): err is ErrorInfo {
-  return typeof err == 'object' && err !== null && err.constructor.name == 'ErrorInfo';
+export function isErrorInfoOrPartialErrorInfo(err: unknown): err is ErrorInfo | PartialErrorInfo {
+  return (
+    typeof err == 'object' &&
+    err !== null &&
+    (err.constructor.name == 'ErrorInfo' || err.constructor.name == 'PartialErrorInfo')
+  );
 }
 
 export function inspectError(err: unknown): string {
-  if (err instanceof Error || (err as ErrorInfo)?.constructor?.name === 'ErrorInfo')
+  if (
+    err instanceof Error ||
+    (err as ErrorInfo)?.constructor?.name === 'ErrorInfo' ||
+    (err as PartialErrorInfo)?.constructor?.name === 'PartialErrorInfo'
+  )
     return Platform.Config.inspect(err);
   return (err as Error).toString();
 }
