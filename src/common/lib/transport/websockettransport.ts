@@ -33,12 +33,8 @@ class WebSocketTransport extends Transport {
   }
 
   createWebSocket(uri: string, connectParams: Record<string, string>) {
-    let paramCount = 0;
-    if (connectParams) {
-      for (const key in connectParams) uri += (paramCount++ ? '&' : '?') + key + '=' + connectParams[key];
-    }
-    this.uri = uri;
-    return new Platform.Config.WebSocket(uri);
+    this.uri = uri + Utils.toQueryString(connectParams);
+    return new Platform.Config.WebSocket(this.uri);
   }
 
   toString() {
