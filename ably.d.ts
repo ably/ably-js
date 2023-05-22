@@ -2904,11 +2904,11 @@ declare namespace Types {
    */
   type CipherKeyParam = ArrayBuffer | Uint8Array | string; // if string must be base64-encoded
   /**
-   * Typed differently depending on platform. (`WordArray` in browser, `Buffer` in node)
+   * Typed differently depending on platform. (`ArrayBuffer` in browser, `Buffer` in node)
    *
    * @internal
    */
-  type CipherKey = unknown; // WordArray on browsers, Buffer on node, using unknown as
+  type CipherKey = unknown; // ArrayBuffer on browsers, Buffer on node, using unknown as
   // user should not be interacting with it - output of getDefaultParams should be used opaquely
 
   /**

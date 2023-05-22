@@ -1,5 +1,4 @@
 import WordArray from 'crypto-js/build/lib-typedarrays';
-import { parse as parseBase64 } from 'crypto-js/build/enc-base64';
 import CryptoJS from 'crypto-js/build';
 import Logger from '../../../../common/lib/util/logger';
 import ErrorInfo from 'common/lib/types/errorinfo';
@@ -149,9 +148,9 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
     algorithm: string;
     keyLength: number;
     mode: string;
-    key: WordArray;
+    key: Bufferlike;
 
-    constructor(algorithm: string, keyLength: number, mode: string, key: WordArray) {
+    constructor(algorithm: string, keyLength: number, mode: string, key: Bufferlike) {
       this.algorithm = algorithm;
       this.keyLength = keyLength;
       this.mode = mode;
@@ -190,20 +189,20 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
      * AES), mode (defaults to 'cbc')
      */
     getDefaultParams(params: API.Types.CipherParamOptions) {
-      var key: WordArray;
+      var key: Bufferlike;
 
       if (!params.key) {
         throw new Error('Crypto.getDefaultParams: a key is required');
       }
 
       if (typeof params.key === 'string') {
-        key = parseBase64(normaliseBase64(params.key));
+        key = bufferUtils.base64Decode(normaliseBase64(params.key));
       } else {
-        key = bufferUtils.toWordArray(params.key); // Expect key to be an Array, ArrayBuffer, or WordArray at this point
+        key = params.key;
       }
 
       var algorithm = params.algorithm || DEFAULT_ALGORITHM;
-      var keyLength = key.words.length * (4 * 8);
+      var keyLength = bufferUtils.byteLength(key) * 8;
       var mode = params.mode || DEFAULT_MODE;
       var cipherParams = new CipherParams(algorithm, keyLength, mode, key);
 
