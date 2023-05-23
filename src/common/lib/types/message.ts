@@ -243,7 +243,7 @@ class Message {
                 if (xformAlgorithm != cipher.algorithm) {
                   throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
                 }
-                data = cipher.decrypt(data);
+                data = await cipher.decrypt(data);
                 continue;
               } else {
                 throw new Error('Unable to decrypt message; not an encrypted channel');

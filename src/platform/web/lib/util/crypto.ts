@@ -312,7 +312,7 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
       }
     }
 
-    decrypt(ciphertext: InputCiphertext) {
+    async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
       ciphertext = bufferUtils.toWordArray(ciphertext);
       var blockLengthWords = this.blockLengthWords,

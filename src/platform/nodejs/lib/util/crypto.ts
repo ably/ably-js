@@ -245,7 +245,7 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
       return callback(null, ciphertext);
     }
 
-    decrypt(ciphertext: InputCiphertext) {
+    async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
       var blockLength = this.blockLength,
         decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
         plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
