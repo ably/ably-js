@@ -975,7 +975,7 @@ declare namespace Types {
    */
   interface ChannelOptions {
     /**
-     * Requests encryption for this channel when not null, and specifies encryption-related parameters (such as algorithm, chaining mode, key length and key). See [an example](https://ably.com/docs/realtime/encryption#getting-started).
+     * Requests encryption for this channel when not null, and specifies encryption-related parameters (such as algorithm, chaining mode, key length and key). See [an example](https://ably.com/docs/realtime/encryption#getting-started). When running in a browser, encryption is only available when the current environment is a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts).
      */
     cipher?: CipherParamOptions | CipherParams;
     /**
