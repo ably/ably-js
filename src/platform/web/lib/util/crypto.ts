@@ -14,9 +14,9 @@ type MessagePackBinaryType = ArrayBuffer;
 
 type IV = CryptoDataTypes.IV<BufferUtilsOutput>;
 type InputPlaintext = CryptoDataTypes.InputPlaintext<Bufferlike, BufferUtilsOutput>;
-type OutputCiphertext = WordArray;
+type OutputCiphertext = ArrayBuffer;
 type InputCiphertext = CryptoDataTypes.InputCiphertext<MessagePackBinaryType, BufferUtilsOutput>;
-type OutputPlaintext = WordArray;
+type OutputPlaintext = ArrayBuffer;
 
 var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof BufferUtils) {
   var DEFAULT_ALGORITHM = 'aes';
@@ -287,7 +287,7 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
             plaintextWordArray.concat(pkcs5Padding[paddedLength - plaintextLength])
           );
           var ciphertext = iv!.concat(cipherOut);
-          callback(null, ciphertext);
+          callback(null, bufferUtils.toArrayBuffer(ciphertext));
         });
       };
 
@@ -325,7 +325,7 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
       var epilogue = decryptCipher.finalize();
       decryptCipher.reset();
       if (epilogue && epilogue.sigBytes) plaintext.concat(epilogue);
-      return plaintext;
+      return bufferUtils.toArrayBuffer(plaintext);
     }
 
     getIv(callback: (error: Error | null, iv: WordArray | null) => void) {
