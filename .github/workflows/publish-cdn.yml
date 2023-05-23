@@ -27,3 +27,25 @@ jobs:
           node-version: 14.x
       - run: npm ci
       - run: node scripts/cdn_deploy.js --skipCheckout --tag=${{ github.event.inputs.version }}
+  publish_sdk:
+    runs-on: ubuntu-latest
+    # These permissions are necessary to run the configure-aws-credentials action
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.version }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}:role/prod-ably-sdk-cdn
+          role-session-name: "${{ github.run_id }}-${{ github.run_number }}"
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+      - run: npm ci
+      - run: node scripts/cdn_deploy.js --bucket cdn.ably.com --skipCheckout --tag=${{ github.event.inputs.version }}
