@@ -13,6 +13,7 @@ import { IPlatformConfig } from 'common/types/IPlatformConfig';
 type MessagePackBinaryType = ArrayBuffer;
 
 type IV = CryptoDataTypes.IV<BufferUtilsOutput>;
+// TODO should Bufferlike be https://www.w3.org/TR/WebIDL-1/#common-BufferSource ?
 type InputPlaintext = CryptoDataTypes.InputPlaintext<Bufferlike, BufferUtilsOutput>;
 type OutputCiphertext = ArrayBuffer;
 type InputCiphertext = CryptoDataTypes.InputCiphertext<MessagePackBinaryType, BufferUtilsOutput>;
@@ -315,20 +316,36 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
       }
     }
 
+    // according to https://www.w3.org/TR/WebCryptoAPI/#subtlecrypto-interface we can pass data of type BufferSource, which is defined in https://www.w3.org/TR/WebIDL-1/#common-BufferSource ("used to represent objects that are either themselves an ArrayBuffer or which provide a view on to an ArrayBuffer")
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
+
+      // TODO remove all of the usage of WordArray
+
       const ciphertextWordArray = bufferUtils.toWordArray(ciphertext);
       var blockLengthWords = this.blockLengthWords,
-        ciphertextWords = ciphertextWordArray.words,
-        iv = WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
-        ciphertextBody = WordArray.create(ciphertextWords.slice(blockLengthWords));
+        ciphertextWords = ciphertextWordArray.words, // "the array of 32-bit words";
+        // this gives the first blockLengthWords elements of cipherTextWords
+        iv = bufferUtils.toArrayBuffer(WordArray.create(ciphertextWords.slice(0, blockLengthWords))),
+        // this gives the remaining elements of cipherTextWords
+        ciphertextBody = bufferUtils.toArrayBuffer(WordArray.create(ciphertextWords.slice(blockLengthWords)));
 
+      const keyArrayBuffer = bufferUtils.toArrayBuffer(this.key);
+
+      const cryptoKey = await crypto.subtle.importKey('raw', keyArrayBuffer, 'AES-CBC', false, ['encrypt', 'decrypt']);
+
+      // TODO link to the mode etc passed in
+      return crypto.subtle.decrypt({ name: 'AES-CBC', iv }, cryptoKey, ciphertextBody);
+
+      /*
+         TODO what was all this stuff?
       var decryptCipher = CryptoJS.algo[this.cjsAlgorithm].createDecryptor(this.key, { iv: iv });
       var plaintext = decryptCipher.process(ciphertextBody);
       var epilogue = decryptCipher.finalize();
       decryptCipher.reset();
       if (epilogue && epilogue.sigBytes) plaintext.concat(epilogue);
       return bufferUtils.toArrayBuffer(plaintext);
+     */
     }
 
     getIv(callback: (error: Error | null, iv: WordArray | null) => void) {
