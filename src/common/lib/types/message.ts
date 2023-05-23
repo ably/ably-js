@@ -197,10 +197,10 @@ class Message {
 
   static serialize = Utils.encodeBody;
 
-  static decode(
+  static async decode(
     message: Message | PresenceMessage,
     inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
-  ): void {
+  ): Promise<void> {
     const context = normaliseContext(inputContext);
 
     let lastPayload = message.data;
@@ -301,11 +301,11 @@ class Message {
     context.baseEncodedPreviousPayload = lastPayload;
   }
 
-  static fromResponseBody(
+  static async fromResponseBody(
     body: Array<Message>,
     options: ChannelOptions | EncodingDecodingContext,
     format?: Utils.Format
-  ): Message[] {
+  ): Promise<Message[]> {
     if (format) {
       body = Utils.decodeBody(body, format);
     }
@@ -313,7 +313,7 @@ class Message {
     for (let i = 0; i < body.length; i++) {
       const msg = (body[i] = Message.fromValues(body[i]));
       try {
-        Message.decode(msg, options);
+        await Message.decode(msg, options);
       } catch (e) {
         Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', (e as Error).toString());
       }
@@ -332,23 +332,25 @@ class Message {
     return result;
   }
 
-  static fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Message {
+  static async fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Promise<Message> {
     const msg = Message.fromValues(encoded);
     const options = normalizeCipherOptions(inputOptions ?? null);
     /* if decoding fails at any point, catch and return the message decoded to
      * the fullest extent possible */
     try {
-      Message.decode(msg, options);
+      await Message.decode(msg, options);
     } catch (e) {
       Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
     }
     return msg;
   }
 
-  static fromEncodedArray(encodedArray: Array<unknown>, options?: API.Types.ChannelOptions): Message[] {
-    return encodedArray.map(function (encoded) {
+  static fromEncodedArray(encodedArray: Array<unknown>, options?: API.Types.ChannelOptions): Promise<Message[]> {
+    const promises = encodedArray.map(function (encoded) {
       return Message.fromEncoded(encoded, options);
     });
+
+    return Promise.all(promises);
   }
 
   /* This should be called on encode()d (and encrypt()d) Messages (as it
