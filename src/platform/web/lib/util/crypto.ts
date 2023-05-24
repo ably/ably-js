@@ -241,7 +241,7 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
 
       return {
         cipherParams: cipherParams,
-        cipher: new CBCCipher(cipherParams, DEFAULT_BLOCKLENGTH_WORDS, params.iv ?? null),
+        cipher: new CBCCipher(cipherParams, params.iv ?? null),
       };
     }
   }
@@ -257,16 +257,14 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
     cjsAlgorithm: 'AES' | 'DES' | 'TripleDES' | 'RC4' | 'RC4Drop' | 'Rabbit' | 'RabbitLegacy';
     key: WordArray;
     iv: WordArray | null;
-    blockLengthWords: number;
     encryptCipher: CryptoJSCipher | null;
 
-    constructor(params: CipherParams, blockLengthWords: number, iv: IV | null) {
+    constructor(params: CipherParams, iv: IV | null) {
       this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
       // We trust that we can handle the algorithm specified by the user — this is the same as the pre-TypeScript behaviour.
       this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '') as typeof this.cjsAlgorithm;
       this.key = bufferUtils.isWordArray(params.key) ? params.key : bufferUtils.toWordArray(params.key);
       this.iv = iv ? bufferUtils.toWordArray(iv).clone() : null;
-      this.blockLengthWords = blockLengthWords;
       this.encryptCipher = null;
     }
 
@@ -315,10 +313,9 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
       const ciphertextWordArray = bufferUtils.toWordArray(ciphertext);
-      var blockLengthWords = this.blockLengthWords,
-        ciphertextWords = ciphertextWordArray.words,
-        iv = WordArray.create(ciphertextWords.slice(0, blockLengthWords)),
-        ciphertextBody = WordArray.create(ciphertextWords.slice(blockLengthWords));
+      var ciphertextWords = ciphertextWordArray.words,
+        iv = WordArray.create(ciphertextWords.slice(0, DEFAULT_BLOCKLENGTH_WORDS)),
+        ciphertextBody = WordArray.create(ciphertextWords.slice(DEFAULT_BLOCKLENGTH_WORDS));
 
       var decryptCipher = CryptoJS.algo[this.cjsAlgorithm].createDecryptor(this.key, { iv: iv });
       var plaintext = decryptCipher.process(ciphertextBody);
