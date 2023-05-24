@@ -50,7 +50,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     }
   }
 
-  function testEachFixture(done, filename, channelName, testsPerFixture, fixtureTest) {
+  function testEachFixture(done, filename, channelName, testsPerFixture, testPlaintextVariants, fixtureTest) {
     if (!Crypto) {
       done(new Error('Encryption not supported'));
       return;
@@ -71,11 +71,30 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var item = testData.items[i];
 
           /* read messages from test data and decode (ie remove any base64 encoding). */
-          var testMessage = Message.fromEncoded(item.encoded);
+          var createTestMessage = function () {
+            return Message.fromEncoded(item.encoded);
+          };
+
           var encryptedMessage = Message.fromEncoded(item.encrypted);
-          /* reset channel cipher, to ensure it uses the given iv */
-          channel.setOptions({ cipher: { key: key, iv: iv } });
-          fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
+
+          var runTest = function (testMessage) {
+            /* reset channel cipher, to ensure it uses the given iv */
+            channel.setOptions({ cipher: { key: key, iv: iv } });
+            fixtureTest(channel.channelOptions, testMessage, encryptedMessage, item.msgpack);
+          };
+
+          // Run the test with the message’s data as-is.
+          runTest(createTestMessage());
+
+          if (testPlaintextVariants) {
+            var testMessage = createTestMessage();
+            if (BufferUtils.isBuffer(testMessage.data) && !(testMessage.data instanceof ArrayBuffer)) {
+              // Now, check that we can also handle an ArrayBuffer plaintext.
+              var testMessageWithArrayBufferData = createTestMessage();
+              testMessageWithArrayBufferData.data = BufferUtils.toArrayBuffer(testMessageWithArrayBufferData.data);
+              runTest(testMessageWithArrayBufferData);
+            }
+          }
         }
       } catch (err) {
         closeAndFinish(done, realtime, err);
@@ -204,6 +223,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'crypto-data-128.json',
         'encrypt_message_128',
         2,
+        true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
           Message.encode(testMessage, channelOpts, function () {
@@ -220,6 +240,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'crypto-data-256.json',
         'encrypt_message_256',
         2,
+        true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
           Message.encode(testMessage, channelOpts, function () {
@@ -236,6 +257,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'crypto-data-128.json',
         'decrypt_message_128',
         2,
+        false,
         function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
           Message.decode(encryptedMessage, channelOpts);
@@ -251,6 +273,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'crypto-data-256.json',
         'decrypt_message_256',
         2,
+        false,
         function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
           Message.decode(encryptedMessage, channelOpts);
@@ -292,6 +315,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           'crypto-data-128.json',
           'msgpack_128',
           2,
+          false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
             Message.encode(testMessage, channelOpts, function () {
               var msgpackFromEncoded = msgpack.encode(testMessage);
@@ -325,6 +349,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           'crypto-data-256.json',
           'msgpack_256',
           2,
+          false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
             Message.encode(testMessage, channelOpts, function () {
               var msgpackFromEncoded = msgpack.encode(testMessage);

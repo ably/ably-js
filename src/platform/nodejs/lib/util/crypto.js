@@ -213,10 +213,13 @@ var Crypto = (function () {
 
   CBCCipher.prototype.encrypt = function (plaintext, callback) {
     Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-    var plaintextLength = plaintext.length,
+    var plaintextBuffer = Platform.BufferUtils.toBuffer(plaintext);
+    var plaintextLength = plaintextBuffer.length,
       paddedLength = getPaddedLength(plaintextLength),
       iv = this.getIv();
-    var cipherOut = this.encryptCipher.update(Buffer.concat([plaintext, pkcs5Padding[paddedLength - plaintextLength]]));
+    var cipherOut = this.encryptCipher.update(
+      Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
+    );
     var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
     return callback(null, ciphertext);
   };
