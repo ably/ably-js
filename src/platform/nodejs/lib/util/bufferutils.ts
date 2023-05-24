@@ -3,9 +3,8 @@ import IBufferUtils from 'common/types/IBufferUtils';
 export type Bufferlike = Buffer | ArrayBuffer | ArrayBufferView;
 export type Output = Buffer;
 export type ToBufferOutput = Buffer;
-export type WordArrayLike = never;
 
-class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, WordArrayLike> {
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   base64CharSet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet: string = '0123456789abcdef';
 
@@ -40,7 +39,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
     return Buffer.isBuffer(buffer) || buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer);
   }
 
-  toArrayBuffer(buffer: Bufferlike | WordArrayLike): ArrayBuffer {
+  toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
     const nodeBuffer = this.toBuffer(buffer);
     return nodeBuffer.buffer.slice(nodeBuffer.byteOffset, nodeBuffer.byteOffset + nodeBuffer.byteLength);
   }
@@ -68,16 +67,6 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
 
   utf8Encode(string: string): Output {
     return Buffer.from(string, 'utf8');
-  }
-
-  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-  toWordArray(buffer: ArrayBufferView | WordArrayLike | number[] | ArrayBuffer): never {
-    throw new Error('Not implemented');
-  }
-
-  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-  isWordArray(val: unknown): val is never {
-    return false;
   }
 }
 

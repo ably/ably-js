@@ -1,4 +1,3 @@
-import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
 import IBufferUtils from 'common/types/IBufferUtils';
 
@@ -9,15 +8,10 @@ import IBufferUtils from 'common/types/IBufferUtils';
 export type Bufferlike = BufferSource;
 export type Output = Bufferlike;
 export type ToBufferOutput = Uint8Array;
-export type WordArrayLike = WordArray;
 
-class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, WordArrayLike> {
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet = '0123456789abcdef';
-
-  isWordArray(ob: unknown): ob is WordArray {
-    return ob !== null && ob !== undefined && (ob as WordArray).sigBytes !== undefined;
-  }
 
   // // https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
   uint8ViewToBase64(bytes: Uint8Array) {
@@ -103,30 +97,11 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
     throw new Error('BufferUtils.toBuffer expected an ArrayBuffer or a view onto one');
   }
 
-  toArrayBuffer(buffer: Bufferlike | WordArrayLike): ArrayBuffer {
+  toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
     if (buffer instanceof ArrayBuffer) {
       return buffer;
     }
-    if (this.isWordArray(buffer)) {
-      /* Backported from unreleased CryptoJS
-       * https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
-      var arrayBuffer = new ArrayBuffer(buffer.sigBytes);
-      var uint8View = new Uint8Array(arrayBuffer);
-
-      for (var i = 0; i < buffer.sigBytes; i++) {
-        uint8View[i] = (buffer.words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
-      }
-
-      return uint8View;
-    }
     return this.toBuffer(buffer).buffer;
-  }
-
-  toWordArray(buffer: Bufferlike | number[]) {
-    if (ArrayBuffer.isView(buffer)) {
-      buffer = buffer.buffer;
-    }
-    return this.isWordArray(buffer) ? buffer : WordArray.create(buffer as number[]);
   }
 
   base64Encode(buffer: Bufferlike) {
