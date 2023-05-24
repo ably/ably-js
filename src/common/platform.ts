@@ -11,7 +11,6 @@ import * as NodeBufferUtils from '../platform/nodejs/lib/util/bufferutils';
 type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
 type BufferUtilsOutput = WebBufferUtils.Output | NodeBufferUtils.Output;
 type ToBufferOutput = WebBufferUtils.ToBufferOutput | NodeBufferUtils.ToBufferOutput;
-type WordArrayLike = WebBufferUtils.WordArrayLike | NodeBufferUtils.WordArrayLike;
 
 export default class Platform {
   static Config: IPlatformConfig;
@@ -22,7 +21,7 @@ export default class Platform {
      BufferUtils object that accepts a broader range of data types than it
      can in reality handle.
    */
-  static BufferUtils: IBufferUtils<Bufferlike, BufferUtilsOutput, ToBufferOutput, WordArrayLike>;
+  static BufferUtils: IBufferUtils<Bufferlike, BufferUtilsOutput, ToBufferOutput>;
   /*
      This should be a class whose static methods implement the ICryptoStatic
      interface, but (for the same reasons as described in the BufferUtils

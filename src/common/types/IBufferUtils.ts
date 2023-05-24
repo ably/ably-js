@@ -1,11 +1,10 @@
-export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, WordArrayLike> {
+export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   base64CharSet: string;
   hexCharSet: string;
   isBuffer: (buffer: unknown) => buffer is Bufferlike;
-  isWordArray: (val: unknown) => val is WordArrayLike;
   // On browser this returns a Uint8Array, on node a Buffer
   toBuffer: (buffer: Bufferlike) => ToBufferOutput;
-  toArrayBuffer: (buffer: Bufferlike | WordArrayLike) => ArrayBuffer;
+  toArrayBuffer: (buffer: Bufferlike) => ArrayBuffer;
   base64Encode: (buffer: Bufferlike) => string;
   base64Decode: (string: string) => Output;
   hexEncode: (buffer: Bufferlike) => string;
@@ -15,6 +14,5 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, WordAr
   areBuffersEqual: (buffer1: Bufferlike, buffer2: Bufferlike) => boolean;
   byteLength: (buffer: Bufferlike) => number;
   arrayBufferViewToBuffer: (arrayBufferView: ArrayBufferView) => Bufferlike;
-  toWordArray: (buffer: Bufferlike | number[]) => WordArrayLike;
   hmacSha256(message: Bufferlike, key: Bufferlike): Output;
 }
