@@ -1732,7 +1732,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* Inject an additional member locally */
-            channel.onMessage({
+            channel.processMessage({
               action: 14,
               id: 'messageid:0',
               connectionId: 'connid',
@@ -1812,7 +1812,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* Inject a member locally */
-            channel.onMessage({
+            channel.processMessage({
               action: 14,
               id: 'messageid:0',
               connectionId: 'connid',
@@ -1846,7 +1846,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               cb();
             });
             /* Inject an ATTACHED with RESUMED and HAS_PRESENCE both false */
-            channel.onMessage(
+            channel.processMessage(
               createPM({
                 action: 11,
                 channelSerial: channel.properties.attachSerial,
