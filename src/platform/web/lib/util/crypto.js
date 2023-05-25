@@ -222,9 +222,7 @@ var CryptoFactory = function (config, bufferUtils) {
     this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
     this.cjsAlgorithm = params.algorithm.toUpperCase().replace(/-\d+$/, '');
     this.key = bufferUtils.toWordArray(params.key);
-    if (iv) {
-      this.iv = bufferUtils.toWordArray(iv).clone();
-    }
+    this.iv = iv ? bufferUtils.toWordArray(iv).clone() : null;
     this.blockLengthWords = blockLengthWords;
   }
 
