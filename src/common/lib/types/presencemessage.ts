@@ -2,6 +2,7 @@ import Logger from '../util/logger';
 import Platform from 'common/platform';
 import Message, { CipherOptions } from './message';
 import * as Utils from '../util/utils';
+import * as API from '../../../../ably';
 
 function toActionValue(actionString: string) {
   return PresenceMessage.Actions.indexOf(actionString);
@@ -136,19 +137,19 @@ class PresenceMessage {
     return result;
   }
 
-  static fromEncoded(encoded: Record<string, unknown>, options: CipherOptions): PresenceMessage {
-    const msg = PresenceMessage.fromValues(encoded, true);
+  static fromEncoded(encoded: unknown, options?: API.Types.ChannelOptions): PresenceMessage {
+    const msg = PresenceMessage.fromValues(encoded as PresenceMessage | Record<string, unknown>, true);
     /* if decoding fails at any point, catch and return the message decoded to
      * the fullest extent possible */
     try {
-      PresenceMessage.decode(msg, options);
+      PresenceMessage.decode(msg, options ?? {});
     } catch (e) {
       Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
     }
     return msg;
   }
 
-  static fromEncodedArray(encodedArray: Record<string, unknown>[], options: CipherOptions): PresenceMessage[] {
+  static fromEncodedArray(encodedArray: unknown[], options?: API.Types.ChannelOptions): PresenceMessage[] {
     return encodedArray.map(function (encoded) {
       return PresenceMessage.fromEncoded(encoded, options);
     });
