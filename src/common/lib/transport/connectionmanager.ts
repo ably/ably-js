@@ -1965,7 +1965,36 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
+  pendingChannelMessages: { message: ProtocolMessage; transport: Transport }[] = [];
+  isProcessingAPendingChannelMessage = false;
+
   onChannelMessage(message: ProtocolMessage, transport: Transport): void {
+    this.pendingChannelMessages.push({ message, transport });
+
+    if (!this.isProcessingAPendingChannelMessage) {
+      this.processNextPendingChannelMessage();
+    }
+  }
+
+  processNextPendingChannelMessage() {
+    this.isProcessingAPendingChannelMessage = true;
+
+    if (this.pendingChannelMessages.length > 0) {
+      const pendingChannelMessage = this.pendingChannelMessages.shift()!;
+      this.processChannelMessage(pendingChannelMessage.message, pendingChannelMessage.transport)
+        .then(() => {
+          this.isProcessingAPendingChannelMessage = false;
+          this.processNextPendingChannelMessage();
+        })
+        .catch((err) => {
+          this.isProcessingAPendingChannelMessage = false;
+          console.log('processNextPendingChannelMessage caught', err);
+          // TODO something?
+        });
+    }
+  }
+
+  async processChannelMessage(message: ProtocolMessage, transport: Transport) {
     const onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
       onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
 
