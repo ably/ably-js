@@ -47,7 +47,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channelName = 'syncexistingset',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -58,7 +58,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       async.series(
         [
           function (cb) {
-            channel.onMessage({
+            channel.processMessage({
               action: 16,
               channel: channelName,
               presence: [
@@ -95,7 +95,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* Trigger another sync. Two has gone without so much as a `leave` message! */
-            channel.onMessage({
+            channel.processMessage({
               action: 16,
               channel: channelName,
               presence: [
@@ -149,7 +149,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channelName = 'sync_member_arrives_in_middle',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -158,7 +158,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
 
       /* First sync */
-      channel.onMessage({
+      channel.processMessage({
         action: 16,
         channel: channelName,
         presence: [
@@ -173,7 +173,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* A second sync, this time in multiple parts, with a presence message in the middle */
-      channel.onMessage({
+      channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:cursor',
@@ -188,7 +188,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         presence: [
@@ -202,7 +202,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:',
@@ -242,7 +242,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channelName = 'sync_member_arrives_normally_after_came_in_sync',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -250,7 +250,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         })
       );
 
-      channel.onMessage({
+      channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:cursor',
@@ -265,7 +265,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         presence: [
@@ -279,7 +279,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:',
@@ -319,7 +319,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channelName = 'sync_member_arrives_normally_before_comes_in_sync',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -327,7 +327,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         })
       );
 
-      channel.onMessage({
+      channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:cursor',
@@ -342,7 +342,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         presence: [
@@ -356,7 +356,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:',
@@ -397,7 +397,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channelName = 'sync_ordering',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -405,7 +405,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
 
       /* One enters */
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         id: 'one_connid:1',
@@ -420,7 +420,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* An earlier leave from one (should be ignored) */
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'one_connid',
@@ -435,7 +435,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* One adds some data in a newer msgSerial */
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'one_connid',
@@ -451,7 +451,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Two enters */
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'two_connid',
@@ -466,7 +466,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Two updates twice in the same message */
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'two_connid',
@@ -487,7 +487,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Three enters */
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'three_connid',
@@ -503,7 +503,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       /* Synthesized leave for three (with earlier msgSerial, incompatible id,
        * and later timestamp) */
-      channel.onMessage({
+      channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'synthesized',
@@ -581,13 +581,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             );
           },
           function (cb) {
-            var originalOnMessage = syncerChannel.onMessage;
-            syncerChannel.onMessage = function (message) {
-              originalOnMessage.apply(this, arguments);
+            var originalProcessMessage = syncerChannel.processMessage;
+            syncerChannel.processMessage = function (message) {
+              originalProcessMessage.apply(this, arguments);
               /* Inject an additional presence message after the first sync */
               if (message.action === 16) {
-                syncerChannel.onMessage = originalOnMessage;
-                syncerChannel.onMessage({
+                syncerChannel.processMessage = originalProcessMessage;
+                syncerChannel.processMessage({
                   action: 14,
                   id: 'messageid:0',
                   connectionId: 'connid',

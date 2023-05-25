@@ -582,7 +582,7 @@ class RealtimeChannel extends Channel {
     this.sendMessage(msg, callback);
   }
 
-  onMessage(message: ProtocolMessage): void {
+  processMessage(message: ProtocolMessage): void {
     if (
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||
@@ -661,7 +661,7 @@ class RealtimeChannel extends Channel {
             if (!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
             if (!presenceMsg.id) presenceMsg.id = id + ':' + i;
           } catch (e) {
-            Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', (e as Error).toString());
+            Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());
           }
         }
         this.presence.setPresence(presence, isSync, syncChannelSerial as any);
@@ -672,7 +672,7 @@ class RealtimeChannel extends Channel {
         if (this.state !== 'attached') {
           Logger.logAction(
             Logger.LOG_MAJOR,
-            'RealtimeChannel.onMessage()',
+            'RealtimeChannel.processMessage()',
             'Message "' +
               message.id +
               '" skipped as this channel "' +
@@ -702,7 +702,7 @@ class RealtimeChannel extends Channel {
             '" on this channel "' +
             this.name +
             '".';
-          Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', msg);
+          Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', msg);
           this._startDecodeFailureRecovery(new ErrorInfo(msg, 40018, 400));
           break;
         }
@@ -713,7 +713,7 @@ class RealtimeChannel extends Channel {
             Message.decode(msg, this._decodingContext);
           } catch (e) {
             /* decrypt failed .. the most likely cause is that we have the wrong key */
-            Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.onMessage()', (e as Error).toString());
+            Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());
             switch ((e as ErrorInfo).code) {
               case 40018:
                 /* decode failure */
@@ -753,7 +753,7 @@ class RealtimeChannel extends Channel {
       default:
         Logger.logAction(
           Logger.LOG_ERROR,
-          'RealtimeChannel.onMessage()',
+          'RealtimeChannel.processMessage()',
           'Fatal protocol error: unrecognised action (' + message.action + ')'
         );
         this.connectionManager.abort(ConnectionErrors.unknownChannelErr());
@@ -762,7 +762,11 @@ class RealtimeChannel extends Channel {
 
   _startDecodeFailureRecovery(reason: ErrorInfo): void {
     if (!this._lastPayload.decodeFailureRecoveryInProgress) {
-      Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.onMessage()', 'Starting decode failure recovery process.');
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'RealtimeChannel.processMessage()',
+        'Starting decode failure recovery process.'
+      );
       this._lastPayload.decodeFailureRecoveryInProgress = true;
       this._attach(true, reason, () => {
         this._lastPayload.decodeFailureRecoveryInProgress = false;
