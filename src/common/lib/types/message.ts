@@ -197,6 +197,9 @@ class Message {
 
   static serialize = Utils.encodeBody;
 
+  // OK, this is what we're going to investigate making async.
+  //
+  // What side effects does it have?
   static decode(
     message: Message | PresenceMessage,
     inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
@@ -238,6 +241,7 @@ class Message {
                 context.channelOptions.channelCipher
               ) {
                 const xformAlgorithm = match[3],
+                  // Is it possible that `context.channelOptions` be modified between suspensions?
                   cipher = context.channelOptions.channelCipher;
                 /* don't attempt to decrypt unless the cipher params are compatible */
                 if (xformAlgorithm != cipher.algorithm) {
@@ -293,14 +297,17 @@ class Message {
           400
         );
       } finally {
+        // OK, so this method modifies `message`.
         message.encoding =
           (lastProcessedEncodingIndex as number) <= 0 ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
         message.data = data;
       }
     }
+    // This method both reads and writes context.baseEncodedPreviousPayload. So, clearly, the processing of one message needs to be completed before the next.
     context.baseEncodedPreviousPayload = lastPayload;
   }
 
+  // TODO who is calling this?
   static fromResponseBody(
     body: Array<Message>,
     options: ChannelOptions | EncodingDecodingContext,
