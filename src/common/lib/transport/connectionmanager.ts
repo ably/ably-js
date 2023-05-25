@@ -215,6 +215,12 @@ class ConnectionManager extends EventEmitter {
   suspendTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
   disconnectedRetryCount: number = 0;
+  pendingChannelMessagesState: {
+    // Whether a message is currently being processed
+    isProcessing: boolean;
+    // The messages remaining to be processed (excluding any message currently being processed)
+    queue: { message: ProtocolMessage; transport: Transport }[];
+  } = { isProcessing: false, queue: [] };
 
   constructor(realtime: Realtime, options: ClientOptions) {
     super();
@@ -1966,6 +1972,34 @@ class ConnectionManager extends EventEmitter {
   }
 
   onChannelMessage(message: ProtocolMessage, transport: Transport): void {
+    this.pendingChannelMessagesState.queue.push({ message, transport });
+
+    if (!this.pendingChannelMessagesState.isProcessing) {
+      this.processNextPendingChannelMessage();
+    }
+  }
+
+  private processNextPendingChannelMessage() {
+    if (this.pendingChannelMessagesState.queue.length > 0) {
+      this.pendingChannelMessagesState.isProcessing = true;
+
+      const pendingChannelMessage = this.pendingChannelMessagesState.queue.shift()!;
+      this.processChannelMessage(pendingChannelMessage.message, pendingChannelMessage.transport)
+        .catch((err) => {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'ConnectionManager.processNextPendingChannelMessage() received error ',
+            err
+          );
+        })
+        .finally(() => {
+          this.pendingChannelMessagesState.isProcessing = false;
+          this.processNextPendingChannelMessage();
+        });
+    }
+  }
+
+  private async processChannelMessage(message: ProtocolMessage, transport: Transport) {
     const onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
       onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
 
