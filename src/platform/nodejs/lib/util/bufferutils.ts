@@ -36,7 +36,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     return this.toBuffer(buffer).toString('hex');
   }
 
-  isArrayBuffer(ob: unknown) {
+  isArrayBuffer(ob: unknown): ob is ArrayBuffer {
     return ob !== null && ob !== undefined && (ob as ArrayBuffer).constructor === ArrayBuffer;
   }
 
