@@ -2763,6 +2763,8 @@ declare namespace Types {
      */
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
+     * @experimental This is a preview feature and may change in a future non-major release.
+     *
      * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified channel {@link DeriveOptions}
      * and {@link ChannelOptions}, or returns the existing channel object.
      *
