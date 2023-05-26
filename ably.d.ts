@@ -2815,7 +2815,7 @@ declare namespace Types {
     /**
      * The connection ID of the publisher of this message.
      */
-    connectionId: string;
+    connectionId?: string;
     /**
      * The message payload, if provided.
      */
