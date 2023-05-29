@@ -161,7 +161,7 @@ class DeviceRegistrations {
 
     Utils.mixin(headers, rest.options.headers);
 
-    new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function (
+    new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, async function (
       body: any,
       headers: Record<string, string>,
       unpacked?: boolean
@@ -286,7 +286,7 @@ class ChannelSubscriptions {
 
     Utils.mixin(headers, rest.options.headers);
 
-    new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function (
+    new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, async function (
       body: any,
       headers: Record<string, string>,
       unpacked?: boolean
@@ -334,7 +334,7 @@ class ChannelSubscriptions {
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    new PaginatedResource(rest, '/push/channels', headers, envelope, function (
+    new PaginatedResource(rest, '/push/channels', headers, envelope, async function (
       body: unknown,
       headers: Record<string, string>,
       unpacked?: boolean
