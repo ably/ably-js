@@ -102,11 +102,11 @@ class PresenceMessage {
   static encode = Message.encode;
   static decode = Message.decode;
 
-  static fromResponseBody(
+  static async fromResponseBody(
     body: Record<string, unknown>[],
     options: CipherOptions,
     format?: Utils.Format
-  ): PresenceMessage[] {
+  ): Promise<PresenceMessage[]> {
     const messages: PresenceMessage[] = [];
     if (format) {
       body = Utils.decodeBody(body, format);
