@@ -274,9 +274,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'decrypt_message_128',
         2,
         false,
-        function (channelOpts, testMessage, encryptedMessage) {
+        async function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-          Message.decode(encryptedMessage, channelOpts);
+          await Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, testMessage, encryptedMessage);
         }
@@ -290,9 +290,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'decrypt_message_256',
         2,
         false,
-        function (channelOpts, testMessage, encryptedMessage) {
+        async function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-          Message.decode(encryptedMessage, channelOpts);
+          await Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, testMessage, encryptedMessage);
         }

@@ -200,10 +200,10 @@ class Message {
   // OK, this is what we're going to investigate making async.
   //
   // What side effects does it have?
-  static decode(
+  static async decode(
     message: Message | PresenceMessage,
     inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
-  ): void {
+  ): Promise<void> {
     const context = normaliseContext(inputContext);
 
     let lastPayload = message.data;
@@ -320,7 +320,7 @@ class Message {
     for (let i = 0; i < body.length; i++) {
       const msg = (body[i] = Message.fromValues(body[i]));
       try {
-        Message.decode(msg, options);
+        await Message.decode(msg, options);
       } catch (e) {
         Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', (e as Error).toString());
       }
@@ -345,7 +345,7 @@ class Message {
     /* if decoding fails at any point, catch and return the message decoded to
      * the fullest extent possible */
     try {
-      Message.decode(msg, options);
+      await Message.decode(msg, options);
     } catch (e) {
       Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
     }

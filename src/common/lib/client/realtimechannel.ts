@@ -656,7 +656,7 @@ class RealtimeChannel extends Channel {
         for (let i = 0; i < presence.length; i++) {
           try {
             presenceMsg = presence[i];
-            PresenceMessage.decode(presenceMsg, options);
+            await PresenceMessage.decode(presenceMsg, options);
             if (!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
             if (!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
             if (!presenceMsg.id) presenceMsg.id = id + ':' + i;
@@ -710,7 +710,7 @@ class RealtimeChannel extends Channel {
         for (let i = 0; i < messages.length; i++) {
           const msg = messages[i];
           try {
-            Message.decode(msg, this._decodingContext);
+            await Message.decode(msg, this._decodingContext);
           } catch (e) {
             /* decrypt failed .. the most likely cause is that we have the wrong key */
             Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());

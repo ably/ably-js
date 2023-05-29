@@ -115,7 +115,7 @@ class PresenceMessage {
     for (let i = 0; i < body.length; i++) {
       const msg = (messages[i] = PresenceMessage.fromValues(body[i], true));
       try {
-        PresenceMessage.decode(msg, options);
+        await PresenceMessage.decode(msg, options);
       } catch (e) {
         Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', (e as Error).toString());
       }
@@ -142,7 +142,7 @@ class PresenceMessage {
     /* if decoding fails at any point, catch and return the message decoded to
      * the fullest extent possible */
     try {
-      PresenceMessage.decode(msg, options ?? {});
+      await PresenceMessage.decode(msg, options ?? {});
     } catch (e) {
       Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
     }
