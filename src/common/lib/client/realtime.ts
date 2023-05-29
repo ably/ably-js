@@ -103,7 +103,7 @@ class Channels extends EventEmitter {
       );
       return;
     }
-    channel.processMessage(msg);
+    await channel.processMessage(msg);
   }
 
   /* called when a transport becomes connected; reattempt attach/detach

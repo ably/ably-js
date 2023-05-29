@@ -582,7 +582,8 @@ class RealtimeChannel extends Channel {
     this.sendMessage(msg, callback);
   }
 
-  processMessage(message: ProtocolMessage): void {
+  // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
+  async processMessage(message: ProtocolMessage): Promise<void> {
     if (
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||
