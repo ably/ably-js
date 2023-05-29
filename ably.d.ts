@@ -2758,17 +2758,17 @@ declare namespace Types {
      *
      * @param JsonObject - A `Message`-like deserialized object.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns A `Message` object.
+     * @returns A promise which will be fulfilled with a `Message` object.
      */
-    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
+    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<Message>;
     /**
      * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonArray - An array of `Message`-like deserialized objects.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns An array of {@link Message} objects.
+     * @returns A promise which will be fulfilled with an array of {@link Message} objects.
      */
-    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Message[];
+    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<Message[]>;
     /**
      * The client ID of the publisher of this message.
      */
@@ -2812,17 +2812,17 @@ declare namespace Types {
      *
      * @param JsonObject - A `Message`-like deserialized object.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns A `Message` object.
+     * @returns A promise which will be fulfilled with a `Message` object.
      */
-    fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Message;
+    fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<Message>;
     /**
      * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
      *
      * @param JsonArray - An array of `Message`-like deserialized objects.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns An array of {@link Message} objects.
+     * @returns A promise which will be fulfilled with an array of {@link Message} objects.
      */
-    fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Message[];
+    fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<Message[]>;
   }
 
   /**
