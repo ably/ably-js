@@ -83,7 +83,7 @@ class Channels extends EventEmitter {
     }
   }
 
-  processChannelMessage(msg: ProtocolMessage) {
+  async processChannelMessage(msg: ProtocolMessage) {
     const channelName = msg.channel;
     if (channelName === undefined) {
       Logger.logAction(
