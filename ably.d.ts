@@ -2841,14 +2841,14 @@ declare namespace Types {
      * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
      * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      */
-    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
+    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<PresenceMessage>;
     /**
      * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
      * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      */
-    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => PresenceMessage[];
+    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<PresenceMessage[]>;
     /**
      * The type of {@link PresenceAction} the `PresenceMessage` is for.
      */
@@ -2889,14 +2889,14 @@ declare namespace Types {
      * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
      * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      */
-    fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => PresenceMessage;
+    fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<PresenceMessage>;
     /**
      * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
      *
      * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
      * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      */
-    fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => PresenceMessage[];
+    fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<PresenceMessage[]>;
   }
 
   /**

@@ -137,7 +137,7 @@ class PresenceMessage {
     return result;
   }
 
-  static fromEncoded(encoded: unknown, options?: API.Types.ChannelOptions): PresenceMessage {
+  static async fromEncoded(encoded: unknown, options?: API.Types.ChannelOptions): Promise<PresenceMessage> {
     const msg = PresenceMessage.fromValues(encoded as PresenceMessage | Record<string, unknown>, true);
     /* if decoding fails at any point, catch and return the message decoded to
      * the fullest extent possible */
@@ -149,10 +149,15 @@ class PresenceMessage {
     return msg;
   }
 
-  static fromEncodedArray(encodedArray: unknown[], options?: API.Types.ChannelOptions): PresenceMessage[] {
-    return encodedArray.map(function (encoded) {
-      return PresenceMessage.fromEncoded(encoded, options);
-    });
+  static async fromEncodedArray(
+    encodedArray: unknown[],
+    options?: API.Types.ChannelOptions
+  ): Promise<PresenceMessage[]> {
+    return Promise.all(
+      encodedArray.map(function (encoded) {
+        return PresenceMessage.fromEncoded(encoded, options);
+      })
+    );
   }
 
   static getMessagesSize = Message.getMessagesSize;
