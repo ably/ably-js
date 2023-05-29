@@ -339,7 +339,7 @@ class Message {
     return result;
   }
 
-  static fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Message {
+  static async fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Promise<Message> {
     const msg = Message.fromValues(encoded);
     const options = normalizeCipherOptions(inputOptions ?? null);
     /* if decoding fails at any point, catch and return the message decoded to
@@ -352,10 +352,12 @@ class Message {
     return msg;
   }
 
-  static fromEncodedArray(encodedArray: Array<unknown>, options?: API.Types.ChannelOptions): Message[] {
-    return encodedArray.map(function (encoded) {
-      return Message.fromEncoded(encoded, options);
-    });
+  static async fromEncodedArray(encodedArray: Array<unknown>, options?: API.Types.ChannelOptions): Promise<Message[]> {
+    return Promise.all(
+      encodedArray.map(function (encoded) {
+        return Message.fromEncoded(encoded, options);
+      })
+    );
   }
 
   /* This should be called on encode()d (and encrypt()d) Messages (as it
