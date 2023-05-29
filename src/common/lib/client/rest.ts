@@ -207,7 +207,7 @@ class Rest {
       path,
       headers,
       envelope,
-      function (resbody: unknown, headers: Record<string, string>, unpacked?: boolean) {
+      async function (resbody: unknown, headers: Record<string, string>, unpacked?: boolean) {
         return Utils.ensureArray(unpacked ? resbody : decoder(resbody as string & Buffer));
       },
       /* useHttpPaginatedResponse: */ true
