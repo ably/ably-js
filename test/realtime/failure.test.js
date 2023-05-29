@@ -329,11 +329,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = realtime.channels.get('failed_attach'),
         originalProcessMessage = channel.processMessage.bind(channel);
 
-      channel.processMessage = function (message) {
+      channel.processMessage = async function (message) {
         if (message.action === 11) {
           return;
         }
-        originalProcessMessage(message);
+        await originalProcessMessage(message);
       };
 
       realtime.connection.once('connected', function () {
@@ -371,12 +371,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         var performance = isBrowser ? window.performance : require('perf_hooks').performance;
 
-        channel.processMessage = function (message) {
+        channel.processMessage = async function (message) {
           // Ignore ATTACHED messages
           if (message.action === 11) {
             return;
           }
-          originalProcessMessage(message);
+          await originalProcessMessage(message);
         };
 
         realtime.connection.on('connected', function () {

@@ -1732,18 +1732,27 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* Inject an additional member locally */
-            channel.processMessage({
-              action: 14,
-              id: 'messageid:0',
-              connectionId: 'connid',
-              timestamp: utils.now(),
-              presence: [
-                {
-                  clientId: goneClientId,
-                  action: 'enter',
-                },
-              ],
-            });
+            channel
+              .processMessage({
+                action: 14,
+                id: 'messageid:0',
+                connectionId: 'connid',
+                timestamp: utils.now(),
+                presence: [
+                  {
+                    clientId: goneClientId,
+                    action: 'enter',
+                  },
+                ],
+              })
+              .then(function () {
+                cb(null);
+              })
+              .catch(function (err) {
+                cb(err);
+              });
+          },
+          function (cb) {
             channel.presence.get(function (err, members) {
               try {
                 expect(members && members.length).to.equal(2, 'Check two members present');
@@ -1812,18 +1821,27 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* Inject a member locally */
-            channel.processMessage({
-              action: 14,
-              id: 'messageid:0',
-              connectionId: 'connid',
-              timestamp: utils.now(),
-              presence: [
-                {
-                  clientId: fakeClientId,
-                  action: 'enter',
-                },
-              ],
-            });
+            channel
+              .processMessage({
+                action: 14,
+                id: 'messageid:0',
+                connectionId: 'connid',
+                timestamp: utils.now(),
+                presence: [
+                  {
+                    clientId: fakeClientId,
+                    action: 'enter',
+                  },
+                ],
+              })
+              .then(function () {
+                cb();
+              })
+              .catch(function () {
+                cb(err);
+              });
+          },
+          function (cb) {
             channel.presence.get(function (err, members) {
               try {
                 expect(members && members.length).to.equal(1, 'Check one member present');

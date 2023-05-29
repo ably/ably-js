@@ -582,7 +582,7 @@ class RealtimeChannel extends Channel {
     this.sendMessage(msg, callback);
   }
 
-  processMessage(message: ProtocolMessage): void {
+  async processMessage(message: ProtocolMessage): Promise<void> {
     if (
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||

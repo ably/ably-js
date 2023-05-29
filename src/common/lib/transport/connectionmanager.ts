@@ -1977,9 +1977,9 @@ class ConnectionManager extends EventEmitter {
   }
 
   processNextPendingChannelMessage() {
-    this.isProcessingAPendingChannelMessage = true;
-
     if (this.pendingChannelMessages.length > 0) {
+      this.isProcessingAPendingChannelMessage = true;
+
       const pendingChannelMessage = this.pendingChannelMessages.shift()!;
       this.processChannelMessage(pendingChannelMessage.message, pendingChannelMessage.transport)
         .then(() => {
