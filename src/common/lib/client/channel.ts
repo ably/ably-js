@@ -102,7 +102,7 @@ class Channel extends EventEmitter {
       headers: Record<string, string>,
       unpacked?: boolean
     ) {
-      return Message.fromResponseBody(body, options, unpacked ? undefined : format);
+      return await Message.fromResponseBody(body, options, unpacked ? undefined : format);
     }).get(params as Record<string, unknown>, callback);
   }
 

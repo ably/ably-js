@@ -308,11 +308,11 @@ class Message {
   }
 
   // TODO who is calling this?
-  static fromResponseBody(
+  static async fromResponseBody(
     body: Array<Message>,
     options: ChannelOptions | EncodingDecodingContext,
     format?: Utils.Format
-  ): Message[] {
+  ): Promise<Message[]> {
     if (format) {
       body = Utils.decodeBody(body, format);
     }
