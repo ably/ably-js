@@ -149,7 +149,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    it('getDefaultParams_wordArray_key', function (done) {
+    it('getDefaultParams_withResultOfGenerateRandomKey', function (done) {
       Crypto.generateRandomKey(function (err, key) {
         if (err) {
           done(err);
