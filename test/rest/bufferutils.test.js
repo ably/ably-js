@@ -19,11 +19,11 @@ define(['ably', 'chai'], function (Ably, chai) {
 
       /* compare */
       expect(
-        BufferUtils.bufferCompare(BufferUtils.utf8Encode(testString), BufferUtils.utf8Encode(testString))
-      ).to.equal(0);
+        BufferUtils.areBuffersEqual(BufferUtils.utf8Encode(testString), BufferUtils.utf8Encode(testString))
+      ).to.equal(true);
       expect(
-        BufferUtils.bufferCompare(BufferUtils.utf8Encode(testString), BufferUtils.utf8Encode('other'))
-      ).to.not.equal(0);
+        BufferUtils.areBuffersEqual(BufferUtils.utf8Encode(testString), BufferUtils.utf8Encode('other'))
+      ).to.not.equal(true);
     });
 
     /* In node it's idiomatic for most methods dealing with binary data to

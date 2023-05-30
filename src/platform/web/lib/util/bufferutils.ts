@@ -188,23 +188,20 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
     }
   }
 
-  bufferCompare(buffer1: Bufferlike, buffer2: Bufferlike) {
-    if (!buffer1) return -1;
-    if (!buffer2) return 1;
+  areBuffersEqual(buffer1: Bufferlike, buffer2: Bufferlike) {
+    if (!buffer1 || !buffer2) return false;
     const wordArray1 = this.toWordArray(buffer1);
     const wordArray2 = this.toWordArray(buffer2);
     wordArray1.clamp();
     wordArray2.clamp();
 
-    var cmp = wordArray1.sigBytes - wordArray2.sigBytes;
-    if (cmp != 0) return cmp;
+    if (wordArray1.sigBytes != wordArray2.sigBytes) return false;
     const words1 = wordArray1.words;
     const words2 = wordArray2.words;
     for (var i = 0; i < words1.length; i++) {
-      cmp = words1[i] - words2[i];
-      if (cmp != 0) return cmp;
+      if (words1[i] != words2[i]) return false;
     }
-    return 0;
+    return true;
   }
 
   byteLength(buffer: Bufferlike) {

@@ -12,7 +12,7 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, WordAr
   hexDecode: (string: string) => Output;
   utf8Encode: (string: string) => Output;
   utf8Decode: (buffer: Bufferlike) => string;
-  bufferCompare: (buffer1: Bufferlike, buffer2: Bufferlike) => number;
+  areBuffersEqual: (buffer1: Bufferlike, buffer2: Bufferlike) => boolean;
   byteLength: (buffer: Bufferlike) => number;
   arrayBufferViewToBuffer: (arrayBufferView: ArrayBufferView) => Bufferlike;
   toWordArray: (buffer: Bufferlike | number[]) => WordArrayLike;

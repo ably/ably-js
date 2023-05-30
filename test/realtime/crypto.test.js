@@ -34,7 +34,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
 
       if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
-        expect(BufferUtils.bufferCompare(one.data, two.data) === 0, 'Buffer data contents mismatch.').to.be.ok;
+        expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
         return;
       }
 
@@ -174,7 +174,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var arrayBufferKey = Ably.Realtime.Platform.BufferUtils.toArrayBuffer(key);
         var params = Crypto.getDefaultParams({ key: arrayBufferKey });
         try {
-          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
+          expect(BufferUtils.areBuffersEqual(params.key, key)).to.equal(true);
           done();
         } catch (err) {
           done(err);
@@ -191,7 +191,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var b64key = Ably.Realtime.Platform.BufferUtils.base64Encode(key);
         var params = Crypto.getDefaultParams({ key: b64key });
         try {
-          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
+          expect(BufferUtils.areBuffersEqual(params.key, key)).to.equal(true);
           done();
         } catch (err) {
           done(err);
@@ -343,9 +343,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
                  * CryptoJS (a wordArray) into the msgpack binary type */
-                expect(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
-                  0,
-                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare'
+                expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
+                  true,
+                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual'
                 );
 
                 /* Can't compare msgpackFromEncoded with fixture data because can't
@@ -377,9 +377,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
                  * CryptoJS (a wordArray) into the msgpack binary type */
-                expect(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
-                  0,
-                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare'
+                expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
+                  true,
+                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual'
                 );
 
                 /* Can't compare msgpackFromEncoded with fixture data because can't
