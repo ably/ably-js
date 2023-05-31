@@ -4,10 +4,9 @@ import IBufferUtils from 'common/types/IBufferUtils';
 export type Bufferlike = Buffer | ArrayBuffer | TypedArray;
 export type Output = Buffer;
 export type ToBufferOutput = Buffer;
-export type ComparableBuffer = Buffer;
 export type WordArrayLike = never;
 
-class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer, WordArrayLike> {
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, WordArrayLike> {
   base64CharSet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet: string = '0123456789abcdef';
 
@@ -19,10 +18,10 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     return this.toBuffer(buffer).toString('base64');
   }
 
-  bufferCompare(buffer1: ComparableBuffer, buffer2: ComparableBuffer): number {
+  bufferCompare(buffer1: Bufferlike, buffer2: Bufferlike): number {
     if (!buffer1) return -1;
     if (!buffer2) return 1;
-    return buffer1.compare(buffer2);
+    return this.toBuffer(buffer1).compare(this.toBuffer(buffer2));
   }
 
   byteLength(buffer: Bufferlike): number {

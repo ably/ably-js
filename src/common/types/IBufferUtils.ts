@@ -1,6 +1,6 @@
 import { TypedArray } from './IPlatformConfig';
 
-export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer, WordArrayLike> {
+export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, WordArrayLike> {
   base64CharSet: string;
   hexCharSet: string;
   isBuffer: (buffer: unknown) => buffer is Bufferlike;
@@ -15,7 +15,7 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, Compar
   hexDecode: (string: string) => Output;
   utf8Encode: (string: string) => Output;
   utf8Decode: (buffer: Bufferlike) => string;
-  bufferCompare: (buffer1: ComparableBuffer, buffer2: ComparableBuffer) => number;
+  bufferCompare: (buffer1: Bufferlike, buffer2: Bufferlike) => number;
   byteLength: (buffer: Bufferlike) => number;
   typedArrayToBuffer: (typedArray: TypedArray) => Bufferlike;
   toWordArray: (buffer: Bufferlike | number[]) => WordArrayLike;

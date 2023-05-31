@@ -13,10 +13,9 @@ import IBufferUtils from 'common/types/IBufferUtils';
 export type Bufferlike = WordArray | ArrayBuffer | TypedArray;
 export type Output = Bufferlike;
 export type ToBufferOutput = Uint8Array;
-export type ComparableBuffer = ArrayBuffer;
 export type WordArrayLike = WordArray;
 
-class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer, WordArrayLike> {
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, WordArrayLike> {
   base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet = '0123456789abcdef';
 
@@ -189,7 +188,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     return stringifyUtf8(buffer);
   }
 
-  bufferCompare(buffer1: ComparableBuffer, buffer2: ComparableBuffer) {
+  bufferCompare(buffer1: Bufferlike, buffer2: Bufferlike) {
     if (!buffer1) return -1;
     if (!buffer2) return 1;
     const wordArray1 = this.toWordArray(buffer1);
