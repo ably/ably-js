@@ -342,7 +342,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
-                 * CryptoJS (a wordArray) into the msgpack binary type */
+                 * the platform's ICipher implementation into the msgpack binary type */
                 expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
                   true,
                   'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual'
@@ -376,7 +376,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
-                 * CryptoJS (a wordArray) into the msgpack binary type */
+                 * the platform's ICipher implementation into the msgpack binary type */
                 expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
                   true,
                   'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual'
