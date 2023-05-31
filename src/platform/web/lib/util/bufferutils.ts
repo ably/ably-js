@@ -22,10 +22,6 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
     return ob !== null && ob !== undefined && (ob as WordArray).sigBytes !== undefined;
   }
 
-  isArrayBufferView(ob: unknown): ob is ArrayBufferView {
-    return !!ArrayBuffer && ArrayBuffer.isView && ArrayBuffer.isView(ob);
-  }
-
   // // https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
   uint8ViewToBase64(bytes: Uint8Array) {
     let base64 = '';
@@ -90,7 +86,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return buffer instanceof ArrayBuffer || this.isWordArray(buffer) || this.isArrayBufferView(buffer);
+    return buffer instanceof ArrayBuffer || this.isWordArray(buffer) || ArrayBuffer.isView(buffer);
   }
 
   /* In browsers, returns a Uint8Array */
@@ -103,7 +99,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
       return new Uint8Array(buffer);
     }
 
-    if (this.isArrayBufferView(buffer)) {
+    if (ArrayBuffer.isView(buffer)) {
       return new Uint8Array(buffer.buffer);
     }
 
@@ -131,7 +127,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   toWordArray(buffer: Bufferlike | number[]) {
-    if (this.isArrayBufferView(buffer)) {
+    if (ArrayBuffer.isView(buffer)) {
       buffer = buffer.buffer;
     }
     return this.isWordArray(buffer) ? buffer : WordArray.create(buffer as number[]);
@@ -203,7 +199,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   byteLength(buffer: Bufferlike) {
-    if (buffer instanceof ArrayBuffer || this.isArrayBufferView(buffer)) {
+    if (buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer)) {
       return buffer.byteLength;
     } else if (this.isWordArray(buffer)) {
       return buffer.sigBytes;
