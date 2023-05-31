@@ -4,7 +4,6 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, WordAr
   base64CharSet: string;
   hexCharSet: string;
   isBuffer: (buffer: unknown) => buffer is Bufferlike;
-  isArrayBuffer: (buffer: unknown) => buffer is ArrayBuffer;
   isWordArray: (val: unknown) => val is WordArrayLike;
   // On browser this returns a Uint8Array, on node a Buffer
   toBuffer: (buffer: Bufferlike) => ToBufferOutput;

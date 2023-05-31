@@ -36,14 +36,10 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
     return this.toBuffer(buffer).toString('hex');
   }
 
-  isArrayBuffer(ob: unknown): ob is ArrayBuffer {
-    return ob !== null && ob !== undefined && (ob as ArrayBuffer).constructor === ArrayBuffer;
-  }
-
   /* In node, BufferUtils methods that return binary objects return a Buffer
    * for historical reasons; the browser equivalents return ArrayBuffers */
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return Buffer.isBuffer(buffer) || this.isArrayBuffer(buffer) || ArrayBuffer.isView(buffer);
+    return Buffer.isBuffer(buffer) || buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer);
   }
 
   toArrayBuffer(buffer: Bufferlike): ArrayBuffer {

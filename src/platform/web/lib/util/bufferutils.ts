@@ -23,10 +23,6 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
     return ob !== null && ob !== undefined && (ob as WordArray).sigBytes !== undefined;
   }
 
-  isArrayBuffer(ob: unknown): ob is ArrayBuffer {
-    return ob !== null && ob !== undefined && (ob as ArrayBuffer).constructor === ArrayBuffer;
-  }
-
   isTypedArray(ob: unknown): ob is TypedArray {
     return !!ArrayBuffer && ArrayBuffer.isView && ArrayBuffer.isView(ob);
   }
@@ -95,7 +91,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return this.isArrayBuffer(buffer) || this.isWordArray(buffer) || this.isTypedArray(buffer);
+    return buffer instanceof ArrayBuffer || this.isWordArray(buffer) || this.isTypedArray(buffer);
   }
 
   /* In browsers, returns a Uint8Array */
@@ -104,7 +100,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
       throw new Error("Can't convert to Buffer: browser does not support the necessary types");
     }
 
-    if (this.isArrayBuffer(buffer)) {
+    if (buffer instanceof ArrayBuffer) {
       return new Uint8Array(buffer);
     }
 
@@ -129,7 +125,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
-    if (this.isArrayBuffer(buffer)) {
+    if (buffer instanceof ArrayBuffer) {
       return buffer;
     }
     return this.toBuffer(buffer).buffer;
@@ -208,7 +204,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   byteLength(buffer: Bufferlike) {
-    if (this.isArrayBuffer(buffer) || this.isTypedArray(buffer)) {
+    if (buffer instanceof ArrayBuffer || this.isTypedArray(buffer)) {
       return buffer.byteLength;
     } else if (this.isWordArray(buffer)) {
       return buffer.sigBytes;

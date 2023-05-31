@@ -160,7 +160,7 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
 
       if (typeof params.key === 'string') {
         key = bufferUtils.base64Decode(normaliseBase64(params.key));
-      } else if (bufferUtils.isArrayBuffer(params.key)) {
+      } else if (params.key instanceof ArrayBuffer) {
         key = Buffer.from(params.key);
       } else {
         key = params.key;
