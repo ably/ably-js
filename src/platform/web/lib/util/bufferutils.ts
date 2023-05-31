@@ -3,14 +3,13 @@ import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/build/
 import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
-import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils from 'common/types/IBufferUtils';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
  * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
  * returns a Uint8Array (and won't work on browsers too old to support it) */
 
-export type Bufferlike = WordArray | ArrayBuffer | TypedArray;
+export type Bufferlike = WordArray | BufferSource;
 export type Output = Bufferlike;
 export type ToBufferOutput = Uint8Array;
 export type WordArrayLike = WordArray;
@@ -23,7 +22,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
     return ob !== null && ob !== undefined && (ob as WordArray).sigBytes !== undefined;
   }
 
-  isTypedArray(ob: unknown): ob is TypedArray {
+  isArrayBufferView(ob: unknown): ob is ArrayBufferView {
     return !!ArrayBuffer && ArrayBuffer.isView && ArrayBuffer.isView(ob);
   }
 
@@ -91,7 +90,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return buffer instanceof ArrayBuffer || this.isWordArray(buffer) || this.isTypedArray(buffer);
+    return buffer instanceof ArrayBuffer || this.isWordArray(buffer) || this.isArrayBufferView(buffer);
   }
 
   /* In browsers, returns a Uint8Array */
@@ -104,7 +103,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
       return new Uint8Array(buffer);
     }
 
-    if (this.isTypedArray(buffer)) {
+    if (this.isArrayBufferView(buffer)) {
       return new Uint8Array(buffer.buffer);
     }
 
@@ -132,7 +131,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   toWordArray(buffer: Bufferlike | number[]) {
-    if (this.isTypedArray(buffer)) {
+    if (this.isArrayBufferView(buffer)) {
       buffer = buffer.buffer;
     }
     return this.isWordArray(buffer) ? buffer : WordArray.create(buffer as number[]);
@@ -204,7 +203,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   byteLength(buffer: Bufferlike) {
-    if (buffer instanceof ArrayBuffer || this.isTypedArray(buffer)) {
+    if (buffer instanceof ArrayBuffer || this.isArrayBufferView(buffer)) {
       return buffer.byteLength;
     } else if (this.isWordArray(buffer)) {
       return buffer.sigBytes;
@@ -213,8 +212,8 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   /* Returns ArrayBuffer on browser and Buffer on Node.js */
-  typedArrayToBuffer(typedArray: TypedArray) {
-    return typedArray.buffer;
+  arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView) {
+    return arrayBufferView.buffer;
   }
 }
 

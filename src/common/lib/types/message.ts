@@ -275,7 +275,7 @@ class Message {
                 deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
                 data = Platform.BufferUtils.toBuffer(data);
 
-                data = Platform.BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
+                data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
                 lastPayload = data;
               } catch (e) {
                 throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);

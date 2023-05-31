@@ -1,14 +1,3 @@
-export type TypedArray =
-  | Int8Array
-  | Uint8Array
-  | Int16Array
-  | Uint16Array
-  | Int32Array
-  | Uint32Array
-  | Uint8ClampedArray
-  | Float32Array
-  | Float64Array;
-
 interface MsgPack {
   encode(value: any, sparse?: boolean): Buffer | ArrayBuffer | undefined;
   decode(buffer: Buffer): any;
@@ -31,7 +20,7 @@ export interface IPlatformConfig {
   stringByteSize: Buffer.byteLength;
   addEventListener?: typeof window.addEventListener | typeof global.addEventListener | null;
   Promise: typeof Promise;
-  getRandomValues?: (arr: TypedArray, callback?: (error: Error | null) => void) => void;
+  getRandomValues?: (arr: ArrayBufferView, callback?: (error: Error | null) => void) => void;
   userAgent?: string | null;
   inherits?: typeof import('util').inherits;
   currentUrl?: string;

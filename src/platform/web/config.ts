@@ -1,5 +1,5 @@
 import msgpack from './lib/util/msgpack';
-import { IPlatformConfig, TypedArray } from '../../common/types/IPlatformConfig';
+import { IPlatformConfig } from '../../common/types/IPlatformConfig';
 import * as Utils from 'common/lib/util/utils';
 
 // Workaround for salesforce lightning locker compat
@@ -65,7 +65,7 @@ const Config: IPlatformConfig = {
     if (crypto === undefined) {
       return undefined;
     }
-    return function (arr: TypedArray, callback?: (error: Error | null) => void) {
+    return function (arr: ArrayBufferView, callback?: (error: Error | null) => void) {
       crypto.getRandomValues(arr);
       if (callback) {
         callback(null);

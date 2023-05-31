@@ -1,7 +1,6 @@
-import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils from 'common/types/IBufferUtils';
 
-export type Bufferlike = Buffer | ArrayBuffer | TypedArray;
+export type Bufferlike = Buffer | ArrayBuffer | ArrayBufferView;
 export type Output = Buffer;
 export type ToBufferOutput = Buffer;
 export type WordArrayLike = never;
@@ -51,11 +50,14 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
     if (Buffer.isBuffer(buffer)) {
       return buffer;
     }
-    return Buffer.from(buffer);
+    if (buffer instanceof ArrayBuffer) {
+      return Buffer.from(buffer);
+    }
+    return Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   }
 
-  typedArrayToBuffer(typedArray: TypedArray): Buffer {
-    return this.toBuffer(typedArray.buffer);
+  arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView): Buffer {
+    return this.toBuffer(arrayBufferView.buffer);
   }
 
   utf8Decode(buffer: Bufferlike): string {
@@ -70,7 +72,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-  toWordArray(buffer: TypedArray | WordArrayLike | number[] | ArrayBuffer): never {
+  toWordArray(buffer: ArrayBufferView | WordArrayLike | number[] | ArrayBuffer): never {
     throw new Error('Not implemented');
   }
 
