@@ -191,7 +191,7 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
 
       generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
         if (callback !== undefined) {
-          callback(err ? ErrorInfo.fromValues(err) : null, buf);
+          callback(err ? ErrorInfo.fromValues(err) : null, buf ?? undefined);
         }
       });
     }
