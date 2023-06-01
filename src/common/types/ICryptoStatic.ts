@@ -12,4 +12,6 @@ export default interface ICryptoStatic<IV, InputPlaintext, OutputCiphertext, Inp
   getCipher(
     params: IGetCipherParams<IV>
   ): IGetCipherReturnValue<ICipher<InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext>>;
+
+  hmacSha256(message: InputPlaintext, key: API.Types.CipherKey): OutputCiphertext;
 }

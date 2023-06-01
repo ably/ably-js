@@ -217,6 +217,16 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
         cipher: new CBCCipher(cipherParams, iv),
       };
     }
+
+    static hmacSha256(message: InputPlaintext, key: API.Types.CipherKey): OutputCiphertext {
+      const messageBuffer = bufferUtils.toBuffer(message);
+      const keyBuffer = bufferUtils.toBuffer(key);
+
+      const hmac = crypto.createHmac('SHA256', keyBuffer);
+      hmac.update(messageBuffer);
+
+      return hmac.digest();
+    }
   }
 
   Crypto satisfies ICryptoStatic<IV, InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext>;

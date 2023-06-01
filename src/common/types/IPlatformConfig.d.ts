@@ -9,9 +9,6 @@ export interface IPlatformConfig {
   binaryType: BinaryType;
   WebSocket: typeof WebSocket | typeof import('ws');
   useProtocolHeartbeats: boolean;
-  createHmac:
-    | ((algorithm: string, key: import('crypto').BinaryLike | import('crypto').KeyObject) => import('crypto').Hmac)
-    | null;
   msgpack: MsgPack;
   supportsBinary: boolean;
   preferBinary: boolean;

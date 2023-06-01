@@ -6,6 +6,7 @@ import ICipher from '../../../../common/types/ICipher';
 import { CryptoDataTypes } from '../../../../common/types/cryptoDataTypes';
 import BufferUtils, { Bufferlike, Output as BufferUtilsOutput } from './bufferutils';
 import { IPlatformConfig } from 'common/types/IPlatformConfig';
+import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 
 // The type to which ./msgpack.ts deserializes elements of the `bin` or `ext` type
 type MessagePackBinaryType = ArrayBuffer;
@@ -208,6 +209,15 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
         cipherParams: cipherParams,
         cipher: new CBCCipher(cipherParams, params.iv ?? null),
       };
+    }
+
+    static hmacSha256(message: InputPlaintext, key: API.Types.CipherKey): OutputCiphertext {
+      const messageWordArray = bufferUtils.toWordArray(message);
+      const keyWordArray = bufferUtils.toWordArray(key);
+
+      const digest = HmacSHA256(messageWordArray, keyWordArray);
+
+      return bufferUtils.toArrayBuffer(digest);
     }
   }
 
