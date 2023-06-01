@@ -16,7 +16,6 @@ module.exports = function (grunt) {
     fragments: 'src/platform/web/fragments',
     static: 'build',
     dest: 'build',
-    crypto_js: 'node_modules/crypto-js/src',
     tools_compiler: __dirname + '/node_modules/google-closure-compiler/compiler.jar',
   };
 
