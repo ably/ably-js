@@ -129,6 +129,7 @@ class Auth {
     if (useTokenAuth(options)) {
       /* Token auth */
       if (options.key && !hmac) {
+        // TODO what is this
         const msg = 'client-side token request signing not supported';
         Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
         throw new Error(msg);
@@ -413,6 +414,7 @@ class Auth {
     callback: StandardCallback<API.Types.TokenDetails>
   ): void;
 
+  // TODO where is this called? it's public API but what else? _ensureValidAuthCredentials
   requestToken(
     tokenParams: API.Types.TokenParams | StandardCallback<API.Types.TokenDetails> | null,
     authOptions?: any | StandardCallback<API.Types.TokenDetails>,
@@ -559,6 +561,7 @@ class Auth {
       };
     } else if (authOptions.key) {
       Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
+      // TODO what is this?
       tokenRequestCallback = (params: any, cb: Function) => {
         this.createTokenRequest(params, authOptions, cb);
       };
@@ -745,6 +748,7 @@ class Auth {
    *
    * @param callback
    */
+  // TODO who calls this? it's public API but other than that I don't think called anywhere else except requestToken
   createTokenRequest(tokenParams: API.Types.TokenParams | null, authOptions: any, callback: Function) {
     /* shuffle and normalise arguments as necessary */
     if (typeof tokenParams == 'function' && !callback) {
@@ -829,8 +833,8 @@ class Auth {
           callback(null, request);
         })
         .catch((err) => {
-          Logger.logAction(Logger.LOG_ERROR, 'Auth.getTokenRequest()', 'failed to sign request: ' + err.message);
-          callback(ErrorInfo.fromValues(err));
+          Logger.logAction(Logger.LOG_ERROR, 'Auth.getTokenRequest()', 'failed to sign request: ' + err);
+          callback(new ErrorInfo('Failed to sign token request: ' + err.message, 40000, 400));
         });
     });
   }

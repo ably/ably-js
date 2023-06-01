@@ -6,7 +6,6 @@ import ICipher from '../../../../common/types/ICipher';
 import { CryptoDataTypes } from '../../../../common/types/cryptoDataTypes';
 import BufferUtils, { Bufferlike, Output as BufferUtilsOutput } from './bufferutils';
 import { IPlatformConfig } from 'common/types/IPlatformConfig';
-import HmacSHA256 from 'crypto-js/build/hmac-sha256';
 
 // The type to which ./msgpack.ts deserializes elements of the `bin` or `ext` type
 type MessagePackBinaryType = ArrayBuffer;
@@ -212,12 +211,11 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
     }
 
     static async hmacSha256(message: InputPlaintext, key: API.Types.CipherKey): Promise<OutputCiphertext> {
-      const messageWordArray = bufferUtils.toWordArray(message);
-      const keyWordArray = bufferUtils.toWordArray(key);
+      // TODO what if crypto.subtle not available
+      const cryptoKey = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      const digest = await crypto.subtle.sign('HMAC', cryptoKey, message);
 
-      const digest = HmacSHA256(messageWordArray, keyWordArray);
-
-      return bufferUtils.toArrayBuffer(digest);
+      return digest;
     }
   }
 
