@@ -1,4 +1,5 @@
 import IBufferUtils from 'common/types/IBufferUtils';
+import crypto from 'crypto';
 
 export type Bufferlike = Buffer | ArrayBuffer | ArrayBufferView;
 export type Output = Buffer;
@@ -78,6 +79,16 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
   isWordArray(val: unknown): val is never {
     return false;
+  }
+
+  hmacSha256(message: Bufferlike, key: Bufferlike): Output {
+    const messageBuffer = this.toBuffer(message);
+    const keyBuffer = this.toBuffer(key);
+
+    const hmac = crypto.createHmac('SHA256', keyBuffer);
+    hmac.update(messageBuffer);
+
+    return hmac.digest();
   }
 }
 

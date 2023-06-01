@@ -16,4 +16,5 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, WordAr
   byteLength: (buffer: Bufferlike) => number;
   arrayBufferViewToBuffer: (arrayBufferView: ArrayBufferView) => Bufferlike;
   toWordArray: (buffer: Bufferlike | number[]) => WordArrayLike;
+  hmacSha256(message: Bufferlike, key: Bufferlike): Output;
 }

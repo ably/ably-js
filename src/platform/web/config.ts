@@ -37,7 +37,6 @@ const Config: IPlatformConfig = {
   allowComet: allowComet(),
   streamingSupported: true,
   useProtocolHeartbeats: true,
-  createHmac: null,
   msgpack: msgpack,
   supportsBinary: !!globalObject.TextDecoder,
   preferBinary: false,

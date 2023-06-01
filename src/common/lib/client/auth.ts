@@ -2,9 +2,6 @@ import Logger from '../util/logger';
 import * as Utils from '../util/utils';
 import Multicaster from '../util/multicaster';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
-import HmacSHA256 from 'crypto-js/build/hmac-sha256';
-import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
-import { createHmac } from 'crypto';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import { StandardCallback } from '../../types/utils';
@@ -48,12 +45,14 @@ let toBase64 = (str: string): string => {
 };
 
 let hmac = (text: string, key: string): string => {
-  if (Platform.Config.createHmac) {
-    const inst = (Platform.Config.createHmac as typeof createHmac)('SHA256', key);
-    inst.update(text);
-    return inst.digest('base64');
-  }
-  return stringifyBase64(HmacSHA256(text, key));
+  const bufferUtils = Platform.BufferUtils;
+
+  const textBuffer = bufferUtils.utf8Encode(text);
+  const keyBuffer = bufferUtils.utf8Encode(key);
+
+  const digest = bufferUtils.hmacSha256(textBuffer, keyBuffer);
+
+  return bufferUtils.base64Encode(digest);
 };
 
 function c14n(capability?: string | Record<string, Array<string>>) {
