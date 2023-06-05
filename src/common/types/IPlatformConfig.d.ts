@@ -31,7 +31,7 @@ export interface IPlatformConfig {
   stringByteSize: Buffer.byteLength;
   addEventListener?: typeof window.addEventListener | typeof global.addEventListener | null;
   Promise: typeof Promise;
-  getRandomValues?: (arr: TypedArray, callback?: (error?: Error | null) => void) => void;
+  getRandomValues?: (arr: TypedArray, callback?: (error: Error | null) => void) => void;
   userAgent?: string | null;
   inherits?: typeof import('util').inherits;
   currentUrl?: string;
@@ -46,7 +46,7 @@ export interface IPlatformConfig {
   TextDecoder?: typeof TextDecoder;
   getRandomWordArray?: (
     byteLength: number,
-    callback: (err: Error, result: boolean | CryptoJS.lib.WordArray) => void
+    callback: (err: Error | null, result: CryptoJS.lib.WordArray | null) => void
   ) => void;
   isWebworker?: boolean;
 }
