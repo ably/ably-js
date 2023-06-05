@@ -97,12 +97,12 @@ class Channel extends EventEmitter {
     Utils.mixin(headers, rest.options.headers);
 
     const options = this.channelOptions;
-    new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, function (
+    new PaginatedResource(rest, this.basePath + '/messages', headers, envelope, async function (
       body: any,
       headers: Record<string, string>,
       unpacked?: boolean
     ) {
-      return Message.fromResponseBody(body, options, unpacked ? undefined : format);
+      return await Message.fromResponseBody(body, options, unpacked ? undefined : format);
     }).get(params as Record<string, unknown>, callback);
   }
 

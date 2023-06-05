@@ -215,6 +215,12 @@ class ConnectionManager extends EventEmitter {
   suspendTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
   disconnectedRetryCount: number = 0;
+  pendingChannelMessagesState: {
+    // Whether a message is currently being processed
+    isProcessing: boolean;
+    // The messages remaining to be processed (excluding any message currently being processed)
+    queue: { message: ProtocolMessage; transport: Transport }[];
+  } = { isProcessing: false, queue: [] };
 
   constructor(realtime: Realtime, options: ClientOptions) {
     super();
@@ -1966,6 +1972,34 @@ class ConnectionManager extends EventEmitter {
   }
 
   onChannelMessage(message: ProtocolMessage, transport: Transport): void {
+    this.pendingChannelMessagesState.queue.push({ message, transport });
+
+    if (!this.pendingChannelMessagesState.isProcessing) {
+      this.processNextPendingChannelMessage();
+    }
+  }
+
+  private processNextPendingChannelMessage() {
+    if (this.pendingChannelMessagesState.queue.length > 0) {
+      this.pendingChannelMessagesState.isProcessing = true;
+
+      const pendingChannelMessage = this.pendingChannelMessagesState.queue.shift()!;
+      this.processChannelMessage(pendingChannelMessage.message, pendingChannelMessage.transport)
+        .catch((err) => {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'ConnectionManager.processNextPendingChannelMessage() received error ',
+            err
+          );
+        })
+        .finally(() => {
+          this.pendingChannelMessagesState.isProcessing = false;
+          this.processNextPendingChannelMessage();
+        });
+    }
+  }
+
+  private async processChannelMessage(message: ProtocolMessage, transport: Transport) {
     const onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
       onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
 
@@ -1973,13 +2007,13 @@ class ConnectionManager extends EventEmitter {
      * before it's become active (while waiting for the old one to become
      * idle), message can validly arrive on it even though it isn't active */
     if (onActiveTransport || onUpgradeTransport) {
-      this.realtime.channels.onChannelMessage(message);
+      await this.realtime.channels.processChannelMessage(message);
     } else {
       // Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
       // messages,  no new messages (as sync has been sent on new transport so new messages will
       // be resent there, or connection has been closed so don't want new messages)
       if (Utils.arrIndexOf([actions.ACK, actions.NACK, actions.ERROR], message.action) > -1) {
-        this.realtime.channels.onChannelMessage(message);
+        await this.realtime.channels.processChannelMessage(message);
       } else {
         Logger.logAction(
           Logger.LOG_MICRO,

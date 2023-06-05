@@ -42,12 +42,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * sync in progress, then do one sync, then a second with a slightly
      * different presence set
      */
-    it('sync_existing_set', function (done) {
+    it('sync_existing_set', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'syncexistingset',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      await channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -55,101 +55,119 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         })
       );
 
-      async.series(
-        [
-          function (cb) {
-            channel.onMessage({
-              action: 16,
-              channel: channelName,
-              presence: [
-                {
-                  action: 'present',
-                  clientId: 'one',
-                  connectionId: 'one_connid',
-                  id: 'one_connid:0:0',
-                  timestamp: 1e12,
-                },
-                {
-                  action: 'present',
-                  clientId: 'two',
-                  connectionId: 'two_connid',
-                  id: 'two_connid:0:0',
-                  timestamp: 1e12,
-                },
-              ],
-            });
-            cb();
-          },
-          function (cb) {
-            channel.presence.get(function (err, results) {
-              try {
-                expect(results.length).to.equal(2, 'Check correct number of results');
-                expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
-                expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check correct members');
-              } catch (err) {
+      await new Promise(function (resolve, reject) {
+        var done = function (err) {
+          err ? reject(err) : resolve();
+        };
+
+        async.series(
+          [
+            function (cb) {
+              channel
+                .processMessage({
+                  action: 16,
+                  channel: channelName,
+                  presence: [
+                    {
+                      action: 'present',
+                      clientId: 'one',
+                      connectionId: 'one_connid',
+                      id: 'one_connid:0:0',
+                      timestamp: 1e12,
+                    },
+                    {
+                      action: 'present',
+                      clientId: 'two',
+                      connectionId: 'two_connid',
+                      id: 'two_connid:0:0',
+                      timestamp: 1e12,
+                    },
+                  ],
+                })
+                .then(function () {
+                  cb();
+                })
+                .catch(function (err) {
+                  cb(err);
+                });
+            },
+            function (cb) {
+              channel.presence.get(function (err, results) {
+                try {
+                  expect(results.length).to.equal(2, 'Check correct number of results');
+                  expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
+                  expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check correct members');
+                } catch (err) {
+                  cb(err);
+                  return;
+                }
                 cb(err);
-                return;
-              }
-              cb(err);
-            });
-          },
-          function (cb) {
-            /* Trigger another sync. Two has gone without so much as a `leave` message! */
-            channel.onMessage({
-              action: 16,
-              channel: channelName,
-              presence: [
-                {
-                  action: 'present',
-                  clientId: 'one',
-                  connectionId: 'one_connid',
-                  id: 'one_connid:0:0',
-                  timestamp: 1e12,
-                },
-                {
-                  action: 'present',
-                  clientId: 'three',
-                  connectionId: 'three_connid',
-                  id: 'three_connid:0:0',
-                  timestamp: 1e12,
-                },
-              ],
-            });
-            cb();
-          },
-          function (cb) {
-            channel.presence.get(function (err, results) {
-              try {
-                expect(results.length).to.equal(2, 'Check correct number of results');
-                expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
-                expect(extractClientIds(results)).to.deep.equal(
-                  ['one', 'three'],
-                  'check two has gone and three is there'
-                );
-              } catch (err) {
+              });
+            },
+            function (cb) {
+              /* Trigger another sync. Two has gone without so much as a `leave` message! */
+              channel
+                .processMessage({
+                  action: 16,
+                  channel: channelName,
+                  presence: [
+                    {
+                      action: 'present',
+                      clientId: 'one',
+                      connectionId: 'one_connid',
+                      id: 'one_connid:0:0',
+                      timestamp: 1e12,
+                    },
+                    {
+                      action: 'present',
+                      clientId: 'three',
+                      connectionId: 'three_connid',
+                      id: 'three_connid:0:0',
+                      timestamp: 1e12,
+                    },
+                  ],
+                })
+                .then(function () {
+                  cb();
+                })
+                .catch(function (err) {
+                  cb(err);
+                });
+            },
+            function (cb) {
+              channel.presence.get(function (err, results) {
+                try {
+                  expect(results.length).to.equal(2, 'Check correct number of results');
+                  expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
+                  expect(extractClientIds(results)).to.deep.equal(
+                    ['one', 'three'],
+                    'check two has gone and three is there'
+                  );
+                } catch (err) {
+                  cb(err);
+                  return;
+                }
                 cb(err);
-                return;
-              }
-              cb(err);
-            });
-          },
-        ],
-        function (err) {
-          closeAndFinish(done, realtime, err);
-        }
-      );
+              });
+            },
+          ],
+          function (err) {
+            closeAndFinish(done, realtime, err);
+          }
+        );
+      });
     });
 
     /*
      * Sync with an existing presence set and a presence member added in the
      * middle of the sync should should discard the former, but not the latter
      * */
-    it('sync_member_arrives_in_middle', function (done) {
+    it('sync_member_arrives_in_middle', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_in_middle',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      await channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -158,7 +176,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
 
       /* First sync */
-      channel.onMessage({
+      await channel.processMessage({
         action: 16,
         channel: channelName,
         presence: [
@@ -173,7 +191,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* A second sync, this time in multiple parts, with a presence message in the middle */
-      channel.onMessage({
+      await channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:cursor',
@@ -188,7 +206,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         presence: [
@@ -202,7 +220,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      await channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:',
@@ -217,32 +235,41 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.presence.get(function (err, results) {
-        if (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
-        try {
-          expect(results.length).to.equal(3, 'Check correct number of results');
-          expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
-          expect(extractClientIds(results)).to.deep.equal(['four', 'three', 'two'], 'check expected presence members');
-        } catch (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
-        closeAndFinish(done, realtime);
+      await new Promise(function (resolve, reject) {
+        var done = function (err) {
+          err ? reject(err) : resolve();
+        };
+
+        channel.presence.get(function (err, results) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          try {
+            expect(results.length).to.equal(3, 'Check correct number of results');
+            expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
+            expect(extractClientIds(results)).to.deep.equal(
+              ['four', 'three', 'two'],
+              'check expected presence members'
+            );
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        });
       });
     });
 
     /*
      * Presence message that was in the sync arrives again as a normal message, after it's come in the sync
      */
-    it('sync_member_arrives_normally_after_came_in_sync', function (done) {
+    it('sync_member_arrives_normally_after_came_in_sync', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_normally_after_came_in_sync',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      await channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -250,7 +277,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         })
       );
 
-      channel.onMessage({
+      await channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:cursor',
@@ -265,7 +292,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         presence: [
@@ -279,7 +306,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      await channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:',
@@ -294,32 +321,38 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.presence.get(function (err, results) {
-        if (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
-        try {
-          expect(results.length).to.equal(2, 'Check correct number of results');
-          expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
-          expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
-        } catch (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
-        closeAndFinish(done, realtime);
+      await new Promise(function (resolve, reject) {
+        var done = function (err) {
+          err ? reject(err) : resolve();
+        };
+
+        channel.presence.get(function (err, results) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          try {
+            expect(results.length).to.equal(2, 'Check correct number of results');
+            expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
+            expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        });
       });
     });
 
     /*
      * Presence message that will be in the sync arrives as a normal message, before it comes in the sync
      */
-    it('sync_member_arrives_normally_before_comes_in_sync', function (done) {
+    it('sync_member_arrives_normally_before_comes_in_sync', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_normally_before_comes_in_sync',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      await channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -327,7 +360,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         })
       );
 
-      channel.onMessage({
+      await channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:cursor',
@@ -342,7 +375,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         presence: [
@@ -356,7 +389,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.onMessage({
+      await channel.processMessage({
         action: 16,
         channel: channelName,
         channelSerial: 'serial:',
@@ -371,20 +404,26 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.presence.get(function (err, results) {
-        if (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
-        try {
-          expect(results.length).to.equal(2, 'Check correct number of results');
-          expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
-          expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
-        } catch (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
-        closeAndFinish(done, realtime);
+      await new Promise(function (resolve, reject) {
+        var done = function (err) {
+          err ? reject(err) : resolve();
+        };
+
+        channel.presence.get(function (err, results) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          try {
+            expect(results.length).to.equal(2, 'Check correct number of results');
+            expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
+            expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        });
       });
     });
 
@@ -392,12 +431,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Get several presence messages with various combinations of msgserial,
      * index, and synthesized leaves, check that the end result is correct
      */
-    it('presence_ordering', function (done) {
+    it('presence_ordering', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_ordering',
         channel = realtime.channels.get(channelName);
 
-      channel.onMessage(
+      await channel.processMessage(
         createPM({
           action: 11,
           channel: channelName,
@@ -405,7 +444,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
 
       /* One enters */
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         id: 'one_connid:1',
@@ -420,7 +459,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* An earlier leave from one (should be ignored) */
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'one_connid',
@@ -435,7 +474,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* One adds some data in a newer msgSerial */
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'one_connid',
@@ -451,7 +490,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Two enters */
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'two_connid',
@@ -466,7 +505,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Two updates twice in the same message */
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'two_connid',
@@ -487,7 +526,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Three enters */
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'three_connid',
@@ -503,7 +542,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       /* Synthesized leave for three (with earlier msgSerial, incompatible id,
        * and later timestamp) */
-      channel.onMessage({
+      await channel.processMessage({
         action: 14,
         channel: channelName,
         connectionId: 'synthesized',
@@ -518,22 +557,27 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
-      channel.presence.get(function (err, results) {
-        if (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
-        try {
-          expect(results.length).to.equal(2, 'Check correct number of results');
-          expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
-          expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
-          expect(extractMember(results, 'one').data).to.equal('onedata', 'check correct data on one');
-          expect(extractMember(results, 'two').data).to.equal('twodata', 'check correct data on two');
-        } catch (err) {
-          closeAndFinish(done, realtime, err);
-          return;
-        }
-        closeAndFinish(done, realtime);
+      await new Promise(function (resolve, reject) {
+        var done = function (err) {
+          err ? reject(err) : resolve();
+        };
+        channel.presence.get(function (err, results) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          try {
+            expect(results.length).to.equal(2, 'Check correct number of results');
+            expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
+            expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
+            expect(extractMember(results, 'one').data).to.equal('onedata', 'check correct data on one');
+            expect(extractMember(results, 'two').data).to.equal('twodata', 'check correct data on two');
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        });
       });
     });
 
@@ -581,13 +625,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             );
           },
           function (cb) {
-            var originalOnMessage = syncerChannel.onMessage;
-            syncerChannel.onMessage = function (message) {
-              originalOnMessage.apply(this, arguments);
+            var originalProcessMessage = syncerChannel.processMessage;
+            syncerChannel.processMessage = async function (message) {
+              await originalProcessMessage.apply(this, arguments);
               /* Inject an additional presence message after the first sync */
               if (message.action === 16) {
-                syncerChannel.onMessage = originalOnMessage;
-                syncerChannel.onMessage({
+                syncerChannel.processMessage = originalProcessMessage;
+                await syncerChannel.processMessage({
                   action: 14,
                   id: 'messageid:0',
                   connectionId: 'connid',

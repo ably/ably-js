@@ -5,7 +5,7 @@ import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
 import Rest from './rest';
 
-export type BodyHandler = (body: unknown, headers: Record<string, string>, packed?: boolean) => any;
+export type BodyHandler = (body: unknown, headers: Record<string, string>, packed?: boolean) => Promise<any>;
 
 function getRelParams(linkUrl: string) {
   const urlMatch = linkUrl.match(/^\.\/(\w+)\?(.*)$/);
@@ -149,25 +149,32 @@ class PaginatedResource {
       callback?.(err);
       return;
     }
-    let items, linkHeader, relParams;
-    try {
-      items = this.bodyHandler(body, headers || {}, unpacked);
-    } catch (e) {
-      /* If we got an error, the failure to parse the body is almost certainly
-       * due to that, so callback with that in preference over the parse error */
-      callback?.(err || e);
-      return;
-    }
 
-    if (headers && (linkHeader = headers['Link'] || headers['link'])) {
-      relParams = parseRelLinks(linkHeader);
-    }
+    const handleBody = async () => {
+      let items, linkHeader, relParams;
 
-    if (this.useHttpPaginatedResponse) {
-      callback(null, new HttpPaginatedResponse(this, items, headers || {}, statusCode as number, relParams, err));
-    } else {
-      callback(null, new PaginatedResult(this, items, relParams));
-    }
+      try {
+        items = await this.bodyHandler(body, headers || {}, unpacked);
+      } catch (e) {
+        /* If we got an error, the failure to parse the body is almost certainly
+         * due to that, so throw that in preference over the parse error */
+        throw err || e;
+      }
+
+      if (headers && (linkHeader = headers['Link'] || headers['link'])) {
+        relParams = parseRelLinks(linkHeader);
+      }
+
+      if (this.useHttpPaginatedResponse) {
+        return new HttpPaginatedResponse(this, items, headers || {}, statusCode as number, relParams, err);
+      } else {
+        return new PaginatedResult(this, items, relParams);
+      }
+    };
+
+    handleBody()
+      .then((result) => callback(null, result))
+      .catch((err) => callback(err, null));
   }
 }
 

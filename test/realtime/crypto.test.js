@@ -56,7 +56,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return;
     }
 
-    loadTestData(testResourcesPath + filename, function (err, testData) {
+    loadTestData(testResourcesPath + filename, async function (err, testData) {
       if (err) {
         done(new Error('Unable to get test assets; err = ' + displayError(err)));
         return;
@@ -71,11 +71,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var item = testData.items[i];
 
           /* read messages from test data and decode (ie remove any base64 encoding). */
-          var createTestMessage = function () {
-            return Message.fromEncoded(item.encoded);
+          var createTestMessage = async function () {
+            return await Message.fromEncoded(item.encoded);
           };
 
-          var encryptedMessage = Message.fromEncoded(item.encrypted);
+          var encryptedMessage = await Message.fromEncoded(item.encrypted);
 
           var runTest = function (testMessage) {
             /* reset channel cipher, to ensure it uses the given iv */
@@ -84,13 +84,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           };
 
           // Run the test with the message’s data as-is.
-          runTest(createTestMessage());
+          runTest(await createTestMessage());
 
           if (testPlaintextVariants) {
-            var testMessage = createTestMessage();
+            var testMessage = await createTestMessage();
             if (BufferUtils.isBuffer(testMessage.data) && !(testMessage.data instanceof ArrayBuffer)) {
               // Now, check that we can also handle an ArrayBuffer plaintext.
-              var testMessageWithArrayBufferData = createTestMessage();
+              var testMessageWithArrayBufferData = await createTestMessage();
               testMessageWithArrayBufferData.data = BufferUtils.toArrayBuffer(testMessageWithArrayBufferData.data);
               runTest(testMessageWithArrayBufferData);
             }
@@ -274,9 +274,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'decrypt_message_128',
         2,
         false,
-        function (channelOpts, testMessage, encryptedMessage) {
+        async function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-          Message.decode(encryptedMessage, channelOpts);
+          await Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, testMessage, encryptedMessage);
         }
@@ -290,9 +290,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'decrypt_message_256',
         2,
         false,
-        function (channelOpts, testMessage, encryptedMessage) {
+        async function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-          Message.decode(encryptedMessage, channelOpts);
+          await Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, testMessage, encryptedMessage);
         }
@@ -305,7 +305,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      loadTestData(testResourcesPath + 'crypto-data-256.json', function (err, testData) {
+      loadTestData(testResourcesPath + 'crypto-data-256.json', async function (err, testData) {
         if (err) {
           done(err);
           return;
@@ -315,8 +315,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         for (var i = 0; i < testData.items.length; i++) {
           var item = testData.items[i];
-          var testMessage = Message.fromEncoded(item.encoded);
-          var decryptedMessage = Message.fromEncoded(item.encrypted, { cipher: { key: key, iv: iv } });
+          var testMessage = await Message.fromEncoded(item.encoded);
+          var decryptedMessage = await Message.fromEncoded(item.encrypted, { cipher: { key: key, iv: iv } });
           testMessageEquality(done, testMessage, decryptedMessage);
         }
         done();

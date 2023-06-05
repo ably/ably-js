@@ -83,12 +83,13 @@ class Channels extends EventEmitter {
     }
   }
 
-  onChannelMessage(msg: ProtocolMessage) {
+  // Access to this method is synchronised by ConnectionManager#processChannelMessage.
+  async processChannelMessage(msg: ProtocolMessage) {
     const channelName = msg.channel;
     if (channelName === undefined) {
       Logger.logAction(
         Logger.LOG_ERROR,
-        'Channels.onChannelMessage()',
+        'Channels.processChannelMessage()',
         'received event unspecified channel, action = ' + msg.action
       );
       return;
@@ -97,12 +98,12 @@ class Channels extends EventEmitter {
     if (!channel) {
       Logger.logAction(
         Logger.LOG_ERROR,
-        'Channels.onChannelMessage()',
+        'Channels.processChannelMessage()',
         'received event for non-existent channel: ' + channelName
       );
       return;
     }
-    channel.onMessage(msg);
+    await channel.processMessage(msg);
   }
 
   /* called when a transport becomes connected; reattempt attach/detach
