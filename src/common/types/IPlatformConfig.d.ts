@@ -17,7 +17,7 @@ export interface IPlatformConfig {
   stringByteSize: Buffer.byteLength;
   addEventListener?: typeof window.addEventListener | typeof global.addEventListener | null;
   Promise: typeof Promise;
-  getRandomValues?: (arr: ArrayBufferView, callback?: (error: Error | null) => void) => void;
+  getRandomValues: (arr: ArrayBufferView, callback?: (error: Error | null) => void) => void;
   userAgent?: string | null;
   inherits?: typeof import('util').inherits;
   currentUrl?: string;
