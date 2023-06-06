@@ -2,14 +2,13 @@
 /* global define, isNativescript, fetch */
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
-define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF8, ably) {
+define(['globals', 'ably'], function (ablyGlobals, ably) {
   var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
     tlsPort = ablyGlobals.tlsPort;
 
   var isBrowser = typeof window === 'object',
     isNativescript = typeof global === 'object' && global.isNativescript,
     httpReq = httpReqFunction(),
-    toBase64 = base64Function(),
     loadJsonData = loadJsonDataNode,
     testResourcesPath = 'test/common/ably-common/test-resources/';
 
@@ -42,20 +41,10 @@ define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF
     return null;
   }
 
-  function NSbase64Function(d) {
-    return Base64.stringify(d);
-  }
-
-  function base64Function() {
-    if (isBrowser) {
-      return function (str) {
-        return Base64.stringify(UTF8.parse(str));
-      };
-    } else {
-      return function (str) {
-        return Buffer.from(str, 'ascii').toString('base64');
-      };
-    }
+  function toBase64(str) {
+    var bufferUtils = ably.Realtime.Platform.BufferUtils;
+    var buffer = bufferUtils.utf8Encode(str);
+    return bufferUtils.base64Encode(buffer);
   }
 
   function httpReqFunction() {
