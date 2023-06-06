@@ -218,7 +218,7 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
       };
     }
 
-    static hmacSha256(message: InputPlaintext, key: API.Types.CipherKey): OutputCiphertext {
+    static async hmacSha256(message: InputPlaintext, key: API.Types.CipherKey): Promise<OutputCiphertext> {
       const messageBuffer = bufferUtils.toBuffer(message);
       const keyBuffer = bufferUtils.toBuffer(key);
 

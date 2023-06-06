@@ -44,11 +44,11 @@ let toBase64 = (str: string): string => {
   return Platform.BufferUtils.base64Encode(buffer);
 };
 
-let hmac = (text: string, key: string): string => {
+let hmac = async (text: string, key: string): Promise<string> => {
   const textBuffer = Platform.BufferUtils.utf8Encode(text);
   const keyBuffer = Platform.BufferUtils.utf8Encode(key);
 
-  const digest = Platform.Crypto.hmacSha256(textBuffer, keyBuffer);
+  const digest = await Platform.Crypto.hmacSha256(textBuffer, keyBuffer);
 
   return Platform.BufferUtils.base64Encode(digest);
 };
@@ -820,10 +820,18 @@ class Auth {
        * specifies the mac; this is done by the library
        * However, this can be overridden by the client
        * simply for testing purposes. */
-      request.mac = request.mac || hmac(signText, keySecret);
+      const macPromise = request.mac ? Promise.resolve(request.mac) : hmac(signText, keySecret);
 
-      Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
-      callback(null, request);
+      macPromise
+        .then((mac) => {
+          request.mac = mac;
+          Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
+          callback(null, request);
+        })
+        .catch((err) => {
+          Logger.logAction(Logger.LOG_ERROR, 'Auth.getTokenRequest()', 'failed to sign request: ' + err.message);
+          callback(ErrorInfo.fromValues(err));
+        });
     });
   }
 

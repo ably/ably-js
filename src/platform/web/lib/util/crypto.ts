@@ -211,7 +211,7 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
       };
     }
 
-    static hmacSha256(message: InputPlaintext, key: API.Types.CipherKey): OutputCiphertext {
+    static async hmacSha256(message: InputPlaintext, key: API.Types.CipherKey): Promise<OutputCiphertext> {
       const messageWordArray = bufferUtils.toWordArray(message);
       const keyWordArray = bufferUtils.toWordArray(key);
 
