@@ -20,6 +20,12 @@ function toString(err: ErrorInfo | PartialErrorInfo) {
   return result;
 }
 
+export interface IConvertibleToErrorInfo {
+  message: string;
+  code: number;
+  statusCode: number;
+}
+
 export default class ErrorInfo extends Error implements IPartialErrorInfo, API.Types.ErrorInfo {
   code: number;
   statusCode: number;
@@ -40,8 +46,8 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.T
     return toString(this);
   }
 
-  static fromValues(values: Record<string, unknown> | ErrorInfo | Error): ErrorInfo {
-    const { message, code, statusCode } = values as ErrorInfo;
+  static fromValues(values: IConvertibleToErrorInfo): ErrorInfo {
+    const { message, code, statusCode } = values;
     if (typeof message !== 'string' || typeof code !== 'number' || typeof statusCode !== 'number') {
       throw new Error('ErrorInfo.fromValues(): invalid values: ' + Platform.Config.inspect(values));
     }
