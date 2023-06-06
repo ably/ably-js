@@ -147,9 +147,9 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
      * in any not provided with default values, calculating a keyLength from
      * the supplied key, and validating the result.
      * @param params an object containing at a minimum a `key` key with value the
-     * key, as either a binary (ArrayBuffer, Array, WordArray) or a
-     * base64-encoded string. May optionally also contain: algorithm (defaults to
-     * AES), mode (defaults to 'cbc')
+     * key, as either a binary or a base64-encoded string.
+     * May optionally also contain: algorithm (defaults to AES),
+     * mode (defaults to 'cbc')
      */
     static getDefaultParams(params: API.Types.CipherParamOptions) {
       var key: NodeCipherKey;
@@ -160,7 +160,7 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
 
       if (typeof params.key === 'string') {
         key = bufferUtils.base64Decode(normaliseBase64(params.key));
-      } else if (bufferUtils.isArrayBuffer(params.key)) {
+      } else if (params.key instanceof ArrayBuffer) {
         key = Buffer.from(params.key);
       } else {
         key = params.key;

@@ -269,13 +269,11 @@ class Message {
                   deltaBase = Platform.BufferUtils.utf8Encode(deltaBase);
                 }
 
-                /* vcdiff expects Uint8Arrays, can't copy with ArrayBuffers. (also, if we
-                 * don't have a TextDecoder, deltaBase might be a WordArray here, so need
-                 * to process it into a buffer anyway) */
+                // vcdiff expects Uint8Arrays, can't copy with ArrayBuffers.
                 deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
                 data = Platform.BufferUtils.toBuffer(data);
 
-                data = Platform.BufferUtils.typedArrayToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
+                data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
                 lastPayload = data;
               } catch (e) {
                 throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);

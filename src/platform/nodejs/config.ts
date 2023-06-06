@@ -1,4 +1,4 @@
-import { TypedArray, IPlatformConfig } from '../../common/types/IPlatformConfig';
+import { IPlatformConfig } from '../../common/types/IPlatformConfig';
 import crypto from 'crypto';
 import WebSocket from 'ws';
 import util from 'util';
@@ -19,9 +19,14 @@ const Config: IPlatformConfig = {
   stringByteSize: Buffer.byteLength,
   inherits: util.inherits,
   addEventListener: null,
-  getRandomValues: function (arr: TypedArray, callback?: (err: Error | null) => void): void {
-    const bytes = crypto.randomBytes(arr.length);
-    arr.set(bytes);
+  getRandomValues: function (arr: ArrayBufferView, callback?: (err: Error | null) => void): void {
+    const bytes = crypto.randomBytes(arr.byteLength);
+    const dataView = new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+
+    for (let i = 0; i < bytes.length; i++) {
+      dataView.setUint8(i, bytes[i]);
+    }
+
     if (callback) {
       callback(null);
     }

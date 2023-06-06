@@ -34,7 +34,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
 
       if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
-        expect(BufferUtils.bufferCompare(one.data, two.data) === 0, 'Buffer data contents mismatch.').to.be.ok;
+        expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
         return;
       }
 
@@ -124,8 +124,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           return;
         }
         try {
-          /* .length for a nodejs buffer, .sigbytes for a browser CryptoJS WordArray */
-          expect(key.length || key.sigBytes).to.equal(8, 'generated key is the correct length');
+          /* .length for a nodejs buffer, .byteLength for a browser ArrayBuffer */
+          expect(key.length || key.byteLength).to.equal(8, 'generated key is the correct length');
           done();
         } catch (err) {
           done(err);
@@ -141,7 +141,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           return;
         }
         try {
-          expect(key.length || key.sigBytes).to.equal(32, 'generated key is the default length');
+          expect(key.length || key.byteLength).to.equal(32, 'generated key is the default length');
           done();
         } catch (err) {
           done(err);
@@ -149,7 +149,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    it('getDefaultParams_wordArray_key', function (done) {
+    it('getDefaultParams_withResultOfGenerateRandomKey', function (done) {
       Crypto.generateRandomKey(function (err, key) {
         if (err) {
           done(err);
@@ -174,7 +174,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var arrayBufferKey = Ably.Realtime.Platform.BufferUtils.toArrayBuffer(key);
         var params = Crypto.getDefaultParams({ key: arrayBufferKey });
         try {
-          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
+          expect(BufferUtils.areBuffersEqual(params.key, key)).to.equal(true);
           done();
         } catch (err) {
           done(err);
@@ -191,7 +191,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var b64key = Ably.Realtime.Platform.BufferUtils.base64Encode(key);
         var params = Crypto.getDefaultParams({ key: b64key });
         try {
-          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
+          expect(BufferUtils.areBuffersEqual(params.key, key)).to.equal(true);
           done();
         } catch (err) {
           done(err);
@@ -342,10 +342,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
-                 * CryptoJS (a wordArray) into the msgpack binary type */
-                expect(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
-                  0,
-                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare'
+                 * the platform's ICipher implementation into the msgpack binary type */
+                expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
+                  true,
+                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual'
                 );
 
                 /* Can't compare msgpackFromEncoded with fixture data because can't
@@ -376,10 +376,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
-                 * CryptoJS (a wordArray) into the msgpack binary type */
-                expect(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
-                  0,
-                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare'
+                 * the platform's ICipher implementation into the msgpack binary type */
+                expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
+                  true,
+                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual'
                 );
 
                 /* Can't compare msgpackFromEncoded with fixture data because can't

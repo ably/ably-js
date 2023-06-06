@@ -1,13 +1,11 @@
-import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils from 'common/types/IBufferUtils';
 
-export type Bufferlike = Buffer | ArrayBuffer | TypedArray;
+export type Bufferlike = Buffer | ArrayBuffer | ArrayBufferView;
 export type Output = Buffer;
 export type ToBufferOutput = Buffer;
-export type ComparableBuffer = Buffer;
 export type WordArrayLike = never;
 
-class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer, WordArrayLike> {
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, WordArrayLike> {
   base64CharSet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet: string = '0123456789abcdef';
 
@@ -19,10 +17,9 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     return this.toBuffer(buffer).toString('base64');
   }
 
-  bufferCompare(buffer1: ComparableBuffer, buffer2: ComparableBuffer): number {
-    if (!buffer1) return -1;
-    if (!buffer2) return 1;
-    return buffer1.compare(buffer2);
+  areBuffersEqual(buffer1: Bufferlike, buffer2: Bufferlike): boolean {
+    if (!buffer1 || !buffer2) return false;
+    return this.toBuffer(buffer1).compare(this.toBuffer(buffer2)) == 0;
   }
 
   byteLength(buffer: Bufferlike): number {
@@ -37,17 +34,13 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     return this.toBuffer(buffer).toString('hex');
   }
 
-  isArrayBuffer(ob: unknown): ob is ArrayBuffer {
-    return ob !== null && ob !== undefined && (ob as ArrayBuffer).constructor === ArrayBuffer;
-  }
-
   /* In node, BufferUtils methods that return binary objects return a Buffer
    * for historical reasons; the browser equivalents return ArrayBuffers */
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return Buffer.isBuffer(buffer) || this.isArrayBuffer(buffer) || ArrayBuffer.isView(buffer);
+    return Buffer.isBuffer(buffer) || buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer);
   }
 
-  toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
+  toArrayBuffer(buffer: Bufferlike | WordArrayLike): ArrayBuffer {
     const nodeBuffer = this.toBuffer(buffer);
     return nodeBuffer.buffer.slice(nodeBuffer.byteOffset, nodeBuffer.byteOffset + nodeBuffer.byteLength);
   }
@@ -56,11 +49,14 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     if (Buffer.isBuffer(buffer)) {
       return buffer;
     }
-    return Buffer.from(buffer);
+    if (buffer instanceof ArrayBuffer) {
+      return Buffer.from(buffer);
+    }
+    return Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   }
 
-  typedArrayToBuffer(typedArray: TypedArray): Buffer {
-    return this.toBuffer(typedArray.buffer);
+  arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView): Buffer {
+    return this.toBuffer(arrayBufferView.buffer);
   }
 
   utf8Decode(buffer: Bufferlike): string {
@@ -75,7 +71,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
   }
 
   // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-  toWordArray(buffer: TypedArray | WordArrayLike | number[] | ArrayBuffer): never {
+  toWordArray(buffer: ArrayBufferView | WordArrayLike | number[] | ArrayBuffer): never {
     throw new Error('Not implemented');
   }
 

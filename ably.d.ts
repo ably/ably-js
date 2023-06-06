@@ -975,7 +975,7 @@ declare namespace Types {
    */
   interface ChannelOptions {
     /**
-     * Requests encryption for this channel when not null, and specifies encryption-related parameters (such as algorithm, chaining mode, key length and key). See [an example](https://ably.com/docs/realtime/encryption#getting-started).
+     * Requests encryption for this channel when not null, and specifies encryption-related parameters (such as algorithm, chaining mode, key length and key). See [an example](https://ably.com/docs/realtime/encryption#getting-started). When running in a browser, encryption is only available when the current environment is a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts).
      */
     cipher?: CipherParamOptions | CipherParams;
     /**
@@ -2904,11 +2904,11 @@ declare namespace Types {
    */
   type CipherKeyParam = ArrayBuffer | Uint8Array | string; // if string must be base64-encoded
   /**
-   * Typed differently depending on platform. (`WordArray` in browser, `Buffer` in node)
+   * Typed differently depending on platform. (`ArrayBuffer` in browser, `Buffer` in node)
    *
    * @internal
    */
-  type CipherKey = unknown; // WordArray on browsers, Buffer on node, using unknown as
+  type CipherKey = unknown; // ArrayBuffer on browsers, Buffer on node, using unknown as
   // user should not be interacting with it - output of getDefaultParams should be used opaquely
 
   /**

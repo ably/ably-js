@@ -1,35 +1,22 @@
-import { parse as parseHex, stringify as stringifyHex } from 'crypto-js/build/enc-hex';
-import { parse as parseUtf8, stringify as stringifyUtf8 } from 'crypto-js/build/enc-utf8';
-import { parse as parseBase64, stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
 import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
-import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils from 'common/types/IBufferUtils';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
- * if supported, else a CryptoJS WordArray. The exception is toBuffer, which
- * returns a Uint8Array (and won't work on browsers too old to support it) */
+ * The exception is toBuffer, which returns a Uint8Array (and won't work on
+ * browsers too old to support it) */
 
-export type Bufferlike = WordArray | ArrayBuffer | TypedArray;
+export type Bufferlike = BufferSource;
 export type Output = Bufferlike;
 export type ToBufferOutput = Uint8Array;
-export type ComparableBuffer = ArrayBuffer;
 export type WordArrayLike = WordArray;
 
-class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer, WordArrayLike> {
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, WordArrayLike> {
   base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet = '0123456789abcdef';
 
   isWordArray(ob: unknown): ob is WordArray {
     return ob !== null && ob !== undefined && (ob as WordArray).sigBytes !== undefined;
-  }
-
-  isArrayBuffer(ob: unknown): ob is ArrayBuffer {
-    return ob !== null && ob !== undefined && (ob as ArrayBuffer).constructor === ArrayBuffer;
-  }
-
-  isTypedArray(ob: unknown): ob is TypedArray {
-    return !!ArrayBuffer && ArrayBuffer.isView && ArrayBuffer.isView(ob);
   }
 
   // // https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
@@ -96,7 +83,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
   }
 
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return this.isArrayBuffer(buffer) || this.isWordArray(buffer) || this.isTypedArray(buffer);
+    return buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer);
   }
 
   /* In browsers, returns a Uint8Array */
@@ -105,14 +92,21 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
       throw new Error("Can't convert to Buffer: browser does not support the necessary types");
     }
 
-    if (this.isArrayBuffer(buffer)) {
+    if (buffer instanceof ArrayBuffer) {
       return new Uint8Array(buffer);
     }
 
-    if (this.isTypedArray(buffer)) {
+    if (ArrayBuffer.isView(buffer)) {
       return new Uint8Array(buffer.buffer);
     }
 
+    throw new Error('BufferUtils.toBuffer expected an ArrayBuffer or a view onto one');
+  }
+
+  toArrayBuffer(buffer: Bufferlike | WordArrayLike): ArrayBuffer {
+    if (buffer instanceof ArrayBuffer) {
+      return buffer;
+    }
     if (this.isWordArray(buffer)) {
       /* Backported from unreleased CryptoJS
        * https://code.google.com/p/crypto-js/source/browse/branches/3.x/src/lib-typedarrays.js?r=661 */
@@ -125,52 +119,57 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
 
       return uint8View;
     }
-
-    throw new Error('BufferUtils.toBuffer expected an arraybuffer, typed array, or CryptoJS wordarray');
-  }
-
-  toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
-    if (this.isArrayBuffer(buffer)) {
-      return buffer;
-    }
     return this.toBuffer(buffer).buffer;
   }
 
   toWordArray(buffer: Bufferlike | number[]) {
-    if (this.isTypedArray(buffer)) {
+    if (ArrayBuffer.isView(buffer)) {
       buffer = buffer.buffer;
     }
     return this.isWordArray(buffer) ? buffer : WordArray.create(buffer as number[]);
   }
 
   base64Encode(buffer: Bufferlike) {
-    if (this.isWordArray(buffer)) {
-      return stringifyBase64(buffer);
-    }
     return this.uint8ViewToBase64(this.toBuffer(buffer));
   }
 
   base64Decode(str: string): Output {
     if (ArrayBuffer && Platform.Config.atob) {
       return this.base64ToArrayBuffer(str);
+    } else {
+      throw new Error('Expected ArrayBuffer to exist and Platform.Config.atob to be configured');
     }
-    return parseBase64(str);
   }
 
   hexEncode(buffer: Bufferlike) {
-    return stringifyHex(this.toWordArray(buffer));
+    const arrayBuffer =
+      buffer instanceof ArrayBuffer
+        ? buffer
+        : buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    return uint8Array.reduce((accum, byte) => accum + byte.toString(16).padStart(2, '0'), '');
   }
 
-  hexDecode(string: string) {
-    var wordArray = parseHex(string);
-    return ArrayBuffer ? this.toArrayBuffer(wordArray) : wordArray;
+  hexDecode(hexEncodedBytes: string) {
+    if (hexEncodedBytes.length % 2 !== 0) {
+      throw new Error("Can't create a byte array from a hex string of odd length");
+    }
+
+    const uint8Array = new Uint8Array(hexEncodedBytes.length / 2);
+
+    for (let i = 0; i < uint8Array.length; i++) {
+      uint8Array[i] = parseInt(hexEncodedBytes.slice(2 * i, 2 * (i + 1)), 16);
+    }
+
+    return uint8Array.buffer.slice(uint8Array.byteOffset, uint8Array.byteOffset + uint8Array.byteLength);
   }
 
   utf8Encode(string: string) {
     if (Platform.Config.TextEncoder) {
       return new Platform.Config.TextEncoder().encode(string).buffer;
+    } else {
+      throw new Error('Expected TextEncoder to be configured');
     }
-    return parseUtf8(string);
   }
 
   /* For utf8 decoding we apply slightly stricter input validation than to
@@ -180,46 +179,41 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
    * to utf8-decode a string to another string is almost certainly a mistake */
   utf8Decode(buffer: Bufferlike) {
     if (!this.isBuffer(buffer)) {
-      throw new Error('Expected input of utf8decode to be an arraybuffer, typed array, or CryptoJS wordarray');
+      throw new Error('Expected input of utf8decode to be an arraybuffer or typed array');
     }
-    if (TextDecoder && !this.isWordArray(buffer)) {
+    if (TextDecoder) {
       return new TextDecoder().decode(buffer);
+    } else {
+      throw new Error('Expected TextDecoder to be configured');
     }
-    buffer = this.toWordArray(buffer);
-    return stringifyUtf8(buffer);
   }
 
-  bufferCompare(buffer1: ComparableBuffer, buffer2: ComparableBuffer) {
-    if (!buffer1) return -1;
-    if (!buffer2) return 1;
-    const wordArray1 = this.toWordArray(buffer1);
-    const wordArray2 = this.toWordArray(buffer2);
-    wordArray1.clamp();
-    wordArray2.clamp();
+  areBuffersEqual(buffer1: Bufferlike, buffer2: Bufferlike) {
+    if (!buffer1 || !buffer2) return false;
+    const arrayBuffer1 = this.toArrayBuffer(buffer1);
+    const arrayBuffer2 = this.toArrayBuffer(buffer2);
 
-    var cmp = wordArray1.sigBytes - wordArray2.sigBytes;
-    if (cmp != 0) return cmp;
-    const words1 = wordArray1.words;
-    const words2 = wordArray2.words;
-    for (var i = 0; i < words1.length; i++) {
-      cmp = words1[i] - words2[i];
-      if (cmp != 0) return cmp;
+    if (arrayBuffer1.byteLength != arrayBuffer2.byteLength) return false;
+
+    const bytes1 = new Uint8Array(arrayBuffer1);
+    const bytes2 = new Uint8Array(arrayBuffer2);
+
+    for (var i = 0; i < bytes1.length; i++) {
+      if (bytes1[i] != bytes2[i]) return false;
     }
-    return 0;
+    return true;
   }
 
   byteLength(buffer: Bufferlike) {
-    if (this.isArrayBuffer(buffer) || this.isTypedArray(buffer)) {
+    if (buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer)) {
       return buffer.byteLength;
-    } else if (this.isWordArray(buffer)) {
-      return buffer.sigBytes;
     }
     return -1;
   }
 
   /* Returns ArrayBuffer on browser and Buffer on Node.js */
-  typedArrayToBuffer(typedArray: TypedArray) {
-    return typedArray.buffer;
+  arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView) {
+    return arrayBufferView.buffer;
   }
 }
 
