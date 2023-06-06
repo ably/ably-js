@@ -479,21 +479,6 @@ export const randomString = (numBytes: number): string => {
   return result;
 };
 
-export const randomHexString = (numBytes: number): string => {
-  if (Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined') {
-    const uIntArr = new Uint8Array(numBytes);
-    (Platform.Config.getRandomValues as Function)(uIntArr);
-    return Platform.BufferUtils.hexEncode(uIntArr);
-  }
-  const charset = Platform.BufferUtils.hexCharSet;
-  const length = numBytes * 2;
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += charset[randomPosn(charset)];
-  }
-  return result;
-};
-
 /* Pick n elements at random without replacement from an array */
 export function arrChooseN<T>(arr: Array<T>, n: number): Array<T> {
   const numItems = Math.min(n, arr.length),
