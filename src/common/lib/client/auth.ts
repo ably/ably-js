@@ -130,11 +130,6 @@ class Auth {
 
     if (useTokenAuth(options)) {
       /* Token auth */
-      if (options.key && !hmac) {
-        const msg = 'client-side token request signing not supported';
-        Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-        throw new Error(msg);
-      }
       if (noWayToRenew(options)) {
         Logger.logAction(
           Logger.LOG_ERROR,
