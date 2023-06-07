@@ -48,4 +48,4 @@ jobs:
         with:
           node-version: 14.x
       - run: npm ci
-      - run: node scripts/cdn_deploy.js --bucket cdn.ably.com --skipCheckout --tag=${{ github.event.inputs.version }}
+      - run: node scripts/cdn_deploy.js --bucket prod-cdn.ably.com --skipCheckout --tag=${{ github.event.inputs.version }}
