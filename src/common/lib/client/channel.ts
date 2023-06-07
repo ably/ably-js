@@ -152,39 +152,48 @@ class Channel extends EventEmitter {
 
     Utils.mixin(headers, options.headers);
 
+    let waitForMessageIdsToBeAssigned = Promise.resolve();
     if (idempotentRestPublishing && allEmptyIds(messages)) {
-      const msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
-      Utils.arrForEach(messages, function (message, index) {
-        message.id = msgIdBase + ':' + index.toString();
-      });
+      waitForMessageIdsToBeAssigned = (async () => {
+        const msgIdBase = await Utils.randomString(MSG_ID_ENTROPY_BYTES);
+        Utils.arrForEach(messages, function (message, index) {
+          message.id = msgIdBase + ':' + index.toString();
+        });
+      })();
     }
 
-    Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
-      if (err) {
+    waitForMessageIdsToBeAssigned
+      .then(() => {
+        Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
+          if (err) {
+            callback(err);
+            return;
+          }
+
+          /* RSL1i */
+          const size = Message.getMessagesSize(messages),
+            maxMessageSize = options.maxMessageSize;
+          if (size > maxMessageSize) {
+            callback(
+              new ErrorInfo(
+                'Maximum size of messages that can be published at once exceeded ( was ' +
+                  size +
+                  ' bytes; limit is ' +
+                  maxMessageSize +
+                  ' bytes)',
+                40009,
+                400
+              )
+            );
+            return;
+          }
+
+          this._publish(Message.serialize(messages, format), headers, params, callback);
+        });
+      })
+      .catch((err) => {
         callback(err);
-        return;
-      }
-
-      /* RSL1i */
-      const size = Message.getMessagesSize(messages),
-        maxMessageSize = options.maxMessageSize;
-      if (size > maxMessageSize) {
-        callback(
-          new ErrorInfo(
-            'Maximum size of messages that can be published at once exceeded ( was ' +
-              size +
-              ' bytes; limit is ' +
-              maxMessageSize +
-              ' bytes)',
-            40009,
-            400
-          )
-        );
-        return;
-      }
-
-      this._publish(Message.serialize(messages, format), headers, params, callback);
-    });
+      });
   }
 
   _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {

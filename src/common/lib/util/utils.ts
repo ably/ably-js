@@ -460,7 +460,21 @@ export function cheapRandStr(): string {
 /* Takes param the minimum number of bytes of entropy the string must
  * include, not the length of the string. String length produced is not
  * guaranteed. */
-export const randomString = (numBytes: number): string => {
+export const randomString = async (numBytes: number): Promise<string> => {
+  if (Platform.Config.getRandomArrayBuffer) {
+    const randomArrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+      Platform.Config.getRandomArrayBuffer!(numBytes, (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result!);
+        }
+      });
+    });
+
+    return Platform.BufferUtils.base64Encode(randomArrayBuffer);
+  }
+
   if (Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined') {
     const uIntArr = new Uint8Array(numBytes);
     Platform.Config.getRandomValues(uIntArr);
