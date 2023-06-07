@@ -1,7 +1,7 @@
 import WordArray from 'crypto-js/build/lib-typedarrays';
 import Platform from 'common/platform';
 import IBufferUtils from 'common/types/IBufferUtils';
-import HmacSHA256 from 'crypto-js/build/hmac-sha256';
+import { sign as hmacSha256 } from './hmac-sha256';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
  * The exception is toBuffer, which returns a Uint8Array (and won't work on
@@ -218,12 +218,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Wo
   }
 
   hmacSha256(message: Bufferlike, key: Bufferlike): Output {
-    const messageWordArray = this.toWordArray(message);
-    const keyWordArray = this.toWordArray(key);
-
-    const digest = HmacSHA256(messageWordArray, keyWordArray);
-
-    return this.toArrayBuffer(digest);
+    return hmacSha256(this.toBuffer(key), this.toBuffer(message));
   }
 }
 
