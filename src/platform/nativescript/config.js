@@ -49,13 +49,10 @@ var Config = {
   TextEncoder: global.TextEncoder,
   TextDecoder: global.TextDecoder,
   Promise: global.Promise,
-  getRandomValues: function (arr, callback) {
+  getRandomValues: function (arr) {
     var bytes = randomBytes(arr.length);
     for (var i = 0; i < arr.length; i++) {
       arr[i] = bytes[i];
-    }
-    if (callback) {
-      callback(null);
     }
   },
 };

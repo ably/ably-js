@@ -463,7 +463,7 @@ export function cheapRandStr(): string {
 export const randomString = (numBytes: number): string => {
   if (Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined') {
     const uIntArr = new Uint8Array(numBytes);
-    (Platform.Config.getRandomValues as Function)(uIntArr);
+    Platform.Config.getRandomValues(uIntArr);
     return Platform.BufferUtils.base64Encode(uIntArr);
   }
   /* Old browser; fall back to Math.random. Could just use a

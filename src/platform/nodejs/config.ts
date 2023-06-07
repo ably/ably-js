@@ -19,16 +19,12 @@ const Config: IPlatformConfig = {
   stringByteSize: Buffer.byteLength,
   inherits: util.inherits,
   addEventListener: null,
-  getRandomValues: function (arr: ArrayBufferView, callback?: (err: Error | null) => void): void {
+  getRandomValues: function (arr: ArrayBufferView): void {
     const bytes = crypto.randomBytes(arr.byteLength);
     const dataView = new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
 
     for (let i = 0; i < bytes.length; i++) {
       dataView.setUint8(i, bytes[i]);
-    }
-
-    if (callback) {
-      callback(null);
     }
   },
   Promise: global && global.Promise,

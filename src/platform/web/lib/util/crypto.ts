@@ -37,11 +37,8 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
     generateRandom = function (bytes, callback) {
       var words = bytes / 4,
         nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
-      config.getRandomValues!(nativeArray, function (err) {
-        if (typeof callback !== 'undefined') {
-          callback(err, bufferUtils.toArrayBuffer(nativeArray));
-        }
-      });
+      config.getRandomValues!(nativeArray);
+      callback(null, bufferUtils.toArrayBuffer(nativeArray));
     };
   } else {
     generateRandom = function (bytes, callback) {
