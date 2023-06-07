@@ -185,7 +185,7 @@ function sha256(data: Uint8Array) {
   );
 }
 
-function hmac(key: Uint8Array, data: Uint8Array) {
+export function hmac(key: Uint8Array, data: Uint8Array) {
   if (key.length > 64) key = sha256(key);
 
   if (key.length < 64) {
@@ -214,21 +214,4 @@ function hmac(key: Uint8Array, data: Uint8Array) {
 
   // Hash the previous message
   return sha256(result);
-}
-
-// Convert a string to a Uint8Array, SHA-256 it, and convert back to string
-const encoder = new TextEncoder();
-
-export function sign(inputKey: string | Uint8Array, inputData: string | Uint8Array) {
-  const key = typeof inputKey === 'string' ? encoder.encode(inputKey) : inputKey;
-  const data = typeof inputData === 'string' ? encoder.encode(inputData) : inputData;
-  return hmac(key, data);
-}
-
-export function hash(str: string) {
-  return hex(sha256(encoder.encode(str)));
-}
-
-export function hex(bin: Uint8Array) {
-  return bin.reduce((acc, val) => acc + ('00' + val.toString(16)).substr(-2), '');
 }
