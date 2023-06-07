@@ -29,7 +29,7 @@ var pow = Math.pow;
 // a bit bigger (we lose our `unshift()` hack), but comes with huge
 // performance gains
 var DEFAULT_STATE = new uint32Array(8);
-var ROUND_CONSTANTS = [];
+var ROUND_CONSTANTS: number[] = [];
 
 // Reusable object for expanded message
 // Using a Uint32Array instead of a simple array makes the minified code
@@ -40,7 +40,7 @@ var M = new uint32Array(64);
 // constants is smaller than the output. More importantly, this serves as a
 // good educational aide for anyone wondering where the magic numbers come
 // from. No magic numbers FTW!
-function getFractionalBits(n) {
+function getFractionalBits(n: number) {
   return ((n - (n | 0)) * pow(2, 32)) | 0;
 }
 
@@ -81,7 +81,7 @@ while (nPrime < 64) {
 // if our system is LittleEndian (which is about 99% of CPUs)
 var LittleEndian = !!new uint8Array(new uint32Array([1]).buffer)[0];
 
-function convertEndian(word) {
+function convertEndian(word: number) {
   if (LittleEndian) {
     return (
       // byte 1 -> byte 4
@@ -98,11 +98,11 @@ function convertEndian(word) {
   }
 }
 
-function rightRotate(word, bits) {
+function rightRotate(word: number, bits: number) {
   return (word >>> bits) | (word << (32 - bits));
 }
 
-function sha256(data) {
+function sha256(data: Uint8Array) {
   // Copy default state
   var STATE = DEFAULT_STATE.slice();
 
@@ -185,7 +185,7 @@ function sha256(data) {
   );
 }
 
-function hmac(key, data) {
+function hmac(key: Uint8Array, data: Uint8Array) {
   if (key.length > 64) key = sha256(key);
 
   if (key.length < 64) {
@@ -217,18 +217,18 @@ function hmac(key, data) {
 }
 
 // Convert a string to a Uint8Array, SHA-256 it, and convert back to string
-const encoder = new TextEncoder('utf-8');
+const encoder = new TextEncoder();
 
-export function sign(inputKey, inputData) {
+export function sign(inputKey: string | Uint8Array, inputData: string | Uint8Array) {
   const key = typeof inputKey === 'string' ? encoder.encode(inputKey) : inputKey;
   const data = typeof inputData === 'string' ? encoder.encode(inputData) : inputData;
   return hmac(key, data);
 }
 
-export function hash(str) {
+export function hash(str: string) {
   return hex(sha256(encoder.encode(str)));
 }
 
-export function hex(bin) {
+export function hex(bin: Uint8Array) {
   return bin.reduce((acc, val) => acc + ('00' + val.toString(16)).substr(-2), '');
 }
