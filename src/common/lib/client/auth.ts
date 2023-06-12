@@ -2,10 +2,6 @@ import Logger from '../util/logger';
 import * as Utils from '../util/utils';
 import Multicaster from '../util/multicaster';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
-import HmacSHA256 from 'crypto-js/build/hmac-sha256';
-import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
-import { parse as parseUtf8 } from 'crypto-js/build/enc-utf8';
-import { createHmac } from 'crypto';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import { StandardCallback } from '../../types/utils';
@@ -44,19 +40,19 @@ function normaliseAuthcallbackError(err: any) {
 }
 
 let toBase64 = (str: string): string => {
-  if (Platform.Config.createHmac) {
-    return Buffer.from(str, 'ascii').toString('base64');
-  }
-  return stringifyBase64(parseUtf8(str));
+  const buffer = Platform.BufferUtils.utf8Encode(str);
+  return Platform.BufferUtils.base64Encode(buffer);
 };
 
 let hmac = (text: string, key: string): string => {
-  if (Platform.Config.createHmac) {
-    const inst = (Platform.Config.createHmac as typeof createHmac)('SHA256', key);
-    inst.update(text);
-    return inst.digest('base64');
-  }
-  return stringifyBase64(HmacSHA256(text, key));
+  const bufferUtils = Platform.BufferUtils;
+
+  const textBuffer = bufferUtils.utf8Encode(text);
+  const keyBuffer = bufferUtils.utf8Encode(key);
+
+  const digest = bufferUtils.hmacSha256(textBuffer, keyBuffer);
+
+  return bufferUtils.base64Encode(digest);
 };
 
 function c14n(capability?: string | Record<string, Array<string>>) {
@@ -134,11 +130,6 @@ class Auth {
 
     if (useTokenAuth(options)) {
       /* Token auth */
-      if (options.key && !hmac) {
-        const msg = 'client-side token request signing not supported';
-        Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
-        throw new Error(msg);
-      }
       if (noWayToRenew(options)) {
         Logger.logAction(
           Logger.LOG_ERROR,

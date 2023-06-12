@@ -13,7 +13,6 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
     allowComet: true,
     streamingSupported: true,
     useProtocolHeartbeats: true,
-    createHmac: null,
     msgpack: msgpack,
     supportsBinary: !!(typeof TextDecoder !== 'undefined' && TextDecoder),
     preferBinary: false,

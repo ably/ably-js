@@ -28,7 +28,6 @@ var Config = {
   allowComet: true,
   streamingSupported: false,
   useProtocolHeartbeats: true,
-  createHmac: null,
   msgpack: msgpack,
   supportsBinary: typeof TextDecoder !== 'undefined' && TextDecoder,
   preferBinary: false,
