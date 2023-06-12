@@ -716,7 +716,7 @@ declare namespace Types {
     /**
      * The private key used to encrypt and decrypt payloads. You should not set this value directly; rather, you should pass a `key` of type {@link Types.CipherKeyParam} to {@link Crypto.getDefaultParams}.
      */
-    key: CipherKey;
+    key: unknown;
     /**
      * The length of the key in bits; either 128 or 256.
      */
@@ -2904,12 +2904,9 @@ declare namespace Types {
    */
   type CipherKeyParam = ArrayBuffer | Uint8Array | string; // if string must be base64-encoded
   /**
-   * Typed differently depending on platform. (`ArrayBuffer` in browser, `Buffer` in node)
-   *
-   * @internal
+   * The type of the key returned by {@link Crypto.generateRandomKey}. Typed differently depending on platform (`Buffer` in Node.js, `ArrayBuffer` elsewhere).
    */
-  type CipherKey = unknown; // ArrayBuffer on browsers, Buffer on node, using unknown as
-  // user should not be interacting with it - output of getDefaultParams should be used opaquely
+  type CipherKey = ArrayBuffer | Buffer;
 
   /**
    * Contains the properties used to generate a {@link CipherParams} object.
