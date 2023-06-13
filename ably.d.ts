@@ -989,6 +989,16 @@ declare namespace Types {
   }
 
   /**
+   * Passes additional properties to a {@link RealtimeChannelBase} name to produce a new derived channel
+   */
+  interface DeriveOptions {
+    /**
+     * The JMESPath Query filter string to be used to derive new channel.
+     */
+    filter?: string;
+  }
+
+  /**
    * The `RestHistoryParams` interface describes the parameters accepted by the following methods:
    *
    * - {@link PresenceCallbacks.history}
@@ -2736,6 +2746,21 @@ declare namespace Types {
      */
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
+     * @experimental This is a preview feature and may change in a future non-major release.
+     * This experimental method allows you to create custom realtime data feeds by selectively subscribing
+     * to receive only part of the data from the channel.
+     * See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
+     *
+     * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified channel {@link DeriveOptions}
+     * and {@link ChannelOptions}, or returns the existing channel object.
+     *
+     * @param name - The channel name.
+     * @param deriveOptions - A {@link DeriveOptions} object.
+     * @param channelOptions - A {@link ChannelOptions} object.
+     * @returns A {@link RealtimeChannelBase} object.
+     */
+    getDerived(name: string, deriveOptions: DeriveOptions, channelOptions?: ChannelOptions): T;
+    /**
      * Releases a {@link ChannelBase} or {@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *
      * @param name - The channel name.
@@ -2776,7 +2801,7 @@ declare namespace Types {
     /**
      * The connection ID of the publisher of this message.
      */
-    connectionId: string;
+    connectionId?: string;
     /**
      * The message payload, if provided.
      */

@@ -2,6 +2,18 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.40](https://github.com/ably/ably-js/tree/1.2.40) (2023-05-26)
+
+This release adds a new experimental `channels.getDerived` method which allows you to create custom realtime data feeds by selectively subscribing to receive only part of the data from the channel. See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
+
+- add experimental API to get derived channel [\#1306](https://github.com/ably/ably-js/pull/1306)
+- make `Message.connectionId` optional [\#1305](https://github.com/ably/ably-js/pull/1305)
+- fix misleading stack traces for early-intialised connection errors [\#1206](https://github.com/ably/ably-js/pull/1206)
+- remove `ProtocolMessage.connectionKey` [\#1218](https://github.com/ably/ably-js/pull/1218)
+- fix broken promisification of `Presence.history` signature [\#1224](https://github.com/ably/ably-js/pull/1224)
+- fix issue with query string encoding in react-native websockets [\#1286](https://github.com/ably/ably-js/pull/1286)
+- fix nodejs encryption of `ArrayBuffer` plaintext [\#1280](https://github.com/ably/ably-js/pull/1280)
+
 ## [1.2.39](https://github.com/ably/ably-js/tree/1.2.39) (2023-04-13)
 - bump got dependency to `^11.8.5` [\#1189](https://github.com/ably/ably-js/pull/1189)
 

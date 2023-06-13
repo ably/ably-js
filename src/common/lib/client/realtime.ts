@@ -162,6 +162,15 @@ class Channels extends EventEmitter {
     return channel;
   }
 
+  getDerived(name: string, deriveOptions: API.Types.DeriveOptions, channelOptions?: ChannelOptions) {
+    if (deriveOptions.filter) {
+      const filter = Utils.toBase64(deriveOptions.filter);
+      const match = Utils.matchDerivedChannel(name);
+      name = `[filter=${filter}${match.qualifierParam}]${match.channelName}`;
+    }
+    return this.get(name, channelOptions);
+  }
+
   /* Included to support certain niche use-cases; most users should ignore this.
    * Please do not use this unless you know what you're doing */
   release(name: string) {

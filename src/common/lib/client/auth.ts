@@ -39,11 +39,6 @@ function normaliseAuthcallbackError(err: any) {
   return err;
 }
 
-let toBase64 = (str: string): string => {
-  const buffer = Platform.BufferUtils.utf8Encode(str);
-  return Platform.BufferUtils.base64Encode(buffer);
-};
-
 let hmac = (text: string, key: string): string => {
   const bufferUtils = Platform.BufferUtils;
 
@@ -859,7 +854,7 @@ class Auth {
         if (!tokenDetails) {
           throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
         }
-        callback(null, { authorization: 'Bearer ' + toBase64(tokenDetails.token) });
+        callback(null, { authorization: 'Bearer ' + Utils.toBase64(tokenDetails.token) });
       });
     }
   }
@@ -889,7 +884,7 @@ class Auth {
   _saveBasicOptions(authOptions: API.Types.AuthOptions) {
     this.method = 'basic';
     this.key = authOptions.key;
-    this.basicKey = toBase64(authOptions.key as string);
+    this.basicKey = Utils.toBase64(authOptions.key as string);
     this.authOptions = authOptions || {};
     if ('clientId' in authOptions) {
       this._userSetClientId(authOptions.clientId);
