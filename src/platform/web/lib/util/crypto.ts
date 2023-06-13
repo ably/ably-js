@@ -191,7 +191,10 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
 
       generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
         if (callback !== undefined) {
-          callback(err ? ErrorInfo.fromValues(err) : null, buf ?? undefined);
+          const errorInfo = err
+            ? new ErrorInfo('Failed to generate random key: ' + err.message, 400, 50000, err)
+            : null;
+          callback(errorInfo, buf ?? undefined);
         }
       });
     }

@@ -198,7 +198,10 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
 
       generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
         if (callback !== undefined) {
-          callback(err ? ErrorInfo.fromValues(err) : null, buf);
+          const errorInfo = err
+            ? new ErrorInfo('Failed to generate random key: ' + err.message, 500, 50000, err)
+            : null;
+          callback(errorInfo, buf);
         }
       });
     }

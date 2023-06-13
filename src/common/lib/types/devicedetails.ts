@@ -1,5 +1,5 @@
 import * as Utils from '../util/utils';
-import ErrorInfo from './errorinfo';
+import ErrorInfo, { IConvertibleToErrorInfo } from './errorinfo';
 
 enum DeviceFormFactor {
   Phone = 'phone',
@@ -88,7 +88,7 @@ class DeviceDetails {
   }
 
   static fromValues(values: Record<string, unknown>): DeviceDetails {
-    values.error = values.error && ErrorInfo.fromValues(values.error as Error);
+    values.error = values.error && ErrorInfo.fromValues(values.error as IConvertibleToErrorInfo);
     return Object.assign(new DeviceDetails(), values);
   }
 
