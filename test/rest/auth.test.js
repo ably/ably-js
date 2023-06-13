@@ -252,6 +252,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
         }
         rest.auth.authOptions.requestHeaders = authHeaders;
         rest.auth.requestToken(function (err, tokenDetails) {
+          delete rest.auth.authOptions.requestHeaders;
           if (err) {
             done(err);
             return;
