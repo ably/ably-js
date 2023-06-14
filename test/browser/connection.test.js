@@ -51,7 +51,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
 
       it('device_going_offline_causes_disconnected_state', function (done) {
-        var realtime = helper.AblyRealtime(),
+        var realtime = helper.AblyRealtimePromise(),
           connection = realtime.connection,
           offlineEvent = new Event('offline', { bubbles: true });
 
@@ -94,7 +94,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
       it('device_going_online_causes_disconnected_connection_to_reconnect_immediately', function (done) {
         /* Give up trying to connect fairly quickly */
-        var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 1000 }),
+        var realtime = helper.AblyRealtimePromise({ realtimeRequestTimeout: 1000 }),
           connection = realtime.connection,
           onlineEvent = new Event('online', { bubbles: true });
 
@@ -139,7 +139,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
       it('device_going_online_causes_suspended_connection_to_reconnect_immediately', function (done) {
         /* move to suspended state after 2s of being disconnected */
-        var realtime = helper.AblyRealtime({
+        var realtime = helper.AblyRealtimePromise({
             disconnectedRetryTimeout: 500,
             realtimeRequestTimeout: 500,
             connectionStateTtl: 2000,
@@ -183,7 +183,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
 
       it('device_going_online_causes_connecting_connection_to_retry_attempt', function (done) {
-        var realtime = helper.AblyRealtime({}),
+        var realtime = helper.AblyRealtimePromise({}),
           connection = realtime.connection,
           onlineEvent = new Event('online', { bubbles: true }),
           oldTransport,
@@ -223,7 +223,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               cb(true);
             },
           },
-          realtime = helper.AblyRealtime(realtimeOpts),
+          realtime = helper.AblyRealtimePromise(realtimeOpts),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
         monitorConnection(done, realtime);
@@ -242,7 +242,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             return;
           }
 
-          var newRealtime = helper.AblyRealtime(realtimeOpts);
+          var newRealtime = helper.AblyRealtimePromise(realtimeOpts);
           newRealtime.connection.once('connected', function () {
             try {
               expect(
@@ -264,7 +264,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             cb(false);
           },
         };
-        var realtime = helper.AblyRealtime(realtimeOpts),
+        var realtime = helper.AblyRealtimePromise(realtimeOpts),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
         monitorConnection(done, realtime);
@@ -283,7 +283,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             return;
           }
 
-          var newRealtime = helper.AblyRealtime(realtimeOpts);
+          var newRealtime = helper.AblyRealtimePromise(realtimeOpts);
           newRealtime.connection.once('connected', function () {
             try {
               expect(
@@ -301,7 +301,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
 
       it('page_refresh_with_close_on_unload', function (done) {
-        var realtime = helper.AblyRealtime({ closeOnUnload: true }),
+        var realtime = helper.AblyRealtimePromise({ closeOnUnload: true }),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
         monitorConnection(done, realtime);
@@ -321,7 +321,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
 
       it('page_refresh_with_manual_recovery', function (done) {
-        var realtime = helper.AblyRealtime({ closeOnUnload: false }),
+        var realtime = helper.AblyRealtimePromise({ closeOnUnload: false }),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
         monitorConnection(done, realtime);
@@ -342,7 +342,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             return;
           }
 
-          var newRealtime = helper.AblyRealtime({ recover: recoveryKey });
+          var newRealtime = helper.AblyRealtimePromise({ recover: recoveryKey });
           newRealtime.connection.once('connected', function () {
             try {
               expect(
@@ -359,7 +359,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
 
       it('persist_preferred_transport', function (done) {
-        var realtime = helper.AblyRealtime();
+        var realtime = helper.AblyRealtimePromise();
 
         realtime.connection.connectionManager.on(function (transport) {
           if (this.event === 'transport.active' && transport.shortName === 'web_socket') {
@@ -381,7 +381,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         var transportPreferenceName = 'ably-transport-preference';
         window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: 'web_socket' }));
 
-        var realtime = helper.AblyRealtime();
+        var realtime = helper.AblyRealtimePromise();
 
         realtime.connection.connectionManager.on(function (transport) {
           if (this.event === 'transport.active') {
@@ -400,7 +400,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       it('use_persisted_transport1', function (done) {
         window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: 'xhr_streaming' }));
 
-        var realtime = helper.AblyRealtime();
+        var realtime = helper.AblyRealtimePromise();
 
         realtime.connection.connectionManager.on(function (transport) {
           if (this.event === 'transport.active') {
@@ -417,7 +417,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
 
       it('browser_transports', function (done) {
-        var realtime = helper.AblyRealtime();
+        var realtime = helper.AblyRealtimePromise();
         try {
           expect(realtime.connection.connectionManager.baseTransport).to.equal('xhr_polling');
           expect(realtime.connection.connectionManager.upgradeTransports).to.deep.equal([
@@ -437,7 +437,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
        * realtime)
        */
       it('connection behaviour with a proxy through which streaming is broken', function (done) {
-        const realtime = helper.AblyRealtime({
+        const realtime = helper.AblyRealtimePromise({
           transportParams: {
             simulateNoStreamingProxy: true,
             maxStreamDuration: 7500,

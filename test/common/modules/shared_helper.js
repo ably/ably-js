@@ -57,6 +57,16 @@ define([
     });
   }
 
+  function promiseToCallback(promise, callback) {
+    promise
+      .then((result) => {
+        callback(null, result);
+      })
+      .catch((err) => {
+        callback(err);
+      });
+  }
+
   function simulateDroppedConnection(realtime) {
     // Go into the 'disconnected' state before actually disconnecting the transports
     // to avoid the instantaneous reconnect attempt that would be triggered in
@@ -237,5 +247,6 @@ define([
     unroutableAddress: unroutableAddress,
     arrFind: arrFind,
     arrFilter: arrFilter,
+    promiseToCallback: promiseToCallback,
   });
 });

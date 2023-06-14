@@ -6,6 +6,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var displayError = helper.displayError;
   var monitorConnection = helper.monitorConnection;
+  var ptcb = helper.promiseToCallback;
 
   describe('realtime/connection', function () {
     this.timeout(60 * 1000);
@@ -22,7 +23,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('connectionPing', function (done) {
       var realtime;
       try {
-        realtime = helper.AblyRealtime();
+        realtime = helper.AblyRealtimePromise();
         realtime.connection.on('connected', function () {
           try {
             realtime.connection.ping();
@@ -40,9 +41,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('connectionPingWithCallback', function (done) {
       var realtime;
       try {
-        realtime = helper.AblyRealtime();
+        realtime = helper.AblyRealtimePromise();
         realtime.connection.on('connected', function () {
-          realtime.connection.ping(function (err, responseTime) {
+          ptcb(realtime.connection.ping(), function (err, responseTime) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -65,7 +66,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('connectionAttributes', function (done) {
       var realtime;
       try {
-        realtime = helper.AblyRealtime({ logLevel: 4 });
+        realtime = helper.AblyRealtimePromise({ logLevel: 4 });
         realtime.connection.on('connected', function () {
           try {
             const recoveryContext = JSON.parse(realtime.connection.recoveryKey);
@@ -77,7 +78,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
 
           var channel = realtime.channels.get('connectionattributes');
-          channel.attach(function (err) {
+          ptcb(channel.attach(), function (err) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -95,7 +96,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
                 function (cb) {
-                  channel.publish('name', 'data', cb);
+                  ptcb(channel.publish('name', 'data'), cb);
                 },
               ],
               function (err) {
@@ -130,7 +131,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channelSerials: {},
       });
       try {
-        realtime = helper.AblyRealtime({ recover: fakeRecoveryKey });
+        realtime = helper.AblyRealtimePromise({ recover: fakeRecoveryKey });
         realtime.connection.on('connected', function (stateChange) {
           try {
             expect(stateChange.reason.code).to.equal(
@@ -166,13 +167,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * without being merged with new messages)
      */
     it('connectionQueuing', function (done) {
-      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] }),
         channel = realtime.channels.get('connectionQueuing'),
         connectionManager = realtime.connection.connectionManager;
 
       realtime.connection.once('connected', function () {
         var transport = connectionManager.activeProtocol.transport;
-        channel.attach(function (err) {
+        ptcb(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -188,7 +189,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             [
               function (cb) {
                 /* Sabotaged publish */
-                channel.publish('first', null, function (err) {
+                ptcb(channel.publish('first', null), function (err) {
                   try {
                     expect(!err, 'Check publish happened (eventually) without err').to.be.ok;
                   } catch (err) {
@@ -247,7 +248,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Inject a new CONNECTED with different connectionDetails; check they're used
      */
     it('connectionDetails', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var realtime = helper.AblyRealtimePromise(),
         connectionManager = realtime.connection.connectionManager;
       realtime.connection.once('connected', function () {
         connectionManager.once('connectiondetails', function (details) {
@@ -286,7 +287,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     if (typeof Promise !== 'undefined') {
       describe('connection_promise', function () {
         it('ping', function (done) {
-          var client = helper.AblyRealtime({ internal: { promises: true } });
+          var client = helper.AblyRealtimePromise({ internal: { promises: true } });
 
           client.connection
             .once('connected')

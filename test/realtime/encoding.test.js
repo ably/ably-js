@@ -8,6 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var encodingFixturesPath = helper.testResourcesPath + 'messages-encoding.json';
   var closeAndFinish = helper.closeAndFinish;
   var Defaults = Ably.Rest.Platform.Defaults;
+  var ptcb = helper.promiseToCallback;
 
   describe('realtime/encoding', function () {
     this.timeout(60 * 1000);
@@ -31,8 +32,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           done(err);
           return;
         }
-        var realtime = helper.AblyRealtime({ useBinaryProtocol: false }),
-          binaryrealtime = helper.AblyRealtime({ useBinaryProtocol: true }),
+        var realtime = helper.AblyRealtimePromise({ useBinaryProtocol: false }),
+          binaryrealtime = helper.AblyRealtimePromise({ useBinaryProtocol: true }),
           channelName = 'message_decoding',
           channelPath = '/channels/' + channelName + '/messages',
           channel = realtime.channels.get(channelName),
@@ -41,10 +42,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              channel.attach(attachCb);
+              ptcb(channel.attach(), attachCb);
             },
             function (attachCb) {
-              binarychannel.attach(attachCb);
+              ptcb(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
@@ -96,13 +97,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       });
                     },
                     function (parallelCb) {
-                      realtime.request(
-                        'post',
-                        channelPath,
-                        Defaults.protocolVersion,
-                        null,
-                        { name: name, data: encodingSpec.data, encoding: encodingSpec.encoding },
-                        null,
+                      ptcb(
+                        realtime.request(
+                          'post',
+                          channelPath,
+                          Defaults.protocolVersion,
+                          null,
+                          { name: name, data: encodingSpec.data, encoding: encodingSpec.encoding },
+                          null
+                        ),
                         function (err) {
                           parallelCb(err);
                         }
@@ -130,8 +133,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           done(new Error('Unable to get test assets; err = ' + displayError(err)));
           return;
         }
-        var realtime = helper.AblyRealtime({ useBinaryProtocol: false }),
-          binaryrealtime = helper.AblyRealtime({ useBinaryProtocol: true }),
+        var realtime = helper.AblyRealtimePromise({ useBinaryProtocol: false }),
+          binaryrealtime = helper.AblyRealtimePromise({ useBinaryProtocol: true }),
           channelName = 'message_encoding',
           channelPath = '/channels/' + channelName + '/messages',
           channel = realtime.channels.get(channelName),
@@ -140,10 +143,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              channel.attach(attachCb);
+              ptcb(channel.attach(), attachCb);
             },
             function (attachCb) {
-              binarychannel.attach(attachCb);
+              ptcb(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
@@ -165,10 +168,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 async.parallel(
                   [
                     function (parallelCb) {
-                      channel.publish(name, data, parallelCb);
+                      ptcb(channel.publish(name, data), parallelCb);
                     },
                     function (parallelCb) {
-                      binarychannel.publish(name, data, parallelCb);
+                      ptcb(binarychannel.publish(name, data), parallelCb);
                     },
                   ],
                   function (err) {
@@ -176,13 +179,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       eachOfCb(err);
                       return;
                     }
-                    realtime.request(
-                      'get',
-                      channelPath,
-                      Defaults.protocolVersion,
-                      null,
-                      null,
-                      null,
+                    ptcb(
+                      realtime.request('get', channelPath, Defaults.protocolVersion, null, null, null),
                       function (err, resultPage) {
                         if (err) {
                           eachOfCb(err);
