@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
   var expect = chai.expect;
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/init', function () {
     this.timeout(60 * 1000);
@@ -28,7 +29,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       it('initbase0', function (done) {
         var realtime;
         try {
-          realtime = helper.AblyRealtime({ transports: ['web_socket', 'xhr_streaming'] });
+          realtime = helper.AblyRealtimePromise({ transports: ['web_socket', 'xhr_streaming'] });
           realtime.connection.on('connected', function () {
             /* check api version */
             var transport = realtime.connection.connectionManager.activeProtocol.transport;
@@ -53,7 +54,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
-        realtime = new helper.Ably.Realtime(keyStr);
+        realtime = new helper.Ably.Realtime.Promise(keyStr);
 
         try {
           expect(realtime.options.key).to.equal(keyStr);
@@ -72,17 +73,17 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     it('init_token_string', function (done) {
       try {
         /* first generate a token ... */
-        var rest = helper.AblyRest();
+        var rest = helper.AblyRestPromise();
         var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
 
-        rest.auth.requestToken(null, testKeyOpts, function (err, tokenDetails) {
+        whenPromiseSettles(rest.auth.requestToken(null, testKeyOpts), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
           }
 
           var tokenStr = tokenDetails.token,
-            realtime = new helper.Ably.Realtime(tokenStr);
+            realtime = new helper.Ably.Realtime.Promise(tokenStr);
 
           try {
             expect(realtime.options.token).to.equal(tokenStr);
@@ -102,7 +103,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
-        realtime = helper.AblyRealtime({ key: keyStr, useTokenAuth: true });
+        realtime = helper.AblyRealtimePromise({ key: keyStr, useTokenAuth: true });
         expect(realtime.options.key).to.equal(keyStr);
         expect(realtime.auth.method).to.equal('token');
         expect(realtime.auth.clientId).to.equal(undefined);
@@ -127,7 +128,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
-        realtime = helper.AblyRealtime({
+        realtime = helper.AblyRealtimePromise({
           key: keyStr,
           useTokenAuth: true,
           defaultTokenParams: { clientId: '*', ttl: 123456 },
@@ -155,7 +156,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
-        realtime = helper.AblyRealtime({ key: keyStr, useTokenAuth: true, defaultTokenParams: { clientId: 'test' } });
+        realtime = helper.AblyRealtimePromise({
+          key: keyStr,
+          useTokenAuth: true,
+          defaultTokenParams: { clientId: 'test' },
+        });
         expect(realtime.auth.clientId).to.equal(undefined);
         realtime.connection.on('connected', function () {
           try {
@@ -177,7 +182,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
-        realtime = helper.AblyRealtime({
+        realtime = helper.AblyRealtimePromise({
           key: keyStr,
           useTokenAuth: true,
           clientId: 'yes',
@@ -203,7 +208,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
         expect(function () {
-          realtime = new helper.Ably.Realtime({ key: keyStr, useTokenAuth: false, clientId: 'foo' });
+          realtime = new helper.Ably.Realtime.Promise({ key: keyStr, useTokenAuth: false, clientId: 'foo' });
         }).to.throw;
         done();
       } catch (err) {
@@ -217,7 +222,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         /* want to check the default host when no custom environment or custom
          * host set, so not using helpers.realtime this time, which will use a
          * test env */
-        var realtime = new Ably.Realtime({ key: 'not_a.real:key', autoConnect: false });
+        var realtime = new Ably.Realtime.Promise({ key: 'not_a.real:key', autoConnect: false });
         var defaultHost = realtime.connection.connectionManager.httpHosts[0];
         expect(defaultHost).to.equal('rest.ably.io', 'Verify correct default rest host chosen');
         realtime.close();
@@ -230,7 +235,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     /* check changing the default timeouts */
     it('init_timeouts', function (done) {
       try {
-        var realtime = helper.AblyRealtime({
+        var realtime = helper.AblyRealtimePromise({
           key: 'not_a.real:key',
           disconnectedRetryTimeout: 123,
           suspendedRetryTimeout: 456,
@@ -263,7 +268,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     /* check changing the default fallback hosts and changing httpMaxRetryCount */
     it('init_fallbacks', function (done) {
       try {
-        var realtime = helper.AblyRealtime({
+        var realtime = helper.AblyRealtimePromise({
           key: 'not_a.real:key',
           restHost: 'a',
           httpMaxRetryCount: 2,
@@ -311,7 +316,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       it('node_transports', function (done) {
         var realtime;
         try {
-          realtime = helper.AblyRealtime({ transports: helper.availableTransports });
+          realtime = helper.AblyRealtimePromise({ transports: helper.availableTransports });
           expect(realtime.connection.connectionManager.baseTransport).to.equal('comet');
           expect(realtime.connection.connectionManager.upgradeTransports).to.deep.equal(['web_socket']);
           closeAndFinish(done, realtime);
@@ -326,7 +331,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     it('init_and_connection_details', function (done) {
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
-        var realtime = helper.AblyRealtime({ key: keyStr, useTokenAuth: true });
+        var realtime = helper.AblyRealtimePromise({ key: keyStr, useTokenAuth: true });
         realtime.connection.connectionManager.once('transport.pending', function (state) {
           var transport = realtime.connection.connectionManager.pendingTransports[0],
             originalOnProtocolMessage = transport.onProtocolMessage;
@@ -365,7 +370,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     it('init_fallbacks_once_connected', function (done) {
-      var realtime = helper.AblyRealtime({
+      var realtime = helper.AblyRealtimePromise({
         httpMaxRetryCount: 3,
         fallbackHosts: ['a', 'b', 'c'],
       });
@@ -385,8 +390,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     it('init_fallbacks_once_connected_2', function (done) {
-      var goodHost = helper.AblyRest().options.realtimeHost;
-      var realtime = helper.AblyRealtime({
+      var goodHost = helper.AblyRestPromise().options.realtimeHost;
+      var realtime = helper.AblyRealtimePromise({
         httpMaxRetryCount: 3,
         restHost: 'a',
         fallbackHosts: [goodHost, 'b', 'c'],
@@ -414,18 +419,12 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
               return { key: keyStr, autoConnect: false };
             };
 
-          realtime = new Ably.Realtime(getOptions());
-          expect(!realtime.options.promises, 'Check promises defaults to false').to.be.ok;
-
           realtime = new Ably.Realtime.Promise(getOptions());
           expect(realtime.options.promises, 'Check promises default to true with promise constructor').to.be.ok;
 
           if (!isBrowser && typeof require == 'function') {
             realtime = new require('../../promises').Realtime(getOptions());
             expect(realtime.options.promises, 'Check promises default to true with promise require target').to.be.ok;
-
-            realtime = new require('../../callbacks').Realtime(getOptions());
-            expect(!realtime.options.promises, 'Check promises default to false with callback require target').to.be.ok;
           }
           done();
         } catch (err) {

@@ -57,6 +57,19 @@ define([
     });
   }
 
+  /**
+   * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
+   */
+  function whenPromiseSettles(promise, callback) {
+    promise
+      .then((result) => {
+        callback(null, result);
+      })
+      .catch((err) => {
+        callback(err);
+      });
+  }
+
   function simulateDroppedConnection(realtime) {
     // Go into the 'disconnected' state before actually disconnecting the transports
     // to avoid the instantaneous reconnect attempt that would be triggered in
@@ -237,5 +250,6 @@ define([
     unroutableAddress: unroutableAddress,
     arrFind: arrFind,
     arrFilter: arrFilter,
+    whenPromiseSettles: whenPromiseSettles,
   });
 });

@@ -15,6 +15,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var http = new Ably.Realtime.Platform.Http();
   var jwtTestChannelName = 'JWT_test' + String(Math.floor(Math.random() * 10000) + 1);
   var echoServer = 'https://echo.ably.io';
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   /*
    * Helper function to fetch JWT tokens from the echo server
@@ -39,14 +40,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           return;
         }
 
-        var rest = helper.AblyRest({ queryTime: true });
-        rest.time(function (err, time) {
+        var rest = helper.AblyRestPromise({ queryTime: true });
+        whenPromiseSettles(rest.time(), function (err, time) {
           if (err) {
             done(err);
             return;
           } else {
             currentTime = time;
-            rest.auth.requestToken({}, function (err, tokenDetails) {
+            whenPromiseSettles(rest.auth.requestToken({}), function (err, tokenDetails) {
               try {
                 expect(!err, err && displayError(err)).to.be.ok;
                 done();
@@ -63,8 +64,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Base token generation case
      */
     it('authbase0', function (done) {
-      var realtime = helper.AblyRealtime();
-      realtime.auth.requestToken(function (err, tokenDetails) {
+      var realtime = helper.AblyRealtimePromise();
+      whenPromiseSettles(realtime.auth.requestToken(), function (err, tokenDetails) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -87,8 +88,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('auth_useAuthUrl_json', function (done) {
       var realtime,
-        rest = helper.AblyRest();
-      rest.auth.requestToken(null, null, function (err, tokenDetails) {
+        rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -96,7 +97,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         var authPath = echoServer + '/?type=json&body=' + encodeURIComponent(JSON.stringify(tokenDetails));
 
-        realtime = helper.AblyRealtime({ authUrl: authPath });
+        realtime = helper.AblyRealtimePromise({ authUrl: authPath });
 
         realtime.connection.on('connected', function () {
           closeAndFinish(done, realtime);
@@ -112,8 +113,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('auth_useAuthUrl_post_json', function (done) {
       var realtime,
-        rest = helper.AblyRest();
-      rest.auth.requestToken(null, null, function (err, tokenDetails) {
+        rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -121,7 +122,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         var authUrl = echoServer + '/?type=json&';
 
-        realtime = helper.AblyRealtime({ authUrl: authUrl, authMethod: 'POST', authParams: tokenDetails });
+        realtime = helper.AblyRealtimePromise({ authUrl: authUrl, authMethod: 'POST', authParams: tokenDetails });
 
         realtime.connection.on('connected', function () {
           closeAndFinish(done, realtime);
@@ -137,8 +138,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('auth_useAuthUrl_plainText', function (done) {
       var realtime,
-        rest = helper.AblyRest();
-      rest.auth.requestToken(null, null, function (err, tokenDetails) {
+        rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -146,7 +147,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         var authPath = echoServer + '/?type=text&body=' + tokenDetails['token'];
 
-        realtime = helper.AblyRealtime({ authUrl: authPath });
+        realtime = helper.AblyRealtimePromise({ authUrl: authPath });
 
         realtime.connection.on('connected', function () {
           closeAndFinish(done, realtime);
@@ -162,9 +163,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('auth_useAuthCallback_tokenRequestResponse', function (done) {
       var realtime,
-        rest = helper.AblyRest();
+        rest = helper.AblyRestPromise();
       var authCallback = function (tokenParams, callback) {
-        rest.auth.createTokenRequest(tokenParams, null, function (err, tokenRequest) {
+        whenPromiseSettles(rest.auth.createTokenRequest(tokenParams, null), function (err, tokenRequest) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -178,7 +179,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         });
       };
 
-      realtime = helper.AblyRealtime({ authCallback: authCallback });
+      realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
 
       realtime.connection.on('connected', function () {
         try {
@@ -199,10 +200,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('auth_useAuthCallback_tokenDetailsResponse', function (done) {
       var realtime,
-        rest = helper.AblyRest();
+        rest = helper.AblyRestPromise();
       var clientId = 'test clientid';
       var authCallback = function (tokenParams, callback) {
-        rest.auth.requestToken(tokenParams, null, function (err, tokenDetails) {
+        whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -217,7 +218,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         });
       };
 
-      realtime = helper.AblyRealtime({ authCallback: authCallback, clientId: clientId });
+      realtime = helper.AblyRealtimePromise({ authCallback: authCallback, clientId: clientId });
 
       realtime.connection.on('connected', function () {
         try {
@@ -236,9 +237,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('auth_useAuthCallback_tokenStringResponse', function (done) {
       var realtime,
-        rest = helper.AblyRest();
+        rest = helper.AblyRestPromise();
       var authCallback = function (tokenParams, callback) {
-        rest.auth.requestToken(tokenParams, null, function (err, tokenDetails) {
+        whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -252,7 +253,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         });
       };
 
-      realtime = helper.AblyRealtime({ authCallback: authCallback });
+      realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
 
       realtime.connection.on('connected', function () {
         try {
@@ -274,8 +275,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('auth_useAuthUrl_mixed_authParams_qsParams', function (done) {
       var realtime,
-        rest = helper.AblyRest();
-      rest.auth.createTokenRequest(null, null, function (err, tokenRequest) {
+        rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.createTokenRequest(null, null), function (err, tokenRequest) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -295,7 +296,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         };
         var authPath = echoServer + '/qs_to_body' + utils.toQueryString(lowerPrecedenceTokenRequestParts);
 
-        realtime = helper.AblyRealtime({ authUrl: authPath, authParams: higherPrecedenceTokenRequestParts });
+        realtime = helper.AblyRealtimePromise({ authUrl: authPath, authParams: higherPrecedenceTokenRequestParts });
 
         realtime.connection.on('connected', function () {
           closeAndFinish(done, realtime);
@@ -309,10 +310,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * and check that the connection inherits the clientId from the tokenDetails
      */
     it('auth_clientid_inheritance', function (done) {
-      var rest = helper.AblyRest(),
+      var rest = helper.AblyRestPromise(),
         testClientId = 'testClientId';
       var authCallback = function (tokenParams, callback) {
-        rest.auth.requestToken({ clientId: testClientId }, function (err, tokenDetails) {
+        whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
@@ -321,7 +322,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         });
       };
 
-      var realtime = helper.AblyRealtime({ authCallback: authCallback });
+      var realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
 
       realtime.connection.on('connected', function () {
         try {
@@ -349,13 +350,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('auth_clientid_inheritance2', function (done) {
       var clientRealtime,
         testClientId = 'test client id';
-      var rest = helper.AblyRest();
-      rest.auth.requestToken({ clientId: testClientId }, function (err, tokenDetails) {
+      var rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
         if (err) {
           done(err);
           return;
         }
-        clientRealtime = helper.AblyRealtime({ token: tokenDetails, clientId: 'WRONG' });
+        clientRealtime = helper.AblyRealtimePromise({ token: tokenDetails, clientId: 'WRONG' });
         clientRealtime.connection.once('failed', function (stateChange) {
           try {
             expect(stateChange.reason.code).to.equal(40102);
@@ -375,13 +376,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('auth_clientid_inheritance3', function (done) {
       var realtime,
         testClientId = 'test client id';
-      var rest = helper.AblyRest();
-      rest.auth.requestToken({ clientId: '*' }, function (err, tokenDetails) {
+      var rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken({ clientId: '*' }), function (err, tokenDetails) {
         if (err) {
           done(err);
           return;
         }
-        realtime = helper.AblyRealtime({ token: tokenDetails.token, clientId: 'test client id' });
+        realtime = helper.AblyRealtimePromise({ token: tokenDetails.token, clientId: 'test client id' });
         realtime.connection.on('connected', function () {
           try {
             expect(realtime.auth.clientId).to.equal(testClientId);
@@ -403,13 +404,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('auth_clientid_inheritance4', function (done) {
       var realtime,
         testClientId = 'test client id';
-      var rest = helper.AblyRest();
-      rest.auth.requestToken({ clientId: '*' }, function (err, tokenDetails) {
+      var rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken({ clientId: '*' }), function (err, tokenDetails) {
         if (err) {
           done(err);
           return;
         }
-        realtime = helper.AblyRealtime({ token: tokenDetails, clientId: 'test client id' });
+        realtime = helper.AblyRealtimePromise({ token: tokenDetails, clientId: 'test client id' });
         realtime.connection.on('connected', function () {
           try {
             expect(realtime.auth.clientId).to.equal(testClientId);
@@ -431,13 +432,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('auth_clientid_inheritance5', function (done) {
       var clientRealtime,
         testClientId = 'test client id';
-      var rest = helper.AblyRest();
-      rest.auth.requestToken({ clientId: testClientId }, function (err, tokenDetails) {
+      var rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
         if (err) {
           done(err);
           return;
         }
-        clientRealtime = helper.AblyRealtime({ token: tokenDetails.token });
+        clientRealtime = helper.AblyRealtimePromise({ token: tokenDetails.token });
         clientRealtime.connection.on('connected', function () {
           try {
             expect(clientRealtime.auth.clientId).to.equal(testClientId);
@@ -456,7 +457,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     function authCallback_failures(realtimeOptions, expectFailure) {
       return function (done) {
-        var realtime = helper.AblyRealtime(realtimeOptions);
+        var realtime = helper.AblyRealtimePromise(realtimeOptions);
         realtime.connection.on(function (stateChange) {
           if (stateChange.previous !== 'initialized') {
             try {
@@ -606,8 +607,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     it('authUrl_403_previously_active', function (done) {
       var realtime,
-        rest = helper.AblyRest();
-      rest.auth.requestToken(null, null, function (err, tokenDetails) {
+        rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -615,13 +616,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         var authPath = echoServer + '/?type=json&body=' + encodeURIComponent(JSON.stringify(tokenDetails));
 
-        realtime = helper.AblyRealtime({ authUrl: authPath });
+        realtime = helper.AblyRealtimePromise({ authUrl: authPath });
 
         realtime.connection.on('connected', function () {
           /* replace the authUrl and reauth */
-          realtime.auth.authorize(
-            null,
-            { authUrl: echoServer + '/respondwith?status=403' },
+          whenPromiseSettles(
+            realtime.auth.authorize(null, { authUrl: echoServer + '/respondwith?status=403' }),
             function (err, tokenDetails) {
               try {
                 expect(err && err.statusCode).to.equal(403, 'Check err statusCode');
@@ -649,14 +649,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('auth_token_expires', function (realtimeOpts) {
       return function (done) {
         var clientRealtime,
-          rest = helper.AblyRest();
+          rest = helper.AblyRestPromise();
 
-        rest.auth.requestToken({ ttl: 5000 }, null, function (err, tokenDetails) {
+        whenPromiseSettles(rest.auth.requestToken({ ttl: 5000 }, null), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
           }
-          clientRealtime = helper.AblyRealtime(mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true }));
+          clientRealtime = helper.AblyRealtimePromise(
+            mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true })
+          );
 
           clientRealtime.connection.on('failed', function () {
             closeAndFinish(done, clientRealtime, new Error('Failed to connect before token expired'));
@@ -683,7 +685,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * and all subsequent requests use the time offset
      */
     it('auth_query_time_once', function (done) {
-      var rest = helper.AblyRest({ queryTime: true }),
+      var rest = helper.AblyRestPromise({ queryTime: true }),
         timeRequestCount = 0,
         originalTime = rest.time;
 
@@ -706,7 +708,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var asyncFns = [];
       for (var i = 0; i < 10; i++) {
         asyncFns.push(function (callback) {
-          rest.auth.createTokenRequest({}, null, function (err, tokenDetails) {
+          whenPromiseSettles(rest.auth.createTokenRequest({}, null), function (err, tokenDetails) {
             if (err) {
               return callback(err);
             }
@@ -741,11 +743,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('auth_tokenDetails_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
         var realtime,
-          rest = helper.AblyRest();
+          rest = helper.AblyRestPromise();
         var clientId = 'test clientid';
         var authCallback = function (tokenParams, callback) {
           tokenParams.ttl = 5000;
-          rest.auth.requestToken(tokenParams, null, function (err, tokenDetails) {
+          whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -754,7 +756,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         };
 
-        realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
+        realtime = helper.AblyRealtimePromise(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
         monitorConnection(done, realtime);
         realtime.connection.once('connected', function () {
           realtime.connection.once('disconnected', function (stateChange) {
@@ -782,11 +784,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('auth_token_string_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
         var realtime,
-          rest = helper.AblyRest();
+          rest = helper.AblyRestPromise();
         var clientId = 'test clientid';
         var authCallback = function (tokenParams, callback) {
           tokenParams.ttl = 5000;
-          rest.auth.requestToken(tokenParams, null, function (err, tokenDetails) {
+          whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -795,7 +797,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         };
 
-        realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
+        realtime = helper.AblyRealtimePromise(mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }));
         monitorConnection(done, realtime);
         realtime.connection.once('connected', function () {
           realtime.connection.once('disconnected', function (stateChange) {
@@ -822,35 +824,40 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('auth_token_string_expiry_with_token', function (realtimeOpts) {
       return function (done) {
         var realtime,
-          rest = helper.AblyRest();
+          rest = helper.AblyRestPromise();
         var clientId = 'test clientid';
-        rest.auth.requestToken({ ttl: 5000, clientId: clientId }, null, function (err, tokenDetails) {
-          if (err) {
-            closeAndFinish(done, realtime, err);
-            return;
-          }
-          realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
-          realtime.connection.once('connected', function () {
-            realtime.connection.once('disconnected', function (stateChange) {
-              try {
-                expect(stateChange.reason.code).to.equal(40142, 'Verify correct disconnect code');
-              } catch (err) {
-                done(err);
-                return;
-              }
-              realtime.connection.once('failed', function (stateChange) {
-                /* Library has no way to generate a new token, so should fail */
+        whenPromiseSettles(
+          rest.auth.requestToken({ ttl: 5000, clientId: clientId }, null),
+          function (err, tokenDetails) {
+            if (err) {
+              closeAndFinish(done, realtime, err);
+              return;
+            }
+            realtime = helper.AblyRealtimePromise(
+              mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId })
+            );
+            realtime.connection.once('connected', function () {
+              realtime.connection.once('disconnected', function (stateChange) {
                 try {
-                  expect(stateChange.reason.code).to.equal(40171, 'Verify correct cause failure code');
-                  realtime.close();
-                  done();
+                  expect(stateChange.reason.code).to.equal(40142, 'Verify correct disconnect code');
                 } catch (err) {
                   done(err);
+                  return;
                 }
+                realtime.connection.once('failed', function (stateChange) {
+                  /* Library has no way to generate a new token, so should fail */
+                  try {
+                    expect(stateChange.reason.code).to.equal(40171, 'Verify correct cause failure code');
+                    realtime.close();
+                    done();
+                  } catch (err) {
+                    done(err);
+                  }
+                });
               });
             });
-          });
-        });
+          }
+        );
       };
     });
 
@@ -860,15 +867,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('auth_expired_token_string', function (realtimeOpts) {
       return function (done) {
         var realtime,
-          rest = helper.AblyRest();
+          rest = helper.AblyRestPromise();
         var clientId = 'test clientid';
-        rest.auth.requestToken({ ttl: 1, clientId: clientId }, null, function (err, tokenDetails) {
+        whenPromiseSettles(rest.auth.requestToken({ ttl: 1, clientId: clientId }, null), function (err, tokenDetails) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
           }
           setTimeout(function () {
-            realtime = helper.AblyRealtime(mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }));
+            realtime = helper.AblyRealtimePromise(
+              mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId })
+            );
             realtime.connection.once('failed', function (stateChange) {
               try {
                 expect(stateChange.reason.code).to.equal(40171, 'Verify correct failure code');
@@ -899,13 +908,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports.skip('reauth_authCallback', function (realtimeOpts) {
       return function (done) {
         var realtime,
-          rest = helper.AblyRest();
+          rest = helper.AblyRestPromise();
         var firstTime = true;
         var authCallback = function (tokenParams, callback) {
           tokenParams.clientId = '*';
           tokenParams.capability = firstTime ? { wrong: ['*'] } : { right: ['*'] };
           firstTime = false;
-          rest.auth.requestToken(tokenParams, null, function (err, tokenDetails) {
+          whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -914,10 +923,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         };
 
-        realtime = helper.AblyRealtime(mixin(realtimeOpts, { authCallback: authCallback }));
+        realtime = helper.AblyRealtimePromise(mixin(realtimeOpts, { authCallback: authCallback }));
         realtime.connection.once('connected', function () {
           var channel = realtime.channels.get('right');
-          channel.attach(function (err) {
+          whenPromiseSettles(channel.attach(), function (err) {
             try {
               expect(err, 'Check using first token, without channel attach capability').to.be.ok;
               expect(err.code).to.equal(40160, 'Check expected error code');
@@ -927,14 +936,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             }
 
             /* soon after connected, reauth */
-            realtime.auth.authorize(null, null, function (err) {
+            whenPromiseSettles(realtime.auth.authorize(null, null), function (err) {
               try {
                 expect(!err, err && displayError(err)).to.be.ok;
               } catch (err) {
                 done(err);
                 return;
               }
-              channel.attach(function (err) {
+              whenPromiseSettles(channel.attach(), function (err) {
                 try {
                   expect(!err, 'Check using second token, with channel attach capability').to.be.ok;
                   closeAndFinish(done, realtime);
@@ -951,7 +960,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* RSA10j */
     it('authorize_updates_stored_details', function (done) {
-      var realtime = helper.AblyRealtime({
+      var realtime = helper.AblyRealtimePromise({
         autoConnect: false,
         defaultTokenParams: { version: 1 },
         token: '1',
@@ -982,10 +991,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Inject a fake AUTH message from realtime, check that we reauth and send our own in reply
      */
     it('mocked_reauth', function (done) {
-      var rest = helper.AblyRest(),
+      var rest = helper.AblyRestPromise(),
         authCallback = function (tokenParams, callback) {
           // Request a token (should happen twice)
-          rest.auth.requestToken(tokenParams, null, function (err, tokenDetails) {
+          whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -993,7 +1002,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             callback(null, tokenDetails);
           });
         },
-        realtime = helper.AblyRealtime({ authCallback: authCallback, transports: [helper.bestTransport] });
+        realtime = helper.AblyRealtimePromise({ authCallback: authCallback, transports: [helper.bestTransport] });
 
       realtime.connection.once('connected', function () {
         var transport = realtime.connection.connectionManager.activeProtocol.transport,
@@ -1029,7 +1038,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         getJWT(params, callback);
       };
 
-      var realtime = helper.AblyRealtime({ authCallback: authCallback });
+      var realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
 
       realtime.connection.on('connected', function () {
         try {
@@ -1062,7 +1071,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         getJWT(params, callback);
       };
 
-      var realtime = helper.AblyRealtime({ authCallback: authCallback });
+      var realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
 
       realtime.connection.on('connected', function () {
         try {
@@ -1093,10 +1102,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         getJWT(params, callback);
       };
 
-      var realtime = helper.AblyRealtime({ authCallback: authCallback });
+      var realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
       realtime.connection.once('connected', function () {
         var channel = realtime.channels.get(jwtTestChannelName);
-        channel.publish('greeting', 'Hello World!', function (err) {
+        whenPromiseSettles(channel.publish('greeting', 'Hello World!'), function (err) {
           try {
             expect(err.code).to.equal(40160, 'Verify publish denied code');
             expect(err.statusCode).to.equal(401, 'Verify publish denied status code');
@@ -1122,7 +1131,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       var publishEvent = 'publishEvent',
         messageData = 'Hello World!';
-      var realtime = helper.AblyRealtime({ authCallback: authCallback });
+      var realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
       realtime.connection.once('connected', function () {
         var channel = realtime.channels.get(jwtTestChannelName);
         channel.subscribe(publishEvent, function (msg) {
@@ -1149,7 +1158,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         getJWT(params, callback);
       };
 
-      var realtime = helper.AblyRealtime({ authCallback: authCallback });
+      var realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
       realtime.connection.once('connected', function () {
         realtime.connection.once('disconnected', function (stateChange) {
           try {
@@ -1176,7 +1185,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         getJWT(params, callback);
       };
 
-      var realtime = helper.AblyRealtime({ authCallback: authCallback });
+      var realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
       realtime.connection.once('connected', function () {
         var originalToken = realtime.auth.tokenDetails.token;
         realtime.connection.once('update', function () {
@@ -1203,7 +1212,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           done(err);
           return;
         }
-        var realtime = helper.AblyRealtime({ token: token });
+        var realtime = helper.AblyRealtimePromise({ token: token });
         realtime.connection.once('connected', function () {
           try {
             expect(token).to.equal(realtime.auth.tokenDetails.token, 'Verify that token is the same');
@@ -1219,8 +1228,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /* RTN14b */
     it('reauth_consistently_expired_token', function (done) {
       var realtime,
-        rest = helper.AblyRest();
-      rest.auth.requestToken({ ttl: 1 }, function (err, token) {
+        rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken({ ttl: 1 }), function (err, token) {
         if (err) {
           done(err);
           return;
@@ -1232,7 +1241,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         };
         /* Wait a few ms to ensure token is expired */
         setTimeout(function () {
-          realtime = helper.AblyRealtime({ authCallback: authCallback, disconnectedRetryTimeout: 15000 });
+          realtime = helper.AblyRealtimePromise({ authCallback: authCallback, disconnectedRetryTimeout: 15000 });
           /* Wait 5s, expect to have seen two attempts to get a token -- so the
            * authCallback called twice -- and the connection to now be sitting in
            * the disconnected state */
@@ -1252,8 +1261,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /* RSA4b1 - only autoremove expired tokens if have a server time offset set */
     it('expired_token_no_autoremove_when_dont_have_servertime', function (done) {
       var realtime,
-        rest = helper.AblyRest();
-      rest.auth.requestToken(function (err, token) {
+        rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken(), function (err, token) {
         if (err) {
           done(err);
           return;
@@ -1265,7 +1274,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           authCallbackCallCount++;
           callback(null, token);
         };
-        realtime = helper.AblyRealtime({ authCallback: authCallback });
+        realtime = helper.AblyRealtimePromise({ authCallback: authCallback });
         realtime.connection.on('connected', function () {
           try {
             expect(authCallbackCallCount).to.equal(1, 'Check we did not autoremove an expired token ourselves');
@@ -1280,8 +1289,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /* RSA4b1 second case */
     it('expired_token_autoremove_when_have_servertime', function (done) {
       var realtime,
-        rest = helper.AblyRest();
-      rest.auth.requestToken(function (err, token) {
+        rest = helper.AblyRestPromise();
+      whenPromiseSettles(rest.auth.requestToken(), function (err, token) {
         if (err) {
           done(err);
           return;
@@ -1293,9 +1302,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           authCallbackCallCount++;
           callback(null, token);
         };
-        realtime = helper.AblyRealtime({ authCallback: authCallback, autoConnect: false });
+        realtime = helper.AblyRealtimePromise({ authCallback: authCallback, autoConnect: false });
         /* Set the server time offset */
-        realtime.time(function () {
+        whenPromiseSettles(realtime.time(), function () {
           realtime.connect();
           realtime.connection.on('connected', function () {
             try {
@@ -1314,38 +1323,38 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* Check that only the last authorize matters */
     it('multiple_concurrent_authorize', function (done) {
-      var realtime = helper.AblyRealtime({
+      var realtime = helper.AblyRealtimePromise({
         logLevel: 4,
         useTokenAuth: true,
         defaultTokenParams: { capability: { wrong: ['*'] } },
       });
       realtime.connection.once('connected', function () {
-        realtime.auth.authorize({ capability: { stillWrong: ['*'] } }, function (err) {
+        whenPromiseSettles(realtime.auth.authorize({ capability: { stillWrong: ['*'] } }), function (err) {
           try {
             expect(!err, 'Check first authorize cb was called').to.be.ok;
           } catch (err) {
             done(err);
           }
         });
-        realtime.auth.authorize({ capability: { alsoNope: ['*'] } }, function (err) {
+        whenPromiseSettles(realtime.auth.authorize({ capability: { alsoNope: ['*'] } }), function (err) {
           try {
             expect(!err, 'Check second authorize cb was called').to.be.ok;
           } catch (err) {
             done(err);
           }
         });
-        realtime.auth.authorize({ capability: { wtfAreYouThinking: ['*'] } }, function (err) {
+        whenPromiseSettles(realtime.auth.authorize({ capability: { wtfAreYouThinking: ['*'] } }), function (err) {
           try {
             expect(!err, 'Check third authorize one cb was called').to.be.ok;
           } catch (err) {
             done(err);
           }
         });
-        realtime.auth.authorize({ capability: { right: ['*'] } }, function (err) {
+        whenPromiseSettles(realtime.auth.authorize({ capability: { right: ['*'] } }), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
           }
-          realtime.channels.get('right').attach(function (err) {
+          whenPromiseSettles(realtime.channels.get('right').attach(), function (err) {
             try {
               expect(!err, (err && displayError(err)) || 'Successfully attached').to.be.ok;
               closeAndFinish(done, realtime);
@@ -1359,7 +1368,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     testOnAllTransports('authorize_immediately_after_init', function (realtimeOpts) {
       return function (done) {
-        var realtime = helper.AblyRealtime({
+        var realtime = helper.AblyRealtimePromise({
           useTokenAuth: true,
           defaultTokenParams: { capability: { wrong: ['*'] } },
         });
@@ -1368,7 +1377,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           closeAndFinish(done, realtime, err);
         });
         realtime.connection.once('connected', function () {
-          realtime.channels.get('right').attach(function (err) {
+          whenPromiseSettles(realtime.channels.get('right').attach(), function (err) {
             try {
               expect(!err, (err && displayError(err)) || 'Successfully attached').to.be.ok;
               closeAndFinish(done, realtime);

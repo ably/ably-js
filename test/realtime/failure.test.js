@@ -8,6 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var simulateDroppedConnection = helper.simulateDroppedConnection;
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var availableTransports = helper.availableTransports;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/failure', function () {
     this.timeout(60 * 1000);
@@ -28,7 +29,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         var failure_test = function (transports) {
           return function (cb) {
-            var realtime = helper.AblyRealtime({ key: 'this.is:wrong', transports: transports });
+            var realtime = helper.AblyRealtimePromise({ key: 'this.is:wrong', transports: transports });
             realtime.connection.on('failed', function (connectionStateChange) {
               try {
                 expect(realtime.connection.errorReason.code).to.equal(40400, 'wrong error reason code on connection.');
@@ -77,7 +78,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         var break_test = function (transports) {
           return function (cb) {
-            var realtime = helper.AblyRealtime({ transports: transports });
+            var realtime = helper.AblyRealtimePromise({ transports: transports });
             realtime.connection.once('connected', function () {
               realtime.connection.once('disconnected', function () {
                 cb(null, realtime);
@@ -116,7 +117,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var lifecycleTest = function (transports) {
           return function (cb) {
             var connectionEvents = [];
-            var realtime = helper.AblyRealtime({
+            var realtime = helper.AblyRealtimePromise({
               transports: transports,
               realtimeHost: 'invalid',
               restHost: 'invalid',
@@ -188,7 +189,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     utils.arrForEach(availableTransports, function (transport) {
       it('disconnected_backoff_' + transport, function (done) {
         var disconnectedRetryTimeout = 150;
-        var realtime = helper.AblyRealtime({
+        var realtime = helper.AblyRealtimePromise({
           disconnectedRetryTimeout: disconnectedRetryTimeout,
           realtimeHost: 'invalid',
           restHost: 'invalid',
@@ -219,13 +220,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Check operations on a failed channel give the right errors
      */
     it('failed_channel', function (done) {
-      var realtime = helper.AblyRealtime();
+      var realtime = helper.AblyRealtimePromise();
       var failChan;
       var channelFailedCode = 90001;
 
       var tests = [
         function (callback) {
-          failChan.publish('event', 'data', function (err) {
+          whenPromiseSettles(failChan.publish('event', 'data'), function (err) {
             try {
               expect(err, 'publish failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'publish failure code');
@@ -247,7 +248,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          failChan.presence.enterClient('clientId', function (err) {
+          whenPromiseSettles(failChan.presence.enterClient('clientId'), function (err) {
             try {
               expect(err, 'presence enter failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence enter failure code');
@@ -258,7 +259,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          failChan.presence.leaveClient('clientId', function (err) {
+          whenPromiseSettles(failChan.presence.leaveClient('clientId'), function (err) {
             try {
               expect(err, 'presence leave failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence leave failure code');
@@ -291,7 +292,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          failChan.presence.get(function (err) {
+          whenPromiseSettles(failChan.presence.get(), function (err) {
             try {
               expect(err, 'presence get failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence get failure code');
@@ -306,7 +307,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         realtime.connection.once('connected', function () {
           failChan = realtime.channels.get('::');
-          failChan.attach(function (err) {
+          whenPromiseSettles(failChan.attach(), function (err) {
             try {
               expect(err, 'channel attach failed').to.be.ok;
               expect(failChan.state).to.equal('failed', 'channel in failed state');
@@ -325,7 +326,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('attach_timeout', function (done) {
-      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000, channelRetryTimeout: 1000 }),
+      var realtime = helper.AblyRealtimePromise({ realtimeRequestTimeout: 2000, channelRetryTimeout: 1000 }),
         channel = realtime.channels.get('failed_attach'),
         originalProcessMessage = channel.processMessage.bind(channel);
 
@@ -337,7 +338,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
 
       realtime.connection.once('connected', function () {
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           try {
             expect(err.code).to.equal(90007, 'check channel error code');
             expect(err.statusCode).to.equal(408, 'check timeout statusCode');
@@ -361,7 +362,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     utils.arrForEach(availableTransports, function (transport) {
       it('channel_backoff_' + transport, function (done) {
         var channelRetryTimeout = 150;
-        var realtime = helper.AblyRealtime({
+        var realtime = helper.AblyRealtimePromise({
             channelRetryTimeout: channelRetryTimeout,
             transports: [transport],
           }),
@@ -381,7 +382,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         realtime.connection.on('connected', function () {
           realtime.options.timeouts.realtimeRequestTimeout = 1;
-          channel.attach(function (err) {
+          whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
               var lastSuspended = performance.now();
               channel.on(function (stateChange) {
@@ -422,7 +423,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     function nack_on_connection_failure(failureFn, expectedRealtimeState, expectedNackCode) {
       return function (done) {
         /* Use one transport because stubbing out transport#onProtocolMesage */
-        var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+        var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] }),
           channel = realtime.channels.get('nack_on_connection_failure');
 
         async.series(
@@ -433,7 +434,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               });
             },
             function (cb) {
-              channel.attach(cb);
+              whenPromiseSettles(channel.attach(), cb);
             },
             function (cb) {
               var transport = realtime.connection.connectionManager.activeProtocol.transport,
@@ -445,7 +446,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   originalOnProtocolMessage.apply(this, arguments);
                 }
               };
-              channel.publish('foo', 'bar', function (err) {
+              whenPromiseSettles(channel.publish('foo', 'bar'), function (err) {
                 try {
                   expect(err, 'Publish failed as expected').to.be.ok;
                   expect(realtime.connection.state).to.equal(
@@ -507,7 +508,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     );
 
     it('idle_transport_timeout', function (done) {
-      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000 }),
+      var realtime = helper.AblyRealtimePromise({ realtimeRequestTimeout: 2000 }),
         originalOnProtocolMessage;
 
       realtime.connection.connectionManager.on('transport.pending', function (transport) {
@@ -545,7 +546,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         /* Use the echoserver as a fallback host because it doesn't support
          * websockets, so it'll fail to connect, which we can detect */
-        var realtime = helper.AblyRealtime(utils.mixin({ fallbackHosts: ['echo.ably.io'] }, realtimeOpts)),
+        var realtime = helper.AblyRealtimePromise(utils.mixin({ fallbackHosts: ['echo.ably.io'] }, realtimeOpts)),
           connection = realtime.connection,
           connectionManager = connection.connectionManager;
 
@@ -585,7 +586,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var testMessage2 = { foo: 'bar', count: 2, status: 'active' };
 
       try {
-        var sender_realtime = helper.AblyRealtime();
+        var sender_realtime = helper.AblyRealtimePromise();
         var sender_channel = sender_realtime.channels.get(testName);
         var messageReceived = false;
 

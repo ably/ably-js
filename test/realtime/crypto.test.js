@@ -11,12 +11,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var msgpack = typeof window == 'object' ? Ably.msgpack : require('@ably/msgpack-js');
   var testOnAllTransports = helper.testOnAllTransports;
   var closeAndFinish = helper.closeAndFinish;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   function attachChannels(channels, callback) {
     async.map(
       channels,
       function (channel, cb) {
-        channel.attach(cb);
+        whenPromiseSettles(channel.attach(), cb);
       },
       callback
     );
@@ -61,7 +62,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         done(new Error('Unable to get test assets; err = ' + displayError(err)));
         return;
       }
-      var realtime = helper.AblyRealtime();
+      var realtime = helper.AblyRealtimePromise();
       var key = BufferUtils.base64Decode(testData.key);
       var iv = BufferUtils.base64Decode(testData.iv);
       var channel = realtime.channels.get(channelName, { cipher: { key: key, iv: iv } });
@@ -408,11 +409,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         /* For single_send tests we test the 'shortcut' way of setting the cipher
          * in channels.get. No callback, but that's ok even for node which has
          * async iv generation since the publish is on an attach cb */
-        var realtime = helper.AblyRealtime(realtimeOpts),
+        var realtime = helper.AblyRealtimePromise(realtimeOpts),
           channel = realtime.channels.get('single_send', { cipher: { key: key } }),
           messageText = 'Test message for single_send -	' + JSON.stringify(realtimeOpts);
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -458,7 +459,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      var realtime = helper.AblyRealtime({ useBinaryProtocol: !text });
+      var realtime = helper.AblyRealtimePromise({ useBinaryProtocol: !text });
       var channelName = 'multiple_send_' + (text ? 'text_' : 'binary_') + iterations + '_' + delay,
         channel = realtime.channels.get(channelName),
         messageText = 'Test message (' + channelName + ')';
@@ -526,8 +527,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      var txRealtime = helper.AblyRealtime(txOpts),
-        rxRealtime = helper.AblyRealtime(rxOpts),
+      var txRealtime = helper.AblyRealtimePromise(txOpts),
+        rxRealtime = helper.AblyRealtimePromise(rxOpts),
         channelName = 'single_send_separate_realtimes';
       var messageText = 'Test message for single_send_separate_realtimes',
         txChannel = txRealtime.channels.get(channelName),
@@ -602,8 +603,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      var txRealtime = helper.AblyRealtime(),
-        rxRealtime = helper.AblyRealtime(),
+      var txRealtime = helper.AblyRealtimePromise(),
+        rxRealtime = helper.AblyRealtimePromise(),
         channelName = 'publish_immediately',
         messageText = 'Test message';
 
@@ -644,8 +645,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      var txRealtime = helper.AblyRealtime();
-      var rxRealtime = helper.AblyRealtime();
+      var txRealtime = helper.AblyRealtimePromise();
+      var rxRealtime = helper.AblyRealtimePromise();
       var channelName = 'single_send_key_mismatch',
         txChannel = txRealtime.channels.get(channelName),
         messageText = 'Test message (' + channelName + ')',
@@ -653,8 +654,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       async.parallel(
         [
-          Crypto.generateRandomKey,
-          Crypto.generateRandomKey,
+          function (cb) {
+            Crypto.generateRandomKey(cb);
+          },
+          function (cb) {
+            Crypto.generateRandomKey(cb);
+          },
           function (cb) {
             attachChannels([txChannel, rxChannel], cb);
           },
@@ -706,8 +711,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      var txRealtime = helper.AblyRealtime();
-      var rxRealtime = helper.AblyRealtime();
+      var txRealtime = helper.AblyRealtimePromise();
+      var rxRealtime = helper.AblyRealtimePromise();
       var channelName = 'single_send_unencrypted',
         txChannel = txRealtime.channels.get(channelName),
         messageText = 'Test message (' + channelName + ')',
@@ -749,8 +754,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      var txRealtime = helper.AblyRealtime();
-      var rxRealtime = helper.AblyRealtime();
+      var txRealtime = helper.AblyRealtimePromise();
+      var rxRealtime = helper.AblyRealtimePromise();
       var channelName = 'single_send_encrypted_unhandled',
         txChannel = txRealtime.channels.get(channelName),
         messageText = 'Test message (' + channelName + ')',
@@ -793,8 +798,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      var txRealtime = helper.AblyRealtime();
-      var rxRealtime = helper.AblyRealtime();
+      var txRealtime = helper.AblyRealtimePromise();
+      var rxRealtime = helper.AblyRealtimePromise();
       var channelName = 'set_cipher_params',
         txChannel = txRealtime.channels.get(channelName),
         messageText = 'Test message (' + channelName + ')',
