@@ -17,7 +17,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           done(err);
           return;
         }
-        rest = helper.AblyRestPromise();
+        rest = helper.AblyRest();
         done();
       });
     });
@@ -44,7 +44,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
     function connectWithToken() {
       return function (state, callback) {
-        var realtime = helper.AblyRealtimePromise(mixin({ token: state.token }, state.realtimeOpts));
+        var realtime = helper.AblyRealtime(mixin({ token: state.token }, state.realtimeOpts));
         realtime.connection.once('connected', function () {
           callback(null, mixin(state, { realtime: realtime }));
         });

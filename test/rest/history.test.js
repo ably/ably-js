@@ -22,7 +22,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
     before(function (done) {
       helper.setupApp(function () {
-        rest = helper.AblyRestPromise();
+        rest = helper.AblyRest();
         done();
       });
     });

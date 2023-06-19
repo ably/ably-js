@@ -20,7 +20,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 		 and is implicitly added when published */
     it('Should implicitly send clientId when authenticated with clientId', async function () {
       var clientId = 'implicit_client_id_0',
-        rest = helper.AblyRestPromise({ clientId: clientId, useBinaryProtocol: false }),
+        rest = helper.AblyRest({ clientId: clientId, useBinaryProtocol: false }),
         channel = rest.channels.get('rest_implicit_client_id_0');
 
       var originalPublish = channel._publish;
@@ -42,7 +42,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 		 and ensure it is published */
     it('Should publish clientId when provided explicitly in message', async function () {
       var clientId = 'explicit_client_id_0',
-        rest = helper.AblyRestPromise({ clientId: clientId, useBinaryProtocol: false }),
+        rest = helper.AblyRest({ clientId: clientId, useBinaryProtocol: false }),
         channel = rest.channels.get('rest_explicit_client_id_0');
 
       var originalPublish = channel._publish;
@@ -68,11 +68,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var clientId = 'explicit_client_id_0',
         invalidClientId = 'invalid';
 
-      var token = await helper.AblyRestPromise().auth.requestToken({ clientId: clientId });
+      var token = await helper.AblyRest().auth.requestToken({ clientId: clientId });
       expect(token.clientId === clientId, 'client ID is present in the Token').to.be.ok;
 
       // REST client uses a token string so is unaware of the clientId so cannot reject before communicating with Ably
-      var rest = helper.AblyRestPromise({ token: token.token, useBinaryProtocol: false }),
+      var rest = helper.AblyRest({ token: token.token, useBinaryProtocol: false }),
         channel = rest.channels.get('rest_explicit_client_id_1');
 
       var originalPublish = channel._publish;
@@ -99,7 +99,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /* TO3l8; CD2C; RSL1i */
     it('Should error when publishing message larger than maxMessageSize', async function () {
       /* No connectionDetails mechanism for REST, so just pass the override into the constructor */
-      var realtime = helper.AblyRestPromise({ internal: { maxMessageSize: 64 } }),
+      var realtime = helper.AblyRest({ internal: { maxMessageSize: 64 } }),
         channel = realtime.channels.get('maxMessageSize');
 
       try {
@@ -114,7 +114,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* Check ids are correctly sent */
     it('Should send correct IDs when idempotentRestPublishing set to false', async function () {
-      var rest = helper.AblyRestPromise({ idempotentRestPublishing: false, useBinaryProtocol: false }),
+      var rest = helper.AblyRest({ idempotentRestPublishing: false, useBinaryProtocol: false }),
         channel = rest.channels.get('idempotent_rest_publishing'),
         message = { name: 'test', id: 'idempotent-msg-id:0' };
 
@@ -128,11 +128,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /* Check ids are added when automatic idempotent rest publishing option enabled */
     it('Should add IDs when automatic idempotent rest publishing option enabled', async function () {
       /* easiest way to get the host we're using for tests */
-      var dummyRest = helper.AblyRestPromise(),
+      var dummyRest = helper.AblyRest(),
         host = dummyRest.options.restHost,
         /* Add the same host as a bunch of fallback hosts, so after the first
          * request 'fails' we retry on the same host using the fallback mechanism */
-        rest = helper.AblyRestPromise({
+        rest = helper.AblyRest({
           idempotentRestPublishing: true,
           useBinaryProtocol: false,
           fallbackHosts: [host, host, host],
@@ -180,7 +180,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('Rest publish params', async function () {
-      var rest = helper.AblyRestPromise(),
+      var rest = helper.AblyRest(),
         channel = rest.channels.get('publish_params');
 
       var originalPublish = channel._publish;

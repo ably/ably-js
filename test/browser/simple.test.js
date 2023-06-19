@@ -23,7 +23,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     function realtimeConnection(transports) {
       var options = {};
       if (transports) options.transports = transports;
-      return helper.AblyRealtimePromise(options);
+      return helper.AblyRealtime(options);
     }
 
     function failWithin(timeInSeconds, done, ably, description) {

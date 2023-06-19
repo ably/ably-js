@@ -177,7 +177,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('channelinit0', function (realtimeOpts) {
       return function (done) {
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             try {
               /* set options on init */
@@ -210,7 +210,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('channelattach0', function (realtimeOpts) {
       return function (done) {
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var channel0 = realtime.channels.get('channelattach0');
             whenPromiseSettles(channel0.attach(), function (err) {
@@ -233,7 +233,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('channelattach2', function (realtimeOpts) {
       return function (done) {
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           var channel2 = realtime.channels.get('channelattach2');
           whenPromiseSettles(channel2.attach(), function (err) {
             if (err) {
@@ -257,7 +257,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       function (realtimeOpts) {
         return function (done) {
           try {
-            var realtime = helper.AblyRealtimePromise(realtimeOpts);
+            var realtime = helper.AblyRealtime(realtimeOpts);
             realtime.connection.on('connected', function () {
               var channel0 = realtime.channels.get('channelattach3');
               whenPromiseSettles(channel0.attach(), function (err) {
@@ -295,7 +295,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('channelattachempty', function (realtimeOpts) {
       return function (done) {
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             var channel0 = realtime.channels.get('');
             whenPromiseSettles(channel0.attach(), function (err) {
@@ -327,7 +327,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('channelattachinvalid', function (realtimeOpts) {
       return function (done) {
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             var channel = realtime.channels.get(':hell');
             whenPromiseSettles(channel.attach(), function (err) {
@@ -365,7 +365,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('publish_no_attach', function (realtimeOpts) {
       return function (done) {
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             whenPromiseSettles(realtime.channels.get('publish_no_attach').publish(), function (err) {
               if (err) {
@@ -388,7 +388,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('channelattach_publish_invalid', function (realtimeOpts) {
       return function (done) {
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             whenPromiseSettles(realtime.channels.get(':hell').publish(), function (err) {
               if (err) {
@@ -417,7 +417,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     testOnAllTransports('channelattach_invalid_twice', function (realtimeOpts) {
       return function (done) {
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             whenPromiseSettles(realtime.channels.get(':hell').attach(), function (err) {
               if (err) {
@@ -453,7 +453,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('channelattachOnceOrIfAfter', function (done) {
       try {
-        var realtime = helper.AblyRealtimePromise(),
+        var realtime = helper.AblyRealtime(),
           channel = realtime.channels.get('channelattachOnceOrIf'),
           firedImmediately = false;
 
@@ -479,7 +479,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('channelattachOnceOrIfBefore', function (done) {
       try {
-        var realtime = helper.AblyRealtimePromise(),
+        var realtime = helper.AblyRealtime(),
           channel = realtime.channels.get('channelattachOnceOrIf'),
           firedImmediately = false;
 
@@ -504,7 +504,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         var testName = 'attachWithChannelParamsBasicChannelsGet';
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var params = {
               modes: 'subscribe',
@@ -528,7 +528,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 return;
               }
 
-              var testRealtime = helper.AblyRealtimePromise();
+              var testRealtime = helper.AblyRealtime();
               testRealtime.connection.on('connected', function () {
                 var testChannel = testRealtime.channels.get(testName);
                 async.series(
@@ -557,7 +557,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         var testName = 'attachWithChannelParamsBasicSetOptions';
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var params = {
               modes: 'subscribe',
@@ -577,7 +577,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               expect(channel.params).to.deep.equal(params, 'Check result params');
               expect(channel.modes).to.deep.equal(['subscribe'], 'Check result modes');
 
-              var testRealtime = helper.AblyRealtimePromise();
+              var testRealtime = helper.AblyRealtime();
               testRealtime.connection.on('connected', function () {
                 var testChannel = testRealtime.channels.get(testName);
                 async.series(
@@ -606,7 +606,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         var testName = 'subscribeAfterSetOptions';
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var channel = realtime.channels.get(testName);
             channel.setOptions({
@@ -635,7 +635,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('channelGetShouldThrowWhenWouldCauseReattach', function (done) {
       var testName = 'channelGetShouldThrowWhenWouldCauseReattach';
       try {
-        var realtime = helper.AblyRealtimePromise();
+        var realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
           var params = {
             modes: 'subscribe',
@@ -676,7 +676,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         var testName = 'setOptionsCallbackBehaviour';
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var params = {
               modes: 'subscribe',
@@ -752,7 +752,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         var testName = 'attachWithChannelParamsModesAndChannelModes';
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var paramsModes = ['presence', 'subscribe'];
             var params = {
@@ -777,7 +777,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 return;
               }
 
-              var testRealtime = helper.AblyRealtimePromise();
+              var testRealtime = helper.AblyRealtime();
               testRealtime.connection.on('connected', function () {
                 var testChannel = testRealtime.channels.get(testName);
                 async.series(
@@ -806,7 +806,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         var testName = 'attachWithChannelModes';
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var modes = ['publish', 'presence_subscribe'];
             var channelOptions = {
@@ -826,7 +826,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 return;
               }
 
-              var testRealtime = helper.AblyRealtimePromise();
+              var testRealtime = helper.AblyRealtime();
               testRealtime.connection.on('connected', function () {
                 var testChannel = testRealtime.channels.get(testName);
                 async.series(
@@ -855,7 +855,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         var testName = 'attachWithChannelParamsDeltaAndModes';
         try {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts);
+          var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var modes = ['publish', 'subscribe', 'presence_subscribe'];
             var channelOptions = {
@@ -877,7 +877,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 return;
               }
 
-              var testRealtime = helper.AblyRealtimePromise();
+              var testRealtime = helper.AblyRealtime();
               testRealtime.connection.on('connected', function () {
                 var testChannel = testRealtime.channels.get(testName);
                 async.series(
@@ -906,7 +906,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var testName = 'attachWithInvalidChannelParams';
       var defaultChannelModes = 'presence,publish,subscribe,presence_subscribe';
       try {
-        var realtime = helper.AblyRealtimePromise();
+        var realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
           var channel = realtime.channels.get(testName);
           async.series(
@@ -1012,7 +1012,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('channelsubscribe0', function (done) {
       try {
-        var realtime = helper.AblyRealtimePromise({ useBinaryProtocol: true });
+        var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
         realtime.connection.on('connected', function () {
           var channel6 = realtime.channels.get('channelsubscribe0');
           whenPromiseSettles(channel6.attach(), function (err) {
@@ -1048,7 +1048,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var messagesReceived = 0;
 
       try {
-        var realtime = helper.AblyRealtimePromise();
+        var realtime = helper.AblyRealtime();
         var channelByEvent, channelByListener, channelAll;
 
         var unsubscribeTest = function () {
@@ -1123,7 +1123,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * immediate reattach. If that fails, it should go into suspended
      */
     it('server_sent_detached', function (done) {
-      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] }),
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channelName = 'server_sent_detached',
         channel = realtime.channels.get(channelName);
 
@@ -1174,7 +1174,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * result in the channel becoming suspended
      */
     it('server_sent_detached_while_attaching', function (done) {
-      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] }),
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channelName = 'server_sent_detached_while_attaching',
         channel = realtime.channels.get(channelName);
 
@@ -1214,7 +1214,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * A server-sent ERROR, with channel field, should fail the channel
      */
     it('server_sent_error', function (done) {
-      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] }),
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channelName = 'server_sent_error',
         channel = realtime.channels.get(channelName);
 
@@ -1251,7 +1251,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * should emit an UPDATE event on the channel
      */
     it('server_sent_attached_err', function (done) {
-      var realtime = helper.AblyRealtimePromise(),
+      var realtime = helper.AblyRealtime(),
         channelName = 'server_sent_attached_err',
         channel = realtime.channels.get(channelName);
 
@@ -1295,7 +1295,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Check that queueMessages: false disables queuing for connection queue state
      */
     it('publish_no_queueing', function (done) {
-      var realtime = helper.AblyRealtimePromise({ queueMessages: false }),
+      var realtime = helper.AblyRealtime({ queueMessages: false }),
         channel = realtime.channels.get('publish_no_queueing');
 
       /* try a publish while not yet connected */
@@ -1314,7 +1314,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('channel_attach_timeout', function (done) {
       /* Use a fixed transport as attaches are resent when the transport changes */
-      var realtime = helper.AblyRealtimePromise({
+      var realtime = helper.AblyRealtime({
           transports: [helper.bestTransport],
           realtimeRequestTimeout: 2000,
           channelRetryTimeout: 100,
@@ -1362,7 +1362,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('suspended_connection', function (done) {
       /* Use a fixed transport as attaches are resent when the transport changes */
       /* Browsers throttle setTimeouts to min 1s in in active tabs; having timeouts less than that screws with the relative timings */
-      var realtime = helper.AblyRealtimePromise({
+      var realtime = helper.AblyRealtime({
           transports: [helper.bestTransport],
           channelRetryTimeout: 1010,
           suspendedRetryTimeout: 1100,
@@ -1430,7 +1430,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* RTL5i */
     it('attached_while_detaching', function (done) {
-      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] }),
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channelName = 'server_sent_detached',
         channel = realtime.channels.get(channelName);
 
@@ -1473,7 +1473,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     // RTL5j
     it('detaching from suspended channel transitions channel to detached state', function (done) {
-      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] });
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
       var channelName = 'detach_from_suspended';
       var channel = realtime.channels.get(channelName);
 
@@ -1489,7 +1489,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     // RTL5b
     it('detaching from failed channel results in error', function (done) {
-      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] });
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
       var channelName = 'detach_from_failed';
       var channel = realtime.channels.get(channelName);
 
@@ -1505,7 +1505,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('rewind works on channel after reattaching', function (done) {
-      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] });
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
       var channelName = 'rewind_after_detach';
       var channel = realtime.channels.get(channelName);
       var channelOpts = { params: { rewind: '1' } };

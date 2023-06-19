@@ -12,7 +12,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
 
     before(function (done) {
       helper.setupApp(function () {
-        rest = helper.AblyRestPromise({ queryTime: true });
+        rest = helper.AblyRest({ queryTime: true });
         rest
           .time()
           .then(function (time) {
@@ -46,7 +46,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     it('Generate token and init library with it', async function () {
       var tokenDetails = await rest.auth.requestToken();
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
-      helper.AblyRestPromise({ token: tokenDetails.token });
+      helper.AblyRest({ token: tokenDetails.token });
     });
 
     it('Token generation with explicit timestamp', async function () {
@@ -179,7 +179,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     });
 
     it('Token generation with defaultTokenParams set and no tokenParams passed in', async function () {
-      var rest1 = helper.AblyRestPromise({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
+      var rest1 = helper.AblyRest({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
       var tokenDetails = await rest1.auth.requestToken();
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
       expect(tokenDetails.clientId).to.equal('foo', 'Verify client id from defaultTokenParams used');
@@ -187,7 +187,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     });
 
     it('Token generation: if tokenParams passed in, defaultTokenParams should be ignored altogether, not merged', async function () {
-      var rest1 = helper.AblyRestPromise({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
+      var rest1 = helper.AblyRest({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
       var tokenDetails = await rest1.auth.requestToken({ clientId: 'bar' }, null);
       expect(tokenDetails.clientId).to.equal(
         'bar',
@@ -289,10 +289,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
         var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
         var authParams = utils.mixin(keys, params);
         var authUrl = echoServer + '/createJWT' + utils.toQueryString(authParams);
-        var restJWTRequester = helper.AblyRestPromise({ authUrl: authUrl });
+        var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
         var tokenDetails = await restJWTRequester.auth.requestToken();
-        var restClient = helper.AblyRestPromise({ token: tokenDetails.token });
+        var restClient = helper.AblyRest({ token: tokenDetails.token });
         await restClient.stats();
       });
     }
@@ -315,10 +315,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     it('JWT request with invalid key', async function () {
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
       var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
-      var restJWTRequester = helper.AblyRestPromise({ authUrl: authUrl });
+      var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
       var tokenDetails = await restJWTRequester.auth.requestToken();
-      var restClient = helper.AblyRestPromise({ token: tokenDetails.token });
+      var restClient = helper.AblyRest({ token: tokenDetails.token });
       try {
         var stats = await restClient.stats();
       } catch (err) {
@@ -336,7 +336,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       var currentKey = helper.getTestApp().keys[0];
       var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
       var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
-      var restJWTRequester = helper.AblyRestPromise({ authUrl: authUrl });
+      var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
       var authCallback = function (tokenParams, callback) {
         restJWTRequester.auth.requestToken().then(function (tokenDetails) {
@@ -344,7 +344,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
         });
       };
 
-      var restClient = helper.AblyRestPromise({ authCallback: authCallback });
+      var restClient = helper.AblyRest({ authCallback: authCallback });
       var stats = await restClient.stats();
     });
 
@@ -354,7 +354,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     it('Rest JWT with authCallback and invalid keys', async function () {
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
       var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
-      var restJWTRequester = helper.AblyRestPromise({ authUrl: authUrl });
+      var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
       var authCallback = function (tokenParams, callback) {
         restJWTRequester.auth.requestToken().then(function (tokenDetails) {
@@ -362,7 +362,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
         });
       };
 
-      var restClient = helper.AblyRestPromise({ authCallback: authCallback });
+      var restClient = helper.AblyRest({ authCallback: authCallback });
       try {
         await restClient.stats();
       } catch (err) {
@@ -383,7 +383,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       }
 
       /* Example client-side using the token */
-      var restClient = helper.AblyRestPromise({ authCallback: authCallback });
+      var restClient = helper.AblyRest({ authCallback: authCallback });
       var channel = restClient.channels.get('auth_concurrent');
 
       await Promise.all([channel.history(), channel.history()]);

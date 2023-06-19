@@ -44,7 +44,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
       var testName = 'deltaPlugin';
       try {
         var testVcdiffDecoder = getTestVcdiffDecoder();
-        var realtime = helper.AblyRealtimePromise({
+        var realtime = helper.AblyRealtime({
           plugins: {
             vcdiff: testVcdiffDecoder,
           },
@@ -93,7 +93,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
       var testName = 'unusedPlugin';
       try {
         var testVcdiffDecoder = getTestVcdiffDecoder();
-        var realtime = helper.AblyRealtimePromise({
+        var realtime = helper.AblyRealtime({
           plugins: {
             vcdiff: testVcdiffDecoder,
           },
@@ -133,7 +133,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
       var testName = 'lastMessageNotFoundRecovery';
       try {
         var testVcdiffDecoder = getTestVcdiffDecoder();
-        var realtime = helper.AblyRealtimePromise({
+        var realtime = helper.AblyRealtime({
           plugins: {
             vcdiff: testVcdiffDecoder,
           },
@@ -201,7 +201,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           },
         };
 
-        var realtime = helper.AblyRealtimePromise({
+        var realtime = helper.AblyRealtime({
           plugins: {
             vcdiff: failingTestVcdiffDecoder,
           },
@@ -246,7 +246,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
     /* Check that channel becomes failed if we get deltas when we don't have a vcdiff plugin */
     it('noPlugin', function (done) {
       try {
-        var realtime = helper.AblyRealtimePromise();
+        var realtime = helper.AblyRealtime();
         var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });
 
         whenPromiseSettles(channel.attach(), function (err) {

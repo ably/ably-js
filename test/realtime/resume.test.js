@@ -44,8 +44,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function resume_inactive(done, channelName, txOpts, rxOpts) {
       var count = 5;
 
-      var txRest = helper.AblyRestPromise(mixin(txOpts));
-      var rxRealtime = helper.AblyRealtimePromise(mixin(rxOpts));
+      var txRest = helper.AblyRest(mixin(txOpts));
+      var rxRealtime = helper.AblyRealtime(mixin(rxOpts));
 
       var rxChannel = rxRealtime.channels.get(channelName);
       var txChannel = txRest.channels.get(channelName);
@@ -155,8 +155,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function resume_active(done, channelName, txOpts, rxOpts) {
       var count = 5;
 
-      var txRest = helper.AblyRestPromise(mixin(txOpts));
-      var rxRealtime = helper.AblyRealtimePromise(mixin(rxOpts));
+      var txRest = helper.AblyRest(mixin(txOpts));
+      var rxRealtime = helper.AblyRealtime(mixin(rxOpts));
 
       var rxChannel = rxRealtime.channels.get(channelName);
       var txChannel = txRest.channels.get(channelName);
@@ -276,7 +276,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       'resume_lost_continuity',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts),
+          var realtime = helper.AblyRealtime(realtimeOpts),
             connection = realtime.connection,
             attachedChannelName = 'resume_lost_continuity_attached',
             suspendedChannelName = 'resume_lost_continuity_suspended',
@@ -342,7 +342,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       'resume_token_error',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtimePromise(mixin(realtimeOpts, { useTokenAuth: true })),
+          var realtime = helper.AblyRealtime(mixin(realtimeOpts, { useTokenAuth: true })),
             badtoken,
             connection = realtime.connection;
 
@@ -395,7 +395,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       'resume_fatal_error',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtimePromise(realtimeOpts),
+          var realtime = helper.AblyRealtime(realtimeOpts),
             connection = realtime.connection;
 
           async.series(
@@ -445,7 +445,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * TODO: enable once realtime supports this
      */
     it('channel_resumed_flag', function (done) {
-      var realtime = helper.AblyRealtimePromise({ transports: [helper.bestTransport] }),
+      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         realtimeTwo,
         recoveryKey,
         connection = realtime.connection,
@@ -476,7 +476,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             helper.becomeSuspended(realtime, cb);
           },
           function (cb) {
-            realtimeTwo = helper.AblyRealtimePromise({ recover: recoveryKey });
+            realtimeTwo = helper.AblyRealtime({ recover: recoveryKey });
             realtimeTwo.connection.once('connected', function (stateChange) {
               if (stateChange.reason) {
                 cb(stateChange.reason);
@@ -509,7 +509,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Check the library doesn't try to resume once the connectionStateTtl has expired
      */
     it('no_resume_once_suspended', function (done) {
-      var realtime = helper.AblyRealtimePromise(),
+      var realtime = helper.AblyRealtime(),
         connection = realtime.connection,
         channelName = 'no_resume_once_suspended';
 
@@ -548,7 +548,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      */
     it('no_resume_last_activity', function (done) {
       /* Specify a best transport so that upgrade activity doesn't reset the last activity timer */
-      var realtime = helper.AblyRealtimePromise({ transports: [bestTransport] }),
+      var realtime = helper.AblyRealtime({ transports: [bestTransport] }),
         connection = realtime.connection,
         connectionManager = connection.connectionManager;
 
@@ -574,11 +574,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       var testName = 'resume_rewind_1';
       var testMessage = { foo: 'bar', count: 1, status: 'active' };
       try {
-        var sender_realtime = helper.AblyRealtimePromise();
+        var sender_realtime = helper.AblyRealtime();
         var sender_channel = sender_realtime.channels.get(testName);
 
         sender_channel.subscribe(function (message) {
-          var receiver_realtime = helper.AblyRealtimePromise();
+          var receiver_realtime = helper.AblyRealtime();
           var receiver_channel = receiver_realtime.channels.get(testName, { params: { rewind: 1 } });
 
           receiver_channel.subscribe(function (message) {
@@ -592,7 +592,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               return;
             }
 
-            var resumed_receiver_realtime = helper.AblyRealtimePromise();
+            var resumed_receiver_realtime = helper.AblyRealtime();
             var connectionManager = resumed_receiver_realtime.connection.connectionManager;
 
             var sendOrig = connectionManager.send;
@@ -630,8 +630,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     it('recover multiple channels', function (done) {
       const NUM_MSGS = 5;
 
-      const txRest = helper.AblyRestPromise();
-      const rxRealtime = helper.AblyRealtimePromise(
+      const txRest = helper.AblyRest();
+      const rxRealtime = helper.AblyRealtime(
         {
           transports: [helper.bestTransport],
         },
@@ -739,7 +739,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               return;
             }
 
-            rxRealtimeRecover = helper.AblyRealtimePromise({ recover: recoveryKey });
+            rxRealtimeRecover = helper.AblyRealtime({ recover: recoveryKey });
             rxRecoverChannels = channelNames.map((name) => rxRealtimeRecover.channels.get(name));
 
             subscribeRecoveredMessages(function (err) {

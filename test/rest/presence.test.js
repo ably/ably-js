@@ -25,7 +25,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     before(function (done) {
       helper.setupApp(function () {
-        rest = helper.AblyRestPromise();
+        rest = helper.AblyRest();
         cipherConfig = helper.getTestApp().cipherConfig;
         done();
       });

@@ -12,7 +12,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       initialXhrSupported = Ably.Rest.Platform.Config.xhrSupported;
       Ably.Rest.Platform.Config.xhrSupported = false;
       helper.setupApp(function () {
-        rest = helper.AblyRestPromise();
+        rest = helper.AblyRest();
         done();
       });
     });

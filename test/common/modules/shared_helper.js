@@ -164,10 +164,10 @@ define([
   function restTestOnJsonMsgpack(name, testFn, skip) {
     var itFn = skip ? it.skip : it;
     itFn(name + ' with binary protocol', async function () {
-      await testFn(new clientModule.AblyRestPromise({ useBinaryProtocol: true }), name + '_binary');
+      await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary');
     });
     itFn(name + ' with text protocol', async function () {
-      await testFn(new clientModule.AblyRestPromise({ useBinaryProtocol: false }), name + '_text');
+      await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text');
     });
   }
 
@@ -226,9 +226,7 @@ define([
 
     Ably: clientModule.Ably,
     AblyRest: clientModule.AblyRest,
-    AblyRestPromise: clientModule.AblyRestPromise,
     AblyRealtime: clientModule.AblyRealtime,
-    AblyRealtimePromise: clientModule.AblyRealtimePromise,
     Utils: utils,
 
     loadTestData: testAppManager.loadJsonData,
