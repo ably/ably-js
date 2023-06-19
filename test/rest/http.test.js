@@ -9,7 +9,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     this.timeout(60 * 1000);
     before(function (done) {
       helper.setupApp(function () {
-        rest = helper.AblyRestPromise({
+        rest = helper.AblyRest({
           agents: {
             'custom-agent': '0.1.2',
           },

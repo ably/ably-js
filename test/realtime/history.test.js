@@ -47,8 +47,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     });
 
     it('history_until_attach', function (done) {
-      var rest = helper.AblyRestPromise();
-      var realtime = helper.AblyRealtimePromise();
+      var rest = helper.AblyRest();
+      var realtime = helper.AblyRealtime();
       var restChannel = rest.channels.get('persisted:history_until_attach');
 
       /* first, send a number of events to this channel before attaching */

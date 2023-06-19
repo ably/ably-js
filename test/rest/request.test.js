@@ -17,7 +17,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           done(err);
           return;
         }
-        rest = helper.AblyRestPromise({ useBinaryProtocol: false });
+        rest = helper.AblyRest({ useBinaryProtocol: false });
         done();
       });
     });
@@ -68,7 +68,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* With a network issue, should get an actual err, not an HttpPaginatedResponse with error members */
     it('request_network_error', async function () {
-      rest = helper.AblyRestPromise({ restHost: helper.unroutableAddress });
+      rest = helper.AblyRest({ restHost: helper.unroutableAddress });
       try {
         var res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
       } catch (err) {
@@ -168,7 +168,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     utils.arrForEach(['put', 'patch', 'delete'], function (method) {
       it('check' + method, async function () {
-        var restEcho = helper.AblyRestPromise({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
+        var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
         var res = await restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {});
         expect(res.items[0] && res.items[0].method).to.equal(method);
       });

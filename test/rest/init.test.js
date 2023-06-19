@@ -25,7 +25,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     it('Init with token string', async function () {
       /* first generate a token ... */
-      var rest = helper.AblyRestPromise();
+      var rest = helper.AblyRest();
       var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
 
       var tokenDetails = await rest.auth.requestToken(null, testKeyOpts);
@@ -36,30 +36,30 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     it('Init with tls: false', function () {
-      var rest = helper.AblyRestPromise({ tls: false, port: 123, tlsPort: 456 });
+      var rest = helper.AblyRest({ tls: false, port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('http://example.com:123');
     });
 
     it('Init with tls: true', function () {
-      var rest = helper.AblyRestPromise({ tls: true, port: 123, tlsPort: 456 });
+      var rest = helper.AblyRest({ tls: true, port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('https://example.com:456');
     });
 
     /* init without any tls key should enable tls */
     it('Init without any tls key should enable tls', function () {
-      var rest = helper.AblyRestPromise({ port: 123, tlsPort: 456 });
+      var rest = helper.AblyRest({ port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('https://example.com:456');
     });
 
     it("Init with clientId set to '*' or anything other than a string or null should error", function () {
       expect(function () {
-        var rest = helper.AblyRestPromise({ clientId: '*' });
+        var rest = helper.AblyRest({ clientId: '*' });
       }, 'Check can’t init library with a wildcard clientId').to.throw;
       expect(function () {
-        var rest = helper.AblyRestPromise({ clientId: 123 });
+        var rest = helper.AblyRest({ clientId: 123 });
       }, 'Check can’t init library with a numerical clientId').to.throw;
       expect(function () {
-        var rest = helper.AblyRestPromise({ clientId: false });
+        var rest = helper.AblyRest({ clientId: false });
       }, 'Check can’t init library with a boolean clientId').to.throw;
     });
 

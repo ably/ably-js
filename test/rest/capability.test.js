@@ -20,7 +20,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     before(function (done) {
       helper.setupApp(function () {
-        rest = helper.AblyRestPromise({ queryTime: true });
+        rest = helper.AblyRest({ queryTime: true });
         testApp = helper.getTestApp();
         rest
           .time()

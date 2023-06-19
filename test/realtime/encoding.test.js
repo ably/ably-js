@@ -32,8 +32,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           done(err);
           return;
         }
-        var realtime = helper.AblyRealtimePromise({ useBinaryProtocol: false }),
-          binaryrealtime = helper.AblyRealtimePromise({ useBinaryProtocol: true }),
+        var realtime = helper.AblyRealtime({ useBinaryProtocol: false }),
+          binaryrealtime = helper.AblyRealtime({ useBinaryProtocol: true }),
           channelName = 'message_decoding',
           channelPath = '/channels/' + channelName + '/messages',
           channel = realtime.channels.get(channelName),
@@ -133,8 +133,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           done(new Error('Unable to get test assets; err = ' + displayError(err)));
           return;
         }
-        var realtime = helper.AblyRealtimePromise({ useBinaryProtocol: false }),
-          binaryrealtime = helper.AblyRealtimePromise({ useBinaryProtocol: true }),
+        var realtime = helper.AblyRealtime({ useBinaryProtocol: false }),
+          binaryrealtime = helper.AblyRealtime({ useBinaryProtocol: true }),
           channelName = 'message_encoding',
           channelPath = '/channels/' + channelName + '/messages',
           channel = realtime.channels.get(channelName),

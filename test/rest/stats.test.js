@@ -64,7 +64,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
     before(function (done) {
       // force a new app to be created with first argument true so that stats are not effected by other tests
       helper.setupApp(true, function () {
-        rest = helper.AblyRestPromise();
+        rest = helper.AblyRest();
         helper.createStats(helper.getTestApp(), statsFixtures, function (err) {
           if (err) {
             done(err);

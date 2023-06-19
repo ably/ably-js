@@ -30,7 +30,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
             done(err);
             return;
           }
-          rest = helper.AblyRestPromise();
+          rest = helper.AblyRest();
           done();
         });
       });
@@ -43,7 +43,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       it('publishpreupgrade', function (done) {
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
         try {
-          var realtime = helper.AblyRealtimePromise(transportOpts);
+          var realtime = helper.AblyRealtime(transportOpts);
           /* connect and attach */
           realtime.connection.on('connected', function () {
             //console.log('publishpreupgrade: connected');
@@ -87,7 +87,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       it('publishpostupgrade0', function (done) {
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
         try {
-          var realtime = helper.AblyRealtimePromise(transportOpts);
+          var realtime = helper.AblyRealtime(transportOpts);
 
           /* subscribe to event */
           var rtChannel = realtime.channels.get('publishpostupgrade0');
@@ -145,7 +145,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       it('publishpostupgrade1', function (done) {
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
         try {
-          var realtime = helper.AblyRealtimePromise(transportOpts);
+          var realtime = helper.AblyRealtime(transportOpts);
 
           /* subscribe to event */
           var rtChannel = realtime.channels.get('publishpostupgrade1');
@@ -220,7 +220,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
           checkFinish();
         };
         var transportOpts = { useBinaryProtocol: false, transports: helper.availableTransports };
-        var realtime = helper.AblyRealtimePromise(transportOpts);
+        var realtime = helper.AblyRealtime(transportOpts);
         var channel = realtime.channels.get('upgradepublish0');
         /* subscribe to event */
         channel.subscribe(
@@ -254,7 +254,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
           checkFinish();
         };
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
-        var realtime = helper.AblyRealtimePromise(transportOpts);
+        var realtime = helper.AblyRealtime(transportOpts);
         var channel = realtime.channels.get('upgradepublish1');
         /* subscribe to event */
         channel.subscribe(
@@ -279,7 +279,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
         var cometDeactivated = false;
         try {
-          var realtime = helper.AblyRealtimePromise(transportOpts);
+          var realtime = helper.AblyRealtime(transportOpts);
           /* check that we see the transport we're interested in get activated,
            * and that we see the comet transport deactivated */
           var failTimer = setTimeout(function () {
@@ -321,7 +321,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       it('upgradeheartbeat0', function (done) {
         var transportOpts = { useBinaryProtocol: false, transports: helper.availableTransports };
         try {
-          var realtime = helper.AblyRealtimePromise(transportOpts);
+          var realtime = helper.AblyRealtime(transportOpts);
 
           /* when we see the transport we're interested in get activated,
            * listen for the heartbeat event */
@@ -354,7 +354,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       it('upgradeheartbeat1', function (done) {
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
         try {
-          var realtime = helper.AblyRealtimePromise(transportOpts);
+          var realtime = helper.AblyRealtime(transportOpts);
 
           /* when we see the transport we're interested in get activated,
            * listen for the heartbeat event */
@@ -387,7 +387,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       it('upgradeheartbeat2', function (done) {
         var transportOpts = { useBinaryProtocol: false, transports: helper.availableTransports };
         try {
-          var realtime = helper.AblyRealtimePromise(transportOpts);
+          var realtime = helper.AblyRealtime(transportOpts);
 
           /* when we see the transport we're interested in get activated,
            * listen for the heartbeat event */
@@ -433,7 +433,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       it('upgradeheartbeat3', function (done) {
         var transportOpts = { useBinaryProtocol: true, transports: helper.availableTransports };
         try {
-          var realtime = helper.AblyRealtimePromise(transportOpts);
+          var realtime = helper.AblyRealtime(transportOpts);
 
           /* when we see the transport we're interested in get activated,
            * listen for the heartbeat event */
@@ -480,7 +480,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
 
         try {
           /* on base transport active */
-          realtime = helper.AblyRealtimePromise({ transports: helper.availableTransports });
+          realtime = helper.AblyRealtime({ transports: helper.availableTransports });
           realtime.connection.connectionManager.once('transport.active', function (transport) {
             expect(
               transport.toString().indexOf('/comet/') > -1,
@@ -535,7 +535,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
        * seamlessly transferred to the websocket transport and published there
        */
       it('message_timeout_stalling_upgrade', function (done) {
-        var realtime = helper.AblyRealtimePromise({ transports: helper.availableTransports, httpRequestTimeout: 3000 }),
+        var realtime = helper.AblyRealtime({ transports: helper.availableTransports, httpRequestTimeout: 3000 }),
           channel = realtime.channels.get('timeout1'),
           connectionManager = realtime.connection.connectionManager;
 
@@ -581,7 +581,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
        * and subsequent connections do not upgrade
        */
       it('persist_transport_prefs', function (done) {
-        var realtime = helper.AblyRealtimePromise({ transports: helper.availableTransports }),
+        var realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
           connection = realtime.connection,
           connectionManager = connection.connectionManager;
 
@@ -643,7 +643,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
        * Check that upgrades succeed even if the original transport dies before the sync
        */
       it('upgrade_original_transport_dies', function (done) {
-        var realtime = helper.AblyRealtimePromise({ transports: helper.availableTransports }),
+        var realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
           connection = realtime.connection,
           connectionManager = connection.connectionManager;
 

@@ -12,7 +12,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           done(err);
           return;
         }
-        rest = helper.AblyRestPromise();
+        rest = helper.AblyRest();
         done();
       });
     });

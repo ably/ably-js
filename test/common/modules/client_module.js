@@ -23,26 +23,16 @@ define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably
   }
 
   function ablyRest(options) {
-    return new Ably.Rest(ablyClientOptions(options));
-  }
-
-  function ablyRestPromise(options) {
     return new Ably.Rest.Promise(ablyClientOptions(options));
   }
 
   function ablyRealtime(options) {
-    return new Ably.Realtime(ablyClientOptions(options));
-  }
-
-  function ablyRealtimePromise(options) {
     return new Ably.Realtime.Promise(ablyClientOptions(options));
   }
 
   return (module.exports = {
     Ably: Ably,
     AblyRest: ablyRest,
-    AblyRestPromise: ablyRestPromise,
     AblyRealtime: ablyRealtime,
-    AblyRealtimePromise: ablyRealtimePromise,
   });
 });

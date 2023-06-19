@@ -14,14 +14,14 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           done(err);
           return;
         }
-        goodHost = helper.AblyRestPromise().options.restHost;
+        goodHost = helper.AblyRest().options.restHost;
         done();
       });
     });
 
     /* RSC15f */
     it('Store working fallback', async function () {
-      var rest = helper.AblyRestPromise({
+      var rest = helper.AblyRest({
         restHost: helper.unroutableHost,
         fallbackHosts: [goodHost],
         httpRequestTimeout: 3000,

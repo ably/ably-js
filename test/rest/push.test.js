@@ -51,13 +51,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
           subsByChannel[sub.channel].push(sub);
 
-          var rest = helper.AblyRestPromise({ clientId: sub.clientId });
+          var rest = helper.AblyRest({ clientId: sub.clientId });
           subscribes.push(() => rest.push.admin.channelSubscriptions.save(sub));
           deletes.push(() => rest.push.admin.channelSubscriptions.remove(sub));
         })(i);
       }
 
-      var rest = helper.AblyRestPromise();
+      var rest = helper.AblyRest();
 
       await Promise.all(subscribes.map((sub) => sub()));
 
@@ -72,7 +72,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     it('Publish', async function () {
       try {
-        var realtime = helper.AblyRealtimePromise();
+        var realtime = helper.AblyRealtime();
 
         var channel = realtime.channels.get('pushenabled:foo');
         await channel.attach();
@@ -108,7 +108,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('deviceRegistrations save', async function () {
-      var rest = helper.AblyRestPromise();
+      var rest = helper.AblyRest();
 
       var saved = await rest.push.admin.deviceRegistrations.save(testDevice);
       var got = await rest.push.admin.deviceRegistrations.get(testDevice.id);
@@ -162,7 +162,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           devices.push(device);
           devices_withoutSecret.push(device_withoutSecret);
 
-          var rest = helper.AblyRestPromise({ clientId: device.clientId });
+          var rest = helper.AblyRest({ clientId: device.clientId });
           registrations.push(function () {
             return rest.push.admin.deviceRegistrations.save(device);
           });
@@ -172,7 +172,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         })(i);
       }
 
-      var rest = helper.AblyRestPromise();
+      var rest = helper.AblyRest();
 
       var res0 = await Promise.all(registrations.map((x) => x()));
       var res1 = await rest.push.admin.deviceRegistrations.list(null);
@@ -195,7 +195,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('deviceRegistrations remove removeWhere', async function () {
-      var rest = helper.AblyRestPromise();
+      var rest = helper.AblyRest();
 
       await rest.push.admin.deviceRegistrations.save(testDevice);
       await rest.push.admin.deviceRegistrations.remove(testDevice.id);
@@ -219,7 +219,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('channelSubscriptions save', async function () {
-      var rest = helper.AblyRestPromise({ clientId: 'testClient' });
+      var rest = helper.AblyRest({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
 
       var saved = await rest.push.admin.channelSubscriptions.save(subscription);
@@ -245,7 +245,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
           subsByChannel[sub.channel].push(sub);
 
-          var rest = helper.AblyRestPromise();
+          var rest = helper.AblyRest();
           subscribes.push(function () {
             return rest.push.admin.channelSubscriptions.save(sub);
           });
@@ -255,7 +255,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         })(i);
       }
 
-      var rest = helper.AblyRestPromise();
+      var rest = helper.AblyRest();
 
       await Promise.all(subscribes.map((x) => x()));
 
@@ -269,7 +269,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('push_channelSubscriptions_remove', async function () {
-      var rest = helper.AblyRestPromise({ clientId: 'testClient' });
+      var rest = helper.AblyRest({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
 
       await rest.push.admin.channelSubscriptions.save(subscription);
@@ -282,7 +282,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       for (var i = 0; i < 5; i++) {
         (function (i) {
           var sub = { channel: 'pushenabled:listChannels' + ((i % 2) + 1), clientId: 'testClient' + ((i % 3) + 1) };
-          var rest = helper.AblyRestPromise({ clientId: sub.clientId });
+          var rest = helper.AblyRest({ clientId: sub.clientId });
           subscribes.push(function (callback) {
             return rest.push.admin.channelSubscriptions.save(sub);
           });
@@ -292,7 +292,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         })(i);
       }
 
-      var rest = helper.AblyRestPromise();
+      var rest = helper.AblyRest();
 
       await Promise.all(subscribes.map((x) => x()));
 
