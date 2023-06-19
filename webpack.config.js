@@ -79,9 +79,6 @@ const browserConfig = {
       crypto: false,
     },
   },
-  externals: {
-    'crypto-js': true,
-  },
   optimization: {
     minimize: false,
   },

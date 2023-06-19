@@ -466,27 +466,12 @@ export const randomString = (numBytes: number): string => {
     (Platform.Config.getRandomValues as Function)(uIntArr);
     return Platform.BufferUtils.base64Encode(uIntArr);
   }
-  /* Old browser; fall back to Math.random. Could just use a
-   * CryptoJS version of the above, but want this to still work in nocrypto
-   * versions of the library */
+  /* No secure random generator available; fall back to Math.random.
+   * TODO we should no longer end up in this scenario — and hence should be able to remove this code — given that all supported platforms should now have a random generator — see https://github.com/ably/ably-js/issues/1332
+   */
   const charset = Platform.BufferUtils.base64CharSet;
   /* base64 has 33% overhead; round length up */
   const length = Math.round((numBytes * 4) / 3);
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += charset[randomPosn(charset)];
-  }
-  return result;
-};
-
-export const randomHexString = (numBytes: number): string => {
-  if (Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined') {
-    const uIntArr = new Uint8Array(numBytes);
-    (Platform.Config.getRandomValues as Function)(uIntArr);
-    return Platform.BufferUtils.hexEncode(uIntArr);
-  }
-  const charset = Platform.BufferUtils.hexCharSet;
-  const length = numBytes * 2;
   let result = '';
   for (let i = 0; i < length; i++) {
     result += charset[randomPosn(charset)];
