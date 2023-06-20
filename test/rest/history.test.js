@@ -4,7 +4,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var rest;
   var expect = chai.expect;
   var exports = {};
-  var restTestOnJsonMsgpackAsync = helper.restTestOnJsonMsgpackAsync;
+  var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
   var utils = helper.Utils;
   var testMessages = [
     { name: 'event0', data: 'some data' },
@@ -27,7 +27,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     });
 
-    restTestOnJsonMsgpackAsync('history_simple', async function (rest, channelName) {
+    restTestOnJsonMsgpack('history_simple', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -53,7 +53,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
-    restTestOnJsonMsgpackAsync('history_multiple', async function (rest, channelName) {
+    restTestOnJsonMsgpack('history_multiple', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -76,7 +76,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
-    restTestOnJsonMsgpackAsync('history_simple_paginated_b', async function (rest, channelName) {
+    restTestOnJsonMsgpack('history_simple_paginated_b', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -225,7 +225,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
-    restTestOnJsonMsgpackAsync('history_encoding_errors', async function (rest, channelName) {
+    restTestOnJsonMsgpack('history_encoding_errors', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
       var badMessage = { name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{"foo":"bar"}' };
       testchannel.publish(badMessage);
