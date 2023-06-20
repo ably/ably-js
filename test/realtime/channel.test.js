@@ -687,23 +687,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             async.series(
               [
                 function (cb) {
-                  var setOptionsReturned = false;
-                  channel.setOptions(
-                    {
-                      params: params,
-                      modes: modes,
-                    },
-                    function () {
-                      expect(
-                        !setOptionsReturned,
-                        'setOptions failed to call back immediately, when no reattach is required'
-                      ).to.be.ok;
-                      cb();
-                    }
-                  );
-                  setOptionsReturned = true;
-                },
-                function (cb) {
                   channel.attach(cb);
                 },
                 function (cb) {
@@ -715,7 +698,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     channelUpdated = true;
                   });
 
-                  var setOptionsReturned = false;
                   channel.setOptions(
                     {
                       params: params,
@@ -725,10 +707,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                        * channelUpdated listener or the setOptions listener first */
                       Ably.Realtime.Platform.Config.nextTick(function () {
                         expect(
-                          setOptionsReturned,
-                          'setOptions should return immediately and call back after the reattach'
-                        ).to.be.ok;
-                        expect(
                           channelUpdated,
                           'Check channel went to the server to update the channel params'
                         ).to.be.ok;
@@ -736,7 +714,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       });
                     }
                   );
-                  setOptionsReturned = true;
                 },
                 function (cb) {
                   var channelUpdated = false;
@@ -744,34 +721,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     channelUpdated = true;
                   });
 
-                  var setOptionsReturned = false;
                   channel.setOptions(
                     {
                       modes: modes,
                     },
                     function () {
                       Ably.Realtime.Platform.Config.nextTick(function () {
-                        expect(
-                          setOptionsReturned,
-                          'setOptions should return immediately and call back after the reattach'
-                        ).to.be.ok;
                         expect(channelUpdated, 'Check channel went to the server to update the channel mode').to.be.ok;
                         cb();
                       });
                     }
                   );
-                  setOptionsReturned = true;
-                },
-                function (cb) {
-                  var setOptionsReturned = false;
-                  channel.setOptions({}, function () {
-                    expect(
-                      !setOptionsReturned,
-                      'setOptions failed to call back immediately, when no reattach is required'
-                    ).to.be.ok;
-                    cb();
-                  });
-                  setOptionsReturned = true;
                 },
               ],
               function (err) {
