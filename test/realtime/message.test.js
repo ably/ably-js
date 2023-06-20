@@ -440,22 +440,25 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return;
             }
 
-            /* publish events */
-            var restChannel = rest.channels.get('publishDisallowed');
-            for (var i = 0; i < testArguments.length; i++) {
-              try {
-                restChannel.publish.apply(restChannel, testArguments[i]);
-                closeAndFinish(done, realtime, new Error('Exception was not raised'));
-              } catch (err) {
+            (async function () {
+              /* publish events */
+              var restChannel = rest.channels.get('publishDisallowed');
+              for (var i = 0; i < testArguments.length; i++) {
                 try {
-                  expect(err.code).to.equal(40013, 'Invalid data type exception raised');
+                  restChannel.publish.apply(restChannel, testArguments[i]);
+                  closeAndFinish(done, realtime, new Error('Exception was not raised'));
                 } catch (err) {
-                  closeAndFinish(done, realtime, err);
-                  return;
+                  try {
+                    expect(err.code).to.equal(40013, 'Invalid data type exception raised');
+                  } catch (err) {
+                    closeAndFinish(done, realtime, err);
+                    return;
+                  }
                 }
               }
-            }
-            closeAndFinish(done, realtime);
+            })().then(() => {
+              closeAndFinish(done, realtime);
+            });
           });
         });
         monitorConnection(done, realtime);
