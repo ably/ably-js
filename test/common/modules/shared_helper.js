@@ -150,20 +150,6 @@ define([
 
   function restTestOnJsonMsgpack(name, testFn, skip) {
     var itFn = skip ? it.skip : it;
-    itFn(name + ' with binary protocol', function (done) {
-      testFn(done, new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary');
-    });
-    itFn(name + ' with text protocol', function (done) {
-      testFn(done, new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text');
-    });
-  }
-
-  restTestOnJsonMsgpack.skip = function (name, testFn) {
-    restTestOnJsonMsgpack(name, testFn, true);
-  };
-
-  function restTestOnJsonMsgpackAsync(name, testFn, skip) {
-    var itFn = skip ? it.skip : it;
     itFn(name + ' with binary protocol', async function () {
       await testFn(new clientModule.AblyRestPromise({ useBinaryProtocol: true }), name + '_binary');
     });
@@ -172,8 +158,8 @@ define([
     });
   }
 
-  restTestOnJsonMsgpackAsync.skip = function (name, testFn) {
-    restTestOnJsonMsgpackAsync(name, testFn, true);
+  restTestOnJsonMsgpack.skip = function (name, testFn) {
+    restTestOnJsonMsgpack(name, testFn, true);
   };
 
   function clearTransportPreference() {
@@ -242,7 +228,6 @@ define([
     becomeSuspended: becomeSuspended,
     testOnAllTransports: testOnAllTransports,
     restTestOnJsonMsgpack: restTestOnJsonMsgpack,
-    restTestOnJsonMsgpackAsync: restTestOnJsonMsgpackAsync,
     availableTransports: availableTransports,
     bestTransport: bestTransport,
     clearTransportPreference: clearTransportPreference,
