@@ -531,12 +531,26 @@ export function allToUpperCase(arr: Array<string>): Array<string> {
   });
 }
 
-export function getBackoffCoefficient(n: number) {
-  return Math.min((n + 2) / 3, 2);
+export function getBackoffCoefficient(count: number) {
+  return Math.min((count + 2) / 3, 2);
 }
 
 export function getJitterCoefficient() {
   return 1 - Math.random() * 0.2;
+}
+
+/**
+ * 
+ * @param initialTimeout initial timeout value
+ * @param retryAttempt integer indicating retryAttempt 
+ * @returns RetryTimeout value for given timeout and retryAttempt.
+ * If x is the value generated then, 
+ * Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout,
+ * Lower bound = 0.8 * Upper bound,
+ * Lower bound < x < Upper bound
+ */
+export function getRetryTime(initialTimeout: number, retryAttempt: number) {
+    return initialTimeout * getBackoffCoefficient(retryAttempt) * getJitterCoefficient();
 }
 
 export function getGlobalObject() {
