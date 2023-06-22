@@ -7,8 +7,6 @@ import PushChannelSubscription from '../types/pushchannelsubscription';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import Rest from './rest';
 
-const noop = function () {};
-
 class Push {
   rest: Rest;
   admin: Admin;
@@ -38,10 +36,7 @@ class Admin {
     const body = Utils.mixin({ recipient: recipient }, payload);
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'publish', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'publish', arguments);
     }
 
     Utils.mixin(headers, rest.options.headers);
@@ -68,10 +63,7 @@ class DeviceRegistrations {
       params = {};
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'save', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'save', arguments);
     }
 
     Utils.mixin(headers, rest.options.headers);
@@ -107,10 +99,7 @@ class DeviceRegistrations {
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'get', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'get', arguments);
     }
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
@@ -153,10 +142,7 @@ class DeviceRegistrations {
       headers = Utils.defaultGetHeaders(rest.options, { format });
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'list', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'list', arguments);
     }
 
     Utils.mixin(headers, rest.options.headers);
@@ -178,10 +164,7 @@ class DeviceRegistrations {
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'remove', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'remove', arguments);
     }
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
@@ -215,10 +198,7 @@ class DeviceRegistrations {
       headers = Utils.defaultGetHeaders(rest.options, { format });
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'removeWhere', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'removeWhere', arguments);
     }
 
     Utils.mixin(headers, rest.options.headers);
@@ -244,10 +224,7 @@ class ChannelSubscriptions {
       params = {};
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'save', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'save', arguments);
     }
 
     Utils.mixin(headers, rest.options.headers);
@@ -278,10 +255,7 @@ class ChannelSubscriptions {
       headers = Utils.defaultGetHeaders(rest.options, { format });
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'list', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'list', arguments);
     }
 
     Utils.mixin(headers, rest.options.headers);
@@ -301,10 +275,7 @@ class ChannelSubscriptions {
       headers = Utils.defaultGetHeaders(rest.options, { format });
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'removeWhere', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'removeWhere', arguments);
     }
 
     Utils.mixin(headers, rest.options.headers);
@@ -324,10 +295,7 @@ class ChannelSubscriptions {
       headers = Utils.defaultGetHeaders(rest.options, { format });
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'listChannels', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'listChannels', arguments);
     }
 
     Utils.mixin(headers, rest.options.headers);

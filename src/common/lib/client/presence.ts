@@ -8,8 +8,6 @@ import { PaginatedResultCallback } from '../../types/utils';
 import Channel from './channel';
 import RealtimeChannel from './realtimechannel';
 
-function noop() {}
-
 class Presence extends EventEmitter {
   channel: RealtimeChannel | Channel;
   basePath: string;
@@ -28,10 +26,7 @@ class Presence extends EventEmitter {
         callback = params;
         params = null;
       } else {
-        if (this.channel.rest.options.promises) {
-          return Utils.promisify(this, 'get', arguments);
-        }
-        callback = noop;
+        return Utils.promisify(this, 'get', arguments);
       }
     }
     const rest = this.channel.rest,
@@ -69,10 +64,7 @@ class Presence extends EventEmitter {
         callback = params;
         params = null;
       } else {
-        if (this.channel.rest.options.promises) {
-          return Utils.promisify(this, '_history', [params]);
-        }
-        callback = noop;
+        return Utils.promisify(this, '_history', [params]);
       }
     }
 

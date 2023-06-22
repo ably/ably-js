@@ -257,7 +257,6 @@ export function normaliseOptions(options: InternalClientOptions): NormalisedClie
     connectivityCheckParams,
     connectivityCheckUrl,
     headers,
-    promises: options.internal?.promises ?? false,
   };
 }
 

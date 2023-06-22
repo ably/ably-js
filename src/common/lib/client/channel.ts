@@ -78,10 +78,7 @@ class Channel extends EventEmitter {
         callback = params;
         params = null;
       } else {
-        if (this.rest.options.promises) {
-          return Utils.promisify(this, 'history', arguments);
-        }
-        callback = noop;
+        return Utils.promisify(this, 'history', arguments);
       }
     }
 
@@ -115,10 +112,7 @@ class Channel extends EventEmitter {
     let params: any;
 
     if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'publish', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'publish', arguments);
     }
 
     if (typeof first === 'string' || first === null) {
@@ -192,7 +186,7 @@ class Channel extends EventEmitter {
   }
 
   status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
-    if (typeof callback !== 'function' && this.rest.options.promises) {
+    if (typeof callback !== 'function') {
       return Utils.promisify(this, 'status', []);
     }
 

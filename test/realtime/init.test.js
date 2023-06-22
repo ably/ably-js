@@ -409,26 +409,5 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         closeAndFinish(done, realtime);
       });
     });
-
-    it('init_callbacks_promises', function (done) {
-      try {
-        var realtime,
-          keyStr = helper.getTestApp().keys[0].keyStr,
-          getOptions = function () {
-            return { key: keyStr, autoConnect: false };
-          };
-
-        realtime = new Ably.Realtime.Promise(getOptions());
-        expect(realtime.options.promises, 'Check promises default to true with promise constructor').to.be.ok;
-
-        if (!isBrowser && typeof require == 'function') {
-          realtime = new require('../../promises').Realtime(getOptions());
-          expect(realtime.options.promises, 'Check promises default to true with promise require target').to.be.ok;
-        }
-        done();
-      } catch (err) {
-        done(err);
-      }
-    });
   });
 });

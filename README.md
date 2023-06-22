@@ -52,8 +52,6 @@ and require as:
 var Ably = require('ably');
 ```
 
-For the version of the library where async methods return promises, use `var Ably = require('ably/promises');` instead. For the explicitly-callback-based variant use `require('ably/callbacks')`– see [Async API style](#async-api-style).
-
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
 
 #### Serverside usage with webpack
@@ -92,21 +90,11 @@ let client = new Ably.Realtime(options); /* inferred type Ably.Realtime */
 let channel = client.channels.get('feed'); /* inferred type Ably.Types.RealtimeChannel */
 ```
 
-For the version of the library where async methods return promises, use `import * as Ably from 'ably/promises';` instead. For the explicitly-callback-based variant use `import * as Ably from 'ably/callbacks'` – see [Async API style](#async-api-style).
-
 Intellisense in IDEs with TypeScript support is supported:
 
 ![TypeScript suggestions](./resources/typescript-demo.gif)
 
-If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts) (or `promises.d.ts` if you're requiring the library as `ably/promises`).
-
-## Async API style
-
-This library exposes two API variants. Firstly, the original (and presently the default) callback-based API, which follows the usual Node.js error-first callback style. Second, a promises-based API. With the promises variant, you can still pass a callback to methods and the callback will work as expected, but if you do not pass a callback, the method will return a promise. The API in use can be selected explicitly by requiring that specific variant when requiring/importing the library (or in the case of the browser version, when instantiating it). The usage instructions below make reference to both variants.
-
-For this library version, and for all future 1.x versions, the callback-based API will be the default. This means that the promises-based variant will need to be explicitly selected, to avoid breaking backwards compatibility. A move to the promises-based variant as the default is likely at the next major release (i.e. 2.x onwards).
-
-For usage, jump to [Using the async API style](#using-the-async-api-style).
+If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts).
 
 ## NativeScript
 
@@ -128,13 +116,6 @@ var client = new Ably.Realtime(key: string);
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Realtime(options: ClientOptions);
-
-// For a version of the library where async methods return promises if
-// you don't pass a callback:
-var client = new Ably.Realtime.Promise(options: string | ClientOptions);
-
-// For the explicitly-callback-based variant (see 'Async API style' below):
-var client = new Ably.Rest.Callbacks(options: string | ClientOptions);
 ```
 
 ### Connection
@@ -195,36 +176,26 @@ If you would like to inspect the `Message` instances in order to identify whethe
 
 ```javascript
 // Publish a single message with name and data
-channel.publish('greeting', 'Hello World!');
-
-// Optionally, you can use a callback to be notified of success or failure
-channel.publish('greeting', 'Hello World!', function(err) {
-  if(err) {
-    console.log('publish failed with error ' + err);
-  } else {
-    console.log('publish succeeded');
-  }
-})
+await channel.publish('greeting', 'Hello World!');
 
 // Publish several messages at once
-channel.publish([{name: 'greeting', data: 'Hello World!'}, ...], callback);
+await channel.publish([{name: 'greeting', data: 'Hello World!'}, ...]);
 ```
 
 ### Querying the History
 
 ```javascript
-channel.history(function(err, messagesPage) {
-  messagesPage                                    // PaginatedResult
-  messagesPage.items                              // array of Message
-  messagesPage.items[0].data                      // payload for first message
-  messagesPage.items.length                       // number of messages in the current page of history
-  messagesPage.hasNext()                          // true if there are further pages
-  messagesPage.isLast()                           // true if this page is the last page
-  messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-});
+const messagesPage = channel.history()
+messagesPage                                   // PaginatedResult
+messagesPage.items                             // array of Message
+messagesPage.items[0].data                     // payload for first message
+messagesPage.items.length                      // number of messages in the current page of history
+messagesPage.hasNext()                         // true if there are further pages
+messagesPage.isLast()                          // true if this page is the last page
+const nextPage = await messagesPage.next();    // retrieves the next page as PaginatedResult
 
 // Can optionally take an options param, see https://www.ably.com/docs/rest-api/#message-history
-channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
+const messagesPage = await channel.history({start: ..., end: ..., limit: ..., direction: ...});
 ```
 
 ### Presence on a channel
@@ -232,9 +203,8 @@ channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err
 Getting presence:
 
 ```javascript
-channel.presence.get(function (err, presenceSet) {
-  presenceSet; // array of PresenceMessages
-});
+const presenceSet = channel.presence.get();
+presenceSet; // array of PresenceMessages
 ```
 
 Note that presence#get on a realtime channel does not return a
@@ -243,17 +213,14 @@ PaginatedResult, as the library maintains a local copy of the presence set.
 Entering (and leaving) the presence set:
 
 ```javascript
-channel.presence.enter('my status', function (err) {
-  // now I am entered
-});
+await channel.presence.enter('my status');
+// now I am entered
 
-channel.presence.update('new status', function (err) {
-  // my presence data is updated
-});
+await channel.presence.update('new status');
+// my presence data is updated
 
-channel.presence.leave(function (err) {
-  // I've left the presence set
-});
+await channel.presence.leave()
+// I've left the presence set
 ```
 
 If you are using a client which is allowed to use any clientId --
@@ -263,24 +230,23 @@ https://www.ably.com/docs/general/authentication for more information), you
 can use
 
 ```javascript
-channel.presence.enterClient('myClientId', 'status', function(err) { ... });
+await channel.presence.enterClient('myClientId', 'status');
 // and similiarly, updateClient and leaveClient
 ```
 
 ### Querying the Presence History
 
 ```javascript
-channel.presence.history(function(err, messagesPage) { // PaginatedResult
-  messagesPage.items                              // array of PresenceMessage
-  messagesPage.items[0].data                      // payload for first message
-  messagesPage.items.length                       // number of messages in the current page of history
-  messagesPage.hasNext()                           // true if there are further pages
-  messagesPage.isLast()                           // true if this page is the last page
-  messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-});
+const messagesPage = channel.presence.history(); // PaginatedResult
+messagesPage.items                               // array of PresenceMessage
+messagesPage.items[0].data                       // payload for first message
+messagesPage.items.length                        // number of messages in the current page of history
+messagesPage.hasNext()                           // true if there are further pages
+messagesPage.isLast()                            // true if this page is the last page
+const nextPage = await messagesPage.next();      // retrieves the next page as PaginatedResult
 
 // Can optionally take an options param, see https://www.ably.com/docs/rest-api/#message-history
-channel.presence.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
+const messagesPage = await channel.presence.history({start: ..., end: ..., limit: ..., direction: ...);
 ```
 
 ### Symmetrical end-to-end encrypted payloads on a channel
@@ -290,24 +256,22 @@ When a 128 bit or 256 bit key is provided to the library, the `data` attributes 
 ```javascript
 // Generate a random 256-bit key for demonstration purposes (in
 // practice you need to create one and distribute it to clients yourselves)
-Ably.Realtime.Crypto.generateRandomKey(function (err, key) {
-  var channel = client.channels.get('channelName', { cipher: { key: key } });
+const key = await Ably.Realtime.Crypto.generateRandomKey();
+var channel = client.channels.get('channelName', { cipher: { key: key } });
 
-  channel.subscribe(function (message) {
-    message.name; // 'name is not encrypted'
-    message.data; // 'sensitive data is encrypted'
-  });
-
-  channel.publish('name is not encrypted', 'sensitive data is encrypted');
+channel.subscribe(function (message) {
+  message.name; // 'name is not encrypted'
+  message.data; // 'sensitive data is encrypted'
 });
+
+channel.publish('name is not encrypted', 'sensitive data is encrypted');
 ```
 
-You can also change the key on an existing channel using setOptions (which takes a callback which is called after the new encryption settings have taken effect):
+You can also change the key on an existing channel using setOptions (which completes after the new encryption settings have taken effect):
 
 ```javascript
-channel.setOptions({cipher: {key: <key>}}, function() {
-	// New encryption settings are in effect
-})
+await channel.setOptions({cipher: {key: <key>}});
+// New encryption settings are in effect
 ```
 
 ### Message interactions
@@ -340,13 +304,6 @@ var client = new Ably.Rest(key: string);
 // which must contain at least one auth option, i.e. at least
 // one of: key, token, tokenDetails, authUrl, or authCallback
 var client = new Ably.Rest(options: ClientOptions);
-
-// For a version of the library where async methods return promises if
-// you don't pass a callback:
-var client = new Ably.Rest.Promise(options: string | ClientOptions);
-
-// For the explicitly-callback-based variant (see 'Async API style' above):
-var client = new Ably.Rest.Callbacks(options: string | ClientOptions);
 ```
 
 Given:
@@ -359,75 +316,67 @@ var channel = client.channels.get('test');
 
 ```javascript
 // Publish a single message with name and data
-channel.publish('greeting', 'Hello World!');
-
-// Optionally, you can use a callback to be notified of success or failure
-channel.publish('greeting', 'Hello World!', function(err) {
-  if(err) {
-    console.log('publish failed with error ' + err);
-  } else {
-    console.log('publish succeeded');
-  }
-})
+try {
+  channel.publish('greeting', 'Hello World!');
+  console.log('publish succeeded');
+} catch (err) {
+  console.log('publish failed with error ' + err);
+}
 
 // Publish several messages at once
-channel.publish([{name: 'greeting', data: 'Hello World!'}, ...], callback);
+await channel.publish([{name: 'greeting', data: 'Hello World!'}, ...]);
 ```
 
 ### Querying the History
 
 ```javascript
-channel.history(function(err, messagesPage) {
-  messagesPage                                    // PaginatedResult
-  messagesPage.items                              // array of Message
-  messagesPage.items[0].data                      // payload for first message
-  messagesPage.items.length                       // number of messages in the current page of history
-  messagesPage.hasNext()                          // true if there are further pages
-  messagesPage.isLast()                           // true if this page is the last page
-  messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-});
+const messagesPage = await channel.history();
+messagesPage                                // PaginatedResult
+messagesPage.items                          // array of Message
+messagesPage.items[0].data                  // payload for first message
+messagesPage.items.length                   // number of messages in the current page of history
+messagesPage.hasNext()                      // true if there are further pages
+messagesPage.isLast()                       // true if this page is the last page
+const nextPage = await messagesPage.next(); // retrieves the next page as PaginatedResult
 
 // Can optionally take an options param, see https://www.ably.com/docs/rest-api/#message-history
-channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
+await channel.history({start: ..., end: ..., limit: ..., direction: ...});
 ```
 
 ### Presence on a channel
 
 ```javascript
-channel.presence.get(function(err, presencePage) { // PaginatedResult
-  presencePage.items                              // array of PresenceMessage
-  presencePage.items[0].data                      // payload for first message
-  presencePage.items.length                       // number of messages in the current page of members
-  presencePage.hasNext()                          // true if there are further pages
-  presencePage.isLast()                           // true if this page is the last page
-  presencePage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-});
+const presencePage = await channel.presence.get() // PaginatedResult
+presencePage.items                                // array of PresenceMessage
+presencePage.items[0].data                        // payload for first message
+presencePage.items.length                         // number of messages in the current page of members
+presencePage.hasNext()                            // true if there are further pages
+presencePage.isLast()                             // true if this page is the last page
+const nextPage = await presencePage.next();       // retrieves the next page as PaginatedResult
 ```
 
 ### Querying the Presence History
 
 ```javascript
-channel.presence.history(function(err, messagesPage) { // PaginatedResult
-  messagesPage.items                              // array of PresenceMessage
-  messagesPage.items[0].data                      // payload for first message
-  messagesPage.items.length                       // number of messages in the current page of history
-  messagesPage.hasNext()                          // true if there are further pages
-  messagesPage.isLast()                           // true if this page is the last page
-  messagesPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-});
+const messagesPage = channel.presence.history(); // PaginatedResult
+messagesPage.items                               // array of PresenceMessage
+messagesPage.items[0].data                       // payload for first message
+messagesPage.items.length                        // number of messages in the current page of history
+messagesPage.hasNext()                           // true if there are further pages
+messagesPage.isLast()                            // true if this page is the last page
+const nextPage = await messagesPage.next();      // retrieves the next page as PaginatedResult
 
 // Can optionally take an options param, see https://www.ably.com/docs/rest-api/#message-history
-channel.history({start: ..., end: ..., limit: ..., direction: ...}, function(err, messagesPage) { ...});
+const messagesPage = channel.history({start: ..., end: ..., limit: ..., direction: ...});
 ```
 
 ### Getting the status of a channel
 
 ```javascript
-channel.status(function(err, channelDetails) {
-  channelDetails.channelId        // The name of the channel
-  channelDetails.status.isActive  // A boolean indicating whether the channel is active
-  channelDetails.status.occupancy // Contains metadata relating to the occupants of the channel
-});
+const channelDetails = await channel.status();
+channelDetails.channelId        // The name of the channel
+channelDetails.status.isActive  // A boolean indicating whether the channel is active
+channelDetails.status.occupancy // Contains metadata relating to the occupants of the channel
 ```
 
 ### Generate Token and Token Request
@@ -438,134 +387,49 @@ explanation of Ably's authentication mechanism.
 Requesting a token:
 
 ```javascript
-client.auth.requestToken(function(err, tokenDetails) {
-  // tokenDetails is instance of TokenDetails
-  // see https://www.ably.com/docs/rest/authentication/#token-details for its properties
+const tokenDetails = await client.auth.requestToken();
+// tokenDetails is instance of TokenDetails
+// see https://www.ably.com/docs/rest/authentication/#token-details for its properties
 
-  // Now we have the token, we can send it to someone who can instantiate a client with it:
-  var clientUsingToken = new Ably.Realtime(tokenDetails.token);
-});
+// Now we have the token, we can send it to someone who can instantiate a client with it:
+var clientUsingToken = new Ably.Realtime(tokenDetails.token);
 
 // requestToken can take two optional params
 // tokenParams: https://www.ably.com/docs/rest/authentication/#token-params
 // authOptions: https://www.ably.com/docs/rest/authentication/#auth-options
-client.auth.requestToken(tokenParams, authOptions, function(err, tokenDetails) { ... });
+const tokenDetails = await client.auth.requestToken(tokenParams, authOptions);
 ```
 
 Creating a token request (for example, on a server in response to a
 request by a client using the `authCallback` or `authUrl` mechanisms):
 
 ```javascript
-client.auth.createTokenRequest(function(err, tokenRequest) {
-  // now send the tokenRequest back to the client, which will
-  // use it to request a token and connect to Ably
-});
+const tokenRequest = await client.auth.createTokenRequest();
+// now send the tokenRequest back to the client, which will
+// use it to request a token and connect to Ably
 
 // createTokenRequest can take two optional params
 // tokenParams: https://www.ably.com/docs/rest/authentication/#token-params
 // authOptions: https://www.ably.com/docs/rest/authentication/#auth-options
-client.auth.createTokenRequest(tokenParams, authOptions, function(err, tokenRequest) { ... });
+const tokenRequest = await client.auth.createTokenRequest(tokenParams, authOptions);
 ```
 
 ### Fetching your application's stats
 
 ```javascript
-client.stats(function(err, statsPage) {        // statsPage as PaginatedResult
-  statsPage.items                              // array of Stats
-  statsPage.items[0].inbound.rest.messages.count; // total messages published over REST
-  statsPage.items.length;                      // number of stats in the current page of history
-  statsPage.hasNext()                          // true if there are further pages
-  statsPage.isLast()                           // true if this page is the last page
-  statsPage.next(function(nextPage) { ... });  // retrieves the next page as PaginatedResult
-});
+const statsPage = await client.stats()          // statsPage as PaginatedResult
+statsPage.items                                 // array of Stats
+statsPage.items[0].inbound.rest.messages.count; // total messages published over REST
+statsPage.items.length;                         // number of stats in the current page of history
+statsPage.hasNext()                             // true if there are further pages
+statsPage.isLast()                              // true if this page is the last page
+const nextPage = await statsPage.next();        // retrieves the next page as PaginatedResult
 ```
 
 ### Fetching the Ably service time
 
 ```javascript
-client.time(function(err, time) { ... }); // time is in ms since epoch
-```
-
-## Using the async API style
-
-### Realtime Example
-
-```ts
-import * as Ably from 'ably/promises';
-
-const client = new Ably.Realtime.Promise(options);
-
-const ablyRealtimePromiseExample = async () => {
-  const channel = client.channels.get('myChannel');
-
-  // Attaching to a channel
-  await channel.attach();
-
-  // Getting presence on a channel
-  const presenceMessage = await channel.presence.get();
-  console.log(presenceMessage);
-
-  // Updating presence on a client
-  await channel.presence.enter();
-  await channel.presence.update('new status');
-  await channel.presence.leave();
-
-  // Publishing a message
-  await channel.publish('greeting', 'Hello, World!');
-
-  // Querying history
-  const history = await channel.history({ limit: 25 });
-  console.log(history);
-
-  client.close();
-};
-
-ablyRealtimePromiseExample();
-```
-
-### REST Example
-
-```ts
-import * as Ably from 'ably/promises';
-
-const client = new Ably.Rest.Promise(options);
-
-const ablyRestPromiseExample = async () => {
-  const channel = client.channels.get('myChannel');
-
-  // Publishing a message
-  await channel.publish('greeting', 'Hello, World!');
-
-  // Getting presence on a channel
-  const presenceMessage = await channel.presence.get();
-  console.log(presenceMessage);
-
-  // Querying history
-  const history = await channel.history({ limit: 25 });
-  console.log(await history.current());
-
-  // Getting the status of a channel
-  const channelDetails = await channel.status();
-  console.log(channelDetails);
-
-  // Requesting a token
-  const token = await client.auth.requestToken(tokenParams);
-
-  // Creating a token request
-  const tokenRequest = await client.auth.createTokenRequest();
-
-  // Fetching your application's stats
-  const stats = await client.stats();
-  console.log(stats);
-
-  // Fetching the Ably service time
-  const time = await client.time();
-  console.log(`Ably service time: ${time}`);
-
-  client.close();
-};
-
-ablyRestPromiseExample();
+const time = await client.time(); // time is in ms since epoch
 ```
 
 ## Delta Plugin

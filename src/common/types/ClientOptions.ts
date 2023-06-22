@@ -19,7 +19,6 @@ export type InternalClientOptions = Modify<
   ClientOptions,
   {
     internal?: {
-      promises?: boolean;
       maxMessageSize?: number;
     };
   }
@@ -36,6 +35,5 @@ export type NormalisedClientOptions = Modify<
     maxMessageSize: number;
     connectivityCheckParams: Record<string, string> | null;
     headers: Record<string, string>;
-    promises: boolean;
   }
 >;

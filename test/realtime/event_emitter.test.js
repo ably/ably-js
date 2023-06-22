@@ -441,7 +441,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     describe('event_emitter_promise', function () {
       it('whenState', function (done) {
-        var realtime = helper.AblyRealtime({ internal: { promises: true } });
+        var realtime = helper.AblyRealtime();
         var eventEmitter = realtime.connection;
 
         eventEmitter
@@ -455,7 +455,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
 
       it('once', function (done) {
-        var realtime = helper.AblyRealtime({ internal: { promises: true } });
+        var realtime = helper.AblyRealtime();
         var eventEmitter = realtime.connection;
 
         eventEmitter

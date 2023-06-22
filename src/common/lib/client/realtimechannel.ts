@@ -136,9 +136,7 @@ class RealtimeChannel extends Channel {
 
   setOptions(options?: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
     if (!callback) {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'setOptions', arguments);
-      }
+      return Utils.promisify(this, 'setOptions', arguments);
     }
     const _callback =
       callback ||
@@ -194,11 +192,7 @@ class RealtimeChannel extends Channel {
     let callback = args[argCount - 1];
 
     if (typeof callback !== 'function') {
-      if (this.realtime.options.promises) {
-        return Utils.promisify(this, 'publish', arguments);
-      }
-      callback = noop;
-      ++argCount;
+      return Utils.promisify(this, 'publish', arguments);
     }
     if (!this.connectionManager.activeState()) {
       callback(this.connectionManager.getError());
@@ -274,14 +268,7 @@ class RealtimeChannel extends Channel {
 
   attach(callback?: ErrCallback): void | Promise<void> {
     if (!callback) {
-      if (this.realtime.options.promises) {
-        return Utils.promisify(this, 'attach', arguments);
-      }
-      callback = function (err?: ErrorInfo | null) {
-        if (err) {
-          Logger.logAction(Logger.LOG_MAJOR, 'RealtimeChannel.attach()', 'Channel attach failed: ' + err.toString());
-        }
-      };
+      return Utils.promisify(this, 'attach', arguments);
     }
     if (this.state === 'attached') {
       callback();
@@ -357,10 +344,7 @@ class RealtimeChannel extends Channel {
 
   detach(callback: ErrCallback): void | Promise<void> {
     if (!callback) {
-      if (this.realtime.options.promises) {
-        return Utils.promisify(this, 'detach', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'detach', arguments);
     }
     const connectionManager = this.connectionManager;
     if (!connectionManager.activeState()) {
@@ -413,7 +397,7 @@ class RealtimeChannel extends Channel {
   subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<void> {
     const [event, listener, callback] = RealtimeChannel.processListenerArgs(args);
 
-    if (!callback && this.realtime.options.promises) {
+    if (!callback) {
       return Utils.promisify(this, 'subscribe', [event, listener]);
     }
 
@@ -957,10 +941,7 @@ class RealtimeChannel extends Channel {
         callback = params;
         params = null;
       } else {
-        if (this.rest.options.promises) {
-          return Utils.promisify(this, 'history', arguments);
-        }
-        callback = noop;
+        return Utils.promisify(this, 'history', arguments);
       }
     }
 

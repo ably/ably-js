@@ -259,9 +259,7 @@ class Auth {
       _authOptions = authOptions as API.Types.AuthOptions;
     }
     if (!callback) {
-      if (this.client.options.promises) {
-        return Utils.promisify(this, 'authorize', arguments);
-      }
+      return Utils.promisify(this, 'authorize', arguments);
     }
 
     /* RSA10a: authorize() call implies token auth. If a key is passed it, we
@@ -418,7 +416,7 @@ class Auth {
       callback = authOptions;
       authOptions = null;
     }
-    if (!callback && this.client.options.promises) {
+    if (!callback) {
       return Utils.promisify(this, 'requestToken', arguments);
     }
 
@@ -746,7 +744,7 @@ class Auth {
       callback = authOptions;
       authOptions = null;
     }
-    if (!callback && this.client.options.promises) {
+    if (!callback) {
       return Utils.promisify(this, 'createTokenRequest', arguments);
     }
 

@@ -195,7 +195,7 @@ export class PaginatedResult<T> {
     if (relParams) {
       if ('first' in relParams) {
         this.first = function (callback: (result?: ErrorInfo | null) => void) {
-          if (!callback && self.resource.rest.options.promises) {
+          if (!callback) {
             return Utils.promisify(self, 'first', []);
           }
           self.get(relParams.first, callback);
@@ -203,14 +203,14 @@ export class PaginatedResult<T> {
       }
       if ('current' in relParams) {
         this.current = function (callback: (results?: ErrorInfo | null) => void) {
-          if (!callback && self.resource.rest.options.promises) {
+          if (!callback) {
             return Utils.promisify(self, 'current', []);
           }
           self.get(relParams.current, callback);
         };
       }
       this.next = function (callback: (results?: ErrorInfo | null) => void) {
-        if (!callback && self.resource.rest.options.promises) {
+        if (!callback) {
           return Utils.promisify(self, 'next', []);
         }
         if ('next' in relParams) {
