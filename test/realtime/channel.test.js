@@ -1569,5 +1569,66 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       channel.subscribe(subscriber);
     });
+
+    it('attach_returns_state_change', function (done) {
+      var realtime = helper.AblyRealtime();
+      var channelName = 'attach_returns_state_chnage';
+      var channel = realtime.channels.get(channelName);
+      channel.attach(function (err, stateChange) {
+        if (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+
+        try {
+          expect(stateChange.current).to.equal('attached');
+          expect(stateChange.previous).to.equal('attaching');
+        } catch (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+
+        // for an already-attached channel, null is returned
+        channel.attach(function (err, stateChange) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+
+          try {
+            expect(stateChange).to.equal(null);
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        });
+      });
+    });
+
+    it('subscribe_returns_state_change', function (done) {
+      var realtime = helper.AblyRealtime();
+      var channelName = 'subscribe_returns_state_chnage';
+      var channel = realtime.channels.get(channelName);
+      channel.subscribe(
+        function () {}, // message listener
+        // attach callback
+        function (err, stateChange) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+
+          try {
+            expect(stateChange.current).to.equal('attached');
+            expect(stateChange.previous).to.equal('attaching');
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        }
+      );
+    });
   });
 });

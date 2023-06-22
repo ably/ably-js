@@ -12,7 +12,7 @@ import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
-import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
+import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import Realtime from './realtime';
 
 interface RealtimeHistoryParams {
@@ -272,7 +272,10 @@ class RealtimeChannel extends Channel {
     }
   }
 
-  attach(flags?: API.Types.ChannelMode[] | ErrCallback, callback?: ErrCallback): void | Promise<void> {
+  attach(
+    flags?: API.Types.ChannelMode[] | ErrCallback,
+    callback?: StandardCallback<ChannelStateChange | null>
+  ): void | Promise<ChannelStateChange> {
     let _flags: API.Types.ChannelMode[] | null | undefined;
     if (typeof flags === 'function') {
       callback = flags;
@@ -296,14 +299,18 @@ class RealtimeChannel extends Channel {
        * current mode differs from requested mode */
       this._requestedFlags = _flags as API.Types.ChannelMode[];
     } else if (this.state === 'attached') {
-      callback();
+      callback(null, null);
       return;
     }
 
     this._attach(false, null, callback);
   }
 
-  _attach(forceReattach: boolean, attachReason: ErrorInfo | null, callback?: ErrCallback): void {
+  _attach(
+    forceReattach: boolean,
+    attachReason: ErrorInfo | null,
+    callback?: StandardCallback<ChannelStateChange>
+  ): void {
     if (!callback) {
       callback = function (err?: ErrorInfo | null) {
         if (err) {
@@ -325,7 +332,7 @@ class RealtimeChannel extends Channel {
     this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
       switch (this.event) {
         case 'attached':
-          callback?.();
+          callback?.(null, stateChange);
           break;
         case 'detached':
         case 'suspended':
@@ -422,7 +429,7 @@ class RealtimeChannel extends Channel {
     this.sendMessage(msg, callback || noop);
   }
 
-  subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<void> {
+  subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<ChannelStateChange> {
     const [event, listener, callback] = RealtimeChannel.processListenerArgs(args);
 
     if (!callback && this.realtime.options.promises) {
