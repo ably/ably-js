@@ -181,21 +181,17 @@ var CryptoFactory = function (config: IPlatformConfig, bufferUtils: typeof Buffe
      * Generate a random encryption key from the supplied keylength (or the
      * default keyLength if none supplied) as an ArrayBuffer
      * @param keyLength (optional) the required keyLength in bits
-     * @param callback (optional) (err, key)
      */
-    static generateRandomKey(keyLength?: number, callback?: API.Types.StandardCallback<API.Types.CipherKey>) {
-      if (arguments.length == 1 && typeof keyLength == 'function') {
-        callback = keyLength;
-        keyLength = undefined;
-      }
-
-      generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
-        if (callback !== undefined) {
-          const errorInfo = err
-            ? new ErrorInfo('Failed to generate random key: ' + err.message, 400, 50000, err)
-            : null;
-          callback(errorInfo, buf ?? undefined);
-        }
+    static async generateRandomKey(keyLength?: number): Promise<API.Types.CipherKey> {
+      return new Promise((resolve, reject) => {
+        generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
+          if (err) {
+            const errorInfo = new ErrorInfo('Failed to generate random key: ' + err.message, 400, 50000, err);
+            reject(errorInfo);
+          } else {
+            resolve(buf!);
+          }
+        });
       });
     }
 
