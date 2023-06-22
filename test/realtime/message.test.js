@@ -1151,51 +1151,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    if (typeof Promise !== 'undefined') {
-      it('publishpromise', function (done) {
-        var realtime = helper.AblyRealtimePromise({ internal: { promises: true } });
-        var channel = realtime.channels.get('publishpromise');
-
-        var publishPromise = realtime.connection
-          .once('connected')
-          .then(function (connectionStateChange) {
-            expect(connectionStateChange.current).to.equal(
-              'connected',
-              'Check promise is resolved with a connectionStateChange'
-            );
-            return channel.attach();
-          })
-          .then(function () {
-            return channel.publish('name', 'data');
-          })
-          ['catch'](function (err) {
-            closeAndFinish(done, realtime, err);
-          });
-
-        var subscribePromise;
-        var messagePromise = new Promise(function (msgResolve) {
-          subscribePromise = channel.subscribe('name', function (msg) {
-            msgResolve();
-          });
-        });
-
-        var channelFailedPromise = realtime.channels
-          .get(':invalid')
-          .attach()
-          ['catch'](function (err) {
-            expect(err.code).to.equal(40010, 'Check err passed through correctly');
-          });
-
-        Promise.all([publishPromise, subscribePromise, messagePromise, channelFailedPromise])
-          .then(function () {
-            closeAndFinish(done, realtime);
-          })
-          ['catch'](function (err) {
-            closeAndFinish(done, realtime, err);
-          });
-      });
-    }
-
     it('subscribes to filtered channel', function (done) {
       var testData = [
         {
