@@ -1630,5 +1630,59 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
       );
     });
+
+    it('rewind_has_backlog_0', function (done) {
+      var realtime = helper.AblyRealtime();
+      var channelName = 'rewind_has_backlog_0';
+      var channelOpts = { params: { rewind: '1' } };
+      var channel = realtime.channels.get(channelName, channelOpts);
+
+      // attach with rewind but no channel history - hasBacklog should be false
+      channel.attach(function (err, stateChange) {
+        if (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+
+        try {
+          expect(!stateChange.hasBacklog).to.be.ok;
+        } catch (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+        closeAndFinish(done, realtime);
+      });
+    });
+
+    it('rewind_has_backlog_1', function (done) {
+      var realtime = helper.AblyRealtime();
+      var rest = helper.AblyRest();
+      var channelName = 'rewind_has_backlog_1';
+      var channelOpts = { params: { rewind: '1' } };
+      var rtChannel = realtime.channels.get(channelName, channelOpts);
+      var restChannel = rest.channels.get(channelName);
+
+      // attach with rewind after publishing - hasBacklog should be true
+      restChannel.publish('foo', 'bar', function (err) {
+        if (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+        rtChannel.attach(function (err, stateChange) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+
+          try {
+            expect(stateChange.hasBacklog).to.be.ok;
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        });
+      });
+    });
   });
 });

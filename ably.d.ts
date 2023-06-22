@@ -1149,6 +1149,10 @@ declare namespace Types {
      * Indicates whether message continuity on this channel is preserved, see [Nonfatal channel errors](https://ably.com/docs/realtime/channels#nonfatal-errors) for more info.
      */
     resumed: boolean;
+    /**
+     * Indicates whether the client can expect a backlog of messages from a rewind or resume.
+     */
+    hasBacklog?: boolean;
   }
 
   /**

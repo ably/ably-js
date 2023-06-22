@@ -622,12 +622,13 @@ class RealtimeChannel extends Channel {
         this.modes = (modesFromFlags && Utils.allToLowerCase(modesFromFlags)) || undefined;
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
+        const hasBacklog = message.hasFlag('HAS_BACKLOG');
         if (this.state === 'attached') {
           if (!resumed) {
             /* On a loss of continuity, the presence set needs to be re-synced */
             this.presence.onAttached(hasPresence);
           }
-          const change = new ChannelStateChange(this.state, this.state, resumed, message.error);
+          const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
           this._allChannelChanges.emit('update', change);
           if (!resumed || this.channelOptions.updateOnAttached) {
             this.emit('update', change);
@@ -636,7 +637,7 @@ class RealtimeChannel extends Channel {
           /* RTL5i: re-send DETACH and remain in the 'detaching' state */
           this.checkPendingState();
         } else {
-          this.notifyState('attached', message.error, resumed, hasPresence);
+          this.notifyState('attached', message.error, resumed, hasPresence, hasBacklog);
         }
         break;
       }
@@ -797,7 +798,8 @@ class RealtimeChannel extends Channel {
     state: API.Types.ChannelState,
     reason?: ErrorInfo | null,
     resumed?: boolean,
-    hasPresence?: boolean
+    hasPresence?: boolean,
+    hasBacklog?: boolean
   ): void {
     Logger.logAction(
       Logger.LOG_MICRO,
@@ -823,7 +825,7 @@ class RealtimeChannel extends Channel {
     if (reason) {
       this.errorReason = reason;
     }
-    const change = new ChannelStateChange(this.state, state, resumed, reason);
+    const change = new ChannelStateChange(this.state, state, resumed, hasBacklog, reason);
     const logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
     Logger.logAction(
       logLevel,
