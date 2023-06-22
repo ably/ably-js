@@ -16,7 +16,6 @@ export interface IPlatformConfig {
   inspect: (value: unknown) => string;
   stringByteSize: Buffer.byteLength;
   addEventListener?: typeof window.addEventListener | typeof global.addEventListener | null;
-  Promise: typeof Promise;
   getRandomValues?: (arr: ArrayBufferView, callback?: (error: Error | null) => void) => void;
   userAgent?: string | null;
   inherits?: typeof import('util').inherits;

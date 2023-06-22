@@ -32,7 +32,6 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
     },
     TextEncoder: global.TextEncoder,
     TextDecoder: global.TextDecoder,
-    Promise: global.Promise,
     getRandomArrayBuffer: (function (RNRandomBytes) {
       return function (byteLength: number, callback: (err: Error | null, result: ArrayBuffer | null) => void) {
         RNRandomBytes.randomBytes(byteLength, function (err: Error | null, base64String: string | null) {
