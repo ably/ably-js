@@ -41,7 +41,7 @@ declare namespace Types {
     type FAILED = 'failed';
   }
   /**
-   * Describes the possible states of a {@link ChannelBase} or {@link RealtimeChannelBase} object.
+   * Describes the possible states of a {@link Channel} or {@link RealtimeChannel} object.
    */
   type ChannelState =
     | ChannelState.FAILED
@@ -90,7 +90,7 @@ declare namespace Types {
     type UPDATE = 'update';
   }
   /**
-   * Describes the events emitted by a {@link ChannelBase} or {@link RealtimeChannelBase} object. An event is either an `UPDATE` or a {@link ChannelState}.
+   * Describes the events emitted by a {@link Channel} or {@link RealtimeChannel} object. An event is either an `UPDATE` or a {@link ChannelState}.
    */
   type ChannelEvent =
     | ChannelEvent.FAILED
@@ -123,7 +123,7 @@ declare namespace Types {
      */
     type DISCONNECTED = 'disconnected';
     /**
-     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link Connection.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
      */
     type SUSPENDED = 'suspended';
     /**
@@ -131,16 +131,16 @@ declare namespace Types {
      */
     type CLOSING = 'closing';
     /**
-     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}, which results in a new connection.
+     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link Connection.connect | `connect()`}, which results in a new connection.
      */
     type CLOSED = 'closed';
     /**
-     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}.
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link Connection.connect | `connect()`}.
      */
     type FAILED = 'failed';
   }
   /**
-   * Describes the realtime {@link ConnectionBase} object states.
+   * Describes the realtime {@link Connection} object states.
    */
   type ConnectionState =
     | ConnectionState.INITIALIZED
@@ -173,7 +173,7 @@ declare namespace Types {
      */
     type DISCONNECTED = 'disconnected';
     /**
-     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link Connection.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
      */
     type SUSPENDED = 'suspended';
     /**
@@ -181,11 +181,11 @@ declare namespace Types {
      */
     type CLOSING = 'closing';
     /**
-     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}, which results in a new connection.
+     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link Connection.connect | `connect()`}, which results in a new connection.
      */
     type CLOSED = 'closed';
     /**
-     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}.
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link Connection.connect | `connect()`}.
      */
     type FAILED = 'failed';
     /**
@@ -194,7 +194,7 @@ declare namespace Types {
     type UPDATE = 'update';
   }
   /**
-   * Describes the events emitted by a {@link ConnectionBase} object. An event is either an `UPDATE` or a {@link ConnectionState}.
+   * Describes the events emitted by a {@link Connection} object. An event is either an `UPDATE` or a {@link ConnectionState}.
    */
   type ConnectionEvent =
     | ConnectionEvent.INITIALIZED
@@ -296,7 +296,7 @@ declare namespace Types {
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'comet';
 
   /**
-   * Contains the details of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as its ID and {@link ChannelStatus}.
+   * Contains the details of a {@link Channel} or {@link RealtimeChannel} object such as its ID and {@link ChannelStatus}.
    */
   interface ChannelDetails {
     /**
@@ -310,7 +310,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains the status of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as whether it is active and its {@link ChannelOccupancy}.
+   * Contains the status of a {@link Channel} or {@link RealtimeChannel} object such as whether it is active and its {@link ChannelOccupancy}.
    */
   interface ChannelStatus {
     /**
@@ -324,7 +324,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains the metrics of a {@link ChannelBase} or {@link RealtimeChannelBase} object.
+   * Contains the metrics of a {@link Channel} or {@link RealtimeChannel} object.
    */
   interface ChannelOccupancy {
     /**
@@ -334,7 +334,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains the metrics associated with a {@link ChannelBase} or {@link RealtimeChannelBase}, such as the number of publishers, subscribers and connections it has.
+   * Contains the metrics associated with a {@link Channel} or {@link RealtimeChannel}, such as the number of publishers, subscribers and connections it has.
    */
   interface ChannelMetrics {
     /**
@@ -364,11 +364,11 @@ declare namespace Types {
   }
 
   /**
-   * Passes additional client-specific properties to the REST {@link RestBase.constructor | `constructor()`} or the Realtime {@link RealtimeBase.constructor | `constructor()`}.
+   * Passes additional client-specific properties to the REST {@link Rest.constructor | `constructor()`} or the Realtime {@link Realtime.constructor | `constructor()`}.
    */
   interface ClientOptions extends AuthOptions {
     /**
-     * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the {@link ConnectionBase.connect | `connect()`} method. The default is `true`.
+     * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the {@link Connection.connect | `connect()`} method. The default is `true`.
      *
      * @defaultValue `true`
      */
@@ -704,7 +704,7 @@ declare namespace Types {
   }
 
   /**
-   * Sets the properties to configure encryption for a {@link ChannelBase} or {@link RealtimeChannelBase} object.
+   * Sets the properties to configure encryption for a {@link Channel} or {@link RealtimeChannel} object.
    */
   interface CipherParams {
     /**
@@ -890,7 +890,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains the properties of a request for a token to Ably. Tokens are generated using {@link AuthPromise.requestToken}.
+   * Contains the properties of a request for a token to Ably. Tokens are generated using {@link Auth.requestToken}.
    */
   interface TokenRequest {
     /**
@@ -971,7 +971,7 @@ declare namespace Types {
   type ChannelModes = Array<ChannelMode>;
 
   /**
-   * Passes additional properties to a {@link ChannelBase} or {@link RealtimeChannelBase} object, such as encryption, {@link ChannelMode} and channel parameters.
+   * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
    */
   interface ChannelOptions {
     /**
@@ -989,7 +989,7 @@ declare namespace Types {
   }
 
   /**
-   * Passes additional properties to a {@link RealtimeChannelBase} name to produce a new derived channel
+   * Passes additional properties to a {@link RealtimeChannel} name to produce a new derived channel
    */
   interface DeriveOptions {
     /**
@@ -1001,8 +1001,8 @@ declare namespace Types {
   /**
    * The `RestHistoryParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link PresencePromise.history}
-   * - {@link ChannelPromise.history}
+   * - {@link Presence.history}
+   * - {@link Channel.history}
    */
   interface RestHistoryParams {
     /**
@@ -1030,7 +1030,7 @@ declare namespace Types {
   }
 
   /**
-   * The `RestPresenceParams` interface describes the parameters accepted by {@link PresencePromise.get}.
+   * The `RestPresenceParams` interface describes the parameters accepted by {@link Presence.get}.
    */
   interface RestPresenceParams {
     /**
@@ -1050,7 +1050,7 @@ declare namespace Types {
   }
 
   /**
-   * The `RealtimePresenceParams` interface describes the parameters accepted by {@link RealtimePresencePromise.get}.
+   * The `RealtimePresenceParams` interface describes the parameters accepted by {@link RealtimePresence.get}.
    */
   interface RealtimePresenceParams {
     /**
@@ -1072,8 +1072,8 @@ declare namespace Types {
   /**
    * The `RealtimeHistoryParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link RealtimePresencePromise.history}
-   * - {@link RealtimeChannelPromise.history}
+   * - {@link RealtimePresence.history}
+   * - {@link RealtimeChannel.history}
    */
   interface RealtimeHistoryParams {
     /**
@@ -1105,7 +1105,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains state change information emitted by {@link ChannelBase} and {@link RealtimeChannelBase} objects.
+   * Contains state change information emitted by {@link Channel} and {@link RealtimeChannel} objects.
    */
   interface ChannelStateChange {
     /**
@@ -1127,7 +1127,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains {@link ConnectionState} change information emitted by the {@link ConnectionBase} object.
+   * Contains {@link ConnectionState} change information emitted by the {@link Connection} object.
    */
   interface ConnectionStateChange {
     /**
@@ -1300,8 +1300,8 @@ declare namespace Types {
   /**
    * The `DeviceRegistrationParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link PushDeviceRegistrationsPromise.list}
-   * - {@link PushDeviceRegistrationsPromise.removeWhere}
+   * - {@link PushDeviceRegistrations.list}
+   * - {@link PushDeviceRegistrations.removeWhere}
    */
   interface DeviceRegistrationParams {
     /**
@@ -1325,8 +1325,8 @@ declare namespace Types {
   /**
    * The `PushChannelSubscriptionParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link PushChannelSubscriptionsPromise.list}
-   * - {@link PushChannelSubscriptionsPromise.removeWhere}
+   * - {@link PushChannelSubscriptions.list}
+   * - {@link PushChannelSubscriptions.removeWhere}
    */
   interface PushChannelSubscriptionParams {
     /**
@@ -1348,7 +1348,7 @@ declare namespace Types {
   }
 
   /**
-   * The `PushChannelsParams` interface describes the parameters accepted by {@link PushChannelSubscriptionsPromise.listChannels}.
+   * The `PushChannelsParams` interface describes the parameters accepted by {@link PushChannelSubscriptions.listChannels}.
    */
   interface PushChannelsParams {
     /**
@@ -1360,8 +1360,8 @@ declare namespace Types {
   /**
    * The `StatsParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link RestPromise.stats}
-   * - {@link RealtimePromise.stats}
+   * - {@link Rest.stats}
+   * - {@link Realtime.stats}
    */
   interface StatsParams {
     /**
@@ -1398,19 +1398,19 @@ declare namespace Types {
 
   // Common Listeners
   /**
-   * A callback which returns only a single argument, used for {@link RealtimeChannelBase} subscriptions.
+   * A callback which returns only a single argument, used for {@link RealtimeChannel} subscriptions.
    *
    * @param message - The message which triggered the callback.
    */
   type messageCallback<T> = (message: T) => void;
   /**
-   * The callback used for the events emitted by {@link RealtimeChannelBase}.
+   * The callback used for the events emitted by {@link RealtimeChannel}.
    *
    * @param changeStateChange - The state change that occurred.
    */
   type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
   /**
-   * The callback used for the events emitted by {@link ConnectionBase}.
+   * The callback used for the events emitted by {@link Connection}.
    *
    * @param connectionStateChange - The state change that occurred.
    */
@@ -1456,7 +1456,7 @@ declare namespace Types {
   // that returns a Promise if desired, EventEmitter uses method overloading to
   // present both methods
   /**
-   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the {@link ConnectionBase} object emits events for connection state using the `EventEmitter` pattern.
+   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the {@link Connection} object emits events for connection state using the `EventEmitter` pattern.
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
     /**
@@ -1532,9 +1532,9 @@ declare namespace Types {
 
   // Classes
   /**
-   * The `RestBase` class acts as a base class for the {@link RestPromise} class.
+   * A client that offers a simple stateless API to interact directly with Ably's REST API.
    */
-  class RestBase {
+  class Rest {
     /**
      * Construct a client object using an Ably {@link Types.ClientOptions} object.
      *
@@ -1559,20 +1559,15 @@ declare namespace Types {
      * Static utilities related to presence messages.
      */
     static PresenceMessage: Types.PresenceMessageStatic;
-  }
 
-  /**
-   * A client that offers a simple stateless API to interact directly with Ably's REST API.
-   */
-  class RestPromise extends RestBase {
     /**
-     * An {@link Types.AuthPromise} object.
+     * An {@link Types.Auth} object.
      */
-    auth: Types.AuthPromise;
+    auth: Types.Auth;
     /**
      * A {@link Types.Channels} object.
      */
-    channels: Types.Channels<Types.ChannelPromise>;
+    channels: Types.Channels<Types.Channel>;
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
      *
@@ -1606,15 +1601,15 @@ declare namespace Types {
      */
     time(): Promise<number>;
     /**
-     * A {@link Types.PushPromise} object.
+     * A {@link Types.Push} object.
      */
-    push: Types.PushPromise;
+    push: Types.Push;
   }
 
   /**
-   * A base class used internally for Realtime APIs.
+   * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
    */
-  class RealtimeBase {
+  class Realtime {
     /**
      * Construct a client object using an Ably {@link Types.ClientOptions} object.
      *
@@ -1644,31 +1639,26 @@ declare namespace Types {
      */
     clientId: string;
     /**
-     * Calls {@link Types.ConnectionBase.close | `connection.close()`} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to {@link Types.ConnectionBase.connect | `connect()`}.
+     * Calls {@link Types.Connection.close | `connection.close()`} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to {@link Types.Connection.connect | `connect()`}.
      */
     close(): void;
     /**
-     * Calls {@link Types.ConnectionBase.connect | `connection.connect()`} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the {@link Types.ClientOptions.autoConnect} property is disabled.
+     * Calls {@link Types.Connection.connect | `connection.connect()`} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the {@link Types.ClientOptions.autoConnect} property is disabled.
      */
     connect(): void;
-  }
 
-  /**
-   * A client that extends the functionality of {@link RestPromise} and provides additional realtime-specific features.
-   */
-  class RealtimePromise extends RealtimeBase {
     /**
-     * An {@link Types.AuthPromise} object.
+     * An {@link Types.Auth} object.
      */
-    auth: Types.AuthPromise;
+    auth: Types.Auth;
     /**
      * A {@link Types.Channels} object.
      */
-    channels: Types.Channels<Types.RealtimeChannelPromise>;
+    channels: Types.Channels<Types.RealtimeChannel>;
     /**
-     * A {@link Types.ConnectionPromise} object.
+     * A {@link Types.Connection} object.
      */
-    connection: Types.ConnectionPromise;
+    connection: Types.Connection;
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
      *
@@ -1702,25 +1692,20 @@ declare namespace Types {
      */
     time(): Promise<number>;
     /**
-     * A {@link Types.PushPromise} object.
+     * A {@link Types.Push} object.
      */
-    push: Types.PushPromise;
-  }
-
-  /**
-   * The `AuthBase` class acts as a base class for the {@link AuthPromise} class.
-   */
-  class AuthBase {
-    /**
-     * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. Note that a `clientId` may also be implicit in a token used to instantiate the library. An error is raised if a `clientId` specified here conflicts with the `clientId` implicit in the token. Find out more about [identified clients](https://ably.com/docs/core-features/authentication#identified-clients).
-     */
-    clientId: string;
+    push: Types.Push;
   }
 
   /**
    * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
    */
-  class AuthPromise extends AuthBase {
+  class Auth {
+    /**
+     * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. Note that a `clientId` may also be implicit in a token used to instantiate the library. An error is raised if a `clientId` specified here conflicts with the `clientId` implicit in the token. Find out more about [identified clients](https://ably.com/docs/core-features/authentication#identified-clients).
+     */
+    clientId: string;
+
     /**
      * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
      *
@@ -1750,7 +1735,7 @@ declare namespace Types {
   /**
    * Enables the retrieval of the current and historic presence set for a channel.
    */
-  class PresencePromise {
+  class Presence {
     /**
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
@@ -1768,9 +1753,9 @@ declare namespace Types {
   }
 
   /**
-   * The `RealtimePresenceBase` class acts as a base class for the {@link RealtimePresencePromise} class.
+   * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
    */
-  class RealtimePresenceBase {
+  class RealtimePresence {
     /**
      * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed. Set to `true` when the sync is complete.
      */
@@ -1811,12 +1796,7 @@ declare namespace Types {
      * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel.
      */
     unsubscribe(): void;
-  }
 
-  /**
-   * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
-   */
-  class RealtimePresencePromise extends RealtimePresenceBase {
     /**
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
@@ -1836,7 +1816,7 @@ declare namespace Types {
      *
      * @param action - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(
       action: PresenceAction | Array<PresenceAction>,
@@ -1846,7 +1826,7 @@ declare namespace Types {
      * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
      *
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(listener?: messageCallback<PresenceMessage>): Promise<void>;
     /**
@@ -1897,23 +1877,18 @@ declare namespace Types {
   }
 
   /**
-   * The `ChannelBase` class acts as a base class for the {@link ChannelPromise} class.
+   * Enables messages to be published and historic messages to be retrieved for a channel.
    */
-  class ChannelBase {
+  class Channel {
     /**
      * The channel name.
      */
     name: string;
-  }
 
-  /**
-   * Enables messages to be published and historic messages to be retrieved for a channel.
-   */
-  class ChannelPromise extends ChannelBase {
     /**
-     * A {@link PresencePromise} object.
+     * A {@link Presence} object.
      */
-    presence: PresencePromise;
+    presence: Presence;
     /**
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -1955,9 +1930,9 @@ declare namespace Types {
   }
 
   /**
-   * The `RealtimeChannelBase` class acts as a base class for the {@link RealtimeChannelPromise} class.
+   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresence} object of a channel.
    */
-  class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
+  class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
     /**
      * The channel name.
      */
@@ -2021,18 +1996,13 @@ declare namespace Types {
      * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
      */
     unsubscribe(): void;
-  }
 
-  /**
-   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresencePromise} object of a channel.
-   */
-  class RealtimeChannelPromise extends RealtimeChannelBase {
     /**
-     * A {@link RealtimePresencePromise} object.
+     * A {@link RealtimePresence} object.
      */
-    presence: RealtimePresencePromise;
+    presence: RealtimePresence;
     /**
-     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelPromise.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelPromise.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresencePromise.enter | `enter()`} or {@link RealtimePresencePromise.subscribe | `subscribe()`} are called on the {@link RealtimePresencePromise} object for this channel.
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
@@ -2062,7 +2032,7 @@ declare namespace Types {
      *
      * @param event - The event name.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
     /**
@@ -2070,7 +2040,7 @@ declare namespace Types {
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
@@ -2078,14 +2048,14 @@ declare namespace Types {
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
      * @param callback - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(callback: messageCallback<Message>): Promise<void>;
     /**
@@ -2129,7 +2099,7 @@ declare namespace Types {
   };
 
   /**
-   * Contains properties to filter messages with when calling {@link RealtimeChannelPromise.subscribe | `RealtimeChannelPromise.subscribe()`}.
+   * Contains properties to filter messages with when calling {@link RealtimeChannel.subscribe | `RealtimeChannel.subscribe()`}.
    */
   type MessageFilter = {
     /**
@@ -2155,15 +2125,15 @@ declare namespace Types {
   };
 
   /**
-   * Creates and destroys {@link ChannelBase} and {@link RealtimeChannelBase} objects.
+   * Creates and destroys {@link Channel} and {@link RealtimeChannel} objects.
    */
   class Channels<T> {
     /**
-     * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
+     * Creates a new {@link Channel} or {@link RealtimeChannel} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
      *
      * @param name - The channel name.
      * @param channelOptions - A {@link ChannelOptions} object.
-     * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
+     * @returns A {@link Channel} or {@link RealtimeChannel} object.
      */
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
@@ -2172,17 +2142,17 @@ declare namespace Types {
      * to receive only part of the data from the channel.
      * See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
      *
-     * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified channel {@link DeriveOptions}
+     * Creates a new {@link Channel} or {@link RealtimeChannel} object, with the specified channel {@link DeriveOptions}
      * and {@link ChannelOptions}, or returns the existing channel object.
      *
      * @param name - The channel name.
      * @param deriveOptions - A {@link DeriveOptions} object.
      * @param channelOptions - A {@link ChannelOptions} object.
-     * @returns A {@link RealtimeChannelBase} object.
+     * @returns A {@link RealtimeChannel} object.
      */
     getDerived(name: string, deriveOptions: DeriveOptions, channelOptions?: ChannelOptions): T;
     /**
-     * Releases a {@link ChannelBase} or {@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
+     * Releases a {@link Channel} or {@link RealtimeChannel} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *
      * @param name - The channel name.
      */
@@ -2397,9 +2367,9 @@ declare namespace Types {
   }
 
   /**
-   * The `ConnectionBase` class acts as a base class for the {@link ChannelPromise} class.
+   * Enables the management of a connection to Ably.
    */
-  class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
+  class Connection extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     /**
      * An {@link ErrorInfo} object describing the last error received if a connection failure occurs.
      */
@@ -2425,19 +2395,14 @@ declare namespace Types {
      */
     readonly state: ConnectionState;
     /**
-     * Causes the connection to close, entering the {@link ConnectionState.CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to {@link ConnectionBase.connect | `connect()`}.
+     * Causes the connection to close, entering the {@link ConnectionState.CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to {@link Connection.connect | `connect()`}.
      */
     close(): void;
     /**
      * Explicitly calling `connect()` is unnecessary unless the `autoConnect` attribute of the {@link ClientOptions} object is `false`. Unless already connected or connecting, this method causes the connection to open, entering the {@link ConnectionState.CONNECTING} state.
      */
     connect(): void;
-  }
 
-  /**
-   * Enables the management of a connection to Ably.
-   */
-  class ConnectionPromise extends ConnectionBase {
     /**
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      *
@@ -2561,25 +2526,25 @@ declare namespace Types {
   /**
    * Enables a device to be registered and deregistered from receiving push notifications.
    */
-  class PushPromise {
+  class Push {
     /**
-     * A {@link PushAdminPromise | `PushAdmin`} object.
+     * A {@link PushAdmin} object.
      */
-    admin: PushAdminPromise;
+    admin: PushAdmin;
   }
 
   /**
    * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
    */
-  class PushAdminPromise {
+  class PushAdmin {
     /**
-     * A {@link PushDeviceRegistrationsPromise} object.
+     * A {@link PushDeviceRegistrations} object.
      */
-    deviceRegistrations: PushDeviceRegistrationsPromise;
+    deviceRegistrations: PushDeviceRegistrations;
     /**
-     * A {@link PushChannelSubscriptionsPromise} object.
+     * A {@link PushChannelSubscriptions} object.
      */
-    channelSubscriptions: PushChannelSubscriptionsPromise;
+    channelSubscriptions: PushChannelSubscriptions;
     /**
      * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
      *
@@ -2593,7 +2558,7 @@ declare namespace Types {
   /**
    * Enables the management of push notification registrations with Ably.
    */
-  class PushDeviceRegistrationsPromise {
+  class PushDeviceRegistrations {
     /**
      * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
@@ -2648,7 +2613,7 @@ declare namespace Types {
   /**
    * Enables device push channel subscriptions.
    */
-  class PushChannelSubscriptionsPromise {
+  class PushChannelSubscriptions {
     /**
      * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
@@ -2690,9 +2655,9 @@ declare namespace Types {
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare class Rest extends Types.RestPromise {}
+export declare class Rest extends Types.Rest {}
 
 /**
  * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  */
-export declare class Realtime extends Types.RealtimePromise {}
+export declare class Realtime extends Types.Realtime {}
