@@ -241,7 +241,7 @@ class EventEmitter {
 
   once(...args: unknown[]): void | Promise<void> {
     const argCount = args.length;
-    if ((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && typeof Promise !== 'undefined') {
+    if (argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) {
       const event = args[0];
       return new Promise((resolve) => {
         this.once(event as string | string[] | null, resolve);
@@ -300,7 +300,7 @@ class EventEmitter {
     if (typeof targetState !== 'string' || typeof currentState !== 'string') {
       throw 'whenState requires a valid event String argument';
     }
-    if (typeof listener !== 'function' && typeof Promise !== 'undefined') {
+    if (typeof listener !== 'function') {
       return new Promise((resolve) => {
         EventEmitter.prototype.whenState.apply(
           this,

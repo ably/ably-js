@@ -233,15 +233,6 @@ export function normaliseOptions(options: InternalClientOptions): NormalisedClie
     options.idempotentRestPublishing = true;
   }
 
-  if (options.internal?.promises && typeof Promise === 'undefined') {
-    Logger.logAction(
-      Logger.LOG_ERROR,
-      'Defaults.normaliseOptions',
-      '{promises: true} was specified, but no Promise constructor found; disabling promises'
-    );
-    options.internal.promises = false;
-  }
-
   let connectivityCheckParams = null;
   let connectivityCheckUrl = options.connectivityCheckUrl;
   if (options.connectivityCheckUrl) {
