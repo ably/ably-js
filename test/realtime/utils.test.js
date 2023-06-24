@@ -5,7 +5,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
   var utils = helper.Utils;
   var expect = chai.expect;
 
-  // RSL8
+  // RTB1
   describe('incremental backoff and jitter', function () {
     this.timeout(30 * 1000);
 
