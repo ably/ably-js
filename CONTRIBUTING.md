@@ -43,6 +43,10 @@ Or run just one test file
 
     npm run test:node -- --file=test/realtime/auth.test.js
 
+Or run just one test
+
+    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here 
+
 ### Debugging the mocha tests locally with a debugger
 
 Run the following command to launch tests with the debugger enabled. The tests will block until you attach a debugger.
