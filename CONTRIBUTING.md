@@ -73,6 +73,12 @@ Run the following command to start a local Mocha test runner web server
 
 Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Mocha runner web server.
 
+### Formatting/linting files
+
+Run the following command to fix linting/formatting issues
+
+    npm run format
+
 ### Testing environment variables for Node.js
 
 All tests are run against the sandbox environment by default. However, the following environment variables can be set before running the Karma server to change the environment the tests are run against.
