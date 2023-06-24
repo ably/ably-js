@@ -61,6 +61,10 @@ The included vscode launch config allows you to launch and attach the debugger i
 file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the
 browser/static directory, not the raw source files, and breakpoints in files under test should work directly.
 
+VSCode allows you to directly launch `package.json` scripts in debug mode.
+Simply click on `Debug` option above `scripts` and select the command to run. 
+This way, you can add a command to run a single test as a part of script and debug directly from package.json.
+
 ### Debugging the tests in a browser with Mocha test runner
 
 Run the following command to start a local Mocha test runner web server
