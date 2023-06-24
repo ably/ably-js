@@ -185,6 +185,24 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    function checkIfRetryTimeoutsAreCorrect(retryTimeouts, calculationDelay = 0) {
+      function checkIsBetween(value, min, max) {
+        expect(value).to.be.above(min);
+        expect(value).to.be.below(max);
+      }; 
+
+      // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+      // Lower bound = 0.8 * Upper bound
+      checkIsBetween(retryTimeouts[0], 120, 150 + calculationDelay);
+      checkIsBetween(retryTimeouts[1], 160, 200 + calculationDelay);
+      checkIsBetween(retryTimeouts[2], 200, 250 + calculationDelay);
+
+      for (var i = 3; i < retryTimeouts.length; i++)
+      {
+        checkIsBetween(retryTimeouts[i], 240, 300 + calculationDelay);
+      }
+    }
+
     utils.arrForEach(availableTransports, function (transport) {
       it('disconnected_backoff_' + transport, function (done) {
         var disconnectedRetryTimeout = 150;
@@ -196,16 +214,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         });
 
         var retryCount = 0;
+        var retryTimeouts = [];
 
         realtime.connection.on(function (stateChange) {
           if (stateChange.previous === 'connecting' && stateChange.current === 'disconnected') {
             if (retryCount > 4) {
+              checkIfRetryTimeoutsAreCorrect(retryTimeouts);
               closeAndFinish(done, realtime);
               return;
             }
             try {
-              expect(stateChange.retryIn).to.be.below(disconnectedRetryTimeout + Math.min(retryCount, 3) * 50);
-              expect(stateChange.retryIn).to.be.above(0.8 * (disconnectedRetryTimeout + Math.min(retryCount, 3) * 50));
+              retryTimeouts.push(stateChange.retryIn);
               retryCount += 1;
             } catch (err) {
               closeAndFinish(done, realtime, err);
@@ -379,6 +398,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           originalOnMessage(message);
         };
 
+        var retryTimeouts = [];
+
         realtime.connection.on('connected', function () {
           realtime.options.timeouts.realtimeRequestTimeout = 1;
           channel.attach(function (err) {
@@ -387,19 +408,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               channel.on(function (stateChange) {
                 if (stateChange.current === 'suspended') {
                   if (retryCount > 4) {
+                    checkIfRetryTimeoutsAreCorrect(retryTimeouts, 10);
                     closeAndFinish(done, realtime);
                     return;
                   }
                   var elapsedSinceSuspneded = performance.now() - lastSuspended;
                   lastSuspended = performance.now();
                   try {
-                    // JS timers don't work precisely and realtimeRequestTimeout can't be 0 so add 5ms to the max timeout length each retry
-                    expect(elapsedSinceSuspneded).to.be.below(
-                      channelRetryTimeout + Math.min(retryCount, 3) * 50 + 5 * (retryCount + 1)
-                    );
-                    expect(elapsedSinceSuspneded).to.be.above(
-                      0.8 * (channelRetryTimeout + Math.min(retryCount, 3) * 50)
-                    );
+                    retryTimeouts.push(elapsedSinceSuspneded);
                     retryCount += 1;
                   } catch (err) {
                     closeAndFinish(done, realtime, err);
