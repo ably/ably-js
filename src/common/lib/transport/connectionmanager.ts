@@ -1320,10 +1320,7 @@ class ConnectionManager extends EventEmitter {
     let retryDelay = newState.retryDelay;
     if (newState.state === 'disconnected') {
       this.disconnectedRetryCount++;
-      retryDelay =
-        (newState.retryDelay as number) *
-        Utils.getBackoffCoefficient(this.disconnectedRetryCount) *
-        Utils.getJitterCoefficient();
+      retryDelay = Utils.getRetryTime(newState.retryDelay as number, this.disconnectedRetryCount);
     }
 
     const change = new ConnectionStateChange(
