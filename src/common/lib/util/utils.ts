@@ -540,17 +540,17 @@ export function getJitterCoefficient() {
 }
 
 /**
- * 
+ *
  * @param initialTimeout initial timeout value
- * @param retryAttempt integer indicating retryAttempt 
+ * @param retryAttempt integer indicating retryAttempt
  * @returns RetryTimeout value for given timeout and retryAttempt.
- * If x is the value generated then, 
+ * If x is the value generated then,
  * Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout,
  * Lower bound = 0.8 * Upper bound,
  * Lower bound < x < Upper bound
  */
 export function getRetryTime(initialTimeout: number, retryAttempt: number) {
-    return initialTimeout * getBackoffCoefficient(retryAttempt) * getJitterCoefficient();
+  return initialTimeout * getBackoffCoefficient(retryAttempt) * getJitterCoefficient();
 }
 
 export function getGlobalObject() {

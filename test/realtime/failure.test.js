@@ -189,7 +189,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       function checkIsBetween(value, min, max) {
         expect(value).to.be.above(min);
         expect(value).to.be.below(max);
-      }; 
+      }
 
       // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
       // Lower bound = 0.8 * Upper bound
@@ -197,8 +197,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       checkIsBetween(retryTimeouts[1], 160, 200 + calculationDelay);
       checkIsBetween(retryTimeouts[2], 200, 250 + calculationDelay);
 
-      for (var i = 3; i < retryTimeouts.length; i++)
-      {
+      for (var i = 3; i < retryTimeouts.length; i++) {
         checkIsBetween(retryTimeouts[i], 240, 300 + calculationDelay);
       }
     }
