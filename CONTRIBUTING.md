@@ -63,7 +63,7 @@ browser/static directory, not the raw source files, and breakpoints in files und
 
 VSCode allows you to directly launch `package.json` scripts in debug mode.
 Simply click on `Debug` option above `scripts` and select the command to run. 
-This way, you can add a command to run a single test as a part of script and debug directly from package.json.
+This way, you can add a command to run a single test as a part of `scripts` and debug directly from package.json.
 
 ### Debugging the tests in a browser with Mocha test runner
 
