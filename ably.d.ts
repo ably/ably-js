@@ -2000,42 +2000,6 @@ declare namespace Types {
   }
 
   /**
-   * Optional parameters for message publishing.
-   */
-  type PublishOptions = {
-    /**
-     * See [here](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes).
-     */
-    quickAck?: boolean;
-  };
-
-  /**
-   * Contains properties to filter messages with when calling {@link RealtimeChannelPromise.subscribe | `RealtimeChannelPromise.subscribe()`}.
-   */
-  type MessageFilter = {
-    /**
-     * Filters messages by a specific message `name`.
-     */
-    name?: string;
-    /**
-     * Filters messages by a specific `extras.ref.timeserial` value.
-     */
-    refTimeserial?: string;
-    /**
-     * Filters messages by a specific `extras.ref.type` value.
-     */
-    refType?: string;
-    /**
-     * Filters messages based on whether they contain an `extras.ref`.
-     */
-    isRef?: boolean;
-    /**
-     * Filters messages by a specific message `clientId`.
-     */
-    clientId: string;
-  };
-
-  /**
    * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresencePromise} object of a channel.
    */
   class RealtimeChannelPromise extends RealtimeChannelBase {
@@ -2129,6 +2093,42 @@ declare namespace Types {
      */
     whenState(targetState: ChannelState): Promise<ChannelStateChange>;
   }
+
+  /**
+   * Optional parameters for message publishing.
+   */
+  type PublishOptions = {
+    /**
+     * See [here](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes).
+     */
+    quickAck?: boolean;
+  };
+
+  /**
+   * Contains properties to filter messages with when calling {@link RealtimeChannelPromise.subscribe | `RealtimeChannelPromise.subscribe()`}.
+   */
+  type MessageFilter = {
+    /**
+     * Filters messages by a specific message `name`.
+     */
+    name?: string;
+    /**
+     * Filters messages by a specific `extras.ref.timeserial` value.
+     */
+    refTimeserial?: string;
+    /**
+     * Filters messages by a specific `extras.ref.type` value.
+     */
+    refType?: string;
+    /**
+     * Filters messages based on whether they contain an `extras.ref`.
+     */
+    isRef?: boolean;
+    /**
+     * Filters messages by a specific message `clientId`.
+     */
+    clientId: string;
+  };
 
   /**
    * Creates and destroys {@link ChannelBase} and {@link RealtimeChannelBase} objects.
