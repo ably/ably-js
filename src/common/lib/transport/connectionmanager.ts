@@ -1529,19 +1529,19 @@ class ConnectionManager extends EventEmitter {
     } else if (state == this.states.connected.state) {
       this.upgradeIfNeeded(transportParams);
     } else if (this.transports.length > 1 && this.getTransportPreference()) {
-      this.connectPreference(transportParams);
+      this.connectPreference(transportParams, connectCount);
     } else {
       this.connectBase(transportParams, connectCount);
     }
   }
 
-  connectPreference(transportParams: TransportParams): void {
+  connectPreference(transportParams: TransportParams, connectCount?: number): void {
     const preference = this.getTransportPreference();
     let preferenceTimeoutExpired = false;
 
     if (!Utils.arrIn(this.transports, preference)) {
       this.unpersistTransportPreference();
-      this.connectImpl(transportParams);
+      this.connectImpl(transportParams, connectCount);
     }
 
     Logger.logAction(
@@ -1564,7 +1564,7 @@ class ConnectionManager extends EventEmitter {
         /* Be quite agressive about clearing the stored preference if ever it doesn't work */
         this.unpersistTransportPreference();
       }
-      this.connectImpl(transportParams);
+      this.connectImpl(transportParams, connectCount);
     }, this.options.timeouts.preferenceConnectTimeout);
 
     /* For connectPreference, just use the main host. If host fallback is needed, do it in connectBase.
@@ -1582,7 +1582,7 @@ class ConnectionManager extends EventEmitter {
       } else if (!transport && !fatal) {
         /* Preference failed in a transport-specific way. Try more */
         this.unpersistTransportPreference();
-        this.connectImpl(transportParams);
+        this.connectImpl(transportParams, connectCount);
       }
       /* If suceeded, or failed fatally, nothing to do */
     });
