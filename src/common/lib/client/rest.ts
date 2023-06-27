@@ -223,8 +223,6 @@ class Rest {
     Logger.setLog(logOptions.level, logOptions.handler);
   }
 
-  static Promise = Rest;
-
   static Platform = Platform;
   static Crypto?: typeof Platform.Crypto;
   static Message = Message;

@@ -35,8 +35,6 @@ class Realtime extends Rest {
     this.connection.close();
   }
 
-  static Promise = Realtime;
-
   static Utils = Utils;
   static ConnectionManager = ConnectionManager;
   static Platform = Platform;

@@ -18,7 +18,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     it('Init with key string', function () {
       var keyStr = helper.getTestApp().keys[0].keyStr;
-      var rest = new helper.Ably.Rest.Promise(keyStr);
+      var rest = new helper.Ably.Rest(keyStr);
 
       expect(rest.options.key).to.equal(keyStr);
     });
@@ -30,7 +30,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
       var tokenDetails = await rest.auth.requestToken(null, testKeyOpts);
       var tokenStr = tokenDetails.token,
-        rest = new helper.Ably.Rest.Promise(tokenStr);
+        rest = new helper.Ably.Rest(tokenStr);
 
       expect(rest.options.token).to.equal(tokenStr);
     });

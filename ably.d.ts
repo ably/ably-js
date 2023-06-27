@@ -1566,10 +1566,6 @@ declare namespace Types {
    */
   class RestPromise extends RestBase {
     /**
-     * A promisified version of the library (use this if you prefer to use Promises or async/await instead of callbacks)
-     */
-    static Promise: typeof Types.RestPromise;
-    /**
      * An {@link Types.AuthPromise} object.
      */
     auth: Types.AuthPromise;
@@ -1619,10 +1615,6 @@ declare namespace Types {
    * A base class used internally for Realtime APIs.
    */
   class RealtimeBase extends RestBase {
-    /**
-     * A promisified version of the library (use this if you prefer to use Promises or async/await instead of callbacks)
-     */
-    static Promise: typeof Types.RealtimePromise;
     /**
      * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
      */
