@@ -1614,7 +1614,31 @@ declare namespace Types {
   /**
    * A base class used internally for Realtime APIs.
    */
-  class RealtimeBase extends RestBase {
+  class RealtimeBase {
+    /**
+     * Construct a client object using an Ably {@link Types.ClientOptions} object.
+     *
+     * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
+     */
+    constructor(options: Types.ClientOptions);
+    /**
+     * Constructs a client object using an Ably API key or token string.
+     *
+     * @param keyOrToken - The Ably API key or token string used to validate the client.
+     */
+    constructor(keyOrToken: string);
+    /**
+     * The cryptographic functions available in the library.
+     */
+    static Crypto: Types.Crypto;
+    /**
+     * Static utilities related to messages.
+     */
+    static Message: Types.MessageStatic;
+    /**
+     * Static utilities related to presence messages.
+     */
+    static PresenceMessage: Types.PresenceMessageStatic;
     /**
      * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
      */
