@@ -1440,13 +1440,13 @@ declare namespace Types {
    */
   type errorCallback = (error?: ErrorInfo | null) => void;
   /**
-   * The callback used by {@link RealtimeChannelCallbacks.whenState}.
+   * The callback used by {@link RealtimeChannelCallbacks.whenState} and for the events emitted by {@link RealtimeChannelBase}.
    *
    * @param changeStateChange - The state change that occurred.
    */
   type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
   /**
-   * The callback used by {@link ConnectionCallbacks.whenState}.
+   * The callback used by {@link ConnectionCallbacks.whenState} and for the events emitted by {@link ConnectionBase}.
    *
    * @param connectionStateChange - The state change that occurred.
    */
