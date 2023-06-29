@@ -45,7 +45,11 @@ Or run just one test file
 
 Or run just one test
 
-    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here     
+    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here 
+
+Or run test skipping the build
+
+    npm run test:node:skip-build -- --file=test/rest/status.test.js --grep=test_name_here 
 
 ### Debugging the mocha tests locally with a debugger
 
@@ -74,7 +78,7 @@ Open your browser to [http://localhost:3000](http://localhost:3000). If you are 
 Run the following command to fix linting/formatting issues
 
     npm run format
-    
+
 ### Testing environment variables for Node.js
 
 All tests are run against the sandbox environment by default. However, the following environment variables can be set before running the Karma server to change the environment the tests are run against.
