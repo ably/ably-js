@@ -43,10 +43,6 @@ Or run just one test file
 
     npm run test:node -- --file=test/realtime/auth.test.js
 
-Or run just one test
-
-    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here 
-
 ### Debugging the mocha tests locally with a debugger
 
 Run the following command to launch tests with the debugger enabled. The tests will block until you attach a debugger.
@@ -61,10 +57,6 @@ The included vscode launch config allows you to launch and attach the debugger i
 file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the
 browser/static directory, not the raw source files, and breakpoints in files under test should work directly.
 
-VSCode allows you to directly launch `package.json` scripts in debug mode.
-Simply click on `Debug` option above `scripts` and select the command to run. 
-This way, you can add a command to run a single test as a part of `scripts` and debug directly from package.json.
-
 ### Debugging the tests in a browser with Mocha test runner
 
 Run the following command to start a local Mocha test runner web server
@@ -72,12 +64,6 @@ Run the following command to start a local Mocha test runner web server
     npm run test:webserver
 
 Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Mocha runner web server.
-
-### Formatting/linting files
-
-Run the following command to fix linting/formatting issues
-
-    npm run format
 
 ### Testing environment variables for Node.js
 
