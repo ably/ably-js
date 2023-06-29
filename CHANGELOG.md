@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.41](https://github.com/ably/ably-js/tree/1.2.41) (2023-06-29)
+
+- add `ChannelStateChange.hasBacklog` and return state change to attach promise/callback [\#1347](https://github.com/ably/ably-js/pull/1347)
+- fix a bug where host fallback was initially skipped after falling back to the base transport [\#1357](https://github.com/ably/ably-js/pull/1357)
+
 ## [1.2.40](https://github.com/ably/ably-js/tree/1.2.40) (2023-05-26)
 
 This release adds a new experimental `channels.getDerived` method which allows you to create custom realtime data feeds by selectively subscribing to receive only part of the data from the channel. See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
