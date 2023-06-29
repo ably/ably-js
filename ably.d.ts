@@ -1149,6 +1149,10 @@ declare namespace Types {
      * Indicates whether message continuity on this channel is preserved, see [Nonfatal channel errors](https://ably.com/docs/realtime/channels#nonfatal-errors) for more info.
      */
     resumed: boolean;
+    /**
+     * Indicates whether the client can expect a backlog of messages from a rewind or resume.
+     */
+    hasBacklog?: boolean;
   }
 
   /**
@@ -2556,9 +2560,9 @@ declare namespace Types {
     /**
      * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelCallbacks.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelCallbacks.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresenceCallbacks.enter | `enter()`} or {@link RealtimePresenceCallbacks.subscribe | `subscribe()`} are called on the {@link RealtimePresenceCallbacks} object for this channel.
      *
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded and the channel became attached, then the function will be called with a {@link ChannelStateChange} object. If the channel was already attached the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
-    attach(callback?: errorCallback): void;
+    attach(callback?: StandardCallback<ChannelStateChange | null>): void;
     /**
      * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
      *
@@ -2590,32 +2594,44 @@ declare namespace Types {
      *
      * @param event - The event name.
      * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded and the channel became attached, then the function will be called with a {@link ChannelStateChange} object. If the channel was already attached the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
-    subscribe(event: string, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
+    subscribe(
+      event: string,
+      listener?: messageCallback<Message>,
+      callbackWhenAttached?: StandardCallback<ChannelStateChange | null>
+    ): void;
     /**
      * Registers a listener for messages on this channel for multiple event name values.
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded and the channel became attached, then the function will be called with a {@link ChannelStateChange} object. If the channel was already attached the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
-    subscribe(events: Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
+    subscribe(
+      events: Array<string>,
+      listener?: messageCallback<Message>,
+      callbackWhenAttached?: StandardCallback<ChannelStateChange | null>
+    ): void;
     /**
      * Registers a listener for messages on this channel that match the supplied filter.
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded and the channel became attached, then the function will be called with a {@link ChannelStateChange} object. If the channel was already attached the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
-    subscribe(filter: MessageFilter, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
+    subscribe(
+      filter: MessageFilter,
+      listener?: messageCallback<Message>,
+      callbackWhenAttached?: StandardCallback<ChannelStateChange | null>
+    ): void;
     /**
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
      * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
+     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded and the channel became attached, then the function will be called with a {@link ChannelStateChange} object. If the channel was already attached the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
-    subscribe(listener: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
+    subscribe(listener: messageCallback<Message>, callbackWhenAttached?: StandardCallback<ChannelStateChange>): void;
     /**
      * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
      *
@@ -2666,9 +2682,9 @@ declare namespace Types {
     /**
      * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelPromise.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelPromise.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresencePromise.enter | `enter()`} or {@link RealtimePresencePromise.subscribe | `subscribe()`} are called on the {@link RealtimePresencePromise} object for this channel.
      *
-     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon success, if the channel became attached will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be fulfilled with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    attach(): Promise<void>;
+    attach(): Promise<ChannelStateChange | null>;
     /**
      * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
      *
@@ -2694,32 +2710,32 @@ declare namespace Types {
      *
      * @param event - The event name.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
+    subscribe(event: string, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
      * Registers a listener for messages on this channel for multiple event name values.
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
+    subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
      * Registers a listener for messages on this channel that match the supplied filter.
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
+    subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
      * @param callback - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(callback: messageCallback<Message>): Promise<void>;
+    subscribe(callback: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
      * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
      *
