@@ -31,12 +31,12 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       function calculateBounds(retryAttempt, initialTimeout) {
         var upperBound = Math.min((retryAttempt + 2) / 3, 2) * initialTimeout;
         var lowerBound = 0.8 * upperBound;
-        return { lowerBound, upperBound };
+        return { lower: lowerBound, upper: upperBound };
       }
 
       for (var i = 0; i < retryTimeouts.length; i++) {
-        var { lowerBound, upperBound } = calculateBounds(retryAttempts[i], initialTimeout);
-        checkIsBetween(retryTimeouts[i], lowerBound, upperBound);
+        var bounds = calculateBounds(retryAttempts[i], initialTimeout);
+        checkIsBetween(retryTimeouts[i], bounds.lower, bounds.upper);
       }
     });
   });
