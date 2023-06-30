@@ -3,6 +3,9 @@
 var fs = require('fs');
 var path = require('path');
 var webpackConfig = require('./webpack.config');
+var esbuild = require('esbuild');
+var umdWrapper = require('esbuild-plugin-umd-wrapper');
+var banner = require('./src/fragments/license');
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
@@ -86,13 +89,52 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all']);
+  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all', 'build:browser']);
 
   grunt.registerTask('build:node', ['checkGitSubmodules', 'webpack:node']);
 
   grunt.registerTask('build:browser', ['checkGitSubmodules', 'webpack:browser']);
 
   grunt.registerTask('all', ['build', 'requirejs']);
+
+  grunt.registerTask('build:browser', function () {
+    var done = this.async();
+
+    var baseConfig = {
+      entryPoints: ['src/platform/web/index.ts'],
+      outfile: 'build/ably.js',
+      bundle: true,
+      sourcemap: true,
+      format: 'umd',
+      banner: { js: '/*' + banner + '*/' },
+      plugins: [umdWrapper.default()],
+      target: 'es6',
+    };
+
+    Promise.all([
+      esbuild.build(baseConfig),
+      esbuild.build({
+        ...baseConfig,
+        outfile: 'build/ably.min.js',
+        minify: true,
+      }),
+      esbuild.build({
+        ...baseConfig,
+        entryPoints: ['src/platform/web-noencryption/index.ts'],
+        outfile: 'build/ably.noencryption.js',
+      }),
+
+      esbuild.build({
+        ...baseConfig,
+        entryPoints: ['src/platform/web-noencryption/index.ts'],
+        outfile: 'build/ably.noencryption.min.js',
+        minify: true,
+      }),
+    ]).then(() => {
+      console.log('esbuild succeeded');
+      done(true);
+    });
+  });
 
   grunt.loadTasks('test/tasks');
 

@@ -137,21 +137,6 @@ const reactNativeConfig = {
   },
 };
 
-const browserMinConfig = {
-  ...browserConfig,
-  output: {
-    ...baseConfig.output,
-    filename: 'ably.min.js',
-  },
-  optimization: {
-    minimize: true,
-  },
-  performance: {
-    hints: 'warning',
-  },
-  devtool: 'source-map',
-};
-
 const webworkerConfig = {
   target: ['webworker', 'es5'],
   ...browserConfig,
@@ -181,36 +166,9 @@ const webworkerConfig = {
   ],
 };
 
-const noEncryptionConfig = {
-  ...browserConfig,
-  entry: {
-    index: platformPath('web-noencryption'),
-  },
-  output: {
-    ...baseConfig.output,
-    filename: 'ably.noencryption.js',
-  },
-};
-
-const noEncryptionMinConfig = {
-  ...browserMinConfig,
-  entry: {
-    index: platformPath('web-noencryption'),
-  },
-  output: {
-    ...baseConfig.output,
-    filename: 'ably.noencryption.min.js',
-  },
-  devtool: 'source-map',
-};
-
 module.exports = {
   node: nodeConfig,
-  browser: browserConfig,
-  browserMin: browserMinConfig,
   webworker: webworkerConfig,
   nativeScript: nativeScriptConfig,
   reactNative: reactNativeConfig,
-  noEncryption: noEncryptionConfig,
-  noEncryptionMin: noEncryptionMinConfig,
 };
