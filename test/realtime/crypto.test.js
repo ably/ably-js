@@ -119,7 +119,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* generateRandomKey with an explicit keyLength */
     it('generateRandomKey0', function (done) {
-      Crypto.generateRandomKey(64, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
           done(err);
           return;
@@ -136,7 +136,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* generateRandomKey with no keyLength should generate 256-bit keys */
     it('generateRandomKey1', function (done) {
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
           return;
@@ -151,7 +151,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_withResultOfGenerateRandomKey', function (done) {
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
         }
@@ -168,7 +168,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_ArrayBuffer_key', function (done) {
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
         }
@@ -184,7 +184,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_base64_key', function (done) {
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
           return;
@@ -201,7 +201,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_check_keylength', function (done) {
-      Crypto.generateRandomKey(64, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
           done(err);
           return;
@@ -216,7 +216,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_preserves_custom_algorithms', function (done) {
-      Crypto.generateRandomKey(64, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
           done(err);
           return;
@@ -401,7 +401,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      Crypto.generateRandomKey(keyLength, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(keyLength), function (err, key) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -464,7 +464,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = realtime.channels.get(channelName),
         messageText = 'Test message (' + channelName + ')';
 
-      Crypto.generateRandomKey(128, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(128), function (err, key) {
         channel.setOptions({ cipher: { key: key } });
         try {
           expect(channel.channelOptions.cipher.algorithm).to.equal('aes');
@@ -534,7 +534,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         txChannel = txRealtime.channels.get(channelName),
         rxChannel = rxRealtime.channels.get(channelName);
 
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -608,7 +608,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channelName = 'publish_immediately',
         messageText = 'Test message';
 
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           closeAndFinish(done, [txRealtime, rxRealtime], err);
           return;
@@ -655,10 +655,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       async.parallel(
         [
           function (cb) {
-            Crypto.generateRandomKey(cb);
+            whenPromiseSettles(Crypto.generateRandomKey(), cb);
           },
           function (cb) {
-            Crypto.generateRandomKey(cb);
+            whenPromiseSettles(Crypto.generateRandomKey(), cb);
           },
           function (cb) {
             attachChannels([txChannel, rxChannel], cb);
@@ -723,7 +723,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           closeAndFinish(done, [txRealtime, rxRealtime], err);
           return;
         }
-        Crypto.generateRandomKey(function (err, rxKey) {
+        whenPromiseSettles(Crypto.generateRandomKey(), function (err, rxKey) {
           if (err) {
             closeAndFinish(done, [txRealtime, rxRealtime], err);
             return;
@@ -766,7 +766,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           closeAndFinish(done, [txRealtime, rxRealtime], err);
           return;
         }
-        Crypto.generateRandomKey(function (err, txKey) {
+        whenPromiseSettles(Crypto.generateRandomKey(), function (err, txKey) {
           if (err) {
             closeAndFinish(done, [txRealtime, rxRealtime], err);
             return;
@@ -811,7 +811,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         attachChannels([txChannel, rxChannel], cb);
       };
       var setInitialOptions = function (cb) {
-        Crypto.generateRandomKey(function (err, key) {
+        whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
           if (err) {
             closeAndFinish(done, [txRealtime, rxRealtime], err);
             return;
@@ -844,7 +844,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
 
       var createSecondKey = function (cb) {
-        Crypto.generateRandomKey(function (err, key) {
+        whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
           if (err) {
             closeAndFinish(done, [txRealtime, rxRealtime], err);
             return;

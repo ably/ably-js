@@ -2963,9 +2963,9 @@ declare namespace Types {
      * Generates a random key to be used in the encryption of the channel. If the language cryptographic randomness primitives are blocking or async, a callback is used. The callback returns a generated binary key.
      *
      * @param keyLength - The length of the key, in bits, to be generated. If not specified, this is equal to the default `keyLength` of the default algorithm: for AES this is 256 bits.
-     * @param callback - A function which, upon success, will be called with the generated key as a binary, for example, a byte array. Upon failure, the function will be called with information about the error.
+     * @returns A promise which, upon success, will be fulfilled with the generated key as a binary, for example, a byte array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
-    generateRandomKey(keyLength?: number, callback?: Types.StandardCallback<CipherKey>): void;
+    generateRandomKey(keyLength?: number): Promise<CipherKey>;
     /**
      * Returns a {@link CipherParams} object, using the default values for any fields not supplied by the {@link CipherParamOptions} object.
      *
