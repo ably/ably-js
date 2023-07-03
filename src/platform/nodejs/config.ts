@@ -30,7 +30,6 @@ const Config: IPlatformConfig = {
       callback(null);
     }
   },
-  Promise: global && global.Promise,
 };
 
 export default Config;

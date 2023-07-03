@@ -8,8 +8,6 @@ import { NormalisedClientOptions } from '../../types/ClientOptions';
 import Realtime from './realtime';
 import Platform from 'common/platform';
 
-function noop() {}
-
 class Connection extends EventEmitter {
   ably: Realtime;
   connectionManager: ConnectionManager;
@@ -58,10 +56,7 @@ class Connection extends EventEmitter {
   ping(callback: Function): Promise<void> | void {
     Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
     if (!callback) {
-      if (this.ably.options.promises) {
-        return Utils.promisify(this, 'ping', arguments);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'ping', arguments);
     }
     this.connectionManager.ping(null, callback);
   }

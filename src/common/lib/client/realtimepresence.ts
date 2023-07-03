@@ -26,8 +26,6 @@ interface RealtimeHistoryParams {
   from_serial?: string | null;
 }
 
-const noop = function () {};
-
 function getClientId(realtimePresence: RealtimePresence) {
   return realtimePresence.channel.realtime.auth.clientId;
 }
@@ -134,10 +132,7 @@ class RealtimePresence extends Presence {
         callback = data as ErrCallback;
         data = null;
       } else {
-        if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, '_enterOrUpdateClient', [id, clientId, data, action]);
-        }
-        callback = noop;
+        return Utils.promisify(this, '_enterOrUpdateClient', [id, clientId, data, action]);
       }
     }
 
@@ -207,10 +202,7 @@ class RealtimePresence extends Presence {
         callback = data as ErrCallback;
         data = null;
       } else {
-        if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, 'leaveClient', [clientId, data]);
-        }
-        callback = noop;
+        return Utils.promisify(this, 'leaveClient', [clientId, data]);
       }
     }
 
@@ -266,10 +258,7 @@ class RealtimePresence extends Presence {
     const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
 
     if (!callback) {
-      if (this.channel.realtime.options.promises) {
-        return Utils.promisify(this, 'get', args);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'get', args);
     }
 
     function returnMembers(members: PresenceMap) {
@@ -315,10 +304,7 @@ class RealtimePresence extends Presence {
         callback = params;
         params = null;
       } else {
-        if (this.channel.realtime.options.promises) {
-          return Utils.promisify(this, 'history', arguments);
-        }
-        callback = noop;
+        return Utils.promisify(this, 'history', arguments);
       }
     }
 
@@ -518,10 +504,7 @@ class RealtimePresence extends Presence {
     const channel = this.channel;
 
     if (!callback) {
-      if (this.channel.realtime.options.promises) {
-        return Utils.promisify(this, 'subscribe', [event, listener]);
-      }
-      callback = noop;
+      return Utils.promisify(this, 'subscribe', [event, listener]);
     }
 
     if (channel.state === 'failed') {

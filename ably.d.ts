@@ -41,7 +41,7 @@ declare namespace Types {
     type FAILED = 'failed';
   }
   /**
-   * Describes the possible states of a {@link ChannelBase} or {@link RealtimeChannelBase} object.
+   * Describes the possible states of a {@link Channel} or {@link RealtimeChannel} object.
    */
   type ChannelState =
     | ChannelState.FAILED
@@ -90,7 +90,7 @@ declare namespace Types {
     type UPDATE = 'update';
   }
   /**
-   * Describes the events emitted by a {@link ChannelBase} or {@link RealtimeChannelBase} object. An event is either an `UPDATE` or a {@link ChannelState}.
+   * Describes the events emitted by a {@link Channel} or {@link RealtimeChannel} object. An event is either an `UPDATE` or a {@link ChannelState}.
    */
   type ChannelEvent =
     | ChannelEvent.FAILED
@@ -123,7 +123,7 @@ declare namespace Types {
      */
     type DISCONNECTED = 'disconnected';
     /**
-     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link Connection.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
      */
     type SUSPENDED = 'suspended';
     /**
@@ -131,16 +131,16 @@ declare namespace Types {
      */
     type CLOSING = 'closing';
     /**
-     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}, which results in a new connection.
+     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link Connection.connect | `connect()`}, which results in a new connection.
      */
     type CLOSED = 'closed';
     /**
-     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}.
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link Connection.connect | `connect()`}.
      */
     type FAILED = 'failed';
   }
   /**
-   * Describes the realtime {@link ConnectionBase} object states.
+   * Describes the realtime {@link Connection} object states.
    */
   type ConnectionState =
     | ConnectionState.INITIALIZED
@@ -173,7 +173,7 @@ declare namespace Types {
      */
     type DISCONNECTED = 'disconnected';
     /**
-     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
+     * A long term failure condition. No current connection exists because there is no network connectivity or no host is available. The suspended state is entered after a failed connection attempt if there has then been no connection for a period of two minutes. In the suspended state, the library will periodically attempt to open a new connection every 30 seconds. Developers are unable to publish messages in this state. A new connection attempt can also be triggered by an explicit call to {@link Connection.connect | `connect()`}. Once the connection has been re-established, channels will be automatically re-attached. The client has been disconnected for too long for them to resume from where they left off, so if it wants to catch up on messages published by other clients while it was disconnected, it needs to use the [History API](https://ably.com/docs/realtime/history).
      */
     type SUSPENDED = 'suspended';
     /**
@@ -181,11 +181,11 @@ declare namespace Types {
      */
     type CLOSING = 'closing';
     /**
-     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}, which results in a new connection.
+     * The connection has been explicitly closed by the client. In the closed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. No connection state is preserved by the service or by the library. A new connection attempt can be triggered by an explicit call to {@link Connection.connect | `connect()`}, which results in a new connection.
      */
     type CLOSED = 'closed';
     /**
-     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link ConnectionBase.connect | `connect()`}.
+     * This state is entered if the client library encounters a failure condition that it cannot recover from. This may be a fatal connection error received from the Ably service, for example an attempt to connect with an incorrect API key, or a local terminal error, for example the token in use has expired and the library does not have any way to renew it. In the failed state, no reconnection attempts are made automatically by the library, and clients may not publish messages. A new connection attempt can be triggered by an explicit call to {@link Connection.connect | `connect()`}.
      */
     type FAILED = 'failed';
     /**
@@ -194,7 +194,7 @@ declare namespace Types {
     type UPDATE = 'update';
   }
   /**
-   * Describes the events emitted by a {@link ConnectionBase} object. An event is either an `UPDATE` or a {@link ConnectionState}.
+   * Describes the events emitted by a {@link Connection} object. An event is either an `UPDATE` or a {@link ConnectionState}.
    */
   type ConnectionEvent =
     | ConnectionEvent.INITIALIZED
@@ -296,7 +296,7 @@ declare namespace Types {
   type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'comet';
 
   /**
-   * Contains the details of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as its ID and {@link ChannelStatus}.
+   * Contains the details of a {@link Channel} or {@link RealtimeChannel} object such as its ID and {@link ChannelStatus}.
    */
   interface ChannelDetails {
     /**
@@ -310,7 +310,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains the status of a {@link ChannelBase} or {@link RealtimeChannelBase} object such as whether it is active and its {@link ChannelOccupancy}.
+   * Contains the status of a {@link Channel} or {@link RealtimeChannel} object such as whether it is active and its {@link ChannelOccupancy}.
    */
   interface ChannelStatus {
     /**
@@ -324,7 +324,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains the metrics of a {@link ChannelBase} or {@link RealtimeChannelBase} object.
+   * Contains the metrics of a {@link Channel} or {@link RealtimeChannel} object.
    */
   interface ChannelOccupancy {
     /**
@@ -334,7 +334,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains the metrics associated with a {@link ChannelBase} or {@link RealtimeChannelBase}, such as the number of publishers, subscribers and connections it has.
+   * Contains the metrics associated with a {@link Channel} or {@link RealtimeChannel}, such as the number of publishers, subscribers and connections it has.
    */
   interface ChannelMetrics {
     /**
@@ -364,11 +364,11 @@ declare namespace Types {
   }
 
   /**
-   * Passes additional client-specific properties to the REST {@link RestBase.constructor | `constructor()`} or the Realtime {@link RealtimeBase.constructor | `constructor()`}.
+   * Passes additional client-specific properties to the REST {@link Rest.constructor | `constructor()`} or the Realtime {@link Realtime.constructor | `constructor()`}.
    */
   interface ClientOptions extends AuthOptions {
     /**
-     * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the {@link ConnectionBase.connect | `connect()`} method. The default is `true`.
+     * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the {@link Connection.connect | `connect()`} method. The default is `true`.
      *
      * @defaultValue `true`
      */
@@ -704,7 +704,7 @@ declare namespace Types {
   }
 
   /**
-   * Sets the properties to configure encryption for a {@link ChannelBase} or {@link RealtimeChannelBase} object.
+   * Sets the properties to configure encryption for a {@link Channel} or {@link RealtimeChannel} object.
    */
   interface CipherParams {
     /**
@@ -890,7 +890,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains the properties of a request for a token to Ably. Tokens are generated using {@link AuthCallbacks.requestToken} or {@link AuthPromise.requestToken}.
+   * Contains the properties of a request for a token to Ably. Tokens are generated using {@link Auth.requestToken}.
    */
   interface TokenRequest {
     /**
@@ -971,7 +971,7 @@ declare namespace Types {
   type ChannelModes = Array<ChannelMode>;
 
   /**
-   * Passes additional properties to a {@link ChannelBase} or {@link RealtimeChannelBase} object, such as encryption, {@link ChannelMode} and channel parameters.
+   * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
    */
   interface ChannelOptions {
     /**
@@ -989,7 +989,7 @@ declare namespace Types {
   }
 
   /**
-   * Passes additional properties to a {@link RealtimeChannelBase} name to produce a new derived channel
+   * Passes additional properties to a {@link RealtimeChannel} name to produce a new derived channel
    */
   interface DeriveOptions {
     /**
@@ -1001,10 +1001,8 @@ declare namespace Types {
   /**
    * The `RestHistoryParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link PresenceCallbacks.history}
-   * - {@link PresencePromise.history}
-   * - {@link ChannelCallbacks.history}
-   * - {@link ChannelPromise.history}
+   * - {@link Presence.history}
+   * - {@link Channel.history}
    */
   interface RestHistoryParams {
     /**
@@ -1032,10 +1030,7 @@ declare namespace Types {
   }
 
   /**
-   * The `RestPresenceParams` interface describes the parameters accepted by the following methods:
-   *
-   * - {@link PresenceCallbacks.get}
-   * - {@link PresencePromise.get}
+   * The `RestPresenceParams` interface describes the parameters accepted by {@link Presence.get}.
    */
   interface RestPresenceParams {
     /**
@@ -1055,10 +1050,7 @@ declare namespace Types {
   }
 
   /**
-   * The `RealtimePresenceParams` interface describes the parameters accepted by the following methods:
-   *
-   * - {@link RealtimePresenceCallbacks.get}
-   * - {@link RealtimePresencePromise.get}
+   * The `RealtimePresenceParams` interface describes the parameters accepted by {@link RealtimePresence.get}.
    */
   interface RealtimePresenceParams {
     /**
@@ -1080,10 +1072,8 @@ declare namespace Types {
   /**
    * The `RealtimeHistoryParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link RealtimePresenceCallbacks.history}
-   * - {@link RealtimePresencePromise.history}
-   * - {@link RealtimeChannelCallbacks.history}
-   * - {@link RealtimeChannelPromise.history}
+   * - {@link RealtimePresence.history}
+   * - {@link RealtimeChannel.history}
    */
   interface RealtimeHistoryParams {
     /**
@@ -1115,7 +1105,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains state change information emitted by {@link ChannelBase} and {@link RealtimeChannelBase} objects.
+   * Contains state change information emitted by {@link Channel} and {@link RealtimeChannel} objects.
    */
   interface ChannelStateChange {
     /**
@@ -1137,7 +1127,7 @@ declare namespace Types {
   }
 
   /**
-   * Contains {@link ConnectionState} change information emitted by the {@link ConnectionBase} object.
+   * Contains {@link ConnectionState} change information emitted by the {@link Connection} object.
    */
   interface ConnectionStateChange {
     /**
@@ -1310,10 +1300,8 @@ declare namespace Types {
   /**
    * The `DeviceRegistrationParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link PushDeviceRegistrationsCallbacks.list}
-   * - {@link PushDeviceRegistrationsCallbacks.removeWhere}
-   * - {@link PushDeviceRegistrationsPromise.list}
-   * - {@link PushDeviceRegistrationsPromise.removeWhere}
+   * - {@link PushDeviceRegistrations.list}
+   * - {@link PushDeviceRegistrations.removeWhere}
    */
   interface DeviceRegistrationParams {
     /**
@@ -1337,10 +1325,8 @@ declare namespace Types {
   /**
    * The `PushChannelSubscriptionParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link PushChannelSubscriptionsCallbacks.list}
-   * - {@link PushChannelSubscriptionsCallbacks.removeWhere}
-   * - {@link PushChannelSubscriptionsPromise.list}
-   * - {@link PushChannelSubscriptionsPromise.removeWhere}
+   * - {@link PushChannelSubscriptions.list}
+   * - {@link PushChannelSubscriptions.removeWhere}
    */
   interface PushChannelSubscriptionParams {
     /**
@@ -1362,10 +1348,7 @@ declare namespace Types {
   }
 
   /**
-   * The `PushChannelsParams` interface describes the parameters accepted by the following methods:
-   *
-   * - {@link PushChannelSubscriptionsCallbacks.listChannels}
-   * - {@link PushChannelSubscriptionsPromise.listChannels}
+   * The `PushChannelsParams` interface describes the parameters accepted by {@link PushChannelSubscriptions.listChannels}.
    */
   interface PushChannelsParams {
     /**
@@ -1377,10 +1360,8 @@ declare namespace Types {
   /**
    * The `StatsParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link RestCallbacks.stats}
-   * - {@link RestPromise.stats}
-   * - {@link RealtimeCallbacks.stats}
-   * - {@link RealtimePromise.stats}
+   * - {@link Rest.stats}
+   * - {@link Realtime.stats}
    */
   interface StatsParams {
     /**
@@ -1417,64 +1398,23 @@ declare namespace Types {
 
   // Common Listeners
   /**
-   * A standard callback format used in most areas of the callback API.
-   *
-   * @param err - An error object if the request failed.
-   * @param result - The result of the request, if any.
-   */
-  type StandardCallback<T> = (err: ErrorInfo | null, result?: T) => void;
-  /**
-   * A {@link StandardCallback} which returns a {@link PaginatedResult}.
-   */
-  type paginatedResultCallback<T> = StandardCallback<PaginatedResult<T>>;
-  /**
-   * A callback which returns only a single argument, used for {@link RealtimeChannelBase} subscriptions.
+   * A callback which returns only a single argument, used for {@link RealtimeChannel} subscriptions.
    *
    * @param message - The message which triggered the callback.
    */
   type messageCallback<T> = (message: T) => void;
   /**
-   * A callback which returns only an error, or null, when complete.
-   *
-   * @param error - The error if the request failed, or null not.
-   */
-  type errorCallback = (error?: ErrorInfo | null) => void;
-  /**
-   * The callback used by {@link RealtimeChannelCallbacks.whenState}.
+   * The callback used for the events emitted by {@link RealtimeChannel}.
    *
    * @param changeStateChange - The state change that occurred.
    */
   type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
   /**
-   * The callback used by {@link ConnectionCallbacks.whenState}.
+   * The callback used for the events emitted by {@link Connection}.
    *
    * @param connectionStateChange - The state change that occurred.
    */
   type connectionEventCallback = (connectionStateChange: ConnectionStateChange) => void;
-  /**
-   * The callback used by {@link RestCallbacks.time} and {@link RealtimeCallbacks.time}.
-   *
-   * @param timeCallback - The time in milliseconds since the Unix epoch.
-   */
-  type timeCallback = StandardCallback<number>;
-  /**
-   * The callback used by {@link RealtimePresenceCallbacks.get}.
-   *
-   * @param realtimePresenceGetCallback - An array of {@link PresenceMessage} objects.
-   */
-  type realtimePresenceGetCallback = StandardCallback<PresenceMessage[]>;
-  /**
-   * The callback used by {@link AuthCallbacks.authorize}.
-   *
-   * @param tokenDetailsCallback - A {@link TokenDetails} object.
-   */
-  type tokenDetailsCallback = StandardCallback<TokenDetails>;
-  /**
-   * The callback used by {@link AuthCallbacks.createTokenRequest}.
-   *
-   * @param tokenRequestCallback - A {@link TokenRequest} object
-   */
-  type tokenRequestCallback = StandardCallback<TokenRequest>;
   /**
    * The callback used by {@link recoverConnectionCallback}.
    *
@@ -1516,7 +1456,7 @@ declare namespace Types {
   // that returns a Promise if desired, EventEmitter uses method overloading to
   // present both methods
   /**
-   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the {@link ConnectionBase} object emits events for connection state using the `EventEmitter` pattern.
+   * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the {@link Connection} object emits events for connection state using the `EventEmitter` pattern.
    */
   class EventEmitter<CallbackType, ResultType, EventType> {
     /**
@@ -1592,9 +1532,9 @@ declare namespace Types {
 
   // Classes
   /**
-   * The `RestBase` class acts as a base class for the {@link RestCallbacks} and {@link RestPromise} classes.
+   * A client that offers a simple stateless API to interact directly with Ably's REST API.
    */
-  class RestBase {
+  class Rest {
     /**
      * Construct a client object using an Ably {@link Types.ClientOptions} object.
      *
@@ -1619,93 +1559,15 @@ declare namespace Types {
      * Static utilities related to presence messages.
      */
     static PresenceMessage: Types.PresenceMessageStatic;
-  }
 
-  /**
-   * A client that offers a simple stateless API to interact directly with Ably's REST API.
-   */
-  class RestCallbacks extends RestBase {
     /**
-     * A promisified version of the library (use this if you prefer to use Promises or async/await instead of callbacks)
+     * An {@link Types.Auth} object.
      */
-    static Promise: typeof Types.RestPromise;
-    /**
-     * A callback based version of the library
-     */
-    static Callbacks: typeof Types.RestCallbacks;
-    /**
-     * An {@link Types.AuthCallbacks} object.
-     */
-    auth: Types.AuthCallbacks;
+    auth: Types.Auth;
     /**
      * A {@link Types.Channels} object.
      */
-    channels: Types.Channels<Types.ChannelCallbacks>;
-    /**
-     * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
-     *
-     * @param method - The request method to use, such as `GET`, `POST`.
-     * @param path - The request path.
-     * @param version - The major version of the Ably REST API to use. See the [REST API reference](https://ably.com/docs/api/rest-api#versioning) for information on versioning.
-     * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
-     * @param body - The JSON body of the request.
-     * @param headers - Additional HTTP headers to include in the request.
-     * @param callback - A function which, upon success, will be called with an {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the function will be called with information about the error.
-     */
-    request<T = any>(
-      method: string,
-      path: string,
-      version: number,
-      params?: any,
-      body?: any[] | any,
-      headers?: any,
-      callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
-    ): void;
-    /**
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
-     *
-     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link Types.StatsParams} interface.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
-     */
-    stats(params?: StatsParams | any, callback?: Types.paginatedResultCallback<Types.Stats>): void;
-    /**
-     * Queries the REST `/stats` API and retrieves your application's usage statistics, using the default parameters described in the {@link Types.StatsParams} interface. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
-     *
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
-     */
-    stats(callback?: Types.paginatedResultCallback<Types.Stats>): void;
-    /**
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
-     *
-     * @param callback - A function which, upon success, will be called with the time as milliseconds since the Unix epoch. Upon failure, the function will be called with information about the error.
-     */
-    time(callback?: Types.timeCallback): void;
-    /**
-     * A {@link Types.PushCallbacks} object.
-     */
-    push: Types.PushCallbacks;
-  }
-
-  /**
-   * A client that offers a simple stateless API to interact directly with Ably's REST API.
-   */
-  class RestPromise extends RestBase {
-    /**
-     * A promisified version of the library (use this if you prefer to use Promises or async/await instead of callbacks)
-     */
-    static Promise: typeof Types.RestPromise;
-    /**
-     * A callback based version of the library
-     */
-    static Callbacks: typeof Types.RestCallbacks;
-    /**
-     * An {@link Types.AuthPromise} object.
-     */
-    auth: Types.AuthPromise;
-    /**
-     * A {@link Types.Channels} object.
-     */
-    channels: Types.Channels<Types.ChannelPromise>;
+    channels: Types.Channels<Types.Channel>;
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
      *
@@ -1739,114 +1601,64 @@ declare namespace Types {
      */
     time(): Promise<number>;
     /**
-     * A {@link Types.PushPromise} object.
+     * A {@link Types.Push} object.
      */
-    push: Types.PushPromise;
+    push: Types.Push;
   }
 
   /**
-   * A base class used internally for Realtime APIs.
+   * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
    */
-  class RealtimeBase extends RestBase {
+  class Realtime {
     /**
-     * A promisified version of the library (use this if you prefer to use Promises or async/await instead of callbacks)
+     * Construct a client object using an Ably {@link Types.ClientOptions} object.
+     *
+     * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
      */
-    static Promise: typeof Types.RealtimePromise;
+    constructor(options: Types.ClientOptions);
     /**
-     * A callback based version of the library
+     * Constructs a client object using an Ably API key or token string.
+     *
+     * @param keyOrToken - The Ably API key or token string used to validate the client.
      */
-    static Callbacks: typeof Types.RealtimeCallbacks;
+    constructor(keyOrToken: string);
+    /**
+     * The cryptographic functions available in the library.
+     */
+    static Crypto: Types.Crypto;
+    /**
+     * Static utilities related to messages.
+     */
+    static Message: Types.MessageStatic;
+    /**
+     * Static utilities related to presence messages.
+     */
+    static PresenceMessage: Types.PresenceMessageStatic;
     /**
      * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
      */
     clientId: string;
     /**
-     * Calls {@link Types.ConnectionBase.close | `connection.close()`} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to {@link Types.ConnectionBase.connect | `connect()`}.
+     * Calls {@link Types.Connection.close | `connection.close()`} and causes the connection to close, entering the closing state. Once closed, the library will not attempt to re-establish the connection without an explicit call to {@link Types.Connection.connect | `connect()`}.
      */
     close(): void;
     /**
-     * Calls {@link Types.ConnectionBase.connect | `connection.connect()`} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the {@link Types.ClientOptions.autoConnect} property is disabled.
+     * Calls {@link Types.Connection.connect | `connection.connect()`} and causes the connection to open, entering the connecting state. Explicitly calling `connect()` is unnecessary unless the {@link Types.ClientOptions.autoConnect} property is disabled.
      */
     connect(): void;
-  }
 
-  /**
-   * A client that extends the functionality of {@link RestCallbacks} and provides additional realtime-specific features.
-   */
-  class RealtimeCallbacks extends RealtimeBase {
     /**
-     * An {@link Types.AuthCallbacks} object.
+     * An {@link Types.Auth} object.
      */
-    auth: Types.AuthCallbacks;
+    auth: Types.Auth;
     /**
      * A {@link Types.Channels} object.
      */
-    channels: Types.Channels<Types.RealtimeChannelCallbacks>;
+    channels: Types.Channels<Types.RealtimeChannel>;
     /**
-     * A {@link Types.ConnectionCallbacks} object.
+     * A {@link Types.Connection} object.
      */
-    connection: Types.ConnectionCallbacks;
-    /**
-     * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
-     *
-     * @param method - The request method to use, such as `GET`, `POST`.
-     * @param path - The request path.
-     * @param version - The major version of the Ably REST API to use. See the [REST API reference](https://ably.com/docs/api/rest-api#versioning) for information on versioning.
-     * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
-     * @param body - The JSON body of the request.
-     * @param headers - Additional HTTP headers to include in the request.
-     * @param callback - A function which, upon success, will be called with the {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the function will be called with information about the error.
-     */
-    request<T = any>(
-      method: string,
-      path: string,
-      version: number,
-      params?: any,
-      body?: any[] | any,
-      headers?: any,
-      callback?: Types.StandardCallback<Types.HttpPaginatedResponse<T>>
-    ): void;
-    /**
-     * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
-     *
-     * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
-     */
-    stats(params: StatsParams | any, callback: Types.paginatedResultCallback<Types.Stats>): void;
-    /**
-     * Queries the REST `/stats` API and retrieves your application's usage statistics, using the default parameters described in the {@link Types.StatsParams} interface. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
-     *
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the function will be called with information about the error.
-     */
-    stats(callback: Types.paginatedResultCallback<Types.Stats>): void;
-    /**
-     * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
-     *
-     * @param callback - A function which, upon success, will be called with the time as milliseconds since the Unix epoch. Upon failure, the function will be called with information about the error.
-     */
-    time(callback?: Types.timeCallback): void;
-    /**
-     * A {@link Types.PushCallbacks} object.
-     */
-    push: Types.PushCallbacks;
-  }
-
-  /**
-   * A client that extends the functionality of {@link RestPromise} and provides additional realtime-specific features.
-   */
-  class RealtimePromise extends RealtimeBase {
-    /**
-     * An {@link Types.AuthPromise} object.
-     */
-    auth: Types.AuthPromise;
-    /**
-     * A {@link Types.Channels} object.
-     */
-    channels: Types.Channels<Types.RealtimeChannelPromise>;
-    /**
-     * A {@link Types.ConnectionPromise} object.
-     */
-    connection: Types.ConnectionPromise;
+    connection: Types.Connection;
     /**
      * Makes a REST request to a provided path. This is provided as a convenience for developers who wish to use REST API functionality that is either not documented or is not yet included in the public API, without having to directly handle features such as authentication, paging, fallback hosts, MsgPack and JSON support.
      *
@@ -1880,102 +1692,20 @@ declare namespace Types {
      */
     time(): Promise<number>;
     /**
-     * A {@link Types.PushPromise} object.
+     * A {@link Types.Push} object.
      */
-    push: Types.PushPromise;
+    push: Types.Push;
   }
 
   /**
-   * The `AuthBase` class acts as a base class for the {@link AuthCallbacks} and {@link AuthPromise} classes.
+   * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
    */
-  class AuthBase {
+  class Auth {
     /**
      * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. Note that a `clientId` may also be implicit in a token used to instantiate the library. An error is raised if a `clientId` specified here conflicts with the `clientId` implicit in the token. Find out more about [identified clients](https://ably.com/docs/core-features/authentication#identified-clients).
      */
     clientId: string;
-  }
 
-  /**
-   * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
-   */
-  class AuthCallbacks extends AuthBase {
-    /**
-     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
-     *
-     * @param tokenParams - A {@link TokenParams} object.
-     * @param authOptions - An {@link AuthOptions} object.
-     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    authorize(tokenParams?: TokenParams, authOptions?: AuthOptions, callback?: tokenDetailsCallback): void;
-    /**
-     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} passed in as the new default, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} object passed in entirely replaces, as opposed to being merged with, the current client library saved value.
-     *
-     * @param tokenParams - A {@link TokenParams} object.
-     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    authorize(tokenParams?: TokenParams, callback?: tokenDetailsCallback): void;
-    /**
-     * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained.
-     *
-     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    authorize(callback?: tokenDetailsCallback): void;
-    /**
-     * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
-     *
-     * @param tokenParams - A {@link TokenParams} object.
-     * @param authOptions - An {@link AuthOptions} object.
-     * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
-     */
-    createTokenRequest(
-      tokenParams?: TokenParams | null,
-      authOptions?: AuthOptions | null,
-      callback?: tokenRequestCallback
-    ): void;
-    /**
-     * Creates and signs an Ably {@link TokenRequest} based on the specified (or if none specified, the client library stored) {@link TokenParams}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenParams} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. When the {@link TokenRequest} is omitted or `null`, the default token parameters for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
-     *
-     * @param tokenParams - A {@link TokenParams} object.
-     * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
-     */
-    createTokenRequest(tokenParams?: TokenParams | null, callback?: tokenRequestCallback): void;
-    /**
-     * Creates and signs an Ably {@link TokenRequest} based on the the client library stored {@link TokenParams} and {@link AuthOptions}. Note this can only be used when the API `key` value is available locally. Otherwise, the Ably {@link TokenRequest} must be obtained from the key owner. Use this to generate an Ably {@link TokenRequest} in order to implement an Ably Token request callback for use by other clients. The default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
-     *
-     * @param callback - A function which, upon success, will be called with a {@link TokenRequest} object. Upon failure, the function will be called with information about the error.
-     */
-    createTokenRequest(callback?: tokenRequestCallback): void;
-    /**
-     * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams} and {@link AuthOptions}. Both {@link TokenParams} and {@link AuthOptions} are optional. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
-     *
-     * @param TokenParams - A {@link TokenParams} object.
-     * @param authOptions - An {@link AuthOptions} object.
-     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    requestToken(
-      TokenParams?: TokenParams | null,
-      authOptions?: AuthOptions | null,
-      callback?: tokenDetailsCallback
-    ): void;
-    /**
-     * Calls the `requestToken` REST API endpoint to obtain an Ably Token according to the specified {@link TokenParams}. When omitted or `null`, the default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. Values passed in are used instead of, rather than being merged with, the default values. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
-     *
-     * @param TokenParams - A {@link TokenParams} object.
-     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    requestToken(TokenParams?: TokenParams | null, callback?: tokenDetailsCallback): void;
-    /**
-     * Calls the `requestToken` REST API endpoint to obtain an Ably Token. The default token parameters and authentication options for the client library are used, as specified in the {@link ClientOptions} when the client library was instantiated, or later updated with an explicit `authorize` request. To understand why an Ably {@link TokenRequest} may be issued to clients in favor of a token, see [Token Authentication explained](https://ably.com/docs/core-features/authentication/#token-authentication).
-     *
-     * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    requestToken(callback?: tokenDetailsCallback): void;
-  }
-
-  /**
-   * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
-   */
-  class AuthPromise extends AuthBase {
     /**
      * Instructs the library to get a new token immediately. When using the realtime client, it upgrades the current realtime connection to use the new token, or if not connected, initiates a connection to Ably, once the new token has been obtained. Also stores any {@link TokenParams} and {@link AuthOptions} passed in as the new defaults, to be used for all subsequent implicit or explicit token requests. Any {@link TokenParams} and {@link AuthOptions} objects passed in entirely replace, as opposed to being merged with, the current client library saved values.
      *
@@ -2005,39 +1735,7 @@ declare namespace Types {
   /**
    * Enables the retrieval of the current and historic presence set for a channel.
    */
-  class PresenceCallbacks {
-    /**
-     * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
-     *
-     * @param params - A set of parameters which are used to specify which presence members should be retrieved.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
-     */
-    get(params?: RestPresenceParams, callback?: paginatedResultCallback<PresenceMessage>): void;
-    /**
-     * Retrieves the current members present on the channel and the metadata for each member, such as their [PresenceAction]{@link PresenceAction} and ID.
-     *
-     * @param callback - A function which, upon success, will be called with a [PaginatedResult]{@link PaginatedResult} object, containing an array of [PresenceMessage]{@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
-     */
-    get(callback?: paginatedResultCallback<PresenceMessage>): void;
-    /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
-     *
-     * @param params - A set of parameters which are used to specify which messages should be retrieved.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
-     */
-    history(params: RestHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
-    /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
-     *
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
-     */
-    history(callback: paginatedResultCallback<PresenceMessage>): void;
-  }
-
-  /**
-   * Enables the retrieval of the current and historic presence set for a channel.
-   */
-  class PresencePromise {
+  class Presence {
     /**
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
      *
@@ -2055,9 +1753,9 @@ declare namespace Types {
   }
 
   /**
-   * The `RealtimePresenceBase` class acts as a base class for the {@link RealtimePresenceCallbacks} and {@link RealtimePresencePromise} classes.
+   * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
    */
-  class RealtimePresenceBase {
+  class RealtimePresence {
     /**
      * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed. Set to `true` when the sync is complete.
      */
@@ -2098,134 +1796,7 @@ declare namespace Types {
      * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel.
      */
     unsubscribe(): void;
-  }
 
-  /**
-   * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
-   */
-  class RealtimePresenceCallbacks extends RealtimePresenceBase {
-    /**
-     * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
-     *
-     * @param params - A set of parameters which are used to specify which presence members should be retrieved.
-     * @param callback - A function which, upon success, will be called with an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
-     */
-    get(params?: RealtimePresenceParams, callback?: realtimePresenceGetCallback): void;
-    /**
-     * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
-     *
-     * @param callback - A function which, upon success, will be called with an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
-     */
-    get(callback?: realtimePresenceGetCallback): void;
-    /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
-     *
-     * @param params - A set of parameters which are used to specify which presence messages should be retrieved.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
-     */
-    history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<PresenceMessage>): void;
-    /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link PresenceMessage} objects for the channel. If the channel is configured to persist messages, then presence messages can be retrieved from history for up to 72 hours in the past. If not, presence messages can only be retrieved from history for up to two minutes in the past.
-     *
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PresenceMessage} objects. Upon failure, the function will be called with information about the error.
-     */
-    history(callback?: paginatedResultCallback<PresenceMessage>): void;
-    /**
-     * Registers a listener that is called each time a {@link PresenceMessage} matching a given {@link PresenceAction}, or an action within an array of {@link PresenceAction | `PresenceAction`s}, is received on the channel, such as a new member entering the presence set.
-     *
-     * @param presence - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
-     * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    subscribe(
-      presence: PresenceAction | Array<PresenceAction>,
-      listener?: messageCallback<PresenceMessage>,
-      callbackWhenAttached?: errorCallback
-    ): void;
-    /**
-     * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
-     *
-     * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    subscribe(listener: messageCallback<PresenceMessage>, callbackWhenAttached?: errorCallback): void;
-    /**
-     * Enters the presence set for the channel, passing a `data` payload. A `clientId` is required to be present on a channel.
-     *
-     * @param data - The payload associated with the presence member.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    enter(data?: any, callback?: errorCallback): void;
-    /**
-     * Enters the presence set for the channel. A `clientId` is required to be present on a channel.
-     *
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    enter(callback?: errorCallback): void;
-    /**
-     * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
-     *
-     * @param data - The payload to update for the presence member.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    update(data?: any, callback?: errorCallback): void;
-    /**
-     * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
-     *
-     * @param data - The payload associated with the presence member.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    leave(data?: any, callback?: errorCallback): void;
-    /**
-     * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
-     *
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    leave(callback?: errorCallback): void;
-    /**
-     * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
-     *
-     * @param clientId - The ID of the client to enter into the presence set.
-     * @param data - The payload associated with the presence member.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    enterClient(clientId: string, data?: any, callback?: errorCallback): void;
-    /**
-     * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
-     *
-     * @param clientId - The ID of the client to enter into the presence set.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    enterClient(clientId: string, callback?: errorCallback): void;
-    /**
-     * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
-     *
-     * @param clientId - The ID of the client to update in the presence set.
-     * @param data - The payload to update for the presence member.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    updateClient(clientId: string, data?: any, callback?: errorCallback): void;
-    /**
-     * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
-     *
-     * @param clientId - The ID of the client to leave the presence set for.
-     * @param data - The payload associated with the presence member.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    leaveClient(clientId: string, data?: any, callback?: errorCallback): void;
-    /**
-     * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
-     *
-     * @param clientId - The ID of the client to leave the presence set for.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    leaveClient(clientId: string, callback?: errorCallback): void;
-  }
-
-  /**
-   * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
-   */
-  class RealtimePresencePromise extends RealtimePresenceBase {
     /**
      * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
      *
@@ -2245,7 +1816,7 @@ declare namespace Types {
      *
      * @param action - A {@link PresenceAction} or an array of {@link PresenceAction | `PresenceAction`s} to register the listener for.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(
       action: PresenceAction | Array<PresenceAction>,
@@ -2255,7 +1826,7 @@ declare namespace Types {
      * Registers a listener that is called each time a {@link PresenceMessage} is received on the channel, such as a new member entering the presence set.
      *
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(listener?: messageCallback<PresenceMessage>): Promise<void>;
     /**
@@ -2306,83 +1877,18 @@ declare namespace Types {
   }
 
   /**
-   * The `ChannelBase` class acts as a base class for the {@link ChannelCallbacks} and {@link ChannelPromise} classes.
+   * Enables messages to be published and historic messages to be retrieved for a channel.
    */
-  class ChannelBase {
+  class Channel {
     /**
      * The channel name.
      */
     name: string;
-  }
 
-  /**
-   * Enables messages to be published and historic messages to be retrieved for a channel.
-   */
-  class ChannelCallbacks extends ChannelBase {
     /**
-     * A {@link PresenceCallbacks} object.
+     * A {@link Presence} object.
      */
-    presence: PresenceCallbacks;
-    /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
-     *
-     * @param params - A set of parameters which are used to specify which messages should be retrieved.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
-     */
-    history(params?: RestHistoryParams, callback?: paginatedResultCallback<Message>): void;
-    /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
-     *
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
-     */
-    history(callback?: paginatedResultCallback<Message>): void;
-    /**
-     * Publishes a single message to the channel with the given event name and payload.
-     *
-     * @param name - The name of the message.
-     * @param data - The payload of the message.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(name: string, data: any, callback?: errorCallback): void;
-    /**
-     * Publishes an array of messages to the channel.
-     *
-     * @param messages - An array of {@link Message} objects.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(messages: any[], callback?: errorCallback): void;
-    /**
-     * Publishes a message to the channel.
-     *
-     * @param message - A {@link Message} object.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(message: any, callback?: errorCallback): void;
-    /**
-     * Publishes a single message to the channel with the given event name and payload.
-     *
-     * @param name - The name of the message.
-     * @param data - The payload of the message.
-     * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(name: string, data: any, options?: PublishOptions, callback?: errorCallback): void;
-    /**
-     * Retrieves a {@link ChannelDetails} object for the channel, which includes status and occupancy metrics.
-     *
-     * @param callback - A function which, upon success, will be called a {@link ChannelDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    status(callback: StandardCallback<ChannelDetails>): void;
-  }
-
-  /**
-   * Enables messages to be published and historic messages to be retrieved for a channel.
-   */
-  class ChannelPromise extends ChannelBase {
-    /**
-     * A {@link PresencePromise} object.
-     */
-    presence: PresencePromise;
+    presence: Presence;
     /**
      * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
@@ -2424,9 +1930,9 @@ declare namespace Types {
   }
 
   /**
-   * The `RealtimeChannelBase` class acts as a base class for the {@link RealtimeChannelCallbacks} and {@link RealtimeChannelPromise} classes.
+   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresence} object of a channel.
    */
-  class RealtimeChannelBase extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
+  class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
     /**
      * The channel name.
      */
@@ -2490,164 +1996,13 @@ declare namespace Types {
      * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
      */
     unsubscribe(): void;
-  }
 
-  /**
-   * Optional parameters for message publishing.
-   */
-  type PublishOptions = {
     /**
-     * See [here](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes).
+     * A {@link RealtimePresence} object.
      */
-    quickAck?: boolean;
-  };
-
-  /**
-   * Contains properties to filter messages with when calling {@link RealtimeChannelCallbacks.subscribe | `RealtimeChannelCallbacks.subscribe()`} or {@link RealtimeChannelPromise.subscribe | `RealtimeChannelPromise.subscribe()`}.
-   */
-  type MessageFilter = {
+    presence: RealtimePresence;
     /**
-     * Filters messages by a specific message `name`.
-     */
-    name?: string;
-    /**
-     * Filters messages by a specific `extras.ref.timeserial` value.
-     */
-    refTimeserial?: string;
-    /**
-     * Filters messages by a specific `extras.ref.type` value.
-     */
-    refType?: string;
-    /**
-     * Filters messages based on whether they contain an `extras.ref`.
-     */
-    isRef?: boolean;
-    /**
-     * Filters messages by a specific message `clientId`.
-     */
-    clientId: string;
-  };
-
-  /**
-   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresenceCallbacks} object of a channel.
-   */
-  class RealtimeChannelCallbacks extends RealtimeChannelBase {
-    /**
-     * A {@link RealtimePresenceCallbacks} object.
-     */
-    presence: RealtimePresenceCallbacks;
-    /**
-     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelCallbacks.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelCallbacks.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresenceCallbacks.enter | `enter()`} or {@link RealtimePresenceCallbacks.subscribe | `subscribe()`} are called on the {@link RealtimePresenceCallbacks} object for this channel.
-     *
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    attach(callback?: errorCallback): void;
-    /**
-     * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
-     *
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    detach(callback?: errorCallback): void;
-    /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
-     *
-     * @param params - A set of parameters which are used to specify which presence members should be retrieved.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
-     */
-    history(params?: RealtimeHistoryParams, callback?: paginatedResultCallback<Message>): void;
-    /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
-     *
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the function will be called with information about the error.
-     */
-    history(callback?: paginatedResultCallback<Message>): void;
-    /**
-     * Sets the {@link ChannelOptions} for the channel.
-     *
-     * @param options - A {@link ChannelOptions} object.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    setOptions(options: ChannelOptions, callback?: errorCallback): void;
-    /**
-     * Registers a listener for messages with a given event name on this channel. The caller supplies a listener function, which is called each time one or more matching messages arrives on the channel.
-     *
-     * @param event - The event name.
-     * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    subscribe(event: string, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
-    /**
-     * Registers a listener for messages on this channel for multiple event name values.
-     *
-     * @param events - An array of event names.
-     * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    subscribe(events: Array<string>, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
-    /**
-     * Registers a listener for messages on this channel that match the supplied filter.
-     *
-     * @param filter - A {@link MessageFilter}.
-     * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    subscribe(filter: MessageFilter, listener?: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
-    /**
-     * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
-     *
-     * @param listener - An event listener function.
-     * @param callbackWhenAttached - A function which will be called upon completion of the channel {@link RealtimeChannelCallbacks.attach | `attach()`} operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    subscribe(listener: messageCallback<Message>, callbackWhenAttached?: errorCallback): void;
-    /**
-     * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
-     *
-     * @param name - The event name.
-     * @param data - The message payload.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(name: string, data: any, callback?: errorCallback): void;
-    /**
-     * Publishes an array of messages to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
-     *
-     * @param messages - An array of {@link Message} objects.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(messages: any[], callback?: errorCallback): void;
-    /**
-     * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
-     *
-     * @param message - A {@link Message} object.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(message: any, callback?: errorCallback): void;
-    /**
-     * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
-     *
-     * @param name - The event name.
-     * @param data - The message payload.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(name: string, data: any, callback?: errorCallback): void;
-    /**
-     * Calls the supplied function when the channel reaches the specified {@link ChannelState}. If the channel is already in the specified state, the callback is called immediately.
-     *
-     * @param targetState - The state which should be reached.
-     * @param callback - A function which will be called when the channel has reached the specified {@link ChannelState} with a {@link ChannelStateChange} object as the first argument.
-     */
-    whenState(targetState: ChannelState, callback: channelEventCallback): void;
-  }
-
-  /**
-   * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresencePromise} object of a channel.
-   */
-  class RealtimeChannelPromise extends RealtimeChannelBase {
-    /**
-     * A {@link RealtimePresencePromise} object.
-     */
-    presence: RealtimePresencePromise;
-    /**
-     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannelPromise.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannelPromise.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresencePromise.enter | `enter()`} or {@link RealtimePresencePromise.subscribe | `subscribe()`} are called on the {@link RealtimePresencePromise} object for this channel.
+     * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel.
      *
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
@@ -2677,7 +2032,7 @@ declare namespace Types {
      *
      * @param event - The event name.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
     /**
@@ -2685,7 +2040,7 @@ declare namespace Types {
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
     /**
@@ -2693,14 +2048,14 @@ declare namespace Types {
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
     /**
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
      * @param callback - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannelPromise.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
     subscribe(callback: messageCallback<Message>): Promise<void>;
     /**
@@ -2734,15 +2089,51 @@ declare namespace Types {
   }
 
   /**
-   * Creates and destroys {@link ChannelBase} and {@link RealtimeChannelBase} objects.
+   * Optional parameters for message publishing.
+   */
+  type PublishOptions = {
+    /**
+     * See [here](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes).
+     */
+    quickAck?: boolean;
+  };
+
+  /**
+   * Contains properties to filter messages with when calling {@link RealtimeChannel.subscribe | `RealtimeChannel.subscribe()`}.
+   */
+  type MessageFilter = {
+    /**
+     * Filters messages by a specific message `name`.
+     */
+    name?: string;
+    /**
+     * Filters messages by a specific `extras.ref.timeserial` value.
+     */
+    refTimeserial?: string;
+    /**
+     * Filters messages by a specific `extras.ref.type` value.
+     */
+    refType?: string;
+    /**
+     * Filters messages based on whether they contain an `extras.ref`.
+     */
+    isRef?: boolean;
+    /**
+     * Filters messages by a specific message `clientId`.
+     */
+    clientId: string;
+  };
+
+  /**
+   * Creates and destroys {@link Channel} and {@link RealtimeChannel} objects.
    */
   class Channels<T> {
     /**
-     * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
+     * Creates a new {@link Channel} or {@link RealtimeChannel} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
      *
      * @param name - The channel name.
      * @param channelOptions - A {@link ChannelOptions} object.
-     * @returns A {@link ChannelBase} or {@link RealtimeChannelBase} object.
+     * @returns A {@link Channel} or {@link RealtimeChannel} object.
      */
     get(name: string, channelOptions?: ChannelOptions): T;
     /**
@@ -2751,17 +2142,17 @@ declare namespace Types {
      * to receive only part of the data from the channel.
      * See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
      *
-     * Creates a new {@link ChannelBase} or {@link RealtimeChannelBase} object, with the specified channel {@link DeriveOptions}
+     * Creates a new {@link Channel} or {@link RealtimeChannel} object, with the specified channel {@link DeriveOptions}
      * and {@link ChannelOptions}, or returns the existing channel object.
      *
      * @param name - The channel name.
      * @param deriveOptions - A {@link DeriveOptions} object.
      * @param channelOptions - A {@link ChannelOptions} object.
-     * @returns A {@link RealtimeChannelBase} object.
+     * @returns A {@link RealtimeChannel} object.
      */
     getDerived(name: string, deriveOptions: DeriveOptions, channelOptions?: ChannelOptions): T;
     /**
-     * Releases a {@link ChannelBase} or {@link RealtimeChannelBase} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
+     * Releases a {@link Channel} or {@link RealtimeChannel} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
      *
      * @param name - The channel name.
      */
@@ -2976,9 +2367,9 @@ declare namespace Types {
   }
 
   /**
-   * The `ConnectionBase` class acts as a base class for the {@link ChannelCallbacks} and {@link ChannelPromise} classes.
+   * Enables the management of a connection to Ably.
    */
-  class ConnectionBase extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
+  class Connection extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
     /**
      * An {@link ErrorInfo} object describing the last error received if a connection failure occurs.
      */
@@ -3004,38 +2395,14 @@ declare namespace Types {
      */
     readonly state: ConnectionState;
     /**
-     * Causes the connection to close, entering the {@link ConnectionState.CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to {@link ConnectionBase.connect | `connect()`}.
+     * Causes the connection to close, entering the {@link ConnectionState.CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to {@link Connection.connect | `connect()`}.
      */
     close(): void;
     /**
      * Explicitly calling `connect()` is unnecessary unless the `autoConnect` attribute of the {@link ClientOptions} object is `false`. Unless already connected or connecting, this method causes the connection to open, entering the {@link ConnectionState.CONNECTING} state.
      */
     connect(): void;
-  }
 
-  /**
-   * Enables the management of a connection to Ably.
-   */
-  class ConnectionCallbacks extends ConnectionBase {
-    /**
-     * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
-     *
-     * @param callback - A function which, upon success, will be called with the response time in milliseconds. Upon failure, the function will be called with information about the error.
-     */
-    ping(callback?: Types.StandardCallback<number>): void;
-    /**
-     * Calls the supplied function when the connection reaches the specified {@link ConnectionState}. If the connection is already in the specified state, the callback is called immediately.
-     *
-     * @param targetState - The state which should be reached.
-     * @param callback - A function which will be called when the connection has reached the specified {@link ConnectionState} with a {@link ConnectionStateChange} object as the first argument.
-     */
-    whenState(targetState: ConnectionState, callback: connectionEventCallback): void;
-  }
-
-  /**
-   * Enables the management of a connection to Ably.
-   */
-  class ConnectionPromise extends ConnectionBase {
     /**
      * When connected, sends a heartbeat ping to the Ably server and executes the callback with any error and the response time in milliseconds when a heartbeat ping request is echoed from the server. This can be useful for measuring true round-trip latency to the connected Ably server.
      *
@@ -3103,33 +2470,15 @@ declare namespace Types {
     /**
      * Returns a new `PaginatedResult` for the first page of results.
      *
-     * @param results - A function which, upon success, will be called with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the function will be called with information about the error.
-     */
-    first(results: paginatedResultCallback<T>): void;
-    /**
-     * Returns a new `PaginatedResult` for the first page of results.
-     *
      * @returns A promise which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     first(): Promise<PaginatedResult<T>>;
     /**
      * Returns a new `PaginatedResult` loaded with the next page of results. If there are no further pages, then `null` is returned.
      *
-     * @param results - A function which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the function will be called with information about the error.
-     */
-    next(results: paginatedResultCallback<T>): void;
-    /**
-     * Returns a new `PaginatedResult` loaded with the next page of results. If there are no further pages, then `null` is returned.
-     *
      * @returns A promise which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     next(): Promise<PaginatedResult<T>>;
-    /**
-     * Returns the `PaginatedResult` for the current page of results.
-     *
-     * @param results - A function which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the function will be called with information about the error.
-     */
-    current(results: paginatedResultCallback<T>): void;
     /**
      * Returns the `PaginatedResult` for the current page of results.
      */
@@ -3177,57 +2526,25 @@ declare namespace Types {
   /**
    * Enables a device to be registered and deregistered from receiving push notifications.
    */
-  class PushCallbacks {
+  class Push {
     /**
-     * A {@link PushAdminCallbacks} object.
+     * A {@link PushAdmin} object.
      */
-    admin: PushAdminCallbacks;
-  }
-
-  /**
-   * Enables a device to be registered and deregistered from receiving push notifications.
-   */
-  class PushPromise {
-    /**
-     * A {@link PushAdminPromise | `PushAdmin`} object.
-     */
-    admin: PushAdminPromise;
+    admin: PushAdmin;
   }
 
   /**
    * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
    */
-  class PushAdminCallbacks {
+  class PushAdmin {
     /**
-     * A {@link PushDeviceRegistrationsCallbacks} object.
+     * A {@link PushDeviceRegistrations} object.
      */
-    deviceRegistrations: PushDeviceRegistrationsCallbacks;
+    deviceRegistrations: PushDeviceRegistrations;
     /**
-     * A {@link PushChannelSubscriptionsCallbacks} object.
+     * A {@link PushChannelSubscriptions} object.
      */
-    channelSubscriptions: PushChannelSubscriptionsCallbacks;
-    /**
-     * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
-     *
-     * @param recipient - A JSON object containing the recipient details using `clientId`, `deviceId` or the underlying notifications service.
-     * @param payload - A JSON object containing the push notification payload.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    publish(recipient: any, payload: any, callback?: errorCallback): void;
-  }
-
-  /**
-   * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
-   */
-  class PushAdminPromise {
-    /**
-     * A {@link PushDeviceRegistrationsPromise} object.
-     */
-    deviceRegistrations: PushDeviceRegistrationsPromise;
-    /**
-     * A {@link PushChannelSubscriptionsPromise} object.
-     */
-    channelSubscriptions: PushChannelSubscriptionsPromise;
+    channelSubscriptions: PushChannelSubscriptions;
     /**
      * Sends a push notification directly to a device, or a group of devices sharing the same `clientId`.
      *
@@ -3241,62 +2558,7 @@ declare namespace Types {
   /**
    * Enables the management of push notification registrations with Ably.
    */
-  class PushDeviceRegistrationsCallbacks {
-    /**
-     * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
-     *
-     * @param deviceDetails - The {@link DeviceDetails} object to create or update.
-     * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    save(deviceDetails: DeviceDetails, callback?: Types.StandardCallback<DeviceDetails>): void;
-    /**
-     * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using its `deviceId`.
-     *
-     * @param deviceId - The unique ID of the device.
-     * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    get(deviceId: string, callback: Types.StandardCallback<DeviceDetails>): void;
-    /**
-     * Retrieves the {@link DeviceDetails} of a device registered to receive push notifications using the `id` property of a {@link DeviceDetails} object.
-     *
-     * @param deviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
-     * @param callback - A function which, upon success, will be called with a {@link DeviceDetails} object. Upon failure, the function will be called with information about the error.
-     */
-    get(deviceDetails: DeviceDetails, callback: Types.StandardCallback<DeviceDetails>): void;
-    /**
-     * Retrieves all devices matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link DeviceDetails} objects.
-     *
-     * @param params - An object containing key-value pairs to filter devices by.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link DeviceDetails} objects. Upon failure, the function will be called with information about the error.
-     */
-    list(params: DeviceRegistrationParams, callback: paginatedResultCallback<DeviceDetails>): void;
-    /**
-     * Removes a device registered to receive push notifications from Ably using its `deviceId`.
-     *
-     * @param deviceId - The unique ID of the device.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    remove(deviceId: string, callback?: errorCallback): void;
-    /**
-     * Removes a device registered to receive push notifications from Ably using the `id` property of a {@link DeviceDetails} object.
-     *
-     * @param deviceDetails - The {@link DeviceDetails} object containing the `id` property of the device.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    remove(deviceDetails: DeviceDetails, callback?: errorCallback): void;
-    /**
-     * Removes all devices registered to receive push notifications from Ably matching the filter `params` provided.
-     *
-     * @param params - An object containing key-value pairs to filter devices by. This object’s {@link DeviceRegistrationParams.limit} property will be ignored.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    removeWhere(params: DeviceRegistrationParams, callback?: errorCallback): void;
-  }
-
-  /**
-   * Enables the management of push notification registrations with Ably.
-   */
-  class PushDeviceRegistrationsPromise {
+  class PushDeviceRegistrations {
     /**
      * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
      *
@@ -3351,48 +2613,7 @@ declare namespace Types {
   /**
    * Enables device push channel subscriptions.
    */
-  class PushChannelSubscriptionsCallbacks {
-    /**
-     * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
-     *
-     * @param subscription - A {@link PushChannelSubscription} object.
-     * @param callback - A function which, upon success, will be called with a {@link PushChannelSubscription} object describing the new or updated subscriptions. Upon failure, the function will be called with information about the error.
-     */
-    save(subscription: PushChannelSubscription, callback?: Types.StandardCallback<PushChannelSubscription>): void;
-    /**
-     * Retrieves all push channel subscriptions matching the filter `params` provided. Returns a {@link Types.PaginatedResult} object, containing an array of {@link PushChannelSubscription} objects.
-     *
-     * @param params - An object containing key-value pairs to filter subscriptions by.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of {@link PushChannelSubscription} objects. Upon failure, the function will be called with information about the error.
-     */
-    list(params: PushChannelSubscriptionParams, callback: paginatedResultCallback<PushChannelSubscription>): void;
-    /**
-     * Retrieves all channels with at least one device subscribed to push notifications. Returns a {@link Types.PaginatedResult} object, containing an array of channel names.
-     *
-     * @param params - An object containing key-value pairs to filter channels by.
-     * @param callback - A function which, upon success, will be called with a {@link Types.PaginatedResult} object containing an array of channel names. Upon failure, the function will be called with information about the error.
-     */
-    listChannels(params: PushChannelsParams, callback: paginatedResultCallback<string>): void;
-    /**
-     * Unsubscribes a device, or a group of devices sharing the same `clientId` from receiving push notifications on a channel.
-     *
-     * @param subscription - A {@link PushChannelSubscription} object.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    remove(subscription: PushChannelSubscription, callback?: errorCallback): void;
-    /**
-     * Unsubscribes all devices from receiving push notifications on a channel that match the filter `params` provided.
-     *
-     * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `channel`, and optionally either `clientId` or `deviceId`.
-     * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
-     */
-    removeWhere(params: PushChannelSubscriptionParams, callback?: errorCallback): void;
-  }
-
-  /**
-   * Enables device push channel subscriptions.
-   */
-  class PushChannelSubscriptionsPromise {
+  class PushChannelSubscriptions {
     /**
      * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
      *
@@ -3434,9 +2655,9 @@ declare namespace Types {
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare class Rest extends Types.RestCallbacks {}
+export declare class Rest extends Types.Rest {}
 
 /**
  * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  */
-export declare class Realtime extends Types.RealtimeCallbacks {}
+export declare class Realtime extends Types.Realtime {}

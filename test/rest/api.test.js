@@ -6,7 +6,6 @@ define(['ably', 'chai'], function (Ably, chai) {
   describe('rest/api', function () {
     it('Client constructors', function () {
       expect(typeof Ably.Rest).to.equal('function');
-      expect(typeof Ably.Rest.Promise).to.equal('function');
     });
 
     it('Crypto', function () {

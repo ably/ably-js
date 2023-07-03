@@ -11,7 +11,7 @@ import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import { ErrnoException, IHttp, RequestParams } from '../../types/http';
-import ClientOptions, { InternalClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
+import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
 
 import Platform from '../../platform';
 import Message from '../types/message';
@@ -92,10 +92,7 @@ class Rest {
         callback = params;
         params = null;
       } else {
-        if (this.options.promises) {
-          return Utils.promisify(this, 'stats', [params]) as Promise<PaginatedResult<Stats>>;
-        }
-        callback = noop;
+        return Utils.promisify(this, 'stats', [params]) as Promise<PaginatedResult<Stats>>;
       }
     }
     const headers = Utils.defaultGetHeaders(this.options),
@@ -122,9 +119,7 @@ class Rest {
         callback = params;
         params = null;
       } else {
-        if (this.options.promises) {
-          return Utils.promisify(this, 'time', [params]) as Promise<number>;
-        }
+        return Utils.promisify(this, 'time', [params]) as Promise<number>;
       }
     }
 
@@ -187,12 +182,9 @@ class Rest {
         : Utils.defaultPostHeaders(this.options, { format, protocolVersion: version });
 
     if (callback === undefined) {
-      if (this.options.promises) {
-        return Utils.promisify(this, 'request', [method, path, version, params, body, customHeaders]) as Promise<
-          HttpPaginatedResponse<unknown>
-        >;
-      }
-      callback = noop;
+      return Utils.promisify(this, 'request', [method, path, version, params, body, customHeaders]) as Promise<
+        HttpPaginatedResponse<unknown>
+      >;
     }
 
     if (typeof body !== 'string') {
@@ -231,13 +223,6 @@ class Rest {
     Logger.setLog(logOptions.level, logOptions.handler);
   }
 
-  static Promise = function (options: InternalClientOptions): Rest {
-    options = Defaults.objectifyOptions(options);
-    options.internal = { ...options.internal, promises: true };
-    return new Rest(options);
-  };
-
-  static Callbacks = Rest;
   static Platform = Platform;
   static Crypto?: typeof Platform.Crypto;
   static Message = Message;

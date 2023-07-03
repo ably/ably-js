@@ -439,62 +439,60 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
-    if (typeof Promise !== 'undefined') {
-      describe('event_emitter_promise', function () {
-        it('whenState', function (done) {
-          var realtime = helper.AblyRealtime({ internal: { promises: true } });
-          var eventEmitter = realtime.connection;
+    describe('event_emitter_promise', function () {
+      it('whenState', function (done) {
+        var realtime = helper.AblyRealtime();
+        var eventEmitter = realtime.connection;
 
-          eventEmitter
-            .whenState('connected')
-            .then(function () {
-              closeAndFinish(done, realtime);
-            })
-            ['catch'](function (err) {
-              closeAndFinish(done, realtime, err);
-            });
-        });
-
-        it('once', function (done) {
-          var realtime = helper.AblyRealtime({ internal: { promises: true } });
-          var eventEmitter = realtime.connection;
-
-          eventEmitter
-            .once('connected')
-            .then(function () {
-              closeAndFinish(done, realtime);
-            })
-            ['catch'](function (err) {
-              closeAndFinish(done, realtime, err);
-            });
-        });
-
-        it('anyEventsWithOnce', function (done) {
-          var realtime = helper.AblyRealtime({ autoConnect: false }),
-            eventEmitter = realtime.connection;
-
-          const p = eventEmitter.once();
-          eventEmitter.emit('b');
-          p.then(function () {
+        eventEmitter
+          .whenState('connected')
+          .then(function () {
             closeAndFinish(done, realtime);
-          }).catch(function (err) {
+          })
+          ['catch'](function (err) {
             closeAndFinish(done, realtime, err);
           });
-        });
+      });
 
-        it('arrayOfEventsWithOnce', function (done) {
-          var realtime = helper.AblyRealtime({ autoConnect: false }),
-            eventEmitter = realtime.connection;
+      it('once', function (done) {
+        var realtime = helper.AblyRealtime();
+        var eventEmitter = realtime.connection;
 
-          const p = eventEmitter.once(['a', 'b', 'c']);
-          eventEmitter.emit('b');
-          p.then(function () {
+        eventEmitter
+          .once('connected')
+          .then(function () {
             closeAndFinish(done, realtime);
-          }).catch(function (err) {
+          })
+          ['catch'](function (err) {
             closeAndFinish(done, realtime, err);
           });
+      });
+
+      it('anyEventsWithOnce', function (done) {
+        var realtime = helper.AblyRealtime({ autoConnect: false }),
+          eventEmitter = realtime.connection;
+
+        const p = eventEmitter.once();
+        eventEmitter.emit('b');
+        p.then(function () {
+          closeAndFinish(done, realtime);
+        }).catch(function (err) {
+          closeAndFinish(done, realtime, err);
         });
       });
-    }
+
+      it('arrayOfEventsWithOnce', function (done) {
+        var realtime = helper.AblyRealtime({ autoConnect: false }),
+          eventEmitter = realtime.connection;
+
+        const p = eventEmitter.once(['a', 'b', 'c']);
+        eventEmitter.emit('b');
+        p.then(function () {
+          closeAndFinish(done, realtime);
+        }).catch(function (err) {
+          closeAndFinish(done, realtime, err);
+        });
+      });
+    });
   });
 });

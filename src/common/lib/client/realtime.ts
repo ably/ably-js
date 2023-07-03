@@ -4,11 +4,10 @@ import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Connection from './connection';
 import RealtimeChannel from './realtimechannel';
-import Defaults from '../util/defaults';
 import ErrorInfo from '../types/errorinfo';
 import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
-import ClientOptions, { InternalClientOptions } from '../../types/ClientOptions';
+import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
@@ -36,13 +35,6 @@ class Realtime extends Rest {
     this.connection.close();
   }
 
-  static Promise = function (options: InternalClientOptions): Realtime {
-    options = Defaults.objectifyOptions(options);
-    options.internal = { ...options.internal, promises: true };
-    return new Realtime(options);
-  };
-
-  static Callbacks = Realtime;
   static Utils = Utils;
   static ConnectionManager = ConnectionManager;
   static Platform = Platform;

@@ -59,7 +59,6 @@ const Config: IPlatformConfig = {
   },
   TextEncoder: globalObject.TextEncoder,
   TextDecoder: globalObject.TextDecoder,
-  Promise: globalObject.Promise,
   getRandomValues: (function (crypto) {
     if (crypto === undefined) {
       return undefined;
