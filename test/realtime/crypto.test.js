@@ -11,12 +11,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var msgpack = typeof window == 'object' ? Ably.msgpack : require('@ably/msgpack-js');
   var testOnAllTransports = helper.testOnAllTransports;
   var closeAndFinish = helper.closeAndFinish;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   function attachChannels(channels, callback) {
     async.map(
       channels,
       function (channel, cb) {
-        channel.attach(cb);
+        whenPromiseSettles(channel.attach(), cb);
       },
       callback
     );
@@ -412,7 +413,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           channel = realtime.channels.get('single_send', { cipher: { key: key } }),
           messageText = 'Test message for single_send -	' + JSON.stringify(realtimeOpts);
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -653,8 +654,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       async.parallel(
         [
-          Crypto.generateRandomKey,
-          Crypto.generateRandomKey,
+          function (cb) {
+            Crypto.generateRandomKey(cb);
+          },
+          function (cb) {
+            Crypto.generateRandomKey(cb);
+          },
           function (cb) {
             attachChannels([txChannel, rxChannel], cb);
           },

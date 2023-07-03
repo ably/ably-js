@@ -6,6 +6,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var displayError = helper.displayError;
   var monitorConnection = helper.monitorConnection;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/connection', function () {
     this.timeout(60 * 1000);
@@ -42,7 +43,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
-          realtime.connection.ping(function (err, responseTime) {
+          whenPromiseSettles(realtime.connection.ping(), function (err, responseTime) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -77,7 +78,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
 
           var channel = realtime.channels.get('connectionattributes');
-          channel.attach(function (err) {
+          whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -95,7 +96,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
                 function (cb) {
-                  channel.publish('name', 'data', cb);
+                  whenPromiseSettles(channel.publish('name', 'data'), cb);
                 },
               ],
               function (err) {
@@ -172,7 +173,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       realtime.connection.once('connected', function () {
         var transport = connectionManager.activeProtocol.transport;
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -188,7 +189,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             [
               function (cb) {
                 /* Sabotaged publish */
-                channel.publish('first', null, function (err) {
+                whenPromiseSettles(channel.publish('first', null), function (err) {
                   try {
                     expect(!err, 'Check publish happened (eventually) without err').to.be.ok;
                   } catch (err) {
@@ -282,31 +283,5 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
       monitorConnection(done, realtime);
     });
-
-    if (typeof Promise !== 'undefined') {
-      describe('connection_promise', function () {
-        it('ping', function (done) {
-          var client = helper.AblyRealtime({ internal: { promises: true } });
-
-          client.connection
-            .once('connected')
-            .then(function () {
-              client.connection
-                .ping()
-                .then(function (responseTime) {
-                  expect(typeof responseTime).to.equal('number', 'check that a responseTime returned');
-                  expect(responseTime > 0, 'check that responseTime was positive').to.be.ok;
-                  closeAndFinish(done, client);
-                })
-                ['catch'](function (err) {
-                  closeAndFinish(done, client, err);
-                });
-            })
-            ['catch'](function (err) {
-              closeAndFinish(done, client, err);
-            });
-        });
-      });
-    }
   });
 });

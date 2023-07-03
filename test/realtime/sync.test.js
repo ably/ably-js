@@ -7,6 +7,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var closeAndFinish = helper.closeAndFinish;
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var monitorConnection = helper.monitorConnection;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/sync', function () {
     this.timeout(60 * 1000);
@@ -92,7 +93,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
             },
             function (cb) {
-              channel.presence.get(function (err, results) {
+              whenPromiseSettles(channel.presence.get(), function (err, results) {
                 try {
                   expect(results.length).to.equal(2, 'Check correct number of results');
                   expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
@@ -135,7 +136,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
             },
             function (cb) {
-              channel.presence.get(function (err, results) {
+              whenPromiseSettles(channel.presence.get(), function (err, results) {
                 try {
                   expect(results.length).to.equal(2, 'Check correct number of results');
                   expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
@@ -240,7 +241,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        channel.presence.get(function (err, results) {
+        whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -326,7 +327,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        channel.presence.get(function (err, results) {
+        whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -409,7 +410,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        channel.presence.get(function (err, results) {
+        whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -561,7 +562,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var done = function (err) {
           err ? reject(err) : resolve();
         };
-        channel.presence.get(function (err, results) {
+        whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -613,13 +614,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         [
           waitForBothConnect,
           function (cb) {
-            entererChannel.attach(cb);
+            whenPromiseSettles(entererChannel.attach(), cb);
           },
           function (cb) {
             async.times(
               110,
               function (i, presCb) {
-                entererChannel.presence.enterClient(i.toString(), null, presCb);
+                whenPromiseSettles(entererChannel.presence.enterClient(i.toString(), null), presCb);
               },
               cb
             );
@@ -645,10 +646,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               }
             };
-            syncerChannel.attach(cb);
+            whenPromiseSettles(syncerChannel.attach(), cb);
           },
           function (cb) {
-            syncerChannel.presence.get(function (err, presenceSet) {
+            whenPromiseSettles(syncerChannel.presence.get(), function (err, presenceSet) {
               try {
                 expect(presenceSet && presenceSet.length).to.equal(111, 'Check everyone’s in presence set');
               } catch (err) {

@@ -18,6 +18,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
   var bestTransport = helper.bestTransport;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   if (bestTransport === 'web_socket') {
     describe('realtime/upgrade', function () {
@@ -48,7 +49,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
             //console.log('publishpreupgrade: connected');
             var testMsg = 'Hello world';
             var rtChannel = realtime.channels.get('publishpreupgrade');
-            rtChannel.attach(function (err) {
+            whenPromiseSettles(rtChannel.attach(), function (err) {
               if (err) {
                 closeAndFinish(done, realtime, err);
                 return;
@@ -67,7 +68,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
 
               /* publish event */
               var restChannel = rest.channels.get('publishpreupgrade');
-              restChannel.publish('event0', testMsg, function (err) {
+              whenPromiseSettles(restChannel.publish('event0', testMsg), function (err) {
                 if (err) {
                   closeAndFinish(done, realtime, err);
                 }
@@ -113,7 +114,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
             if (transport.toString().match(/wss?\:/)) {
               if (rtChannel.state == 'attached') {
                 //console.log('*** publishpostupgrade0: publishing (channel attached on transport active) ...');
-                restChannel.publish('event0', testMsg, function (err) {
+                whenPromiseSettles(restChannel.publish('event0', testMsg), function (err) {
                   //console.log('publishpostupgrade0: publish returned err = ' + displayError(err));
                   if (err) {
                     closeAndFinish(done, realtime, err);
@@ -122,7 +123,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
               } else {
                 rtChannel.on('attached', function () {
                   //console.log('*** publishpostupgrade0: publishing (channel attached after wait) ...');
-                  restChannel.publish('event0', testMsg, function (err) {
+                  whenPromiseSettles(restChannel.publish('event0', testMsg), function (err) {
                     //console.log('publishpostupgrade0: publish returned err = ' + displayError(err));
                     if (err) {
                       closeAndFinish(done, realtime, err);
@@ -512,7 +513,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
 
               /* Check events not still paused */
               var channel = realtime.channels.get('unrecoverableUpgrade');
-              channel.attach(function (err) {
+              whenPromiseSettles(channel.attach(), function (err) {
                 if (err) {
                   closeAndFinish(done, realtime, err);
                   return;
@@ -557,7 +558,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
                 });
               },
               function (cb) {
-                channel.publish('event', null, function (err) {
+                whenPromiseSettles(channel.publish('event', null), function (err) {
                   try {
                     expect(!err, 'Successfully published message').to.be.ok;
                   } catch (err) {

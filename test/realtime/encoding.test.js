@@ -8,6 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var encodingFixturesPath = helper.testResourcesPath + 'messages-encoding.json';
   var closeAndFinish = helper.closeAndFinish;
   var Defaults = Ably.Rest.Platform.Defaults;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/encoding', function () {
     this.timeout(60 * 1000);
@@ -41,10 +42,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              channel.attach(attachCb);
+              whenPromiseSettles(channel.attach(), attachCb);
             },
             function (attachCb) {
-              binarychannel.attach(attachCb);
+              whenPromiseSettles(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
@@ -96,13 +97,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       });
                     },
                     function (parallelCb) {
-                      realtime.request(
-                        'post',
-                        channelPath,
-                        Defaults.protocolVersion,
-                        null,
-                        { name: name, data: encodingSpec.data, encoding: encodingSpec.encoding },
-                        null,
+                      whenPromiseSettles(
+                        realtime.request(
+                          'post',
+                          channelPath,
+                          Defaults.protocolVersion,
+                          null,
+                          { name: name, data: encodingSpec.data, encoding: encodingSpec.encoding },
+                          null
+                        ),
                         function (err) {
                           parallelCb(err);
                         }
@@ -140,10 +143,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              channel.attach(attachCb);
+              whenPromiseSettles(channel.attach(), attachCb);
             },
             function (attachCb) {
-              binarychannel.attach(attachCb);
+              whenPromiseSettles(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
@@ -165,10 +168,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 async.parallel(
                   [
                     function (parallelCb) {
-                      channel.publish(name, data, parallelCb);
+                      whenPromiseSettles(channel.publish(name, data), parallelCb);
                     },
                     function (parallelCb) {
-                      binarychannel.publish(name, data, parallelCb);
+                      whenPromiseSettles(binarychannel.publish(name, data), parallelCb);
                     },
                   ],
                   function (err) {
@@ -176,13 +179,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       eachOfCb(err);
                       return;
                     }
-                    realtime.request(
-                      'get',
-                      channelPath,
-                      Defaults.protocolVersion,
-                      null,
-                      null,
-                      null,
+                    whenPromiseSettles(
+                      realtime.request('get', channelPath, Defaults.protocolVersion, null, null, null),
                       function (err, resultPage) {
                         if (err) {
                           eachOfCb(err);

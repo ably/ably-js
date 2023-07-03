@@ -6,6 +6,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var simulateDroppedConnection = helper.simulateDroppedConnection;
   var testOnAllTransports = helper.testOnAllTransports;
   var bestTransport = helper.bestTransport;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/resume', function () {
     this.timeout(120 * 1000);
@@ -31,7 +32,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         receivingChannel.unsubscribe(event);
         callback();
       });
-      sendingChannel.publish(event, message, function (err) {
+      whenPromiseSettles(sendingChannel.publish(event, message), function (err) {
         if (err) callback(err);
       });
     }
@@ -51,7 +52,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       var rxCount = 0;
 
       function phase0(callback) {
-        rxChannel.attach(callback);
+        whenPromiseSettles(rxChannel.attach(), callback);
       }
 
       function phase1(callback) {
@@ -162,7 +163,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       var rxCount = 0;
 
       function phase0(callback) {
-        rxChannel.attach(callback);
+        whenPromiseSettles(rxChannel.attach(), callback);
       }
 
       function phase1(callback) {
@@ -188,7 +189,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         var txCount = 0;
 
         function ph2TxOnce() {
-          txChannel.publish('sentWhileDisconnected', 'phase 2, message ' + txCount, function (err) {
+          whenPromiseSettles(txChannel.publish('sentWhileDisconnected', 'phase 2, message ' + txCount), function (err) {
             if (err) callback(err);
           });
           if (++txCount == count) {
@@ -291,7 +292,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               },
               function (cb) {
                 suspendedChannel.state = 'suspended';
-                attachedChannel.attach(cb);
+                whenPromiseSettles(attachedChannel.attach(), cb);
               },
               function (cb) {
                 /* Sabotage the resume */
@@ -353,7 +354,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 });
               },
               function (cb) {
-                realtime.auth.requestToken({ ttl: 1 }, null, function (err, token) {
+                whenPromiseSettles(realtime.auth.requestToken({ ttl: 1 }, null), function (err, token) {
                   badtoken = token;
                   cb(err);
                 });
@@ -643,7 +644,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       const rxChannels = channelNames.map((name) => rxRealtime.channels.get(name));
 
       function attachChannels(callback) {
-        async.each(rxChannels, (channel, cb) => channel.attach(cb), callback);
+        async.each(rxChannels, (channel, cb) => whenPromiseSettles(channel.attach(), cb), callback);
       }
 
       function publishSubscribeWhileConnectedOnce(callback) {
@@ -673,7 +674,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           channelNames,
           (name, cb) => {
             const tx = txRest.channels.get(name);
-            tx.publish('sentWhileDisconnected', null, cb);
+            whenPromiseSettles(tx.publish('sentWhileDisconnected', null), cb);
           },
           callback
         );
