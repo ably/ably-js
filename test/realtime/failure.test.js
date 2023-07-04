@@ -185,26 +185,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    function checkIfRetryTimeoutsAreCorrect(retryTimeouts, calculationDelay = 0) {
-      function checkIsBetween(value, min, max) {
-        expect(value).to.be.above(min);
-        expect(value).to.be.below(max);
-      }
-
-      // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
-      // Lower bound = 0.8 * Upper bound
-      checkIsBetween(retryTimeouts[0], 120, 150 + calculationDelay);
-      checkIsBetween(retryTimeouts[1], 160, 200 + calculationDelay);
-      checkIsBetween(retryTimeouts[2], 200, 250 + calculationDelay);
-
-      for (var i = 3; i < retryTimeouts.length; i++) {
-        checkIsBetween(retryTimeouts[i], 240, 300 + calculationDelay);
-      }
+    function checkIsBetween(value, min, max) {
+      expect(value).to.be.above(min);
+      expect(value).to.be.below(max);
     }
 
     utils.arrForEach(availableTransports, function (transport) {
       it('disconnected_backoff_' + transport, function (done) {
-        var disconnectedRetryTimeout = 150;
+        var disconnectedRetryTimeout = ;
         var realtime = helper.AblyRealtime({
           disconnectedRetryTimeout: disconnectedRetryTimeout,
           realtimeHost: 'invalid',
@@ -218,7 +206,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         realtime.connection.on(function (stateChange) {
           if (stateChange.previous === 'connecting' && stateChange.current === 'disconnected') {
             if (retryCount > 4) {
-              checkIfRetryTimeoutsAreCorrect(retryTimeouts);
+              // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+              // Lower bound = 0.8 * Upper bound
+              checkIsBetween(retryTimeouts[0], 120, 150);
+              checkIsBetween(retryTimeouts[1], 160, 200);
+              checkIsBetween(retryTimeouts[2], 200, 250);
+
+              for (var i = 3; i < retryTimeouts.length; i++) {
+                checkIsBetween(retryTimeouts[i], 240, 300);
+              }
               closeAndFinish(done, realtime);
               return;
             }
@@ -407,7 +403,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               channel.on(function (stateChange) {
                 if (stateChange.current === 'suspended') {
                   if (retryCount > 4) {
-                    checkIfRetryTimeoutsAreCorrect(retryTimeouts, 10);
+                    // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+                    // Lower bound = 0.8 * Upper bound
+                    // Additional 10 is a calculationDelayTimeout
+                    checkIsBetween(retryTimeouts[0], 120, 150 + 10); 
+                    checkIsBetween(retryTimeouts[1], 160, 200 + 10);
+                    checkIsBetween(retryTimeouts[2], 200, 250 + 10);
+
+                    for (var i = 3; i < retryTimeouts.length; i++) {
+                      checkIsBetween(retryTimeouts[i], 240, 300 + 10);
+                    }
                     closeAndFinish(done, realtime);
                     return;
                   }
