@@ -192,7 +192,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     utils.arrForEach(availableTransports, function (transport) {
       it('disconnected_backoff_' + transport, function (done) {
-        var disconnectedRetryTimeout = ;
+        var disconnectedRetryTimeout = 150;
         var realtime = helper.AblyRealtime({
           disconnectedRetryTimeout: disconnectedRetryTimeout,
           realtimeHost: 'invalid',
@@ -406,7 +406,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
                     // Lower bound = 0.8 * Upper bound
                     // Additional 10 is a calculationDelayTimeout
-                    checkIsBetween(retryTimeouts[0], 120, 150 + 10); 
+                    checkIsBetween(retryTimeouts[0], 120, 150 + 10);
                     checkIsBetween(retryTimeouts[1], 160, 200 + 10);
                     checkIsBetween(retryTimeouts[2], 200, 250 + 10);
 
