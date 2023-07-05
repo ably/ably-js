@@ -938,10 +938,7 @@ class RealtimeChannel extends Channel {
     if (this.retryTimer) return;
 
     this.retryCount++;
-    const retryDelay =
-      this.realtime.options.timeouts.channelRetryTimeout *
-      Utils.getJitterCoefficient() *
-      Utils.getBackoffCoefficient(this.retryCount);
+    const retryDelay = Utils.getRetryTime(this.realtime.options.timeouts.channelRetryTimeout, this.retryCount);
 
     this.retryTimer = setTimeout(() => {
       /* If connection is not connected, just leave in suspended, a reattach
