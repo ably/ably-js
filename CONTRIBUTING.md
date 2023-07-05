@@ -43,6 +43,14 @@ Or run just one test file
 
     npm run test:node -- --file=test/realtime/auth.test.js
 
+Or run just one test
+
+    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here 
+
+Or run test skipping the build
+
+    npm run test:node:skip-build -- --file=test/rest/status.test.js --grep=test_name_here 
+
 ### Debugging the mocha tests locally with a debugger
 
 Run the following command to launch tests with the debugger enabled. The tests will block until you attach a debugger.
@@ -64,6 +72,12 @@ Run the following command to start a local Mocha test runner web server
     npm run test:webserver
 
 Open your browser to [http://localhost:3000](http://localhost:3000). If you are using a remote browser, refer to https://docs.saucelabs.com/reference/sauce-connect/ for instructions on setting up a local tunnel to your Mocha runner web server.
+
+### Formatting/linting files
+
+Run the following command to fix linting/formatting issues
+
+    npm run format
 
 ### Testing environment variables for Node.js
 
