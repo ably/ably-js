@@ -46,6 +46,7 @@ compliance:
       Get Identifier:
       Incremental Backoff:
       Lifecycle Control:
+      OS Connectivity Events:
       Ping:
       Recovery:
       State Events:
