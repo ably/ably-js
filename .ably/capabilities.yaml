@@ -1,6 +1,6 @@
 %YAML 1.2
 ---
-common-version: 1.2.0
+common-version: 1.2.1
 compliance:
   Agent Identifier:
     Agents:
