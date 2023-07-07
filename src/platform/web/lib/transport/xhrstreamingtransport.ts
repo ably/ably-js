@@ -1,35 +1,40 @@
-import * as Utils from '../../../../common/lib/util/utils';
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import Platform from '../../../../common/platform';
 import XHRRequest from './xhrrequest';
+import ConnectionManager, { TransportParams } from 'common/lib/transport/connectionmanager';
+import Auth from 'common/lib/client/auth';
+import { RequestParams } from 'common/types/http';
 
-var XHRStreamingTransport = function (connectionManager) {
-  var shortName = 'xhr_streaming';
-
-  /* public constructor */
-  function XHRStreamingTransport(connectionManager, auth, params) {
-    CometTransport.call(this, connectionManager, auth, params);
-    this.shortName = shortName;
+const shortName = 'xhr_streaming';
+class XHRStreamingTransport extends CometTransport {
+  shortName = shortName;
+  constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {
+    super(connectionManager, auth, params);
   }
-  Utils.inherits(XHRStreamingTransport, CometTransport);
 
-  XHRStreamingTransport.isAvailable = function () {
+  static isAvailable() {
     return Platform.Config.xhrSupported && Platform.Config.streamingSupported && Platform.Config.allowComet;
-  };
-
-  XHRStreamingTransport.prototype.toString = function () {
-    return 'XHRStreamingTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
-  };
-
-  XHRStreamingTransport.prototype.createRequest = function (uri, headers, params, body, requestMode) {
-    return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
-  };
-
-  if (typeof connectionManager !== 'undefined' && XHRStreamingTransport.isAvailable()) {
-    connectionManager.supportedTransports[shortName] = XHRStreamingTransport;
   }
+
+  toString() {
+    return 'XHRStreamingTransport; uri=' + this.baseUri + '; isConnected=' + this.isConnected;
+  }
+
+  createRequest(
+    uri: string,
+    headers: Record<string, string>,
+    params: RequestParams,
+    body: unknown,
+    requestMode: number
+  ) {
+    return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
+  }
+}
+
+function initialiseTransport(connectionManager: any): typeof XHRStreamingTransport {
+  if (XHRStreamingTransport.isAvailable()) connectionManager.supportedTransports[shortName] = XHRStreamingTransport;
 
   return XHRStreamingTransport;
-};
+}
 
-export default XHRStreamingTransport;
+export default initialiseTransport;
