@@ -418,7 +418,7 @@ export function isErrorInfoOrPartialErrorInfo(err: unknown): err is ErrorInfo | 
   return (
     typeof err == 'object' &&
     err !== null &&
-    (err.constructor.name == 'ErrorInfo' || err.constructor.name == 'PartialErrorInfo')
+    (err instanceof ErrorInfo || err instanceof PartialErrorInfo)
   );
 }
 
