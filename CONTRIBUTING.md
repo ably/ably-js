@@ -27,6 +27,12 @@
 11. For nontrivial releases: update the ably-js submodule ref in the realtime repo
 12. Update the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/)) with these changes (again, you can just copy the notes you added to the CHANGELOG)
 
+## Building the library
+
+To build the library, simply run `npm run build`. Building the library currently requires NodeJS <= v16.
+
+Since webpack builds are slow, commands are also available to only build the output for specific platforms (eg `npm run build:node`), see [package.json](./package.json) for the full list of available commands
+
 ## Test suite
 
 To run the Mocha tests, simply run the following command:
