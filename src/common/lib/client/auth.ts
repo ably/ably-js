@@ -12,6 +12,7 @@ import Rest from './rest';
 import Realtime from './realtime';
 import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
+import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import Platform from '../../platform';
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
@@ -294,10 +295,10 @@ class Auth {
       _authOptions,
       (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
         if (err) {
-          if ((this.client as Realtime).connection) {
-            /* We interpret RSA4d as including requests made by a client lib to
-             * authenticate triggered by an explicit authorize() or an AUTH received from
-             * ably, not just connect-sequence-triggered token fetches */
+          if ((this.client as Realtime).connection && err.statusCode === HttpStatusCodes.Forbidden) {
+            /* Per RSA4d & RSA4d1, if the auth server explicitly repudiates our right to
+             * stay connecticed by returning a 403, we actively disconnect the connection
+             * even though we may well still have time left in the old token. */
             (this.client as Realtime).connection.connectionManager.actOnErrorFromAuthorize(err);
           }
           callback?.(err);
