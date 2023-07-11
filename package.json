@@ -49,7 +49,7 @@
     "express": "^4.17.1",
     "glob": "~4.4",
     "google-closure-compiler": "^20180610.0.1",
-    "grunt": "^1.4.1",
+    "grunt": "^1.6.1",
     "grunt-bump": "^0.3.1",
     "grunt-cli": "~1.2.0",
     "grunt-closure-tools": "^1.0.0",
