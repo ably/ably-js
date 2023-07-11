@@ -38,7 +38,7 @@
     "@typescript-eslint/eslint-plugin": "^5.14.0",
     "@typescript-eslint/parser": "^5.14.0",
     "async": "ably-forks/async#requirejs",
-    "aws-sdk": "^2.1075.0",
+    "aws-sdk": "^2.1413.0",
     "chai": "^4.2.0",
     "copy-webpack-plugin": "^6.4.1",
     "cors": "~2.7",
