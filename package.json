@@ -41,7 +41,7 @@
     "aws-sdk": "^2.1413.0",
     "chai": "^4.2.0",
     "copy-webpack-plugin": "^6.4.1",
-    "cors": "~2.7",
+    "cors": "^2.8.5",
     "crypto-js": "ably-forks/crypto-js#crypto-lite",
     "eslint": "^7.13.0",
     "eslint-plugin-jsdoc": "^40.0.0",
