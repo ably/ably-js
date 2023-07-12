@@ -2081,9 +2081,10 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  /* This method is only used during connection attempts, so implements RSA4c1,
-   * RSA4c2, and RSA4d. In particular, it is not invoked for
-   * serverside-triggered reauths or manual reauths, so RSA4c3 does not apply */
+  /* This method is only used during connection attempts, so implements RSA4c1, RSA4c2,
+   * and RSA4d. It is generally not invoked for serverside-triggered reauths or manual
+   * reauths, so RSA4c3 does not apply, except (per per RSA4d1) in the case that the auth
+   * server returns 403. */
   actOnErrorFromAuthorize(err: ErrorInfo): void {
     if (err.code === 40171) {
       /* No way to reauth */
