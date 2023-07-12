@@ -6,6 +6,7 @@ class CustomEventReporter extends Mocha.reporters.HTML {
   constructor(runner) {
     super(runner);
     this.indents = 0;
+    this.failedTests = [];
 
     runner
       .on(EVENT_SUITE_BEGIN, (suite) => {
@@ -22,9 +23,13 @@ class CustomEventReporter extends Mocha.reporters.HTML {
       })
       .on(EVENT_TEST_FAIL, (test, err) => {
         this.logToNodeConsole(`${failSymbol}: ${test.title} - error: ${err.message}`);
+        this.failedTests.push(test.title);
       })
       .once(EVENT_RUN_END, () => {
         this.indents = 0;
+        if (this.failedTests.length > 0) {
+          this.logToNodeConsole('\nfailed tests: \n' + this.failedTests.map((x) => ' - ' + x).join('\n') + '\n');
+        }
         runner.stats &&
           window.dispatchEvent(
             new CustomEvent('testResult', {
