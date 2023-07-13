@@ -413,8 +413,8 @@ export function inspectError(err: unknown): string {
     (err as ErrorInfo)?.constructor?.name === 'ErrorInfo' ||
     (err as PartialErrorInfo)?.constructor?.name === 'PartialErrorInfo'
   )
-    return Platform.Config.inspect(err);
-  return (err as Error).toString();
+    return (err as Error).toString();
+  return Platform.Config.inspect(err);
 }
 
 export function inspectBody(body: unknown): string {
