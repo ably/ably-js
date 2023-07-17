@@ -4,6 +4,7 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
+  var closeAndFinish = helper.closeAndFinish;
 
   describe('rest/batchPublish', function () {
     this.timeout(60 * 1000);
@@ -335,6 +336,136 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
             const channel0HistoryData = new Set([channel0History.items[0].data, channel0History.items[1].data]);
             expect(channel0HistoryData).to.deep.equal(new Set(['message1', 'message2']));
+          });
+        });
+      });
+    }
+  });
+
+  describe('rest/batchPresence', function () {
+    this.timeout(60 * 1000);
+
+    before(function (done) {
+      helper.setupApp(function (err) {
+        if (err) {
+          done(err);
+        }
+        done();
+      });
+    });
+
+    it('performs a batch presence fetch and returns a result', function (done) {
+      const testApp = helper.getTestApp();
+      const rest = helper.AblyRest({
+        key: testApp.keys[2].keyStr /* we use this key so that some presence fetches fail due to capabilities */,
+      });
+
+      const presenceEnterRealtime = helper.AblyRealtime(
+        {
+          clientId: 'batchPresenceTest',
+        } /* note that the key used here has no capability limitations, so that we can use this instance to enter presence below */
+      );
+
+      const channelNames = [
+        'channel0' /* key does not allow presence on this channel */,
+        'channel4' /* key allows presence on this channel */,
+      ];
+
+      async.series(
+        [
+          // First, we enter presence on two channels...
+          function (cb) {
+            presenceEnterRealtime.channels.get('channel0').presence.enter(cb);
+          },
+          function (cb) {
+            presenceEnterRealtime.channels.get('channel4').presence.enter(cb);
+          },
+          // ...and now we perform the batch presence request.
+          function (cb) {
+            rest.batchPresence(channelNames, function (err, batchResult) {
+              if (err) {
+                cb(err);
+              }
+
+              try {
+                expect(batchResult.successCount).to.equal(1);
+                expect(batchResult.failureCount).to.equal(1);
+
+                // Check that the channel0 presence fetch request fails (due to key’s capabilities, as mentioned above)
+
+                expect(batchResult.results[0].channel).to.equal('channel0');
+                expect('presence' in batchResult.results[0]).to.be.false;
+                expect(batchResult.results[0].error.statusCode).to.equal(401);
+
+                // Check that the channel4 presence fetch request reflects the presence enter performed above
+
+                expect(batchResult.results[1].channel).to.equal('channel4');
+                expect(batchResult.results[1].presence).to.have.lengthOf(1);
+                expect(batchResult.results[1].presence[0].clientId).to.equal('batchPresenceTest');
+                expect('error' in batchResult.results[1]).to.be.false;
+              } catch (err) {
+                cb(err);
+                return;
+              }
+
+              cb();
+            });
+          },
+          function (cb) {
+            closeAndFinish(cb, presenceEnterRealtime);
+          },
+        ],
+        done
+      );
+    });
+
+    if (typeof Promise !== 'undefined') {
+      describe('using promises', function () {
+        it('performs a batch presence fetch and returns a result', async function () {
+          const testApp = helper.getTestApp();
+          const rest = helper.AblyRest({
+            promises: true,
+            key: testApp.keys[2].keyStr /* we use this key so that some presence fetches fail due to capabilities */,
+          });
+
+          const presenceEnterRealtime = helper.AblyRealtime({
+            promises: true,
+            clientId:
+              'batchPresenceTest' /* note that the key used here has no capability limitations, so that we can use this instance to enter presence below */,
+          });
+
+          const channelNames = [
+            'channel0' /* key does not allow presence on this channel */,
+            'channel4' /* key allows presence on this channel */,
+          ];
+
+          // First, we enter presence on two channels...
+          await presenceEnterRealtime.channels.get('channel0').presence.enter();
+          await presenceEnterRealtime.channels.get('channel4').presence.enter();
+
+          // ...and now we perform the batch presence request.
+          const batchResult = await rest.batchPresence(channelNames);
+
+          expect(batchResult.successCount).to.equal(1);
+          expect(batchResult.failureCount).to.equal(1);
+
+          // Check that the channel0 presence fetch request fails (due to key’s capabilities, as mentioned above)
+
+          expect(batchResult.results[0].channel).to.equal('channel0');
+          expect('presence' in batchResult.results[0]).to.be.false;
+          expect(batchResult.results[0].error.statusCode).to.equal(401);
+
+          // Check that the channel4 presence fetch request reflects the presence enter performed above
+
+          expect(batchResult.results[1].channel).to.equal('channel4');
+          expect(batchResult.results[1].presence).to.have.lengthOf(1);
+          expect(batchResult.results[1].presence[0].clientId).to.equal('batchPresenceTest');
+          expect('error' in batchResult.results[1]).to.be.false;
+
+          await new Promise((resolve, reject) => {
+            closeAndFinish((err) => {
+              err ? reject(err) : resolve();
+            }, presenceEnterRealtime);
           });
         });
       });

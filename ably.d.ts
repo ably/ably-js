@@ -1494,6 +1494,34 @@ declare namespace Types {
     error: ErrorInfo;
   }
 
+  /**
+   * Contains information about the result of a successful batch presence request for a single channel.
+   */
+  interface BatchPresenceSuccessResult {
+    /**
+     * The channel name the presence state was retrieved for.
+     */
+    channel: string;
+    /**
+     * An array of {@link PresenceMessage}s describing members present on the channel.
+     */
+    presence: PresenceMessage[];
+  }
+
+  /**
+   * Contains information about the result of an unsuccessful batch presence request for a single channel.
+   */
+  interface BatchPresenceFailureResult {
+    /**
+     * The channel name the presence state failed to be retrieved for.
+     */
+    channel: string;
+    /**
+     * Describes the reason for which presence state could not be retrieved for the channel as an {@link ErrorInfo} object.
+     */
+    error: ErrorInfo;
+  }
+
   // Common Listeners
   /**
    * A standard callback format used in most areas of the callback API.
@@ -1788,6 +1816,16 @@ declare namespace Types {
       callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>
     ): void;
     /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the function will be called with information about the error.
+     */
+    batchPresence(
+      channels: string[],
+      callback: StandardCallback<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>>
+    ): void;
+    /**
      * A {@link Types.PushCallbacks} object.
      */
     push: Types.PushCallbacks;
@@ -1860,6 +1898,13 @@ declare namespace Types {
     batchPublish(
       specs: BatchPublishSpec[]
     ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+    /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
     /**
      * A {@link Types.PushPromise} object.
      */
@@ -1966,6 +2011,16 @@ declare namespace Types {
       callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>
     ): void;
     /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the function will be called with information about the error.
+     */
+    batchPresence(
+      channels: string[],
+      callback: StandardCallback<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>
+    ): void;
+    /**
      * A {@link Types.PushCallbacks} object.
      */
     push: Types.PushCallbacks;
@@ -2033,6 +2088,13 @@ declare namespace Types {
     batchPublish(
       specs: BatchPublishSpec[]
     ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+    /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
     /**
      * A {@link Types.PushPromise} object.
      */

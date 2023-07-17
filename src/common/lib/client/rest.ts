@@ -24,6 +24,9 @@ type BatchPublishSpec = API.Types.BatchPublishSpec;
 type BatchPublishSuccessResult = API.Types.BatchPublishSuccessResult;
 type BatchPublishFailureResult = API.Types.BatchPublishFailureResult;
 type BatchPublishResult = BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>;
+type BatchPresenceSuccessResult = API.Types.BatchPresenceSuccessResult;
+type BatchPresenceFailureResult = API.Types.BatchPresenceFailureResult;
+type BatchPresenceResult = BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>;
 
 const noop = function () {};
 class Rest {
@@ -294,6 +297,48 @@ class Rest {
         } else {
           (callback as API.Types.StandardCallback<BatchPublishResult[]>)(null, batchResults);
         }
+      }
+    );
+  }
+
+  batchPresence(channels: string[], callback: API.Types.StandardCallback<BatchPresenceResult>): void;
+  batchPresence(channels: string[]): Promise<BatchPresenceResult>;
+  batchPresence(
+    channels: string[],
+    callbackArg?: API.Types.StandardCallback<BatchPresenceResult>
+  ): void | Promise<BatchPresenceResult> {
+    if (callbackArg === undefined) {
+      if (this.options.promises) {
+        return Utils.promisify(this, 'batchPresence', [channels]);
+      }
+      callbackArg = noop;
+    }
+
+    const callback = callbackArg;
+
+    const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Utils.defaultPostHeaders(this.options, format);
+
+    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+
+    const channelsParam = channels.join(',');
+
+    Resource.get(
+      this,
+      '/presence',
+      headers,
+      { newBatchResponse: 'true', channels: channelsParam },
+      null,
+      (err, body, headers, unpacked) => {
+        if (err) {
+          // TODO remove this type assertion after fixing https://github.com/ably/ably-js/issues/1405
+          callback(err as API.Types.ErrorInfo);
+          return;
+        }
+
+        const batchResult = (unpacked ? body : Utils.decodeBody(body, format)) as BatchPresenceResult;
+
+        callback(null, batchResult);
       }
     );
   }
