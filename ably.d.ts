@@ -1434,6 +1434,66 @@ declare namespace Types {
     unit?: StatsIntervalGranularity;
   }
 
+  /**
+   * Contains information about the results of a batch operation.
+   */
+  interface BatchResult<T> {
+    /**
+     * The number of successful operations in the request.
+     */
+    successCount: number;
+    /**
+     * The number of unsuccessful operations in the request.
+     */
+    failureCount: number;
+    /**
+     * An array of results for the batch operation.
+     */
+    results: T[];
+  }
+
+  /**
+   * Describes the messages that should be published by a batch publish operation, and the channels to which they should be published.
+   */
+  interface BatchPublishSpec {
+    /**
+     * The names of the channels to publish the `messages` to.
+     */
+    channels: string[];
+    /**
+     * An array of {@link Message} objects.
+     */
+    messages: Message[];
+  }
+
+  /**
+   * Contains information about the result of successful publishes to a channel requested by a single {@link Types.BatchPublishSpec}.
+   */
+  interface BatchPublishSuccessResult {
+    /**
+     * The name of the channel the message(s) was published to.
+     */
+    channel: string;
+    /**
+     * A unique ID prefixed to the {@link Message.id} of each published message.
+     */
+    messageId: string;
+  }
+
+  /**
+   * Contains information about the result of unsuccessful publishes to a channel requested by a single {@link Types.BatchPublishSpec}.
+   */
+  interface BatchPublishFailureResult {
+    /**
+     * The name of the channel the message(s) failed to be published to.
+     */
+    channel: string;
+    /**
+     * Describes the reason for which the message(s) failed to publish to the channel as an {@link ErrorInfo} object.
+     */
+    error: ErrorInfo;
+  }
+
   // Common Listeners
   /**
    * A standard callback format used in most areas of the callback API.
@@ -1708,6 +1768,26 @@ declare namespace Types {
      */
     time(callback?: Types.timeCallback): void;
     /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the function will be called with information about the error.
+     */
+    batchPublish(
+      spec: BatchPublishSpec,
+      callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>
+    ): void;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @param callback - A function which, upon success, will be called with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the function will be called with information about the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[],
+      callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>
+    ): void;
+    /**
      * A {@link Types.PushCallbacks} object.
      */
     push: Types.PushCallbacks;
@@ -1763,6 +1843,23 @@ declare namespace Types {
      * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     time(): Promise<number>;
+
+    /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[]
+    ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
     /**
      * A {@link Types.PushPromise} object.
      */
@@ -1849,6 +1946,26 @@ declare namespace Types {
      */
     time(callback?: Types.timeCallback): void;
     /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the function will be called with information about the error.
+     */
+    batchPublish(
+      spec: BatchPublishSpec,
+      callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>
+    ): void;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @param callback - A function which, upon success, will be called with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the function will be called with information about the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[],
+      callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>
+    ): void;
+    /**
      * A {@link Types.PushCallbacks} object.
      */
     push: Types.PushCallbacks;
@@ -1900,6 +2017,22 @@ declare namespace Types {
      * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     time(): Promise<number>;
+    /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[]
+    ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
     /**
      * A {@link Types.PushPromise} object.
      */
