@@ -100,7 +100,7 @@ const Http: typeof IHttp = class {
               err?: ErrorInfo | ErrnoException | null,
               responseText?: unknown,
               headers?: any,
-              packed?: boolean,
+              unpacked?: boolean,
               statusCode?: number
             ) {
               let result = false;

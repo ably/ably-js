@@ -261,7 +261,7 @@ const Http: typeof IHttp = class {
         err?: ErrnoException | ErrorInfo | null,
         responseText?: unknown,
         headers?: any,
-        packed?: boolean,
+        unpacked?: boolean,
         statusCode?: number
       ) {
         if (!err && !connectivityUrlIsDefault) {
