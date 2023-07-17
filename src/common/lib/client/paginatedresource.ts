@@ -5,7 +5,7 @@ import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
 import Rest from './rest';
 
-export type BodyHandler = (body: unknown, headers: Record<string, string>, packed?: boolean) => any;
+export type BodyHandler = (body: unknown, headers: Record<string, string>, unpacked?: boolean) => any;
 
 function getRelParams(linkUrl: string) {
   const urlMatch = linkUrl.match(/^\.\/(\w+)\?(.*)$/);
