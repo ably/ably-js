@@ -5,7 +5,7 @@ import Presence from './presence';
 import Message, { CipherOptions } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
-import Resource, { ResourceCallback } from './resource';
+import Resource, { ResourceCallbackWithBody } from './resource';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import Rest from './rest';
@@ -187,7 +187,12 @@ class Channel extends EventEmitter {
     });
   }
 
-  _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
+  _publish(
+    requestBody: unknown,
+    headers: Record<string, string>,
+    params: any,
+    callback: ResourceCallbackWithBody
+  ): void {
     Resource.post(this.rest, this.basePath + '/messages', requestBody, headers, params, null, callback);
   }
 

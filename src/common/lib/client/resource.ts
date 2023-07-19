@@ -27,7 +27,10 @@ function withAuthDetails(
   }
 }
 
-function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | null): ResourceCallback<T> {
+function unenvelope<T>(
+  callback: ResourceCallbackWithBody<T>,
+  format: Utils.Format | null
+): ResourceCallbackWithBody<T> {
   return (err, body, outerHeaders, unpacked, outerStatusCode) => {
     if (err && !body) {
       callback(err);
@@ -90,11 +93,11 @@ function urlFromPathAndParams(path: string, params: Record<string, any>) {
 }
 
 function logResponseHandler<T>(
-  callback: ResourceCallback<T>,
+  callback: ResourceCallbackWithBody<T>,
   method: HttpMethods,
   path: string,
   params: Record<string, string>
-): ResourceCallback {
+): ResourceCallbackWithBody {
   return (err, body, headers, unpacked, statusCode) => {
     if (err) {
       Logger.logAction(
@@ -122,7 +125,7 @@ function logResponseHandler<T>(
   };
 }
 
-export type ResourceCallback<T = unknown> = (
+export type ResourceCallbackWithBody<T = unknown> = (
   err: IPartialErrorInfo | null,
   body?: T,
   headers?: Record<string, string>,
@@ -137,7 +140,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback<T>
+    callback: ResourceCallbackWithBody<T>
   ): void {
     Resource.do(HttpMethods.Get, rest, path, null, headers, params, envelope, callback);
   }
@@ -148,7 +151,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
+    callback: ResourceCallbackWithBody
   ): void {
     Resource.do(HttpMethods.Delete, rest, path, null, headers, params, envelope, callback);
   }
@@ -160,7 +163,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
+    callback: ResourceCallbackWithBody
   ): void {
     Resource.do(HttpMethods.Post, rest, path, body, headers, params, envelope, callback);
   }
@@ -172,7 +175,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
+    callback: ResourceCallbackWithBody
   ): void {
     Resource.do(HttpMethods.Patch, rest, path, body, headers, params, envelope, callback);
   }
@@ -184,7 +187,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
+    callback: ResourceCallbackWithBody
   ): void {
     Resource.do(HttpMethods.Put, rest, path, body, headers, params, envelope, callback);
   }
@@ -197,7 +200,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback<T>
+    callback: ResourceCallbackWithBody<T>
   ): void {
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
       callback = logResponseHandler(callback, method, path, params);
