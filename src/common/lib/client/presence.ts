@@ -7,6 +7,7 @@ import { CipherOptions } from '../types/message';
 import { PaginatedResultCallback } from '../../types/utils';
 import Channel from './channel';
 import RealtimeChannel from './realtimechannel';
+import Defaults from '../util/defaults';
 
 class Presence extends EventEmitter {
   channel: RealtimeChannel | Channel;
@@ -32,7 +33,7 @@ class Presence extends EventEmitter {
     const rest = this.channel.rest,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(rest.options, { format });
+      headers = Defaults.defaultGetHeaders(rest.options, { format });
 
     Utils.mixin(headers, rest.options.headers);
 
@@ -71,7 +72,7 @@ class Presence extends EventEmitter {
     const rest = this.channel.rest,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(rest.options, { format });
+      headers = Defaults.defaultGetHeaders(rest.options, { format });
 
     Utils.mixin(headers, rest.options.headers);
 

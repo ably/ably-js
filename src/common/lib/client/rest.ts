@@ -1,7 +1,5 @@
 import * as Utils from '../util/utils';
 import Logger, { LoggerOptions } from '../util/logger';
-import Defaults from '../util/defaults';
-import Auth from './auth';
 import Push from './push';
 import PaginatedResource, { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 import Channel from './channel';
@@ -15,7 +13,7 @@ import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOption
 
 import Platform from '../../platform';
 import Message from '../types/message';
-import PresenceMessage from '../types/presencemessage';
+import Defaults from '../util/defaults';
 
 const noop = function () {};
 class Rest {
@@ -95,7 +93,7 @@ class Rest {
         return Utils.promisify(this, 'stats', [params]) as Promise<PaginatedResult<Stats>>;
       }
     }
-    const headers = Utils.defaultGetHeaders(this.options),
+    const headers = Defaults.defaultGetHeaders(this.options),
       format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.http.supportsLinkHeaders ? undefined : format;
 
@@ -125,7 +123,7 @@ class Rest {
 
     const _callback = callback || noop;
 
-    const headers = Utils.defaultGetHeaders(this.options);
+    const headers = Defaults.defaultGetHeaders(this.options);
     if (this.options.headers) Utils.mixin(headers, this.options.headers);
     const timeUri = (host: string) => {
       return this.authority(host) + '/time';
@@ -178,8 +176,8 @@ class Rest {
     const _method = method.toLowerCase() as HttpMethods;
     const headers =
       _method == 'get'
-        ? Utils.defaultGetHeaders(this.options, { format, protocolVersion: version })
-        : Utils.defaultPostHeaders(this.options, { format, protocolVersion: version });
+        ? Defaults.defaultGetHeaders(this.options, { format, protocolVersion: version })
+        : Defaults.defaultPostHeaders(this.options, { format, protocolVersion: version });
 
     if (callback === undefined) {
       return Utils.promisify(this, 'request', [method, path, version, params, body, customHeaders]) as Promise<

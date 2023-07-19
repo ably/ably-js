@@ -12,6 +12,7 @@ import Rest from './rest';
 import Realtime from './realtime';
 import * as API from '../../../../ably';
 import Platform from 'common/platform';
+import Defaults from '../util/defaults';
 
 interface RestHistoryParams {
   start?: number;
@@ -89,7 +90,7 @@ class Channel extends EventEmitter {
     const rest = this.rest,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(rest.options, { format });
+      headers = Defaults.defaultGetHeaders(rest.options, { format });
 
     Utils.mixin(headers, rest.options.headers);
 
@@ -142,7 +143,7 @@ class Channel extends EventEmitter {
       options = rest.options,
       format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       idempotentRestPublishing = rest.options.idempotentRestPublishing,
-      headers = Utils.defaultPostHeaders(rest.options, { format });
+      headers = Defaults.defaultPostHeaders(rest.options, { format });
 
     Utils.mixin(headers, options.headers);
 
@@ -191,7 +192,7 @@ class Channel extends EventEmitter {
     }
 
     const format = this.rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-    const headers = Utils.defaultPostHeaders(this.rest.options, { format });
+    const headers = Defaults.defaultPostHeaders(this.rest.options, { format });
 
     Resource.get<API.Types.ChannelDetails>(this.rest, this.basePath, headers, {}, format, callback || noop);
   }
