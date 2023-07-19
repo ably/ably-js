@@ -1,5 +1,5 @@
 import * as Utils from '../util/utils';
-import Rest from './rest';
+import { DefaultRest as Rest } from './defaultrest';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Connection from './connection';
@@ -14,15 +14,19 @@ import Platform from 'common/platform';
 import Message from '../types/message';
 
 class Realtime extends Rest {
-  channels: any;
+  _channels: any;
   connection: Connection;
 
   constructor(options: ClientOptions) {
     super(options);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this.connection = new Connection(this, this.options);
-    this.channels = new Channels(this);
+    this._channels = new Channels(this);
     if (options.autoConnect !== false) this.connect();
+  }
+
+  get channels() {
+    return this._channels;
   }
 
   connect(): void {

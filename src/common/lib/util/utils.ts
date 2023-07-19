@@ -1,7 +1,7 @@
 import Platform from 'common/platform';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
 import Realtime from '../client/realtime';
-import Rest from '../client/rest';
+import { BaseClient } from '../client/baseclient';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -531,6 +531,6 @@ export function toBase64(str: string) {
   return bufferUtils.base64Encode(textBuffer);
 }
 
-export function isRealtime(client: Rest | Realtime): client is Realtime {
+export function isRealtime(client: BaseClient): client is Realtime {
   return !!(client as Realtime).connection;
 }

@@ -9,74 +9,26 @@ import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import { ErrnoException, IHttp, RequestParams } from '../../types/http';
-import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
+import { NormalisedClientOptions } from '../../types/ClientOptions';
 
 import Platform from '../../platform';
-import Message from '../types/message';
+import { BaseClient } from './baseclient';
 import Defaults from '../util/defaults';
 
 const noop = function () {};
+
 class Rest {
-  options: NormalisedClientOptions;
-  baseUri: (host: string) => string;
-  authority: (host: string) => string;
-  _currentFallback: null | {
-    host: string;
-    validUntil: number;
-  };
-  serverTimeOffset: number | null;
-  http: IHttp;
-  auth: Auth;
   channels: Channels;
   push: Push;
+  client: BaseClient;
+  http: IHttp;
+  options: NormalisedClientOptions;
 
-  constructor(options: ClientOptions | string) {
-    if (!options) {
-      const msg = 'no options provided';
-      Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-      throw new Error(msg);
-    }
-    const optionsObj = Defaults.objectifyOptions(options);
-
-    Logger.setLog(optionsObj.logLevel, optionsObj.logHandler);
-    Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Platform.Config.inspect(options));
-
-    const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));
-
-    /* process options */
-    if (normalOptions.key) {
-      const keyMatch = normalOptions.key.match(/^([^:\s]+):([^:.\s]+)$/);
-      if (!keyMatch) {
-        const msg = 'invalid key parameter';
-        Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-        throw new ErrorInfo(msg, 40400, 404);
-      }
-      normalOptions.keyName = keyMatch[1];
-      normalOptions.keySecret = keyMatch[2];
-    }
-
-    if ('clientId' in normalOptions) {
-      if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null))
-        throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
-      else if (normalOptions.clientId === '*')
-        throw new ErrorInfo(
-          'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
-          40012,
-          400
-        );
-    }
-
-    Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.version);
-
-    this.baseUri = this.authority = function (host) {
-      return Defaults.getHttpScheme(normalOptions) + host + ':' + Defaults.getPort(normalOptions, false);
-    };
-    this._currentFallback = null;
-
-    this.serverTimeOffset = null;
-    this.http = new Platform.Http(normalOptions);
-    this.auth = new Auth(this, normalOptions);
-    this.channels = new Channels(this);
+  constructor(client: BaseClient) {
+    this.client = client;
+    this.http = client.http;
+    this.options = client.options;
+    this.channels = new Channels(this.client);
     this.push = new Push(this);
   }
 
@@ -99,7 +51,7 @@ class Rest {
 
     Utils.mixin(headers, this.options.headers);
 
-    new PaginatedResource(this, '/stats', headers, envelope, function (
+    new PaginatedResource(this.client, '/stats', headers, envelope, function (
       body: unknown,
       headers: Record<string, string>,
       unpacked?: boolean
@@ -126,11 +78,11 @@ class Rest {
     const headers = Defaults.defaultGetHeaders(this.options);
     if (this.options.headers) Utils.mixin(headers, this.options.headers);
     const timeUri = (host: string) => {
-      return this.authority(host) + '/time';
+      return this.client.authority(host) + '/time';
     };
     this.http.do(
       HttpMethods.Get,
-      this,
+      this.client,
       timeUri,
       headers,
       null,
@@ -152,7 +104,7 @@ class Rest {
           return;
         }
         /* calculate time offset only once for this device by adding to the prototype */
-        this.serverTimeOffset = time - Utils.now();
+        this.client.serverTimeOffset = time - Utils.now();
         _callback(null, time);
       }
     );
@@ -193,7 +145,7 @@ class Rest {
       Utils.mixin(headers, customHeaders);
     }
     const paginatedResource = new PaginatedResource(
-      this,
+      this.client,
       path,
       headers,
       envelope,
@@ -220,19 +172,14 @@ class Rest {
   setLog(logOptions: LoggerOptions): void {
     Logger.setLog(logOptions.level, logOptions.handler);
   }
-
-  static Platform = Platform;
-  static Crypto?: typeof Platform.Crypto;
-  static Message = Message;
-  static PresenceMessage = PresenceMessage;
 }
 
 class Channels {
-  rest: Rest;
+  client: BaseClient;
   all: Record<string, Channel>;
 
-  constructor(rest: Rest) {
-    this.rest = rest;
+  constructor(client: BaseClient) {
+    this.client = client;
     this.all = Object.create(null);
   }
 
@@ -240,7 +187,7 @@ class Channels {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
-      this.all[name] = channel = new Channel(this.rest, name, channelOptions);
+      this.all[name] = channel = new Channel(this.client, name, channelOptions);
     } else if (channelOptions) {
       channel.setOptions(channelOptions);
     }

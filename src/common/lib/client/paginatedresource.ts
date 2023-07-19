@@ -3,7 +3,7 @@ import Logger from '../util/logger';
 import Resource from './resource';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
-import Rest from './rest';
+import { BaseClient } from './baseclient';
 
 export type BodyHandler = (body: unknown, headers: Record<string, string>, packed?: boolean) => Promise<any>;
 
@@ -35,7 +35,7 @@ function returnErrOnly(err: IPartialErrorInfo, body: unknown, useHPR?: boolean) 
 }
 
 class PaginatedResource {
-  rest: Rest;
+  client: BaseClient;
   path: string;
   headers: Record<string, string>;
   envelope: Utils.Format | null;
@@ -43,14 +43,14 @@ class PaginatedResource {
   useHttpPaginatedResponse: boolean;
 
   constructor(
-    rest: Rest,
+    client: BaseClient,
     path: string,
     headers: Record<string, string>,
     envelope: Utils.Format | undefined,
     bodyHandler: BodyHandler,
     useHttpPaginatedResponse?: boolean
   ) {
-    this.rest = rest;
+    this.client = client;
     this.path = path;
     this.headers = headers;
     this.envelope = envelope ?? null;
@@ -60,7 +60,7 @@ class PaginatedResource {
 
   get<T1, T2>(params: Record<string, T2>, callback: PaginatedResultCallback<T1>): void {
     Resource.get(
-      this.rest,
+      this.client,
       this.path,
       this.headers,
       params,
@@ -73,7 +73,7 @@ class PaginatedResource {
 
   delete<T1, T2>(params: Record<string, T2>, callback: PaginatedResultCallback<T1>): void {
     Resource.delete(
-      this.rest,
+      this.client,
       this.path,
       this.headers,
       params,
@@ -86,7 +86,7 @@ class PaginatedResource {
 
   post<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
     Resource.post(
-      this.rest,
+      this.client,
       this.path,
       body,
       this.headers,
@@ -102,7 +102,7 @@ class PaginatedResource {
 
   put<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
     Resource.put(
-      this.rest,
+      this.client,
       this.path,
       body,
       this.headers,
@@ -118,7 +118,7 @@ class PaginatedResource {
 
   patch<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
     Resource.patch(
-      this.rest,
+      this.client,
       this.path,
       body,
       this.headers,
@@ -234,7 +234,7 @@ export class PaginatedResult<T> {
   get(params: any, callback: PaginatedResultCallback<T>): void {
     const res = this.resource;
     Resource.get(
-      res.rest,
+      res.client,
       res.path,
       res.headers,
       params,

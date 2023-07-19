@@ -2,6 +2,7 @@ import HttpMethods from '../constants/HttpMethods';
 import Rest from '../lib/client/rest';
 import ErrorInfo from '../lib/types/errorinfo';
 import { Agents } from 'got';
+import { BaseClient } from 'common/lib/client/baseclient';
 
 export type PathParameter = string | ((host: string) => string);
 export type RequestCallback = (
@@ -25,7 +26,7 @@ export declare class IHttp {
 
   Request?: (
     method: HttpMethods,
-    rest: Rest | null,
+    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
@@ -35,7 +36,7 @@ export declare class IHttp {
   _getHosts: (client: Rest | Realtime) => string[];
   do(
     method: HttpMethods,
-    rest: Rest | null,
+    client: BaseClient | null,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
@@ -44,7 +45,7 @@ export declare class IHttp {
   ): void;
   doUri(
     method: HttpMethods,
-    rest: Rest | null,
+    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,

@@ -45,7 +45,7 @@ class Admin {
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
     const requestBody = Utils.encodeBody(body, format);
-    Resource.post(rest, '/push/publish', requestBody, headers, params, null, (err) => callback(err));
+    Resource.post(rest.client, '/push/publish', requestBody, headers, params, null, (err) => callback(err));
   }
 }
 
@@ -73,7 +73,7 @@ class DeviceRegistrations {
 
     const requestBody = Utils.encodeBody(body, format);
     Resource.put(
-      rest,
+      rest.client,
       '/push/deviceRegistrations/' + encodeURIComponent(device.id),
       requestBody,
       headers,
@@ -117,7 +117,7 @@ class DeviceRegistrations {
     Utils.mixin(headers, rest.options.headers);
 
     Resource.get(
-      rest,
+      rest.client,
       '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
       headers,
       {},
@@ -148,7 +148,7 @@ class DeviceRegistrations {
 
     Utils.mixin(headers, rest.options.headers);
 
-    new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, async function (
+    new PaginatedResource(rest.client, '/push/deviceRegistrations', headers, envelope, async function (
       body: any,
       headers: Record<string, string>,
       unpacked?: boolean
@@ -184,7 +184,7 @@ class DeviceRegistrations {
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
     Resource['delete'](
-      rest,
+      rest.client,
       '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
       headers,
       params,
@@ -206,7 +206,7 @@ class DeviceRegistrations {
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    Resource['delete'](rest, '/push/deviceRegistrations', headers, params, null, (err) => callback(err));
+    Resource['delete'](rest.client, '/push/deviceRegistrations', headers, params, null, (err) => callback(err));
   }
 }
 
@@ -234,7 +234,7 @@ class ChannelSubscriptions {
 
     const requestBody = Utils.encodeBody(body, format);
     Resource.post(
-      rest,
+      rest.client,
       '/push/channelSubscriptions',
       requestBody,
       headers,
@@ -261,7 +261,7 @@ class ChannelSubscriptions {
 
     Utils.mixin(headers, rest.options.headers);
 
-    new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, async function (
+    new PaginatedResource(rest.client, '/push/channelSubscriptions', headers, envelope, async function (
       body: any,
       headers: Record<string, string>,
       unpacked?: boolean
@@ -283,7 +283,7 @@ class ChannelSubscriptions {
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    Resource['delete'](rest, '/push/channelSubscriptions', headers, params, null, (err) => callback(err));
+    Resource['delete'](rest.client, '/push/channelSubscriptions', headers, params, null, (err) => callback(err));
   }
 
   /* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */
@@ -303,7 +303,7 @@ class ChannelSubscriptions {
 
     if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    new PaginatedResource(rest, '/push/channels', headers, envelope, async function (
+    new PaginatedResource(rest.client, '/push/channels', headers, envelope, async function (
       body: unknown,
       headers: Record<string, string>,
       unpacked?: boolean

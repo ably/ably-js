@@ -4,23 +4,23 @@ import Logger from '../util/logger';
 import Auth from './auth';
 import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
-import Rest from './rest';
 import { ErrnoException } from '../../types/http';
+import { BaseClient } from './baseclient';
 
 function withAuthDetails(
-  rest: Rest,
+  client: BaseClient,
   headers: Record<string, string>,
   params: Record<string, any>,
   errCallback: Function,
   opCallback: Function
 ) {
-  if (rest.http.supportsAuthHeaders) {
-    rest.auth.getAuthHeaders(function (err: Error, authHeaders: Record<string, string>) {
+  if (client.http.supportsAuthHeaders) {
+    client.auth.getAuthHeaders(function (err: Error, authHeaders: Record<string, string>) {
       if (err) errCallback(err);
       else opCallback(Utils.mixin(authHeaders, headers), params);
     });
   } else {
-    rest.auth.getAuthParams(function (err: Error, authParams: Record<string, string>) {
+    client.auth.getAuthParams(function (err: Error, authParams: Record<string, string>) {
       if (err) errCallback(err);
       else opCallback(headers, Utils.mixin(authParams, params));
     });
@@ -132,29 +132,29 @@ export type ResourceCallback<T = unknown> = (
 
 class Resource {
   static get<T = unknown>(
-    rest: Rest,
+    client: BaseClient,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
     callback: ResourceCallback<T>
   ): void {
-    Resource.do(HttpMethods.Get, rest, path, null, headers, params, envelope, callback);
+    Resource.do(HttpMethods.Get, client, path, null, headers, params, envelope, callback);
   }
 
   static delete(
-    rest: Rest,
+    client: BaseClient,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
     callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Delete, rest, path, null, headers, params, envelope, callback);
+    Resource.do(HttpMethods.Delete, client, path, null, headers, params, envelope, callback);
   }
 
   static post(
-    rest: Rest,
+    client: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
@@ -162,11 +162,11 @@ class Resource {
     envelope: Utils.Format | null,
     callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Post, rest, path, body, headers, params, envelope, callback);
+    Resource.do(HttpMethods.Post, client, path, body, headers, params, envelope, callback);
   }
 
   static patch(
-    rest: Rest,
+    client: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
@@ -174,11 +174,11 @@ class Resource {
     envelope: Utils.Format | null,
     callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Patch, rest, path, body, headers, params, envelope, callback);
+    Resource.do(HttpMethods.Patch, client, path, body, headers, params, envelope, callback);
   }
 
   static put(
-    rest: Rest,
+    client: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
@@ -186,12 +186,12 @@ class Resource {
     envelope: Utils.Format | null,
     callback: ResourceCallback
   ): void {
-    Resource.do(HttpMethods.Put, rest, path, body, headers, params, envelope, callback);
+    Resource.do(HttpMethods.Put, client, path, body, headers, params, envelope, callback);
   }
 
   static do<T>(
     method: HttpMethods,
-    rest: Rest,
+    client: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
@@ -237,9 +237,9 @@ class Resource {
         );
       }
 
-      rest.http.do(
+      client.http.do(
         method,
-        rest,
+        client,
         path,
         headers,
         body,
@@ -253,13 +253,13 @@ class Resource {
         ) {
           if (err && Auth.isTokenErr(err as ErrorInfo)) {
             /* token has expired, so get a new one */
-            rest.auth.authorize(null, null, function (err: ErrorInfo) {
+            client.auth.authorize(null, null, function (err: ErrorInfo) {
               if (err) {
                 callback(err);
                 return;
               }
               /* retry ... */
-              withAuthDetails(rest, headers, params, callback, doRequest);
+              withAuthDetails(client, headers, params, callback, doRequest);
             });
             return;
           }
@@ -268,7 +268,7 @@ class Resource {
       );
     }
 
-    withAuthDetails(rest, headers, params, callback, doRequest);
+    withAuthDetails(client, headers, params, callback, doRequest);
   }
 }
 

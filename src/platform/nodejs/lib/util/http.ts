@@ -6,11 +6,10 @@ import HttpMethods from '../../../../common/constants/HttpMethods';
 import got, { Response, Options, CancelableRequest, Agents } from 'got';
 import http from 'http';
 import https from 'https';
-import Rest from 'common/lib/client/rest';
-import Realtime from 'common/lib/client/realtime';
 import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 import { shallowEquals, isRealtime } from 'common/lib/util/utils';
+import { BaseClient } from 'common/lib/client/baseclient';
 
 /***************************************************
  *
@@ -74,7 +73,7 @@ function shouldFallback(err: ErrnoException) {
   );
 }
 
-function getHosts(client: Rest | Realtime): string[] {
+function getHosts(client: BaseClient): string[] {
   /* If we're a connected realtime client, try the endpoint we're connected
    * to first -- but still have fallbacks, being connected is not an absolute
    * guarantee that a datacenter has free capacity to service REST requests. */
@@ -105,7 +104,7 @@ const Http: typeof IHttp = class {
   /* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
   do(
     method: HttpMethods,
-    rest: Rest,
+    client: BaseClient,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
@@ -116,16 +115,16 @@ const Http: typeof IHttp = class {
       typeof path === 'function'
         ? path
         : function (host: string) {
-            return rest.baseUri(host) + path;
+            return client.baseUri(host) + path;
           };
 
-    const currentFallback = rest._currentFallback;
+    const currentFallback = client._currentFallback;
     if (currentFallback) {
       if (currentFallback.validUntil > Date.now()) {
         /* Use stored fallback */
         this.doUri(
           method,
-          rest,
+          client,
           uriFromHost(currentFallback.host),
           headers,
           body,
@@ -133,8 +132,8 @@ const Http: typeof IHttp = class {
           (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) => {
             if (err && shouldFallback(err as ErrnoException)) {
               /* unstore the fallback and start from the top with the default sequence */
-              rest._currentFallback = null;
-              this.do(method, rest, path, headers, body, params, callback);
+              client._currentFallback = null;
+              this.do(method, client, path, headers, body, params, callback);
               return;
             }
             callback(err, ...args);
@@ -143,15 +142,15 @@ const Http: typeof IHttp = class {
         return;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
-        rest._currentFallback = null;
+        client._currentFallback = null;
       }
     }
 
-    const hosts = getHosts(rest);
+    const hosts = getHosts(client);
 
     /* see if we have one or more than one host */
     if (hosts.length === 1) {
-      this.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback);
+      this.doUri(method, client, uriFromHost(hosts[0]), headers, body, params, callback);
       return;
     }
 
@@ -159,7 +158,7 @@ const Http: typeof IHttp = class {
       const host = candidateHosts.shift();
       this.doUri(
         method,
-        rest,
+        client,
         uriFromHost(host as string),
         headers,
         body,
@@ -171,9 +170,9 @@ const Http: typeof IHttp = class {
           }
           if (persistOnSuccess) {
             /* RSC15f */
-            rest._currentFallback = {
+            client._currentFallback = {
               host: host as string,
-              validUntil: Date.now() + rest.options.timeouts.fallbackRetryTimeout,
+              validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
             };
           }
           callback(err, ...args);
@@ -185,7 +184,7 @@ const Http: typeof IHttp = class {
 
   doUri(
     method: HttpMethods,
-    rest: Rest,
+    client: BaseClient,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
@@ -195,7 +194,7 @@ const Http: typeof IHttp = class {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
-    const agentOptions = (rest && rest.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
+    const agentOptions = (client && client.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
     const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
 
     if (!this.agent) {
@@ -222,7 +221,7 @@ const Http: typeof IHttp = class {
     doOptions.agent = this.agent;
 
     doOptions.url = uri;
-    doOptions.timeout = { request: ((rest && rest.options.timeouts) || Defaults.TIMEOUTS).httpRequestTimeout };
+    doOptions.timeout = { request: ((client && client.options.timeouts) || Defaults.TIMEOUTS).httpRequestTimeout };
     // We have our own logic that retries appropriate statuscodes to fallback endpoints,
     // with timeouts constructed appropriately. Don't want `got` doing its own retries to
     // the same endpoint, inappropriately retrying 429s, etc
@@ -275,7 +274,7 @@ const Http: typeof IHttp = class {
 
   Request?: (
     method: HttpMethods,
-    rest: Rest | null,
+    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,

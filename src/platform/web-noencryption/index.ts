@@ -1,5 +1,5 @@
 // Common
-import Rest from '../../common/lib/client/rest';
+import { DefaultRest as Rest } from '../../common/lib/client/defaultrest';
 import Realtime from '../../common/lib/client/realtime';
 import Platform from '../../common/platform';
 

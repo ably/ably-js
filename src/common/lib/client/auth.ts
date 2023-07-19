@@ -5,11 +5,10 @@ import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import { StandardCallback } from '../../types/utils';
-import Rest from './rest';
-import Realtime from './realtime';
 import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
 import Platform from '../../platform';
+import { BaseClient } from './baseclient';
 import Defaults from '../util/defaults';
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
@@ -101,7 +100,7 @@ function getTokenRequestId() {
 }
 
 class Auth {
-  client: Rest | Realtime;
+  client: BaseClient;
   tokenParams: API.Types.TokenParams;
   currentTokenRequestId: number | null;
   waitingForTokenRequest: ReturnType<typeof Multicaster.create> | null;
@@ -113,7 +112,7 @@ class Auth {
   basicKey?: string;
   clientId?: string | null;
 
-  constructor(client: Rest | Realtime, options: ClientOptions) {
+  constructor(client: BaseClient, options: ClientOptions) {
     this.client = client;
     this.tokenParams = options.defaultTokenParams || {};
     /* The id of the current token request if one is in progress, else null */
@@ -274,7 +273,7 @@ class Auth {
             /* We interpret RSA4d as including requests made by a client lib to
              * authenticate triggered by an explicit authorize() or an AUTH received from
              * ably, not just connect-sequence-triggered token fetches */
-            (this.client as Realtime).connection.connectionManager.actOnErrorFromAuthorize(err);
+            this.client.connection.connectionManager.actOnErrorFromAuthorize(err);
           }
           callback?.(err);
           return;

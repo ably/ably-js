@@ -30,15 +30,15 @@ class Presence extends EventEmitter {
         return Utils.promisify(this, 'get', arguments);
       }
     }
-    const rest = this.channel.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(rest.options, { format });
+    const client = this.channel.client,
+      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      envelope = this.channel.client.http.supportsLinkHeaders ? undefined : format,
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
-    Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, client.options.headers);
 
     const options = this.channel.channelOptions;
-    new PaginatedResource(rest, this.basePath, headers, envelope, async function (
+    new PaginatedResource(client, this.basePath, headers, envelope, async function (
       body: any,
       headers: Record<string, string>,
       unpacked?: boolean
@@ -69,9 +69,9 @@ class Presence extends EventEmitter {
       }
     }
 
-    const rest = this.channel.rest,
+    const rest = this.channel.client,
       format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.channel.rest.http.supportsLinkHeaders ? undefined : format,
+      envelope = this.channel.client.http.supportsLinkHeaders ? undefined : format,
       headers = Defaults.defaultGetHeaders(rest.options, { format });
 
     Utils.mixin(headers, rest.options.headers);
