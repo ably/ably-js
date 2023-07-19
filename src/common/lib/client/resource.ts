@@ -125,6 +125,12 @@ function logResponseHandler<T>(
   };
 }
 
+export type ResourceCallbackWithoutBody = (
+  err: IPartialErrorInfo | null,
+  headers?: Record<string, string>,
+  statusCode?: number
+) => void;
+
 export type ResourceCallbackWithBody<T = unknown> = (
   err: IPartialErrorInfo | null,
   body?: T,
@@ -139,7 +145,7 @@ class Resource {
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
-    envelope: Utils.Format | null,
+    envelope: Utils.Format,
     callback: ResourceCallbackWithBody<T>
   ): void {
     Resource.do(HttpMethods.Get, rest, path, null, headers, params, envelope, callback);
@@ -150,8 +156,24 @@ class Resource {
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
-    envelope: Utils.Format | null,
+    envelope: Utils.Format,
     callback: ResourceCallbackWithBody
+  ): void
+  static delete(
+    rest: Rest,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: null,
+    callback: ResourceCallbackWithoutBody
+  ): void
+  static delete(
+    rest: Rest,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    callback: ResourceCallbackWithBody | ResourceCallbackWithoutBody
   ): void {
     Resource.do(HttpMethods.Delete, rest, path, null, headers, params, envelope, callback);
   }
@@ -162,8 +184,26 @@ class Resource {
     body: unknown,
     headers: Record<string, string>,
     params: Record<string, any>,
-    envelope: Utils.Format | null,
+    envelope: Utils.Format,
     callback: ResourceCallbackWithBody
+  ): void;
+  static post(
+    rest: Rest,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: null,
+    callback: ResourceCallbackWithoutBody
+  ): void;
+  static post(
+    rest: Rest,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    callback: ResourceCallbackWithBody | ResourceCallbackWithoutBody
   ): void {
     Resource.do(HttpMethods.Post, rest, path, body, headers, params, envelope, callback);
   }
@@ -174,8 +214,26 @@ class Resource {
     body: unknown,
     headers: Record<string, string>,
     params: Record<string, any>,
-    envelope: Utils.Format | null,
+    envelope: Utils.Format,
     callback: ResourceCallbackWithBody
+  ): void
+  static patch(
+    rest: Rest,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope:  null,
+    callback: ResourceCallbackWithoutBody
+  ): void
+  static patch(
+    rest: Rest,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    callback: ResourceCallbackWithBody | ResourceCallbackWithoutBody
   ): void {
     Resource.do(HttpMethods.Patch, rest, path, body, headers, params, envelope, callback);
   }
@@ -186,8 +244,26 @@ class Resource {
     body: unknown,
     headers: Record<string, string>,
     params: Record<string, any>,
-    envelope: Utils.Format | null,
+    envelope: Utils.Format,
     callback: ResourceCallbackWithBody
+  ): void
+  static put(
+    rest: Rest,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: null,
+    callback: ResourceCallbackWithoutBody
+  ): void
+  static put(
+    rest: Rest,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    callback: ResourceCallbackWithBody | ResourceCallbackWithoutBody
   ): void {
     Resource.do(HttpMethods.Put, rest, path, body, headers, params, envelope, callback);
   }
@@ -199,8 +275,28 @@ class Resource {
     body: unknown,
     headers: Record<string, string>,
     params: Record<string, any>,
-    envelope: Utils.Format | null,
+    envelope: Utils.Format,
     callback: ResourceCallbackWithBody<T>
+  ): void
+  static do(
+    method: HttpMethods,
+    rest: Rest,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: null,
+    callback: ResourceCallbackWithoutBody
+  ): void
+  static do<T>(
+    method: HttpMethods,
+    rest: Rest,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    callback: ResourceCallbackWithBody<T> | ResourceCallbackWithoutBody
   ): void {
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
       callback = logResponseHandler(callback, method, path, params);
