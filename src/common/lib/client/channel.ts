@@ -11,6 +11,7 @@ import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import BaseClient from './baseclient';
 import * as API from '../../../../ably';
 import Platform from 'common/platform';
+import Defaults from '../util/defaults';
 
 interface RestHistoryParams {
   start?: number;
@@ -88,7 +89,7 @@ class Channel extends EventEmitter {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
     Utils.mixin(headers, client.options.headers);
 
@@ -141,7 +142,7 @@ class Channel extends EventEmitter {
       options = client.options,
       format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       idempotentRestPublishing = client.options.idempotentRestPublishing,
-      headers = Utils.defaultPostHeaders(client.options, { format });
+      headers = Defaults.defaultPostHeaders(client.options, { format });
 
     Utils.mixin(headers, options.headers);
 
@@ -190,7 +191,7 @@ class Channel extends EventEmitter {
     }
 
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-    const headers = Utils.defaultPostHeaders(this.client.options, { format });
+    const headers = Defaults.defaultPostHeaders(this.client.options, { format });
 
     Resource.get<API.Types.ChannelDetails>(this.client, this.basePath, headers, {}, format, callback || noop);
   }

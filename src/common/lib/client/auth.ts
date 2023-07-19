@@ -12,6 +12,7 @@ import HttpMethods from '../../constants/HttpMethods';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import Platform from '../../platform';
 import Resource from './resource';
+import Defaults from '../util/defaults';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
 type TokenRevocationTargetSpecifier = API.Types.TokenRevocationTargetSpecifier;
@@ -584,7 +585,7 @@ class Auth {
           return client.baseUri(host) + path;
         };
 
-      const requestHeaders = Utils.defaultPostHeaders(this.client.options);
+      const requestHeaders = Defaults.defaultPostHeaders(this.client.options);
       if (authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
       Logger.logAction(
         Logger.LOG_MICRO,
@@ -1073,7 +1074,7 @@ class Auth {
     };
 
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(this.client.options, { format });
+      headers = Defaults.defaultPostHeaders(this.client.options, { format });
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 

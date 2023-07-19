@@ -6,6 +6,7 @@ import ErrorInfo from '../types/errorinfo';
 import PushChannelSubscription from '../types/pushchannelsubscription';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import BaseClient from './baseclient';
+import Defaults from '../util/defaults';
 
 class Push {
   client: BaseClient;
@@ -31,7 +32,7 @@ class Admin {
   publish(recipient: any, payload: any, callback: ErrCallback) {
     const client = this.client;
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(client.options, { format }),
+      headers = Defaults.defaultPostHeaders(client.options, { format }),
       params = {};
     const body = Utils.mixin({ recipient: recipient }, payload);
 
@@ -59,7 +60,7 @@ class DeviceRegistrations {
     const client = this.client;
     const body = DeviceDetails.fromValues(device);
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(client.options, { format }),
+      headers = Defaults.defaultPostHeaders(client.options, { format }),
       params = {};
 
     if (typeof callback !== 'function') {
@@ -95,7 +96,7 @@ class DeviceRegistrations {
   get(deviceIdOrDetails: any, callback: StandardCallback<DeviceDetails>) {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultGetHeaders(client.options, { format }),
+      headers = Defaults.defaultGetHeaders(client.options, { format }),
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof callback !== 'function') {
@@ -139,7 +140,7 @@ class DeviceRegistrations {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
     if (typeof callback !== 'function') {
       return Utils.promisify(this, 'list', arguments);
@@ -159,7 +160,7 @@ class DeviceRegistrations {
   remove(deviceIdOrDetails: any, callback: ErrCallback) {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultGetHeaders(client.options, { format }),
+      headers = Defaults.defaultGetHeaders(client.options, { format }),
       params = {},
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
@@ -195,7 +196,7 @@ class DeviceRegistrations {
   removeWhere(params: any, callback: ErrCallback) {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
     if (typeof callback !== 'function') {
       return Utils.promisify(this, 'removeWhere', arguments);
@@ -220,7 +221,7 @@ class ChannelSubscriptions {
     const client = this.client;
     const body = PushChannelSubscription.fromValues(subscription);
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(client.options, { format }),
+      headers = Defaults.defaultPostHeaders(client.options, { format }),
       params = {};
 
     if (typeof callback !== 'function') {
@@ -252,7 +253,7 @@ class ChannelSubscriptions {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
     if (typeof callback !== 'function') {
       return Utils.promisify(this, 'list', arguments);
@@ -272,7 +273,7 @@ class ChannelSubscriptions {
   removeWhere(params: any, callback: PaginatedResultCallback<unknown>) {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
     if (typeof callback !== 'function') {
       return Utils.promisify(this, 'removeWhere', arguments);
@@ -292,7 +293,7 @@ class ChannelSubscriptions {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
     if (typeof callback !== 'function') {
       return Utils.promisify(this, 'listChannels', arguments);

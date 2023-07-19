@@ -118,7 +118,7 @@ class BaseClient {
         return Utils.promisify(this, 'stats', [params]) as Promise<PaginatedResult<Stats>>;
       }
     }
-    const headers = Utils.defaultGetHeaders(this.options),
+    const headers = Defaults.defaultGetHeaders(this.options),
       format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.http.supportsLinkHeaders ? undefined : format;
 
@@ -148,7 +148,7 @@ class BaseClient {
 
     const _callback = callback || noop;
 
-    const headers = Utils.defaultGetHeaders(this.options);
+    const headers = Defaults.defaultGetHeaders(this.options);
     if (this.options.headers) Utils.mixin(headers, this.options.headers);
     const timeUri = (host: string) => {
       return this.baseUri(host) + '/time';
@@ -201,8 +201,8 @@ class BaseClient {
     const _method = method.toLowerCase() as HttpMethods;
     const headers =
       _method == 'get'
-        ? Utils.defaultGetHeaders(this.options, { format, protocolVersion: version })
-        : Utils.defaultPostHeaders(this.options, { format, protocolVersion: version });
+        ? Defaults.defaultGetHeaders(this.options, { format, protocolVersion: version })
+        : Defaults.defaultPostHeaders(this.options, { format, protocolVersion: version });
 
     if (callback === undefined) {
       return Utils.promisify(this, 'request', [method, path, version, params, body, customHeaders]) as Promise<
@@ -264,7 +264,7 @@ class BaseClient {
     }
 
     const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(this.options, { format });
+      headers = Defaults.defaultPostHeaders(this.options, { format });
 
     if (this.options.headers) Utils.mixin(headers, this.options.headers);
 
@@ -304,7 +304,7 @@ class BaseClient {
     }
 
     const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(this.options, { format });
+      headers = Defaults.defaultPostHeaders(this.options, { format });
 
     if (this.options.headers) Utils.mixin(headers, this.options.headers);
 
