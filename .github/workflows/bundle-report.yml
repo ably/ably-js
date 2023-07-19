@@ -37,3 +37,4 @@ jobs:
           sourcePath: bundle-reports
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           artifactName: bundle-report
+      - run: npm run modulereport
