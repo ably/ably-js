@@ -15,7 +15,6 @@ class DefaultRest extends BaseClient {
     });
   }
 
-  static Platform = Platform;
   static Crypto?: typeof Platform.Crypto;
   static Message = Message;
   static PresenceMessage = PresenceMessage;

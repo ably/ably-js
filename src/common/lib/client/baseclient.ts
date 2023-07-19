@@ -75,7 +75,7 @@ class BaseClient {
     this.http = new Platform.Http(normalOptions);
     this.auth = new Auth(this, normalOptions);
 
-    if (modules?.Rest) {
+    if (modules.Rest) {
       this._rest = new modules.Rest(this);
     }
   }
