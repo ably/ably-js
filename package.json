@@ -96,6 +96,7 @@
     "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js",
+    "modulereport": "node scripts/moduleReport.js",
     "docs": "typedoc --entryPoints ably.d.ts --out docs/generated --readme docs/landing-page.md"
   }
 }
