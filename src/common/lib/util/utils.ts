@@ -1,7 +1,5 @@
 import Platform from 'common/platform';
-import Defaults, { getAgentString } from './defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { NormalisedClientOptions } from 'common/types/ClientOptions';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -330,59 +328,9 @@ export function allSame(arr: Array<Record<string, unknown>>, prop: string): bool
   });
 }
 
-const contentTypes = {
-  json: 'application/json',
-  xml: 'application/xml',
-  html: 'text/html',
-  msgpack: 'application/x-msgpack',
-};
-
 export enum Format {
   msgpack = 'msgpack',
   json = 'json',
-}
-
-export interface HeadersOptions {
-  format?: Format;
-  protocolVersion?: number;
-}
-
-const defaultHeadersOptions: Required<HeadersOptions> = {
-  format: Format.json,
-  protocolVersion: Defaults.protocolVersion,
-};
-
-export function defaultGetHeaders(
-  options: NormalisedClientOptions,
-  {
-    format = defaultHeadersOptions.format,
-    protocolVersion = defaultHeadersOptions.protocolVersion,
-  }: HeadersOptions = {}
-): Record<string, string> {
-  const accept = contentTypes[format];
-  return {
-    accept: accept,
-    'X-Ably-Version': protocolVersion.toString(),
-    'Ably-Agent': getAgentString(options),
-  };
-}
-
-export function defaultPostHeaders(
-  options: NormalisedClientOptions,
-  {
-    format = defaultHeadersOptions.format,
-    protocolVersion = defaultHeadersOptions.protocolVersion,
-  }: HeadersOptions = {}
-): Record<string, string> {
-  let contentType;
-  const accept = (contentType = contentTypes[format]);
-
-  return {
-    accept: accept,
-    'content-type': contentType,
-    'X-Ably-Version': protocolVersion.toString(),
-    'Ably-Agent': getAgentString(options),
-  };
 }
 
 export function arrPopRandomElement<T>(arr: Array<T>): T {

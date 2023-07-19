@@ -10,6 +10,7 @@ import BaseRealtime from './baserealtime';
 import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
 import Platform from '../../platform';
+import Defaults from '../util/defaults';
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
@@ -575,7 +576,7 @@ class Auth {
           return client.baseUri(host) + path;
         };
 
-      const requestHeaders = Utils.defaultPostHeaders(this.client.options);
+      const requestHeaders = Defaults.defaultPostHeaders(this.client.options);
       if (authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
       Logger.logAction(
         Logger.LOG_MICRO,
