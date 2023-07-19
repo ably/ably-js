@@ -30,11 +30,11 @@ function getHosts(client: Rest | Realtime): string[] {
   /* If we're a connected realtime client, try the endpoint we're connected
    * to first -- but still have fallbacks, being connected is not an absolute
    * guarantee that a datacenter has free capacity to service REST requests. */
-  const connection = (client as Realtime).connection,
-    connectionHost = connection && connection.connectionManager.host;
-
-  if (connectionHost) {
-    return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+  if (Utils.isRealtime(client)) {
+    const connectionHost = client.connection.connectionManager.host;
+    if (connectionHost) {
+      return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+    }
   }
 
   return Defaults.getHosts(client.options);

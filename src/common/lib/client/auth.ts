@@ -18,10 +18,6 @@ function random() {
   return ('000000' + Math.floor(Math.random() * 1e16)).slice(-16);
 }
 
-function isRealtime(client: Rest | Realtime): client is Realtime {
-  return !!(client as Realtime).connection;
-}
-
 /* A client auth callback may give errors in any number of formats; normalise to an ErrorInfo or PartialErrorInfo */
 function normaliseAuthcallbackError(err: any) {
   if (!Utils.isErrorInfoOrPartialErrorInfo(err)) {
@@ -274,7 +270,7 @@ class Auth {
       _authOptions,
       (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
         if (err) {
-          if ((this.client as Realtime).connection) {
+          if (Utils.isRealtime(this.client)) {
             /* We interpret RSA4d as including requests made by a client lib to
              * authenticate triggered by an explicit authorize() or an AUTH received from
              * ably, not just connect-sequence-triggered token fetches */
@@ -289,7 +285,7 @@ class Auth {
          * don't call back till new token has taken effect.
          * - Use this.client.connection as a proxy for (this.client instanceof Realtime),
          * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
-        if (isRealtime(this.client)) {
+        if (Utils.isRealtime(this.client)) {
           this.client.connection.connectionManager.onAuthUpdated(tokenDetails, callback || noop);
         } else {
           callback?.(null, tokenDetails);

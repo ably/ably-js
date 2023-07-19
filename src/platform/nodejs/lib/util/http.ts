@@ -10,7 +10,7 @@ import Rest from 'common/lib/client/rest';
 import Realtime from 'common/lib/client/realtime';
 import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
-import { shallowEquals } from 'common/lib/util/utils';
+import { shallowEquals, isRealtime } from 'common/lib/util/utils';
 
 /***************************************************
  *
@@ -78,11 +78,11 @@ function getHosts(client: Rest | Realtime): string[] {
   /* If we're a connected realtime client, try the endpoint we're connected
    * to first -- but still have fallbacks, being connected is not an absolute
    * guarantee that a datacenter has free capacity to service REST requests. */
-  const connection = (client as Realtime).connection;
-  const connectionHost = connection && connection.connectionManager.host;
-
-  if (connectionHost) {
-    return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+  if (isRealtime(client)) {
+    const connectionHost = client.connection.connectionManager.host;
+    if (connectionHost) {
+      return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+    }
   }
 
   return Defaults.getHosts(client.options);
