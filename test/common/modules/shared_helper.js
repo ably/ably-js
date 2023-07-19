@@ -218,7 +218,7 @@ define([
         return res;
       };
 
-  return (module.exports = {
+  var exports = {
     setupApp: testAppModule.setup,
     tearDownApp: testAppModule.tearDown,
     createStats: testAppModule.createStatsFixtureData,
@@ -249,5 +249,11 @@ define([
     arrFind: arrFind,
     arrFilter: arrFilter,
     whenPromiseSettles: whenPromiseSettles,
-  });
+  };
+
+  if (typeof window !== 'undefined') {
+    window.ablyHelpers = exports;
+  }
+
+  return (module.exports = exports);
 });
