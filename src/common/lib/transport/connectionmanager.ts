@@ -21,6 +21,8 @@ import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 type Realtime = any;
 type ClientOptions = any;
 
+let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
+
 const haveWebStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.localSupported;
 const haveSessionStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
 const actions = ProtocolMessage.Action;
@@ -1136,7 +1138,7 @@ class ConnectionManager extends EventEmitter {
         setSessionRecoverData({
           recoveryKey: recoveryKey,
           disconnectedAt: Utils.now(),
-          location: global.location,
+          location: globalObject.location,
           clientId: this.realtime.auth.clientId,
         });
       }

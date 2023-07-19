@@ -3,10 +3,12 @@
 var fs = require('fs');
 var path = require('path');
 var webpackConfig = require('./webpack.config');
+var esbuild = require('esbuild');
+var umdWrapper = require('esbuild-plugin-umd-wrapper');
+var banner = require('./src/fragments/license');
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
-  grunt.loadNpmTasks('grunt-closure-tools');
   grunt.loadNpmTasks('grunt-bump');
   grunt.loadNpmTasks('grunt-webpack');
 
@@ -16,7 +18,6 @@ module.exports = function (grunt) {
     fragments: 'src/platform/web/fragments',
     static: 'build',
     dest: 'build',
-    tools_compiler: __dirname + '/node_modules/google-closure-compiler/compiler.jar',
   };
 
   function compilerSpec(src, dest) {
@@ -49,24 +50,6 @@ module.exports = function (grunt) {
       node: webpackConfig.node,
       browser: [webpackConfig.browser, webpackConfig.browserMin],
     },
-  };
-
-  gruntConfig['closureCompiler'] = {
-    options: {
-      compilerFile: dirs.tools_compiler,
-      compilerOpts: {
-        compilation_level: 'SIMPLE_OPTIMIZATIONS',
-        /* By default, the compiler assumes you're using es6 and transpiles to
-         * es5, adding various (unnecessary and undesired) polyfills. Specify
-         * both in and out to es5 to avoid transpilation */
-        language_in: 'ECMASCRIPT5',
-        language_out: 'ECMASCRIPT5',
-        strict_mode_input: true,
-        checks_only: true,
-        warning_level: 'QUIET',
-      },
-    },
-    'ably.js': compilerSpec('<%= dirs.static %>/ably.js'),
   };
 
   gruntConfig.bump = {
@@ -106,15 +89,52 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all']);
+  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all', 'build:browser']);
 
   grunt.registerTask('build:node', ['checkGitSubmodules', 'webpack:node']);
 
   grunt.registerTask('build:browser', ['checkGitSubmodules', 'webpack:browser']);
 
-  grunt.registerTask('check-closure-compiler', ['build', 'closureCompiler:ably.js']);
+  grunt.registerTask('all', ['build', 'requirejs']);
 
-  grunt.registerTask('all', ['build', 'check-closure-compiler', 'requirejs']);
+  grunt.registerTask('build:browser', function () {
+    var done = this.async();
+
+    var baseConfig = {
+      entryPoints: ['src/platform/web/index.ts'],
+      outfile: 'build/ably.js',
+      bundle: true,
+      sourcemap: true,
+      format: 'umd',
+      banner: { js: '/*' + banner + '*/' },
+      plugins: [umdWrapper.default()],
+      target: 'es6',
+    };
+
+    Promise.all([
+      esbuild.build(baseConfig),
+      esbuild.build({
+        ...baseConfig,
+        outfile: 'build/ably.min.js',
+        minify: true,
+      }),
+      esbuild.build({
+        ...baseConfig,
+        entryPoints: ['src/platform/web-noencryption/index.ts'],
+        outfile: 'build/ably.noencryption.js',
+      }),
+
+      esbuild.build({
+        ...baseConfig,
+        entryPoints: ['src/platform/web-noencryption/index.ts'],
+        outfile: 'build/ably.noencryption.min.js',
+        minify: true,
+      }),
+    ]).then(() => {
+      console.log('esbuild succeeded');
+      done(true);
+    });
+  });
 
   grunt.loadTasks('test/tasks');
 

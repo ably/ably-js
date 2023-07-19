@@ -8,9 +8,8 @@
 4. Commit your changes (`git commit -am 'Add some feature'`)
 5. Ensure you have added suitable tests and the test suite is passing(`npm test`)
 6. Ensure the [type definitions](https://github.com/ably/ably-js/blob/main/ably.d.ts) have been updated if the public API has changed
-7. Ensure you stick to the version of JS used by the library (currently ES5). (The minfication task (`npm run grunt -- closureCompiler:ably.js`) will enforce that you stick to ES5 syntax, but will not enforce that you don't use, for example, new methods)
-8. Push the branch (`git push origin my-new-feature`)
-9. Create a new Pull Request
+7. Push the branch (`git push origin my-new-feature`)
+8. Create a new Pull Request
 
 ## Release Process
 

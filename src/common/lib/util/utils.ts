@@ -415,11 +415,7 @@ export const now =
   };
 
 export function isErrorInfoOrPartialErrorInfo(err: unknown): err is ErrorInfo | PartialErrorInfo {
-  return (
-    typeof err == 'object' &&
-    err !== null &&
-    (err.constructor.name == 'ErrorInfo' || err.constructor.name == 'PartialErrorInfo')
-  );
+  return typeof err == 'object' && err !== null && (err instanceof ErrorInfo || err instanceof PartialErrorInfo);
 }
 
 export function inspectError(err: unknown): string {
@@ -535,7 +531,7 @@ export function getJitterCoefficient() {
 }
 
 export function getGlobalObject() {
-  if (global) {
+  if (typeof global !== 'undefined') {
     return global;
   }
 

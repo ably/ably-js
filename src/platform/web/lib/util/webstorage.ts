@@ -3,6 +3,8 @@ import IWebStorage from 'common/types/IWebStorage';
 
 const test = 'ablyjs-storage-test';
 
+let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
+
 class Webstorage implements IWebStorage {
   sessionSupported: boolean;
   localSupported: boolean;
@@ -14,16 +16,16 @@ class Webstorage implements IWebStorage {
      * somewhat roundabout way. (If unsupported or no global object,
      * will throw on accessing a property of undefined) */
     try {
-      global.sessionStorage.setItem(test, test);
-      global.sessionStorage.removeItem(test);
+      globalObject.sessionStorage.setItem(test, test);
+      globalObject.sessionStorage.removeItem(test);
       this.sessionSupported = true;
     } catch (e) {
       this.sessionSupported = false;
     }
 
     try {
-      global.localStorage.setItem(test, test);
-      global.localStorage.removeItem(test);
+      globalObject.localStorage.setItem(test, test);
+      globalObject.localStorage.removeItem(test);
       this.localSupported = true;
     } catch (e) {
       this.localSupported = false;
@@ -80,7 +82,7 @@ class Webstorage implements IWebStorage {
   }
 
   private storageInterface(session?: boolean) {
-    return session ? global.sessionStorage : global.localStorage;
+    return session ? globalObject.sessionStorage : globalObject.localStorage;
   }
 }
 

@@ -46,6 +46,8 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
+export { Rest, Realtime, msgpack };
+
 export default {
   Rest,
   Realtime,

@@ -8,7 +8,7 @@ type LoggerFunction = (...args: string[]) => void;
 
 // Workaround for salesforce lightning locker compatibility
 // This is a shorthand version of Utils.getGlobalObject (which we can't use here without creating a circular import)
-let globalObject = global || (typeof window !== 'undefined' ? window : self);
+let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
 
 enum LogLevels {
   None = 0,
