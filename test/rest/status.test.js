@@ -4,6 +4,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
   var rest;
   var utils = helper.Utils;
   var expect = chai.expect;
+  var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
 
   // RSL8
   describe('rest/status', function () {
@@ -20,7 +21,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
-    it('status0', function (done) {
+    restTestOnJsonMsgpack('status0', function (done, rest) {
       var channel = rest.channels.get('status0');
       channel.status(function (err, channelDetails) {
         try {
