@@ -40,6 +40,14 @@ export default class ErrorInfo extends Error implements IPartialErrorInfo, API.T
     return toString(this);
   }
 
+  toJSON(): Record<string, string | number> {
+    return {
+      message: this.message,
+      code: this.code,
+      statusCode: this.statusCode,
+    };
+  }
+
   static fromValues(values: Record<string, unknown> | ErrorInfo | Error): ErrorInfo {
     const { message, code, statusCode } = values as ErrorInfo;
     if (typeof message !== 'string' || typeof code !== 'number' || typeof statusCode !== 'number') {
