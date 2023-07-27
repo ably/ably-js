@@ -10,7 +10,7 @@ import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOption
 import Platform from '../../platform';
 import { IRest, IRestConstructor } from './rest';
 import { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
-import Message from '../types/message';
+import { messageClassFactory } from '../types/message';
 
 export interface ModulesMap {
   Rest?: IRestConstructor;
@@ -30,7 +30,8 @@ const baseClientClassFactory = (modules?: ModulesMap) => {
     auth: Auth;
     _rest?: IRest;
 
-    static Message = Message;
+    // TODO what's going on here, is this OK? check for where the top-level usage of the *ClassFactory happens
+    static Message = messageClassFactory();
 
     constructor(options: ClientOptions | string) {
       if (!options) {

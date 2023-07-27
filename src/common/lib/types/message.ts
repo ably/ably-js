@@ -2,7 +2,7 @@ import Platform from 'common/platform';
 import Logger from '../util/logger';
 import ErrorInfo from './errorinfo';
 import { ChannelOptions } from '../../types/channel';
-import PresenceMessage from './presencemessage';
+import { IPresenceMessage } from './presencemessage';
 import * as Utils from '../util/utils';
 import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/bufferutils';
 import * as API from '../../../../ably';
@@ -54,7 +54,7 @@ function normalizeCipherOptions(options: API.Types.ChannelOptions | null): Chann
   return options ?? {};
 }
 
-function getMessageSize(msg: Message) {
+function getMessageSize(msg: IMessage) {
   let size = 0;
   if (msg.name) {
     size += msg.name.length;
@@ -71,297 +71,330 @@ function getMessageSize(msg: Message) {
   return size;
 }
 
-class Message {
-  name?: string;
+export interface IMessage {
   id?: string;
-  timestamp?: number;
+  name?: string;
+  extras?: any;
   clientId?: string;
   connectionId?: string;
-  connectionKey?: string;
+  timestamp?: number;
   data?: any;
-  encoding?: string | null;
-  extras?: any;
-  size?: number;
+}
 
-  /**
-   * Overload toJSON() to intercept JSON.stringify()
-   * @return {*}
-   */
-  toJSON() {
-    /* encode data to base64 if present and we're returning real JSON;
-     * although msgpack calls toJSON(), we know it is a stringify()
-     * call if it has a non-empty arguments list */
-    let encoding = this.encoding;
-    let data = this.data;
-    if (data && Platform.BufferUtils.isBuffer(data)) {
-      if (arguments.length > 0) {
-        /* stringify call */
-        encoding = encoding ? encoding + '/base64' : 'base64';
-        data = Platform.BufferUtils.base64Encode(data);
-      } else {
-        /* Called by msgpack. toBuffer returns a datatype understandable by
-         * that platform's msgpack implementation (Buffer in node, Uint8Array
-         * in browsers) */
-        data = Platform.BufferUtils.toBuffer(data);
+export interface IMessageConstructor {
+  fromResponseBody(
+    body: Array<IMessage>,
+    options: ChannelOptions | EncodingDecodingContext,
+    format?: Utils.Format
+  ): Promise<IMessage[]>;
+  fromValues(values: unknown): IMessage;
+  fromValuesArray(values: unknown[]): IMessage[];
+  encodeArray(messages: Array<IMessage>, options: CipherOptions, callback: Function): void;
+  getMessagesSize(messages: IMessage[]): number;
+  serialize(body: unknown, format?: Utils.Format): string | Buffer;
+  encode(msg: IMessage | IPresenceMessage, options: CipherOptions, callback: Function): void;
+  decode(
+    message: IMessage | IPresenceMessage,
+    inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
+  ): Promise<void>;
+}
+
+const messageClassFactory = (): IMessageConstructor => {
+  return class Message implements IMessage {
+    name?: string;
+    id?: string;
+    timestamp?: number;
+    clientId?: string;
+    connectionId?: string;
+    connectionKey?: string;
+    data?: any;
+    encoding?: string | null;
+    extras?: any;
+    size?: number;
+
+    /**
+     * Overload toJSON() to intercept JSON.stringify()
+     * @return {*}
+     */
+    toJSON() {
+      /* encode data to base64 if present and we're returning real JSON;
+       * although msgpack calls toJSON(), we know it is a stringify()
+       * call if it has a non-empty arguments list */
+      let encoding = this.encoding;
+      let data = this.data;
+      if (data && Platform.BufferUtils.isBuffer(data)) {
+        if (arguments.length > 0) {
+          /* stringify call */
+          encoding = encoding ? encoding + '/base64' : 'base64';
+          data = Platform.BufferUtils.base64Encode(data);
+        } else {
+          /* Called by msgpack. toBuffer returns a datatype understandable by
+           * that platform's msgpack implementation (Buffer in node, Uint8Array
+           * in browsers) */
+          data = Platform.BufferUtils.toBuffer(data);
+        }
       }
+      return {
+        name: this.name,
+        id: this.id,
+        clientId: this.clientId,
+        connectionId: this.connectionId,
+        connectionKey: this.connectionKey,
+        extras: this.extras,
+        encoding,
+        data,
+      };
     }
-    return {
-      name: this.name,
-      id: this.id,
-      clientId: this.clientId,
-      connectionId: this.connectionId,
-      connectionKey: this.connectionKey,
-      extras: this.extras,
-      encoding,
-      data,
-    };
-  }
 
-  toString(): string {
-    let result = '[Message';
-    if (this.name) result += '; name=' + this.name;
-    if (this.id) result += '; id=' + this.id;
-    if (this.timestamp) result += '; timestamp=' + this.timestamp;
-    if (this.clientId) result += '; clientId=' + this.clientId;
-    if (this.connectionId) result += '; connectionId=' + this.connectionId;
-    if (this.encoding) result += '; encoding=' + this.encoding;
-    if (this.extras) result += '; extras =' + JSON.stringify(this.extras);
-    if (this.data) {
-      if (typeof this.data == 'string') result += '; data=' + this.data;
-      else if (Platform.BufferUtils.isBuffer(this.data))
-        result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
-      else result += '; data (json)=' + JSON.stringify(this.data);
-    }
-    if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
-    result += ']';
-    return result;
-  }
-
-  static encrypt(msg: Message | PresenceMessage, options: CipherOptions, callback: Function) {
-    let data = msg.data,
-      encoding = msg.encoding,
-      cipher = options.channelCipher;
-
-    encoding = encoding ? encoding + '/' : '';
-    if (!Platform.BufferUtils.isBuffer(data)) {
-      data = Platform.BufferUtils.utf8Encode(String(data));
-      encoding = encoding + 'utf-8/';
-    }
-    cipher.encrypt(data, function (err: Error, data: unknown) {
-      if (err) {
-        callback(err);
-        return;
+    toString(): string {
+      let result = '[Message';
+      if (this.name) result += '; name=' + this.name;
+      if (this.id) result += '; id=' + this.id;
+      if (this.timestamp) result += '; timestamp=' + this.timestamp;
+      if (this.clientId) result += '; clientId=' + this.clientId;
+      if (this.connectionId) result += '; connectionId=' + this.connectionId;
+      if (this.encoding) result += '; encoding=' + this.encoding;
+      if (this.extras) result += '; extras =' + JSON.stringify(this.extras);
+      if (this.data) {
+        if (typeof this.data == 'string') result += '; data=' + this.data;
+        else if (Platform.BufferUtils.isBuffer(this.data))
+          result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
+        else result += '; data (json)=' + JSON.stringify(this.data);
       }
-      msg.data = data;
-      msg.encoding = encoding + 'cipher+' + cipher.algorithm;
-      callback(null, msg);
-    });
-  }
+      if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
+      result += ']';
+      return result;
+    }
 
-  static encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function): void {
-    const data = msg.data;
-    const nativeDataType =
-      typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
+    static encrypt(msg: Message | IPresenceMessage, options: CipherOptions, callback: Function) {
+      let data = msg.data,
+        encoding = msg.encoding,
+        cipher = options.channelCipher;
 
-    if (!nativeDataType) {
-      if (Utils.isObject(data) || Utils.isArray(data)) {
-        msg.data = JSON.stringify(data);
-        msg.encoding = msg.encoding ? msg.encoding + '/json' : 'json';
-      } else {
-        throw new ErrorInfo('Data type is unsupported', 40013, 400);
+      encoding = encoding ? encoding + '/' : '';
+      if (!Platform.BufferUtils.isBuffer(data)) {
+        data = Platform.BufferUtils.utf8Encode(String(data));
+        encoding = encoding + 'utf-8/';
       }
-    }
-
-    if (options != null && options.cipher) {
-      Message.encrypt(msg, options, callback);
-    } else {
-      callback(null, msg);
-    }
-  }
-
-  static encodeArray(messages: Array<Message>, options: CipherOptions, callback: Function): void {
-    let processed = 0;
-    for (let i = 0; i < messages.length; i++) {
-      Message.encode(messages[i], options, function (err: Error) {
+      cipher.encrypt(data, function (err: Error, data: unknown) {
         if (err) {
           callback(err);
           return;
         }
-        processed++;
-        if (processed == messages.length) {
-          callback(null, messages);
-        }
+        msg.data = data;
+        msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+        callback(null, msg);
       });
     }
-  }
 
-  static serialize = Utils.encodeBody;
+    static encode(msg: Message | IPresenceMessage, options: CipherOptions, callback: Function): void {
+      const data = msg.data;
+      const nativeDataType =
+        typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
 
-  static async decode(
-    message: Message | PresenceMessage,
-    inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
-  ): Promise<void> {
-    const context = normaliseContext(inputContext);
-
-    let lastPayload = message.data;
-    const encoding = message.encoding;
-    if (encoding) {
-      const xforms = encoding.split('/');
-      let lastProcessedEncodingIndex,
-        encodingsToProcess = xforms.length,
-        data = message.data;
-
-      let xform = '';
-      try {
-        while ((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
-          // eslint-disable-next-line security/detect-unsafe-regex
-          const match = xforms[--encodingsToProcess].match(/([-\w]+)(\+([\w-]+))?/);
-          if (!match) break;
-          xform = match[1];
-          switch (xform) {
-            case 'base64':
-              data = Platform.BufferUtils.base64Decode(String(data));
-              if (lastProcessedEncodingIndex == xforms.length) {
-                lastPayload = data;
-              }
-              continue;
-            case 'utf-8':
-              data = Platform.BufferUtils.utf8Decode(data);
-              continue;
-            case 'json':
-              data = JSON.parse(data);
-              continue;
-            case 'cipher':
-              if (
-                context.channelOptions != null &&
-                context.channelOptions.cipher &&
-                context.channelOptions.channelCipher
-              ) {
-                const xformAlgorithm = match[3],
-                  cipher = context.channelOptions.channelCipher;
-                /* don't attempt to decrypt unless the cipher params are compatible */
-                if (xformAlgorithm != cipher.algorithm) {
-                  throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
-                }
-                data = await cipher.decrypt(data);
-                continue;
-              } else {
-                throw new Error('Unable to decrypt message; not an encrypted channel');
-              }
-            case 'vcdiff':
-              if (!context.plugins || !context.plugins.vcdiff) {
-                throw new ErrorInfo(
-                  'Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)',
-                  40019,
-                  400
-                );
-              }
-              if (typeof Uint8Array === 'undefined') {
-                throw new ErrorInfo(
-                  'Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)',
-                  40020,
-                  400
-                );
-              }
-              try {
-                let deltaBase = context.baseEncodedPreviousPayload;
-                if (typeof deltaBase === 'string') {
-                  deltaBase = Platform.BufferUtils.utf8Encode(deltaBase);
-                }
-
-                // vcdiff expects Uint8Arrays, can't copy with ArrayBuffers.
-                deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
-                data = Platform.BufferUtils.toBuffer(data);
-
-                data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
-                lastPayload = data;
-              } catch (e) {
-                throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
-              }
-              continue;
-            default:
-              throw new Error('Unknown encoding');
-          }
+      if (!nativeDataType) {
+        if (Utils.isObject(data) || Utils.isArray(data)) {
+          msg.data = JSON.stringify(data);
+          msg.encoding = msg.encoding ? msg.encoding + '/json' : 'json';
+        } else {
+          throw new ErrorInfo('Data type is unsupported', 40013, 400);
         }
-      } catch (e) {
-        const err = e as ErrorInfo;
-        throw new ErrorInfo(
-          'Error processing the ' + xform + ' encoding, decoder returned ‘' + err.message + '’',
-          err.code || 40013,
-          400
-        );
-      } finally {
-        message.encoding =
-          (lastProcessedEncodingIndex as number) <= 0 ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
-        message.data = data;
+      }
+
+      if (options != null && options.cipher) {
+        Message.encrypt(msg, options, callback);
+      } else {
+        callback(null, msg);
       }
     }
-    context.baseEncodedPreviousPayload = lastPayload;
-  }
 
-  static async fromResponseBody(
-    body: Array<Message>,
-    options: ChannelOptions | EncodingDecodingContext,
-    format?: Utils.Format
-  ): Promise<Message[]> {
-    if (format) {
-      body = Utils.decodeBody(body, format);
+    static encodeArray(messages: Array<Message>, options: CipherOptions, callback: Function): void {
+      let processed = 0;
+      for (let i = 0; i < messages.length; i++) {
+        Message.encode(messages[i], options, function (err: Error) {
+          if (err) {
+            callback(err);
+            return;
+          }
+          processed++;
+          if (processed == messages.length) {
+            callback(null, messages);
+          }
+        });
+      }
     }
 
-    for (let i = 0; i < body.length; i++) {
-      const msg = (body[i] = Message.fromValues(body[i]));
+    static serialize = Utils.encodeBody;
+
+    static async decode(
+      message: Message | IPresenceMessage,
+      inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
+    ): Promise<void> {
+      const context = normaliseContext(inputContext);
+
+      let lastPayload = message.data;
+      const encoding = message.encoding;
+      if (encoding) {
+        const xforms = encoding.split('/');
+        let lastProcessedEncodingIndex,
+          encodingsToProcess = xforms.length,
+          data = message.data;
+
+        let xform = '';
+        try {
+          while ((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
+            // eslint-disable-next-line security/detect-unsafe-regex
+            const match = xforms[--encodingsToProcess].match(/([-\w]+)(\+([\w-]+))?/);
+            if (!match) break;
+            xform = match[1];
+            switch (xform) {
+              case 'base64':
+                data = Platform.BufferUtils.base64Decode(String(data));
+                if (lastProcessedEncodingIndex == xforms.length) {
+                  lastPayload = data;
+                }
+                continue;
+              case 'utf-8':
+                data = Platform.BufferUtils.utf8Decode(data);
+                continue;
+              case 'json':
+                data = JSON.parse(data);
+                continue;
+              case 'cipher':
+                if (
+                  context.channelOptions != null &&
+                  context.channelOptions.cipher &&
+                  context.channelOptions.channelCipher
+                ) {
+                  const xformAlgorithm = match[3],
+                    cipher = context.channelOptions.channelCipher;
+                  /* don't attempt to decrypt unless the cipher params are compatible */
+                  if (xformAlgorithm != cipher.algorithm) {
+                    throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
+                  }
+                  data = await cipher.decrypt(data);
+                  continue;
+                } else {
+                  throw new Error('Unable to decrypt message; not an encrypted channel');
+                }
+              case 'vcdiff':
+                if (!context.plugins || !context.plugins.vcdiff) {
+                  throw new ErrorInfo(
+                    'Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)',
+                    40019,
+                    400
+                  );
+                }
+                if (typeof Uint8Array === 'undefined') {
+                  throw new ErrorInfo(
+                    'Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)',
+                    40020,
+                    400
+                  );
+                }
+                try {
+                  let deltaBase = context.baseEncodedPreviousPayload;
+                  if (typeof deltaBase === 'string') {
+                    deltaBase = Platform.BufferUtils.utf8Encode(deltaBase);
+                  }
+
+                  // vcdiff expects Uint8Arrays, can't copy with ArrayBuffers.
+                  deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
+                  data = Platform.BufferUtils.toBuffer(data);
+
+                  data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
+                  lastPayload = data;
+                } catch (e) {
+                  throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
+                }
+                continue;
+              default:
+                throw new Error('Unknown encoding');
+            }
+          }
+        } catch (e) {
+          const err = e as ErrorInfo;
+          throw new ErrorInfo(
+            'Error processing the ' + xform + ' encoding, decoder returned ‘' + err.message + '’',
+            err.code || 40013,
+            400
+          );
+        } finally {
+          message.encoding =
+            (lastProcessedEncodingIndex as number) <= 0 ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
+          message.data = data;
+        }
+      }
+      context.baseEncodedPreviousPayload = lastPayload;
+    }
+
+    static async fromResponseBody(
+      body: Array<Message>,
+      options: ChannelOptions | EncodingDecodingContext,
+      format?: Utils.Format
+    ): Promise<Message[]> {
+      if (format) {
+        body = Utils.decodeBody(body, format);
+      }
+
+      for (let i = 0; i < body.length; i++) {
+        const msg = (body[i] = Message.fromValues(body[i]));
+        try {
+          await Message.decode(msg, options);
+        } catch (e) {
+          Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', (e as Error).toString());
+        }
+      }
+      return body;
+    }
+
+    static fromValues(values: unknown): Message {
+      return Object.assign(new Message(), values);
+    }
+
+    static fromValuesArray(values: unknown[]): Message[] {
+      const count = values.length,
+        result = new Array(count);
+      for (let i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
+      return result;
+    }
+
+    static async fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Promise<Message> {
+      const msg = Message.fromValues(encoded);
+      const options = normalizeCipherOptions(inputOptions ?? null);
+      /* if decoding fails at any point, catch and return the message decoded to
+       * the fullest extent possible */
       try {
         await Message.decode(msg, options);
       } catch (e) {
-        Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', (e as Error).toString());
+        Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
       }
+      return msg;
     }
-    return body;
-  }
 
-  static fromValues(values: unknown): Message {
-    return Object.assign(new Message(), values);
-  }
-
-  static fromValuesArray(values: unknown[]): Message[] {
-    const count = values.length,
-      result = new Array(count);
-    for (let i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
-    return result;
-  }
-
-  static async fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Promise<Message> {
-    const msg = Message.fromValues(encoded);
-    const options = normalizeCipherOptions(inputOptions ?? null);
-    /* if decoding fails at any point, catch and return the message decoded to
-     * the fullest extent possible */
-    try {
-      await Message.decode(msg, options);
-    } catch (e) {
-      Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
+    static async fromEncodedArray(
+      encodedArray: Array<unknown>,
+      options?: API.Types.ChannelOptions
+    ): Promise<Message[]> {
+      return Promise.all(
+        encodedArray.map(function (encoded) {
+          return Message.fromEncoded(encoded, options);
+        })
+      );
     }
-    return msg;
-  }
 
-  static async fromEncodedArray(encodedArray: Array<unknown>, options?: API.Types.ChannelOptions): Promise<Message[]> {
-    return Promise.all(
-      encodedArray.map(function (encoded) {
-        return Message.fromEncoded(encoded, options);
-      })
-    );
-  }
-
-  /* This should be called on encode()d (and encrypt()d) Messages (as it
-   * assumes the data is a string or buffer) */
-  static getMessagesSize(messages: Message[]): number {
-    let msg,
-      total = 0;
-    for (let i = 0; i < messages.length; i++) {
-      msg = messages[i];
-      total += msg.size || (msg.size = getMessageSize(msg));
+    /* This should be called on encode()d (and encrypt()d) Messages (as it
+     * assumes the data is a string or buffer) */
+    static getMessagesSize(messages: Message[]): number {
+      let msg,
+        total = 0;
+      for (let i = 0; i < messages.length; i++) {
+        msg = messages[i];
+        total += msg.size || (msg.size = getMessageSize(msg));
+      }
+      return total;
     }
-    return total;
-  }
-}
+  };
+};
 
-export default Message;
+export { messageClassFactory };

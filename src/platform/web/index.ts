@@ -3,6 +3,17 @@ import { defaultRestClassFactory } from '../../common/lib/client/defaultrest';
 import { realtimeClassFactory } from '../../common/lib/client/realtime';
 import { channelClassFactory } from '../../common/lib/client/channel';
 import Platform from '../../common/platform';
+import { messageClassFactory } from 'common/lib/types/message';
+import { presenceMessageClassFactory } from 'common/lib/types/presencemessage';
+import { presenceClassFactory } from 'common/lib/client/presence';
+import { protocolMessageClassFactory } from 'common/lib/types/protocolmessage';
+import { realtimePresenceClassFactory } from 'common/lib/client/realtimepresence';
+import { transportClassFactory } from 'common/lib/transport/transport';
+import { protocolClassFactory } from 'common/lib/transport/protocol';
+import { connectionManagerClassFactory } from 'common/lib/transport/connectionmanager';
+import { connectionClassFactory } from 'common/lib/client/connection';
+import { realtimeChannelClassFactory } from 'common/lib/client/realtimechannel';
+import webSocketTransportInitializerFactory from 'common/lib/transport/websockettransport';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
@@ -20,9 +31,33 @@ import msgpack from './lib/util/msgpack';
 
 const Crypto = CryptoFactory(Config, BufferUtils);
 
-const Channel = channelClassFactory();
-const DefaultRest = defaultRestClassFactory(Channel, {});
-const Realtime = realtimeClassFactory(DefaultRest, Channel);
+const Message = messageClassFactory();
+const PresenceMessage = presenceMessageClassFactory(Message);
+const Presence = presenceClassFactory(PresenceMessage);
+const Channel = channelClassFactory(Message, Presence);
+const DefaultRest = defaultRestClassFactory(Channel, PresenceMessage, {});
+const ProtocolMessage = protocolMessageClassFactory(Message, PresenceMessage);
+const RealtimePresence = realtimePresenceClassFactory(Presence, PresenceMessage);
+const RealtimeChannel = realtimeChannelClassFactory(
+  Channel,
+  ProtocolMessage,
+  Message,
+  PresenceMessage,
+  RealtimePresence
+);
+const Transport = transportClassFactory(ProtocolMessage);
+const { protocolClass: Protocol, pendingMessageClass: PendingMessage } = protocolClassFactory(ProtocolMessage);
+const webSocketTransportInitializer = webSocketTransportInitializerFactory(Transport, ProtocolMessage);
+const ConnectionManager = connectionManagerClassFactory(
+  Message,
+  ProtocolMessage,
+  Transport,
+  Protocol,
+  PendingMessage,
+  webSocketTransportInitializer
+);
+const Connection = connectionClassFactory(ConnectionManager);
+const Realtime = realtimeClassFactory(DefaultRest, RealtimeChannel, ProtocolMessage, ConnectionManager, Connection);
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;

@@ -3,6 +3,9 @@ import { BaseClient } from '../../common/lib/client/baseclient';
 import { channelClassFactory } from '../../common/lib/client/channel';
 import { restClassFactory } from '../../common/lib/client/rest';
 import Platform from '../../common/platform';
+import { messageClassFactory } from 'common/lib/types/message';
+import { presenceMessageClassFactory } from 'common/lib/types/presencemessage';
+import { presenceClassFactory } from 'common/lib/client/presence';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
@@ -41,7 +44,10 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
-const Channel = channelClassFactory();
+const Message = messageClassFactory();
+const PresenceMessage = presenceMessageClassFactory(Message);
+const Presence = presenceClassFactory(PresenceMessage);
+const Channel = channelClassFactory(Message, Presence);
 const Rest = restClassFactory(Channel);
 
 export { BaseClient, Rest, Crypto };

@@ -2,31 +2,31 @@ import * as Utils from '../util/utils';
 import { defaultRestClassFactory } from './defaultrest';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import Connection from './connection';
-import { realtimeChannelClassFactory } from './realtimechannel';
+import { IConnection, IConnectionConstructor } from './connection';
+import { IRealtimeChannel, IRealtimeChannelConstructor } from './realtimechannel';
 import ErrorInfo from '../types/errorinfo';
-import ProtocolMessage from '../types/protocolmessage';
+import { IProtocolMessage, IProtocolMessageConstructor } from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
 import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
-import ConnectionManager from '../transport/connectionmanager';
+import { IConnectionManagerConstructor } from '../transport/connectionmanager';
 import Platform from 'common/platform';
-import { IChannelConstructor } from './channel';
 
 const realtimeClassFactory = (
   superclass: ReturnType<typeof defaultRestClassFactory>,
-  channelSuperclass: IChannelConstructor
+  channelClass: IRealtimeChannelConstructor,
+  protocolMessageClass: IProtocolMessageConstructor,
+  connectionManagerClass: IConnectionManagerConstructor,
+  connectionClass: IConnectionConstructor
 ) => {
-  const RealtimeChannel = realtimeChannelClassFactory(channelSuperclass);
-
   class Realtime extends superclass {
     _channels: any;
-    connection: Connection;
+    connection: IConnection;
 
     constructor(options: ClientOptions) {
       super(options);
       Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
-      this.connection = new Connection(this, this.options);
+      this.connection = new connectionClass(this, this.options);
       this._channels = new Channels(this);
       if (options.autoConnect !== false) this.connect();
     }
@@ -46,15 +46,15 @@ const realtimeClassFactory = (
     }
 
     static Utils = Utils;
-    static ConnectionManager = ConnectionManager;
+    static ConnectionManager = connectionManagerClass;
     static Platform = Platform;
-    static ProtocolMessage = ProtocolMessage;
+    static ProtocolMessage = protocolMessageClass;
     static Crypto?: typeof Platform.Crypto;
   }
 
   class Channels extends EventEmitter {
     realtime: Realtime;
-    all: Record<string, InstanceType<typeof RealtimeChannel>>;
+    all: Record<string, IRealtimeChannel>;
 
     constructor(realtime: Realtime) {
       super();
@@ -85,7 +85,7 @@ const realtimeClassFactory = (
     }
 
     // Access to this method is synchronised by ConnectionManager#processChannelMessage.
-    async processChannelMessage(msg: ProtocolMessage) {
+    async processChannelMessage(msg: IProtocolMessage) {
       const channelName = msg.channel;
       if (channelName === undefined) {
         Logger.logAction(
@@ -149,7 +149,7 @@ const realtimeClassFactory = (
       name = String(name);
       let channel = this.all[name];
       if (!channel) {
-        channel = this.all[name] = new RealtimeChannel(this.realtime, name, channelOptions);
+        channel = this.all[name] = new channelClass(this.realtime, name, channelOptions);
       } else if (channelOptions) {
         if (channel._shouldReattachToSetOptions(channelOptions)) {
           throw new ErrorInfo(

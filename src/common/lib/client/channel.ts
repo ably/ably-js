@@ -1,8 +1,8 @@
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import Presence from './presence';
-import Message, { CipherOptions } from '../types/message';
+import { IPresence, IPresenceConstructor } from './presence';
+import { IMessage, CipherOptions, IMessageConstructor } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource, { ResourceCallback } from './resource';
@@ -24,8 +24,8 @@ function noop() {}
 
 const MSG_ID_ENTROPY_BYTES = 9;
 
-function allEmptyIds(messages: Array<Message>) {
-  return Utils.arrEvery(messages, function (message: Message) {
+function allEmptyIds(messages: Array<IMessage>) {
+  return Utils.arrEvery(messages, function (message: IMessage) {
     return !message.id;
   });
 }
@@ -58,12 +58,12 @@ export interface IChannelConstructor {
   new (client: BaseClient, name: string, channelOptions?: ChannelOptions): IChannel;
 }
 
-const channelClassFactory = () => {
+const channelClassFactory = (messageClass: IMessageConstructor, presenceClass: IPresenceConstructor) => {
   return class Channel extends EventEmitter implements IChannel {
     client: BaseClient;
     name: string;
     basePath: string;
-    presence: Presence;
+    presence: IPresence;
     channelOptions: ChannelOptions;
 
     constructor(client: BaseClient, name: string, channelOptions?: ChannelOptions) {
@@ -72,7 +72,7 @@ const channelClassFactory = () => {
       this.client = client;
       this.name = name;
       this.basePath = '/channels/' + encodeURIComponent(name);
-      this.presence = new Presence(this);
+      this.presence = new presenceClass(this);
       this.channelOptions = normaliseChannelOptions(channelOptions);
     }
 
@@ -82,8 +82,8 @@ const channelClassFactory = () => {
 
     history(
       params: RestHistoryParams | null,
-      callback: PaginatedResultCallback<Message>
-    ): Promise<PaginatedResult<Message>> | void {
+      callback: PaginatedResultCallback<IMessage>
+    ): Promise<PaginatedResult<IMessage>> | void {
       Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
       /* params and callback are optional; see if params contains the callback */
       if (callback === undefined) {
@@ -98,7 +98,7 @@ const channelClassFactory = () => {
       this._history(params, callback);
     }
 
-    _history(params: RestHistoryParams | null, callback: PaginatedResultCallback<Message>): void {
+    _history(params: RestHistoryParams | null, callback: PaginatedResultCallback<IMessage>): void {
       const client = this.client,
         format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
         envelope = this.client.http.supportsLinkHeaders ? undefined : format,
@@ -112,7 +112,7 @@ const channelClassFactory = () => {
         headers: Record<string, string>,
         unpacked?: boolean
       ) {
-        return await Message.fromResponseBody(body, options, unpacked ? undefined : format);
+        return await messageClass.fromResponseBody(body, options, unpacked ? undefined : format);
       }).get(params as Record<string, unknown>, callback);
     }
 
@@ -121,7 +121,7 @@ const channelClassFactory = () => {
         first = arguments[0],
         second = arguments[1];
       let callback = arguments[argCount - 1];
-      let messages: Array<Message>;
+      let messages: Array<IMessage>;
       let params: any;
 
       if (typeof callback !== 'function') {
@@ -130,13 +130,13 @@ const channelClassFactory = () => {
 
       if (typeof first === 'string' || first === null) {
         /* (name, data, ...) */
-        messages = [Message.fromValues({ name: first, data: second })];
+        messages = [messageClass.fromValues({ name: first, data: second })];
         params = arguments[2];
       } else if (Utils.isObject(first)) {
-        messages = [Message.fromValues(first)];
+        messages = [messageClass.fromValues(first)];
         params = arguments[1];
       } else if (Utils.isArray(first)) {
-        messages = Message.fromValuesArray(first);
+        messages = messageClass.fromValuesArray(first);
         params = arguments[1];
       } else {
         throw new ErrorInfo(
@@ -166,14 +166,14 @@ const channelClassFactory = () => {
         });
       }
 
-      Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
+      messageClass.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
         if (err) {
           callback(err);
           return;
         }
 
         /* RSL1i */
-        const size = Message.getMessagesSize(messages),
+        const size = messageClass.getMessagesSize(messages),
           maxMessageSize = options.maxMessageSize;
         if (size > maxMessageSize) {
           callback(
@@ -190,7 +190,7 @@ const channelClassFactory = () => {
           return;
         }
 
-        this._publish(Message.serialize(messages, format), headers, params, callback);
+        this._publish(messageClass.serialize(messages, format), headers, params, callback);
       });
     }
 

@@ -1,16 +1,16 @@
-import ProtocolMessage from '../types/protocolmessage';
+import { IProtocolMessage, IProtocolMessageConstructor } from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import { IChannel, IChannelConstructor } from './channel';
 import Logger from '../util/logger';
-import RealtimePresence from './realtimepresence';
-import Message, { CipherOptions } from '../types/message';
+import { IRealtimePresence, IRealtimePresenceConstructor } from './realtimepresence';
+import { CipherOptions, IMessage, IMessageConstructor } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
-import PresenceMessage from '../types/presencemessage';
+import { IPresenceMessage, IPresenceMessageConstructor } from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
-import ConnectionManager from '../transport/connectionmanager';
+import { IConnectionManager } from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
 import { Realtime } from './realtime';
@@ -22,30 +22,6 @@ interface RealtimeHistoryParams {
   limit?: number;
   untilAttach?: boolean;
   from_serial?: string;
-}
-
-const actions = ProtocolMessage.Action;
-const noop = function () {};
-
-function validateChannelOptions(options?: API.Types.ChannelOptions) {
-  if (options && 'params' in options && !Utils.isObject(options.params)) {
-    return new ErrorInfo('options.params must be an object', 40000, 400);
-  }
-  if (options && 'modes' in options) {
-    if (!Utils.isArray(options.modes)) {
-      return new ErrorInfo('options.modes must be an array', 40000, 400);
-    }
-    for (let i = 0; i < options.modes.length; i++) {
-      const currentMode = options.modes[i];
-      if (
-        !currentMode ||
-        typeof currentMode !== 'string' ||
-        !Utils.arrIn(ProtocolMessage.channelModes, String.prototype.toUpperCase.call(currentMode))
-      ) {
-        return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
-      }
-    }
-  }
 }
 
 export function processListenerArgs(args: unknown[]): any[] {
@@ -62,33 +38,68 @@ export function processListenerArgs(args: unknown[]): any[] {
 
 export interface IRealtimeChannel extends IChannel {
   attach(callback?: ErrCallback): void | Promise<void>;
-  connectionManager: ConnectionManager;
+  connectionManager: IConnectionManager;
   invalidStateError(): ErrorInfo;
-
   properties: {
     attachSerial: string | null | undefined;
     channelSerial: string | null | undefined;
   };
   realtime: Realtime;
-  sendPresence(presence: PresenceMessage | PresenceMessage[], callback?: ErrCallback): void;
+  sendPresence(presence: IPresenceMessage | IPresenceMessage[], callback?: ErrCallback): void;
   state: API.Types.ChannelState;
   syncChannelSerial?: string | null;
+  processMessage(message: IProtocolMessage): Promise<void>;
+  checkPendingState(): void;
+  _attach(forceReattach: boolean, attachReason: ErrorInfo | null, callback?: ErrCallback): void;
+  requestState(state: API.Types.ChannelState, reason?: ErrorInfo | null): void;
+  notifyState(state: API.Types.ChannelState, reason?: ErrorInfo | null, resumed?: boolean, hasPresence?: boolean): void;
+  getReleaseErr(): ErrorInfo | null;
+  _shouldReattachToSetOptions(options?: API.Types.ChannelOptions): boolean;
 }
 
 export interface IRealtimeChannelConstructor {
   new (realtime: Realtime, name: string, options?: API.Types.ChannelOptions): IRealtimeChannel;
 }
 
-const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
+const realtimeChannelClassFactory = (
+  superclass: IChannelConstructor,
+  protocolMessageClass: IProtocolMessageConstructor,
+  messageClass: IMessageConstructor,
+  presenceMessageClass: IPresenceMessageConstructor,
+  realtimePresenceClass: IRealtimePresenceConstructor
+) => {
+  const actions = protocolMessageClass.Action;
+  const noop = function () {};
+
+  function validateChannelOptions(options?: API.Types.ChannelOptions) {
+    if (options && 'params' in options && !Utils.isObject(options.params)) {
+      return new ErrorInfo('options.params must be an object', 40000, 400);
+    }
+    if (options && 'modes' in options) {
+      if (!Utils.isArray(options.modes)) {
+        return new ErrorInfo('options.modes must be an array', 40000, 400);
+      }
+      for (let i = 0; i < options.modes.length; i++) {
+        const currentMode = options.modes[i];
+        if (
+          !currentMode ||
+          typeof currentMode !== 'string' ||
+          !Utils.arrIn(protocolMessageClass.channelModes, String.prototype.toUpperCase.call(currentMode))
+        ) {
+          return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
+        }
+      }
+    }
+  }
   return class RealtimeChannel extends superclass implements IRealtimeChannel {
     realtime: Realtime;
-    presence: RealtimePresence;
-    connectionManager: ConnectionManager;
+    presence: IRealtimePresence;
+    connectionManager: IConnectionManager;
     state: API.Types.ChannelState;
     subscriptions: EventEmitter;
     filteredSubscriptions?: Map<
-      API.Types.messageCallback<Message>,
-      Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
+      API.Types.messageCallback<IMessage>,
+      Map<API.Types.MessageFilter, API.Types.messageCallback<IMessage>[]>
     >;
     syncChannelSerial?: string | null;
     properties: {
@@ -116,7 +127,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
       super(realtime, name, options);
       Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
       this.realtime = realtime;
-      this.presence = new RealtimePresence(this);
+      this.presence = new realtimePresenceClass(this);
       this.connectionManager = realtime.connection.connectionManager;
       this.state = 'initialized';
       this.subscriptions = new EventEmitter();
@@ -203,7 +214,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
     }
 
     _shouldReattachToSetOptions(options?: API.Types.ChannelOptions) {
-      return (this.state === 'attached' || this.state === 'attaching') && (options?.params || options?.modes);
+      return !!((this.state === 'attached' || this.state === 'attaching') && (options?.params || options?.modes));
     }
 
     publish(...args: any[]): void | Promise<void> {
@@ -219,8 +230,8 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
         return;
       }
       if (argCount == 2) {
-        if (Utils.isObject(messages)) messages = [Message.fromValues(messages)];
-        else if (Utils.isArray(messages)) messages = Message.fromValuesArray(messages);
+        if (Utils.isObject(messages)) messages = [messageClass.fromValues(messages)];
+        else if (Utils.isArray(messages)) messages = messageClass.fromValuesArray(messages);
         else
           throw new ErrorInfo(
             'The single-argument form of publish() expects a message object or an array of message objects',
@@ -228,16 +239,16 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
             400
           );
       } else {
-        messages = [Message.fromValues({ name: args[0], data: args[1] })];
+        messages = [messageClass.fromValues({ name: args[0], data: args[1] })];
       }
       const maxMessageSize = this.realtime.options.maxMessageSize;
-      Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
+      messageClass.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
         if (err) {
           callback(err);
           return;
         }
         /* RSL1i */
-        const size = Message.getMessagesSize(messages);
+        const size = messageClass.getMessagesSize(messages);
         if (size > maxMessageSize) {
           callback(
             new ErrorInfo(
@@ -257,7 +268,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
     }
 
     // Double underscore used to prevent type conflict with underlying Channel._publish method
-    __publish(messages: Array<Message>, callback: ErrCallback) {
+    __publish(messages: Array<IMessage>, callback: ErrCallback) {
       Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
       const state = this.state;
       switch (state) {
@@ -267,7 +278,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
           break;
         default: {
           Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
-          const msg = new ProtocolMessage();
+          const msg = new protocolMessageClass();
           msg.action = actions.MESSAGE;
           msg.channel = this.name;
           msg.messages = messages;
@@ -340,7 +351,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
 
     attachImpl(): void {
       Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-      const attachMsg = ProtocolMessage.fromValues({
+      const attachMsg = protocolMessageClass.fromValues({
         action: actions.ATTACH,
         channel: this.name,
         params: this.channelOptions.params,
@@ -410,7 +421,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
 
     detachImpl(callback?: ErrCallback): void {
       Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-      const msg = ProtocolMessage.fromValues({ action: actions.DETACH, channel: this.name });
+      const msg = protocolMessageClass.fromValues({ action: actions.DETACH, channel: this.name });
       this.sendMessage(msg, callback || noop);
     }
 
@@ -436,8 +447,8 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
       return this.attach(callback || noop);
     }
 
-    _subscribeFilter(filter: API.Types.MessageFilter, listener: API.Types.messageCallback<Message>) {
-      const filteredListener = (m: Message) => {
+    _subscribeFilter(filter: API.Types.MessageFilter, listener: API.Types.messageCallback<IMessage>) {
+      const filteredListener = (m: IMessage) => {
         const mapping: { [key in keyof API.Types.MessageFilter]: any } = {
           name: m.name,
           refTimeserial: m.extras?.ref?.timeserial,
@@ -462,34 +473,34 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
     // Adds a new filtered subscription
     _addFilteredSubscription(
       filter: API.Types.MessageFilter,
-      realListener: API.Types.messageCallback<Message>,
-      filteredListener: API.Types.messageCallback<Message>
+      realListener: API.Types.messageCallback<IMessage>,
+      filteredListener: API.Types.messageCallback<IMessage>
     ) {
       if (!this.filteredSubscriptions) {
         this.filteredSubscriptions = new Map<
-          API.Types.messageCallback<Message>,
-          Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
+          API.Types.messageCallback<IMessage>,
+          Map<API.Types.MessageFilter, API.Types.messageCallback<IMessage>[]>
         >();
       }
       if (this.filteredSubscriptions.has(realListener)) {
         const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<
           API.Types.MessageFilter,
-          API.Types.messageCallback<Message>[]
+          API.Types.messageCallback<IMessage>[]
         >;
         // Add the filtered listener to the map, or append to the array if this filter has already been used
         realListenerMap.set(filter, realListenerMap?.get(filter)?.concat(filteredListener) || [filteredListener]);
       } else {
         this.filteredSubscriptions.set(
           realListener,
-          new Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>([[filter, [filteredListener]]])
+          new Map<API.Types.MessageFilter, API.Types.messageCallback<IMessage>[]>([[filter, [filteredListener]]])
         );
       }
     }
 
     _getAndDeleteFilteredSubscriptions(
       filter: API.Types.MessageFilter | undefined,
-      realListener: API.Types.messageCallback<Message> | undefined
-    ): API.Types.messageCallback<Message>[] {
+      realListener: API.Types.messageCallback<IMessage> | undefined
+    ): API.Types.messageCallback<IMessage>[] {
       // No filtered subscriptions map means there has been no filtered subscriptions yet, so return nothing
       if (!this.filteredSubscriptions) {
         return [];
@@ -509,9 +520,9 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
             return listenerMaps;
           })
           .reduce(
-            (prev, cur) => (cur ? (prev as API.Types.messageCallback<Message>[]).concat(...cur) : prev),
+            (prev, cur) => (cur ? (prev as API.Types.messageCallback<IMessage>[]).concat(...cur) : prev),
             []
-          ) as API.Types.messageCallback<Message>[];
+          ) as API.Types.messageCallback<IMessage>[];
       }
 
       // No subscriptions for this listener
@@ -520,7 +531,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
       }
       const realListenerMap = this.filteredSubscriptions.get(realListener) as Map<
         API.Types.MessageFilter,
-        API.Types.messageCallback<Message>[]
+        API.Types.messageCallback<IMessage>[]
       >;
       // If no filter is specified return all listeners using that function
       if (!filter) {
@@ -564,30 +575,30 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
       }
 
       /* send sync request */
-      const syncMessage = ProtocolMessage.fromValues({ action: actions.SYNC, channel: this.name });
+      const syncMessage = protocolMessageClass.fromValues({ action: actions.SYNC, channel: this.name });
       if (this.syncChannelSerial) {
         syncMessage.channelSerial = this.syncChannelSerial;
       }
       connectionManager.send(syncMessage);
     }
 
-    sendMessage(msg: ProtocolMessage, callback?: ErrCallback): void {
+    sendMessage(msg: IProtocolMessage, callback?: ErrCallback): void {
       this.connectionManager.send(msg, this.realtime.options.queueMessages, callback);
     }
 
-    sendPresence(presence: PresenceMessage | PresenceMessage[], callback?: ErrCallback): void {
-      const msg = ProtocolMessage.fromValues({
+    sendPresence(presence: IPresenceMessage | IPresenceMessage[], callback?: ErrCallback): void {
+      const msg = protocolMessageClass.fromValues({
         action: actions.PRESENCE,
         channel: this.name,
         presence: Utils.isArray(presence)
-          ? PresenceMessage.fromValuesArray(presence)
-          : [PresenceMessage.fromValues(presence)],
+          ? presenceMessageClass.fromValuesArray(presence)
+          : [presenceMessageClass.fromValues(presence)],
       });
       this.sendMessage(msg, callback);
     }
 
     // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
-    async processMessage(message: ProtocolMessage): Promise<void> {
+    async processMessage(message: IProtocolMessage): Promise<void> {
       if (
         message.action === actions.ATTACHED ||
         message.action === actions.MESSAGE ||
@@ -653,15 +664,15 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
           if (!message.presence) break;
         // eslint-disable-next-line no-fallthrough
         case actions.PRESENCE: {
-          const presence = message.presence as Array<PresenceMessage>;
+          const presence = message.presence as Array<IPresenceMessage>;
           const { id, connectionId, timestamp } = message;
 
           const options = this.channelOptions;
-          let presenceMsg: PresenceMessage;
+          let presenceMsg: IPresenceMessage;
           for (let i = 0; i < presence.length; i++) {
             try {
               presenceMsg = presence[i];
-              await PresenceMessage.decode(presenceMsg, options);
+              await presenceMessageClass.decode(presenceMsg, options);
               if (!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
               if (!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
               if (!presenceMsg.id) presenceMsg.id = id + ':' + i;
@@ -678,7 +689,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
             Logger.logAction(
               Logger.LOG_MAJOR,
               'RealtimeChannel.processMessage()',
-              'Message "' +
+              'IMessage "' +
                 message.id +
                 '" skipped as this channel "' +
                 this.name +
@@ -689,7 +700,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
             return;
           }
 
-          const messages = message.messages as Array<Message>,
+          const messages = message.messages as Array<IMessage>,
             firstMessage = messages[0],
             lastMessage = messages[messages.length - 1],
             id = message.id,
@@ -715,7 +726,7 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
           for (let i = 0; i < messages.length; i++) {
             const msg = messages[i];
             try {
-              await Message.decode(msg, this._decodingContext);
+              await messageClass.decode(msg, this._decodingContext);
             } catch (e) {
               /* decrypt failed .. the most likely cause is that we have the wrong key */
               Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());
@@ -952,8 +963,8 @@ const realtimeChannelClassFactory = (superclass: IChannelConstructor) => {
     history = function (
       this: RealtimeChannel,
       params: RealtimeHistoryParams | null,
-      callback: PaginatedResultCallback<Message>
-    ): void | Promise<PaginatedResultCallback<Message>> {
+      callback: PaginatedResultCallback<IMessage>
+    ): void | Promise<PaginatedResultCallback<IMessage>> {
       Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
       /* params and callback are optional; see if params contains the callback */
       if (callback === undefined) {

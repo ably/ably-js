@@ -1,10 +1,10 @@
 import ErrorInfo from '../types/errorinfo';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import { PendingMessage } from './protocol';
+import { IPendingMessage } from './protocol';
 
 class MessageQueue extends EventEmitter {
-  messages: Array<PendingMessage>;
+  messages: Array<IPendingMessage>;
 
   constructor() {
     super();
@@ -15,27 +15,27 @@ class MessageQueue extends EventEmitter {
     return this.messages.length;
   }
 
-  push(message: PendingMessage): void {
+  push(message: IPendingMessage): void {
     this.messages.push(message);
   }
 
-  shift(): PendingMessage | undefined {
+  shift(): IPendingMessage | undefined {
     return this.messages.shift();
   }
 
-  last(): PendingMessage {
+  last(): IPendingMessage {
     return this.messages[this.messages.length - 1];
   }
 
-  copyAll(): PendingMessage[] {
+  copyAll(): IPendingMessage[] {
     return this.messages.slice();
   }
 
-  append(messages: Array<PendingMessage>): void {
+  append(messages: Array<IPendingMessage>): void {
     this.messages.push.apply(this.messages, messages);
   }
 
-  prepend(messages: Array<PendingMessage>): void {
+  prepend(messages: Array<IPendingMessage>): void {
     this.messages.unshift.apply(this.messages, messages);
   }
 

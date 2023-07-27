@@ -1,10 +1,14 @@
 import Platform from 'common/platform';
-import PresenceMessage from '../types/presencemessage';
+import { IPresenceMessageConstructor, presenceMessageClassFactory } from '../types/presencemessage';
 import { baseClientClassFactory, ModulesMap } from './baseclient';
 import { restClassFactory } from './rest';
 import { IChannelConstructor } from './channel';
 
-const defaultRestClassFactory = (channelClass: IChannelConstructor, platformModules: ModulesMap) => {
+const defaultRestClassFactory = (
+  channelClass: IChannelConstructor,
+  presenceMessageClass: IPresenceMessageConstructor,
+  platformModules: ModulesMap
+) => {
   const Rest = restClassFactory(channelClass);
 
   /**
@@ -13,7 +17,7 @@ const defaultRestClassFactory = (channelClass: IChannelConstructor, platformModu
   return class DefaultRest extends baseClientClassFactory({ ...platformModules, Rest }) {
     static Platform = Platform;
     static Crypto?: typeof Platform.Crypto;
-    static PresenceMessage = PresenceMessage;
+    static PresenceMessage = presenceMessageClassFactory;
   };
 };
 

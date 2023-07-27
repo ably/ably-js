@@ -1,0 +1,286 @@
+
+> ably@1.2.40 build
+> grunt build:all
+
+Running "checkGitSubmodules" task
+Git submodule at /Users/lawrence/code/work/ably/ably-js/test/common/ably-common is found!
+
+Running "webpack:all" (webpack) task
+assets by status 492 KiB [1m[32m[cached][39m[22m 1 asset
+
+[1m[33mWARNING[39m[22m in [1m./src/platform/nodejs/lib/transport/nodecomettransport.js[39m[22m [1m[32m23:4-23[39m[22m
+[1mexport 'default' (imported as 'CometTransport') was [1m[31mnot found[39m[22m[1m in '../../../../common/lib/transport/comettransport' (possible exports: [1m[32m__esModule, cometTransportClassFactory[39m[22m[1m)[39m[22m
+ @ ./src/platform/nodejs/lib/transport/index.js 1:0-54 3:16-34
+ @ ./src/platform/nodejs/index.ts
+
+[1m[33mWARNING[39m[22m in [1m./src/platform/nodejs/lib/transport/nodecomettransport.js[39m[22m [1m[32m29:36-50[39m[22m
+[1mexport 'default' (imported as 'CometTransport') was [1m[31mnot found[39m[22m[1m in '../../../../common/lib/transport/comettransport' (possible exports: [1m[32m__esModule, cometTransportClassFactory[39m[22m[1m)[39m[22m
+ @ ./src/platform/nodejs/lib/transport/index.js 1:0-54 3:16-34
+ @ ./src/platform/nodejs/index.ts
+
+[1m[33mWARNING[39m[22m in [1m./src/platform/nodejs/lib/transport/nodecomettransport.js[39m[22m [1m[32m64:4-41[39m[22m
+[1mexport 'default' (imported as 'CometTransport') was [1m[31mnot found[39m[22m[1m in '../../../../common/lib/transport/comettransport' (possible exports: [1m[32m__esModule, cometTransportClassFactory[39m[22m[1m)[39m[22m
+ @ ./src/platform/nodejs/lib/transport/index.js 1:0-54 3:16-34
+ @ ./src/platform/nodejs/index.ts
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/common/lib/transport/comettransport.ts[39m[22m
+[1m./src/common/lib/transport/comettransport.ts[39m[22m [1m[32m396:2-24[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/common/lib/transport/comettransport.ts(396,3)
+      TS2322: Type 'typeof CometTransport' is not assignable to type 'ICometTransportConstructor'.
+  Cannot assign an abstract constructor type to a non-abstract constructor type.[39m[22m
+ @ ./src/platform/nodejs/lib/transport/nodecomettransport.js 2:0-77 23:4-23 29:36-50 64:4-41
+ @ ./src/platform/nodejs/lib/transport/index.js 1:0-54 3:16-34
+ @ ./src/platform/nodejs/index.ts
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts[39m[22m
+[1m[32m54:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts(54,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts[39m[22m
+[1m[32m58:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts(58,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts[39m[22m
+[1m./src/platform/nodejs/index.ts[39m[22m [1m[32m48:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts(48,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.
+  Cannot assign an abstract constructor type to a non-abstract constructor type.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts[39m[22m
+[1m./src/platform/nodejs/index.ts[39m[22m [1m[32m52:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts(52,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts[39m[22m
+[1m[32m52:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts(52,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts[39m[22m
+[1m[32m56:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts(56,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts[39m[22m
+[1m[32m50:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts(50,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts[39m[22m
+[1m[32m54:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts(54,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts[39m[22m
+[1m[32m47:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts(47,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts[39m[22m
+[1m[32m51:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts(51,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[33m11 errors have detailed information that is not shown.
+Use 'stats.errorDetails: true' resp. '--stats-error-details' to show it.[39m[22m
+
+webpack 5.79.0 compiled with [1m[31m11 errors[39m[22m and [1m[33m3 warnings[39m[22m in 6434 ms
+
+assets by status 199 KiB [1m[32m[cached][39m[22m 2 assets
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/common/lib/transport/comettransport.ts[39m[22m
+[1m[32m396:2-24[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/common/lib/transport/comettransport.ts(396,3)
+      TS2322: Type 'typeof CometTransport' is not assignable to type 'ICometTransportConstructor'.
+  Cannot assign an abstract constructor type to a non-abstract constructor type.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts[39m[22m
+[1m[32m54:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts(54,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts[39m[22m
+[1m[32m58:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts(58,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts[39m[22m
+[1m[32m48:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts(48,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts[39m[22m
+[1m[32m52:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts(52,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts[39m[22m
+[1m[32m52:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts(52,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts[39m[22m
+[1m[32m56:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts(56,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts[39m[22m
+[1m./src/platform/web/index.ts[39m[22m [1m[32m50:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts(50,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.
+  Cannot assign an abstract constructor type to a non-abstract constructor type.[39m[22m
+ @ ./src/platform/web/index-webworker.ts 5:38-56
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts[39m[22m
+[1m./src/platform/web/index.ts[39m[22m [1m[32m54:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts(54,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+ @ ./src/platform/web/index-webworker.ts 5:38-56
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts[39m[22m
+[1m[32m47:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts(47,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts[39m[22m
+[1m[32m51:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts(51,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[33m11 errors have detailed information that is not shown.
+Use 'stats.errorDetails: true' resp. '--stats-error-details' to show it.[39m[22m
+
+webpack 5.79.0 compiled with [1m[31m11 errors[39m[22m in 7303 ms
+
+assets by status 506 KiB [1m[32m[cached][39m[22m 1 asset
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/common/lib/transport/comettransport.ts[39m[22m
+[1m[32m396:2-24[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/common/lib/transport/comettransport.ts(396,3)
+      TS2322: Type 'typeof CometTransport' is not assignable to type 'ICometTransportConstructor'.
+  Cannot assign an abstract constructor type to a non-abstract constructor type.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts[39m[22m
+[1m./src/platform/nativescript/index.ts[39m[22m [1m[32m54:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts(54,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.
+  Cannot assign an abstract constructor type to a non-abstract constructor type.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts[39m[22m
+[1m./src/platform/nativescript/index.ts[39m[22m [1m[32m58:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts(58,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts[39m[22m
+[1m[32m48:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts(48,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts[39m[22m
+[1m[32m52:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts(52,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts[39m[22m
+[1m[32m52:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts(52,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts[39m[22m
+[1m[32m56:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts(56,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts[39m[22m
+[1m[32m50:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts(50,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts[39m[22m
+[1m[32m54:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts(54,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts[39m[22m
+[1m[32m47:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts(47,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts[39m[22m
+[1m[32m51:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts(51,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[33m11 errors have detailed information that is not shown.
+Use 'stats.errorDetails: true' resp. '--stats-error-details' to show it.[39m[22m
+
+webpack 5.79.0 compiled with [1m[31m11 errors[39m[22m in 5598 ms
+
+assets by status 506 KiB [1m[32m[cached][39m[22m 1 asset
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/common/lib/transport/comettransport.ts[39m[22m
+[1m[32m396:2-24[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/common/lib/transport/comettransport.ts(396,3)
+      TS2322: Type 'typeof CometTransport' is not assignable to type 'ICometTransportConstructor'.
+  Cannot assign an abstract constructor type to a non-abstract constructor type.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts[39m[22m
+[1m[32m54:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts(54,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts[39m[22m
+[1m[32m58:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nativescript/index.ts(58,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts[39m[22m
+[1m[32m48:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts(48,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts[39m[22m
+[1m[32m52:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/nodejs/index.ts(52,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts[39m[22m
+[1m./src/platform/react-native/index.ts[39m[22m [1m[32m52:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts(52,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.
+  Cannot assign an abstract constructor type to a non-abstract constructor type.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts[39m[22m
+[1m./src/platform/react-native/index.ts[39m[22m [1m[32m56:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/react-native/index.ts(56,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts[39m[22m
+[1m[32m50:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts(50,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts[39m[22m
+[1m[32m54:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web/index.ts(54,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts[39m[22m
+[1m[32m47:75-84[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts(47,76)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[31mERROR[39m[22m in [1m/Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts[39m[22m
+[1m[32m51:2-11[39m[22m
+[1m[tsl] [1m[31mERROR[39m[22m[1m in /Users/lawrence/code/work/ably/ably-js/src/platform/web-noencryption/index.ts(51,3)
+      TS2345: Argument of type 'typeof Transport' is not assignable to parameter of type 'ITransportConstructor'.[39m[22m
+
+[1m[33m11 errors have detailed information that is not shown.
+Use 'stats.errorDetails: true' resp. '--stats-error-details' to show it.[39m[22m
+
+webpack 5.79.0 compiled with [1m[31m11 errors[39m[22m in 5906 ms
+Warning:  Use --force to continue.
+
+Aborted due to warnings.
