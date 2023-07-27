@@ -15,7 +15,7 @@ interface ModulesMap {
   Rest?: typeof Rest;
 }
 
-const baseClientClassFactory = () => {
+const baseClientClassFactory = (modules?: ModulesMap) => {
   return class BaseClient {
     options: NormalisedClientOptions;
     baseUri: (host: string) => string;
@@ -29,7 +29,7 @@ const baseClientClassFactory = () => {
     auth: Auth;
     _rest?: Rest;
 
-    constructor(options: ClientOptions | string, modules: ModulesMap) {
+    constructor(options: ClientOptions | string) {
       if (!options) {
         const msg = 'no options provided';
         Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
@@ -136,5 +136,4 @@ const baseClientClassFactory = () => {
 
 export type BaseClient = InstanceType<ReturnType<typeof baseClientClassFactory>>;
 
-const baseClientClass = baseClientClassFactory();
-export { baseClientClass as BaseClient };
+export { baseClientClassFactory };

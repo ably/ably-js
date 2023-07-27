@@ -1,4 +1,4 @@
-import { BaseClient, Rest } from '../../build/modules/index.js';
+import { baseClientClassFactory, Rest } from '../../build/modules/index.js';
 
 describe('browser/modules', function () {
   this.timeout(10 * 1000);
@@ -12,7 +12,9 @@ describe('browser/modules', function () {
   });
 
   it('baseclient_with_rest', async function () {
-    const client = new BaseClient({ key }, { Rest });
+    const BaseClient = baseClientClassFactory({ Rest });
+
+    const client = new BaseClient({ key });
     const time = await client.time();
     if (typeof time !== 'number') {
       throw new Error('client.time returned wrong type');
@@ -20,6 +22,8 @@ describe('browser/modules', function () {
   });
 
   it('baseclient_without_rest', function (done) {
+    const BaseClient = baseClientClassFactory();
+
     const client = new BaseClient({ key });
     try {
       client.time();
