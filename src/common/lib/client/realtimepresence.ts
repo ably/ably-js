@@ -4,7 +4,7 @@ import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import PresenceMessage from '../types/presencemessage';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
-import RealtimeChannel from './realtimechannel';
+import RealtimeChannel, { processListenerArgs } from './realtimechannel';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
 import { CipherOptions } from '../types/message';
@@ -497,7 +497,7 @@ class RealtimePresence extends Presence {
   }
 
   subscribe(..._args: unknown[] /* [event], listener, [callback] */): void | Promise<void> {
-    const args = RealtimeChannel.processListenerArgs(_args);
+    const args = processListenerArgs(_args);
     const event = args[0];
     const listener = args[1];
     let callback = args[2];
@@ -517,7 +517,7 @@ class RealtimePresence extends Presence {
   }
 
   unsubscribe(..._args: unknown[] /* [event], listener */): void {
-    const args = RealtimeChannel.processListenerArgs(_args);
+    const args = processListenerArgs(_args);
     const event = args[0];
     const listener = args[1];
     this.subscriptions.off(event, listener);

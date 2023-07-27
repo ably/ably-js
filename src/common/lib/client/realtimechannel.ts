@@ -48,6 +48,18 @@ function validateChannelOptions(options?: API.Types.ChannelOptions) {
   }
 }
 
+export function processListenerArgs(args: unknown[]): any[] {
+  /* [event], listener, [callback] */
+  args = Array.prototype.slice.call(args);
+  if (typeof args[0] === 'function') {
+    args.unshift(null);
+  }
+  if (args[args.length - 1] == undefined) {
+    args.pop();
+  }
+  return args;
+}
+
 class RealtimeChannel extends Channel {
   realtime: Realtime;
   presence: RealtimePresence;
@@ -120,18 +132,6 @@ class RealtimeChannel extends Channel {
       400,
       this.errorReason || undefined
     );
-  }
-
-  static processListenerArgs(args: unknown[]): any[] {
-    /* [event], listener, [callback] */
-    args = Array.prototype.slice.call(args);
-    if (typeof args[0] === 'function') {
-      args.unshift(null);
-    }
-    if (args[args.length - 1] == undefined) {
-      args.pop();
-    }
-    return args;
   }
 
   setOptions(options?: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
@@ -395,7 +395,7 @@ class RealtimeChannel extends Channel {
   }
 
   subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<void> {
-    const [event, listener, callback] = RealtimeChannel.processListenerArgs(args);
+    const [event, listener, callback] = processListenerArgs(args);
 
     if (!callback) {
       return Utils.promisify(this, 'subscribe', [event, listener]);
@@ -518,7 +518,7 @@ class RealtimeChannel extends Channel {
   }
 
   unsubscribe(...args: unknown[] /* [event], listener */): void {
-    const [event, listener] = RealtimeChannel.processListenerArgs(args);
+    const [event, listener] = processListenerArgs(args);
 
     // If we either have a filtered listener, a filter or both we need to do additional processing to find the original function(s)
     if ((typeof event === 'object' && !listener) || this.filteredSubscriptions?.has(listener)) {
