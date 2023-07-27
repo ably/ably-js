@@ -44,7 +44,6 @@ const realtimeClassFactory = (superclass: ReturnType<typeof defaultRestClassFact
     static ConnectionManager = ConnectionManager;
     static Platform = Platform;
     static ProtocolMessage = ProtocolMessage;
-    static Message = Message;
     static Crypto?: typeof Platform.Crypto;
   }
 
