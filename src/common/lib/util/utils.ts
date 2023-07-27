@@ -1,6 +1,6 @@
 import Platform from 'common/platform';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import Realtime from '../client/realtime';
+import { Realtime } from '../client/realtime';
 import { BaseClient } from '../client/baseclient';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {

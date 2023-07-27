@@ -13,7 +13,7 @@ import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
-import Realtime from './realtime';
+import { Realtime } from './realtime';
 
 interface RealtimeHistoryParams {
   start?: number;

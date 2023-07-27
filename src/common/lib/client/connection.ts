@@ -5,7 +5,7 @@ import Logger from '../util/logger';
 import ConnectionStateChange from './connectionstatechange';
 import ErrorInfo from '../types/errorinfo';
 import { NormalisedClientOptions } from '../../types/ClientOptions';
-import Realtime from './realtime';
+import { Realtime } from './realtime';
 import Platform from 'common/platform';
 
 class Connection extends EventEmitter {
