@@ -11,7 +11,6 @@ const defaultRestClassFactory = (platformModules: ModulesMap) => {
   return class DefaultRest extends baseClientClassFactory({ ...platformModules, Rest }) {
     static Platform = Platform;
     static Crypto?: typeof Platform.Crypto;
-    static Message = Message;
     static PresenceMessage = PresenceMessage;
   };
 };

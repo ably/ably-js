@@ -10,6 +10,7 @@ import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOption
 import Platform from '../../platform';
 import Rest from './rest';
 import { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
+import Message from '../types/message';
 
 export interface ModulesMap {
   Rest?: typeof Rest;
@@ -28,6 +29,8 @@ const baseClientClassFactory = (modules?: ModulesMap) => {
     http: IHttp;
     auth: Auth;
     _rest?: Rest;
+
+    static Message = Message;
 
     constructor(options: ClientOptions | string) {
       if (!options) {
