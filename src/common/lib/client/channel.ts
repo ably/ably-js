@@ -32,7 +32,7 @@ export interface IChannelConstructor {
   new (client: BaseClient, name: string, channelOptions?: ChannelOptions): IChannel;
 }
 
-const channelClassFactory = (messageClass: IMessageConstructor, presenceClass: IPresenceConstructor) => {
+const channelClassFactory = (messageClass: IMessageConstructor, presenceClass: IPresenceConstructor, cryptoClass: any | null /* TODO */) => {
   function noop() {}
 
   const MSG_ID_ENTROPY_BYTES = 9;
@@ -46,8 +46,8 @@ const channelClassFactory = (messageClass: IMessageConstructor, presenceClass: I
   function normaliseChannelOptions(options?: ChannelOptions) {
     const channelOptions = options || {};
     if (channelOptions.cipher) {
-      if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-      const cipher = Platform.Crypto.getCipher(channelOptions.cipher);
+      if (!cryptoClass) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+      const cipher = cryptoClass.getCipher(channelOptions.cipher);
       channelOptions.cipher = cipher.cipherParams;
       channelOptions.channelCipher = cipher.cipher;
     } else if ('cipher' in channelOptions) {

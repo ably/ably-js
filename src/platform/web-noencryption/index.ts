@@ -28,10 +28,10 @@ import WebStorage from '../web/lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
 
-const Message = messageClassFactory();
+const Message = messageClassFactory(null);
 const PresenceMessage = presenceMessageClassFactory(Message);
 const Presence = presenceClassFactory(PresenceMessage);
-const Channel = channelClassFactory(Message, Presence);
+const Channel = channelClassFactory(Message, Presence, null);
 const DefaultRest = defaultRestClassFactory(Channel, PresenceMessage, {});
 const ProtocolMessage = protocolMessageClassFactory(Message, PresenceMessage);
 const RealtimePresence = realtimePresenceClassFactory(Presence, PresenceMessage);
@@ -56,15 +56,11 @@ const ConnectionManager = connectionManagerClassFactory(
 const Connection = connectionClassFactory(ConnectionManager);
 const Realtime = realtimeClassFactory(DefaultRest, RealtimeChannel, ProtocolMessage, ConnectionManager, Connection);
 
-Platform.Crypto = null;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
-
-DefaultRest.Crypto = null;
-Realtime.Crypto = null;
 
 Logger.initLogHandlers();
 

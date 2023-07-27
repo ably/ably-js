@@ -59,7 +59,7 @@ export interface IMessageConstructor {
   ): Promise<void>;
 }
 
-const messageClassFactory = (): IMessageConstructor => {
+const messageClassFactory = (cryptoClass: any | null /* TODO */): IMessageConstructor => {
   function normaliseContext(
     context: CipherOptions | EncodingDecodingContext | ChannelOptions
   ): EncodingDecodingContext {
@@ -75,8 +75,8 @@ const messageClassFactory = (): IMessageConstructor => {
 
   function normalizeCipherOptions(options: API.Types.ChannelOptions | null): ChannelOptions {
     if (options && options.cipher) {
-      if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-      const cipher = Platform.Crypto.getCipher(options.cipher);
+      if (!cryptoClass) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+      const cipher = cryptoClass.getCipher(options.cipher);
       return {
         cipher: cipher.cipherParams,
         channelCipher: cipher.cipher,

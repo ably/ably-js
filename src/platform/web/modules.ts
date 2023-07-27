@@ -21,7 +21,6 @@ import PlatformDefaults from './lib/util/defaults';
 
 const Crypto = CryptoFactory(Config, BufferUtils);
 
-Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;

@@ -35,11 +35,11 @@ import msgpack from '../web/lib/util/msgpack';
 
 const Crypto = CryptoFactory(Config, BufferUtils);
 
-const Message = messageClassFactory();
+const Message = messageClassFactory(Crypto);
 const PresenceMessage = presenceMessageClassFactory(Message);
 const Presence = presenceClassFactory(PresenceMessage);
-const Channel = channelClassFactory(Message, Presence);
-const DefaultRest = defaultRestClassFactory(Channel, PresenceMessage, {});
+const Channel = channelClassFactory(Message, Presence, Crypto);
+const DefaultRest = defaultRestClassFactory(Channel, PresenceMessage, { Crypto });
 const ProtocolMessage = protocolMessageClassFactory(Message, PresenceMessage);
 const RealtimePresence = realtimePresenceClassFactory(Presence, PresenceMessage);
 const RealtimeChannel = realtimeChannelClassFactory(
@@ -63,7 +63,6 @@ const ConnectionManager = connectionManagerClassFactory(
 const Connection = connectionClassFactory(ConnectionManager);
 const Realtime = realtimeClassFactory(DefaultRest, RealtimeChannel, ProtocolMessage, ConnectionManager, Connection);
 
-Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;

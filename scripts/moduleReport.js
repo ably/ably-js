@@ -1,7 +1,7 @@
 const esbuild = require('esbuild');
 
 // List of all modules accepted in ModulesMap
-const moduleNames = ['Rest'];
+const moduleNames = ['Rest', 'Crypto'];
 
 function formatBytes(bytes) {
   const kb = bytes / 1024;

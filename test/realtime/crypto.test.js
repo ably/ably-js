@@ -4,7 +4,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var expect = chai.expect;
   var loadTestData = helper.loadTestData;
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
-  var Crypto = Ably.Realtime.Platform.Crypto;
+  var Crypto = Ably.Realtime.Crypto;
   var Message = Ably.Realtime.Message;
   var displayError = helper.displayError;
   var testResourcesPath = helper.testResourcesPath;

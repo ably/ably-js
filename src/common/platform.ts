@@ -22,13 +22,6 @@ export default class Platform {
      can in reality handle.
    */
   static BufferUtils: IBufferUtils<Bufferlike, BufferUtilsOutput, ToBufferOutput>;
-  /*
-     This should be a class whose static methods implement the ICryptoStatic
-     interface, but (for the same reasons as described in the BufferUtils
-     comment above) Platform doesn’t currently allow us to express the
-     generic parameters, hence keeping the type as `any`.
-   */
-  static Crypto: any;
   static Http: typeof IHttp;
   // TODO here I've changed this from IConnectionManager to IConnectionManagerConstructor — did i get it wrong in the first place?
   static Transports: Array<(connectionManager: IConnectionManagerConstructor) => Transport>;

@@ -49,7 +49,6 @@ const realtimeClassFactory = (
     static ConnectionManager = connectionManagerClass;
     static Platform = Platform;
     static ProtocolMessage = protocolMessageClass;
-    static Crypto?: typeof Platform.Crypto;
   }
 
   class Channels extends EventEmitter {

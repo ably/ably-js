@@ -14,6 +14,7 @@ import { messageClassFactory } from '../types/message';
 
 export interface ModulesMap {
   Rest?: IRestConstructor;
+  Crypto?: any /* TODO sort out this type */;
 }
 
 const baseClientClassFactory = (modules?: ModulesMap) => {
@@ -31,7 +32,12 @@ const baseClientClassFactory = (modules?: ModulesMap) => {
     _rest?: IRest;
 
     // TODO what's going on here, is this OK? check for where the top-level usage of the *ClassFactory happens
-    static Message = messageClassFactory();
+    static Message = messageClassFactory(modules?.Crypto ?? null);
+    // TODO what if someone tries to access this, check in test
+    static Crypto? = modules?.Crypto;
+    // TODO do we want a guard on this? if so we should remove the existing ones
+    // this exists for instance methods; maybe there's a neater way
+    Crypto? = modules?.Crypto;
 
     constructor(options: ClientOptions | string) {
       if (!options) {

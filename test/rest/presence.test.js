@@ -4,7 +4,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var rest;
   var cipherConfig;
   var expect = chai.expect;
-  var Crypto = Ably.Realtime.Platform.Crypto;
+  var Crypto = Ably.Realtime.Crypto;
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
   var arrFind = helper.arrFind;
 
