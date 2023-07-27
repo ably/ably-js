@@ -1,6 +1,6 @@
 // Common
-import { DefaultRest as Rest } from '../../common/lib/client/defaultrest';
-import Realtime from '../../common/lib/client/realtime';
+import { defaultRestClassFactory } from '../../common/lib/client/defaultrest';
+import { realtimeClassFactory } from '../../common/lib/client/realtime';
 import Platform from '../../common/platform';
 
 // Platform Specific
@@ -19,6 +19,9 @@ import msgpack from './lib/util/msgpack';
 
 const Crypto = CryptoFactory(Config, BufferUtils);
 
+const DefaultRest = defaultRestClassFactory({});
+const Realtime = realtimeClassFactory(DefaultRest);
+
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
@@ -26,7 +29,7 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
-Rest.Crypto = Crypto;
+DefaultRest.Crypto = Crypto;
 Realtime.Crypto = Crypto;
 
 Logger.initLogHandlers();
@@ -46,10 +49,10 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
-export { Rest, Realtime, msgpack };
+export { DefaultRest as Rest, Realtime, msgpack };
 
 export default {
-  Rest,
+  Rest: DefaultRest,
   Realtime,
   msgpack,
 };

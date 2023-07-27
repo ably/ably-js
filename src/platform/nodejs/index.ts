@@ -1,6 +1,6 @@
 // Common
-import { DefaultRest as Rest } from '../../common/lib/client/defaultrest';
-import Realtime from '../../common/lib/client/realtime';
+import { defaultRestClassFactory } from '../../common/lib/client/defaultrest';
+import { realtimeClassFactory } from '../../common/lib/client/realtime';
 import Platform from '../../common/platform';
 
 // Platform Specific
@@ -17,6 +17,9 @@ import PlatformDefaults from './lib/util/defaults';
 
 const Crypto = CryptoFactory(BufferUtils);
 
+const DefaultRest = defaultRestClassFactory({});
+const Realtime = realtimeClassFactory(DefaultRest);
+
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils as typeof Platform.BufferUtils;
 Platform.Http = Http;
@@ -24,7 +27,7 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = null;
 
-Rest.Crypto = Crypto;
+DefaultRest.Crypto = Crypto;
 Realtime.Crypto = Crypto;
 
 Logger.initLogHandlers();
@@ -37,7 +40,7 @@ if (Platform.Config.agent) {
 }
 
 export default {
-  Rest,
+  Rest: DefaultRest,
   Realtime,
   msgpack: null,
 };

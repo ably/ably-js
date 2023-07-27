@@ -11,7 +11,7 @@ import Platform from '../../platform';
 import Rest from './rest';
 import { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 
-interface ModulesMap {
+export interface ModulesMap {
   Rest?: typeof Rest;
 }
 

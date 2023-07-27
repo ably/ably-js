@@ -1,5 +1,5 @@
 import * as Utils from '../util/utils';
-import { DefaultRest as Rest } from './defaultrest';
+import { defaultRestClassFactory } from './defaultrest';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Connection from './connection';
@@ -13,8 +13,8 @@ import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';
 
-const realtimeClassFactory = () => {
-  class Realtime extends Rest {
+const realtimeClassFactory = (superclass: ReturnType<typeof defaultRestClassFactory>) => {
+  class Realtime extends superclass {
     _channels: any;
     connection: Connection;
 
@@ -189,5 +189,4 @@ const realtimeClassFactory = () => {
 
 export type Realtime = InstanceType<ReturnType<typeof realtimeClassFactory>>;
 
-const realtimeClass = realtimeClassFactory();
-export default realtimeClass;
+export { realtimeClassFactory };
