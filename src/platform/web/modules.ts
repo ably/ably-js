@@ -1,6 +1,7 @@
 // Common
 import { BaseClient } from '../../common/lib/client/baseclient';
-import Rest from '../../common/lib/client/rest';
+import { channelClassFactory } from '../../common/lib/client/channel';
+import { restClassFactory } from '../../common/lib/client/rest';
 import Platform from '../../common/platform';
 
 // Platform Specific
@@ -39,5 +40,8 @@ if (Platform.Config.agent) {
 if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
+
+const Channel = channelClassFactory();
+const Rest = restClassFactory(Channel);
 
 export { BaseClient, Rest, Crypto };

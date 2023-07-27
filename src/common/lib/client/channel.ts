@@ -46,155 +46,169 @@ function normaliseChannelOptions(options?: ChannelOptions) {
   return channelOptions;
 }
 
-class Channel extends EventEmitter {
-  client: BaseClient;
+export interface IChannel extends EventEmitter {
   name: string;
-  basePath: string;
-  presence: Presence;
   channelOptions: ChannelOptions;
+  client: BaseClient;
+  basePath: string;
+  setOptions(options?: ChannelOptions): void;
+}
 
-  constructor(client: BaseClient, name: string, channelOptions?: ChannelOptions) {
-    super();
-    Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
-    this.client = client;
-    this.name = name;
-    this.basePath = '/channels/' + encodeURIComponent(name);
-    this.presence = new Presence(this);
-    this.channelOptions = normaliseChannelOptions(channelOptions);
-  }
+export interface IChannelConstructor {
+  new (client: BaseClient, name: string, channelOptions?: ChannelOptions): IChannel;
+}
 
-  setOptions(options?: ChannelOptions): void {
-    this.channelOptions = normaliseChannelOptions(options);
-  }
+const channelClassFactory = () => {
+  return class Channel extends EventEmitter implements IChannel {
+    client: BaseClient;
+    name: string;
+    basePath: string;
+    presence: Presence;
+    channelOptions: ChannelOptions;
 
-  history(
-    params: RestHistoryParams | null,
-    callback: PaginatedResultCallback<Message>
-  ): Promise<PaginatedResult<Message>> | void {
-    Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
-    /* params and callback are optional; see if params contains the callback */
-    if (callback === undefined) {
-      if (typeof params == 'function') {
-        callback = params;
-        params = null;
-      } else {
-        return Utils.promisify(this, 'history', arguments);
+    constructor(client: BaseClient, name: string, channelOptions?: ChannelOptions) {
+      super();
+      Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
+      this.client = client;
+      this.name = name;
+      this.basePath = '/channels/' + encodeURIComponent(name);
+      this.presence = new Presence(this);
+      this.channelOptions = normaliseChannelOptions(channelOptions);
+    }
+
+    setOptions(options?: ChannelOptions): void {
+      this.channelOptions = normaliseChannelOptions(options);
+    }
+
+    history(
+      params: RestHistoryParams | null,
+      callback: PaginatedResultCallback<Message>
+    ): Promise<PaginatedResult<Message>> | void {
+      Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
+      /* params and callback are optional; see if params contains the callback */
+      if (callback === undefined) {
+        if (typeof params == 'function') {
+          callback = params;
+          params = null;
+        } else {
+          return Utils.promisify(this, 'history', arguments);
+        }
       }
+
+      this._history(params, callback);
     }
 
-    this._history(params, callback);
-  }
+    _history(params: RestHistoryParams | null, callback: PaginatedResultCallback<Message>): void {
+      const client = this.client,
+        format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+        envelope = this.client.http.supportsLinkHeaders ? undefined : format,
+        headers = Defaults.defaultGetHeaders(client.options, { format });
 
-  _history(params: RestHistoryParams | null, callback: PaginatedResultCallback<Message>): void {
-    const client = this.client,
-      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(client.options, { format });
+      Utils.mixin(headers, client.options.headers);
 
-    Utils.mixin(headers, client.options.headers);
-
-    const options = this.channelOptions;
-    new PaginatedResource(client, this.basePath + '/messages', headers, envelope, async function (
-      body: any,
-      headers: Record<string, string>,
-      unpacked?: boolean
-    ) {
-      return await Message.fromResponseBody(body, options, unpacked ? undefined : format);
-    }).get(params as Record<string, unknown>, callback);
-  }
-
-  publish(): void | Promise<void> {
-    const argCount = arguments.length,
-      first = arguments[0],
-      second = arguments[1];
-    let callback = arguments[argCount - 1];
-    let messages: Array<Message>;
-    let params: any;
-
-    if (typeof callback !== 'function') {
-      return Utils.promisify(this, 'publish', arguments);
+      const options = this.channelOptions;
+      new PaginatedResource(client, this.basePath + '/messages', headers, envelope, async function (
+        body: any,
+        headers: Record<string, string>,
+        unpacked?: boolean
+      ) {
+        return await Message.fromResponseBody(body, options, unpacked ? undefined : format);
+      }).get(params as Record<string, unknown>, callback);
     }
 
-    if (typeof first === 'string' || first === null) {
-      /* (name, data, ...) */
-      messages = [Message.fromValues({ name: first, data: second })];
-      params = arguments[2];
-    } else if (Utils.isObject(first)) {
-      messages = [Message.fromValues(first)];
-      params = arguments[1];
-    } else if (Utils.isArray(first)) {
-      messages = Message.fromValuesArray(first);
-      params = arguments[1];
-    } else {
-      throw new ErrorInfo(
-        'The single-argument form of publish() expects a message object or an array of message objects',
-        40013,
-        400
-      );
-    }
+    publish(): void | Promise<void> {
+      const argCount = arguments.length,
+        first = arguments[0],
+        second = arguments[1];
+      let callback = arguments[argCount - 1];
+      let messages: Array<Message>;
+      let params: any;
 
-    if (typeof params !== 'object' || !params) {
-      /* No params supplied (so after-message argument is just the callback or undefined) */
-      params = {};
-    }
+      if (typeof callback !== 'function') {
+        return Utils.promisify(this, 'publish', arguments);
+      }
 
-    const client = this.client,
-      options = client.options,
-      format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      idempotentRestPublishing = client.options.idempotentRestPublishing,
-      headers = Defaults.defaultPostHeaders(client.options, { format });
+      if (typeof first === 'string' || first === null) {
+        /* (name, data, ...) */
+        messages = [Message.fromValues({ name: first, data: second })];
+        params = arguments[2];
+      } else if (Utils.isObject(first)) {
+        messages = [Message.fromValues(first)];
+        params = arguments[1];
+      } else if (Utils.isArray(first)) {
+        messages = Message.fromValuesArray(first);
+        params = arguments[1];
+      } else {
+        throw new ErrorInfo(
+          'The single-argument form of publish() expects a message object or an array of message objects',
+          40013,
+          400
+        );
+      }
 
-    Utils.mixin(headers, options.headers);
+      if (typeof params !== 'object' || !params) {
+        /* No params supplied (so after-message argument is just the callback or undefined) */
+        params = {};
+      }
 
-    if (idempotentRestPublishing && allEmptyIds(messages)) {
-      const msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
-      Utils.arrForEach(messages, function (message, index) {
-        message.id = msgIdBase + ':' + index.toString();
+      const client = this.client,
+        options = client.options,
+        format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+        idempotentRestPublishing = client.options.idempotentRestPublishing,
+        headers = Defaults.defaultPostHeaders(client.options, { format });
+
+      Utils.mixin(headers, options.headers);
+
+      if (idempotentRestPublishing && allEmptyIds(messages)) {
+        const msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
+        Utils.arrForEach(messages, function (message, index) {
+          message.id = msgIdBase + ':' + index.toString();
+        });
+      }
+
+      Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
+        if (err) {
+          callback(err);
+          return;
+        }
+
+        /* RSL1i */
+        const size = Message.getMessagesSize(messages),
+          maxMessageSize = options.maxMessageSize;
+        if (size > maxMessageSize) {
+          callback(
+            new ErrorInfo(
+              'Maximum size of messages that can be published at once exceeded ( was ' +
+                size +
+                ' bytes; limit is ' +
+                maxMessageSize +
+                ' bytes)',
+              40009,
+              400
+            )
+          );
+          return;
+        }
+
+        this._publish(Message.serialize(messages, format), headers, params, callback);
       });
     }
 
-    Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
-      if (err) {
-        callback(err);
-        return;
-      }
-
-      /* RSL1i */
-      const size = Message.getMessagesSize(messages),
-        maxMessageSize = options.maxMessageSize;
-      if (size > maxMessageSize) {
-        callback(
-          new ErrorInfo(
-            'Maximum size of messages that can be published at once exceeded ( was ' +
-              size +
-              ' bytes; limit is ' +
-              maxMessageSize +
-              ' bytes)',
-            40009,
-            400
-          )
-        );
-        return;
-      }
-
-      this._publish(Message.serialize(messages, format), headers, params, callback);
-    });
-  }
-
-  _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
-    Resource.post(this.client, this.basePath + '/messages', requestBody, headers, params, null, callback);
-  }
-
-  status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
-    if (typeof callback !== 'function') {
-      return Utils.promisify(this, 'status', []);
+    _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
+      Resource.post(this.client, this.basePath + '/messages', requestBody, headers, params, null, callback);
     }
 
-    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-    const headers = Defaults.defaultPostHeaders(this.client.options, { format });
+    status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
+      if (typeof callback !== 'function') {
+        return Utils.promisify(this, 'status', []);
+      }
 
-    Resource.get<API.Types.ChannelDetails>(this.client, this.basePath, headers, {}, format, callback || noop);
-  }
-}
+      const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
+      const headers = Defaults.defaultPostHeaders(this.client.options, { format });
 
-export default Channel;
+      Resource.get<API.Types.ChannelDetails>(this.client, this.basePath, headers, {}, format, callback || noop);
+    }
+  };
+};
+
+export { channelClassFactory };

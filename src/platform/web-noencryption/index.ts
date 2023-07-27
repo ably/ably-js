@@ -1,6 +1,7 @@
 // Common
 import { defaultRestClassFactory } from '../../common/lib/client/defaultrest';
 import { realtimeClassFactory } from '../../common/lib/client/realtime';
+import { channelClassFactory } from '../../common/lib/client/channel';
 import Platform from '../../common/platform';
 
 // Platform Specific
@@ -16,8 +17,9 @@ import WebStorage from '../web/lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
 
-const DefaultRest = defaultRestClassFactory({});
-const Realtime = realtimeClassFactory(DefaultRest);
+const Channel = channelClassFactory();
+const DefaultRest = defaultRestClassFactory(Channel, {});
+const Realtime = realtimeClassFactory(DefaultRest, Channel);
 
 Platform.Crypto = null;
 Platform.BufferUtils = BufferUtils;

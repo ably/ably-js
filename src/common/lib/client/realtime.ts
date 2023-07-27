@@ -3,7 +3,7 @@ import { defaultRestClassFactory } from './defaultrest';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Connection from './connection';
-import RealtimeChannel from './realtimechannel';
+import { realtimeChannelClassFactory } from './realtimechannel';
 import ErrorInfo from '../types/errorinfo';
 import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
@@ -11,9 +11,14 @@ import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
-import Message from '../types/message';
+import { IChannelConstructor } from './channel';
 
-const realtimeClassFactory = (superclass: ReturnType<typeof defaultRestClassFactory>) => {
+const realtimeClassFactory = (
+  superclass: ReturnType<typeof defaultRestClassFactory>,
+  channelSuperclass: IChannelConstructor
+) => {
+  const RealtimeChannel = realtimeChannelClassFactory(channelSuperclass);
+
   class Realtime extends superclass {
     _channels: any;
     connection: Connection;
@@ -49,7 +54,7 @@ const realtimeClassFactory = (superclass: ReturnType<typeof defaultRestClassFact
 
   class Channels extends EventEmitter {
     realtime: Realtime;
-    all: Record<string, RealtimeChannel>;
+    all: Record<string, InstanceType<typeof RealtimeChannel>>;
 
     constructor(realtime: Realtime) {
       super();

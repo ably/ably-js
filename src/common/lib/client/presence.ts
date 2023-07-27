@@ -5,15 +5,15 @@ import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import PresenceMessage from '../types/presencemessage';
 import { CipherOptions } from '../types/message';
 import { PaginatedResultCallback } from '../../types/utils';
-import Channel from './channel';
-import RealtimeChannel from './realtimechannel';
+import { IChannel } from './channel';
+import { IRealtimeChannel } from './realtimechannel';
 import Defaults from '../util/defaults';
 
 class Presence extends EventEmitter {
-  channel: RealtimeChannel | Channel;
+  channel: IRealtimeChannel | IChannel;
   basePath: string;
 
-  constructor(channel: RealtimeChannel | Channel) {
+  constructor(channel: IRealtimeChannel | IChannel) {
     super();
     this.channel = channel;
     this.basePath = channel.basePath + '/presence';

@@ -1,10 +1,12 @@
 import Platform from 'common/platform';
-import Message from '../types/message';
 import PresenceMessage from '../types/presencemessage';
 import { baseClientClassFactory, ModulesMap } from './baseclient';
-import Rest from './rest';
+import { restClassFactory } from './rest';
+import { IChannelConstructor } from './channel';
 
-const defaultRestClassFactory = (platformModules: ModulesMap) => {
+const defaultRestClassFactory = (channelClass: IChannelConstructor, platformModules: ModulesMap) => {
+  const Rest = restClassFactory(channelClass);
+
   /**
    * Preloaded BaseClient with all REST features, used as the default non-treeshakeable Rest export
    */

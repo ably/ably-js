@@ -4,7 +4,7 @@ import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import PresenceMessage from '../types/presencemessage';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
-import RealtimeChannel, { processListenerArgs } from './realtimechannel';
+import { IRealtimeChannel, processListenerArgs } from './realtimechannel';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
 import { CipherOptions } from '../types/message';
@@ -41,7 +41,7 @@ function isAnonymousOrWildcard(realtimePresence: RealtimePresence) {
 }
 
 /* Callback is called only in the event of an error */
-function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: () => void) {
+function waitAttached(channel: IRealtimeChannel, callback: ErrCallback, action: () => void) {
   switch (channel.state) {
     case 'attached':
     case 'suspended':
@@ -79,7 +79,7 @@ function newerThan(item: PresenceMessage, existing: PresenceMessage) {
 }
 
 class RealtimePresence extends Presence {
-  channel: RealtimeChannel;
+  channel: IRealtimeChannel;
   pendingPresence: { presence: PresenceMessage; callback: ErrCallback }[];
   syncComplete: boolean;
   members: PresenceMap;
@@ -87,7 +87,7 @@ class RealtimePresence extends Presence {
   subscriptions: EventEmitter;
   name?: string;
 
-  constructor(channel: RealtimeChannel) {
+  constructor(channel: IRealtimeChannel) {
     super(channel);
     this.channel = channel;
     this.syncComplete = false;
@@ -440,7 +440,7 @@ class RealtimePresence extends Presence {
     if (this.pendingPresence.length) {
       Logger.logAction(
         Logger.LOG_MINOR,
-        'RealtimeChannel.failPendingPresence',
+        'IRealtimeChannel.failPendingPresence',
         'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err)
       );
       for (let i = 0; i < this.pendingPresence.length; i++)
