@@ -4,8 +4,10 @@ import Message, { CipherOptions } from './message';
 import * as Utils from '../util/utils';
 import * as API from '../../../../ably';
 
+const actions = ['absent', 'present', 'enter', 'leave', 'update'];
+
 function toActionValue(actionString: string) {
-  return PresenceMessage.Actions.indexOf(actionString);
+  return actions.indexOf(actionString);
 }
 
 class PresenceMessage {
@@ -17,8 +19,6 @@ class PresenceMessage {
   data?: string | Buffer | Uint8Array;
   encoding?: string;
   size?: number;
-
-  static Actions = ['absent', 'present', 'enter', 'leave', 'update'];
 
   /* Returns whether this presenceMessage is synthesized, i.e. was not actually
    * sent by the connection (usually means a leave event sent 15s after a
@@ -125,7 +125,7 @@ class PresenceMessage {
 
   static fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage {
     if (stringifyAction) {
-      values.action = PresenceMessage.Actions[values.action as number];
+      values.action = actions[values.action as number];
     }
     return Object.assign(new PresenceMessage(), values);
   }
