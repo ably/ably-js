@@ -8,12 +8,12 @@ import { IHttp, RequestParams } from '../../types/http';
 import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
 
 import Platform from '../../platform';
-import Rest from './rest';
+import { IRest, IRestConstructor } from './rest';
 import { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 import Message from '../types/message';
 
 export interface ModulesMap {
-  Rest?: typeof Rest;
+  Rest?: IRestConstructor;
 }
 
 const baseClientClassFactory = (modules?: ModulesMap) => {
@@ -28,7 +28,7 @@ const baseClientClassFactory = (modules?: ModulesMap) => {
     serverTimeOffset: number | null;
     http: IHttp;
     auth: Auth;
-    _rest?: Rest;
+    _rest?: IRest;
 
     static Message = Message;
 
@@ -88,7 +88,7 @@ const baseClientClassFactory = (modules?: ModulesMap) => {
       }
     }
 
-    private get rest(): Rest {
+    private get rest(): IRest {
       if (!this._rest) {
         throw new ErrorInfo('Rest module not provided', 400, 40000);
       }

@@ -5,25 +5,25 @@ import PaginatedResource from './paginatedresource';
 import ErrorInfo from '../types/errorinfo';
 import PushChannelSubscription from '../types/pushchannelsubscription';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import Rest from './rest';
+import { IRest } from './rest';
 import Defaults from '../util/defaults';
 
 class Push {
-  rest: Rest;
+  rest: IRest;
   admin: Admin;
 
-  constructor(rest: Rest) {
+  constructor(rest: IRest) {
     this.rest = rest;
     this.admin = new Admin(rest);
   }
 }
 
 class Admin {
-  rest: Rest;
+  rest: IRest;
   deviceRegistrations: DeviceRegistrations;
   channelSubscriptions: ChannelSubscriptions;
 
-  constructor(rest: Rest) {
+  constructor(rest: IRest) {
     this.rest = rest;
     this.deviceRegistrations = new DeviceRegistrations(rest);
     this.channelSubscriptions = new ChannelSubscriptions(rest);
@@ -50,9 +50,9 @@ class Admin {
 }
 
 class DeviceRegistrations {
-  rest: Rest;
+  rest: IRest;
 
-  constructor(rest: Rest) {
+  constructor(rest: IRest) {
     this.rest = rest;
   }
 
@@ -211,9 +211,9 @@ class DeviceRegistrations {
 }
 
 class ChannelSubscriptions {
-  rest: Rest;
+  rest: IRest;
 
-  constructor(rest: Rest) {
+  constructor(rest: IRest) {
     this.rest = rest;
   }
 

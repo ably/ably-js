@@ -15,6 +15,32 @@ import Platform from '../../platform';
 import { BaseClient } from './baseclient';
 import Defaults from '../util/defaults';
 
+export interface IRest {
+  channels: Channels;
+  push: Push;
+  time(params?: RequestParams | StandardCallback<number>, callback?: StandardCallback<number>): Promise<number> | void;
+  stats(
+    params: RequestParams,
+    callback: StandardCallback<PaginatedResult<Stats>>
+  ): Promise<PaginatedResult<Stats>> | void;
+  request(
+    method: string,
+    path: string,
+    version: number,
+    params: RequestParams,
+    body: unknown,
+    customHeaders: Record<string, string>,
+    callback: StandardCallback<HttpPaginatedResponse<unknown>>
+  ): Promise<HttpPaginatedResponse<unknown>> | void;
+  options: NormalisedClientOptions;
+  client: BaseClient;
+  http: IHttp;
+}
+
+export interface IRestConstructor {
+  new (client: BaseClient): IRest;
+}
+
 const noop = function () {};
 
 class Rest {
