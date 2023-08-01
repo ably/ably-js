@@ -12,7 +12,7 @@ import { DefaultMessage } from '../types/defaultmessage';
  */
 export class DefaultRealtime extends BaseRealtime {
   constructor(options: ClientOptions) {
-    super(options, allCommonModules);
+    super(options, { ...allCommonModules, Crypto: DefaultRealtime.Crypto ?? undefined });
   }
 
   static Utils = Utils;

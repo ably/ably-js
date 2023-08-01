@@ -9,7 +9,7 @@ import { DefaultMessage } from '../types/defaultmessage';
  */
 export class DefaultRest extends BaseRest {
   constructor(options: ClientOptions | string) {
-    super(options, allCommonModules);
+    super(options, { ...allCommonModules, Crypto: DefaultRest.Crypto ?? undefined });
   }
 
   private static _Crypto: typeof Platform.Crypto = null;

@@ -7,7 +7,6 @@ import ErrorInfo from '../../common/lib/types/errorinfo';
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
 // @ts-ignore
-import { createCryptoClass } from './lib/util/crypto';
 import Http from './lib/util/http';
 import Config from './config';
 // @ts-ignore
@@ -17,9 +16,6 @@ import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
 
-const Crypto = createCryptoClass(Config, BufferUtils);
-
-Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;

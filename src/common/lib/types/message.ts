@@ -48,7 +48,7 @@ function normalizeCipherOptions(
   options: API.Types.ChannelOptions | null
 ): ChannelOptions {
   if (options && options.cipher) {
-    if (!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+    if (!Crypto) Utils.throwMissingModuleError('Crypto');
     const cipher = Crypto.getCipher(options.cipher);
     return {
       cipher: cipher.cipherParams,

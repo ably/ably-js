@@ -13,6 +13,8 @@ import Platform from '../../platform';
 import PresenceMessage from '../types/presencemessage';
 import { ModulesMap } from './modulesmap';
 import { Rest } from './rest';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
+import { throwMissingModuleError } from '../util/utils';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
 type BatchPublishSpec = API.Types.BatchPublishSpec;
@@ -37,6 +39,7 @@ class BaseClient {
   auth: Auth;
 
   private readonly _rest: Rest | null;
+  readonly _Crypto: IUntypedCryptoStatic | null;
 
   constructor(options: ClientOptions | string, modules: ModulesMap) {
     if (!options) {
@@ -87,11 +90,12 @@ class BaseClient {
     this.auth = new Auth(this, normalOptions);
 
     this._rest = modules.Rest ? new modules.Rest(this) : null;
+    this._Crypto = modules.Crypto ?? null;
   }
 
   private get rest(): Rest {
     if (!this._rest) {
-      throw new ErrorInfo('Rest module not provided', 400, 40000);
+      throwMissingModuleError('Rest');
     }
     return this._rest;
   }
