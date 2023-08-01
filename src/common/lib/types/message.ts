@@ -75,6 +75,35 @@ function getMessageSize(msg: Message) {
   return size;
 }
 
+export async function fromEncoded(
+  Crypto: IUntypedCryptoStatic | null,
+  encoded: unknown,
+  inputOptions?: API.Types.ChannelOptions
+): Promise<Message> {
+  const msg = Message.fromValues(encoded);
+  const options = normalizeCipherOptions(Crypto, inputOptions ?? null);
+  /* if decoding fails at any point, catch and return the message decoded to
+   * the fullest extent possible */
+  try {
+    await Message.decode(msg, options);
+  } catch (e) {
+    Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
+  }
+  return msg;
+}
+
+export async function fromEncodedArray(
+  Crypto: IUntypedCryptoStatic | null,
+  encodedArray: Array<unknown>,
+  options?: API.Types.ChannelOptions
+): Promise<Message[]> {
+  return Promise.all(
+    encodedArray.map(function (encoded) {
+      return fromEncoded(Crypto, encoded, options);
+    })
+  );
+}
+
 class Message {
   name?: string;
   id?: string;
@@ -338,24 +367,11 @@ class Message {
   static _Crypto: IUntypedCryptoStatic | null;
 
   static async fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Promise<Message> {
-    const msg = Message.fromValues(encoded);
-    const options = normalizeCipherOptions(this._Crypto, inputOptions ?? null);
-    /* if decoding fails at any point, catch and return the message decoded to
-     * the fullest extent possible */
-    try {
-      await Message.decode(msg, options);
-    } catch (e) {
-      Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
-    }
-    return msg;
+    return fromEncoded(this._Crypto, encoded, inputOptions);
   }
 
   static async fromEncodedArray(encodedArray: Array<unknown>, options?: API.Types.ChannelOptions): Promise<Message[]> {
-    return Promise.all(
-      encodedArray.map(function (encoded) {
-        return Message.fromEncoded(encoded, options);
-      })
-    );
+    return fromEncodedArray(this._Crypto, encodedArray, options);
   }
 
   /* This should be called on encode()d (and encrypt()d) Messages (as it
