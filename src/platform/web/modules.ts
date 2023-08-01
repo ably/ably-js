@@ -2,6 +2,7 @@
 import { BaseClient } from '../../common/lib/client/baseclient';
 import Rest from '../../common/lib/client/rest';
 import Platform from '../../common/platform';
+import Message from '../../common/lib/types/message';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
@@ -22,6 +23,8 @@ Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;
 Platform.WebStorage = WebStorage;
+
+Message._Crypto = null;
 
 Logger.initLogHandlers();
 

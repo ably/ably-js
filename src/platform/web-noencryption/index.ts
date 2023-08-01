@@ -2,6 +2,7 @@
 import { DefaultRest as Rest } from '../../common/lib/client/defaultrest';
 import Realtime from '../../common/lib/client/realtime';
 import Platform from '../../common/platform';
+import Message from '../../common/lib/types/message';
 
 // Platform Specific
 import BufferUtils from '../web/lib/util/bufferutils';
@@ -25,6 +26,7 @@ Platform.WebStorage = WebStorage;
 
 Rest.Crypto = null;
 Realtime.Crypto = null;
+Message._Crypto = null;
 
 Logger.initLogHandlers();
 
