@@ -20,32 +20,6 @@ interface RestHistoryParams {
   limit?: number;
 }
 
-function noop() {}
-
-const MSG_ID_ENTROPY_BYTES = 9;
-
-function allEmptyIds(messages: Array<IMessage>) {
-  return Utils.arrEvery(messages, function (message: IMessage) {
-    return !message.id;
-  });
-}
-
-function normaliseChannelOptions(options?: ChannelOptions) {
-  const channelOptions = options || {};
-  if (channelOptions.cipher) {
-    if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-    const cipher = Platform.Crypto.getCipher(channelOptions.cipher);
-    channelOptions.cipher = cipher.cipherParams;
-    channelOptions.channelCipher = cipher.cipher;
-  } else if ('cipher' in channelOptions) {
-    /* Don't deactivate an existing cipher unless options
-     * has a 'cipher' key that's falsey */
-    channelOptions.cipher = undefined;
-    channelOptions.channelCipher = null;
-  }
-  return channelOptions;
-}
-
 export interface IChannel extends EventEmitter {
   name: string;
   channelOptions: ChannelOptions;
@@ -59,6 +33,32 @@ export interface IChannelConstructor {
 }
 
 const channelClassFactory = (messageClass: IMessageConstructor, presenceClass: IPresenceConstructor) => {
+  function noop() {}
+
+  const MSG_ID_ENTROPY_BYTES = 9;
+
+  function allEmptyIds(messages: Array<IMessage>) {
+    return Utils.arrEvery(messages, function (message: IMessage) {
+      return !message.id;
+    });
+  }
+
+  function normaliseChannelOptions(options?: ChannelOptions) {
+    const channelOptions = options || {};
+    if (channelOptions.cipher) {
+      if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+      const cipher = Platform.Crypto.getCipher(channelOptions.cipher);
+      channelOptions.cipher = cipher.cipherParams;
+      channelOptions.channelCipher = cipher.cipher;
+    } else if ('cipher' in channelOptions) {
+      /* Don't deactivate an existing cipher unless options
+       * has a 'cipher' key that's falsey */
+      channelOptions.cipher = undefined;
+      channelOptions.channelCipher = null;
+    }
+    return channelOptions;
+  }
+
   return class Channel extends EventEmitter implements IChannel {
     client: BaseClient;
     name: string;
