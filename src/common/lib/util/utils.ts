@@ -528,3 +528,7 @@ export function toBase64(str: string) {
   const textBuffer = bufferUtils.utf8Encode(str);
   return bufferUtils.base64Encode(textBuffer);
 }
+
+export function throwMissingModuleError(moduleName: string): never {
+  throw new ErrorInfo(`${moduleName} module not provided`, 400, 40000);
+}
