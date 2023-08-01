@@ -31,46 +31,6 @@ type EncodingDecodingContext = {
   baseEncodedPreviousPayload?: Buffer | BrowserBufferlike;
 };
 
-function normaliseContext(context: CipherOptions | EncodingDecodingContext | ChannelOptions): EncodingDecodingContext {
-  if (!context || !(context as EncodingDecodingContext).channelOptions) {
-    return {
-      channelOptions: context as ChannelOptions,
-      plugins: {},
-      baseEncodedPreviousPayload: undefined,
-    };
-  }
-  return context as EncodingDecodingContext;
-}
-
-function normalizeCipherOptions(options: API.Types.ChannelOptions | null): ChannelOptions {
-  if (options && options.cipher) {
-    if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-    const cipher = Platform.Crypto.getCipher(options.cipher);
-    return {
-      cipher: cipher.cipherParams,
-      channelCipher: cipher.cipher,
-    };
-  }
-  return options ?? {};
-}
-
-function getMessageSize(msg: IMessage) {
-  let size = 0;
-  if (msg.name) {
-    size += msg.name.length;
-  }
-  if (msg.clientId) {
-    size += msg.clientId.length;
-  }
-  if (msg.extras) {
-    size += JSON.stringify(msg.extras).length;
-  }
-  if (msg.data) {
-    size += Utils.dataSizeBytes(msg.data);
-  }
-  return size;
-}
-
 export interface IMessage {
   id?: string;
   name?: string;
@@ -100,6 +60,48 @@ export interface IMessageConstructor {
 }
 
 const messageClassFactory = (): IMessageConstructor => {
+  function normaliseContext(
+    context: CipherOptions | EncodingDecodingContext | ChannelOptions
+  ): EncodingDecodingContext {
+    if (!context || !(context as EncodingDecodingContext).channelOptions) {
+      return {
+        channelOptions: context as ChannelOptions,
+        plugins: {},
+        baseEncodedPreviousPayload: undefined,
+      };
+    }
+    return context as EncodingDecodingContext;
+  }
+
+  function normalizeCipherOptions(options: API.Types.ChannelOptions | null): ChannelOptions {
+    if (options && options.cipher) {
+      if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+      const cipher = Platform.Crypto.getCipher(options.cipher);
+      return {
+        cipher: cipher.cipherParams,
+        channelCipher: cipher.cipher,
+      };
+    }
+    return options ?? {};
+  }
+
+  function getMessageSize(msg: IMessage) {
+    let size = 0;
+    if (msg.name) {
+      size += msg.name.length;
+    }
+    if (msg.clientId) {
+      size += msg.clientId.length;
+    }
+    if (msg.extras) {
+      size += JSON.stringify(msg.extras).length;
+    }
+    if (msg.data) {
+      size += Utils.dataSizeBytes(msg.data);
+    }
+    return size;
+  }
+
   return class Message implements IMessage {
     name?: string;
     id?: string;
