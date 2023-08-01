@@ -6,6 +6,7 @@ import PresenceMessage from './presencemessage';
 import * as Utils from '../util/utils';
 import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/bufferutils';
 import * as API from '../../../../ably';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 
 export type CipherOptions = {
   channelCipher: {
@@ -42,10 +43,13 @@ function normaliseContext(context: CipherOptions | EncodingDecodingContext | Cha
   return context as EncodingDecodingContext;
 }
 
-function normalizeCipherOptions(options: API.Types.ChannelOptions | null): ChannelOptions {
+function normalizeCipherOptions(
+  Crypto: IUntypedCryptoStatic | null,
+  options: API.Types.ChannelOptions | null
+): ChannelOptions {
   if (options && options.cipher) {
-    if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-    const cipher = Platform.Crypto.getCipher(options.cipher);
+    if (!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+    const cipher = Crypto.getCipher(options.cipher);
     return {
       cipher: cipher.cipherParams,
       channelCipher: cipher.cipher,
@@ -332,7 +336,7 @@ class Message {
 
   static async fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Promise<Message> {
     const msg = Message.fromValues(encoded);
-    const options = normalizeCipherOptions(inputOptions ?? null);
+    const options = normalizeCipherOptions(Platform.Crypto, inputOptions ?? null);
     /* if decoding fails at any point, catch and return the message decoded to
      * the fullest extent possible */
     try {
