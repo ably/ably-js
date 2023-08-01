@@ -8,7 +8,7 @@ import ErrorInfo from '../../common/lib/types/errorinfo';
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
 // @ts-ignore
-import CryptoFactory from './lib/util/crypto';
+import { createCryptoClass } from './lib/util/crypto';
 import Http from './lib/util/http';
 import Config from './config';
 // @ts-ignore
@@ -17,7 +17,7 @@ import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import PlatformDefaults from './lib/util/defaults';
 
-const Crypto = CryptoFactory(BufferUtils);
+const Crypto = createCryptoClass(BufferUtils);
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils as typeof Platform.BufferUtils;

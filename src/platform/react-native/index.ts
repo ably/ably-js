@@ -8,7 +8,7 @@ import ErrorInfo from '../../common/lib/types/errorinfo';
 // Platform Specific
 import BufferUtils from '../web/lib/util/bufferutils';
 // @ts-ignore
-import CryptoFactory from '../web/lib/util/crypto';
+import { createCryptoClass } from '../web/lib/util/crypto';
 import Http from '../web/lib/util/http';
 import configFactory from './config';
 // @ts-ignore
@@ -21,7 +21,7 @@ import msgpack from '../web/lib/util/msgpack';
 
 const Config = configFactory(BufferUtils);
 
-const Crypto = CryptoFactory(Config, BufferUtils);
+const Crypto = createCryptoClass(Config, BufferUtils);
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
