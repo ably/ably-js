@@ -4,7 +4,7 @@ import { IConnectionManagerConstructor } from './lib/transport/connectionmanager
 import IDefaults from './types/IDefaults';
 import IWebStorage from './types/IWebStorage';
 import IBufferUtils from './types/IBufferUtils';
-import { ITransport } from './lib/transport/transport';
+import { Transport } from './lib/transport/transport';
 import * as WebBufferUtils from '../platform/web/lib/util/bufferutils';
 import * as NodeBufferUtils from '../platform/nodejs/lib/util/bufferutils';
 
@@ -31,7 +31,7 @@ export default class Platform {
   static Crypto: any;
   static Http: typeof IHttp;
   // TODO here I've changed this from IConnectionManager to IConnectionManagerConstructor — did i get it wrong in the first place?
-  static Transports: Array<(connectionManager: IConnectionManagerConstructor) => ITransport>;
+  static Transports: Array<(connectionManager: IConnectionManagerConstructor) => Transport>;
   static Defaults: IDefaults;
   static WebStorage: IWebStorage | null;
 }

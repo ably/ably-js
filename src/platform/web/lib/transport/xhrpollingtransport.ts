@@ -1,11 +1,11 @@
 import Platform from '../../../../common/platform';
-import { ICometTransportConstructor } from '../../../../common/lib/transport/comettransport';
+import { CometTransportClass } from '../../../../common/lib/transport/comettransport';
 import XHRRequest from './xhrrequest';
 import { IConnectionManager, ITransportParams } from 'common/lib/transport/connectionmanager';
 import Auth from 'common/lib/client/auth';
 import { RequestParams } from 'common/types/http';
 
-const xhrPollingTransportInitializerFactory = (superclass: ICometTransportConstructor) => {
+const xhrPollingTransportInitializerFactory = (superclass: CometTransportClass) => {
   var shortName = 'xhr_polling';
   class XHRPollingTransport extends superclass {
     shortName = shortName;

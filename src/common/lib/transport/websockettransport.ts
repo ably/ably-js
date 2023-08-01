@@ -1,6 +1,6 @@
 import Platform from 'common/platform';
 import * as Utils from '../util/utils';
-import { ITransport, ITransportConstructor } from './transport';
+import { Transport, TransportClass } from './transport';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
 import { IProtocolMessage, IProtocolMessageConstructor } from '../types/protocolmessage';
@@ -16,7 +16,7 @@ function isNodeWebSocket(ws: WebSocket | NodeWebSocket): ws is NodeWebSocket {
 }
 
 const webSocketTransportInitializerFactory = (
-  superclass: ITransportConstructor,
+  superclass: TransportClass,
   protocolMessageClass: IProtocolMessageConstructor
 ) => {
   class WebSocketTransport extends superclass {

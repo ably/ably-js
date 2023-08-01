@@ -11,6 +11,7 @@ import https from 'https';
 import url from 'url';
 import util from 'util';
 
+// TODO this needs updating, and check the other JS files too
 var NodeCometTransport = function (connectionManager) {
   var noop = function () {};
   var shortName = 'comet';

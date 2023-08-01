@@ -12,7 +12,7 @@ import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types
 import Auth from 'common/lib/client/auth';
 import { IMessage, IMessageConstructor } from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
-import { ITransport, ITransportConstructor } from './transport';
+import { Transport, TransportClass, TransportCtor } from './transport';
 import * as API from '../../../../ably';
 import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
@@ -33,9 +33,9 @@ type ConnectionState = {
 };
 
 export interface IConnectionManager extends EventEmitter {
-  registerProposedTransport(transport: ITransport): void;
+  registerProposedTransport(transport: Transport): void;
   connectionId?: string;
-  onChannelMessage(message: IProtocolMessage, transport: ITransport): void;
+  onChannelMessage(message: IProtocolMessage, transport: Transport): void;
   lastActivity: number | null;
   options: ClientOptions;
   activeState(): boolean | void;
@@ -45,7 +45,7 @@ export interface IConnectionManager extends EventEmitter {
   state: ConnectionState;
   requestState(request: any): void;
   createRecoveryKey(): string | null;
-  ping(transport: ITransport | null, callback: Function): void;
+  ping(transport: Transport | null, callback: Function): void;
   actOnErrorFromAuthorize(err: ErrorInfo): void;
   onAuthUpdated(tokenDetails: API.Types.TokenDetails, callback: Function): void;
   host: string | null;
@@ -67,10 +67,10 @@ export interface ITransportParams {
 const connectionManagerClassFactory = (
   messageClass: IMessageConstructor,
   protocolMessageClass: IProtocolMessageConstructor,
-  transportClass: ITransportConstructor,
+  transportClass: TransportClass,
   protocolClass: IProtocolConstructor,
   pendingMessageClass: IPendingMessageConstructor,
-  webSocketTransportInitializer: (connectionManager: any) => ITransportConstructor
+  webSocketTransportInitializer: (connectionManager: any) => TransportClass
 ): IConnectionManagerConstructor => {
   let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
 
@@ -91,7 +91,7 @@ const connectionManagerClassFactory = (
     return haveSessionStorage() && Platform.WebStorage?.removeSession?.(sessionRecoveryName);
   }
 
-  function betterTransportThan(a: ITransport, b: ITransport) {
+  function betterTransportThan(a: Transport, b: Transport) {
     return (
       Utils.arrIndexOf(Platform.Defaults.transportPreferenceOrder, a.shortName) >
       Utils.arrIndexOf(Platform.Defaults.transportPreferenceOrder, b.shortName)
@@ -245,8 +245,8 @@ const connectionManagerClassFactory = (
     transportPreference: string | null;
     httpHosts: string[];
     activeProtocol: null | IProtocol;
-    proposedTransports: ITransport[];
-    pendingTransports: ITransport[];
+    proposedTransports: Transport[];
+    pendingTransports: Transport[];
     host: string | null;
     lastAutoReconnectAttempt: number | null;
     lastActivity: number | null;
@@ -260,7 +260,7 @@ const connectionManagerClassFactory = (
       // Whether a message is currently being processed
       isProcessing: boolean;
       // The messages remaining to be processed (excluding any message currently being processed)
-      queue: { message: IProtocolMessage; transport: ITransport }[];
+      queue: { message: IProtocolMessage; transport: Transport }[];
     } = { isProcessing: false, queue: [] };
 
     constructor(realtime: Realtime, options: ClientOptions) {
@@ -441,7 +441,7 @@ const connectionManagerClassFactory = (
      * transport management
      *********************/
 
-    static supportedTransports: Record<string, ITransportConstructor> = {};
+    static supportedTransports: Record<string, TransportCtor> = {};
 
     static initTransports() {
       webSocketTransportInitializer(ConnectionManager);
@@ -493,7 +493,7 @@ const connectionManagerClassFactory = (
           Logger.logAction(
             Logger.LOG_MINOR,
             'ConnectionManager.getTransportParams()',
-            'ITransport recovery mode = recover; recoveryKey = ' + this.options.recover
+            'Transport recovery mode = recover; recoveryKey = ' + this.options.recover
           );
           const recoveryContext = decodeRecoveryKey(this.options.recover);
           if (recoveryContext) {
@@ -503,7 +503,7 @@ const connectionManagerClassFactory = (
           Logger.logAction(
             Logger.LOG_MINOR,
             'ConnectionManager.getTransportParams()',
-            'ITransport params = ' + transportParams.toString()
+            'Transport params = ' + transportParams.toString()
           );
         }
         callback(transportParams);
@@ -524,7 +524,7 @@ const connectionManagerClassFactory = (
         this,
         this.realtime.auth,
         transportParams,
-        (wrappedErr: { error: ErrorInfo; event: string } | null, transport?: ITransport) => {
+        (wrappedErr: { error: ErrorInfo; event: string } | null, transport?: Transport) => {
           const state = this.state;
           if (state == this.states.closing || state == this.states.closed || state == this.states.failed) {
             if (transport) {
@@ -584,7 +584,7 @@ const connectionManagerClassFactory = (
             'ConnectionManager.tryATransport()',
             'viable transport ' + candidate + '; setting pending'
           );
-          this.setTransportPending(transport as ITransport, transportParams);
+          this.setTransportPending(transport as Transport, transportParams);
           callback(null, transport);
         }
       );
@@ -596,7 +596,7 @@ const connectionManagerClassFactory = (
      * @param transport
      * @param transportParams
      */
-    setTransportPending(transport: ITransport, transportParams: TransportParams): void {
+    setTransportPending(transport: Transport, transportParams: TransportParams): void {
       const mode = transportParams.mode;
       Logger.logAction(
         Logger.LOG_MINOR,
@@ -658,7 +658,7 @@ const connectionManagerClassFactory = (
      */
     scheduleTransportActivation(
       error: ErrorInfo,
-      transport: ITransport,
+      transport: Transport,
       connectionId: string,
       connectionDetails: Record<string, any>
     ): void {
@@ -818,7 +818,7 @@ const connectionManagerClassFactory = (
      */
     activateTransport(
       error: ErrorInfo,
-      transport: ITransport,
+      transport: Transport,
       connectionId: string,
       connectionDetails: Record<string, any>
     ): boolean {
@@ -967,7 +967,7 @@ const connectionManagerClassFactory = (
           pendingTransport.disconnect();
         }
       });
-      Utils.safeArrForEach(this.proposedTransports, (proposedTransport: ITransport) => {
+      Utils.safeArrForEach(this.proposedTransports, (proposedTransport: Transport) => {
         if (proposedTransport === transport) {
           Logger.logAction(
             Logger.LOG_ERROR,
@@ -991,7 +991,7 @@ const connectionManagerClassFactory = (
      * in any transport connection state.
      * @param transport
      */
-    deactivateTransport(transport: ITransport, state: string, error: ErrorInfo): void {
+    deactivateTransport(transport: Transport, state: string, error: ErrorInfo): void {
       const currentProtocol = this.activeProtocol,
         wasActive = currentProtocol && currentProtocol.getTransport() === transport,
         wasPending = Utils.arrDeleteValue(this.pendingTransports, transport),
@@ -1619,7 +1619,7 @@ const connectionManagerClassFactory = (
       /* For connectPreference, just use the main host. If host fallback is needed, do it in connectBase.
        * The wstransport it will substitute the httphost for an appropriate wshost */
       transportParams.host = this.httpHosts[0];
-      this.tryATransport(transportParams, preference, (fatal: boolean, transport: ITransport) => {
+      this.tryATransport(transportParams, preference, (fatal: boolean, transport: Transport) => {
         clearTimeout(preferenceTimeout);
         if (preferenceTimeoutExpired && transport) {
           /* Viable, but too late - connectImpl() will already be trying
@@ -1649,7 +1649,7 @@ const connectionManagerClassFactory = (
         this.notifyState({ state: this.states.connecting.failState as string, error: err });
       };
       const candidateHosts = this.httpHosts.slice();
-      const hostAttemptCb = (fatal: boolean, transport: ITransport) => {
+      const hostAttemptCb = (fatal: boolean, transport: Transport) => {
         if (connectCount !== this.connectCounter) {
           return;
         }
@@ -2022,7 +2022,7 @@ const connectionManagerClassFactory = (
       }
     }
 
-    onChannelMessage(message: IProtocolMessage, transport: ITransport): void {
+    onChannelMessage(message: IProtocolMessage, transport: Transport): void {
       this.pendingChannelMessagesState.queue.push({ message, transport });
 
       if (!this.pendingChannelMessagesState.isProcessing) {
@@ -2050,7 +2050,7 @@ const connectionManagerClassFactory = (
       }
     }
 
-    private async processChannelMessage(message: IProtocolMessage, transport: ITransport) {
+    private async processChannelMessage(message: IProtocolMessage, transport: Transport) {
       const onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
         onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
 
@@ -2075,7 +2075,7 @@ const connectionManagerClassFactory = (
       }
     }
 
-    ping(transport: ITransport | null, callback: Function): void {
+    ping(transport: Transport | null, callback: Function): void {
       /* if transport is specified, try that */
       if (transport) {
         Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
@@ -2141,7 +2141,7 @@ const connectionManagerClassFactory = (
       (this.activeProtocol as IProtocol).getTransport().fail(error);
     }
 
-    registerProposedTransport(transport: ITransport): void {
+    registerProposedTransport(transport: Transport): void {
       this.proposedTransports.push(transport);
     }
 
@@ -2149,7 +2149,7 @@ const connectionManagerClassFactory = (
       return this.transportPreference || (haveWebStorage() && Platform.WebStorage?.get?.(transportPreferenceName));
     }
 
-    persistTransportPreference(transport: ITransport): void {
+    persistTransportPreference(transport: Transport): void {
       if (Utils.arrIn(Defaults.upgradeTransports, transport.shortName)) {
         this.transportPreference = transport.shortName;
         if (haveWebStorage()) {
@@ -2185,7 +2185,7 @@ const connectionManagerClassFactory = (
       }
     }
 
-    onConnectionDetailsUpdate(connectionDetails: Record<string, any>, transport: ITransport): void {
+    onConnectionDetailsUpdate(connectionDetails: Record<string, any>, transport: Transport): void {
       if (!connectionDetails) {
         return;
       }

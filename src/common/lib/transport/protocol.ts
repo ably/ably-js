@@ -4,7 +4,7 @@ import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import MessageQueue from './messagequeue';
 import ErrorInfo from '../types/errorinfo';
-import { ITransport } from './transport';
+import { Transport } from './transport';
 import { ErrCallback } from '../../types/utils';
 
 export interface IPendingMessage {
@@ -20,10 +20,10 @@ export interface IPendingMessageConstructor {
 }
 
 export interface IProtocol {
-  getTransport(): ITransport;
+  getTransport(): Transport;
   onceIdle(listener: ErrCallback): void;
   messageQueue: MessageQueue;
-  transport: ITransport;
+  transport: Transport;
   finish(): void;
   getPendingMessages(): IPendingMessage[];
   clearPendingMessages(): void;
@@ -31,7 +31,7 @@ export interface IProtocol {
 }
 
 export interface IProtocolConstructor {
-  new (transport: ITransport): IProtocol;
+  new (transport: Transport): IProtocol;
 }
 
 const protocolClassFactory = (protocolMessageClass: IProtocolMessageConstructor) => {
@@ -55,10 +55,10 @@ const protocolClassFactory = (protocolMessageClass: IProtocolMessageConstructor)
   }
 
   class Protocol extends EventEmitter {
-    transport: ITransport;
+    transport: Transport;
     messageQueue: MessageQueue;
 
-    constructor(transport: ITransport) {
+    constructor(transport: Transport) {
       super();
       this.transport = transport;
       this.messageQueue = new MessageQueue();
@@ -111,7 +111,7 @@ const protocolClassFactory = (protocolMessageClass: IProtocolMessageConstructor)
       this.transport.send(pendingMessage.message);
     }
 
-    getTransport(): ITransport {
+    getTransport(): Transport {
       return this.transport;
     }
 

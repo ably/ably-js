@@ -1,6 +1,6 @@
 import * as Utils from '../util/utils';
 import { IProtocolMessage, IProtocolMessageConstructor } from '../types/protocolmessage';
-import { ITransport, ITransportConstructor } from './transport';
+import { TransportClass } from './transport';
 import Logger from '../util/logger';
 import Defaults from '../util/defaults';
 import ConnectionErrors from './connectionerrors';
@@ -12,18 +12,7 @@ import { IConnectionManager, ITransportParams } from './connectionmanager';
 import XHRStates from '../../constants/XHRStates';
 import Platform from 'common/platform';
 
-export interface ICometTransport extends ITransport {
-  baseUri?: string;
-}
-
-export interface ICometTransportConstructor {
-  new (connectionManager: IConnectionManager, auth: Auth, params: ITransportParams): ICometTransport;
-}
-
-const cometTransportClassFactory = (
-  superclass: ITransportConstructor,
-  protocolMessageClass: IProtocolMessageConstructor
-): ICometTransportConstructor => {
+const cometTransportClassFactory = (superclass: TransportClass, protocolMessageClass: IProtocolMessageConstructor) => {
   /* TODO: can remove once realtime sends protocol message responses for comet errors */
   function shouldBeErrorAction(err: ErrorInfo) {
     const UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
@@ -50,7 +39,7 @@ const cometTransportClassFactory = (
   /*
    * A base comet transport class
    */
-  abstract class CometTransport extends superclass implements ICometTransport {
+  abstract class CometTransport extends superclass {
     stream: string | boolean;
     sendRequest: IXHRRequest | null;
     recvRequest: null | IXHRRequest;
@@ -395,5 +384,8 @@ const cometTransportClassFactory = (
 
   return CometTransport;
 };
+
+export type CometTransportClass = ReturnType<typeof cometTransportClassFactory>;
+export type CometTransport = InstanceType<CometTransportClass>;
 
 export { cometTransportClassFactory };

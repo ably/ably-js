@@ -11,10 +11,11 @@ import Platform from 'common/platform';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
-  transport?: ITransport
+  transport?: Transport
 ) => void;
 
-export interface ITransport extends EventEmitter {
+/*
+export interface Transport extends EventEmitter {
   connect(): void;
   isConnected: boolean;
   isDisposed: boolean;
@@ -35,23 +36,31 @@ export interface ITransport extends EventEmitter {
   onAuthUpdated?: (tokenDetails: API.Types.TokenDetails) => void;
 }
 
-export interface ITransportConstructor {
+export interface TransportClass {
   new (
     connectionManager: IConnectionManager,
     auth: Auth,
     params: ITransportParams,
     forceJsonProtocol?: boolean
-  ): ITransport;
+  ): Transport;
   tryConnect(
-    transportCtor: ITransportConstructor,
+    transportCtor: TransportClass,
     connectionManager: IConnectionManager,
     auth: Auth,
     transportParams: ITransportParams,
     callback: TryConnectCallback
   ): void;
 }
+*/
 
-const transportClassFactory = (protocolMessageClass: IProtocolMessageConstructor): ITransportConstructor => {
+export type TransportCtor = new (
+  connectionManager: IConnectionManager,
+  auth: Auth,
+  params: ITransportParams,
+  forceJsonProtocol?: boolean
+) => Transport;
+
+const transportClassFactory = (protocolMessageClass: IProtocolMessageConstructor) => {
   const actions = protocolMessageClass.Action;
   const closeMessage = protocolMessageClass.fromValues({ action: actions.CLOSE });
   const disconnectMessage = protocolMessageClass.fromValues({ action: actions.DISCONNECT });
@@ -67,7 +76,7 @@ const transportClassFactory = (protocolMessageClass: IProtocolMessageConstructor
    * event            channel message object
    */
 
-  abstract class Transport extends EventEmitter implements ITransport {
+  abstract class Transport extends EventEmitter {
     connectionManager: IConnectionManager;
     auth: Auth;
     params: ITransportParams;
@@ -319,7 +328,7 @@ const transportClassFactory = (protocolMessageClass: IProtocolMessageConstructor
     }
 
     static tryConnect(
-      transportCtor: ITransportConstructor,
+      transportCtor: TransportCtor,
       connectionManager: IConnectionManager,
       auth: Auth,
       transportParams: ITransportParams,
@@ -359,5 +368,8 @@ const transportClassFactory = (protocolMessageClass: IProtocolMessageConstructor
 
   return Transport;
 };
+
+export type TransportClass = ReturnType<typeof transportClassFactory>;
+export type Transport = InstanceType<TransportClass>;
 
 export { transportClassFactory };
