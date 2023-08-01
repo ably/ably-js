@@ -6,7 +6,6 @@ import Message from '../../common/lib/types/message';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
-import { Crypto } from './modules/crypto';
 import Http from './lib/util/http';
 import Config from './config';
 // @ts-ignore
@@ -15,7 +14,6 @@ import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
 
-Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;

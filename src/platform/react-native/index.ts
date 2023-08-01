@@ -22,7 +22,6 @@ const Config = configFactory(BufferUtils);
 
 const Crypto = createCryptoClass(Config, BufferUtils);
 
-Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;

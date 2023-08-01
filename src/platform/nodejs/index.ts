@@ -18,7 +18,6 @@ import PlatformDefaults from './lib/util/defaults';
 
 const Crypto = createCryptoClass(BufferUtils);
 
-Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils as typeof Platform.BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;

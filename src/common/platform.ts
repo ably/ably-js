@@ -7,7 +7,6 @@ import IBufferUtils from './types/IBufferUtils';
 import Transport from './lib/transport/transport';
 import * as WebBufferUtils from '../platform/web/lib/util/bufferutils';
 import * as NodeBufferUtils from '../platform/nodejs/lib/util/bufferutils';
-import { IUntypedCryptoStatic } from '../common/types/ICryptoStatic';
 
 type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
 type BufferUtilsOutput = WebBufferUtils.Output | NodeBufferUtils.Output;
@@ -23,12 +22,6 @@ export default class Platform {
      can in reality handle.
    */
   static BufferUtils: IBufferUtils<Bufferlike, BufferUtilsOutput, ToBufferOutput>;
-  /*
-     We’d like this to be ICryptoStatic with the correct generic arguments,
-     but Platform doesn’t currently allow that, as described in the BufferUtils
-     comment above
-   */
-  static Crypto: IUntypedCryptoStatic | null;
   static Http: typeof IHttp;
   static Transports: Array<(connectionManager: typeof ConnectionManager) => Transport>;
   static Defaults: IDefaults;
