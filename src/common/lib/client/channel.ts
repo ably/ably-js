@@ -12,6 +12,7 @@ import BaseClient from './baseclient';
 import * as API from '../../../../ably';
 import Platform from 'common/platform';
 import Defaults from '../util/defaults';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 
 interface RestHistoryParams {
   start?: number;
@@ -30,11 +31,11 @@ function allEmptyIds(messages: Array<Message>) {
   });
 }
 
-function normaliseChannelOptions(options?: ChannelOptions) {
+function normaliseChannelOptions(Crypto: IUntypedCryptoStatic | null, options?: ChannelOptions) {
   const channelOptions = options || {};
   if (channelOptions.cipher) {
-    if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-    const cipher = Platform.Crypto.getCipher(channelOptions.cipher);
+    if (!Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
+    const cipher = Crypto.getCipher(channelOptions.cipher);
     channelOptions.cipher = cipher.cipherParams;
     channelOptions.channelCipher = cipher.cipher;
   } else if ('cipher' in channelOptions) {
@@ -60,11 +61,11 @@ class Channel extends EventEmitter {
     this.name = name;
     this.basePath = '/channels/' + encodeURIComponent(name);
     this.presence = new Presence(this);
-    this.channelOptions = normaliseChannelOptions(channelOptions);
+    this.channelOptions = normaliseChannelOptions(Platform.Crypto, channelOptions);
   }
 
   setOptions(options?: ChannelOptions): void {
-    this.channelOptions = normaliseChannelOptions(options);
+    this.channelOptions = normaliseChannelOptions(Platform.Crypto, options);
   }
 
   history(
