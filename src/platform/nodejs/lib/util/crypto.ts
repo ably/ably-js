@@ -18,7 +18,7 @@ type OutputCiphertext = Buffer;
 type InputCiphertext = CryptoDataTypes.InputCiphertext<MessagePackBinaryType, BufferUtilsOutput>;
 type OutputPlaintext = Buffer;
 
-var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
+var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
   var DEFAULT_ALGORITHM = 'aes';
   var DEFAULT_KEYLENGTH = 256; // bits
   var DEFAULT_MODE = 'cbc';
@@ -276,4 +276,4 @@ var CryptoFactory = function (bufferUtils: typeof BufferUtils) {
   return Crypto;
 };
 
-export default CryptoFactory;
+export { createCryptoClass };

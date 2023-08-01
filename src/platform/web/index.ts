@@ -7,7 +7,7 @@ import Platform from '../../common/platform';
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
 // @ts-ignore
-import CryptoFactory from './lib/util/crypto';
+import { createCryptoClass } from './lib/util/crypto';
 import Http from './lib/util/http';
 import Config from './config';
 // @ts-ignore
@@ -18,7 +18,7 @@ import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
 import msgpack from './lib/util/msgpack';
 
-const Crypto = CryptoFactory(Config, BufferUtils);
+const Crypto = createCryptoClass(Config, BufferUtils);
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
