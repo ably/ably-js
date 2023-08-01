@@ -10,9 +10,11 @@ import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOption
 import Platform from '../../platform';
 import Rest from './rest';
 import { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 
 interface ModulesMap {
   Rest?: typeof Rest;
+  Crypto?: IUntypedCryptoStatic;
 }
 
 class BaseClient {
@@ -27,6 +29,7 @@ class BaseClient {
   http: IHttp;
   auth: Auth;
   _rest?: Rest;
+  _Crypto?: IUntypedCryptoStatic;
 
   constructor(options: ClientOptions | string, modules: ModulesMap) {
     if (!options) {
@@ -78,6 +81,7 @@ class BaseClient {
     if (modules.Rest) {
       this._rest = new modules.Rest(this);
     }
+    this._Crypto = modules.Crypto;
   }
 
   private get rest(): Rest {

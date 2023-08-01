@@ -1,5 +1,5 @@
-import Platform from 'common/platform';
 import ClientOptions from 'common/types/ClientOptions';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import Message from '../types/message';
 import PresenceMessage from '../types/presencemessage';
 import { BaseClient } from './baseclient';
@@ -12,10 +12,12 @@ class DefaultRest extends BaseClient {
   constructor(options: string | ClientOptions) {
     super(options, {
       Rest,
+      Crypto: DefaultRest.Crypto,
     });
   }
 
-  static Crypto?: typeof Platform.Crypto;
+  // TODO does this mean we can make it generic now?
+  static Crypto?: IUntypedCryptoStatic;
   static Message = Message;
   static PresenceMessage = PresenceMessage;
 }

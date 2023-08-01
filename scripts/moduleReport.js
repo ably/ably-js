@@ -1,7 +1,10 @@
 const esbuild = require('esbuild');
 
 // List of all modules accepted in ModulesMap
-const moduleNames = ['Rest'];
+const moduleNames = ['Rest', 'Crypto'];
+
+// List of all free-standing functions exported by the library
+const functionNames = ['generateRandomKey', 'getDefaultCryptoParams', 'messageFromEncoded', 'messageFromEncodedWithCrypto', 'messageFromEncodedArray', 'messageFromEncodedArrayWithCrypto']
 
 function formatBytes(bytes) {
   const kb = bytes / 1024;
@@ -30,8 +33,8 @@ function getImportSize(modules) {
 // First display the size of the BaseClient
 console.log(`BaseClient: ${getImportSize(['BaseClient'])}`);
 
-// Then display the size of each module together with the BaseClient
-moduleNames.forEach((moduleName) => {
-  const sizeInBytes = getImportSize(['BaseClient', moduleName]);
-  console.log(`BaseClient + ${moduleName}: ${sizeInBytes}`);
+// Then display the size of each import together with the BaseClient
+[...moduleNames, ...functionNames].forEach((importName) => {
+  const sizeInBytes = getImportSize(['BaseClient', importName]);
+  console.log(`BaseClient + ${importName}: ${sizeInBytes}`);
 });

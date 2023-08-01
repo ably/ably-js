@@ -12,6 +12,7 @@ import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 
 class Realtime extends Rest {
   _channels: any;
@@ -44,7 +45,7 @@ class Realtime extends Rest {
   static Platform = Platform;
   static ProtocolMessage = ProtocolMessage;
   static Message = Message;
-  static Crypto?: typeof Platform.Crypto;
+  static Crypto?: IUntypedCryptoStatic;
 }
 
 class Channels extends EventEmitter {

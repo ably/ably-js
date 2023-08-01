@@ -24,8 +24,6 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
-Rest.Crypto = null;
-Realtime.Crypto = null;
 Message._Crypto = null;
 
 Logger.initLogHandlers();

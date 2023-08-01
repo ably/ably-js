@@ -9,7 +9,6 @@ import Resource, { ResourceCallback } from './resource';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import * as API from '../../../../ably';
-import Platform from 'common/platform';
 import { BaseClient } from './baseclient';
 import Defaults from '../util/defaults';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
@@ -61,11 +60,11 @@ class Channel extends EventEmitter {
     this.name = name;
     this.basePath = '/channels/' + encodeURIComponent(name);
     this.presence = new Presence(this);
-    this.channelOptions = normaliseChannelOptions(Platform.Crypto, channelOptions);
+    this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, channelOptions);
   }
 
   setOptions(options?: ChannelOptions): void {
-    this.channelOptions = normaliseChannelOptions(Platform.Crypto, options);
+    this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, options);
   }
 
   history(
