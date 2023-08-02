@@ -47,4 +47,5 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
+export { Rest } from '../../common/lib/client/rest';
 export { BaseRest, BaseRealtime, ErrorInfo };
