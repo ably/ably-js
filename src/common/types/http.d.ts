@@ -1,5 +1,5 @@
 import HttpMethods from '../constants/HttpMethods';
-import Rest from '../lib/client/rest';
+import BaseClient from '../lib/client/baseclient';
 import ErrorInfo from '../lib/types/errorinfo';
 import { Agents } from 'got';
 
@@ -25,17 +25,17 @@ export declare class IHttp {
 
   Request?: (
     method: HttpMethods,
-    rest: Rest | null,
+    rest: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
     body: unknown,
     callback: RequestCallback
   ) => void;
-  _getHosts: (client: Rest | Realtime) => string[];
+  _getHosts: (client: BaseClient | Realtime) => string[];
   do(
     method: HttpMethods,
-    rest: Rest | null,
+    rest: BaseClient | null,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
@@ -44,7 +44,7 @@ export declare class IHttp {
   ): void;
   doUri(
     method: HttpMethods,
-    rest: Rest | null,
+    rest: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,

@@ -4,11 +4,11 @@ import Logger from '../util/logger';
 import Auth from './auth';
 import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
-import Rest from './rest';
+import BaseClient from './baseclient';
 import { ErrnoException } from '../../types/http';
 
 function withAuthDetails(
-  rest: Rest,
+  rest: BaseClient,
   headers: Record<string, string>,
   params: Record<string, any>,
   errCallback: Function,
@@ -132,7 +132,7 @@ export type ResourceCallback<T = unknown> = (
 
 class Resource {
   static get<T = unknown>(
-    rest: Rest,
+    rest: BaseClient,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
@@ -143,7 +143,7 @@ class Resource {
   }
 
   static delete(
-    rest: Rest,
+    rest: BaseClient,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
@@ -154,7 +154,7 @@ class Resource {
   }
 
   static post(
-    rest: Rest,
+    rest: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
@@ -166,7 +166,7 @@ class Resource {
   }
 
   static patch(
-    rest: Rest,
+    rest: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
@@ -178,7 +178,7 @@ class Resource {
   }
 
   static put(
-    rest: Rest,
+    rest: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
@@ -191,7 +191,7 @@ class Resource {
 
   static do<T>(
     method: HttpMethods,
-    rest: Rest,
+    rest: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,

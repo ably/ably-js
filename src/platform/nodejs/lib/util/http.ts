@@ -6,8 +6,8 @@ import HttpMethods from '../../../../common/constants/HttpMethods';
 import got, { Response, Options, CancelableRequest, Agents } from 'got';
 import http from 'http';
 import https from 'https';
-import Rest from 'common/lib/client/rest';
-import Realtime from 'common/lib/client/realtime';
+import BaseClient from 'common/lib/client/baseclient';
+import BaseRealtime from 'common/lib/client/baserealtime';
 import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 import { shallowEquals } from 'common/lib/util/utils';
@@ -74,11 +74,11 @@ function shouldFallback(err: ErrnoException) {
   );
 }
 
-function getHosts(client: Rest | Realtime): string[] {
+function getHosts(client: BaseClient | BaseRealtime): string[] {
   /* If we're a connected realtime client, try the endpoint we're connected
    * to first -- but still have fallbacks, being connected is not an absolute
    * guarantee that a datacenter has free capacity to service REST requests. */
-  const connection = (client as Realtime).connection;
+  const connection = (client as BaseRealtime).connection;
   const connectionHost = connection && connection.connectionManager.host;
 
   if (connectionHost) {
@@ -105,7 +105,7 @@ const Http: typeof IHttp = class {
   /* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
   do(
     method: HttpMethods,
-    rest: Rest,
+    rest: BaseClient,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
@@ -185,7 +185,7 @@ const Http: typeof IHttp = class {
 
   doUri(
     method: HttpMethods,
-    rest: Rest,
+    rest: BaseClient,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
@@ -275,7 +275,7 @@ const Http: typeof IHttp = class {
 
   Request?: (
     method: HttpMethods,
-    rest: Rest | null,
+    rest: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,

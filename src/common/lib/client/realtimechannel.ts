@@ -13,7 +13,7 @@ import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import Realtime from './realtime';
+import BaseRealtime from './baserealtime';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -49,7 +49,7 @@ function validateChannelOptions(options?: API.Types.ChannelOptions) {
 }
 
 class RealtimeChannel extends Channel {
-  realtime: Realtime;
+  realtime: BaseRealtime;
   presence: RealtimePresence;
   connectionManager: ConnectionManager;
   state: API.Types.ChannelState;
@@ -80,7 +80,7 @@ class RealtimeChannel extends Channel {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
 
-  constructor(realtime: Realtime, name: string, options?: API.Types.ChannelOptions) {
+  constructor(realtime: BaseRealtime, name: string, options?: API.Types.ChannelOptions) {
     super(realtime, name, options);
     Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
     this.realtime = realtime;

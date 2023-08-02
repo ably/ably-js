@@ -5,8 +5,8 @@ import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import { StandardCallback } from '../../types/utils';
-import Rest from './rest';
-import Realtime from './realtime';
+import BaseClient from './baseclient';
+import BaseRealtime from './baserealtime';
 import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
@@ -26,8 +26,8 @@ function random() {
   return ('000000' + Math.floor(Math.random() * 1e16)).slice(-16);
 }
 
-function isRealtime(client: Rest | Realtime): client is Realtime {
-  return !!(client as Realtime).connection;
+function isRealtime(client: BaseClient | BaseRealtime): client is BaseRealtime {
+  return !!(client as BaseRealtime).connection;
 }
 
 /* A client auth callback may give errors in any number of formats; normalise to an ErrorInfo or PartialErrorInfo */
@@ -113,7 +113,7 @@ function getTokenRequestId() {
 }
 
 class Auth {
-  client: Rest | Realtime;
+  client: BaseClient | BaseRealtime;
   tokenParams: API.Types.TokenParams;
   currentTokenRequestId: number | null;
   waitingForTokenRequest: ReturnType<typeof Multicaster.create> | null;
@@ -125,7 +125,7 @@ class Auth {
   basicKey?: string;
   clientId?: string | null;
 
-  constructor(client: Rest | Realtime, options: ClientOptions) {
+  constructor(client: BaseClient | BaseRealtime, options: ClientOptions) {
     this.client = client;
     this.tokenParams = options.defaultTokenParams || {};
     /* The id of the current token request if one is in progress, else null */
@@ -282,11 +282,11 @@ class Auth {
       _authOptions,
       (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
         if (err) {
-          if ((this.client as Realtime).connection && err.statusCode === HttpStatusCodes.Forbidden) {
+          if ((this.client as BaseRealtime).connection && err.statusCode === HttpStatusCodes.Forbidden) {
             /* Per RSA4d & RSA4d1, if the auth server explicitly repudiates our right to
              * stay connecticed by returning a 403, we actively disconnect the connection
              * even though we may well still have time left in the old token. */
-            (this.client as Realtime).connection.connectionManager.actOnErrorFromAuthorize(err);
+            (this.client as BaseRealtime).connection.connectionManager.actOnErrorFromAuthorize(err);
           }
           callback?.(err);
           return;
@@ -295,8 +295,8 @@ class Auth {
         /* RTC8
          * - When authorize called by an end user and have a realtime connection,
          * don't call back till new token has taken effect.
-         * - Use this.client.connection as a proxy for (this.client instanceof Realtime),
-         * which doesn't work in node as Realtime isn't part of the vm context for Rest clients */
+         * - Use this.client.connection as a proxy for (this.client instanceof BaseRealtime),
+         * which doesn't work in node as BaseRealtime isn't part of the vm context for Rest clients */
         if (isRealtime(this.client)) {
           this.client.connection.connectionManager.onAuthUpdated(tokenDetails, callback || noop);
         } else {
