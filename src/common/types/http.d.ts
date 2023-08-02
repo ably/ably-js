@@ -25,7 +25,7 @@ export declare class IHttp {
 
   Request?: (
     method: HttpMethods,
-    rest: BaseClient | null,
+    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
@@ -35,7 +35,7 @@ export declare class IHttp {
   _getHosts: (client: BaseClient | Realtime) => string[];
   do(
     method: HttpMethods,
-    rest: BaseClient | null,
+    client: BaseClient | null,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
@@ -44,7 +44,7 @@ export declare class IHttp {
   ): void;
   doUri(
     method: HttpMethods,
-    rest: BaseClient | null,
+    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
