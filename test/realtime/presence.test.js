@@ -6,6 +6,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
+  var PresenceMessage = Ably.Realtime.PresenceMessage;
 
   function extractClientIds(presenceSet) {
     return utils
@@ -365,6 +366,43 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             return;
           }
           clientChannel.presence.enter();
+        }
+      );
+      monitorConnection(done, clientRealtime);
+    });
+
+    /*
+     * Attach to channel, enter presence channel with extras and check received
+     * PresenceMessage has extras.
+     */
+    it('presenceMessageExtras', function (done) {
+      var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+      var channelName = 'presenceMessageExtras';
+      var clientChannel = clientRealtime.channels.get(channelName);
+      var presence = clientChannel.presence;
+      presence.subscribe(
+        function (presenceMessage) {
+          try {
+            expect(presenceMessage.extras).to.deep.equal(
+              { headers: { key: 'value' } },
+              'extras should have headers "key=value"'
+            );
+          } catch (err) {
+            closeAndFinish(done, clientRealtime, err);
+            return;
+          }
+          closeAndFinish(done, clientRealtime);
+        },
+        function onPresenceSubscribe(err) {
+          if (err) {
+            closeAndFinish(done, clientRealtime, err);
+            return;
+          }
+          clientChannel.presence.enter(
+            PresenceMessage.fromValues({
+              extras: { headers: { key: 'value' } },
+            })
+          );
         }
       );
       monitorConnection(done, clientRealtime);

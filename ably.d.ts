@@ -2454,7 +2454,7 @@ declare namespace Types {
     /**
      * Enters the presence set for the channel, passing a `data` payload. A `clientId` is required to be present on a channel.
      *
-     * @param data - The payload associated with the presence member.
+     * @param data - The data payload or {@link PresenceMessage} associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     enter(data?: any, callback?: errorCallback): void;
@@ -2467,14 +2467,14 @@ declare namespace Types {
     /**
      * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
      *
-     * @param data - The payload to update for the presence member.
+     * @param data - The data payload or {@link PresenceMessage} object to update for the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     update(data?: any, callback?: errorCallback): void;
     /**
      * Leaves the presence set for the channel. A client must have previously entered the presence set before they can leave it.
      *
-     * @param data - The payload associated with the presence member.
+     * @param data - The data payload or {@link PresenceMessage} associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     leave(data?: any, callback?: errorCallback): void;
@@ -2488,7 +2488,7 @@ declare namespace Types {
      * Enters the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to enter into the presence set.
-     * @param data - The payload associated with the presence member.
+     * @param data - The data payload or {@link PresenceMessage} associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     enterClient(clientId: string, data?: any, callback?: errorCallback): void;
@@ -2503,7 +2503,7 @@ declare namespace Types {
      * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to update in the presence set.
-     * @param data - The payload to update for the presence member.
+     * @param data - The data payload or {@link PresenceMessage} object to update for the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     updateClient(clientId: string, data?: any, callback?: errorCallback): void;
@@ -2511,7 +2511,7 @@ declare namespace Types {
      * Leaves the presence set of the channel for a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
      *
      * @param clientId - The ID of the client to leave the presence set for.
-     * @param data - The payload associated with the presence member.
+     * @param data - The data payload or {@link PresenceMessage} associated with the presence member.
      * @param callback - A function which will be called upon completion of the operation. If the operation succeeded, then the function will be called with `null`. If it failed, the function will be called with information about the error.
      */
     leaveClient(clientId: string, data?: any, callback?: errorCallback): void;
@@ -3208,6 +3208,10 @@ declare namespace Types {
      * This will typically be empty as all presence messages received from Ably are automatically decoded client-side using this value. However, if the message encoding cannot be processed, this attribute will contain the remaining transformations not applied to the data payload.
      */
     encoding: string;
+    /**
+     * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `headers`.
+     */
+    extras: any;
     /**
      * A unique ID assigned to each `PresenceMessage` by Ably.
      */
