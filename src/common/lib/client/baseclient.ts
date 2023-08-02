@@ -36,8 +36,6 @@ const noop = function () {};
  */
 class BaseClient {
   options: NormalisedClientOptions;
-  baseUri: (host: string) => string;
-  authority: (host: string) => string;
   _currentFallback: null | {
     host: string;
     validUntil: number;
@@ -94,9 +92,6 @@ class BaseClient {
 
     Logger.logAction(Logger.LOG_MINOR, 'BaseClient()', 'started; version = ' + Defaults.version);
 
-    this.baseUri = this.authority = function (host) {
-      return Defaults.getHttpScheme(normalOptions) + host + ':' + Defaults.getPort(normalOptions, false);
-    };
     this._currentFallback = null;
 
     this.serverTimeOffset = null;
@@ -104,6 +99,10 @@ class BaseClient {
     this.auth = new Auth(this, normalOptions);
     this.channels = new Channels(this);
     this.push = new Push(this);
+  }
+
+  baseUri(host: string) {
+    return Defaults.getHttpScheme(this.options) + host + ':' + Defaults.getPort(this.options, false);
   }
 
   stats(
@@ -152,7 +151,7 @@ class BaseClient {
     const headers = Utils.defaultGetHeaders(this.options);
     if (this.options.headers) Utils.mixin(headers, this.options.headers);
     const timeUri = (host: string) => {
-      return this.authority(host) + '/time';
+      return this.baseUri(host) + '/time';
     };
     this.http.do(
       HttpMethods.Get,
