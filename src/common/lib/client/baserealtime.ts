@@ -12,16 +12,17 @@ import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';
+import { ModulesMap } from './modulesmap';
 
 /**
- `BaseRealtime` acts as the base class for the `BaseRealtime` class exported by the SDK. It is currently an implementation detail, but will become an export of the forthcoming tree-shakable version of the SDK.
+ `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `BaseRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
   channels: any;
   connection: Connection;
 
-  constructor(options: ClientOptions) {
-    super(options);
+  constructor(options: ClientOptions, modules: ModulesMap) {
+    super(options, modules);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this.connection = new Connection(this, this.options);
     this.channels = new Channels(this);

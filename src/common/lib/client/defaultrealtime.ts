@@ -1,6 +1,12 @@
 import BaseRealtime from './baserealtime';
+import ClientOptions from '../../types/ClientOptions';
+import { allCommonModules } from './modulesmap';
 
 /**
- `DefaultRealtime` is the class that the SDK exports as `Realtime`. This is currently the only Realtime class exported by the SDK. When we introduce the forthcoming tree-shakable version of the SDK, which will export `BaseRealtime`, `DefaultRealtime` will remain an export of the non-tree-shakable version.
+ `DefaultRealtime` is the class that the non tree-shakable version of the SDK exports as `Realtime`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
  */
-export class DefaultRealtime extends BaseRealtime {}
+export class DefaultRealtime extends BaseRealtime {
+  constructor(options: ClientOptions) {
+    super(options, allCommonModules);
+  }
+}

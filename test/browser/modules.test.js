@@ -10,11 +10,13 @@ describe('browser/modules', function () {
     window.ablyHelpers.setupApp(done);
   });
 
-  for (const clientClass of [BaseRest, BaseRealtime]) {
-    it(clientClass.name, async () => {
-      const client = new clientClass(ablyClientOptions());
-      const time = await client.time();
-      expect(time).to.be.a('number');
-    });
-  }
+  describe('without any modules', () => {
+    for (const clientClass of [BaseRest, BaseRealtime]) {
+      it(clientClass.name, async () => {
+        const client = new clientClass(ablyClientOptions());
+        const time = await client.time();
+        expect(time).to.be.a('number');
+      });
+    }
+  });
 });

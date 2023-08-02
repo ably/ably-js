@@ -16,6 +16,7 @@ import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOption
 import Platform from '../../platform';
 import Message from '../types/message';
 import PresenceMessage from '../types/presencemessage';
+import { ModulesMap } from './modulesmap';
 
 const noop = function () {};
 
@@ -36,7 +37,11 @@ class BaseClient {
   channels: Channels;
   push: Push;
 
-  constructor(options: ClientOptions | string) {
+  constructor(
+    options: ClientOptions | string,
+    // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+    modules: ModulesMap
+  ) {
     if (!options) {
       const msg = 'no options provided';
       Logger.logAction(Logger.LOG_ERROR, 'BaseClient()', msg);
