@@ -14,7 +14,7 @@ import Platform from 'common/platform';
 import Message from '../types/message';
 
 /**
- `BaseRealtime` acts as the base class for the `DefaultRealtime` class exported by the SDK. It is currently an implementation detail, but will become an export of the forthcoming tree-shakable version of the SDK.
+ `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
   channels: any;
