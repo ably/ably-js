@@ -1,5 +1,5 @@
 import * as Utils from '../util/utils';
-import Rest from './rest';
+import BaseClient from './baseclient';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Connection from './connection';
@@ -13,7 +13,10 @@ import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';
 
-class Realtime extends Rest {
+/**
+ `BaseRealtime` acts as the base class for the `BaseRealtime` class exported by the SDK. It is currently an implementation detail, but will become an export of the forthcoming tree-shakable version of the SDK.
+ */
+class BaseRealtime extends BaseClient {
   channels: any;
   connection: Connection;
 
@@ -44,10 +47,10 @@ class Realtime extends Rest {
 }
 
 class Channels extends EventEmitter {
-  realtime: Realtime;
+  realtime: BaseRealtime;
   all: Record<string, RealtimeChannel>;
 
-  constructor(realtime: Realtime) {
+  constructor(realtime: BaseRealtime) {
     super();
     this.realtime = realtime;
     this.all = Object.create(null);
@@ -179,4 +182,4 @@ class Channels extends EventEmitter {
   }
 }
 
-export default Realtime;
+export default BaseRealtime;

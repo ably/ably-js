@@ -1,6 +1,6 @@
 // Common
-import Rest from '../../common/lib/client/rest';
-import Realtime from '../../common/lib/client/realtime';
+import { DefaultRest } from '../../common/lib/client/defaultrest';
+import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
 
 // Platform Specific
@@ -26,8 +26,8 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
-Rest.Crypto = Crypto;
-Realtime.Crypto = Crypto;
+DefaultRest.Crypto = Crypto;
+DefaultRealtime.Crypto = Crypto;
 
 Logger.initLogHandlers();
 
@@ -46,10 +46,10 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
-export { Rest, Realtime, msgpack };
+export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack };
 
 export default {
-  Rest,
-  Realtime,
+  Rest: DefaultRest,
+  Realtime: DefaultRealtime,
   msgpack,
 };

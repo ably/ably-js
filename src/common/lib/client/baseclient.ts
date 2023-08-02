@@ -18,7 +18,11 @@ import Message from '../types/message';
 import PresenceMessage from '../types/presencemessage';
 
 const noop = function () {};
-class Rest {
+
+/**
+ `BaseClient` acts as the base class for all of the client classes exported by the SDK. It is an implementation detail and this class is not advertised publicly.
+ */
+class BaseClient {
   options: NormalisedClientOptions;
   baseUri: (host: string) => string;
   authority: (host: string) => string;
@@ -35,13 +39,17 @@ class Rest {
   constructor(options: ClientOptions | string) {
     if (!options) {
       const msg = 'no options provided';
-      Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
+      Logger.logAction(Logger.LOG_ERROR, 'BaseClient()', msg);
       throw new Error(msg);
     }
     const optionsObj = Defaults.objectifyOptions(options);
 
     Logger.setLog(optionsObj.logLevel, optionsObj.logHandler);
-    Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Platform.Config.inspect(options));
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'BaseClient()',
+      'initialized with clientOptions ' + Platform.Config.inspect(options)
+    );
 
     const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));
 
@@ -50,7 +58,7 @@ class Rest {
       const keyMatch = normalOptions.key.match(/^([^:\s]+):([^:.\s]+)$/);
       if (!keyMatch) {
         const msg = 'invalid key parameter';
-        Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
+        Logger.logAction(Logger.LOG_ERROR, 'BaseClient()', msg);
         throw new ErrorInfo(msg, 40400, 404);
       }
       normalOptions.keyName = keyMatch[1];
@@ -68,7 +76,7 @@ class Rest {
         );
     }
 
-    Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.version);
+    Logger.logAction(Logger.LOG_MINOR, 'BaseClient()', 'started; version = ' + Defaults.version);
 
     this.baseUri = this.authority = function (host) {
       return Defaults.getHttpScheme(normalOptions) + host + ':' + Defaults.getPort(normalOptions, false);
@@ -230,10 +238,10 @@ class Rest {
 }
 
 class Channels {
-  rest: Rest;
+  rest: BaseClient;
   all: Record<string, Channel>;
 
-  constructor(rest: Rest) {
+  constructor(rest: BaseClient) {
     this.rest = rest;
     this.all = Object.create(null);
   }
@@ -257,4 +265,4 @@ class Channels {
   }
 }
 
-export default Rest;
+export default BaseClient;

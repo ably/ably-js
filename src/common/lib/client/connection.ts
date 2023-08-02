@@ -5,18 +5,18 @@ import Logger from '../util/logger';
 import ConnectionStateChange from './connectionstatechange';
 import ErrorInfo from '../types/errorinfo';
 import { NormalisedClientOptions } from '../../types/ClientOptions';
-import Realtime from './realtime';
+import BaseRealtime from './baserealtime';
 import Platform from 'common/platform';
 
 class Connection extends EventEmitter {
-  ably: Realtime;
+  ably: BaseRealtime;
   connectionManager: ConnectionManager;
   state: string;
   key?: string;
   id?: string;
   errorReason: ErrorInfo | null;
 
-  constructor(ably: Realtime, options: NormalisedClientOptions) {
+  constructor(ably: BaseRealtime, options: NormalisedClientOptions) {
     super();
     this.ably = ably;
     this.connectionManager = new ConnectionManager(ably, options);

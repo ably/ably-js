@@ -3,7 +3,7 @@ import Logger from '../util/logger';
 import Resource from './resource';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
-import Rest from './rest';
+import BaseClient from './baseclient';
 
 export type BodyHandler = (body: unknown, headers: Record<string, string>, packed?: boolean) => Promise<any>;
 
@@ -35,7 +35,7 @@ function returnErrOnly(err: IPartialErrorInfo, body: unknown, useHPR?: boolean) 
 }
 
 class PaginatedResource {
-  rest: Rest;
+  rest: BaseClient;
   path: string;
   headers: Record<string, string>;
   envelope: Utils.Format | null;
@@ -43,7 +43,7 @@ class PaginatedResource {
   useHttpPaginatedResponse: boolean;
 
   constructor(
-    rest: Rest,
+    rest: BaseClient,
     path: string,
     headers: Record<string, string>,
     envelope: Utils.Format | undefined,

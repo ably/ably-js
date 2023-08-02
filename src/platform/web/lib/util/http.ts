@@ -4,8 +4,8 @@ import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
 import { ErrnoException, IHttp, RequestCallback, RequestParams } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
-import Rest from 'common/lib/client/rest';
-import Realtime from 'common/lib/client/realtime';
+import BaseClient from 'common/lib/client/baseclient';
+import BaseRealtime from 'common/lib/client/baserealtime';
 import XHRRequest from '../transport/xhrrequest';
 import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
@@ -26,11 +26,11 @@ function shouldFallback(errorInfo: ErrorInfo) {
   );
 }
 
-function getHosts(client: Rest | Realtime): string[] {
+function getHosts(client: BaseClient | BaseRealtime): string[] {
   /* If we're a connected realtime client, try the endpoint we're connected
    * to first -- but still have fallbacks, being connected is not an absolute
    * guarantee that a datacenter has free capacity to service REST requests. */
-  const connection = (client as Realtime).connection,
+  const connection = (client as BaseRealtime).connection,
     connectionHost = connection && connection.connectionManager.host;
 
   if (connectionHost) {
@@ -57,7 +57,7 @@ const Http: typeof IHttp = class {
       this.supportsAuthHeaders = true;
       this.Request = function (
         method: HttpMethods,
-        rest: Rest | null,
+        rest: BaseClient | null,
         uri: string,
         headers: Record<string, string> | null,
         params: RequestParams,
@@ -143,7 +143,7 @@ const Http: typeof IHttp = class {
   /* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
   do(
     method: HttpMethods,
-    rest: Rest,
+    rest: BaseClient,
     path: string,
     headers: Record<string, string> | null,
     body: unknown,
@@ -230,7 +230,7 @@ const Http: typeof IHttp = class {
 
   doUri(
     method: HttpMethods,
-    rest: Rest | null,
+    rest: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
@@ -246,7 +246,7 @@ const Http: typeof IHttp = class {
 
   Request?: (
     method: HttpMethods,
-    rest: Rest | null,
+    rest: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
