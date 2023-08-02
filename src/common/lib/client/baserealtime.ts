@@ -18,15 +18,19 @@ import { ModulesMap } from './modulesmap';
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `BaseRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
-  channels: any;
+  _channels: any;
   connection: Connection;
 
   constructor(options: ClientOptions, modules: ModulesMap) {
     super(options, modules);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this.connection = new Connection(this, this.options);
-    this.channels = new Channels(this);
+    this._channels = new Channels(this);
     if (options.autoConnect !== false) this.connect();
+  }
+
+  get channels() {
+    return this._channels;
   }
 
   connect(): void {

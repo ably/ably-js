@@ -1,3 +1,7 @@
-export interface ModulesMap {}
+import { Rest } from './rest';
 
-export const allCommonModules: ModulesMap = {};
+export interface ModulesMap {
+  Rest?: typeof Rest;
+}
+
+export const allCommonModules: ModulesMap = { Rest };

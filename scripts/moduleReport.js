@@ -1,7 +1,7 @@
 const esbuild = require('esbuild');
 
 // List of all modules accepted in ModulesMap
-const moduleNames = [];
+const moduleNames = ['Rest'];
 
 function formatBytes(bytes) {
   const kibibytes = bytes / 1024;
@@ -40,7 +40,7 @@ const errors = [];
     const size = getImportSize([baseClient, moduleName]);
     console.log(`${baseClient} + ${moduleName}: ${formatBytes(size)}`);
 
-    if (!(baseClientSize < size)) {
+    if (!(baseClientSize < size) && !(baseClient === 'BaseRest' && moduleName === 'Rest')) {
       // Emit an error if adding the module does not increase the bundle size
       // (this means that the module is not being tree-shaken correctly).
       errors.push(new Error(`Adding ${moduleName} to ${baseClient} does not increase the bundle size.`));

@@ -1,5 +1,5 @@
 import HttpMethods from '../constants/HttpMethods';
-import BaseClient from '../lib/client/baseclient';
+import { BaseClient } from '../lib/client/baseclient';
 import ErrorInfo from '../lib/types/errorinfo';
 import { Agents } from 'got';
 
