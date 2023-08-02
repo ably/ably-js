@@ -9,11 +9,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var monitorConnection = helper.monitorConnection;
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var testOnAllTransports = helper.testOnAllTransports;
-
-  /* Helpers */
-  function randomString() {
-    return Math.random().toString().slice(2);
-  }
+  var randomString = helper.randomString;
 
   function checkCanSubscribe(channel, testChannel) {
     return function (callback) {

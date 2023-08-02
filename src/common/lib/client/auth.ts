@@ -14,6 +14,14 @@ import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import Platform from '../../platform';
+import Resource from './resource';
+
+type BatchResult<T> = API.Types.BatchResult<T>;
+type TokenRevocationTargetSpecifier = API.Types.TokenRevocationTargetSpecifier;
+type TokenRevocationOptions = API.Types.TokenRevocationOptions;
+type TokenRevocationSuccessResult = API.Types.TokenRevocationSuccessResult;
+type TokenRevocationFailureResult = API.Types.TokenRevocationFailureResult;
+type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
@@ -1053,6 +1061,76 @@ class Auth {
 
   static isTokenErr(error: IPartialErrorInfo) {
     return error.code && error.code >= 40140 && error.code < 40150;
+  }
+
+  revokeTokens(
+    specifiers: TokenRevocationTargetSpecifier[],
+    options?: TokenRevocationOptions,
+    callback?: API.Types.StandardCallback<TokenRevocationResult>
+  ): void;
+  revokeTokens(
+    specifiers: TokenRevocationTargetSpecifier[],
+    options?: TokenRevocationOptions
+  ): Promise<TokenRevocationResult>;
+  revokeTokens(
+    specifiers: TokenRevocationTargetSpecifier[],
+    optionsOrCallbackArg?: TokenRevocationOptions | API.Types.StandardCallback<TokenRevocationResult>,
+    callbackArg?: API.Types.StandardCallback<TokenRevocationResult>
+  ): void | Promise<TokenRevocationResult> {
+    if (useTokenAuth(this.client.options)) {
+      throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
+    }
+
+    const keyName = this.client.options.keyName!;
+
+    let resolvedOptions: TokenRevocationOptions;
+
+    if (typeof optionsOrCallbackArg === 'function') {
+      callbackArg = optionsOrCallbackArg;
+      resolvedOptions = {};
+    } else {
+      resolvedOptions = optionsOrCallbackArg ?? {};
+    }
+
+    if (callbackArg === undefined) {
+      if (this.client.options.promises) {
+        return Utils.promisify(this, 'revokeTokens', [specifiers, resolvedOptions]);
+      }
+      callbackArg = noop;
+    }
+
+    const callback = callbackArg;
+
+    const requestBodyDTO = {
+      targets: specifiers.map((specifier) => `${specifier.type}:${specifier.value}`),
+      ...resolvedOptions,
+    };
+
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Utils.defaultPostHeaders(this.client.options, format);
+
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
+
+    const requestBody = Utils.encodeBody(requestBodyDTO, format);
+    Resource.post(
+      this.client,
+      `/keys/${keyName}/revokeTokens`,
+      requestBody,
+      headers,
+      { newBatchResponse: 'true' },
+      null,
+      (err, body, headers, unpacked) => {
+        if (err) {
+          // TODO remove this type assertion after fixing https://github.com/ably/ably-js/issues/1405
+          callback(err as API.Types.ErrorInfo);
+          return;
+        }
+
+        const batchResult = (unpacked ? body : Utils.decodeBody(body, format)) as TokenRevocationResult;
+
+        callback(null, batchResult);
+      }
+    );
   }
 }
 

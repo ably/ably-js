@@ -1434,6 +1434,157 @@ declare namespace Types {
     unit?: StatsIntervalGranularity;
   }
 
+  /**
+   * Contains information about the results of a batch operation.
+   */
+  interface BatchResult<T> {
+    /**
+     * The number of successful operations in the request.
+     */
+    successCount: number;
+    /**
+     * The number of unsuccessful operations in the request.
+     */
+    failureCount: number;
+    /**
+     * An array of results for the batch operation.
+     */
+    results: T[];
+  }
+
+  /**
+   * Describes the messages that should be published by a batch publish operation, and the channels to which they should be published.
+   */
+  interface BatchPublishSpec {
+    /**
+     * The names of the channels to publish the `messages` to.
+     */
+    channels: string[];
+    /**
+     * An array of {@link Message} objects.
+     */
+    messages: Message[];
+  }
+
+  /**
+   * Contains information about the result of successful publishes to a channel requested by a single {@link Types.BatchPublishSpec}.
+   */
+  interface BatchPublishSuccessResult {
+    /**
+     * The name of the channel the message(s) was published to.
+     */
+    channel: string;
+    /**
+     * A unique ID prefixed to the {@link Message.id} of each published message.
+     */
+    messageId: string;
+  }
+
+  /**
+   * Contains information about the result of unsuccessful publishes to a channel requested by a single {@link Types.BatchPublishSpec}.
+   */
+  interface BatchPublishFailureResult {
+    /**
+     * The name of the channel the message(s) failed to be published to.
+     */
+    channel: string;
+    /**
+     * Describes the reason for which the message(s) failed to publish to the channel as an {@link ErrorInfo} object.
+     */
+    error: ErrorInfo;
+  }
+
+  /**
+   * Contains information about the result of a successful batch presence request for a single channel.
+   */
+  interface BatchPresenceSuccessResult {
+    /**
+     * The channel name the presence state was retrieved for.
+     */
+    channel: string;
+    /**
+     * An array of {@link PresenceMessage}s describing members present on the channel.
+     */
+    presence: PresenceMessage[];
+  }
+
+  /**
+   * Contains information about the result of an unsuccessful batch presence request for a single channel.
+   */
+  interface BatchPresenceFailureResult {
+    /**
+     * The channel name the presence state failed to be retrieved for.
+     */
+    channel: string;
+    /**
+     * Describes the reason for which presence state could not be retrieved for the channel as an {@link ErrorInfo} object.
+     */
+    error: ErrorInfo;
+  }
+
+  /**
+   * The `TokenRevocationOptions` interface describes the additional options accepted by the following methods:
+   *
+   * - {@link AuthCallbacks.revokeTokens}
+   * - {@link AuthPromise.revokeTokens}
+   */
+  interface TokenRevocationOptions {
+    /**
+     * A Unix timestamp in milliseconds where only tokens issued before this time are revoked. The default is the current time. Requests with an `issuedBefore` in the future, or more than an hour in the past, will be rejected.
+     */
+    issuedBefore?: number;
+    /**
+     * If true, permits a token renewal cycle to take place without needing established connections to be dropped, by postponing enforcement to 30 seconds in the future, and sending any existing connections a hint to obtain (and upgrade the connection to use) a new token. The default is `false`, meaning that the effect is near-immediate.
+     */
+    allowReauthMargin?: boolean;
+  }
+
+  /**
+   * Describes which tokens should be affected by a token revocation request.
+   */
+  interface TokenRevocationTargetSpecifier {
+    /**
+     * The type of token revocation target specifier. Valid values include `clientId`, `revocationKey` and `channel`.
+     */
+    type: string;
+    /**
+     * The value of the token revocation target specifier.
+     */
+    value: string;
+  }
+
+  /**
+   * Contains information about the result of a successful token revocation request for a single target specifier.
+   */
+  interface TokenRevocationSuccessResult {
+    /**
+     * The target specifier.
+     */
+    target: string;
+    /**
+     * The time at which the token revocation will take effect, as a Unix timestamp in milliseconds.
+     */
+    appliesAt: number;
+    /**
+     * A Unix timestamp in milliseconds. Only tokens issued earlier than this time will be revoked.
+     */
+    issuedBefore: number;
+  }
+
+  /**
+   * Contains information about the result of an unsuccessful token revocation request for a single target specifier.
+   */
+  interface TokenRevocationFailureResult {
+    /**
+     * The target specifier.
+     */
+    target: string;
+    /**
+     * Describes the reason for which token revocation failed for the given `target` as an {@link ErrorInfo} object.
+     */
+    error: ErrorInfo;
+  }
+
   // Common Listeners
   /**
    * A standard callback format used in most areas of the callback API.
@@ -1708,6 +1859,36 @@ declare namespace Types {
      */
     time(callback?: Types.timeCallback): void;
     /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the function will be called with information about the error.
+     */
+    batchPublish(
+      spec: BatchPublishSpec,
+      callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>
+    ): void;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @param callback - A function which, upon success, will be called with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the function will be called with information about the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[],
+      callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>
+    ): void;
+    /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the function will be called with information about the error.
+     */
+    batchPresence(
+      channels: string[],
+      callback: StandardCallback<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>>
+    ): void;
+    /**
      * A {@link Types.PushCallbacks} object.
      */
     push: Types.PushCallbacks;
@@ -1763,6 +1944,30 @@ declare namespace Types {
      * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     time(): Promise<number>;
+
+    /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[]
+    ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+    /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
     /**
      * A {@link Types.PushPromise} object.
      */
@@ -1849,6 +2054,36 @@ declare namespace Types {
      */
     time(callback?: Types.timeCallback): void;
     /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the function will be called with information about the error.
+     */
+    batchPublish(
+      spec: BatchPublishSpec,
+      callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>
+    ): void;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @param callback - A function which, upon success, will be called with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the function will be called with information about the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[],
+      callback: StandardCallback<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>
+    ): void;
+    /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the function will be called with information about the error.
+     */
+    batchPresence(
+      channels: string[],
+      callback: StandardCallback<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>
+    ): void;
+    /**
      * A {@link Types.PushCallbacks} object.
      */
     push: Types.PushCallbacks;
@@ -1900,6 +2135,29 @@ declare namespace Types {
      * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     time(): Promise<number>;
+    /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[]
+    ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+    /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
     /**
      * A {@link Types.PushPromise} object.
      */
@@ -1991,6 +2249,18 @@ declare namespace Types {
      * @param callback - A function which, upon success, will be called with a {@link TokenDetails} object. Upon failure, the function will be called with information about the error.
      */
     requestToken(callback?: tokenDetailsCallback): void;
+    /**
+     * Revokes the tokens specified by the provided array of {@link TokenRevocationTargetSpecifier}s. Only tokens issued by an API key that had revocable tokens enabled before the token was issued can be revoked. See the [token revocation docs](https://ably.com/docs/core-features/authentication#token-revocation) for more information.
+     *
+     * @param specifiers - An array of {@link TokenRevocationTargetSpecifier} objects.
+     * @param options - A set of options which are used to modify the revocation request.
+     * @param callback - A function which, upon success, will be called with a {@link Types.BatchResult} containing information about the result of the token revocation request for each provided [`TokenRevocationTargetSpecifier`]{@link TokenRevocationTargetSpecifier}. Upon failure, the function will be called with information about the error.
+     */
+    revokeTokens(
+      specifiers: TokenRevocationTargetSpecifier[],
+      options?: TokenRevocationOptions,
+      callback?: StandardCallback<BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>>
+    ): void;
   }
 
   /**
@@ -2021,6 +2291,17 @@ declare namespace Types {
      * @returns A promise which, upon success, will be fulfilled with a {@link TokenDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     requestToken(TokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
+    /**
+     * Revokes the tokens specified by the provided array of {@link TokenRevocationTargetSpecifier}s. Only tokens issued by an API key that had revocable tokens enabled before the token was issued can be revoked. See the [token revocation docs](https://ably.com/docs/core-features/authentication#token-revocation) for more information.
+     *
+     * @param specifiers - An array of {@link TokenRevocationTargetSpecifier} objects.
+     * @param options - A set of options which are used to modify the revocation request.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} containing information about the result of the token revocation request for each provided [`TokenRevocationTargetSpecifier`]{@link TokenRevocationTargetSpecifier}. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    revokeTokens(
+      specifiers: TokenRevocationTargetSpecifier[],
+      options?: TokenRevocationOptions
+    ): Promise<BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>>;
   }
 
   /**

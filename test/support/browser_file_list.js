@@ -70,4 +70,5 @@ window.__testFiles__.files = {
   'test/browser/simple.test.js': true,
   'test/browser/http.test.js': true,
   'test/rest/status.test.js': true,
+  'test/rest/batch.test.js': true,
 };
