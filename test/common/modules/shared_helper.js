@@ -218,7 +218,7 @@ define([
         return res;
       };
 
-  return (module.exports = {
+  var exports = {
     setupApp: testAppModule.setup,
     tearDownApp: testAppModule.tearDown,
     createStats: testAppModule.createStatsFixtureData,
@@ -227,6 +227,7 @@ define([
     Ably: clientModule.Ably,
     AblyRest: clientModule.AblyRest,
     AblyRealtime: clientModule.AblyRealtime,
+    ablyClientOptions: clientModule.ablyClientOptions,
     Utils: utils,
 
     loadTestData: testAppManager.loadJsonData,
@@ -249,5 +250,11 @@ define([
     arrFind: arrFind,
     arrFilter: arrFilter,
     whenPromiseSettles: whenPromiseSettles,
-  });
+  };
+
+  if (typeof window !== 'undefined') {
+    window.ablyHelpers = exports;
+  }
+
+  return (module.exports = exports);
 });

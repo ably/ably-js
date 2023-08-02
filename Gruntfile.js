@@ -111,6 +111,17 @@ module.exports = function (grunt) {
       target: 'es6',
     };
 
+    var modulesConfig = {
+      ...baseConfig,
+      entryPoints: ['src/platform/web/modules.ts'],
+      outfile: 'build/modules/index.js',
+      format: 'esm',
+      plugins: [],
+    };
+
+    // For reasons I don't understand this build fails when run asynchronously
+    esbuild.buildSync(modulesConfig);
+
     Promise.all([
       esbuild.build(baseConfig),
       esbuild.build({
