@@ -18,6 +18,7 @@ import Platform from '../../platform';
 import Message from '../types/message';
 import PresenceMessage from '../types/presencemessage';
 import Resource from './resource';
+import { ModulesMap } from './modulesmap';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
 type BatchPublishSpec = API.Types.BatchPublishSpec;
@@ -47,7 +48,11 @@ class BaseClient {
   channels: Channels;
   push: Push;
 
-  constructor(options: ClientOptions | string) {
+  constructor(
+    options: ClientOptions | string,
+    // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+    modules: ModulesMap
+  ) {
     if (!options) {
       const msg = 'no options provided';
       Logger.logAction(Logger.LOG_ERROR, 'BaseClient()', msg);
