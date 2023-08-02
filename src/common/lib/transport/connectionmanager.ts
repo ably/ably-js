@@ -1326,10 +1326,7 @@ class ConnectionManager extends EventEmitter {
     let retryDelay = newState.retryDelay;
     if (newState.state === 'disconnected') {
       this.disconnectedRetryCount++;
-      retryDelay =
-        (newState.retryDelay as number) *
-        Utils.getBackoffCoefficient(this.disconnectedRetryCount) *
-        Utils.getJitterCoefficient();
+      retryDelay = Utils.getRetryTime(newState.retryDelay as number, this.disconnectedRetryCount);
     }
 
     const change = new ConnectionStateChange(
@@ -1533,19 +1530,19 @@ class ConnectionManager extends EventEmitter {
     } else if (state == this.states.connected.state) {
       this.upgradeIfNeeded(transportParams);
     } else if (this.transports.length > 1 && this.getTransportPreference()) {
-      this.connectPreference(transportParams);
+      this.connectPreference(transportParams, connectCount);
     } else {
       this.connectBase(transportParams, connectCount);
     }
   }
 
-  connectPreference(transportParams: TransportParams): void {
+  connectPreference(transportParams: TransportParams, connectCount?: number): void {
     const preference = this.getTransportPreference();
     let preferenceTimeoutExpired = false;
 
     if (!Utils.arrIn(this.transports, preference)) {
       this.unpersistTransportPreference();
-      this.connectImpl(transportParams);
+      this.connectImpl(transportParams, connectCount);
     }
 
     Logger.logAction(
@@ -1568,7 +1565,7 @@ class ConnectionManager extends EventEmitter {
         /* Be quite agressive about clearing the stored preference if ever it doesn't work */
         this.unpersistTransportPreference();
       }
-      this.connectImpl(transportParams);
+      this.connectImpl(transportParams, connectCount);
     }, this.options.timeouts.preferenceConnectTimeout);
 
     /* For connectPreference, just use the main host. If host fallback is needed, do it in connectBase.
@@ -1586,7 +1583,7 @@ class ConnectionManager extends EventEmitter {
       } else if (!transport && !fatal) {
         /* Preference failed in a transport-specific way. Try more */
         this.unpersistTransportPreference();
-        this.connectImpl(transportParams);
+        this.connectImpl(transportParams, connectCount);
       }
       /* If suceeded, or failed fatally, nothing to do */
     });
@@ -2116,9 +2113,10 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  /* This method is only used during connection attempts, so implements RSA4c1,
-   * RSA4c2, and RSA4d. In particular, it is not invoked for
-   * serverside-triggered reauths or manual reauths, so RSA4c3 does not apply */
+  /* This method is only used during connection attempts, so implements RSA4c1, RSA4c2,
+   * and RSA4d. It is generally not invoked for serverside-triggered reauths or manual
+   * reauths, so RSA4c3 does not apply, except (per per RSA4d1) in the case that the auth
+   * server returns 403. */
   actOnErrorFromAuthorize(err: ErrorInfo): void {
     if (err.code === 40171) {
       /* No way to reauth */

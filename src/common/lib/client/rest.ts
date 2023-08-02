@@ -12,10 +12,21 @@ import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import { ErrnoException, IHttp, RequestParams } from '../../types/http';
 import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
+import * as API from '../../../../ably';
 
 import Platform from '../../platform';
 import Message from '../types/message';
 import PresenceMessage from '../types/presencemessage';
+import Resource from './resource';
+
+type BatchResult<T> = API.Types.BatchResult<T>;
+type BatchPublishSpec = API.Types.BatchPublishSpec;
+type BatchPublishSuccessResult = API.Types.BatchPublishSuccessResult;
+type BatchPublishFailureResult = API.Types.BatchPublishFailureResult;
+type BatchPublishResult = BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>;
+type BatchPresenceSuccessResult = API.Types.BatchPresenceSuccessResult;
+type BatchPresenceFailureResult = API.Types.BatchPresenceFailureResult;
+type BatchPresenceResult = BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>;
 
 const noop = function () {};
 class Rest {
@@ -217,6 +228,93 @@ class Rest {
         callback as PaginatedResultCallback<unknown>
       );
     }
+  }
+
+  batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
+    specOrSpecs: T
+  ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]>;
+  batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
+    specOrSpecs: T,
+    callback?: StandardCallback<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]>
+  ): void | Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
+    if (callback === undefined) {
+      return Utils.promisify(this, 'batchPublish', [specOrSpecs]);
+    }
+
+    let requestBodyDTO: BatchPublishSpec[];
+    let singleSpecMode: boolean;
+    if (Utils.isArray(specOrSpecs)) {
+      requestBodyDTO = specOrSpecs;
+      singleSpecMode = false;
+    } else {
+      requestBodyDTO = [specOrSpecs];
+      singleSpecMode = true;
+    }
+
+    const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Utils.defaultPostHeaders(this.options, { format });
+
+    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+
+    const requestBody = Utils.encodeBody(requestBodyDTO, format);
+    Resource.post(
+      this,
+      '/messages',
+      requestBody,
+      headers,
+      { newBatchResponse: 'true' },
+      null,
+      (err, body, headers, unpacked) => {
+        if (err) {
+          callback(err);
+          return;
+        }
+
+        const batchResults = (unpacked ? body : Utils.decodeBody(body, format)) as BatchPublishResult[];
+
+        // I don't love the below type assertions for `callback` but not sure how to avoid them
+        if (singleSpecMode) {
+          (callback as StandardCallback<BatchPublishResult>)(null, batchResults[0]);
+        } else {
+          (callback as StandardCallback<BatchPublishResult[]>)(null, batchResults);
+        }
+      }
+    );
+  }
+
+  batchPresence(channels: string[]): Promise<BatchPresenceResult>;
+  batchPresence(
+    channels: string[],
+    callback?: StandardCallback<BatchPresenceResult>
+  ): void | Promise<BatchPresenceResult> {
+    if (callback === undefined) {
+      return Utils.promisify(this, 'batchPresence', [channels]);
+    }
+
+    const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Utils.defaultPostHeaders(this.options, { format });
+
+    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+
+    const channelsParam = channels.join(',');
+
+    Resource.get(
+      this,
+      '/presence',
+      headers,
+      { newBatchResponse: 'true', channels: channelsParam },
+      null,
+      (err, body, headers, unpacked) => {
+        if (err) {
+          callback(err);
+          return;
+        }
+
+        const batchResult = (unpacked ? body : Utils.decodeBody(body, format)) as BatchPresenceResult;
+
+        callback(null, batchResult);
+      }
+    );
   }
 
   setLog(logOptions: LoggerOptions): void {

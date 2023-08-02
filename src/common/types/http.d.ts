@@ -8,7 +8,7 @@ export type RequestCallback = (
   error?: ErrnoException | IPartialErrorInfo | null,
   body?: unknown,
   headers?: IncomingHttpHeaders,
-  packed?: boolean,
+  unpacked?: boolean,
   statusCode?: number
 ) => void;
 export type RequestParams = Record<string, string> | null;

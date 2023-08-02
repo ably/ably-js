@@ -63,7 +63,7 @@ export default function fetchRequest(
         prom = res.text();
       }
       prom.then((body) => {
-        const packed = !!contentType && contentType.indexOf('application/x-msgpack') === -1;
+        const unpacked = !!contentType && contentType.indexOf('application/x-msgpack') === -1;
         if (!res.ok) {
           const err =
             getAblyError(body, res.headers) ||
@@ -72,9 +72,9 @@ export default function fetchRequest(
               null,
               res.status
             );
-          callback(err, body, res.headers, packed, res.status);
+          callback(err, body, res.headers, unpacked, res.status);
         } else {
-          callback(null, body, res.headers, packed, res.status);
+          callback(null, body, res.headers, unpacked, res.status);
         }
       });
     })
