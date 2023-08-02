@@ -340,11 +340,11 @@ class BaseClient {
 }
 
 class Channels {
-  rest: BaseClient;
+  client: BaseClient;
   all: Record<string, Channel>;
 
-  constructor(rest: BaseClient) {
-    this.rest = rest;
+  constructor(client: BaseClient) {
+    this.client = client;
     this.all = Object.create(null);
   }
 
@@ -352,7 +352,7 @@ class Channels {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
-      this.all[name] = channel = new Channel(this.rest, name, channelOptions);
+      this.all[name] = channel = new Channel(this.client, name, channelOptions);
     } else if (channelOptions) {
       channel.setOptions(channelOptions);
     }

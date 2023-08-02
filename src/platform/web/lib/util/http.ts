@@ -57,7 +57,7 @@ const Http: typeof IHttp = class {
       this.supportsAuthHeaders = true;
       this.Request = function (
         method: HttpMethods,
-        rest: BaseClient | null,
+        client: BaseClient | null,
         uri: string,
         headers: Record<string, string> | null,
         params: RequestParams,
@@ -70,7 +70,7 @@ const Http: typeof IHttp = class {
           params,
           body,
           XHRStates.REQ_SEND,
-          rest && rest.options.timeouts,
+          client && client.options.timeouts,
           method
         );
         req.once('complete', callback);
@@ -134,16 +134,16 @@ const Http: typeof IHttp = class {
         );
       };
     } else {
-      this.Request = (method, rest, uri, headers, params, body, callback) => {
+      this.Request = (method, client, uri, headers, params, body, callback) => {
         callback(new PartialErrorInfo('no supported HTTP transports available', null, 400), null);
       };
     }
   }
 
-  /* Unlike for doUri, the 'rest' param here is mandatory, as it's used to generate the hosts */
+  /* Unlike for doUri, the 'client' param here is mandatory, as it's used to generate the hosts */
   do(
     method: HttpMethods,
-    rest: BaseClient,
+    client: BaseClient,
     path: string,
     headers: Record<string, string> | null,
     body: unknown,
@@ -154,10 +154,10 @@ const Http: typeof IHttp = class {
       typeof path == 'function'
         ? path
         : function (host: string) {
-            return rest.baseUri(host) + path;
+            return client.baseUri(host) + path;
           };
 
-    const currentFallback = rest._currentFallback;
+    const currentFallback = client._currentFallback;
     if (currentFallback) {
       if (currentFallback.validUntil > Utils.now()) {
         /* Use stored fallback */
@@ -167,7 +167,7 @@ const Http: typeof IHttp = class {
         }
         this.Request(
           method,
-          rest,
+          client,
           uriFromHost(currentFallback.host),
           headers,
           params,
@@ -176,8 +176,8 @@ const Http: typeof IHttp = class {
             // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
             if (err && shouldFallback(err as ErrorInfo)) {
               /* unstore the fallback and start from the top with the default sequence */
-              rest._currentFallback = null;
-              this.do(method, rest, path, headers, body, params, callback);
+              client._currentFallback = null;
+              this.do(method, client, path, headers, body, params, callback);
               return;
             }
             callback?.(err, ...args);
@@ -186,15 +186,15 @@ const Http: typeof IHttp = class {
         return;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
-        rest._currentFallback = null;
+        client._currentFallback = null;
       }
     }
 
-    const hosts = getHosts(rest);
+    const hosts = getHosts(client);
 
     /* if there is only one host do it */
     if (hosts.length === 1) {
-      this.doUri(method, rest, uriFromHost(hosts[0]), headers, body, params, callback as RequestCallback);
+      this.doUri(method, client, uriFromHost(hosts[0]), headers, body, params, callback as RequestCallback);
       return;
     }
 
@@ -203,7 +203,7 @@ const Http: typeof IHttp = class {
       const host = candidateHosts.shift();
       this.doUri(
         method,
-        rest,
+        client,
         uriFromHost(host as string),
         headers,
         body,
@@ -216,9 +216,9 @@ const Http: typeof IHttp = class {
           }
           if (persistOnSuccess) {
             /* RSC15f */
-            rest._currentFallback = {
+            client._currentFallback = {
               host: host as string,
-              validUntil: Utils.now() + rest.options.timeouts.fallbackRetryTimeout,
+              validUntil: Utils.now() + client.options.timeouts.fallbackRetryTimeout,
             };
           }
           callback?.(err, ...args);
@@ -230,7 +230,7 @@ const Http: typeof IHttp = class {
 
   doUri(
     method: HttpMethods,
-    rest: BaseClient | null,
+    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
@@ -241,12 +241,12 @@ const Http: typeof IHttp = class {
       callback(new PartialErrorInfo('Request invoked before assigned to', null, 500));
       return;
     }
-    this.Request(method, rest, uri, headers, params, body, callback);
+    this.Request(method, client, uri, headers, params, body, callback);
   }
 
   Request?: (
     method: HttpMethods,
-    rest: BaseClient | null,
+    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
