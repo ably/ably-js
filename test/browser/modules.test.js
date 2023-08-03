@@ -1,4 +1,4 @@
-import { BaseRest, BaseRealtime, Rest } from '../../build/modules/index.js';
+import { BaseRest, BaseRealtime, Rest, generateRandomKey, getDefaultCryptoParams } from '../../build/modules/index.js';
 
 describe('browser/modules', function () {
   this.timeout(10 * 1000);
@@ -42,6 +42,19 @@ describe('browser/modules', function () {
         const client = new BaseRealtime(ablyClientOptions(), {});
         expect(() => client.time()).to.throw();
       });
+    });
+  });
+
+  describe('Crypto standalone functions', () => {
+    it('generateRandomKey', async () => {
+      const key = await generateRandomKey();
+      expect(key).to.be.an('ArrayBuffer');
+    });
+
+    it('getDefaultCryptoParams', async () => {
+      const key = await generateRandomKey();
+      const params = getDefaultCryptoParams({ key });
+      expect(params).to.be.an('object');
     });
   });
 });

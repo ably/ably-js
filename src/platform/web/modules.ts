@@ -1,5 +1,4 @@
 // Common
-import BaseClient from 'common/lib/client/baseclient';
 import { BaseRest } from '../../common/lib/client/baserest';
 import BaseRealtime from '../../common/lib/client/baserealtime';
 import Platform from '../../common/platform';
@@ -26,8 +25,6 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
-BaseClient.Crypto = Crypto;
-
 Logger.initLogHandlers();
 
 Platform.Defaults = getDefaults(PlatformDefaults);
@@ -45,5 +42,6 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
+export * from './modules/crypto';
 export { Rest } from '../../common/lib/client/rest';
 export { BaseRest, BaseRealtime };

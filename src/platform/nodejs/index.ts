@@ -1,5 +1,4 @@
 // Common
-import BaseClient from '../../common/lib/client/baseclient';
 import { DefaultRest } from '../../common/lib/client/defaultrest';
 import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
@@ -25,7 +24,9 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = null;
 
-BaseClient.Crypto = Crypto;
+for (const clientClass of [DefaultRest, DefaultRealtime]) {
+  clientClass.Crypto = Crypto;
+}
 
 Logger.initLogHandlers();
 

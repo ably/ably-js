@@ -3,6 +3,9 @@ const esbuild = require('esbuild');
 // List of all modules accepted in ModulesMap
 const moduleNames = ['Rest'];
 
+// List of all free-standing functions exported by the library
+const functionNames = ['generateRandomKey', 'getDefaultCryptoParams'];
+
 function formatBytes(bytes) {
   const kibibytes = bytes / 1024;
   const formatted = kibibytes.toFixed(2);
@@ -35,15 +38,15 @@ const errors = [];
   // First display the size of the base client
   console.log(`${baseClient}: ${formatBytes(baseClientSize)}`);
 
-  // Then display the size of each module together with the base client
-  moduleNames.forEach((moduleName) => {
-    const size = getImportSize([baseClient, moduleName]);
-    console.log(`${baseClient} + ${moduleName}: ${formatBytes(size)}`);
+  // Then display the size of each export together with the base client
+  [...moduleNames, ...functionNames].forEach((exportName) => {
+    const size = getImportSize([baseClient, exportName]);
+    console.log(`${baseClient} + ${exportName}: ${formatBytes(size)}`);
 
-    if (!(baseClientSize < size) && !(baseClient === 'BaseRest' && moduleName === 'Rest')) {
+    if (!(baseClientSize < size) && !(baseClient === 'BaseRest' && exportName === 'Rest')) {
       // Emit an error if adding the module does not increase the bundle size
       // (this means that the module is not being tree-shaken correctly).
-      errors.push(new Error(`Adding ${moduleName} to ${baseClient} does not increase the bundle size.`));
+      errors.push(new Error(`Adding ${exportName} to ${baseClient} does not increase the bundle size.`));
     }
   });
 });

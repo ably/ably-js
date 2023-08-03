@@ -127,19 +127,6 @@ class BaseClient {
   }
 
   static Platform = Platform;
-
-  private static _Crypto: typeof Platform.Crypto = null;
-  static get Crypto() {
-    if (this._Crypto === null) {
-      throw new Error('Encryption not enabled; use ably.encryption.js instead');
-    }
-
-    return this._Crypto;
-  }
-  static set Crypto(newValue: typeof Platform.Crypto) {
-    this._Crypto = newValue;
-  }
-
   static Message = Message;
   static PresenceMessage = PresenceMessage;
 }
