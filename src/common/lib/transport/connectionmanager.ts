@@ -99,6 +99,8 @@ function decodeRecoveryKey(recoveryKey: string): RecoveryContext | null {
   }
 }
 
+const supportedTransports: Record<string, TransportCtor> = {};
+
 export class TransportParams {
   options: ClientOptions;
   host: string | null;
@@ -402,7 +404,9 @@ class ConnectionManager extends EventEmitter {
    * transport management
    *********************/
 
-  static supportedTransports: Record<string, TransportCtor> = {};
+  static get supportedTransports() {
+    return supportedTransports;
+  }
 
   static initTransports() {
     WebSocketTransport(ConnectionManager);
