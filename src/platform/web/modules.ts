@@ -28,7 +28,6 @@ Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
 BaseClient.Crypto = Crypto;
-BaseRealtime.Crypto = Crypto;
 
 Logger.initLogHandlers();
 

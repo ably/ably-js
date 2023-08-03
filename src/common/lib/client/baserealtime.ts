@@ -10,8 +10,6 @@ import { ChannelOptions } from '../../types/channel';
 import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
-import Platform from 'common/platform';
-import Message from '../types/message';
 import { ModulesMap } from './modulesmap';
 
 /**
@@ -45,10 +43,7 @@ class BaseRealtime extends BaseClient {
 
   static Utils = Utils;
   static ConnectionManager = ConnectionManager;
-  static Platform = Platform;
   static ProtocolMessage = ProtocolMessage;
-  static Message = Message;
-  static Crypto?: typeof Platform.Crypto;
 }
 
 class Channels extends EventEmitter {
