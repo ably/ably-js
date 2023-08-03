@@ -1,4 +1,5 @@
 // Common
+import BaseClient from '../../common/lib/client/baseclient';
 import { DefaultRest } from '../../common/lib/client/defaultrest';
 import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
@@ -23,8 +24,7 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
-DefaultRest.Crypto = null;
-DefaultRealtime.Crypto = null;
+BaseClient.Crypto = null;
 
 Logger.initLogHandlers();
 
