@@ -9,7 +9,6 @@ import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
 import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
-import ConnectionManager from '../transport/connectionmanager';
 import { ModulesMap } from './modulesmap';
 
 /**
@@ -40,10 +39,6 @@ class BaseRealtime extends BaseClient {
     Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
     this.connection.close();
   }
-
-  static Utils = Utils;
-  static ConnectionManager = ConnectionManager;
-  static ProtocolMessage = ProtocolMessage;
 }
 
 class Channels extends EventEmitter {
