@@ -3240,6 +3240,14 @@ declare namespace Types {
      * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      */
     fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => PresenceMessage[];
+
+    /**
+     * Initialises a `PresenceMessage` from a `PresenceMessage`-like object.
+     *
+     * @param values - The values to intialise the `PresenceMessage` from.
+     * @param stringifyAction - Whether to convert the `action` field from a number to a string.
+     */
+    fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage;
   }
 
   /**
