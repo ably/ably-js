@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.43](https://github.com/ably/ably-js/tree/1.2.43) (2023-08-10)
+
+- Add REST APIs for batch publishing, batch presence, and token revocation [\#1410](https://github.com/ably/ably-js/pull/1410)
+- Add support for presence message extras [\#1418](https://github.com/ably/ably-js/pull/1418)
+
 ## [1.2.42](https://github.com/ably/ably-js/tree/1.2.42) (2023-07-24)
 
 - Auth: remain connected upon failed authorize unless returning explicit 403 [\#1385](https://github.com/ably/ably-js/pull/1385)
