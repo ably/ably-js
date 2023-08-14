@@ -9,7 +9,6 @@ import Resource, { ResourceCallback } from './resource';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import BaseClient from './baseclient';
-import BaseRealtime from './baserealtime';
 import * as API from '../../../../ably';
 import Platform from 'common/platform';
 
@@ -47,13 +46,13 @@ function normaliseChannelOptions(options?: ChannelOptions) {
 }
 
 class Channel extends EventEmitter {
-  client: BaseClient | BaseRealtime;
+  client: BaseClient;
   name: string;
   basePath: string;
   presence: Presence;
   channelOptions: ChannelOptions;
 
-  constructor(client: BaseClient | BaseRealtime, name: string, channelOptions?: ChannelOptions) {
+  constructor(client: BaseClient, name: string, channelOptions?: ChannelOptions) {
     super();
     Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
     this.client = client;
