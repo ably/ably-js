@@ -26,7 +26,7 @@ function random() {
   return ('000000' + Math.floor(Math.random() * 1e16)).slice(-16);
 }
 
-function isRealtime(client: BaseClient | BaseRealtime): client is BaseRealtime {
+function isRealtime(client: BaseClient): client is BaseRealtime {
   return !!(client as BaseRealtime).connection;
 }
 
@@ -113,7 +113,7 @@ function getTokenRequestId() {
 }
 
 class Auth {
-  client: BaseClient | BaseRealtime;
+  client: BaseClient;
   tokenParams: API.Types.TokenParams;
   currentTokenRequestId: number | null;
   waitingForTokenRequest: ReturnType<typeof Multicaster.create> | null;
@@ -125,7 +125,7 @@ class Auth {
   basicKey?: string;
   clientId?: string | null;
 
-  constructor(client: BaseClient | BaseRealtime, options: ClientOptions) {
+  constructor(client: BaseClient, options: ClientOptions) {
     this.client = client;
     this.tokenParams = options.defaultTokenParams || {};
     /* The id of the current token request if one is in progress, else null */

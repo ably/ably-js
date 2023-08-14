@@ -26,7 +26,7 @@ function shouldFallback(errorInfo: ErrorInfo) {
   );
 }
 
-function getHosts(client: BaseClient | BaseRealtime): string[] {
+function getHosts(client: BaseClient): string[] {
   /* If we're a connected realtime client, try the endpoint we're connected
    * to first -- but still have fallbacks, being connected is not an absolute
    * guarantee that a datacenter has free capacity to service REST requests. */
