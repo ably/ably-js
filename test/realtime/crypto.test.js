@@ -25,27 +25,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
   function testMessageEquality(done, one, two) {
     try {
-      // treat `null` same as `undefined` (using ==, rather than ===)
-      expect(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').").to
-        .be.ok;
-
-      if (typeof one.data === 'string' && typeof two.data === 'string') {
-        expect(one.data === two.data, 'String data contents mismatch.').to.be.ok;
-        return;
-      }
-
-      if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
-        expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
-        return;
-      }
-
-      var json1 = JSON.stringify(one.data);
-      var json2 = JSON.stringify(two.data);
-      if (null === json1 || undefined === json1 || null === json2 || undefined === json2) {
-        expect(false, 'JSON stringify failed.').to.be.ok;
-        return;
-      }
-      expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
+      helper.testMessageEquality(one, two);
     } catch (err) {
       done(err);
     }
