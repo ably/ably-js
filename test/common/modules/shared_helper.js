@@ -8,9 +8,12 @@ define([
   'test/common/modules/client_module',
   'test/common/modules/testapp_manager',
   'async',
-], function (testAppModule, clientModule, testAppManager, async) {
+  'chai',
+], function (testAppModule, clientModule, testAppManager, async, chai) {
   var utils = clientModule.Ably.Realtime.Utils;
   var platform = clientModule.Ably.Realtime.Platform;
+  var BufferUtils = platform.BufferUtils;
+  var expect = chai.expect;
   clientModule.Ably.Realtime.ConnectionManager.initTransports();
   var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
     bestTransport = availableTransports[0],
@@ -218,6 +221,30 @@ define([
         return res;
       };
 
+  function testMessageEquality(one, two) {
+    // treat `null` same as `undefined` (using ==, rather than ===)
+    expect(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').").to.be
+      .ok;
+
+    if (typeof one.data === 'string' && typeof two.data === 'string') {
+      expect(one.data === two.data, 'String data contents mismatch.').to.be.ok;
+      return;
+    }
+
+    if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
+      expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
+      return;
+    }
+
+    var json1 = JSON.stringify(one.data);
+    var json2 = JSON.stringify(two.data);
+    if (null === json1 || undefined === json1 || null === json2 || undefined === json2) {
+      expect(false, 'JSON stringify failed.').to.be.ok;
+      return;
+    }
+    expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
+  }
+
   var exports = {
     setupApp: testAppModule.setup,
     tearDownApp: testAppModule.tearDown,
@@ -250,6 +277,7 @@ define([
     arrFind: arrFind,
     arrFilter: arrFilter,
     whenPromiseSettles: whenPromiseSettles,
+    testMessageEquality: testMessageEquality,
   };
 
   if (typeof window !== 'undefined') {
