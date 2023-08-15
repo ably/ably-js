@@ -10,7 +10,6 @@ import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOption
 import * as API from '../../../../ably';
 
 import Platform from '../../platform';
-import Message from '../types/message';
 import PresenceMessage from '../types/presencemessage';
 import { ModulesMap } from './modulesmap';
 import { Rest } from './rest';
@@ -147,7 +146,6 @@ class BaseClient {
   }
 
   static Platform = Platform;
-  static Message = Message;
   static PresenceMessage = PresenceMessage;
 }
 

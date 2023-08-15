@@ -4,7 +4,7 @@ const esbuild = require('esbuild');
 const moduleNames = ['Rest'];
 
 // List of all free-standing functions exported by the library
-const functionNames = ['generateRandomKey', 'getDefaultCryptoParams'];
+const functionNames = ['generateRandomKey', 'getDefaultCryptoParams', 'decodeMessage', 'decodeMessages'];
 
 function formatBytes(bytes) {
   const kibibytes = bytes / 1024;
