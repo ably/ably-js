@@ -9,7 +9,6 @@ import { IHttp, RequestParams } from '../../types/http';
 import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
 
 import Platform from '../../platform';
-import Message from '../types/message';
 import PresenceMessage from '../types/presencemessage';
 import { ModulesMap } from './modulesmap';
 import { Rest } from './rest';
@@ -127,7 +126,6 @@ class BaseClient {
   }
 
   static Platform = Platform;
-  static Message = Message;
   static PresenceMessage = PresenceMessage;
 }
 

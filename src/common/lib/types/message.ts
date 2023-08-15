@@ -363,14 +363,6 @@ class Message {
     return result;
   }
 
-  static async fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Promise<Message> {
-    return fromEncoded(Platform.Crypto, encoded, inputOptions);
-  }
-
-  static async fromEncodedArray(encodedArray: Array<unknown>, options?: API.Types.ChannelOptions): Promise<Message[]> {
-    return fromEncodedArray(Platform.Crypto, encodedArray, options);
-  }
-
   /* This should be called on encode()d (and encrypt()d) Messages (as it
    * assumes the data is a string or buffer) */
   static getMessagesSize(messages: Message[]): number {
