@@ -11,6 +11,7 @@ import BaseRealtime from 'common/lib/client/baserealtime';
 import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 import { shallowEquals } from 'common/lib/util/utils';
+import { MsgPack } from 'common/types/msgpack';
 
 /***************************************************
  *
@@ -28,7 +29,7 @@ import { shallowEquals } from 'common/lib/util/utils';
 
 const globalAgentPool: Array<{ options: RestAgentOptions; agents: Agents }> = [];
 
-const handler = function (uri: string, params: unknown, callback?: RequestCallback) {
+const handler = function (uri: string, params: unknown, MsgPack: MsgPack, callback?: RequestCallback) {
   return function (err: ErrnoException | null, response?: Response, body?: unknown) {
     if (err) {
       callback?.(err);
@@ -42,7 +43,7 @@ const handler = function (uri: string, params: unknown, callback?: RequestCallba
           body = JSON.parse(body as string);
           break;
         case 'application/x-msgpack':
-          body = Platform.Config.msgpack.decode(body as Buffer);
+          body = MsgPack.decode(body as Buffer);
       }
       const error = (body as { error: ErrorInfo }).error
         ? ErrorInfo.fromValues((body as { error: ErrorInfo }).error)
@@ -230,14 +231,14 @@ const Http: typeof IHttp = class {
 
     (got[method](doOptions) as CancelableRequest<Response>)
       .then((res: Response) => {
-        handler(uri, params, callback)(null, res, res.body);
+        handler(uri, params, client._MsgPack, callback)(null, res, res.body);
       })
       .catch((err: ErrnoException) => {
         if (err instanceof got.HTTPError) {
-          handler(uri, params, callback)(null, err.response, err.response.body);
+          handler(uri, params, client._MsgPack, callback)(null, err.response, err.response.body);
           return;
         }
-        handler(uri, params, callback)(err);
+        handler(uri, params, client._MsgPack, callback)(err);
       });
   }
 

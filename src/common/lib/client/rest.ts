@@ -114,8 +114,8 @@ export class Rest {
     callback: StandardCallback<HttpPaginatedResponse<unknown>>
   ): Promise<HttpPaginatedResponse<unknown>> | void {
     const useBinary = this.client.options.useBinaryProtocol,
-      encoder = useBinary ? Platform.Config.msgpack.encode : JSON.stringify,
-      decoder = useBinary ? Platform.Config.msgpack.decode : JSON.parse,
+      encoder = useBinary ? this.client._MsgPack.encode : JSON.stringify,
+      decoder = useBinary ? this.client._MsgPack.decode : JSON.parse,
       format = useBinary ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format;
     params = params || {};

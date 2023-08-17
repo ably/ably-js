@@ -43,7 +43,12 @@ class Presence extends EventEmitter {
       headers: Record<string, string>,
       unpacked?: boolean
     ) {
-      return await PresenceMessage.fromResponseBody(body, options as CipherOptions, unpacked ? undefined : format);
+      return await PresenceMessage.fromResponseBody(
+        body,
+        options as CipherOptions,
+        client._MsgPack,
+        unpacked ? undefined : format
+      );
     }).get(params, callback);
   }
 
@@ -82,7 +87,12 @@ class Presence extends EventEmitter {
       headers: Record<string, string>,
       unpacked?: boolean
     ) {
-      return await PresenceMessage.fromResponseBody(body, options as CipherOptions, unpacked ? undefined : format);
+      return await PresenceMessage.fromResponseBody(
+        body,
+        options as CipherOptions,
+        client._MsgPack,
+        unpacked ? undefined : format
+      );
     }).get(params, callback);
   }
 }

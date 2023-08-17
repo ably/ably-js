@@ -1,5 +1,6 @@
 import Platform from 'common/platform';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
+import { MsgPack } from 'common/types/msgpack';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -450,12 +451,12 @@ export function promisify<T>(ob: Record<string, any>, fnName: string, args: IArg
   });
 }
 
-export function decodeBody<T>(body: unknown, format?: Format | null): T {
-  return format == 'msgpack' ? Platform.Config.msgpack.decode(body as Buffer) : JSON.parse(String(body));
+export function decodeBody<T>(body: unknown, MsgPack: MsgPack, format?: Format | null): T {
+  return format == 'msgpack' ? MsgPack.decode(body as Buffer) : JSON.parse(String(body));
 }
 
-export function encodeBody(body: unknown, format?: Format): string | Buffer {
-  return format == 'msgpack' ? (Platform.Config.msgpack.encode(body, true) as Buffer) : JSON.stringify(body);
+export function encodeBody(body: unknown, MsgPack: MsgPack, format?: Format): string | Buffer {
+  return format == 'msgpack' ? (MsgPack.encode(body, true) as Buffer) : JSON.stringify(body);
 }
 
 export function allToLowerCase(arr: Array<string>): Array<string> {

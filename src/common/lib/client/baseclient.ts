@@ -30,6 +30,7 @@ class BaseClient {
 
   private readonly _rest: Rest | null;
   readonly _Crypto: IUntypedCryptoStatic | null;
+  readonly _MsgPack = Platform.Config.msgpack;
 
   constructor(options: ClientOptions | string, modules: ModulesMap) {
     if (!options) {

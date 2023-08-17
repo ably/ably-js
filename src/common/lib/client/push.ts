@@ -44,7 +44,7 @@ class Admin {
 
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    const requestBody = Utils.encodeBody(body, format);
+    const requestBody = Utils.encodeBody(body, client._MsgPack, format);
     Resource.post(client, '/push/publish', requestBody, headers, params, null, (err) => callback(err));
   }
 }
@@ -71,7 +71,7 @@ class DeviceRegistrations {
 
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    const requestBody = Utils.encodeBody(body, format);
+    const requestBody = Utils.encodeBody(body, client._MsgPack, format);
     Resource.put(
       client,
       '/push/deviceRegistrations/' + encodeURIComponent(device.id),
@@ -85,6 +85,7 @@ class DeviceRegistrations {
           !err
             ? (DeviceDetails.fromResponseBody(
                 body as Record<string, unknown>,
+                client._MsgPack,
                 unpacked ? undefined : format
               ) as DeviceDetails)
             : undefined
@@ -128,6 +129,7 @@ class DeviceRegistrations {
           !err
             ? (DeviceDetails.fromResponseBody(
                 body as Record<string, unknown>,
+                client._MsgPack,
                 unpacked ? undefined : format
               ) as DeviceDetails)
             : undefined
@@ -153,7 +155,7 @@ class DeviceRegistrations {
       headers: Record<string, string>,
       unpacked?: boolean
     ) {
-      return DeviceDetails.fromResponseBody(body, unpacked ? undefined : format);
+      return DeviceDetails.fromResponseBody(body, client._MsgPack, unpacked ? undefined : format);
     }).get(params, callback);
   }
 
@@ -232,7 +234,7 @@ class ChannelSubscriptions {
 
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    const requestBody = Utils.encodeBody(body, format);
+    const requestBody = Utils.encodeBody(body, client._MsgPack, format);
     Resource.post(
       client,
       '/push/channelSubscriptions',
@@ -243,7 +245,12 @@ class ChannelSubscriptions {
       function (err, body, headers, unpacked) {
         callback(
           err,
-          !err && PushChannelSubscription.fromResponseBody(body as Record<string, any>, unpacked ? undefined : format)
+          !err &&
+            PushChannelSubscription.fromResponseBody(
+              body as Record<string, any>,
+              client._MsgPack,
+              unpacked ? undefined : format
+            )
         );
       }
     );
@@ -266,7 +273,7 @@ class ChannelSubscriptions {
       headers: Record<string, string>,
       unpacked?: boolean
     ) {
-      return PushChannelSubscription.fromResponseBody(body, unpacked ? undefined : format);
+      return PushChannelSubscription.fromResponseBody(body, client._MsgPack, unpacked ? undefined : format);
     }).get(params, callback);
   }
 
@@ -308,7 +315,9 @@ class ChannelSubscriptions {
       headers: Record<string, string>,
       unpacked?: boolean
     ) {
-      const parsedBody = (!unpacked && format ? Utils.decodeBody(body, format) : body) as Array<string>;
+      const parsedBody = (
+        !unpacked && format ? Utils.decodeBody(body, client._MsgPack, format) : body
+      ) as Array<string>;
 
       for (let i = 0; i < parsedBody.length; i++) {
         parsedBody[i] = String(parsedBody[i]);

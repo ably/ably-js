@@ -1,3 +1,4 @@
+import { MsgPack } from 'common/types/msgpack';
 import * as Utils from '../util/utils';
 import ErrorInfo, { IConvertibleToErrorInfo } from './errorinfo';
 
@@ -74,10 +75,11 @@ class DeviceDetails {
 
   static fromResponseBody(
     body: Array<Record<string, unknown>> | Record<string, unknown>,
+    MsgPack: MsgPack,
     format?: Utils.Format
   ): DeviceDetails | DeviceDetails[] {
     if (format) {
-      body = Utils.decodeBody(body, format);
+      body = Utils.decodeBody(body, MsgPack, format);
     }
 
     if (Utils.isArray(body)) {

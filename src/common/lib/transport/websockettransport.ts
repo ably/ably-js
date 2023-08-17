@@ -102,7 +102,9 @@ class WebSocketTransport extends Transport {
       return;
     }
     try {
-      wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
+      wsConnection.send(
+        ProtocolMessage.serialize(message, this.connectionManager.realtime._MsgPack, this.params.format)
+      );
     } catch (e) {
       const msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
       Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
@@ -119,7 +121,7 @@ class WebSocketTransport extends Transport {
       'data received; length = ' + data.length + '; type = ' + typeof data
     );
     try {
-      this.onProtocolMessage(ProtocolMessage.deserialize(data, this.format));
+      this.onProtocolMessage(ProtocolMessage.deserialize(data, this.connectionManager.realtime._MsgPack, this.format));
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,

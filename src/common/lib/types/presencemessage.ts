@@ -3,6 +3,7 @@ import Platform from 'common/platform';
 import Message, { CipherOptions } from './message';
 import * as Utils from '../util/utils';
 import * as API from '../../../../ably';
+import { MsgPack } from 'common/types/msgpack';
 
 function toActionValue(actionString: string) {
   return PresenceMessage.Actions.indexOf(actionString);
@@ -105,11 +106,12 @@ class PresenceMessage {
   static async fromResponseBody(
     body: Record<string, unknown>[],
     options: CipherOptions,
+    MsgPack: MsgPack,
     format?: Utils.Format
   ): Promise<PresenceMessage[]> {
     const messages: PresenceMessage[] = [];
     if (format) {
-      body = Utils.decodeBody(body, format);
+      body = Utils.decodeBody(body, MsgPack, format);
     }
 
     for (let i = 0; i < body.length; i++) {
