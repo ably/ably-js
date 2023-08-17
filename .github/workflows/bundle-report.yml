@@ -37,4 +37,5 @@ jobs:
           sourcePath: bundle-reports
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           artifactName: bundle-report
+      # This step performs some validation and may fail, so it should come after the steps that we want to always execute.
       - run: npm run modulereport
