@@ -28,7 +28,7 @@ import { shallowEquals } from 'common/lib/util/utils';
 
 const globalAgentPool: Array<{ options: RestAgentOptions; agents: Agents }> = [];
 
-const handler = function (uri: string, params: unknown, callback?: RequestCallback) {
+const handler = function (uri: string, params: unknown, client: BaseClient | null, callback?: RequestCallback) {
   return function (err: ErrnoException | null, response?: Response, body?: unknown) {
     if (err) {
       callback?.(err);
@@ -42,7 +42,10 @@ const handler = function (uri: string, params: unknown, callback?: RequestCallba
           body = JSON.parse(body as string);
           break;
         case 'application/x-msgpack':
-          body = Platform.Config.msgpack.decode(body as Buffer);
+          if (!client) {
+            throw new ErrorInfo('Cannot use MessagePack without a client', 400, 40000);
+          }
+          body = client._MsgPack.decode(body as Buffer);
       }
       const error = (body as { error: ErrorInfo }).error
         ? ErrorInfo.fromValues((body as { error: ErrorInfo }).error)
@@ -230,14 +233,14 @@ const Http: typeof IHttp = class {
 
     (got[method](doOptions) as CancelableRequest<Response>)
       .then((res: Response) => {
-        handler(uri, params, callback)(null, res, res.body);
+        handler(uri, params, client, callback)(null, res, res.body);
       })
       .catch((err: ErrnoException) => {
         if (err instanceof got.HTTPError) {
-          handler(uri, params, callback)(null, err.response, err.response.body);
+          handler(uri, params, client, callback)(null, err.response, err.response.body);
           return;
         }
-        handler(uri, params, callback)(err);
+        handler(uri, params, client, callback)(err);
       });
   }
 

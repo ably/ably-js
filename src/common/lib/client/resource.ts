@@ -6,6 +6,7 @@ import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { ErrnoException } from '../../types/http';
+import { MsgPack } from 'common/types/msgpack';
 
 function withAuthDetails(
   client: BaseClient,
@@ -27,7 +28,11 @@ function withAuthDetails(
   }
 }
 
-function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | null): ResourceCallback<T> {
+function unenvelope<T>(
+  callback: ResourceCallback<T>,
+  MsgPack: MsgPack,
+  format: Utils.Format | null
+): ResourceCallback<T> {
   return (err, body, outerHeaders, unpacked, outerStatusCode) => {
     if (err && !body) {
       callback(err);
@@ -36,7 +41,7 @@ function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | nul
 
     if (!unpacked) {
       try {
-        body = Utils.decodeBody(body, format);
+        body = Utils.decodeBody(body, MsgPack, format);
       } catch (e) {
         if (Utils.isErrorInfoOrPartialErrorInfo(e)) {
           callback(e);
@@ -204,7 +209,7 @@ class Resource {
     }
 
     if (envelope) {
-      callback = callback && unenvelope(callback, envelope);
+      callback = callback && unenvelope(callback, client._MsgPack, envelope);
       (params = params || {})['envelope'] = envelope;
     }
 
@@ -221,7 +226,7 @@ class Resource {
         let decodedBody = body;
         if (headers['content-type']?.indexOf('msgpack') > 0) {
           try {
-            decodedBody = Platform.Config.msgpack.decode(body as Buffer);
+            decodedBody = client._MsgPack.decode(body as Buffer);
           } catch (decodeErr) {
             Logger.logAction(
               Logger.LOG_MICRO,

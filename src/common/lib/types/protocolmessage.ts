@@ -1,3 +1,4 @@
+import { MsgPack } from 'common/types/msgpack';
 import { Types } from '../../../../ably';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
@@ -109,8 +110,8 @@ class ProtocolMessage {
 
   static serialize = Utils.encodeBody;
 
-  static deserialize = function (serialized: unknown, format?: Utils.Format): ProtocolMessage {
-    const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, format);
+  static deserialize = function (serialized: unknown, MsgPack: MsgPack, format?: Utils.Format): ProtocolMessage {
+    const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, MsgPack, format);
     return ProtocolMessage.fromDeserialized(deserialized);
   };
 

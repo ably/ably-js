@@ -7,6 +7,7 @@ import * as Utils from '../util/utils';
 import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/bufferutils';
 import * as API from '../../../../ably';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
+import { MsgPack } from 'common/types/msgpack';
 
 export type CipherOptions = {
   channelCipher: {
@@ -335,10 +336,11 @@ class Message {
   static async fromResponseBody(
     body: Array<Message>,
     options: ChannelOptions | EncodingDecodingContext,
+    MsgPack: MsgPack,
     format?: Utils.Format
   ): Promise<Message[]> {
     if (format) {
-      body = Utils.decodeBody(body, format);
+      body = Utils.decodeBody(body, MsgPack, format);
     }
 
     for (let i = 0; i < body.length; i++) {
