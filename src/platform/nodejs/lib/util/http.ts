@@ -10,7 +10,7 @@ import BaseClient from 'common/lib/client/baseclient';
 import BaseRealtime from 'common/lib/client/baserealtime';
 import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
-import { shallowEquals } from 'common/lib/util/utils';
+import { shallowEquals, throwMissingModuleError } from 'common/lib/util/utils';
 
 /***************************************************
  *
@@ -42,8 +42,8 @@ const handler = function (uri: string, params: unknown, client: BaseClient | nul
           body = JSON.parse(body as string);
           break;
         case 'application/x-msgpack':
-          if (!client) {
-            throw new ErrorInfo('Cannot use MessagePack without a client', 400, 40000);
+          if (!client?._MsgPack) {
+            throwMissingModuleError('MsgPack');
           }
           body = client._MsgPack.decode(body as Buffer);
       }

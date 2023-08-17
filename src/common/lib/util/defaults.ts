@@ -5,6 +5,7 @@ import ErrorInfo from 'common/lib/types/errorinfo';
 import { version } from '../../../../package.json';
 import ClientOptions, { InternalClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
 import IDefaults from '../../types/IDefaults';
+import { MsgPack } from 'common/types/msgpack';
 
 let agent = 'ably-js/' + version;
 
@@ -41,7 +42,7 @@ type CompleteDefaults = IDefaults & {
   checkHost(host: string): void;
   getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
   objectifyOptions(options: ClientOptions | string): ClientOptions;
-  normaliseOptions(options: InternalClientOptions): NormalisedClientOptions;
+  normaliseOptions(options: InternalClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions;
   defaultGetHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
   defaultPostHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
 };
@@ -185,7 +186,7 @@ export function objectifyOptions(options: ClientOptions | string): ClientOptions
   return options;
 }
 
-export function normaliseOptions(options: InternalClientOptions): NormalisedClientOptions {
+export function normaliseOptions(options: InternalClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions {
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
     Logger.logAction(
       Logger.LOG_ERROR,
@@ -222,10 +223,14 @@ export function normaliseOptions(options: InternalClientOptions): NormalisedClie
 
   const timeouts = getTimeouts(options);
 
-  if ('useBinaryProtocol' in options) {
-    options.useBinaryProtocol = Platform.Config.supportsBinary && options.useBinaryProtocol;
+  if (MsgPack) {
+    if ('useBinaryProtocol' in options) {
+      options.useBinaryProtocol = Platform.Config.supportsBinary && options.useBinaryProtocol;
+    } else {
+      options.useBinaryProtocol = Platform.Config.preferBinary;
+    }
   } else {
-    options.useBinaryProtocol = Platform.Config.preferBinary;
+    options.useBinaryProtocol = false;
   }
 
   const headers: Record<string, string> = {};

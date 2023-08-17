@@ -15,6 +15,7 @@ import { ModulesMap } from './modulesmap';
 import { Rest } from './rest';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import { throwMissingModuleError } from '../util/utils';
+import { MsgPack } from 'common/types/msgpack';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
 type BatchPublishSpec = API.Types.BatchPublishSpec;
@@ -40,7 +41,7 @@ class BaseClient {
 
   private readonly _rest: Rest | null;
   readonly _Crypto: IUntypedCryptoStatic | null;
-  readonly _MsgPack = Platform.Config.msgpack;
+  readonly _MsgPack: MsgPack | null;
 
   constructor(options: ClientOptions | string, modules: ModulesMap) {
     if (!options) {
@@ -57,7 +58,8 @@ class BaseClient {
       'initialized with clientOptions ' + Platform.Config.inspect(options)
     );
 
-    const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));
+    this._MsgPack = modules.MsgPack ?? null;
+    const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj, this._MsgPack));
 
     /* process options */
     if (normalOptions.key) {

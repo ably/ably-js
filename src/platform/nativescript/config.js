@@ -1,5 +1,4 @@
 /* eslint-disable no-undef */
-import msgpack from '../web/lib/util/msgpack';
 require('nativescript-websockets');
 
 var randomBytes;
@@ -28,7 +27,6 @@ var Config = {
   allowComet: true,
   streamingSupported: false,
   useProtocolHeartbeats: true,
-  msgpack: msgpack,
   supportsBinary: typeof TextDecoder !== 'undefined' && TextDecoder,
   preferBinary: false,
   ArrayBuffer: ArrayBuffer,

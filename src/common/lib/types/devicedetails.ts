@@ -75,7 +75,7 @@ class DeviceDetails {
 
   static fromResponseBody(
     body: Array<Record<string, unknown>> | Record<string, unknown>,
-    MsgPack: MsgPack,
+    MsgPack: MsgPack | null,
     format?: Utils.Format
   ): DeviceDetails | DeviceDetails[] {
     if (format) {

@@ -30,7 +30,7 @@ function withAuthDetails(
 
 function unenvelope<T>(
   callback: ResourceCallback<T>,
-  MsgPack: MsgPack,
+  MsgPack: MsgPack | null,
   format: Utils.Format | null
 ): ResourceCallback<T> {
   return (err, body, outerHeaders, unpacked, outerStatusCode) => {
@@ -226,6 +226,9 @@ class Resource {
         let decodedBody = body;
         if (headers['content-type']?.indexOf('msgpack') > 0) {
           try {
+            if (!client._MsgPack) {
+              Utils.throwMissingModuleError('MsgPack');
+            }
             decodedBody = client._MsgPack.decode(body as Buffer);
           } catch (decodeErr) {
             Logger.logAction(

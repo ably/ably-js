@@ -6,13 +6,19 @@ import ConnectionManager from '../transport/connectionmanager';
 import ProtocolMessage from '../types/protocolmessage';
 import Platform from 'common/platform';
 import { DefaultMessage } from '../types/defaultmessage';
+import { MsgPack } from 'common/types/msgpack';
 
 /**
  `DefaultRealtime` is the class that the non tree-shakable version of the SDK exports as `Realtime`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
  */
 export class DefaultRealtime extends BaseRealtime {
   constructor(options: ClientOptions) {
-    super(options, { ...allCommonModules, Crypto: DefaultRealtime.Crypto ?? undefined });
+    const MsgPack = DefaultRealtime._MsgPack;
+    if (!MsgPack) {
+      throw new Error('Expected DefaultRealtime._MsgPack to have been set');
+    }
+
+    super(options, { ...allCommonModules, Crypto: DefaultRealtime.Crypto ?? undefined, MsgPack });
   }
 
   static Utils = Utils;
@@ -32,4 +38,6 @@ export class DefaultRealtime extends BaseRealtime {
   }
 
   static Message = DefaultMessage;
+
+  static _MsgPack: MsgPack | null = null;
 }

@@ -1,12 +1,9 @@
-import { MsgPack } from './msgpack';
-
 export interface IPlatformConfig {
   agent: string;
   logTimestamps: boolean;
   binaryType: BinaryType;
   WebSocket: typeof WebSocket | typeof import('ws');
   useProtocolHeartbeats: boolean;
-  msgpack: MsgPack;
   supportsBinary: boolean;
   preferBinary: boolean;
   nextTick: process.nextTick;

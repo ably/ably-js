@@ -336,7 +336,7 @@ class Message {
   static async fromResponseBody(
     body: Array<Message>,
     options: ChannelOptions | EncodingDecodingContext,
-    MsgPack: MsgPack,
+    MsgPack: MsgPack | null,
     format?: Utils.Format
   ): Promise<Message[]> {
     if (format) {

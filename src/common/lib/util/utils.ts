@@ -452,12 +452,26 @@ export function promisify<T>(ob: Record<string, any>, fnName: string, args: IArg
   });
 }
 
-export function decodeBody<T>(body: unknown, MsgPack: MsgPack, format?: Format | null): T {
-  return format == 'msgpack' ? MsgPack.decode(body as Buffer) : JSON.parse(String(body));
+export function decodeBody<T>(body: unknown, MsgPack: MsgPack | null, format?: Format | null): T {
+  if (format == 'msgpack') {
+    if (!MsgPack) {
+      throwMissingModuleError('MsgPack');
+    }
+    return MsgPack.decode(body as Buffer);
+  }
+
+  return JSON.parse(String(body));
 }
 
-export function encodeBody(body: unknown, MsgPack: MsgPack, format?: Format): string | Buffer {
-  return format == 'msgpack' ? (MsgPack.encode(body, true) as Buffer) : JSON.stringify(body);
+export function encodeBody(body: unknown, MsgPack: MsgPack | null, format?: Format): string | Buffer {
+  if (format == 'msgpack') {
+    if (!MsgPack) {
+      throwMissingModuleError('MsgPack');
+    }
+    return MsgPack.encode(body, true) as Buffer;
+  }
+
+  return JSON.stringify(body);
 }
 
 export function allToLowerCase(arr: Array<string>): Array<string> {

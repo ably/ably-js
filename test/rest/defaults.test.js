@@ -135,6 +135,28 @@ define(['ably', 'chai'], function (Ably, chai) {
       Defaults.ENVIRONMENT = '';
     });
 
+    // TODO once https://github.com/ably/ably-js/issues/1424 is fixed, this should also test the case where the useBinaryProtocol option is not specified
+    describe('normaliseOptions with useBinaryProtocol == true', () => {
+      if (Ably.Realtime.Platform.Config.supportsBinary) {
+        describe('given MsgPack implementation', () => {
+          it('maintains useBinaryProtocol as true', () => {
+            const StubMsgPack = {};
+            var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, StubMsgPack);
+
+            expect(normalisedOptions.useBinaryProtocol).to.be.true;
+          });
+        });
+      }
+
+      describe('given no MsgPack implementation', () => {
+        it('changes useBinaryProtocol to false', () => {
+          var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, null);
+
+          expect(normalisedOptions.useBinaryProtocol).to.be.false;
+        });
+      });
+    });
+
     it('closeOnUnload', function () {
       var options;
 

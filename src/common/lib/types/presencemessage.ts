@@ -112,7 +112,7 @@ class PresenceMessage {
   static async fromResponseBody(
     body: Record<string, unknown>[],
     options: CipherOptions,
-    MsgPack: MsgPack,
+    MsgPack: MsgPack | null,
     format?: Utils.Format
   ): Promise<PresenceMessage[]> {
     const messages: PresenceMessage[] = [];

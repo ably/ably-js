@@ -1,4 +1,3 @@
-import msgpack from '../web/lib/util/msgpack';
 import { IPlatformConfig } from '../../common/types/IPlatformConfig';
 import BufferUtils from '../web/lib/util/bufferutils';
 
@@ -13,7 +12,6 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
     allowComet: true,
     streamingSupported: true,
     useProtocolHeartbeats: true,
-    msgpack: msgpack,
     supportsBinary: !!(typeof TextDecoder !== 'undefined' && TextDecoder),
     preferBinary: false,
     ArrayBuffer: typeof ArrayBuffer !== 'undefined' && ArrayBuffer,
