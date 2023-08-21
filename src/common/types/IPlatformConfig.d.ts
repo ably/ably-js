@@ -1,7 +1,4 @@
-interface MsgPack {
-  encode(value: any, sparse?: boolean): Buffer | ArrayBuffer | undefined;
-  decode(buffer: Buffer): any;
-}
+import { MsgPack } from './msgpack';
 
 export interface IPlatformConfig {
   agent: string;
