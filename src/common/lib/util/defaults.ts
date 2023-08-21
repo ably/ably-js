@@ -250,10 +250,6 @@ export function normaliseOptions(options: InternalClientOptions): NormalisedClie
 
   return {
     ...options,
-    useBinaryProtocol:
-      'useBinaryProtocol' in options
-        ? Platform.Config.supportsBinary && options.useBinaryProtocol
-        : Platform.Config.preferBinary,
     realtimeHost,
     restHost,
     maxMessageSize: options.internal?.maxMessageSize || Defaults.maxMessageSize,
