@@ -7,6 +7,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import Platform from 'common/platform';
 import { DefaultMessage } from '../types/defaultmessage';
 import { MsgPack } from 'common/types/msgpack';
+import RealtimePresence from './realtimepresence';
 
 /**
  `DefaultRealtime` is the class that the non tree-shakable version of the SDK exports as `Realtime`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
@@ -18,7 +19,7 @@ export class DefaultRealtime extends BaseRealtime {
       throw new Error('Expected DefaultRealtime._MsgPack to have been set');
     }
 
-    super(options, { ...allCommonModules, Crypto: DefaultRealtime.Crypto ?? undefined, MsgPack });
+    super(options, { ...allCommonModules, Crypto: DefaultRealtime.Crypto ?? undefined, MsgPack, RealtimePresence });
   }
 
   static Utils = Utils;

@@ -10,17 +10,20 @@ import { ChannelOptions } from '../../types/channel';
 import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 import { ModulesMap } from './modulesmap';
+import RealtimePresence from './realtimepresence';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
+  readonly _RealtimePresence: typeof RealtimePresence | null;
   _channels: any;
   connection: Connection;
 
   constructor(options: ClientOptions, modules: ModulesMap) {
     super(options, modules);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
+    this._RealtimePresence = modules.RealtimePresence ?? null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
     if (options.autoConnect !== false) this.connect();
