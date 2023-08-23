@@ -14,6 +14,9 @@ import {
   decodePresenceMessage,
   decodePresenceMessages,
   constructPresenceMessage,
+  XHRPolling,
+  XHRStreaming,
+  WebSocketTransport,
 } from '../../build/modules/index.js';
 
 describe('browser/modules', function () {
@@ -42,13 +45,17 @@ describe('browser/modules', function () {
   });
 
   describe('without any modules', () => {
-    for (const clientClass of [BaseRest, BaseRealtime]) {
-      describe(clientClass.name, () => {
-        it('can be constructed', async () => {
-          expect(() => new clientClass(ablyClientOptions(), {})).not.to.throw();
-        });
+    describe('BaseRest', () => {
+      it('can be constructed', () => {
+        expect(() => new BaseRest(ablyClientOptions(), {})).not.to.throw();
       });
-    }
+    });
+
+    describe('BaseRealtime', () => {
+      it('throws an error due to absence of a transport module', () => {
+        expect(() => new BaseRealtime(ablyClientOptions(), {})).to.throw('no requested transports available');
+      });
+    });
   });
 
   describe('Rest', () => {
@@ -62,7 +69,7 @@ describe('browser/modules', function () {
 
     describe('BaseRealtime with Rest', () => {
       it('offers REST functionality', async () => {
-        const client = new BaseRealtime(ablyClientOptions(), { Rest });
+        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, Rest });
         const time = await client.time();
         expect(time).to.be.a('number');
       });
@@ -70,7 +77,7 @@ describe('browser/modules', function () {
 
     describe('BaseRealtime without Rest', () => {
       it('throws an error when attempting to use REST functionality', async () => {
-        const client = new BaseRealtime(ablyClientOptions(), {});
+        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport });
         expect(() => client.time()).to.throw('Rest module not provided');
       });
     });
@@ -206,48 +213,68 @@ describe('browser/modules', function () {
 
   describe('Crypto', () => {
     describe('without Crypto', () => {
-      for (const clientClass of [BaseRest, BaseRealtime]) {
-        describe(clientClass.name, () => {
+      async function testThrowsAnErrorWhenGivenChannelOptionsWithACipher(clientClassConfig) {
+        const client = new clientClassConfig.clientClass(
+          ablyClientOptions(),
+          clientClassConfig.additionalModules ?? {}
+        );
+        const key = await generateRandomKey();
+        expect(() => client.channels.get('channel', { cipher: { key } })).to.throw('Crypto module not provided');
+      }
+
+      for (const clientClassConfig of [
+        { clientClass: BaseRest },
+        { clientClass: BaseRealtime, additionalModules: { WebSocketTransport } },
+      ]) {
+        describe(clientClassConfig.clientClass.name, () => {
           it('throws an error when given channel options with a cipher', async () => {
-            const client = new clientClass(ablyClientOptions(), {});
-            const key = await generateRandomKey();
-            expect(() => client.channels.get('channel', { cipher: { key } })).to.throw('Crypto module not provided');
+            await testThrowsAnErrorWhenGivenChannelOptionsWithACipher(clientClassConfig);
           });
         });
       }
     });
 
     describe('with Crypto', () => {
-      for (const clientClass of [BaseRest, BaseRealtime]) {
-        describe(clientClass.name, () => {
+      async function testIsAbleToPublishEncryptedMessages(clientClassConfig) {
+        const clientOptions = ablyClientOptions();
+
+        const key = await generateRandomKey();
+
+        // Publish the message on a channel configured to use encryption, and receive it on one not configured to use encryption
+
+        const rxClient = new BaseRealtime(clientOptions, { WebSocketTransport });
+        const rxChannel = rxClient.channels.get('channel');
+        await rxChannel.attach();
+
+        const rxMessagePromise = new Promise((resolve, _) => rxChannel.subscribe((message) => resolve(message)));
+
+        const encryptionChannelOptions = { cipher: { key } };
+
+        const txMessage = { name: 'message', data: 'data' };
+        const txClient = new clientClassConfig.clientClass(clientOptions, {
+          ...(clientClassConfig.additionalModules ?? {}),
+          Crypto,
+        });
+        const txChannel = txClient.channels.get('channel', encryptionChannelOptions);
+        await txChannel.publish(txMessage);
+
+        const rxMessage = await rxMessagePromise;
+
+        // Verify that the message was published with encryption
+        expect(rxMessage.encoding).to.equal('utf-8/cipher+aes-256-cbc');
+
+        // Verify that the message was correctly encrypted
+        const rxMessageDecrypted = await decodeEncryptedMessage(rxMessage, encryptionChannelOptions);
+        testMessageEquality(rxMessageDecrypted, txMessage);
+      }
+
+      for (const clientClassConfig of [
+        { clientClass: BaseRest },
+        { clientClass: BaseRealtime, additionalModules: { WebSocketTransport } },
+      ]) {
+        describe(clientClassConfig.clientClass.name, () => {
           it('is able to publish encrypted messages', async () => {
-            const clientOptions = ablyClientOptions();
-
-            const key = await generateRandomKey();
-
-            // Publish the message on a channel configured to use encryption, and receive it on one not configured to use encryption
-
-            const rxClient = new BaseRealtime(clientOptions, {});
-            const rxChannel = rxClient.channels.get('channel');
-            await rxChannel.attach();
-
-            const rxMessagePromise = new Promise((resolve, _) => rxChannel.subscribe((message) => resolve(message)));
-
-            const encryptionChannelOptions = { cipher: { key } };
-
-            const txMessage = { name: 'message', data: 'data' };
-            const txClient = new clientClass(clientOptions, { Crypto });
-            const txChannel = txClient.channels.get('channel', encryptionChannelOptions);
-            await txChannel.publish(txMessage);
-
-            const rxMessage = await rxMessagePromise;
-
-            // Verify that the message was published with encryption
-            expect(rxMessage.encoding).to.equal('utf-8/cipher+aes-256-cbc');
-
-            // Verify that the message was correctly encrypted
-            const rxMessageDecrypted = await decodeEncryptedMessage(rxMessage, encryptionChannelOptions);
-            testMessageEquality(rxMessageDecrypted, txMessage);
+            await testIsAbleToPublishEncryptedMessages(clientClassConfig);
           });
         });
       }
@@ -298,7 +325,9 @@ describe('browser/modules', function () {
 
         describe('BaseRealtime', () => {
           it('uses JSON', async () => {
-            const client = new BaseRealtime(ablyClientOptions({ useBinaryProtocol: true, autoConnect: false }), {});
+            const client = new BaseRealtime(ablyClientOptions({ useBinaryProtocol: true, autoConnect: false }), {
+              WebSocketTransport,
+            });
             await testRealtimeUsesFormat(client, 'json');
           });
         });
@@ -307,7 +336,9 @@ describe('browser/modules', function () {
       describe('with MsgPack', () => {
         describe('BaseRest', () => {
           it('uses MessagePack', async () => {
-            const client = new BaseRest(ablyClientOptions({ useBinaryProtocol: true }), { MsgPack });
+            const client = new BaseRest(ablyClientOptions({ useBinaryProtocol: true }), {
+              MsgPack,
+            });
             await testRestUsesContentType(client, 'application/x-msgpack');
           });
         });
@@ -315,6 +346,7 @@ describe('browser/modules', function () {
         describe('BaseRealtime', () => {
           it('uses MessagePack', async () => {
             const client = new BaseRealtime(ablyClientOptions({ useBinaryProtocol: true, autoConnect: false }), {
+              WebSocketTransport,
               MsgPack,
             });
             await testRealtimeUsesFormat(client, 'msgpack');
@@ -327,7 +359,7 @@ describe('browser/modules', function () {
   describe('RealtimePresence', () => {
     describe('BaseRealtime without RealtimePresence', () => {
       it('throws an error when attempting to access the `presence` property', () => {
-        const client = new BaseRealtime(ablyClientOptions(), {});
+        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport });
         const channel = client.channels.get('channel');
 
         expect(() => channel.presence).to.throw('RealtimePresence module not provided');
@@ -336,9 +368,12 @@ describe('browser/modules', function () {
 
     describe('BaseRealtime with RealtimePresence', () => {
       it('offers realtime presence functionality', async () => {
-        const rxChannel = new BaseRealtime(ablyClientOptions(), { RealtimePresence }).channels.get('channel');
+        const rxChannel = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, RealtimePresence }).channels.get(
+          'channel'
+        );
         const txClientId = randomString();
         const txChannel = new BaseRealtime(ablyClientOptions({ clientId: txClientId }), {
+          WebSocketTransport,
           RealtimePresence,
         }).channels.get('channel');
 
@@ -395,6 +430,42 @@ describe('browser/modules', function () {
         expect(presenceMessage.constructor.name).to.contain('PresenceMessage');
         expect(presenceMessage.extras).to.equal(extras);
       });
+    });
+  });
+
+  describe('Transports', () => {
+    describe('BaseRealtime', () => {
+      for (const scenario of [
+        { moduleMapKey: 'WebSocketTransport', transportModule: WebSocketTransport, transportName: 'web_socket' },
+        { moduleMapKey: 'XHRPolling', transportModule: XHRPolling, transportName: 'xhr_polling' },
+        { moduleMapKey: 'XHRStreaming', transportModule: XHRStreaming, transportName: 'xhr_streaming' },
+      ]) {
+        describe(`with the ${scenario.moduleMapKey} module`, () => {
+          it(`is able to use the ${scenario.transportName} transport`, async () => {
+            const realtime = new BaseRealtime(
+              ablyClientOptions({ autoConnect: false, transports: [scenario.transportName] }),
+              {
+                [scenario.moduleMapKey]: scenario.transportModule,
+              }
+            );
+
+            let firstTransportCandidate;
+            const connectionManager = realtime.connection.connectionManager;
+            const originalTryATransport = connectionManager.tryATransport;
+            realtime.connection.connectionManager.tryATransport = (transportParams, candidate, callback) => {
+              if (!firstTransportCandidate) {
+                firstTransportCandidate = candidate;
+              }
+              originalTryATransport.bind(connectionManager)(transportParams, candidate, callback);
+            };
+
+            realtime.connect();
+
+            await realtime.connection.once('connected');
+            expect(firstTransportCandidate).to.equal(scenario.transportName);
+          });
+        });
+      }
     });
   });
 });

@@ -10,7 +10,7 @@ import BufferUtils from './lib/util/bufferutils';
 import Http from './lib/util/http';
 import Config from './config';
 // @ts-ignore
-import Transports from './lib/transport';
+import { ModulesTransports } from './lib/transport';
 import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
@@ -19,7 +19,7 @@ import PlatformDefaults from './lib/util/defaults';
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;
-Platform.Transports = Transports;
+Platform.Transports = ModulesTransports;
 Platform.WebStorage = WebStorage;
 
 Logger.initLogHandlers();
@@ -44,5 +44,6 @@ export * from './modules/message';
 export * from './modules/presencemessage';
 export * from './modules/msgpack';
 export * from './modules/realtimepresence';
+export * from './modules/transports';
 export { Rest } from '../../common/lib/client/rest';
 export { BaseRest, BaseRealtime, ErrorInfo };

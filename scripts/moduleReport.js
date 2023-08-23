@@ -1,7 +1,15 @@
 const esbuild = require('esbuild');
 
 // List of all modules accepted in ModulesMap
-const moduleNames = ['Rest', 'Crypto', 'MsgPack', 'RealtimePresence'];
+const moduleNames = [
+  'Rest',
+  'Crypto',
+  'MsgPack',
+  'RealtimePresence',
+  'XHRPolling',
+  'XHRStreaming',
+  'WebSocketTransport',
+];
 
 // List of all free-standing functions exported by the library along with the
 // ModulesMap entries that we expect them to transitively import

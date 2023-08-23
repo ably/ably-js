@@ -1,7 +1,11 @@
 import { TransportNames } from 'common/constants/TransportName';
 import initialiseNodeCometTransport from './nodecomettransport';
+import { default as initialiseWebSocketTransport } from '../../../../common/lib/transport/websockettransport';
 
 export default {
   order: [TransportNames.Comet],
-  implementations: { [TransportNames.Comet]: initialiseNodeCometTransport },
+  bundledImplementations: {
+    [TransportNames.WebSocket]: initialiseWebSocketTransport,
+    [TransportNames.Comet]: initialiseNodeCometTransport,
+  },
 };

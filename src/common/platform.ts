@@ -34,7 +34,8 @@ export default class Platform {
   static Http: typeof IHttp;
   static Transports: {
     order: TransportName[];
-    implementations: TransportImplementations;
+    // Transport implementations that always come with this platform
+    bundledImplementations: TransportImplementations;
   };
   static Defaults: IDefaults;
   static WebStorage: IWebStorage | null;

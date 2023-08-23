@@ -2,7 +2,7 @@ import ProtocolMessage from 'common/lib/types/protocolmessage';
 import * as Utils from 'common/lib/util/utils';
 import Protocol, { PendingMessage } from './protocol';
 import Defaults, { getAgentString } from 'common/lib/util/defaults';
-import Platform from 'common/platform';
+import Platform, { TransportImplementations } from 'common/platform';
 import EventEmitter from '../util/eventemitter';
 import MessageQueue from './messagequeue';
 import Logger from '../util/logger';
@@ -12,14 +12,13 @@ import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types
 import Auth from 'common/lib/client/auth';
 import Message from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
-import WebSocketTransport from './websockettransport';
 import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
 import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import BaseRealtime from '../client/baserealtime';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
-import TransportName from 'common/constants/TransportName';
+import TransportName, { TransportNames } from 'common/constants/TransportName';
 
 let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
 
@@ -227,8 +226,8 @@ class ConnectionManager extends EventEmitter {
 
   constructor(realtime: BaseRealtime, options: NormalisedClientOptions) {
     super();
-    this.initTransports();
     this.realtime = realtime;
+    this.initTransports();
     this.options = options;
     const timeouts = options.timeouts;
     /* connectingTimeout: leave preferenceConnectTimeout (~6s) to try the
@@ -401,22 +400,29 @@ class ConnectionManager extends EventEmitter {
    *********************/
 
   // Used by tests
-  static get supportedTransports() {
+  static supportedTransports(additionalImplementations: TransportImplementations) {
     const storage: TransportStorage = { supportedTransports: {} };
-    this.initTransports(storage);
+    this.initTransports(additionalImplementations, storage);
     return storage.supportedTransports;
   }
 
-  private static initTransports(storage: TransportStorage) {
-    WebSocketTransport(storage);
+  private static initTransports(additionalImplementations: TransportImplementations, storage: TransportStorage) {
+    const implementations = { ...Platform.Transports.bundledImplementations, ...additionalImplementations };
+
+    const initialiseWebSocketTransport = implementations[TransportNames.WebSocket];
+    if (initialiseWebSocketTransport) {
+      initialiseWebSocketTransport(storage);
+    }
     Utils.arrForEach(Platform.Transports.order, function (transportName) {
-      const initFn = Platform.Transports.implementations[transportName]!;
-      initFn(ConnectionManager);
+      const initFn = implementations[transportName];
+      if (initFn) {
+        initFn(storage);
+      }
     });
   }
 
   initTransports() {
-    ConnectionManager.initTransports(this);
+    ConnectionManager.initTransports(this.realtime._additionalTransportImplementations, this);
   }
 
   createTransportParams(host: string | null, mode: string): TransportParams {
