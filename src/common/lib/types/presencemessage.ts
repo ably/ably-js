@@ -9,6 +9,39 @@ function toActionValue(actionString: string) {
   return PresenceMessage.Actions.indexOf(actionString);
 }
 
+export async function fromEncoded(encoded: unknown, options?: API.Types.ChannelOptions): Promise<PresenceMessage> {
+  const msg = fromValues(encoded as PresenceMessage | Record<string, unknown>, true);
+  /* if decoding fails at any point, catch and return the message decoded to
+   * the fullest extent possible */
+  try {
+    await PresenceMessage.decode(msg, options ?? {});
+  } catch (e) {
+    Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
+  }
+  return msg;
+}
+
+export async function fromEncodedArray(
+  encodedArray: unknown[],
+  options?: API.Types.ChannelOptions
+): Promise<PresenceMessage[]> {
+  return Promise.all(
+    encodedArray.map(function (encoded) {
+      return fromEncoded(encoded, options);
+    })
+  );
+}
+
+export function fromValues(
+  values: PresenceMessage | Record<string, unknown>,
+  stringifyAction?: boolean
+): PresenceMessage {
+  if (stringifyAction) {
+    values.action = PresenceMessage.Actions[values.action as number];
+  }
+  return Object.assign(new PresenceMessage(), values);
+}
+
 class PresenceMessage {
   action?: string | number;
   id?: string;
@@ -121,7 +154,7 @@ class PresenceMessage {
     }
 
     for (let i = 0; i < body.length; i++) {
-      const msg = (messages[i] = PresenceMessage.fromValues(body[i], true));
+      const msg = (messages[i] = fromValues(body[i], true));
       try {
         await PresenceMessage.decode(msg, options);
       } catch (e) {
@@ -131,48 +164,18 @@ class PresenceMessage {
     return messages;
   }
 
-  static fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage {
-    if (stringifyAction) {
-      values.action = PresenceMessage.Actions[values.action as number];
-    }
-    return Object.assign(new PresenceMessage(), values);
-  }
-
   static fromValuesArray(values: unknown[]): PresenceMessage[] {
     const count = values.length,
       result = new Array(count);
-    for (let i = 0; i < count; i++) result[i] = PresenceMessage.fromValues(values[i] as Record<string, unknown>);
+    for (let i = 0; i < count; i++) result[i] = fromValues(values[i] as Record<string, unknown>);
     return result;
-  }
-
-  static async fromEncoded(encoded: unknown, options?: API.Types.ChannelOptions): Promise<PresenceMessage> {
-    const msg = PresenceMessage.fromValues(encoded as PresenceMessage | Record<string, unknown>, true);
-    /* if decoding fails at any point, catch and return the message decoded to
-     * the fullest extent possible */
-    try {
-      await PresenceMessage.decode(msg, options ?? {});
-    } catch (e) {
-      Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
-    }
-    return msg;
-  }
-
-  static async fromEncodedArray(
-    encodedArray: unknown[],
-    options?: API.Types.ChannelOptions
-  ): Promise<PresenceMessage[]> {
-    return Promise.all(
-      encodedArray.map(function (encoded) {
-        return PresenceMessage.fromEncoded(encoded, options);
-      })
-    );
   }
 
   static fromData(data: unknown): PresenceMessage {
     if (data instanceof PresenceMessage) {
       return data;
     }
-    return PresenceMessage.fromValues({
+    return fromValues({
       data,
     });
   }

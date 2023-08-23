@@ -7,7 +7,7 @@ import RealtimePresence from './realtimepresence';
 import Message, { CipherOptions } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
-import PresenceMessage from '../types/presencemessage';
+import PresenceMessage, { fromValues as presenceMessageFromValues } from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
@@ -591,7 +591,7 @@ class RealtimeChannel extends Channel {
       channel: this.name,
       presence: Utils.isArray(presence)
         ? PresenceMessage.fromValuesArray(presence)
-        : [PresenceMessage.fromValues(presence)],
+        : [presenceMessageFromValues(presence)],
     });
     this.sendMessage(msg, callback);
   }

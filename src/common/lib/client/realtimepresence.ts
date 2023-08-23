@@ -2,7 +2,7 @@ import * as Utils from '../util/utils';
 import Presence from './presence';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import PresenceMessage from '../types/presencemessage';
+import PresenceMessage, { fromValues as presenceMessageFromValues } from '../types/presencemessage';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
 import Multicaster from '../util/multicaster';
@@ -342,7 +342,7 @@ class RealtimePresence extends Presence {
     }
 
     for (let i = 0; i < presenceSet.length; i++) {
-      const presence = PresenceMessage.fromValues(presenceSet[i]);
+      const presence = presenceMessageFromValues(presenceSet[i]);
       switch (presence.action) {
         case 'leave':
           if (members.remove(presence)) {
@@ -480,7 +480,7 @@ class RealtimePresence extends Presence {
   _synthesizeLeaves(items: PresenceMessage[]): void {
     const subscriptions = this.subscriptions;
     Utils.arrForEach(items, function (item) {
-      const presence = PresenceMessage.fromValues({
+      const presence = presenceMessageFromValues({
         action: 'leave',
         connectionId: item.connectionId,
         clientId: item.clientId,
@@ -568,7 +568,7 @@ class PresenceMap extends EventEmitter {
 
   put(item: PresenceMessage) {
     if (item.action === 'enter' || item.action === 'update') {
-      item = PresenceMessage.fromValues(item);
+      item = presenceMessageFromValues(item);
       item.action = 'present';
     }
     const map = this.map,
@@ -606,7 +606,7 @@ class PresenceMap extends EventEmitter {
 
     /* RTP2f */
     if (this.syncInProgress) {
-      item = PresenceMessage.fromValues(item);
+      item = presenceMessageFromValues(item);
       item.action = 'absent';
       map[key] = item;
     } else {

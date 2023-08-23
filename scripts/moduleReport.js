@@ -12,6 +12,9 @@ const functions = [
   { name: 'decodeEncryptedMessage', transitiveImports: ['Crypto'] },
   { name: 'decodeMessages', transitiveImports: [] },
   { name: 'decodeEncryptedMessages', transitiveImports: ['Crypto'] },
+  { name: 'decodePresenceMessage', transitiveImports: [] },
+  { name: 'decodePresenceMessages', transitiveImports: [] },
+  { name: 'constructPresenceMessage', transitiveImports: [] },
 ];
 
 function formatBytes(bytes) {
