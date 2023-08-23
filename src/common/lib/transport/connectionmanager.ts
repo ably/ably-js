@@ -2167,3 +2167,5 @@ class ConnectionManager extends EventEmitter {
 }
 
 export default ConnectionManager;
+
+export type TransportInitialiser = (connectionManager: typeof ConnectionManager) => typeof Transport;
