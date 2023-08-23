@@ -30,7 +30,7 @@ export default class Platform {
    */
   static Crypto: IUntypedCryptoStatic | null;
   static Http: typeof IHttp;
-  static Transports: Array<(connectionManager: typeof ConnectionManager) => Transport>;
+  static Transports: Array<(connectionManager: typeof ConnectionManager) => typeof Transport>;
   static Defaults: IDefaults;
   static WebStorage: IWebStorage | null;
 }
