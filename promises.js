@@ -23,6 +23,7 @@ var RealtimePromise = function (options) {
 Object.assign(RealtimePromise, Ably.Realtime);
 
 module.exports = {
+  ErrorInfo: Ably.ErrorInfo,
   Rest: RestPromise,
   Realtime: RealtimePromise,
 };
