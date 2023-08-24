@@ -2,6 +2,7 @@
 import Rest from '../../common/lib/client/rest';
 import Realtime from '../../common/lib/client/realtime';
 import Platform from '../../common/platform';
+import ErrorInfo from '../../common/lib/types/errorinfo';
 
 // Platform Specific
 import BufferUtils from '../web/lib/util/bufferutils';
@@ -39,6 +40,7 @@ if (Platform.Config.agent) {
 }
 
 export default {
+  ErrorInfo,
   Rest,
   Realtime,
   msgpack,

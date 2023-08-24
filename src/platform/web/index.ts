@@ -2,6 +2,7 @@
 import Rest from '../../common/lib/client/rest';
 import Realtime from '../../common/lib/client/realtime';
 import Platform from '../../common/platform';
+import ErrorInfo from '../../common/lib/types/errorinfo';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
@@ -47,6 +48,7 @@ if (Platform.Config.noUpgrade) {
 }
 
 export default {
+  ErrorInfo,
   Rest,
   Realtime,
   msgpack,
