@@ -196,7 +196,7 @@ class WebSocketTransport extends Transport {
   }
 }
 
-function initialiseTransport(connectionManager: any): typeof WebSocketTransport {
+function initialiseTransport(connectionManager: typeof ConnectionManager): typeof WebSocketTransport {
   if (WebSocketTransport.isAvailable()) connectionManager.supportedTransports[shortName] = WebSocketTransport;
 
   return WebSocketTransport;

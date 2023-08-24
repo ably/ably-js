@@ -34,7 +34,7 @@ class XHRPollingTransport extends CometTransport {
   }
 }
 
-function initialiseTransport(connectionManager: any): typeof XHRPollingTransport {
+function initialiseTransport(connectionManager: typeof ConnectionManager): typeof XHRPollingTransport {
   if (XHRPollingTransport.isAvailable()) connectionManager.supportedTransports[shortName] = XHRPollingTransport;
 
   return XHRPollingTransport;

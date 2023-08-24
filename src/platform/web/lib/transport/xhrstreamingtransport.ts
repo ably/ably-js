@@ -32,7 +32,7 @@ class XHRStreamingTransport extends CometTransport {
   }
 }
 
-function initialiseTransport(connectionManager: any): typeof XHRStreamingTransport {
+function initialiseTransport(connectionManager: typeof ConnectionManager): typeof XHRStreamingTransport {
   if (XHRStreamingTransport.isAvailable()) connectionManager.supportedTransports[shortName] = XHRStreamingTransport;
 
   return XHRStreamingTransport;
