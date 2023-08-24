@@ -410,7 +410,8 @@ class ConnectionManager extends EventEmitter {
 
   static initTransports() {
     WebSocketTransport(ConnectionManager);
-    Utils.arrForEach(Platform.Transports, function (initFn) {
+    Utils.arrForEach(Platform.Transports.order, function (transportName) {
+      const initFn = Platform.Transports.implementations[transportName]!;
       initFn(ConnectionManager);
     });
   }

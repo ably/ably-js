@@ -7,10 +7,13 @@ import IBufferUtils from './types/IBufferUtils';
 import * as WebBufferUtils from '../platform/web/lib/util/bufferutils';
 import * as NodeBufferUtils from '../platform/nodejs/lib/util/bufferutils';
 import { IUntypedCryptoStatic } from '../common/types/ICryptoStatic';
+import TransportName from './constants/TransportName';
 
 type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
 type BufferUtilsOutput = WebBufferUtils.Output | NodeBufferUtils.Output;
 type ToBufferOutput = WebBufferUtils.ToBufferOutput | NodeBufferUtils.ToBufferOutput;
+
+export type TransportImplementations = Partial<Record<TransportName, TransportInitialiser>>;
 
 export default class Platform {
   static Config: IPlatformConfig;
@@ -29,7 +32,10 @@ export default class Platform {
    */
   static Crypto: IUntypedCryptoStatic | null;
   static Http: typeof IHttp;
-  static Transports: TransportInitialiser[];
+  static Transports: {
+    order: TransportName[];
+    implementations: TransportImplementations;
+  };
   static Defaults: IDefaults;
   static WebStorage: IWebStorage | null;
 }
