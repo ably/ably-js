@@ -14,7 +14,6 @@ define([
   var platform = clientModule.Ably.Realtime.Platform;
   var BufferUtils = platform.BufferUtils;
   var expect = chai.expect;
-  clientModule.Ably.Realtime.ConnectionManager.initTransports();
   var availableTransports = utils.keysArray(clientModule.Ably.Realtime.ConnectionManager.supportedTransports),
     bestTransport = availableTransports[0],
     /* IANA reserved; requests to it will hang forever */

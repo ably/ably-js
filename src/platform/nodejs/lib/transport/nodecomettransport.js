@@ -12,7 +12,7 @@ import url from 'url';
 import util from 'util';
 import { TransportNames } from '../../../../common/constants/TransportName';
 
-var NodeCometTransport = function (connectionManager) {
+var NodeCometTransport = function (transportStorage) {
   var noop = function () {};
   var shortName = TransportNames.Comet;
 
@@ -32,7 +32,7 @@ var NodeCometTransport = function (connectionManager) {
   NodeCometTransport.isAvailable = function () {
     return true;
   };
-  connectionManager.supportedTransports[shortName] = NodeCometTransport;
+  transportStorage.supportedTransports[shortName] = NodeCometTransport;
 
   NodeCometTransport.prototype.toString = function () {
     return (

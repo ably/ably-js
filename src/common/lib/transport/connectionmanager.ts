@@ -99,8 +99,6 @@ function decodeRecoveryKey(recoveryKey: NormalisedClientOptions['recover']): Rec
   }
 }
 
-const supportedTransports: Partial<Record<TransportName, TransportCtor>> = {};
-
 export class TransportParams {
   options: NormalisedClientOptions;
   host: string | null;
@@ -190,6 +188,7 @@ type ConnectionState = {
 };
 
 class ConnectionManager extends EventEmitter {
+  supportedTransports: Partial<Record<TransportName, TransportCtor>> = {};
   realtime: BaseRealtime;
   options: NormalisedClientOptions;
   states: Record<string, ConnectionState>;
@@ -228,7 +227,7 @@ class ConnectionManager extends EventEmitter {
 
   constructor(realtime: BaseRealtime, options: NormalisedClientOptions) {
     super();
-    ConnectionManager.initTransports();
+    this.initTransports();
     this.realtime = realtime;
     this.options = options;
     const timeouts = options.timeouts;
@@ -305,10 +304,7 @@ class ConnectionManager extends EventEmitter {
     this.connectionStateTtl = timeouts.connectionStateTtl;
     this.maxIdleInterval = null;
 
-    this.transports = Utils.intersect(
-      options.transports || Defaults.defaultTransports,
-      ConnectionManager.supportedTransports
-    );
+    this.transports = Utils.intersect(options.transports || Defaults.defaultTransports, this.supportedTransports);
     /* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
      * that's both requested and supported. */
     this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
@@ -404,16 +400,23 @@ class ConnectionManager extends EventEmitter {
    * transport management
    *********************/
 
+  // Used by tests
   static get supportedTransports() {
-    return supportedTransports;
+    const storage: TransportStorage = { supportedTransports: {} };
+    this.initTransports(storage);
+    return storage.supportedTransports;
   }
 
-  static initTransports() {
-    WebSocketTransport(ConnectionManager);
+  private static initTransports(storage: TransportStorage) {
+    WebSocketTransport(storage);
     Utils.arrForEach(Platform.Transports.order, function (transportName) {
       const initFn = Platform.Transports.implementations[transportName]!;
       initFn(ConnectionManager);
     });
+  }
+
+  initTransports() {
+    ConnectionManager.initTransports(this);
   }
 
   createTransportParams(host: string | null, mode: string): TransportParams {
@@ -486,7 +489,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
     Transport.tryConnect(
-      ConnectionManager.supportedTransports[candidate]!,
+      this.supportedTransports[candidate]!,
       this,
       this.realtime.auth,
       transportParams,
@@ -2169,4 +2172,8 @@ class ConnectionManager extends EventEmitter {
 
 export default ConnectionManager;
 
-export type TransportInitialiser = (connectionManager: typeof ConnectionManager) => typeof Transport;
+export interface TransportStorage {
+  supportedTransports: Partial<Record<TransportName, TransportCtor>>;
+}
+
+export type TransportInitialiser = (transportStorage: TransportStorage) => typeof Transport;
