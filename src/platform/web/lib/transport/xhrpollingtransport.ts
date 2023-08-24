@@ -4,8 +4,9 @@ import XHRRequest from './xhrrequest';
 import ConnectionManager, { TransportParams } from 'common/lib/transport/connectionmanager';
 import Auth from 'common/lib/client/auth';
 import { RequestParams } from 'common/types/http';
+import TransportName from 'common/constants/TransportName';
 
-var shortName = 'xhr_polling';
+var shortName = TransportName.XhrPolling;
 class XHRPollingTransport extends CometTransport {
   shortName = shortName;
   constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {

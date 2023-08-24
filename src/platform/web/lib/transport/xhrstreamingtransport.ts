@@ -4,8 +4,9 @@ import XHRRequest from './xhrrequest';
 import ConnectionManager, { TransportParams } from 'common/lib/transport/connectionmanager';
 import Auth from 'common/lib/client/auth';
 import { RequestParams } from 'common/types/http';
+import TransportName from 'common/constants/TransportName';
 
-const shortName = 'xhr_streaming';
+const shortName = TransportName.XhrStreaming;
 class XHRStreamingTransport extends CometTransport {
   shortName = shortName;
   constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams) {
