@@ -17,8 +17,8 @@ import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
 import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
+import BaseRealtime from '../client/baserealtime';
 
-type Realtime = any;
 type ClientOptions = any;
 
 let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
@@ -190,7 +190,7 @@ type ConnectionState = {
 };
 
 class ConnectionManager extends EventEmitter {
-  realtime: Realtime;
+  realtime: BaseRealtime;
   options: ClientOptions;
   states: Record<string, ConnectionState>;
   state: ConnectionState;
@@ -226,7 +226,7 @@ class ConnectionManager extends EventEmitter {
     queue: { message: ProtocolMessage; transport: Transport }[];
   } = { isProcessing: false, queue: [] };
 
-  constructor(realtime: Realtime, options: ClientOptions) {
+  constructor(realtime: BaseRealtime, options: ClientOptions) {
     super();
     ConnectionManager.initTransports();
     this.realtime = realtime;
@@ -1191,7 +1191,8 @@ class ConnectionManager extends EventEmitter {
     const newState = (this.state = this.states[stateChange.current as string]);
     if (stateChange.reason) {
       this.errorReason = stateChange.reason;
-      this.realtime.connection.errorReason = stateChange.reason;
+      // TODO remove this type assertion after fixing https://github.com/ably/ably-js/issues/1405
+      this.realtime.connection.errorReason = stateChange.reason as ErrorInfo;
     }
     if (newState.terminal || newState.state === 'suspended') {
       /* suspended is nonterminal, but once in the suspended state, realtime
