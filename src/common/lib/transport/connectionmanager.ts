@@ -99,7 +99,7 @@ function decodeRecoveryKey(recoveryKey: string): RecoveryContext | null {
   }
 }
 
-const supportedTransports: Record<string, TransportCtor> = {};
+const supportedTransports: Partial<Record<string, TransportCtor>> = {};
 
 export class TransportParams {
   options: ClientOptions;
@@ -486,7 +486,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
     Transport.tryConnect(
-      ConnectionManager.supportedTransports[candidate],
+      ConnectionManager.supportedTransports[candidate]!,
       this,
       this.realtime.auth,
       transportParams,
