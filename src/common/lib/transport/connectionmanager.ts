@@ -19,6 +19,7 @@ import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import BaseRealtime from '../client/baserealtime';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import TransportName from 'common/constants/TransportName';
 
 let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
 
@@ -98,7 +99,7 @@ function decodeRecoveryKey(recoveryKey: NormalisedClientOptions['recover']): Rec
   }
 }
 
-const supportedTransports: Partial<Record<string, TransportCtor>> = {};
+const supportedTransports: Partial<Record<TransportName, TransportCtor>> = {};
 
 export class TransportParams {
   options: NormalisedClientOptions;
@@ -201,9 +202,9 @@ class ConnectionManager extends EventEmitter {
   connectionKey?: string;
   connectionStateTtl: number;
   maxIdleInterval: number | null;
-  transports: string[];
-  baseTransport: string;
-  upgradeTransports: string[];
+  transports: TransportName[];
+  baseTransport: TransportName;
+  upgradeTransports: TransportName[];
   transportPreference: string | null;
   httpHosts: string[];
   activeProtocol: null | Protocol;
@@ -481,7 +482,7 @@ class ConnectionManager extends EventEmitter {
    * @param candidate, the transport to try
    * @param callback
    */
-  tryATransport(transportParams: TransportParams, candidate: string, callback: Function): void {
+  tryATransport(transportParams: TransportParams, candidate: TransportName, callback: Function): void {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
     Transport.tryConnect(
@@ -1674,13 +1675,13 @@ class ConnectionManager extends EventEmitter {
     this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
   }
 
-  getUpgradePossibilities(): string[] {
+  getUpgradePossibilities(): TransportName[] {
     /* returns the subset of upgradeTransports to the right of the current
      * transport in upgradeTransports (if it's in there - if not, currentSerial
      * will be -1, so return upgradeTransports.slice(0) == upgradeTransports */
     const current = (this.activeProtocol as Protocol).getTransport().shortName;
     const currentSerial = Utils.arrIndexOf(this.upgradeTransports, current);
-    return this.upgradeTransports.slice(currentSerial + 1) as string[];
+    return this.upgradeTransports.slice(currentSerial + 1);
   }
 
   upgradeIfNeeded(transportParams: Record<string, any>): void {
@@ -1695,7 +1696,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    Utils.arrForEach(upgradePossibilities, (upgradeTransport: string) => {
+    Utils.arrForEach(upgradePossibilities, (upgradeTransport: TransportName) => {
       /* Note: the transport may mutate the params, so give each transport a fresh one */
       const upgradeTransportParams = this.createTransportParams(transportParams.host, 'upgrade');
       this.tryATransport(upgradeTransportParams, upgradeTransport, noop);
@@ -2098,7 +2099,7 @@ class ConnectionManager extends EventEmitter {
     this.proposedTransports.push(transport);
   }
 
-  getTransportPreference(): string {
+  getTransportPreference(): TransportName {
     return this.transportPreference || (haveWebStorage() && Platform.WebStorage?.get?.(transportPreferenceName));
   }
 

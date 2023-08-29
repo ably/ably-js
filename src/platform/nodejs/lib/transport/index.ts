@@ -1,7 +1,7 @@
-import TransportName from 'common/constants/TransportName';
+import { TransportNames } from 'common/constants/TransportName';
 import initialiseNodeCometTransport from './nodecomettransport';
 
 export default {
-  order: [TransportName.Comet],
-  implementations: { [TransportName.Comet]: initialiseNodeCometTransport },
+  order: [TransportNames.Comet],
+  implementations: { [TransportNames.Comet]: initialiseNodeCometTransport },
 };

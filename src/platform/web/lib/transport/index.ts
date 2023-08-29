@@ -1,11 +1,11 @@
-import TransportName from 'common/constants/TransportName';
+import { TransportNames } from 'common/constants/TransportName';
 import initialiseXHRPollingTransport from './xhrpollingtransport';
 import initialiseXHRStreamingTransport from './xhrstreamingtransport';
 
 export default {
-  order: [TransportName.XhrPolling, TransportName.XhrStreaming],
+  order: [TransportNames.XhrPolling, TransportNames.XhrStreaming],
   implementations: {
-    [TransportName.XhrPolling]: initialiseXHRPollingTransport,
-    [TransportName.XhrStreaming]: initialiseXHRStreamingTransport,
+    [TransportNames.XhrPolling]: initialiseXHRPollingTransport,
+    [TransportNames.XhrStreaming]: initialiseXHRStreamingTransport,
   },
 };

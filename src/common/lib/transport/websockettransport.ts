@@ -8,9 +8,9 @@ import ErrorInfo from '../types/errorinfo';
 import NodeWebSocket from 'ws';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Auth from '../client/auth';
-import TransportName from 'common/constants/TransportName';
+import { TransportNames } from 'common/constants/TransportName';
 
-const shortName = TransportName.WebSocket;
+const shortName = TransportNames.WebSocket;
 
 function isNodeWebSocket(ws: WebSocket | NodeWebSocket): ws is NodeWebSocket {
   return !!(ws as NodeWebSocket).on;

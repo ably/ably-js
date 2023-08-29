@@ -156,7 +156,7 @@ export function containsValue(ob: Record<string, unknown>, val: unknown): boolea
   return false;
 }
 
-export function intersect<T>(arr: Array<string>, ob: string[] | Record<string, T>): string[] {
+export function intersect<K extends string, T>(arr: Array<K>, ob: K[] | Partial<Record<K, T>>): K[] {
   return isArray(ob) ? arrIntersect(arr, ob) : arrIntersectOb(arr, ob);
 }
 
@@ -169,7 +169,7 @@ export function arrIntersect<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   return result;
 }
 
-export function arrIntersectOb(arr: Array<string>, ob: Record<string, unknown>): string[] {
+export function arrIntersectOb<K extends string>(arr: Array<K>, ob: Partial<Record<K, unknown>>): K[] {
   const result = [];
   for (let i = 0; i < arr.length; i++) {
     const member = arr[i];

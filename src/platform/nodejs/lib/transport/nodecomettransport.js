@@ -10,11 +10,11 @@ import http from 'http';
 import https from 'https';
 import url from 'url';
 import util from 'util';
-import TransportName from '../../../../common/constants/TransportName';
+import { TransportNames } from '../../../../common/constants/TransportName';
 
 var NodeCometTransport = function (connectionManager) {
   var noop = function () {};
-  var shortName = TransportName.Comet;
+  var shortName = TransportNames.Comet;
 
   /*
    * A transport to use with nodejs
