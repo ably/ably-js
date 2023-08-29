@@ -18,8 +18,7 @@ import * as API from '../../../../ably';
 import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import BaseRealtime from '../client/baserealtime';
-
-type ClientOptions = any;
+import { NormalisedClientOptions } from 'common/types/ClientOptions';
 
 let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
 
@@ -91,9 +90,9 @@ type RecoveryContext = {
   channelSerials: { [name: string]: string };
 };
 
-function decodeRecoveryKey(recoveryKey: string): RecoveryContext | null {
+function decodeRecoveryKey(recoveryKey: NormalisedClientOptions['recover']): RecoveryContext | null {
   try {
-    return JSON.parse(recoveryKey);
+    return JSON.parse(recoveryKey as string);
   } catch (e) {
     return null;
   }
@@ -102,7 +101,7 @@ function decodeRecoveryKey(recoveryKey: string): RecoveryContext | null {
 const supportedTransports: Partial<Record<string, TransportCtor>> = {};
 
 export class TransportParams {
-  options: ClientOptions;
+  options: NormalisedClientOptions;
   host: string | null;
   mode: string;
   format?: Utils.Format;
@@ -110,7 +109,7 @@ export class TransportParams {
   stream?: any;
   heartbeats?: boolean;
 
-  constructor(options: ClientOptions, host: string | null, mode: string, connectionKey?: string) {
+  constructor(options: NormalisedClientOptions, host: string | null, mode: string, connectionKey?: string) {
     this.options = options;
     this.host = host;
     this.mode = mode;
@@ -191,7 +190,7 @@ type ConnectionState = {
 
 class ConnectionManager extends EventEmitter {
   realtime: BaseRealtime;
-  options: ClientOptions;
+  options: NormalisedClientOptions;
   states: Record<string, ConnectionState>;
   state: ConnectionState;
   errorReason: IPartialErrorInfo | string | null;
@@ -226,7 +225,7 @@ class ConnectionManager extends EventEmitter {
     queue: { message: ProtocolMessage; transport: Transport }[];
   } = { isProcessing: false, queue: [] };
 
-  constructor(realtime: BaseRealtime, options: ClientOptions) {
+  constructor(realtime: BaseRealtime, options: NormalisedClientOptions) {
     super();
     ConnectionManager.initTransports();
     this.realtime = realtime;
@@ -601,7 +600,7 @@ class ConnectionManager extends EventEmitter {
       if (mode === 'recover' && this.options.recover) {
         /* After a successful recovery, we unpersist, as a recovery key cannot
          * be used more than once */
-        this.options.recover = null;
+        delete this.options.recover;
         this.unpersistConnection();
       }
     });
