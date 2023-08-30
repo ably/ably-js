@@ -1,0 +1,19 @@
+{
+  "include": ["./src/**/*.ts", "./ably.d.ts"],
+  "exclude": ["./src/**/*.test.tsx", "./src/fakes/**/*.ts"],
+  "compilerOptions": {
+    "target": "es6",
+    "rootDir": "./src",
+    "sourceMap": true,
+    "strict": false,
+    "esModuleInterop": true,
+    "declaration": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["vitest/globals"]
+  }
+}
