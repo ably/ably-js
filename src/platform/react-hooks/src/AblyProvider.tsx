@@ -4,7 +4,7 @@ import * as Ably from 'ably';
 import { Types } from '../../../../ably.js';
 import React, { useMemo } from 'react';
 
-const version = '1.2.43';
+const version = '1.2.44';
 
 const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'function';
 
