@@ -52,6 +52,7 @@ module.exports = {
     "tools",
     "scripts",
     "docs",
+    "react",
     "Gruntfile.js",
   ],
   settings: {
