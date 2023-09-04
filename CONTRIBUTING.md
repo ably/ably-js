@@ -109,3 +109,23 @@ When using the test webserver `npm run test:webserver` the following test variab
 - `tls_port` - TLS port to use for the tests, defaults to 443
 - `tls` - true or false to enable/disable use of TLS respectively
 - `log_level` - Log level for the client libraries, defaults to 2, 4 is `MICRO`
+
+## React hooks
+
+The react sample application is configured to execute using Vite - which will load a sample web app that acts as a simple test harness for the hooks.
+
+You can run the dev server from the terminal using:
+
+```bash
+npm run start:react
+```
+
+You'll need to provide an API key for the sample to work (or you'll just get a white page and some errors in the console). To do this, create the file `./src/platform/react-hooks/sample-app/.env` and add the following line:
+
+```.env
+VITE_ABLY_API_KEY=<your-api-key>
+```
+
+This API key will be loaded by the vite dev server at build time.
+
+You can run the unit tests by running `npm run test:react` in the terminal.
