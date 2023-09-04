@@ -26,9 +26,9 @@ This SDK supports the following platforms:
 
 **TypeScript:** see [below](#typescript)
 
-**React** We offer a set of react hooks which make it seamless to use ably-js in your react application. See the [react hooks documentation](./docs/react.md) for more details.
-
 **WebWorkers**: We build a separate bundle which supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can import it like this:
+
+**React (experimental)** We offer a set of react hooks which make it seamless to use ably-js in your react application. See the [react hooks documentation](./docs/react.md) for more details.
 ```js
 import Ably from 'ably/build/ably-webworker.min';
 ```
