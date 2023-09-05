@@ -2,16 +2,17 @@ import Platform from 'common/platform';
 import * as Utils from 'common/lib/util/utils';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { IHttpStatic, RequestCallback, RequestParams } from 'common/types/http';
+import { RequestCallback, RequestParams } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import BaseRealtime from 'common/lib/client/baserealtime';
-import XHRRequest from './request/xhrrequest';
 import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
-import fetchRequest from './request/fetchrequest';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
+import { ModulesMap } from 'common/lib/client/modulesmap';
+
+export type HTTPRequestImplementations = Pick<ModulesMap, 'XHRRequest' | 'FetchRequest'>;
 
 function shouldFallback(errorInfo: ErrorInfo) {
   const statusCode = errorInfo.statusCode as number;
@@ -39,10 +40,20 @@ function getHosts(client: BaseClient): string[] {
   return Defaults.getHosts(client.options);
 }
 
-const Http: IHttpStatic = class {
+function createMissingImplementationError() {
+  return new ErrorInfo(
+    'No HTTP request module provided. Provide at least one of the FetchRequest or XHRRequest modules.',
+    400,
+    40000
+  );
+}
+
+const Http = class {
   static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
+  // HTTP request implementations that are available even without a BaseClient object (needed by some tests which directly instantiate `Http` without a client)
+  static bundledRequestImplementations: HTTPRequestImplementations;
   checksInProgress: Array<StandardCallback<boolean>> | null = null;
   private client: BaseClient | null;
 
@@ -51,7 +62,20 @@ const Http: IHttpStatic = class {
     const connectivityCheckUrl = client?.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
     const connectivityCheckParams = client?.options.connectivityCheckParams ?? null;
     const connectivityUrlIsDefault = !client?.options.connectivityCheckUrl;
-    if (Platform.Config.xhrSupported) {
+
+    const requestImplementations = {
+      ...Http.bundledRequestImplementations,
+      ...client?._additionalHTTPRequestImplementations,
+    };
+    const xhrRequestImplementation = requestImplementations.XHRRequest;
+    const fetchRequestImplementation = requestImplementations.FetchRequest;
+    const hasImplementation = !!(xhrRequestImplementation || fetchRequestImplementation);
+
+    if (!hasImplementation) {
+      throw createMissingImplementationError();
+    }
+
+    if (Platform.Config.xhrSupported && xhrRequestImplementation) {
       this.supportsAuthHeaders = true;
       this.Request = function (
         method: HttpMethods,
@@ -61,7 +85,7 @@ const Http: IHttpStatic = class {
         body: unknown,
         callback: RequestCallback
       ) {
-        const req = XHRRequest.createRequest(
+        const req = xhrRequestImplementation.createRequest(
           uri,
           headers,
           params,
@@ -104,10 +128,10 @@ const Http: IHttpStatic = class {
           );
         };
       }
-    } else if (Platform.Config.fetchSupported) {
+    } else if (Platform.Config.fetchSupported && fetchRequestImplementation) {
       this.supportsAuthHeaders = true;
       this.Request = (method, uri, headers, params, body, callback) => {
-        fetchRequest(method, client ?? null, uri, headers, params, body, callback);
+        fetchRequestImplementation(method, client ?? null, uri, headers, params, body, callback);
       };
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
@@ -119,7 +143,10 @@ const Http: IHttpStatic = class {
       };
     } else {
       this.Request = (method, uri, headers, params, body, callback) => {
-        callback(new PartialErrorInfo('no supported HTTP transports available', null, 400), null);
+        const error = hasImplementation
+          ? new PartialErrorInfo('no supported HTTP transports available', null, 400)
+          : createMissingImplementationError();
+        callback(error, null);
       };
     }
   }

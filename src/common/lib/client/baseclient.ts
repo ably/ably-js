@@ -15,6 +15,7 @@ import { Rest } from './rest';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import { throwMissingModuleError } from '../util/utils';
 import { MsgPack } from 'common/types/msgpack';
+import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
 type BatchPublishSpec = API.Types.BatchPublishSpec;
@@ -41,8 +42,12 @@ class BaseClient {
   private readonly _rest: Rest | null;
   readonly _Crypto: IUntypedCryptoStatic | null;
   readonly _MsgPack: MsgPack | null;
+  // Extra HTTP request implementations available to this client, in addition to those in web’s Http.bundledRequestImplementations
+  readonly _additionalHTTPRequestImplementations: HTTPRequestImplementations;
 
   constructor(options: ClientOptions | string, modules: ModulesMap) {
+    this._additionalHTTPRequestImplementations = modules;
+
     if (!options) {
       const msg = 'no options provided';
       Logger.logAction(Logger.LOG_ERROR, 'BaseClient()', msg);

@@ -16,6 +16,7 @@ import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from '../web/lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
+import { defaultBundledRequestImplementations } from '../web/lib/http/request';
 
 Platform.Crypto = null;
 Platform.BufferUtils = BufferUtils;
@@ -27,6 +28,8 @@ Platform.WebStorage = WebStorage;
 for (const clientClass of [DefaultRest, DefaultRealtime]) {
   clientClass._MsgPack = msgpack;
 }
+
+Http.bundledRequestImplementations = defaultBundledRequestImplementations;
 
 Logger.initLogHandlers();
 
