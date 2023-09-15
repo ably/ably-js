@@ -1,18 +1,21 @@
-# ably-js React hooks
+# ably-js React Hooks
 
 > [!IMPORTANT]  
-> The ably-js react hooks are currently in the release candidate phase, and there may be breaking changes in a future non-major release.
+> The ably-js React Hooks are currently in the release candidate phase, and there may be breaking changes in a future non-major release.
 
 Use Ably in your React application using idiomatic, easy to use, React Hooks!
 
 Using this module you can:
 
-- Interact with Ably channels using a react hook.
-- Send messages via Ably using the channel instances the hooks provide
-- Get notifications of user presence on channels
+- Interact with [Ably channels](https://ably.com/docs/channels) using a React Hook.
+- [Publish messages](https://ably.com/docs/channels#publish) via Ably using the channel instances the hooks provide
+- Get notifications of user [presence on channels](https://ably.com/docs/presence-occupancy/presence)
 - Send presence updates
 
 The hooks provide a simplified syntax for interacting with Ably, and manage the lifecycle of the Ably SDK instances for you taking care to subscribe and unsubscribe to channels and events when your react components re-render.
+
+> [!NOTE]
+> For more information what Ably is and concepts you need, please see the official [Ably documentation](https://ably.com/docs/). The official docs also include a more complete [React Hooks quickstart guide](https://ably.com/docs/getting-started/react).
 
 ---
 
@@ -29,7 +32,7 @@ The hooks provide a simplified syntax for interacting with Ably, and manage the 
 
 ### Compatible React Versions
 
-The hooks are compatible with all versions of react above 16.8.0
+The hooks are compatible with all versions of React above 16.8.0
 
 ## Usage
 
@@ -84,7 +87,7 @@ Our react hooks are designed to run on the client-side, so if you are using serv
 
 ### useChannel
 
-The useChannel hook lets you subscribe to a channel and receive messages from it.
+The useChannel hook lets you subscribe to an [Ably Channel](https://ably.com/docs/channels) and receive messages from it.
 
 ```javascript
 const { channel, ably } = useChannel("your-channel-name", (message) => {
@@ -135,7 +138,8 @@ const history = channel.history((err, result) => {
 });
 ```
 
-It's also worth highlighting that the `useChannel` hook supports all of the additional parameters that the regular Ably SDK does as we're simply passing the call along.
+It's also worth highlighting that the `useChannel` hook supports all of the additional parameters that the regular Ably SDK does as we're simply passing the call along. See the [Ably Channel docs](https://ably.com/docs/channels) for more info.
+
 This means you can use features like `rewind`:
 
 ```javascript
@@ -157,7 +161,7 @@ const { channel } = useChannel({ channelName: "your-channel-name", options: { ..
 
 ### usePresence
 
-The usePresence hook lets you subscribe to presence events on a channel - this will allow you to get notified when a user joins or leaves the channel.
+The usePresence hook lets you [subscribe to presence events on a channel](https://ably.com/docs/presence-occupancy/presence?lang=javascript#subscribe) - this will allow you to get notified when a user joins or leaves the channel. To find out more about Presence, see the [presence documentation](https://ably.com/docs/presence-occupancy/presence).
 
 **Please note** that fetching present members is executed as an effect, so it'll load in *after* your component renders for the first time.
 
@@ -258,7 +262,7 @@ useChannelStateListener(['failed', 'suspended'], listener); // the listener only
 
 ### useAbly
 
-The useAbly hook lets you access the Ably client used by the AblyProvider context. This can be useful if you need to access ably-js APIs which aren't available through our react-hooks library.
+The `useAbly` hook lets you access the Ably client used by the `AblyProvider` context. This can be useful if you need to access ably-js APIs which aren't available through our react-hooks library.
 
 ```javascript
 const client = useAbly();
@@ -308,7 +312,7 @@ root.render(
 )
 ```
 
-This id can then be passed in to each hook to specify which client to use.
+This `id` can then be passed in to each hook to specify which client to use.
 
 ```javascript
 const ablyContextId = 'providerOne';
