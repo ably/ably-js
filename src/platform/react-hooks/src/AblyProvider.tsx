@@ -71,8 +71,8 @@ export const AblyProvider = ({ client, children, options, id = 'default' }: Ably
   React.useEffect(() => {
     if (!hasSentAgent) {
       hasSentAgent = true;
-      realtime.request('GET', '/time', {
-        agent: `react-hooks-time-ping/${version}`,
+      realtime.request('GET', '/time', null, null, {
+        'Ably-Agent': `react-hooks-time-ping/${version}`,
       });
     }
   });
