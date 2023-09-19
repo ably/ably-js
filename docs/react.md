@@ -327,3 +327,42 @@ usePresence({ channelName: "your-channel-name", id: ablyContextId }, (presenceUp
     ...
 })
 ```
+
+## NextJS warnings
+
+Currently, when using our react library with NextJS you may encounter some warnings which arise due to some static checks against subdependencies of the library.
+While these warnings won't affect the performance of the library and are safe to ignore, we understand that they are an annoyance and offer the following advice to prevent them from displaying:
+
+### Critical dependency: the request of a dependency is an expression
+
+This warning comes from keyv which is a subdependency of our NodeJS http client.
+You can read more about the reason this warning is displayed at [jaredwray/keyv#45](https://github.com/jaredwray/keyv/issues/45).
+
+You can avoid this warning by overriding the version of keyv used by adding the following to your package.json:
+
+```json
+"overrides": {
+  "cacheable-request": {
+    "keyv": "npm:@keyvhq/core@~1.6.6"
+  }
+} 
+```
+
+### Module not found: Can't resolve 'bufferutil'/'utf-8-validate'
+
+These warnings come from devDependencies which are conditionally loaded in the ws module (our NodeJS websocket client).
+They aren't required for the websocket client to work, however NextJS will statically analyse imports and incorrectly assume that these are needed.
+
+You can avoid this warning by adding the following to your next.config.js:
+
+```javascript
+module.exports = {
+  webpack: (config) => {
+    config.externals.push({
+      'utf-8-validate': 'commonjs utf-8-validate',
+      'bufferutil': 'commonjs bufferutil',
+    })
+    return config
+  },
+}
+```
