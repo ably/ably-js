@@ -2,6 +2,18 @@
 
 ## Version 2.x to 3.x
 
+### Hooks now return object
+
+In previous versions of our react hooks, the `useChannel` and `usePresence` hooks returned arrays.
+Since these hooks now return more values we've opted to change them to return objects.
+You can still access the return values using simple destructuring syntax like in the below example:
+
+```jsx
+const { channel, ably } = useChannel("your-channel-name", (message) => { /* ... */ });
+
+const { presenceData, updateStatus } = usePresence("your-channel-name");
+```
+
 ### Replacing `configureAbly` with `AblyProvider` 
 
 In versions 1 and 2 of our react-hooks, we exported a function called `configureAbly` which was used to register an Ably client instance to global state.
