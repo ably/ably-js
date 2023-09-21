@@ -23,14 +23,6 @@ return <AblyProvider client={ably}>
 </AblyProvider>
 ```
 
-You may also provide the client options directly to the `AblyProvider` so that the client is created automatically. If you use this prop the client will be automatically closed when the `AblyProvider` is unmounted.
-
-```jsx
-return <AblyProvider options={options}>
-  {children}
-</AblyProvider>
-```
-
 If you were already using multiple Ably clients in the same react application, you may pass in an optional `id` prop to the provider, which you can then pass to the hooks to specify which Ably client instance the hook should use:
 ```jsx
 const client = new Ably.Realtime.Promise(options);

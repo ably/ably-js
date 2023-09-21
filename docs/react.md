@@ -36,27 +36,9 @@ The hooks are compatible with all versions of React above 16.8.0
 
 ## Usage
 
-Start by connecting your app to Ably using the `AblyProvider` component. The options provided to the `AblyProvider` are the same options used for the Ably SDK - and requires either a `string` or an `AblyClientOptions`. You can use this configuration object to setup your API keys, or tokenAuthentication as you normally would. If you want to use the `usePresence` hook, you'll need to explicitly provide a `clientId`.
+Start by connecting your app to Ably using the `AblyProvider` component. See the [`ClientOptions` documentation](https://ably.com/docs/api/realtime-sdk/types?lang=javascript) for information about what options are available when creating an Ably client. If you want to use the `usePresence` hook, you'll need to explicitly provide a `clientId`.
 
 The `AblyProvider` should be high in your component tree, wrapping every component which needs to access Ably.
-
-
-```jsx
-import { AblyProvider } from "ably/react";
-
-const options = {
-  key: "your-ably-api-key",
-  clientId: "me",
-}
-
-root.render(
-  <AblyProvider options={options}>
-    <App />
-  </AblyProvider>
-)
-```
-
-You may also create your own client and pass it into the context provider.
 
 ```jsx
 import { AblyProvider } from "ably/react";
@@ -304,8 +286,8 @@ If you need to use multiple Ably clients on the same page, the easiest way to do
 
 ```jsx
 root.render(
-  <AblyProvider options={options} id={'providerOne'}>
-    <AblyProvider options={options} id={'providerTwo'}>
+  <AblyProvider client={client1} id={'providerOne'}>
+    <AblyProvider client={client2} id={'providerTwo'}>
       <App />
     </AblyProvider>
   </AblyProvider>
