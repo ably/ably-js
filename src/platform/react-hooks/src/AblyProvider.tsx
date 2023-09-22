@@ -8,35 +8,13 @@ const version = '1.2.44';
 
 const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'function';
 
-/**
- * Wrapper around Ably.Realtime.Promise which injects the 'react-hooks' agent
- */
-export class Realtime extends Ably.Realtime.Promise {
-  constructor(options: string | Types.ClientOptions) {
-    let opts: Types.ClientOptions;
-
-    if (typeof options === 'string') {
-      opts = {
-        key: options,
-      } as Types.ClientOptions;
-    } else {
-      opts = { ...options };
-    }
-
-    (opts as any).agents = { 'react-hooks': version };
-
-    super(opts);
-  }
-}
-
 interface AblyProviderProps {
   children?: React.ReactNode | React.ReactNode[] | null;
   client?: Ably.Types.RealtimePromise;
-  options?: Ably.Types.ClientOptions;
   id?: string;
 }
 
-type AblyContextType = React.Context<Realtime>;
+type AblyContextType = React.Context<Types.RealtimePromise>;
 
 // An object is appended to `React.createContext` which stores all contexts
 // indexed by id, which is used by useAbly to find the correct context when an
@@ -52,16 +30,12 @@ export function getContext(ctxId = 'default'): AblyContextType {
 
 let hasSentAgent = false;
 
-export const AblyProvider = ({ client, children, options, id = 'default' }: AblyProviderProps) => {
-  if (!client && !options) {
-    throw new Error('No client or options');
+export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderProps) => {
+  if (!client) {
+    throw new Error('AblyProvider: the `client` prop is required');
   }
 
-  if (client && options) {
-    throw new Error('Provide client or options, not both');
-  }
-
-  const realtime = useMemo(() => client || new Realtime(options as Ably.Types.ClientOptions), [client, options]);
+  const realtime = useMemo(() => client, [client]);
 
   let context = getContext(id);
   if (!context) {
@@ -76,15 +50,6 @@ export const AblyProvider = ({ client, children, options, id = 'default' }: Ably
       });
     }
   });
-
-  // If options have been provided, the client cannot be accessed after the provider has unmounted, so close it
-  React.useEffect(() => {
-    if (options) {
-      return () => {
-        realtime.close();
-      };
-    }
-  }, [realtime, options]);
 
   return <context.Provider value={realtime}>{children}</context.Provider>;
 };
