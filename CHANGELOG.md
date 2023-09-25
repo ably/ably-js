@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.45](https://github.com/ably/ably-js/tree/1.2.45) (2023-09-25)
+
+- remove `AblyProvider` options prop [\#1446](https://github.com/ably/ably-js/pull/1446)
+- fix: throw descriptive error when callbacks used with react [\#1450](https://github.com/ably/ably-js/pull/1450)
+
 ## [1.2.44](https://github.com/ably/ably-js/tree/1.2.44) (2023-09-04)
 
 - Add new experimental react hooks and context provider [\#1433](https://github.com/ably/ably-js/pull/1433)
