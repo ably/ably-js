@@ -35,6 +35,10 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
     throw new Error('AblyProvider: the `client` prop is required');
   }
 
+  if (!(client instanceof Ably.Realtime) && !client?.options?.promises) {
+    throw new Error('AblyProvider: the `client` prop must take an instance of Ably.Realtime.Promise');
+  }
+
   const realtime = useMemo(() => client, [client]);
 
   let context = getContext(id);
