@@ -4,6 +4,7 @@ export class FakeAblySdk {
   public clientId: string;
   public channels: ClientChannelsCollection;
   public connection: Connection;
+  public options = { promises: true };
 
   constructor() {
     this.clientId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
