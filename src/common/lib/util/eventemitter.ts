@@ -237,14 +237,14 @@ class EventEmitter {
    * @param event the name of the event to listen to
    * @param listener the listener to be called
    */
-  once(event?: string | string[] | null, listener?: Function): void;
+  once(event?: string | null, listener?: Function): void;
 
   once(...args: unknown[]): void | Promise<void> {
     const argCount = args.length;
     if ((argCount === 0 || (argCount === 1 && typeof args[0] !== 'function')) && Platform.Config.Promise) {
       const event = args[0];
       return new Platform.Config.Promise((resolve) => {
-        this.once(event as string | string[] | null, resolve);
+        this.once(event as string | null, resolve);
       });
     }
 
@@ -256,21 +256,6 @@ class EventEmitter {
         throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
       }
       this.anyOnce.push(secondArg);
-    } else if (Utils.isArray(firstArg)) {
-      const self = this;
-      const listenerWrapper = function (this: any) {
-        const innerArgs = Array.prototype.slice.call(arguments);
-        Utils.arrForEach(firstArg, function (eventName) {
-          self.off(eventName, listenerWrapper);
-        });
-        if (typeof secondArg !== 'function') {
-          throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
-        }
-        secondArg.apply(this, innerArgs);
-      };
-      Utils.arrForEach(firstArg, function (eventName) {
-        self.on(eventName, listenerWrapper);
-      });
     } else {
       if (typeof firstArg !== 'string') {
         throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));

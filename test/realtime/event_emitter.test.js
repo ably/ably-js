@@ -342,31 +342,6 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
-    it('arrayOfEventsWithOnce', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
-        callbackCalled = 0,
-        eventEmitter = realtime.connection;
-
-      var callback = function (arg) {
-        callbackCalled += 1;
-        expect(arg).to.equal('expected');
-      };
-
-      try {
-        callbackCalled = 0;
-        eventEmitter.once(['a', 'b', 'c'], callback);
-        eventEmitter.emit('a', 'expected');
-        eventEmitter.emit('b', 'wrong');
-        eventEmitter.emit('c', 'wrong');
-        expect(callbackCalled).to.equal(1, 'listener called back only once, for the first event emitted');
-      } catch (err) {
-        closeAndFinish(done, realtime, err);
-        return;
-      }
-
-      closeAndFinish(done, realtime);
-    });
-
     /* check that listeners added in a listener cb are not called during that
      * emit instance */
     it('listenerAddedInListenerCb', function (done) {
@@ -474,19 +449,6 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             eventEmitter = realtime.connection;
 
           const p = eventEmitter.once();
-          eventEmitter.emit('b');
-          p.then(function () {
-            closeAndFinish(done, realtime);
-          }).catch(function (err) {
-            closeAndFinish(done, realtime, err);
-          });
-        });
-
-        it('arrayOfEventsWithOnce', function (done) {
-          var realtime = helper.AblyRealtime({ autoConnect: false }),
-            eventEmitter = realtime.connection;
-
-          const p = eventEmitter.once(['a', 'b', 'c']);
           eventEmitter.emit('b');
           p.then(function () {
             closeAndFinish(done, realtime);

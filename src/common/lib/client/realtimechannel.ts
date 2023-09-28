@@ -165,9 +165,11 @@ class RealtimeChannel extends Channel {
       // Ignore 'attaching' -- could be just due to to a resume & reattach, should not
       // call back setOptions until we're definitely attached with the new options (or
       // else in a terminal state)
-      this._allChannelChanges.once(
+      const self = this;
+      this._allChannelChanges.on(
         ['attached', 'update', 'detached', 'failed'],
-        function (this: { event: string }, stateChange: ConnectionStateChange) {
+        function listener(this: { event: string }, stateChange: ConnectionStateChange) {
+          self._allChannelChanges.off(listener);
           switch (this.event) {
             case 'update':
             case 'attached':
