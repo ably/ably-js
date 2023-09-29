@@ -19,9 +19,13 @@ export function useStateErrors(params: ChannelNameAndOptions) {
     params.id
   );
 
-  useConnectionStateListener(['connected', 'closed'], () => {
-    setConnectionError(null);
-  });
+  useConnectionStateListener(
+    ['connected', 'closed'],
+    () => {
+      setConnectionError(null);
+    },
+    params.id
+  );
 
   useChannelStateListener(params, ['suspended', 'failed', 'detached'], (stateChange) => {
     if (stateChange.reason) {
