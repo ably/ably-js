@@ -1,6 +1,6 @@
 import { Types } from '../../../../../ably.js';
 import { useEffect, useMemo, useRef } from 'react';
-import { ChannelParameters } from '../AblyReactHooks.js';
+import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
 
@@ -45,13 +45,16 @@ export function useChannel(
   const channelOptionsRef = useRef(channelOptions);
   const ablyMessageCallbackRef = useRef(ablyMessageCallback);
 
-  const channel = useMemo(() => ably.channels.get(channelName, channelOptionsRef.current), [ably, channelName]);
+  const channel = useMemo(
+    () => ably.channels.get(channelName, channelOptionsWithAgent(channelOptionsRef.current)),
+    [ably, channelName]
+  );
 
   const { connectionError, channelError } = useStateErrors(channelHookOptions);
 
   useEffect(() => {
     if (channelOptionsRef.current !== channelOptions && channelOptions) {
-      channel.setOptions(channelOptions);
+      channel.setOptions(channelOptionsWithAgent(channelOptions));
     }
     channelOptionsRef.current = channelOptions;
   }, [channel, channelOptions]);

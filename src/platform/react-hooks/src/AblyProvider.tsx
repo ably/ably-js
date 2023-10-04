@@ -4,8 +4,6 @@ import * as Ably from 'ably';
 import { Types } from '../../../../ably.js';
 import React, { useMemo } from 'react';
 
-const version = '1.2.45';
-
 const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'function';
 
 interface AblyProviderProps {
@@ -28,8 +26,6 @@ export function getContext(ctxId = 'default'): AblyContextType {
   return ctxMap[ctxId];
 }
 
-let hasSentAgent = false;
-
 export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderProps) => {
   if (!client) {
     throw new Error('AblyProvider: the `client` prop is required');
@@ -45,15 +41,6 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
   if (!context) {
     context = ctxMap[id] = React.createContext(realtime ?? 1);
   }
-
-  React.useEffect(() => {
-    if (!hasSentAgent) {
-      hasSentAgent = true;
-      realtime.request('GET', '/time', null, null, {
-        'Ably-Agent': `react-hooks-time-ping/${version}`,
-      });
-    }
-  });
 
   return <context.Provider value={realtime}>{children}</context.Provider>;
 };

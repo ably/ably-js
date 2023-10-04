@@ -16,3 +16,15 @@ export type ChannelNameAndId = {
   id?: string;
 };
 export type ChannelParameters = string | ChannelNameAndOptions;
+
+export const version = '1.2.45';
+
+export function channelOptionsWithAgent(options?: Types.ChannelOptions) {
+  return {
+    ...options,
+    params: {
+      ...options?.params,
+      agent: `react-hooks/${version}`,
+    },
+  };
+}
