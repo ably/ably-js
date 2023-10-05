@@ -604,3 +604,12 @@ export function toBase64(str: string) {
   }
   return stringifyBase64(parseUtf8(str));
 }
+
+export function arrEquals(a: any[], b: any[]) {
+  return (
+    a.length === b.length &&
+    arrEvery(a, function (val, i) {
+      return val === b[i];
+    })
+  );
+}
