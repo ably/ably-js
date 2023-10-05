@@ -647,7 +647,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
             try {
               realtime.channels.get(testName, {
-                params: params,
+                params: {
+                  modes: 'subscribe',
+                },
               });
             } catch (err) {
               try {
@@ -714,7 +716,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   var setOptionsReturned = false;
                   channel.setOptions(
                     {
-                      params: params,
+                      params: {
+                        modes: 'publish',
+                      },
                     },
                     function () {
                       /* Wait a tick so we don' depend on whether the update event runs the
@@ -743,7 +747,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   var setOptionsReturned = false;
                   channel.setOptions(
                     {
-                      modes: modes,
+                      modes: ['subscribe'],
                     },
                     function () {
                       Ably.Realtime.Platform.Config.nextTick(function () {
