@@ -12,6 +12,10 @@ function promisifyOptions(options) {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 var Ably = require('./build/ably-node');
 
+var ErrorInfo = function(message, code, statusCode, cause) {
+  return new Ably.ErrorInfo(message, code, statusCode, cause);
+}
+
 var RestPromise = function (options) {
   return new Ably.Rest(promisifyOptions(options));
 };
@@ -23,7 +27,7 @@ var RealtimePromise = function (options) {
 Object.assign(RealtimePromise, Ably.Realtime);
 
 module.exports = {
-  ErrorInfo: Ably.ErrorInfo,
+  ErrorInfo: ErrorInfo,
   Rest: RestPromise,
   Realtime: RealtimePromise,
 };
