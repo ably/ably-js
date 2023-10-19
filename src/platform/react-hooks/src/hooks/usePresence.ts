@@ -1,6 +1,6 @@
 import { Types } from '../../../../../ably.js';
-import { useCallback, useEffect, useState } from 'react';
-import { ChannelParameters } from '../AblyReactHooks.js';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
 
@@ -28,10 +28,23 @@ export function usePresence<T = any>(
 
   const subscribeOnly = typeof channelNameOrNameAndOptions === 'string' ? false : params.subscribeOnly;
 
-  const channel = ably.channels.get(params.channelName, params.options);
+  const channelOptions = params.options;
+  const channelOptionsRef = useRef(channelOptions);
+
+  const channel = useMemo(
+    () => ably.channels.get(params.channelName, channelOptionsWithAgent(channelOptionsRef.current)),
+    [ably, params.channelName]
+  );
   const skip = params.skip;
 
   const { connectionError, channelError } = useStateErrors(params);
+
+  useEffect(() => {
+    if (channelOptionsRef.current !== channelOptions && channelOptions) {
+      channel.setOptions(channelOptionsWithAgent(channelOptions));
+    }
+    channelOptionsRef.current = channelOptions;
+  }, [channel, channelOptions]);
 
   const [presenceData, updatePresenceData] = useState<Array<PresenceMessage<T>>>([]);
 

@@ -18,7 +18,7 @@
 2. Create a new branch for the release, for example `release/1.2.3`
 3. Update the CHANGELOG.md with any customer-affecting changes since the last release and add this to the git index
 4. Run `npm version <VERSION_NUMBER> --no-git-tag-version` with the new version and add the changes to the git index
-5. Update the version number to the new version in `src/platform/react-hooks/src/AblyProvider.tsx`
+5. Update the version number to the new version in `src/platform/react-hooks/src/AblyReactHooks.ts`
 6. Create a PR for the release branch
 7. Once the release PR is landed to the `main` branch, checkout the `main` branch locally (remember to pull the remote changes) and run `npm run build`
 8. Run `git tag <VERSION_NUMBER>` with the new version and push the tag to git

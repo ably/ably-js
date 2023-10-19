@@ -318,10 +318,10 @@ export const arrFilter = (Array.prototype.filter as unknown)
     };
 
 export const arrEvery = (Array.prototype.every as unknown)
-  ? function <T>(arr: Array<T>, fn: (value: T, index?: number, arr?: Array<T>) => boolean) {
+  ? function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
       return arr.every(fn);
     }
-  : function <T>(arr: Array<T>, fn: (value: T, index?: number, arr?: Array<T>) => boolean) {
+  : function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
       const len = arr.length;
       for (let i = 0; i < len; i++) {
         if (!fn(arr[i], i, arr)) {
@@ -603,4 +603,13 @@ export function toBase64(str: string) {
     return Buffer.from(str, 'ascii').toString('base64');
   }
   return stringifyBase64(parseUtf8(str));
+}
+
+export function arrEquals(a: any[], b: any[]) {
+  return (
+    a.length === b.length &&
+    arrEvery(a, function (val, i) {
+      return val === b[i];
+    })
+  );
 }
