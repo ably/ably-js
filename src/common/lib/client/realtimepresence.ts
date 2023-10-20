@@ -223,10 +223,8 @@ class RealtimePresence extends Presence {
       'RealtimePresence.leaveClient()',
       'leaving; channel = ' + this.channel.name + ', client = ' + clientId
     );
-    const presence = PresenceMessage.fromValues({
-      action: 'leave',
-      data: data,
-    });
+    const presence = PresenceMessage.fromData(data);
+    presence.action = 'leave';
     if (clientId) {
       presence.clientId = clientId;
     }
