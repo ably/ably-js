@@ -29,7 +29,7 @@
   "dependencies": {
     "@ably/msgpack-js": "^0.4.0",
     "got": "^11.8.5",
-    "ws": "^5.1"
+    "ws": "^8.14.2"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
