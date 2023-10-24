@@ -267,7 +267,7 @@ can use
 
 ```javascript
 channel.presence.enterClient('myClientId', 'status', function(err) { ... });
-// and similiarly, updateClient and leaveClient
+// and similarly, updateClient and leaveClient
 ```
 
 ### Querying the Presence History
