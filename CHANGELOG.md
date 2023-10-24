@@ -2,6 +2,13 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.46](https://github.com/ably/ably-js/tree/1.2.46) (2023-10-24)
+
+- fix: avoid directly exporting Ably.ErrorInfo from promises.js [\#1463](https://github.com/ably/ably-js/pull/1463)
+- fix(react): add missing id param for `useStateErrors` call to `useChannelStateListener` [\#1455](https://github.com/ably/ably-js/pull/1455)
+- fix: allow `RealtimePresence#leave` to take `PresenceMessage` as argument [\#1466](https://github.com/ably/ably-js/pull/1466)
+- deps: bump ws to 8.14.2 [\#1467](https://github.com/ably/ably-js/pull/1467)
+
 ## [1.2.45](https://github.com/ably/ably-js/tree/1.2.45) (2023-09-25)
 
 - remove `AblyProvider` options prop [\#1446](https://github.com/ably/ably-js/pull/1446)
