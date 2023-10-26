@@ -9,7 +9,7 @@ import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import { ErrnoException, RequestParams } from '../../types/http';
+import { RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import Resource from './resource';
 
@@ -88,12 +88,7 @@ export class Rest {
       headers,
       null,
       params as RequestParams,
-      (
-        err?: ErrorInfo | ErrnoException | null,
-        res?: unknown,
-        headers?: Record<string, string>,
-        unpacked?: boolean
-      ) => {
+      (err, res, headers, unpacked) => {
         if (err) {
           _callback(err);
           return;

@@ -1,5 +1,5 @@
 import { IPlatformConfig } from './types/IPlatformConfig';
-import { IHttp } from './types/http';
+import { IHttpStatic } from './types/http';
 import { TransportInitialiser } from './lib/transport/connectionmanager';
 import IDefaults from './types/IDefaults';
 import IWebStorage from './types/IWebStorage';
@@ -31,7 +31,7 @@ export default class Platform {
      comment above.
    */
   static Crypto: IUntypedCryptoStatic | null;
-  static Http: typeof IHttp;
+  static Http: IHttpStatic;
   static Transports: {
     order: TransportName[];
     // Transport implementations that always come with this platform

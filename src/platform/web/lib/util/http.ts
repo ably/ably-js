@@ -2,7 +2,7 @@ import Platform from 'common/platform';
 import * as Utils from 'common/lib/util/utils';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { ErrnoException, IHttp, RequestCallback, RequestParams } from 'common/types/http';
+import { IHttpStatic, RequestCallback, RequestParams } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import BaseRealtime from 'common/lib/client/baserealtime';
@@ -40,7 +40,7 @@ function getHosts(client: BaseClient): string[] {
   return Defaults.getHosts(client.options);
 }
 
-const Http: typeof IHttp = class {
+const Http: IHttpStatic = class {
   static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
@@ -95,13 +95,7 @@ const Http: typeof IHttp = class {
             null,
             null,
             connectivityCheckParams,
-            function (
-              err?: ErrorInfo | ErrnoException | null,
-              responseText?: unknown,
-              headers?: any,
-              unpacked?: boolean,
-              statusCode?: number
-            ) {
+            function (err, responseText, headers, unpacked, statusCode) {
               let result = false;
               if (!connectivityUrlIsDefault) {
                 result = !err && isSuccessCode(statusCode as number);
@@ -119,19 +113,11 @@ const Http: typeof IHttp = class {
       this.Request = fetchRequest;
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
-        this.doUri(
-          HttpMethods.Get,
-          null as any,
-          connectivityCheckUrl,
-          null,
-          null,
-          null,
-          function (err?: ErrorInfo | ErrnoException | null, responseText?: unknown) {
-            const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-            Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
-            callback(null, result);
-          }
-        );
+        this.doUri(HttpMethods.Get, null as any, connectivityCheckUrl, null, null, null, function (err, responseText) {
+          const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+          Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
+          callback(null, result);
+        });
       };
     } else {
       this.Request = (method, client, uri, headers, params, body, callback) => {
@@ -165,24 +151,16 @@ const Http: typeof IHttp = class {
           callback?.(new PartialErrorInfo('Request invoked before assigned to', null, 500));
           return;
         }
-        this.Request(
-          method,
-          client,
-          uriFromHost(currentFallback.host),
-          headers,
-          params,
-          body,
-          (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) => {
-            // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
-            if (err && shouldFallback(err as ErrorInfo)) {
-              /* unstore the fallback and start from the top with the default sequence */
-              client._currentFallback = null;
-              this.do(method, client, path, headers, body, params, callback);
-              return;
-            }
-            callback?.(err, ...args);
+        this.Request(method, client, uriFromHost(currentFallback.host), headers, params, body, (err?, ...args) => {
+          // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
+          if (err && shouldFallback(err as ErrorInfo)) {
+            /* unstore the fallback and start from the top with the default sequence */
+            client._currentFallback = null;
+            this.do(method, client, path, headers, body, params, callback);
+            return;
           }
-        );
+          callback?.(err, ...args);
+        });
         return;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
@@ -201,29 +179,21 @@ const Http: typeof IHttp = class {
     /* hosts is an array with preferred host plus at least one fallback */
     const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
       const host = candidateHosts.shift();
-      this.doUri(
-        method,
-        client,
-        uriFromHost(host as string),
-        headers,
-        body,
-        params,
-        function (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
-          // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
-          if (err && shouldFallback(err as ErrorInfo) && candidateHosts.length) {
-            tryAHost(candidateHosts, true);
-            return;
-          }
-          if (persistOnSuccess) {
-            /* RSC15f */
-            client._currentFallback = {
-              host: host as string,
-              validUntil: Utils.now() + client.options.timeouts.fallbackRetryTimeout,
-            };
-          }
-          callback?.(err, ...args);
+      this.doUri(method, client, uriFromHost(host as string), headers, body, params, function (err, ...args) {
+        // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
+        if (err && shouldFallback(err as ErrorInfo) && candidateHosts.length) {
+          tryAHost(candidateHosts, true);
+          return;
         }
-      );
+        if (persistOnSuccess) {
+          /* RSC15f */
+          client._currentFallback = {
+            host: host as string,
+            validUntil: Utils.now() + client.options.timeouts.fallbackRetryTimeout,
+          };
+        }
+        callback?.(err, ...args);
+      });
     };
     tryAHost(hosts);
   }

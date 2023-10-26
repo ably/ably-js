@@ -1,7 +1,13 @@
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
-import { ErrnoException, IHttp, PathParameter, RequestCallback, RequestParams } from '../../../../common/types/http';
+import {
+  ErrnoException,
+  IHttpStatic,
+  PathParameter,
+  RequestCallback,
+  RequestParams,
+} from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
 import got, { Response, Options, CancelableRequest, Agents } from 'got';
 import http from 'http';
@@ -91,7 +97,7 @@ function getHosts(client: BaseClient): string[] {
   return Defaults.getHosts(client.options);
 }
 
-const Http: typeof IHttp = class {
+const Http: IHttpStatic = class {
   static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
@@ -126,23 +132,15 @@ const Http: typeof IHttp = class {
     if (currentFallback) {
       if (currentFallback.validUntil > Date.now()) {
         /* Use stored fallback */
-        this.doUri(
-          method,
-          client,
-          uriFromHost(currentFallback.host),
-          headers,
-          body,
-          params,
-          (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) => {
-            if (err && shouldFallback(err as ErrnoException)) {
-              /* unstore the fallback and start from the top with the default sequence */
-              client._currentFallback = null;
-              this.do(method, client, path, headers, body, params, callback);
-              return;
-            }
-            callback(err, ...args);
+        this.doUri(method, client, uriFromHost(currentFallback.host), headers, body, params, (err, ...args) => {
+          if (err && shouldFallback(err as ErrnoException)) {
+            /* unstore the fallback and start from the top with the default sequence */
+            client._currentFallback = null;
+            this.do(method, client, path, headers, body, params, callback);
+            return;
           }
-        );
+          callback(err, ...args);
+        });
         return;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
@@ -160,28 +158,20 @@ const Http: typeof IHttp = class {
 
     const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
       const host = candidateHosts.shift();
-      this.doUri(
-        method,
-        client,
-        uriFromHost(host as string),
-        headers,
-        body,
-        params,
-        function (err?: ErrnoException | ErrorInfo | null, ...args: unknown[]) {
-          if (err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
-            tryAHost(candidateHosts, true);
-            return;
-          }
-          if (persistOnSuccess) {
-            /* RSC15f */
-            client._currentFallback = {
-              host: host as string,
-              validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
-            };
-          }
-          callback(err, ...args);
+      this.doUri(method, client, uriFromHost(host as string), headers, body, params, function (err, ...args) {
+        if (err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
+          tryAHost(candidateHosts, true);
+          return;
         }
-      );
+        if (persistOnSuccess) {
+          /* RSC15f */
+          client._currentFallback = {
+            host: host as string,
+            validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
+          };
+        }
+        callback(err, ...args);
+      });
     };
     tryAHost(hosts);
   }
@@ -260,13 +250,7 @@ const Http: typeof IHttp = class {
       null,
       null,
       connectivityCheckParams,
-      function (
-        err?: ErrnoException | ErrorInfo | null,
-        responseText?: unknown,
-        headers?: any,
-        unpacked?: boolean,
-        statusCode?: number
-      ) {
+      function (err, responseText, headers, unpacked, statusCode) {
         if (!err && !connectivityUrlIsDefault) {
           callback(null, isSuccessCode(statusCode as number));
           return;

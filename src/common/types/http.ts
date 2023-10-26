@@ -1,23 +1,28 @@
 import HttpMethods from '../constants/HttpMethods';
-import { BaseClient } from '../lib/client/baseclient';
-import ErrorInfo from '../lib/types/errorinfo';
+import BaseClient from '../lib/client/baseclient';
+import ErrorInfo, { IPartialErrorInfo } from '../lib/types/errorinfo';
 import { Agents } from 'got';
+import { NormalisedClientOptions } from './ClientOptions';
 
 export type PathParameter = string | ((host: string) => string);
+export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
 export type RequestCallback = (
   error?: ErrnoException | IPartialErrorInfo | null,
   body?: unknown,
-  headers?: IncomingHttpHeaders,
+  headers?: RequestCallbackHeaders,
   unpacked?: boolean,
   statusCode?: number
 ) => void;
 export type RequestParams = Record<string, string> | null;
 
-export declare class IHttp {
-  constructor(options: NormalisedClientOptions);
-  static methods: Array<HttpMethods>;
-  static methodsWithBody: Array<HttpMethods>;
-  static methodsWithoutBody: Array<HttpMethods>;
+export interface IHttpStatic {
+  new (options: NormalisedClientOptions): IHttp;
+  methods: Array<HttpMethods>;
+  methodsWithBody: Array<HttpMethods>;
+  methodsWithoutBody: Array<HttpMethods>;
+}
+
+export interface IHttp {
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
   agent?: Agents | null;
@@ -32,7 +37,7 @@ export declare class IHttp {
     body: unknown,
     callback: RequestCallback
   ) => void;
-  _getHosts: (client: BaseClient | Realtime) => string[];
+  _getHosts: (client: BaseClient) => string[];
   do(
     method: HttpMethods,
     client: BaseClient | null,
