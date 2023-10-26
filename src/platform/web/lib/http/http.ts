@@ -45,14 +45,11 @@ const Http: IHttpStatic = class {
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   checksInProgress: Array<StandardCallback<boolean>> | null = null;
-  options: NormalisedClientOptions;
 
-  constructor(options: NormalisedClientOptions) {
-    this.options = options || {};
-
-    const connectivityCheckUrl = this.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
-    const connectivityCheckParams = this.options.connectivityCheckParams;
-    const connectivityUrlIsDefault = !this.options.connectivityCheckUrl;
+  constructor(options?: NormalisedClientOptions) {
+    const connectivityCheckUrl = options?.connectivityCheckUrl || Defaults.connectivityCheckUrl;
+    const connectivityCheckParams = options?.connectivityCheckParams ?? null;
+    const connectivityUrlIsDefault = !options?.connectivityCheckUrl;
     if (Platform.Config.xhrSupported) {
       this.supportsAuthHeaders = true;
       this.Request = function (
@@ -77,7 +74,7 @@ const Http: IHttpStatic = class {
         req.exec();
         return req;
       };
-      if (this.options.disableConnectivityCheck) {
+      if (options?.disableConnectivityCheck) {
         this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
           callback(null, true);
         };

@@ -105,10 +105,10 @@ const Http: IHttpStatic = class {
   _getHosts = getHosts;
   supportsAuthHeaders = true;
   supportsLinkHeaders = true;
-  options: NormalisedClientOptions;
+  private options: NormalisedClientOptions | null;
 
-  constructor(options: NormalisedClientOptions) {
-    this.options = options || {};
+  constructor(options?: NormalisedClientOptions) {
+    this.options = options ?? null;
   }
 
   /* Unlike for doUri, the 'client' param here is mandatory, as it's used to generate the hosts */
@@ -235,13 +235,13 @@ const Http: IHttpStatic = class {
   }
 
   checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
-    if (this.options.disableConnectivityCheck) {
+    if (this.options?.disableConnectivityCheck) {
       callback(null, true);
       return;
     }
-    const connectivityCheckUrl = this.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
-    const connectivityCheckParams = this.options.connectivityCheckParams;
-    const connectivityUrlIsDefault = !this.options.connectivityCheckUrl;
+    const connectivityCheckUrl = this.options?.connectivityCheckUrl || Defaults.connectivityCheckUrl;
+    const connectivityCheckParams = this.options?.connectivityCheckParams ?? null;
+    const connectivityUrlIsDefault = !this.options?.connectivityCheckUrl;
 
     this.doUri(
       HttpMethods.Get,

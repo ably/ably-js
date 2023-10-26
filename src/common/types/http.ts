@@ -16,7 +16,7 @@ export type RequestCallback = (
 export type RequestParams = Record<string, string> | null;
 
 export interface IHttpStatic {
-  new (options: NormalisedClientOptions): IHttp;
+  new (options?: NormalisedClientOptions): IHttp;
   methods: Array<HttpMethods>;
   methodsWithBody: Array<HttpMethods>;
   methodsWithoutBody: Array<HttpMethods>;
@@ -26,7 +26,6 @@ export interface IHttp {
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
   agent?: Agents | null;
-  options: NormalisedClientOptions;
 
   Request?: (
     method: HttpMethods,
