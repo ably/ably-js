@@ -38,13 +38,9 @@ class Presence extends EventEmitter {
     Utils.mixin(headers, client.options.headers);
 
     const options = this.channel.channelOptions;
-    new PaginatedResource(client, this.basePath, headers, envelope, async function (
-      body: any,
-      headers: Record<string, string>,
-      unpacked?: boolean
-    ) {
+    new PaginatedResource(client, this.basePath, headers, envelope, async function (body, headers, unpacked) {
       return await PresenceMessage.fromResponseBody(
-        body,
+        body as Record<string, unknown>[],
         options as CipherOptions,
         client._MsgPack,
         unpacked ? undefined : format
@@ -83,12 +79,12 @@ class Presence extends EventEmitter {
 
     const options = this.channel.channelOptions;
     new PaginatedResource(client, this.basePath + '/history', headers, envelope, async function (
-      body: any,
-      headers: Record<string, string>,
-      unpacked?: boolean
+      body,
+      headers,
+      unpacked
     ) {
       return await PresenceMessage.fromResponseBody(
-        body,
+        body as Record<string, unknown>[],
         options as CipherOptions,
         client._MsgPack,
         unpacked ? undefined : format
