@@ -7,7 +7,7 @@ import ErrorInfo from '../../common/lib/types/errorinfo';
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
 // @ts-ignore
-import Http from './lib/util/http';
+import Http from './lib/http/http';
 import Config from './config';
 // @ts-ignore
 import { ModulesTransports } from './lib/transport';

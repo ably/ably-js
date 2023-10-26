@@ -8,7 +8,7 @@ import ErrorInfo from '../../common/lib/types/errorinfo';
 import BufferUtils from '../web/lib/util/bufferutils';
 // @ts-ignore
 import { createCryptoClass } from '../web/lib/util/crypto';
-import Http from '../web/lib/util/http';
+import Http from '../web/lib/http/http';
 // @ts-ignore
 import Config from './config';
 // @ts-ignore

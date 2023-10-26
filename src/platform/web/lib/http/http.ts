@@ -6,11 +6,11 @@ import { IHttpStatic, RequestCallback, RequestParams } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import BaseRealtime from 'common/lib/client/baserealtime';
-import XHRRequest from '../transport/xhrrequest';
+import XHRRequest from './request/xhrrequest';
 import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
-import fetchRequest from '../transport/fetchrequest';
+import fetchRequest from './request/fetchrequest';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 
