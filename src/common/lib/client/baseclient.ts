@@ -88,7 +88,7 @@ class BaseClient {
     this._currentFallback = null;
 
     this.serverTimeOffset = null;
-    this.http = new Platform.Http(normalOptions);
+    this.http = new Platform.Http(this);
     this.auth = new Auth(this, normalOptions);
 
     this._rest = modules.Rest ? new modules.Rest(this) : null;

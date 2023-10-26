@@ -83,7 +83,6 @@ export class Rest {
     };
     this.client.http.do(
       HttpMethods.Get,
-      this.client,
       timeUri,
       headers,
       null,

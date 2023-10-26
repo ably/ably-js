@@ -25,7 +25,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     restTestOnJsonMsgpack('request_version', function (rest) {
       const version = 150; // arbitrarily chosen
 
-      function testRequestHandler(_, __, ___, headers) {
+      function testRequestHandler(_, __, headers) {
         try {
           expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
           expect(headers['X-Ably-Version']).to.equal(version.toString(), 'Verify version number sent in request');

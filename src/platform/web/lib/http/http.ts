@@ -11,7 +11,6 @@ import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
 import fetchRequest from './request/fetchrequest';
-import { NormalisedClientOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 
 function shouldFallback(errorInfo: ErrorInfo) {
@@ -45,16 +44,17 @@ const Http: IHttpStatic = class {
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   checksInProgress: Array<StandardCallback<boolean>> | null = null;
+  private client: BaseClient | null;
 
-  constructor(options?: NormalisedClientOptions) {
-    const connectivityCheckUrl = options?.connectivityCheckUrl || Defaults.connectivityCheckUrl;
-    const connectivityCheckParams = options?.connectivityCheckParams ?? null;
-    const connectivityUrlIsDefault = !options?.connectivityCheckUrl;
+  constructor(client?: BaseClient) {
+    this.client = client ?? null;
+    const connectivityCheckUrl = client?.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
+    const connectivityCheckParams = client?.options.connectivityCheckParams ?? null;
+    const connectivityUrlIsDefault = !client?.options.connectivityCheckUrl;
     if (Platform.Config.xhrSupported) {
       this.supportsAuthHeaders = true;
       this.Request = function (
         method: HttpMethods,
-        client: BaseClient | null,
         uri: string,
         headers: Record<string, string> | null,
         params: RequestParams,
@@ -67,14 +67,14 @@ const Http: IHttpStatic = class {
           params,
           body,
           XHRStates.REQ_SEND,
-          client && client.options.timeouts,
+          (client && client.options.timeouts) ?? null,
           method
         );
         req.once('complete', callback);
         req.exec();
         return req;
       };
-      if (options?.disableConnectivityCheck) {
+      if (client?.options.disableConnectivityCheck) {
         this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
           callback(null, true);
         };
@@ -87,7 +87,6 @@ const Http: IHttpStatic = class {
           );
           this.doUri(
             HttpMethods.Get,
-            null as any,
             connectivityCheckUrl,
             null,
             null,
@@ -107,17 +106,19 @@ const Http: IHttpStatic = class {
       }
     } else if (Platform.Config.fetchSupported) {
       this.supportsAuthHeaders = true;
-      this.Request = fetchRequest;
+      this.Request = (method, uri, headers, params, body, callback) => {
+        fetchRequest(method, client ?? null, uri, headers, params, body, callback);
+      };
       this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
-        this.doUri(HttpMethods.Get, null as any, connectivityCheckUrl, null, null, null, function (err, responseText) {
+        this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null, function (err, responseText) {
           const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
           Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
           callback(null, result);
         });
       };
     } else {
-      this.Request = (method, client, uri, headers, params, body, callback) => {
+      this.Request = (method, uri, headers, params, body, callback) => {
         callback(new PartialErrorInfo('no supported HTTP transports available', null, 400), null);
       };
     }
@@ -126,13 +127,18 @@ const Http: IHttpStatic = class {
   /* Unlike for doUri, the 'client' param here is mandatory, as it's used to generate the hosts */
   do(
     method: HttpMethods,
-    client: BaseClient,
     path: string,
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
     callback?: RequestCallback
   ): void {
+    /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
+    const client = this.client;
+    if (!client) {
+      throw new Error('http.do called without client');
+    }
+
     const uriFromHost =
       typeof path == 'function'
         ? path
@@ -148,12 +154,12 @@ const Http: IHttpStatic = class {
           callback?.(new PartialErrorInfo('Request invoked before assigned to', null, 500));
           return;
         }
-        this.Request(method, client, uriFromHost(currentFallback.host), headers, params, body, (err?, ...args) => {
+        this.Request(method, uriFromHost(currentFallback.host), headers, params, body, (err?, ...args) => {
           // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
           if (err && shouldFallback(err as ErrorInfo)) {
             /* unstore the fallback and start from the top with the default sequence */
             client._currentFallback = null;
-            this.do(method, client, path, headers, body, params, callback);
+            this.do(method, path, headers, body, params, callback);
             return;
           }
           callback?.(err, ...args);
@@ -169,14 +175,14 @@ const Http: IHttpStatic = class {
 
     /* if there is only one host do it */
     if (hosts.length === 1) {
-      this.doUri(method, client, uriFromHost(hosts[0]), headers, body, params, callback as RequestCallback);
+      this.doUri(method, uriFromHost(hosts[0]), headers, body, params, callback as RequestCallback);
       return;
     }
 
     /* hosts is an array with preferred host plus at least one fallback */
     const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
       const host = candidateHosts.shift();
-      this.doUri(method, client, uriFromHost(host as string), headers, body, params, function (err, ...args) {
+      this.doUri(method, uriFromHost(host as string), headers, body, params, function (err, ...args) {
         // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
         if (err && shouldFallback(err as ErrorInfo) && candidateHosts.length) {
           tryAHost(candidateHosts, true);
@@ -197,7 +203,6 @@ const Http: IHttpStatic = class {
 
   doUri(
     method: HttpMethods,
-    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
@@ -208,12 +213,11 @@ const Http: IHttpStatic = class {
       callback(new PartialErrorInfo('Request invoked before assigned to', null, 500));
       return;
     }
-    this.Request(method, client, uri, headers, params, body, callback);
+    this.Request(method, uri, headers, params, body, callback);
   }
 
   Request?: (
     method: HttpMethods,
-    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,

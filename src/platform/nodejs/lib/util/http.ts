@@ -14,7 +14,7 @@ import http from 'http';
 import https from 'https';
 import BaseClient from 'common/lib/client/baseclient';
 import BaseRealtime from 'common/lib/client/baserealtime';
-import { NormalisedClientOptions, RestAgentOptions } from 'common/types/ClientOptions';
+import { RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 import { shallowEquals, throwMissingModuleError } from 'common/lib/util/utils';
 
@@ -105,22 +105,26 @@ const Http: IHttpStatic = class {
   _getHosts = getHosts;
   supportsAuthHeaders = true;
   supportsLinkHeaders = true;
-  private options: NormalisedClientOptions | null;
+  private client: BaseClient | null;
 
-  constructor(options?: NormalisedClientOptions) {
-    this.options = options ?? null;
+  constructor(client?: BaseClient) {
+    this.client = client ?? null;
   }
 
-  /* Unlike for doUri, the 'client' param here is mandatory, as it's used to generate the hosts */
   do(
     method: HttpMethods,
-    client: BaseClient,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
     params: RequestParams,
     callback: RequestCallback
   ): void {
+    /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
+    const client = this.client;
+    if (!client) {
+      throw new Error('http.do called without client');
+    }
+
     const uriFromHost =
       typeof path === 'function'
         ? path
@@ -132,11 +136,11 @@ const Http: IHttpStatic = class {
     if (currentFallback) {
       if (currentFallback.validUntil > Date.now()) {
         /* Use stored fallback */
-        this.doUri(method, client, uriFromHost(currentFallback.host), headers, body, params, (err, ...args) => {
+        this.doUri(method, uriFromHost(currentFallback.host), headers, body, params, (err, ...args) => {
           if (err && shouldFallback(err as ErrnoException)) {
             /* unstore the fallback and start from the top with the default sequence */
             client._currentFallback = null;
-            this.do(method, client, path, headers, body, params, callback);
+            this.do(method, path, headers, body, params, callback);
             return;
           }
           callback(err, ...args);
@@ -152,13 +156,13 @@ const Http: IHttpStatic = class {
 
     /* see if we have one or more than one host */
     if (hosts.length === 1) {
-      this.doUri(method, client, uriFromHost(hosts[0]), headers, body, params, callback);
+      this.doUri(method, uriFromHost(hosts[0]), headers, body, params, callback);
       return;
     }
 
     const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
       const host = candidateHosts.shift();
-      this.doUri(method, client, uriFromHost(host as string), headers, body, params, function (err, ...args) {
+      this.doUri(method, uriFromHost(host as string), headers, body, params, function (err, ...args) {
         if (err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
           tryAHost(candidateHosts, true);
           return;
@@ -178,7 +182,6 @@ const Http: IHttpStatic = class {
 
   doUri(
     method: HttpMethods,
-    client: BaseClient,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
@@ -188,7 +191,8 @@ const Http: IHttpStatic = class {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
-    const agentOptions = (client && client.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
+    const agentOptions =
+      (this.client && this.client.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
     const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
 
     if (!this.agent) {
@@ -215,7 +219,9 @@ const Http: IHttpStatic = class {
     doOptions.agent = this.agent;
 
     doOptions.url = uri;
-    doOptions.timeout = { request: ((client && client.options.timeouts) || Defaults.TIMEOUTS).httpRequestTimeout };
+    doOptions.timeout = {
+      request: ((this.client && this.client.options.timeouts) || Defaults.TIMEOUTS).httpRequestTimeout,
+    };
     // We have our own logic that retries appropriate statuscodes to fallback endpoints,
     // with timeouts constructed appropriately. Don't want `got` doing its own retries to
     // the same endpoint, inappropriately retrying 429s, etc
@@ -223,29 +229,28 @@ const Http: IHttpStatic = class {
 
     (got[method](doOptions) as CancelableRequest<Response>)
       .then((res: Response) => {
-        handler(uri, params, client, callback)(null, res, res.body);
+        handler(uri, params, this.client, callback)(null, res, res.body);
       })
       .catch((err: ErrnoException) => {
         if (err instanceof got.HTTPError) {
-          handler(uri, params, client, callback)(null, err.response, err.response.body);
+          handler(uri, params, this.client, callback)(null, err.response, err.response.body);
           return;
         }
-        handler(uri, params, client, callback)(err);
+        handler(uri, params, this.client, callback)(err);
       });
   }
 
   checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
-    if (this.options?.disableConnectivityCheck) {
+    if (this.client?.options.disableConnectivityCheck) {
       callback(null, true);
       return;
     }
-    const connectivityCheckUrl = this.options?.connectivityCheckUrl || Defaults.connectivityCheckUrl;
-    const connectivityCheckParams = this.options?.connectivityCheckParams ?? null;
-    const connectivityUrlIsDefault = !this.options?.connectivityCheckUrl;
+    const connectivityCheckUrl = this.client?.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
+    const connectivityCheckParams = this.client?.options.connectivityCheckParams ?? null;
+    const connectivityUrlIsDefault = !this.client?.options.connectivityCheckUrl;
 
     this.doUri(
       HttpMethods.Get,
-      null as any,
       connectivityCheckUrl,
       null,
       null,
@@ -262,7 +267,6 @@ const Http: IHttpStatic = class {
 
   Request?: (
     method: HttpMethods,
-    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,

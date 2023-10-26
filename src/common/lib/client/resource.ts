@@ -245,7 +245,7 @@ class Resource {
         );
       }
 
-      client.http.do(method, client, path, headers, body, params, function (err, res, headers, unpacked, statusCode) {
+      client.http.do(method, path, headers, body, params, function (err, res, headers, unpacked, statusCode) {
         if (err && Auth.isTokenErr(err as ErrorInfo)) {
           /* token has expired, so get a new one */
           client.auth.authorize(null, null, function (err: ErrorInfo) {

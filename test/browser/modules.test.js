@@ -286,7 +286,7 @@ describe('browser/modules', function () {
       const channelName = 'channel';
       const channel = rest.channels.get(channelName);
       const contentTypeUsedForPublishPromise = new Promise((resolve, reject) => {
-        rest.http.do = (method, client, path, headers, body, params, callback) => {
+        rest.http.do = (method, path, headers, body, params, callback) => {
           if (!(method == 'post' && path == `/channels/${channelName}/messages`)) {
             return;
           }

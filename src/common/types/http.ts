@@ -2,7 +2,6 @@ import HttpMethods from '../constants/HttpMethods';
 import BaseClient from '../lib/client/baseclient';
 import ErrorInfo, { IPartialErrorInfo } from '../lib/types/errorinfo';
 import { Agents } from 'got';
-import { NormalisedClientOptions } from './ClientOptions';
 
 export type PathParameter = string | ((host: string) => string);
 export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
@@ -16,7 +15,7 @@ export type RequestCallback = (
 export type RequestParams = Record<string, string> | null;
 
 export interface IHttpStatic {
-  new (options?: NormalisedClientOptions): IHttp;
+  new (client?: BaseClient): IHttp;
   methods: Array<HttpMethods>;
   methodsWithBody: Array<HttpMethods>;
   methodsWithoutBody: Array<HttpMethods>;
@@ -29,7 +28,6 @@ export interface IHttp {
 
   Request?: (
     method: HttpMethods,
-    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
@@ -39,7 +37,6 @@ export interface IHttp {
   _getHosts: (client: BaseClient) => string[];
   do(
     method: HttpMethods,
-    client: BaseClient | null,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
@@ -48,7 +45,6 @@ export interface IHttp {
   ): void;
   doUri(
     method: HttpMethods,
-    client: BaseClient | null,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
