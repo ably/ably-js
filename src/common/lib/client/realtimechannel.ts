@@ -14,7 +14,6 @@ import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
-import { FilteredSubscriptions } from './filteredsubscriptions';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -439,7 +438,7 @@ class RealtimeChannel extends Channel {
 
     // Filtered
     if (event && typeof event === 'object' && !Array.isArray(event)) {
-      FilteredSubscriptions.subscribeFilter(this, event, listener);
+      this.client._FilteredSubscriptions.subscribeFilter(this, event, listener);
     } else {
       this.subscriptions.on(event, listener);
     }
@@ -452,9 +451,9 @@ class RealtimeChannel extends Channel {
 
     // If we either have a filtered listener, a filter or both we need to do additional processing to find the original function(s)
     if ((typeof event === 'object' && !listener) || this.filteredSubscriptions?.has(listener)) {
-      FilteredSubscriptions.getAndDeleteFilteredSubscriptions(this, event, listener).forEach((l) =>
-        this.subscriptions.off(l)
-      );
+      this.client._FilteredSubscriptions
+        .getAndDeleteFilteredSubscriptions(this, event, listener)
+        .forEach((l) => this.subscriptions.off(l));
       return;
     }
 
