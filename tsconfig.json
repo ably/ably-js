@@ -12,6 +12,7 @@
     "baseUrl": "./src"
   },
   "exclude": [
-    "src/platform/react-hooks"
+    "src/platform/react-hooks",
+    "test/package"
   ]
 }

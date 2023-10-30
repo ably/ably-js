@@ -1,0 +1,7 @@
+{
+  "include": ["src/**/*.ts"],
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  }
+}
