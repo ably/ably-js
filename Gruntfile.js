@@ -6,6 +6,7 @@ var webpackConfig = require('./webpack.config');
 var esbuild = require('esbuild');
 var umdWrapper = require('esbuild-plugin-umd-wrapper');
 var banner = require('./src/fragments/license');
+var process = require('process');
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
@@ -27,18 +28,27 @@ module.exports = function (grunt) {
     };
   }
 
-  function execExternal(cmd) {
-    return function () {
-      var done = this.async();
-      grunt.log.ok('Executing ' + cmd);
+  async function execExternalPromises(cmd) {
+    grunt.log.ok('Executing ' + cmd);
+    return new Promise(function (resolve, reject) {
       require('child_process').exec(cmd, function (err, stdout, stderr) {
         if (err) {
           grunt.fatal('Error executing "' + cmd + '": ' + stderr);
+          reject(err);
         }
         console.log(stdout);
         stderr && console.error(stderr);
-        done();
+        resolve();
       });
+    });
+  }
+
+  function execExternal(cmd) {
+    return function () {
+      var done = this.async();
+      execExternalPromises(cmd)
+        .then(() => done())
+        .catch((error) => done(error));
     };
   }
 
@@ -203,6 +213,62 @@ module.exports = function (grunt) {
       ]);
     }
   );
+
+  grunt.registerTask('test:package:browser:prepare-project', function () {
+    const done = this.async();
+
+    (async function () {
+      const baseDir = path.join(__dirname, 'test', 'package', 'browser');
+      const buildDir = path.join(baseDir, 'build');
+
+      if (grunt.file.exists(buildDir)) {
+        grunt.file.delete(buildDir);
+      }
+
+      grunt.file.copy(path.join(baseDir, 'template'), buildDir);
+
+      await execExternalPromises('npm run build');
+
+      await execExternalPromises('npm pack --pack-destination test/package/browser/build');
+      const version = grunt.file.readJSON('package.json').version;
+      const packFileName = `ably-${version}.tgz`;
+
+      const buildPackageJsonPath = 'test/package/browser/build/package.json';
+      const projectPackageJson = grunt.file.readJSON(buildPackageJsonPath);
+      const dependencies = projectPackageJson.dependencies ?? {};
+      dependencies.ably = `file:${packFileName}`;
+      projectPackageJson.dependencies = dependencies;
+      grunt.file.write(buildPackageJsonPath, JSON.stringify(projectPackageJson));
+
+      const pwd = process.cwd();
+      process.chdir(buildDir);
+      await execExternalPromises('npm install');
+      process.chdir(pwd);
+    })()
+      .then(() => done(true))
+      .catch((error) => done(error));
+  });
+
+  grunt.registerTask('test:package:browser:test', function () {
+    const done = this.async();
+
+    (async function () {
+      grunt.task.requires('test:package:browser:prepare-project');
+
+      const baseDir = path.join(__dirname, 'test', 'package', 'browser');
+      const buildDir = path.join(baseDir, 'build');
+
+      const pwd = process.cwd();
+      process.chdir(buildDir);
+      await execExternalPromises('npx tsc -noEmit');
+      process.chdir(pwd);
+    })()
+      .then(() => done(true))
+      .catch((error) => done(error));
+  });
+
+  grunt.registerTask('test:package:browser', ['test:package:browser:prepare-project', 'test:package:browser:test']);
+  grunt.registerTask('test:package', ['test:package:browser']);
 
   grunt.registerTask('default', 'all');
 };
