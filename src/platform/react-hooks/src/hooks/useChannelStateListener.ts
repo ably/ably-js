@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { Types } from '../../../../../ably.js';
-import { ChannelNameAndId } from '../AblyReactHooks.js';
+import { ChannelNameAndId, ChannelNameAndOptions, channelOptionsWithAgent } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useEventListener } from './useEventListener.js';
 
@@ -8,22 +9,40 @@ type ChannelStateListener = (stateChange: Types.ChannelStateChange) => any;
 export function useChannelStateListener(channelName: string, listener?: ChannelStateListener);
 
 export function useChannelStateListener(
-  options: ChannelNameAndId | string,
+  options: ChannelNameAndOptions | string,
   state?: Types.ChannelState | Types.ChannelState[],
   listener?: ChannelStateListener
 );
 
 export function useChannelStateListener(
-  channelNameOrNameAndId: ChannelNameAndId | string,
+  channelNameOrNameAndId: ChannelNameAndOptions | string,
   stateOrListener?: Types.ChannelState | Types.ChannelState[] | ChannelStateListener,
   listener?: (stateChange: Types.ChannelStateChange) => any
 ) {
-  const channelName =
-    typeof channelNameOrNameAndId === 'string' ? channelNameOrNameAndId : channelNameOrNameAndId.channelName;
+  const channelHookOptions =
+    typeof channelNameOrNameAndId === 'object' ? channelNameOrNameAndId : { channelName: channelNameOrNameAndId };
   const id = (channelNameOrNameAndId as ChannelNameAndId)?.id;
 
+  const { channelName, options: channelOptions } = channelHookOptions;
+
   const ably = useAbly(id);
-  const channel = ably.channels.get(channelName);
+  const channel = ably.channels.get(channelName, channelOptionsWithAgent(channelOptions));
+
+  const channelOptionsRef = useRef(channelOptions);
+
+  useEffect(() => {
+    if (channelOptionsRef.current !== channelOptions && channelOptions) {
+      channel.setOptions(channelOptionsWithAgent(channelOptions));
+    }
+    channelOptionsRef.current = channelOptions;
+  }, [channel, channelOptions]);
+
+  useEffect(() => {
+    if (channelOptionsRef.current !== channelOptions && channelOptions) {
+      channel.setOptions(channelOptionsWithAgent(channelOptions));
+    }
+    channelOptionsRef.current = channelOptions;
+  }, [channel, channelOptions]);
 
   const _listener = typeof listener === 'function' ? listener : (stateOrListener as ChannelStateListener);
 

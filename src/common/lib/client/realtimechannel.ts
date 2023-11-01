@@ -189,7 +189,14 @@ class RealtimeChannel extends Channel {
       return false;
     }
     if (options?.params) {
-      if (!this.params || !Utils.shallowEquals(this.params, options.params)) {
+      // Don't check against the `agent` param - it isn't returned in the ATTACHED message
+      const requestedParams = Object.assign({}, options.params);
+      delete requestedParams.agent;
+      if (Object.keys(requestedParams).length !== 0 && !this.params) {
+        return true;
+      }
+
+      if (this.params && !Utils.shallowEquals(this.params, requestedParams)) {
         return true;
       }
     }
