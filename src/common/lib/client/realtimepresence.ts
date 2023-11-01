@@ -148,10 +148,8 @@ class RealtimePresence extends Presence {
       'channel = ' + channel.name + ', id = ' + id + ', client = ' + (clientId || '(implicit) ' + getClientId(this))
     );
 
-    const presence = PresenceMessage.fromValues({
-      action: action,
-      data: data,
-    });
+    const presence = PresenceMessage.fromData(data);
+    presence.action = action;
     if (id) {
       presence.id = id;
     }
@@ -217,10 +215,8 @@ class RealtimePresence extends Presence {
       'RealtimePresence.leaveClient()',
       'leaving; channel = ' + this.channel.name + ', client = ' + clientId
     );
-    const presence = PresenceMessage.fromValues({
-      action: 'leave',
-      data: data,
-    });
+    const presence = PresenceMessage.fromData(data);
+    presence.action = 'leave';
     if (clientId) {
       presence.clientId = clientId;
     }

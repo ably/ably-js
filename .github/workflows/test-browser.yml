@@ -8,8 +8,8 @@ on:
 jobs:
   test-browser:
     runs-on: ubuntu-20.04
-    continue-on-error: true
     strategy:
+        fail-fast: false
         matrix:
             browser: [chromium, firefox, webkit]
     steps:
@@ -25,8 +25,8 @@ jobs:
         with:
           node-version: 16.x
       - run: npm ci
-      - name: Install playwright dependencies
-        run: sudo npx playwright install-deps
+      - name: Install Playwright browsers and dependencies
+        run: npx playwright install --with-deps
       - env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
         run: npm run test:playwright

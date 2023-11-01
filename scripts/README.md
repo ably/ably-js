@@ -6,7 +6,7 @@ Deploys correctly versioned code and source maps to the CDN.
 
 Arguments:
 
-* **--bucket**: The S3 bucket name to deploy to, defaults to `cdn.ably.io`.
+* **--bucket**: The S3 bucket name to deploy to, defaults to `prod-cdn.ably.com`.
 * **--root**: The base directory inside the bucket to deploy to, defaults to `lib`.
 * **--path**: The local path to retrieve source files from. Defaults to `.`.
 * **--includeDirs**: A comma separated list of directories to include. Defaults to `.`.

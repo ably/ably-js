@@ -10,5 +10,8 @@
     "resolveJsonModule": true,
     "importHelpers": true,
     "baseUrl": "./src"
-  }
+  },
+  "exclude": [
+    "src/platform/react-hooks"
+  ]
 }
