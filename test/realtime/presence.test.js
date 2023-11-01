@@ -6,6 +6,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
+  var PresenceMessage = Ably.Realtime.PresenceMessage;
   var whenPromiseSettles = helper.whenPromiseSettles;
 
   function extractClientIds(presenceSet) {
@@ -368,6 +369,74 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           clientChannel.presence.enter();
         }
       );
+      monitorConnection(done, clientRealtime);
+    });
+
+    /*
+     * Attach to channel, enter presence channel with extras and check received
+     * PresenceMessage has extras. Then do the same for leaving presence.
+     */
+    it('presenceMessageExtras', function (done) {
+      var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+      var channelName = 'presenceEnterWithExtras';
+      var clientChannel = clientRealtime.channels.get(channelName);
+      var presence = clientChannel.presence;
+
+      async.series(
+        [
+          function (cb) {
+            whenPromiseSettles(clientChannel.attach(), cb);
+          },
+          // Test entering with extras
+          function (cb) {
+            presence.subscribe('enter', function (presenceMessage) {
+              try {
+                expect(presenceMessage.extras).to.deep.equal(
+                  { headers: { key: 'value' } },
+                  'extras should have headers "key=value"'
+                );
+              } catch (err) {
+                cb(err);
+                return;
+              }
+              cb();
+            });
+            presence.enter(
+              PresenceMessage.fromValues({
+                extras: { headers: { key: 'value' } },
+              })
+            );
+          },
+          // Test leaving with extras
+          function (cb) {
+            presence.subscribe('leave', function (presenceMessage) {
+              try {
+                expect(presenceMessage.extras).to.deep.equal(
+                  { headers: { otherKey: 'otherValue' } },
+                  'extras should have headers "otherKey=otherValue"'
+                );
+              } catch (err) {
+                cb(err);
+                return;
+              }
+              cb();
+            });
+            presence.leave(
+              PresenceMessage.fromValues({
+                extras: { headers: { otherKey: 'otherValue' } },
+              })
+            );
+          },
+        ],
+        function (err) {
+          if (err) {
+            closeAndFinish(done, clientRealtime, err);
+            return;
+          }
+          closeAndFinish(done, clientRealtime);
+        }
+      );
+
       monitorConnection(done, clientRealtime);
     });
 

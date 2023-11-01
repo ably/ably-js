@@ -23,7 +23,7 @@ define(function (require) {
 
     if (query['env']) ablyEnvironment = query['env'];
     if (query['realtime_host']) realtimeHost = query['realtime_host'];
-    if (query['host']) host = query['host'];
+    if (query['rest_host']) restHost = query['rest_host'];
     if (query['port']) port = query['port'];
     if (query['tls_port']) tlsPort = query['tls_port'];
     if (query['tls']) tls = query['tls'].toLowerCase() !== 'false';

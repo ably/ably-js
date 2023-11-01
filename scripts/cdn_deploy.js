@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const argv = require('minimist')(process.argv.slice(2));
-const S3_DEFAULT_BUCKET = 'cdn.ably.io';
+const S3_DEFAULT_BUCKET = 'prod-cdn.ably.com';
 const S3_DEFAULT_ROOT = 'lib';
 
 async function run() {

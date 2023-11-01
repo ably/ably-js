@@ -2,6 +2,28 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.46](https://github.com/ably/ably-js/tree/1.2.46) (2023-10-24)
+
+- fix: avoid directly exporting Ably.ErrorInfo from promises.js [\#1463](https://github.com/ably/ably-js/pull/1463)
+- fix(react): add missing id param for `useStateErrors` call to `useChannelStateListener` [\#1455](https://github.com/ably/ably-js/pull/1455)
+- fix: allow `RealtimePresence#leave` to take `PresenceMessage` as argument [\#1466](https://github.com/ably/ably-js/pull/1466)
+- deps: bump ws to 8.14.2 [\#1467](https://github.com/ably/ably-js/pull/1467)
+
+## [1.2.45](https://github.com/ably/ably-js/tree/1.2.45) (2023-09-25)
+
+- remove `AblyProvider` options prop [\#1446](https://github.com/ably/ably-js/pull/1446)
+- fix: throw descriptive error when callbacks used with react [\#1450](https://github.com/ably/ably-js/pull/1450)
+
+## [1.2.44](https://github.com/ably/ably-js/tree/1.2.44) (2023-09-04)
+
+- Add new experimental react hooks and context provider [\#1433](https://github.com/ably/ably-js/pull/1433)
+- Export the `ErrorInfo` class [\#1430](https://github.com/ably/ably-js/pull/1430)
+
+## [1.2.43](https://github.com/ably/ably-js/tree/1.2.43) (2023-08-10)
+
+- Add REST APIs for batch publishing, batch presence, and token revocation [\#1410](https://github.com/ably/ably-js/pull/1410)
+- Add support for presence message extras [\#1418](https://github.com/ably/ably-js/pull/1418)
+
 ## [1.2.42](https://github.com/ably/ably-js/tree/1.2.42) (2023-07-24)
 
 - Auth: remain connected upon failed authorize unless returning explicit 403 [\#1385](https://github.com/ably/ably-js/pull/1385)
