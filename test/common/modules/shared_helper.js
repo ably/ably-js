@@ -218,6 +218,10 @@ define([
         return res;
       };
 
+  function randomString() {
+    return Math.random().toString().slice(2);
+  }
+
   return (module.exports = {
     setupApp: testAppModule.setup,
     tearDownApp: testAppModule.tearDown,
@@ -249,5 +253,6 @@ define([
     arrFind: arrFind,
     arrFilter: arrFilter,
     whenPromiseSettles: whenPromiseSettles,
+    randomString: randomString,
   });
 });

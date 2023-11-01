@@ -9,7 +9,16 @@ import Rest from './rest';
 import Realtime from './realtime';
 import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
+import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import Platform from '../../platform';
+import Resource from './resource';
+
+type BatchResult<T> = API.Types.BatchResult<T>;
+type TokenRevocationTargetSpecifier = API.Types.TokenRevocationTargetSpecifier;
+type TokenRevocationOptions = API.Types.TokenRevocationOptions;
+type TokenRevocationSuccessResult = API.Types.TokenRevocationSuccessResult;
+type TokenRevocationFailureResult = API.Types.TokenRevocationFailureResult;
+type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
 function noop() {}
@@ -273,10 +282,10 @@ class Auth {
       _authOptions,
       (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
         if (err) {
-          if ((this.client as Realtime).connection) {
-            /* We interpret RSA4d as including requests made by a client lib to
-             * authenticate triggered by an explicit authorize() or an AUTH received from
-             * ably, not just connect-sequence-triggered token fetches */
+          if ((this.client as Realtime).connection && err.statusCode === HttpStatusCodes.Forbidden) {
+            /* Per RSA4d & RSA4d1, if the auth server explicitly repudiates our right to
+             * stay connecticed by returning a 403, we actively disconnect the connection
+             * even though we may well still have time left in the old token. */
             (this.client as Realtime).connection.connectionManager.actOnErrorFromAuthorize(err);
           }
           callback?.(err);
@@ -1026,6 +1035,67 @@ class Auth {
 
   static isTokenErr(error: IPartialErrorInfo) {
     return error.code && error.code >= 40140 && error.code < 40150;
+  }
+
+  revokeTokens(
+    specifiers: TokenRevocationTargetSpecifier[],
+    options?: TokenRevocationOptions
+  ): Promise<TokenRevocationResult>;
+  revokeTokens(
+    specifiers: TokenRevocationTargetSpecifier[],
+    optionsOrCallbackArg?: TokenRevocationOptions | StandardCallback<TokenRevocationResult>,
+    callbackArg?: StandardCallback<TokenRevocationResult>
+  ): void | Promise<TokenRevocationResult> {
+    if (useTokenAuth(this.client.options)) {
+      throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
+    }
+
+    const keyName = this.client.options.keyName!;
+
+    let resolvedOptions: TokenRevocationOptions;
+
+    if (typeof optionsOrCallbackArg === 'function') {
+      callbackArg = optionsOrCallbackArg;
+      resolvedOptions = {};
+    } else {
+      resolvedOptions = optionsOrCallbackArg ?? {};
+    }
+
+    if (callbackArg === undefined) {
+      return Utils.promisify(this, 'revokeTokens', [specifiers, resolvedOptions]);
+    }
+
+    const callback = callbackArg;
+
+    const requestBodyDTO = {
+      targets: specifiers.map((specifier) => `${specifier.type}:${specifier.value}`),
+      ...resolvedOptions,
+    };
+
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Utils.defaultPostHeaders(this.client.options, { format });
+
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
+
+    const requestBody = Utils.encodeBody(requestBodyDTO, format);
+    Resource.post(
+      this.client,
+      `/keys/${keyName}/revokeTokens`,
+      requestBody,
+      headers,
+      { newBatchResponse: 'true' },
+      null,
+      (err, body, headers, unpacked) => {
+        if (err) {
+          callback(err);
+          return;
+        }
+
+        const batchResult = (unpacked ? body : Utils.decodeBody(body, format)) as TokenRevocationResult;
+
+        callback(null, batchResult);
+      }
+    );
   }
 }
 

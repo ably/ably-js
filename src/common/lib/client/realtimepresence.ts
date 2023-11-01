@@ -463,7 +463,7 @@ class RealtimePresence extends Presence {
           const msg = 'Presence auto-re-enter failed: ' + err.toString();
           const wrappedErr = new ErrorInfo(msg, 91004, 400);
           Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
-          const change = new ChannelStateChange(this.channel.state, this.channel.state, true, wrappedErr);
+          const change = new ChannelStateChange(this.channel.state, this.channel.state, true, false, wrappedErr);
           this.channel.emit('update', change);
         }
       };

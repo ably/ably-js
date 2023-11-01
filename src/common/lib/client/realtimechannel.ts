@@ -12,7 +12,7 @@ import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
-import { ErrCallback, PaginatedResultCallback } from '../../types/utils';
+import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import Realtime from './realtime';
 
 interface RealtimeHistoryParams {
@@ -266,19 +266,23 @@ class RealtimeChannel extends Channel {
     }
   }
 
-  attach(callback?: ErrCallback): void | Promise<void> {
+  attach(callback?: StandardCallback<ChannelStateChange | null>): void | Promise<ChannelStateChange> {
     if (!callback) {
       return Utils.promisify(this, 'attach', arguments);
     }
     if (this.state === 'attached') {
-      callback();
+      callback(null, null);
       return;
     }
 
     this._attach(false, null, callback);
   }
 
-  _attach(forceReattach: boolean, attachReason: ErrorInfo | null, callback?: ErrCallback): void {
+  _attach(
+    forceReattach: boolean,
+    attachReason: ErrorInfo | null,
+    callback?: StandardCallback<ChannelStateChange>
+  ): void {
     if (!callback) {
       callback = function (err?: ErrorInfo | null) {
         if (err) {
@@ -300,7 +304,7 @@ class RealtimeChannel extends Channel {
     this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
       switch (this.event) {
         case 'attached':
-          callback?.();
+          callback?.(null, stateChange);
           break;
         case 'detached':
         case 'suspended':
@@ -394,7 +398,7 @@ class RealtimeChannel extends Channel {
     this.sendMessage(msg, callback || noop);
   }
 
-  subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<void> {
+  subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<ChannelStateChange> {
     const [event, listener, callback] = RealtimeChannel.processListenerArgs(args);
 
     if (!callback) {
@@ -588,12 +592,13 @@ class RealtimeChannel extends Channel {
         this.modes = (modesFromFlags && Utils.allToLowerCase(modesFromFlags)) || undefined;
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
+        const hasBacklog = message.hasFlag('HAS_BACKLOG');
         if (this.state === 'attached') {
           if (!resumed) {
             /* On a loss of continuity, the presence set needs to be re-synced */
             this.presence.onAttached(hasPresence);
           }
-          const change = new ChannelStateChange(this.state, this.state, resumed, message.error);
+          const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
           this._allChannelChanges.emit('update', change);
           if (!resumed || this.channelOptions.updateOnAttached) {
             this.emit('update', change);
@@ -602,7 +607,7 @@ class RealtimeChannel extends Channel {
           /* RTL5i: re-send DETACH and remain in the 'detaching' state */
           this.checkPendingState();
         } else {
-          this.notifyState('attached', message.error, resumed, hasPresence);
+          this.notifyState('attached', message.error, resumed, hasPresence, hasBacklog);
         }
         break;
       }
@@ -767,7 +772,8 @@ class RealtimeChannel extends Channel {
     state: API.Types.ChannelState,
     reason?: ErrorInfo | null,
     resumed?: boolean,
-    hasPresence?: boolean
+    hasPresence?: boolean,
+    hasBacklog?: boolean
   ): void {
     Logger.logAction(
       Logger.LOG_MICRO,
@@ -793,7 +799,7 @@ class RealtimeChannel extends Channel {
     if (reason) {
       this.errorReason = reason;
     }
-    const change = new ChannelStateChange(this.state, state, resumed, reason);
+    const change = new ChannelStateChange(this.state, state, resumed, hasBacklog, reason);
     const logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
     Logger.logAction(
       logLevel,
@@ -906,10 +912,7 @@ class RealtimeChannel extends Channel {
     if (this.retryTimer) return;
 
     this.retryCount++;
-    const retryDelay =
-      this.realtime.options.timeouts.channelRetryTimeout *
-      Utils.getJitterCoefficient() *
-      Utils.getBackoffCoefficient(this.retryCount);
+    const retryDelay = Utils.getRetryTime(this.realtime.options.timeouts.channelRetryTimeout, this.retryCount);
 
     this.retryTimer = setTimeout(() => {
       /* If connection is not connected, just leave in suspended, a reattach

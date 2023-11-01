@@ -636,7 +636,7 @@ declare namespace Types {
     queryTime?: boolean;
 
     /**
-     * An authenticated token. This can either be a {@link TokenDetails} object, a {@link TokenRequest} object, or token string (obtained from the `token` property of a {@link TokenDetails} component of an Ably {@link TokenRequest} response, or a JSON Web Token satisfying [the Ably requirements for JWTs](https://ably.com/docs/core-features/authentication#ably-jwt)). This option is mostly useful for testing: since tokens are short-lived, in production you almost always want to use an authentication method that enables the client library to renew the token automatically when the previous one expires, such as `authUrl` or `authCallback`. Read more about [Token authentication](https://ably.com/docs/core-features/authentication#token-authentication).
+     * An authenticated token. This can either be a {@link TokenDetails} object or token string (obtained from the `token` property of a {@link TokenDetails} component of an Ably {@link TokenRequest} response, or a JSON Web Token satisfying [the Ably requirements for JWTs](https://ably.com/docs/core-features/authentication#ably-jwt)). This option is mostly useful for testing: since tokens are short-lived, in production you almost always want to use an authentication method that enables the client library to renew the token automatically when the previous one expires, such as `authUrl` or `authCallback`. Read more about [Token authentication](https://ably.com/docs/core-features/authentication#token-authentication).
      */
     token?: TokenDetails | string;
 
@@ -1124,6 +1124,10 @@ declare namespace Types {
      * Indicates whether message continuity on this channel is preserved, see [Nonfatal channel errors](https://ably.com/docs/realtime/channels#nonfatal-errors) for more info.
      */
     resumed: boolean;
+    /**
+     * Indicates whether the client can expect a backlog of messages from a rewind or resume.
+     */
+    hasBacklog?: boolean;
   }
 
   /**
@@ -1396,6 +1400,154 @@ declare namespace Types {
     unit?: StatsIntervalGranularity;
   }
 
+  /**
+   * Contains information about the results of a batch operation.
+   */
+  interface BatchResult<T> {
+    /**
+     * The number of successful operations in the request.
+     */
+    successCount: number;
+    /**
+     * The number of unsuccessful operations in the request.
+     */
+    failureCount: number;
+    /**
+     * An array of results for the batch operation.
+     */
+    results: T[];
+  }
+
+  /**
+   * Describes the messages that should be published by a batch publish operation, and the channels to which they should be published.
+   */
+  interface BatchPublishSpec {
+    /**
+     * The names of the channels to publish the `messages` to.
+     */
+    channels: string[];
+    /**
+     * An array of {@link Message} objects.
+     */
+    messages: Message[];
+  }
+
+  /**
+   * Contains information about the result of successful publishes to a channel requested by a single {@link Types.BatchPublishSpec}.
+   */
+  interface BatchPublishSuccessResult {
+    /**
+     * The name of the channel the message(s) was published to.
+     */
+    channel: string;
+    /**
+     * A unique ID prefixed to the {@link Message.id} of each published message.
+     */
+    messageId: string;
+  }
+
+  /**
+   * Contains information about the result of unsuccessful publishes to a channel requested by a single {@link Types.BatchPublishSpec}.
+   */
+  interface BatchPublishFailureResult {
+    /**
+     * The name of the channel the message(s) failed to be published to.
+     */
+    channel: string;
+    /**
+     * Describes the reason for which the message(s) failed to publish to the channel as an {@link ErrorInfo} object.
+     */
+    error: ErrorInfo;
+  }
+
+  /**
+   * Contains information about the result of a successful batch presence request for a single channel.
+   */
+  interface BatchPresenceSuccessResult {
+    /**
+     * The channel name the presence state was retrieved for.
+     */
+    channel: string;
+    /**
+     * An array of {@link PresenceMessage}s describing members present on the channel.
+     */
+    presence: PresenceMessage[];
+  }
+
+  /**
+   * Contains information about the result of an unsuccessful batch presence request for a single channel.
+   */
+  interface BatchPresenceFailureResult {
+    /**
+     * The channel name the presence state failed to be retrieved for.
+     */
+    channel: string;
+    /**
+     * Describes the reason for which presence state could not be retrieved for the channel as an {@link ErrorInfo} object.
+     */
+    error: ErrorInfo;
+  }
+
+  /**
+   * The `TokenRevocationOptions` interface describes the additional options accepted by {@link Auth.revokeTokens}.
+   */
+  interface TokenRevocationOptions {
+    /**
+     * A Unix timestamp in milliseconds where only tokens issued before this time are revoked. The default is the current time. Requests with an `issuedBefore` in the future, or more than an hour in the past, will be rejected.
+     */
+    issuedBefore?: number;
+    /**
+     * If true, permits a token renewal cycle to take place without needing established connections to be dropped, by postponing enforcement to 30 seconds in the future, and sending any existing connections a hint to obtain (and upgrade the connection to use) a new token. The default is `false`, meaning that the effect is near-immediate.
+     */
+    allowReauthMargin?: boolean;
+  }
+
+  /**
+   * Describes which tokens should be affected by a token revocation request.
+   */
+  interface TokenRevocationTargetSpecifier {
+    /**
+     * The type of token revocation target specifier. Valid values include `clientId`, `revocationKey` and `channel`.
+     */
+    type: string;
+    /**
+     * The value of the token revocation target specifier.
+     */
+    value: string;
+  }
+
+  /**
+   * Contains information about the result of a successful token revocation request for a single target specifier.
+   */
+  interface TokenRevocationSuccessResult {
+    /**
+     * The target specifier.
+     */
+    target: string;
+    /**
+     * The time at which the token revocation will take effect, as a Unix timestamp in milliseconds.
+     */
+    appliesAt: number;
+    /**
+     * A Unix timestamp in milliseconds. Only tokens issued earlier than this time will be revoked.
+     */
+    issuedBefore: number;
+  }
+
+  /**
+   * Contains information about the result of an unsuccessful token revocation request for a single target specifier.
+   */
+  interface TokenRevocationFailureResult {
+    /**
+     * The target specifier.
+     */
+    target: string;
+    /**
+     * Describes the reason for which token revocation failed for the given `target` as an {@link ErrorInfo} object.
+     */
+    error: ErrorInfo;
+  }
+
   // Common Listeners
   /**
    * A callback which returns only a single argument, used for {@link RealtimeChannel} subscriptions.
@@ -1600,6 +1752,30 @@ declare namespace Types {
      * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
      */
     time(): Promise<number>;
+
+    /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[]
+    ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+    /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
     /**
      * A {@link Types.Push} object.
      */
@@ -1692,6 +1868,29 @@ declare namespace Types {
      */
     time(): Promise<number>;
     /**
+     * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param spec - A {@link Types.BatchPublishSpec} object.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+    /**
+     * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
+     *
+     * @param specs - An array of {@link Types.BatchPublishSpec} objects.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPublish(
+      specs: BatchPublishSpec[]
+    ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+    /**
+     * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
+     *
+     * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
+    /**
      * A {@link Types.Push} object.
      */
     push: Types.Push;
@@ -1730,6 +1929,17 @@ declare namespace Types {
      * @returns A promise which, upon success, will be fulfilled with a {@link TokenDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     requestToken(TokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenDetails>;
+    /**
+     * Revokes the tokens specified by the provided array of {@link TokenRevocationTargetSpecifier}s. Only tokens issued by an API key that had revocable tokens enabled before the token was issued can be revoked. See the [token revocation docs](https://ably.com/docs/core-features/authentication#token-revocation) for more information.
+     *
+     * @param specifiers - An array of {@link TokenRevocationTargetSpecifier} objects.
+     * @param options - A set of options which are used to modify the revocation request.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} containing information about the result of the token revocation request for each provided [`TokenRevocationTargetSpecifier`]{@link TokenRevocationTargetSpecifier}. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     */
+    revokeTokens(
+      specifiers: TokenRevocationTargetSpecifier[],
+      options?: TokenRevocationOptions
+    ): Promise<BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>>;
   }
 
   /**
@@ -2004,9 +2214,9 @@ declare namespace Types {
     /**
      * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel.
      *
-     * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon success, if the channel became attached will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be fulfilled with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    attach(): Promise<void>;
+    attach(): Promise<ChannelStateChange | null>;
     /**
      * Detach from this channel. Any resulting channel state change is emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. Once all clients globally have detached from the channel, the channel will be released in the Ably service within two minutes.
      *
@@ -2032,32 +2242,32 @@ declare namespace Types {
      *
      * @param event - The event name.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(event: string, listener?: messageCallback<Message>): Promise<void>;
+    subscribe(event: string, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
      * Registers a listener for messages on this channel for multiple event name values.
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<void>;
+    subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
      * Registers a listener for messages on this channel that match the supplied filter.
      *
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<void>;
+    subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
      * @param callback - An event listener function.
-     * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+     * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(callback: messageCallback<Message>): Promise<void>;
+    subscribe(callback: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
      * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
      *

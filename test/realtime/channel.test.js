@@ -10,11 +10,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var testOnAllTransports = helper.testOnAllTransports;
   var whenPromiseSettles = helper.whenPromiseSettles;
-
-  /* Helpers */
-  function randomString() {
-    return Math.random().toString().slice(2);
-  }
+  var randomString = helper.randomString;
 
   function checkCanSubscribe(channel, testChannel) {
     return function (callback) {
@@ -1529,6 +1525,121 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       channel.publish('event', 'message');
 
       channel.subscribe(subscriber);
+    });
+
+    it('attach_returns_state_change', function (done) {
+      var realtime = helper.AblyRealtime();
+      var channelName = 'attach_returns_state_chnage';
+      var channel = realtime.channels.get(channelName);
+      channel.attach(function (err, stateChange) {
+        if (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+
+        try {
+          expect(stateChange.current).to.equal('attached');
+          expect(stateChange.previous).to.equal('attaching');
+        } catch (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+
+        // for an already-attached channel, null is returned
+        channel.attach(function (err, stateChange) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+
+          try {
+            expect(stateChange).to.equal(null);
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        });
+      });
+    });
+
+    it('subscribe_returns_state_change', function (done) {
+      var realtime = helper.AblyRealtime();
+      var channelName = 'subscribe_returns_state_chnage';
+      var channel = realtime.channels.get(channelName);
+      channel.subscribe(
+        function () {}, // message listener
+        // attach callback
+        function (err, stateChange) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+
+          try {
+            expect(stateChange.current).to.equal('attached');
+            expect(stateChange.previous).to.equal('attaching');
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        }
+      );
+    });
+
+    it('rewind_has_backlog_0', function (done) {
+      var realtime = helper.AblyRealtime();
+      var channelName = 'rewind_has_backlog_0';
+      var channelOpts = { params: { rewind: '1' } };
+      var channel = realtime.channels.get(channelName, channelOpts);
+
+      // attach with rewind but no channel history - hasBacklog should be false
+      channel.attach(function (err, stateChange) {
+        if (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+
+        try {
+          expect(!stateChange.hasBacklog).to.be.ok;
+        } catch (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+        closeAndFinish(done, realtime);
+      });
+    });
+
+    it('rewind_has_backlog_1', function (done) {
+      var realtime = helper.AblyRealtime();
+      var rest = helper.AblyRest();
+      var channelName = 'rewind_has_backlog_1';
+      var channelOpts = { params: { rewind: '1' } };
+      var rtChannel = realtime.channels.get(channelName, channelOpts);
+      var restChannel = rest.channels.get(channelName);
+
+      // attach with rewind after publishing - hasBacklog should be true
+      restChannel.publish('foo', 'bar', function (err) {
+        if (err) {
+          closeAndFinish(done, realtime, err);
+          return;
+        }
+        rtChannel.attach(function (err, stateChange) {
+          if (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+
+          try {
+            expect(stateChange.hasBacklog).to.be.ok;
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
+          closeAndFinish(done, realtime);
+        });
+      });
     });
   });
 });
