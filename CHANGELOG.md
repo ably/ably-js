@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.47](https://github.com/ably/ably-js/tree/1.2.47) (2023-11-02)
+
+- fix(react): fix issue where useChannel would error upon router navigation or hmr [\#1478](https://github.com/ably/ably-js/pull/1478)
+
 ## [1.2.46](https://github.com/ably/ably-js/tree/1.2.46) (2023-10-24)
 
 - fix: avoid directly exporting Ably.ErrorInfo from promises.js [\#1463](https://github.com/ably/ably-js/pull/1463)
