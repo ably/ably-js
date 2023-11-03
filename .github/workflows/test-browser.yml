@@ -27,6 +27,8 @@ jobs:
       - run: npm ci
       - name: Install playwright dependencies
         run: sudo npx playwright install-deps
+      - name: Show cache
+        run: find ~/.cache
       - env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
         run: npm run test:playwright
