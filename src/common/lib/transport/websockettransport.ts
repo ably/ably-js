@@ -102,7 +102,7 @@ class WebSocketTransport extends Transport {
       return;
     }
     try {
-      wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
+      (wsConnection as NodeWebSocket).send(ProtocolMessage.serialize(message, this.params.format));
     } catch (e) {
       const msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
       Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);

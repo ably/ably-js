@@ -183,7 +183,27 @@ class RealtimeChannel extends Channel {
   }
 
   _shouldReattachToSetOptions(options?: API.Types.ChannelOptions) {
-    return (this.state === 'attached' || this.state === 'attaching') && (options?.params || options?.modes);
+    if (!(this.state === 'attached' || this.state === 'attaching')) {
+      return false;
+    }
+    if (options?.params) {
+      // Don't check against the `agent` param - it isn't returned in the ATTACHED message
+      const requestedParams = Object.assign({}, options.params);
+      delete requestedParams.agent;
+      if (Object.keys(requestedParams).length !== 0 && !this.params) {
+        return true;
+      }
+
+      if (this.params && !Utils.shallowEquals(this.params, requestedParams)) {
+        return true;
+      }
+    }
+    if (options?.modes) {
+      if (!this.modes || !Utils.arrEquals(options.modes, this.modes)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   publish(...args: any[]): void | Promise<void> {

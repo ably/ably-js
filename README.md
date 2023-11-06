@@ -20,6 +20,8 @@ This SDK supports the following platforms:
 
 **Node.js:** version 8.17 or newer. (1.1.x versions work on Node.js 4.5 or newer). We do not currently provide an ESM bundle, please [contact us](https://www.ably.com/contact) if you would would like to use ably-js in a NodeJS ESM project.
 
+**React (release candidate)** We offer a set of React Hooks which make it seamless to use ably-js in your React application. See the [React Hooks documentation](./docs/react.md) for more details.
+
 **React Native:** We aim to support all platforms supported by React Native. If you find any issues please raise an issue or [contact us](https://www.ably.com/contact).
 
 **NativeScript:** see [ably-js-nativescript](https://github.com/ably/ably-js-nativescript)
@@ -27,6 +29,7 @@ This SDK supports the following platforms:
 **TypeScript:** see [below](#typescript)
 
 **WebWorkers**: We build a separate bundle which supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can import it like this:
+
 ```js
 import Ably from 'ably/build/ably-webworker.min';
 ```
@@ -231,7 +234,7 @@ can use
 
 ```javascript
 await channel.presence.enterClient('myClientId', 'status');
-// and similiarly, updateClient and leaveClient
+// and similarly, updateClient and leaveClient
 ```
 
 ### Querying the Presence History

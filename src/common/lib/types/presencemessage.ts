@@ -16,6 +16,7 @@ class PresenceMessage {
   connectionId?: string;
   data?: string | Buffer | Uint8Array;
   encoding?: string;
+  extras?: any;
   size?: number;
 
   static Actions = ['absent', 'present', 'enter', 'leave', 'update'];
@@ -53,6 +54,7 @@ class PresenceMessage {
     action: number;
     data: string | Buffer | Uint8Array;
     encoding?: string;
+    extras?: any;
   } {
     /* encode data to base64 if present and we're returning real JSON;
      * although msgpack calls toJSON(), we know it is a stringify()
@@ -78,6 +80,7 @@ class PresenceMessage {
       action: toActionValue(this.action as string),
       data: data,
       encoding: encoding,
+      extras: this.extras,
     };
   }
 
@@ -94,6 +97,9 @@ class PresenceMessage {
       else if (Platform.BufferUtils.isBuffer(this.data))
         result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
       else result += '; data (json)=' + JSON.stringify(this.data);
+    }
+    if (this.extras) {
+      result += '; extras=' + JSON.stringify(this.extras);
     }
     result += ']';
     return result;
@@ -158,6 +164,15 @@ class PresenceMessage {
         return PresenceMessage.fromEncoded(encoded, options);
       })
     );
+  }
+
+  static fromData(data: unknown): PresenceMessage {
+    if (data instanceof PresenceMessage) {
+      return data;
+    }
+    return PresenceMessage.fromValues({
+      data,
+    });
   }
 
   static getMessagesSize = Message.getMessagesSize;

@@ -732,7 +732,7 @@ declare namespace Types {
   /**
    * A generic Ably error object that contains an Ably-specific status code, and a generic status code. Errors returned from the Ably server are compatible with the `ErrorInfo` structure and should result in errors that inherit from `ErrorInfo`.
    */
-  interface ErrorInfo extends Error {
+  class ErrorInfo extends Error {
     /**
      * Ably [error code](https://github.com/ably/ably-common/blob/main/protocol/errors.json).
      */
@@ -745,6 +745,20 @@ declare namespace Types {
      * HTTP Status Code corresponding to this error, where applicable.
      */
     statusCode: number;
+    /**
+     * The underlying cause of the error, where applicable.
+     */
+    cause?: string | Error | ErrorInfo;
+
+    /**
+     * Construct an ErrorInfo object.
+     *
+     * @param message - A string describing the error.
+     * @param code - Ably [error code](https://github.com/ably/ably-common/blob/main/protocol/errors.json).
+     * @param statusCode - HTTP Status Code corresponding to this error.
+     * @param cause - The underlying cause of the error.
+     */
+    constructor(message: string, code: number, statusCode: number, cause?: string | Error | ErrorInfo);
   }
 
   /**
@@ -2496,6 +2510,10 @@ declare namespace Types {
      */
     encoding: string;
     /**
+     * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `headers`.
+     */
+    extras: any;
+    /**
      * A unique ID assigned to each `PresenceMessage` by Ably.
      */
     id: string;
@@ -2523,6 +2541,14 @@ declare namespace Types {
      * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
      */
     fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<PresenceMessage[]>;
+
+    /**
+     * Initialises a `PresenceMessage` from a `PresenceMessage`-like object.
+     *
+     * @param values - The values to intialise the `PresenceMessage` from.
+     * @param stringifyAction - Whether to convert the `action` field from a number to a string.
+     */
+    fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage;
   }
 
   /**
@@ -2871,3 +2897,8 @@ export declare class Rest extends Types.Rest {}
  * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  */
 export declare class Realtime extends Types.Realtime {}
+
+/**
+ * A generic Ably error object that contains an Ably-specific status code, and a generic status code. Errors returned from the Ably server are compatible with the `ErrorInfo` structure and should result in errors that inherit from `ErrorInfo`.
+ */
+export declare class ErrorInfo extends Types.ErrorInfo {}
