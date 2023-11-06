@@ -1,7 +1,7 @@
 // Common
-import BaseClient from '../../common/lib/client/baseclient';
-import { DefaultRest } from '../../common/lib/client/defaultrest';
-import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
+import BaseClient from 'common/lib/client/baseclient';
+import { BaseRest } from '../../common/lib/client/baserest';
+import BaseRealtime from '../../common/lib/client/baserealtime';
 import Platform from '../../common/platform';
 import ErrorInfo from '../../common/lib/types/errorinfo';
 
@@ -17,7 +17,6 @@ import Logger from '../../common/lib/util/logger';
 import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
-import msgpack from './lib/util/msgpack';
 
 const Crypto = CryptoFactory(Config, BufferUtils);
 
@@ -47,11 +46,5 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
-export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack };
-
-export default {
-  ErrorInfo,
-  Rest: DefaultRest,
-  Realtime: DefaultRealtime,
-  msgpack,
-};
+export { Rest } from '../../common/lib/client/rest';
+export { BaseRest, BaseRealtime, ErrorInfo };

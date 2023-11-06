@@ -222,7 +222,7 @@ define([
     return Math.random().toString().slice(2);
   }
 
-  return (module.exports = {
+  var exports = {
     setupApp: testAppModule.setup,
     tearDownApp: testAppModule.tearDown,
     createStats: testAppModule.createStatsFixtureData,
@@ -231,6 +231,7 @@ define([
     Ably: clientModule.Ably,
     AblyRest: clientModule.AblyRest,
     AblyRealtime: clientModule.AblyRealtime,
+    ablyClientOptions: clientModule.ablyClientOptions,
     Utils: utils,
 
     loadTestData: testAppManager.loadJsonData,
@@ -254,5 +255,11 @@ define([
     arrFilter: arrFilter,
     whenPromiseSettles: whenPromiseSettles,
     randomString: randomString,
-  });
+  };
+
+  if (typeof window !== 'undefined') {
+    window.ablyHelpers = exports;
+  }
+
+  return (module.exports = exports);
 });

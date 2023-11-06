@@ -1,6 +1,7 @@
 // Common
-import Rest from '../../common/lib/client/rest';
-import Realtime from '../../common/lib/client/realtime';
+import BaseClient from '../../common/lib/client/baseclient';
+import { DefaultRest } from '../../common/lib/client/defaultrest';
+import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
 import ErrorInfo from '../../common/lib/types/errorinfo';
 
@@ -25,8 +26,7 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = null;
 
-Rest.Crypto = Crypto;
-Realtime.Crypto = Crypto;
+BaseClient.Crypto = Crypto;
 
 Logger.initLogHandlers();
 
@@ -39,7 +39,7 @@ if (Platform.Config.agent) {
 
 export default {
   ErrorInfo,
-  Rest,
-  Realtime,
+  Rest: DefaultRest,
+  Realtime: DefaultRealtime,
   msgpack: null,
 };

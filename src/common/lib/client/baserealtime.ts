@@ -1,5 +1,5 @@
 import * as Utils from '../util/utils';
-import Rest from './rest';
+import BaseClient from './baseclient';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import Connection from './connection';
@@ -9,20 +9,25 @@ import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
 import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
-import ConnectionManager from '../transport/connectionmanager';
-import Platform from 'common/platform';
-import Message from '../types/message';
+import { ModulesMap } from './modulesmap';
 
-class Realtime extends Rest {
-  channels: any;
+/**
+ `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
+ */
+class BaseRealtime extends BaseClient {
+  _channels: any;
   connection: Connection;
 
-  constructor(options: ClientOptions) {
-    super(options);
+  constructor(options: ClientOptions, modules: ModulesMap) {
+    super(options, modules);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this.connection = new Connection(this, this.options);
-    this.channels = new Channels(this);
+    this._channels = new Channels(this);
     if (options.autoConnect !== false) this.connect();
+  }
+
+  get channels() {
+    return this._channels;
   }
 
   connect(): void {
@@ -34,20 +39,13 @@ class Realtime extends Rest {
     Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
     this.connection.close();
   }
-
-  static Utils = Utils;
-  static ConnectionManager = ConnectionManager;
-  static Platform = Platform;
-  static ProtocolMessage = ProtocolMessage;
-  static Message = Message;
-  static Crypto?: typeof Platform.Crypto;
 }
 
 class Channels extends EventEmitter {
-  realtime: Realtime;
+  realtime: BaseRealtime;
   all: Record<string, RealtimeChannel>;
 
-  constructor(realtime: Realtime) {
+  constructor(realtime: BaseRealtime) {
     super();
     this.realtime = realtime;
     this.all = Object.create(null);
@@ -179,4 +177,4 @@ class Channels extends EventEmitter {
   }
 }
 
-export default Realtime;
+export default BaseRealtime;

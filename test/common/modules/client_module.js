@@ -34,5 +34,6 @@ define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably
     Ably: Ably,
     AblyRest: ablyRest,
     AblyRealtime: ablyRealtime,
+    ablyClientOptions,
   });
 });

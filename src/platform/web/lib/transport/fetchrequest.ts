@@ -1,5 +1,5 @@
 import HttpMethods from 'common/constants/HttpMethods';
-import Rest from 'common/lib/client/rest';
+import BaseClient from 'common/lib/client/baseclient';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
 import { RequestCallback, RequestParams } from 'common/types/http';
 import Platform from 'common/platform';
@@ -19,7 +19,7 @@ function getAblyError(responseBody: unknown, headers: Headers) {
 
 export default function fetchRequest(
   method: HttpMethods,
-  rest: Rest | null,
+  client: BaseClient | null,
   uri: string,
   headers: Record<string, string> | null,
   params: RequestParams,
@@ -36,7 +36,7 @@ export default function fetchRequest(
       controller.abort();
       callback(new PartialErrorInfo('Request timed out', null, 408));
     },
-    rest ? rest.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
+    client ? client.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
   );
 
   const requestInit: RequestInit = {

@@ -42,6 +42,8 @@ type CompleteDefaults = IDefaults & {
   getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
   objectifyOptions(options: ClientOptions | string): ClientOptions;
   normaliseOptions(options: InternalClientOptions): NormalisedClientOptions;
+  defaultGetHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
+  defaultPostHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
 };
 
 const Defaults = {
@@ -87,6 +89,8 @@ const Defaults = {
   checkHost,
   objectifyOptions,
   normaliseOptions,
+  defaultGetHeaders,
+  defaultPostHeaders,
 };
 
 export function getHost(options: ClientOptions, host?: string | null, ws?: boolean): string {
@@ -257,6 +261,56 @@ export function normaliseOptions(options: InternalClientOptions): NormalisedClie
     connectivityCheckParams,
     connectivityCheckUrl,
     headers,
+  };
+}
+
+const contentTypes = {
+  json: 'application/json',
+  xml: 'application/xml',
+  html: 'text/html',
+  msgpack: 'application/x-msgpack',
+};
+
+export interface HeadersOptions {
+  format?: Utils.Format;
+  protocolVersion?: number;
+}
+
+const defaultHeadersOptions: Required<HeadersOptions> = {
+  format: Utils.Format.json,
+  protocolVersion: Defaults.protocolVersion,
+};
+
+export function defaultGetHeaders(
+  options: NormalisedClientOptions,
+  {
+    format = defaultHeadersOptions.format,
+    protocolVersion = defaultHeadersOptions.protocolVersion,
+  }: HeadersOptions = {}
+): Record<string, string> {
+  const accept = contentTypes[format];
+  return {
+    accept: accept,
+    'X-Ably-Version': protocolVersion.toString(),
+    'Ably-Agent': getAgentString(options),
+  };
+}
+
+export function defaultPostHeaders(
+  options: NormalisedClientOptions,
+  {
+    format = defaultHeadersOptions.format,
+    protocolVersion = defaultHeadersOptions.protocolVersion,
+  }: HeadersOptions = {}
+): Record<string, string> {
+  let contentType;
+  const accept = (contentType = contentTypes[format]);
+
+  return {
+    accept: accept,
+    'content-type': contentType,
+    'X-Ably-Version': protocolVersion.toString(),
+    'Ably-Agent': getAgentString(options),
   };
 }
 

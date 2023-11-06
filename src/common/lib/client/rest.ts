@@ -1,7 +1,6 @@
 import * as Utils from '../util/utils';
 import Logger, { LoggerOptions } from '../util/logger';
 import Defaults from '../util/defaults';
-import Auth from './auth';
 import Push from './push';
 import PaginatedResource, { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 import Channel from './channel';
@@ -10,14 +9,12 @@ import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import { ErrnoException, IHttp, RequestParams } from '../../types/http';
-import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
+import { ErrnoException, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
+import Resource from './resource';
 
 import Platform from '../../platform';
-import Message from '../types/message';
-import PresenceMessage from '../types/presencemessage';
-import Resource from './resource';
+import BaseClient from './baseclient';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
 type BatchPublishSpec = API.Types.BatchPublishSpec;
@@ -29,68 +26,15 @@ type BatchPresenceFailureResult = API.Types.BatchPresenceFailureResult;
 type BatchPresenceResult = BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>;
 
 const noop = function () {};
-class Rest {
-  options: NormalisedClientOptions;
-  baseUri: (host: string) => string;
-  authority: (host: string) => string;
-  _currentFallback: null | {
-    host: string;
-    validUntil: number;
-  };
-  serverTimeOffset: number | null;
-  http: IHttp;
-  auth: Auth;
-  channels: Channels;
-  push: Push;
+export class Rest {
+  private readonly client: BaseClient;
+  readonly channels: Channels;
+  readonly push: Push;
 
-  constructor(options: ClientOptions | string) {
-    if (!options) {
-      const msg = 'no options provided';
-      Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-      throw new Error(msg);
-    }
-    const optionsObj = Defaults.objectifyOptions(options);
-
-    Logger.setLog(optionsObj.logLevel, optionsObj.logHandler);
-    Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Platform.Config.inspect(options));
-
-    const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));
-
-    /* process options */
-    if (normalOptions.key) {
-      const keyMatch = normalOptions.key.match(/^([^:\s]+):([^:.\s]+)$/);
-      if (!keyMatch) {
-        const msg = 'invalid key parameter';
-        Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-        throw new ErrorInfo(msg, 40400, 404);
-      }
-      normalOptions.keyName = keyMatch[1];
-      normalOptions.keySecret = keyMatch[2];
-    }
-
-    if ('clientId' in normalOptions) {
-      if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null))
-        throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
-      else if (normalOptions.clientId === '*')
-        throw new ErrorInfo(
-          'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
-          40012,
-          400
-        );
-    }
-
-    Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.version);
-
-    this.baseUri = this.authority = function (host) {
-      return Defaults.getHttpScheme(normalOptions) + host + ':' + Defaults.getPort(normalOptions, false);
-    };
-    this._currentFallback = null;
-
-    this.serverTimeOffset = null;
-    this.http = new Platform.Http(normalOptions);
-    this.auth = new Auth(this, normalOptions);
-    this.channels = new Channels(this);
-    this.push = new Push(this);
+  constructor(client: BaseClient) {
+    this.client = client;
+    this.channels = new Channels(this.client);
+    this.push = new Push(this.client);
   }
 
   stats(
@@ -106,13 +50,13 @@ class Rest {
         return Utils.promisify(this, 'stats', [params]) as Promise<PaginatedResult<Stats>>;
       }
     }
-    const headers = Utils.defaultGetHeaders(this.options),
-      format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.http.supportsLinkHeaders ? undefined : format;
+    const headers = Defaults.defaultGetHeaders(this.client.options),
+      format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      envelope = this.client.http.supportsLinkHeaders ? undefined : format;
 
-    Utils.mixin(headers, this.options.headers);
+    Utils.mixin(headers, this.client.options.headers);
 
-    new PaginatedResource(this, '/stats', headers, envelope, function (
+    new PaginatedResource(this.client, '/stats', headers, envelope, function (
       body: unknown,
       headers: Record<string, string>,
       unpacked?: boolean
@@ -136,14 +80,14 @@ class Rest {
 
     const _callback = callback || noop;
 
-    const headers = Utils.defaultGetHeaders(this.options);
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+    const headers = Defaults.defaultGetHeaders(this.client.options);
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
     const timeUri = (host: string) => {
-      return this.authority(host) + '/time';
+      return this.client.baseUri(host) + '/time';
     };
-    this.http.do(
+    this.client.http.do(
       HttpMethods.Get,
-      this,
+      this.client,
       timeUri,
       headers,
       null,
@@ -165,7 +109,7 @@ class Rest {
           return;
         }
         /* calculate time offset only once for this device by adding to the prototype */
-        this.serverTimeOffset = time - Utils.now();
+        this.client.serverTimeOffset = time - Utils.now();
         _callback(null, time);
       }
     );
@@ -180,17 +124,17 @@ class Rest {
     customHeaders: Record<string, string>,
     callback: StandardCallback<HttpPaginatedResponse<unknown>>
   ): Promise<HttpPaginatedResponse<unknown>> | void {
-    const useBinary = this.options.useBinaryProtocol,
+    const useBinary = this.client.options.useBinaryProtocol,
       encoder = useBinary ? Platform.Config.msgpack.encode : JSON.stringify,
       decoder = useBinary ? Platform.Config.msgpack.decode : JSON.parse,
       format = useBinary ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.http.supportsLinkHeaders ? undefined : format;
+      envelope = this.client.http.supportsLinkHeaders ? undefined : format;
     params = params || {};
     const _method = method.toLowerCase() as HttpMethods;
     const headers =
       _method == 'get'
-        ? Utils.defaultGetHeaders(this.options, { format, protocolVersion: version })
-        : Utils.defaultPostHeaders(this.options, { format, protocolVersion: version });
+        ? Defaults.defaultGetHeaders(this.client.options, { format, protocolVersion: version })
+        : Defaults.defaultPostHeaders(this.client.options, { format, protocolVersion: version });
 
     if (callback === undefined) {
       return Utils.promisify(this, 'request', [method, path, version, params, body, customHeaders]) as Promise<
@@ -201,12 +145,12 @@ class Rest {
     if (typeof body !== 'string') {
       body = encoder(body);
     }
-    Utils.mixin(headers, this.options.headers);
+    Utils.mixin(headers, this.client.options.headers);
     if (customHeaders) {
       Utils.mixin(headers, customHeaders);
     }
     const paginatedResource = new PaginatedResource(
-      this,
+      this.client,
       path,
       headers,
       envelope,
@@ -251,14 +195,14 @@ class Rest {
       singleSpecMode = true;
     }
 
-    const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(this.options, { format });
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(this.client.options, { format });
 
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
     const requestBody = Utils.encodeBody(requestBodyDTO, format);
     Resource.post(
-      this,
+      this.client,
       '/messages',
       requestBody,
       headers,
@@ -291,15 +235,15 @@ class Rest {
       return Utils.promisify(this, 'batchPresence', [channels]);
     }
 
-    const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(this.options, { format });
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(this.client.options, { format });
 
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
     const channelsParam = channels.join(',');
 
     Resource.get(
-      this,
+      this.client,
       '/presence',
       headers,
       { newBatchResponse: 'true', channels: channelsParam },
@@ -320,19 +264,14 @@ class Rest {
   setLog(logOptions: LoggerOptions): void {
     Logger.setLog(logOptions.level, logOptions.handler);
   }
-
-  static Platform = Platform;
-  static Crypto?: typeof Platform.Crypto;
-  static Message = Message;
-  static PresenceMessage = PresenceMessage;
 }
 
 class Channels {
-  rest: Rest;
+  client: BaseClient;
   all: Record<string, Channel>;
 
-  constructor(rest: Rest) {
-    this.rest = rest;
+  constructor(client: BaseClient) {
+    this.client = client;
     this.all = Object.create(null);
   }
 
@@ -340,7 +279,7 @@ class Channels {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
-      this.all[name] = channel = new Channel(this.rest, name, channelOptions);
+      this.all[name] = channel = new Channel(this.client, name, channelOptions);
     } else if (channelOptions) {
       channel.setOptions(channelOptions);
     }
@@ -354,5 +293,3 @@ class Channels {
     delete this.all[String(name)];
   }
 }
-
-export default Rest;
