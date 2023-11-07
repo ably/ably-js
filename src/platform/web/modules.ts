@@ -1,5 +1,4 @@
 // Common
-import BaseClient from 'common/lib/client/baseclient';
 import { BaseRest } from '../../common/lib/client/baserest';
 import BaseRealtime from '../../common/lib/client/baserealtime';
 import Platform from '../../common/platform';
@@ -8,7 +7,6 @@ import ErrorInfo from '../../common/lib/types/errorinfo';
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
 // @ts-ignore
-import CryptoFactory from './lib/util/crypto';
 import Http from './lib/util/http';
 import Config from './config';
 // @ts-ignore
@@ -18,16 +16,11 @@ import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
 
-const Crypto = CryptoFactory(Config, BufferUtils);
-
-Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
 Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
-
-BaseClient.Crypto = Crypto;
 
 Logger.initLogHandlers();
 
@@ -46,5 +39,7 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
+export * from './modules/crypto';
+export * from './modules/message';
 export { Rest } from '../../common/lib/client/rest';
 export { BaseRest, BaseRealtime, ErrorInfo };

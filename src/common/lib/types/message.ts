@@ -6,6 +6,7 @@ import PresenceMessage from './presencemessage';
 import * as Utils from '../util/utils';
 import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/bufferutils';
 import * as API from '../../../../ably';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 
 export type CipherOptions = {
   channelCipher: {
@@ -42,10 +43,13 @@ function normaliseContext(context: CipherOptions | EncodingDecodingContext | Cha
   return context as EncodingDecodingContext;
 }
 
-function normalizeCipherOptions(options: API.Types.ChannelOptions | null): ChannelOptions {
+function normalizeCipherOptions(
+  Crypto: IUntypedCryptoStatic | null,
+  options: API.Types.ChannelOptions | null
+): ChannelOptions {
   if (options && options.cipher) {
-    if (!Platform.Crypto) throw new Error('Encryption not enabled; use ably.encryption.js instead');
-    const cipher = Platform.Crypto.getCipher(options.cipher);
+    if (!Crypto) Utils.throwMissingModuleError('Crypto');
+    const cipher = Crypto.getCipher(options.cipher);
     return {
       cipher: cipher.cipherParams,
       channelCipher: cipher.cipher,
@@ -69,6 +73,35 @@ function getMessageSize(msg: Message) {
     size += Utils.dataSizeBytes(msg.data);
   }
   return size;
+}
+
+export async function fromEncoded(
+  Crypto: IUntypedCryptoStatic | null,
+  encoded: unknown,
+  inputOptions?: API.Types.ChannelOptions
+): Promise<Message> {
+  const msg = Message.fromValues(encoded);
+  const options = normalizeCipherOptions(Crypto, inputOptions ?? null);
+  /* if decoding fails at any point, catch and return the message decoded to
+   * the fullest extent possible */
+  try {
+    await Message.decode(msg, options);
+  } catch (e) {
+    Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
+  }
+  return msg;
+}
+
+export async function fromEncodedArray(
+  Crypto: IUntypedCryptoStatic | null,
+  encodedArray: Array<unknown>,
+  options?: API.Types.ChannelOptions
+): Promise<Message[]> {
+  return Promise.all(
+    encodedArray.map(function (encoded) {
+      return fromEncoded(Crypto, encoded, options);
+    })
+  );
 }
 
 class Message {
@@ -328,27 +361,6 @@ class Message {
       result = new Array(count);
     for (let i = 0; i < count; i++) result[i] = Message.fromValues(values[i]);
     return result;
-  }
-
-  static async fromEncoded(encoded: unknown, inputOptions?: API.Types.ChannelOptions): Promise<Message> {
-    const msg = Message.fromValues(encoded);
-    const options = normalizeCipherOptions(inputOptions ?? null);
-    /* if decoding fails at any point, catch and return the message decoded to
-     * the fullest extent possible */
-    try {
-      await Message.decode(msg, options);
-    } catch (e) {
-      Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
-    }
-    return msg;
-  }
-
-  static async fromEncodedArray(encodedArray: Array<unknown>, options?: API.Types.ChannelOptions): Promise<Message[]> {
-    return Promise.all(
-      encodedArray.map(function (encoded) {
-        return Message.fromEncoded(encoded, options);
-      })
-    );
   }
 
   /* This should be called on encode()d (and encrypt()d) Messages (as it

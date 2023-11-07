@@ -1,5 +1,4 @@
 // Common
-import BaseClient from '../../common/lib/client/baseclient';
 import { DefaultRest } from '../../common/lib/client/defaultrest';
 import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
@@ -8,7 +7,7 @@ import ErrorInfo from '../../common/lib/types/errorinfo';
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
 // @ts-ignore
-import CryptoFactory from './lib/util/crypto';
+import { createCryptoClass } from './lib/util/crypto';
 import Http from './lib/util/http';
 import Config from './config';
 // @ts-ignore
@@ -19,7 +18,7 @@ import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from './lib/util/defaults';
 import msgpack from './lib/util/msgpack';
 
-const Crypto = CryptoFactory(Config, BufferUtils);
+const Crypto = createCryptoClass(Config, BufferUtils);
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
@@ -28,7 +27,9 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
-BaseClient.Crypto = Crypto;
+for (const clientClass of [DefaultRest, DefaultRealtime]) {
+  clientClass.Crypto = Crypto;
+}
 
 Logger.initLogHandlers();
 

@@ -1,5 +1,6 @@
 import Platform from 'common/platform';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
+import { ModulesMap } from '../client/modulesmap';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -550,4 +551,8 @@ export function arrEquals(a: any[], b: any[]) {
       return val === b[i];
     })
   );
+}
+
+export function throwMissingModuleError(moduleName: keyof ModulesMap): never {
+  throw new ErrorInfo(`${moduleName} module not provided`, 400, 40000);
 }
