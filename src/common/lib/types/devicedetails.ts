@@ -71,7 +71,9 @@ class DeviceDetails {
     return result;
   }
 
-  static toRequestBody = Utils.encodeBody;
+  static toRequestBody(body: unknown, MsgPack: MsgPack | null, format?: Utils.Format) {
+    return Utils.encodeBody(body, MsgPack, format);
+  }
 
   static fromResponseBody(
     body: Array<Record<string, unknown>> | Record<string, unknown>,
