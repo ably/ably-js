@@ -1,7 +1,7 @@
 import ProtocolMessage from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
-import Channel from './channel';
+import RestChannel from './restchannel';
 import Logger from '../util/logger';
 import RealtimePresence from './realtimepresence';
 import Message, { CipherOptions } from '../types/message';
@@ -48,7 +48,7 @@ function validateChannelOptions(options?: API.Types.ChannelOptions) {
   }
 }
 
-class RealtimeChannel extends Channel {
+class RealtimeChannel extends RestChannel {
   realtime: BaseRealtime;
   private _realtimePresence: RealtimePresence | null;
   get presence(): RealtimePresence {
@@ -156,7 +156,7 @@ class RealtimeChannel extends Channel {
       _callback(err);
       return;
     }
-    Channel.prototype.setOptions.call(this, options);
+    RestChannel.prototype.setOptions.call(this, options);
     if (this._decodingContext) this._decodingContext.channelOptions = this.channelOptions;
     if (this._shouldReattachToSetOptions(options)) {
       /* This does not just do _attach(true, null, callback) because that would put us
@@ -900,7 +900,7 @@ class RealtimeChannel extends Channel {
       params.from_serial = this.properties.attachSerial;
     }
 
-    Channel.prototype._history.call(this, params, callback);
+    RestChannel.prototype._history.call(this, params, callback);
   } as any;
 
   whenState = ((state: string, listener: ErrCallback) => {

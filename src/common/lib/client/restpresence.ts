@@ -5,22 +5,22 @@ import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import PresenceMessage from '../types/presencemessage';
 import { CipherOptions } from '../types/message';
 import { PaginatedResultCallback } from '../../types/utils';
-import Channel from './channel';
+import RestChannel from './restchannel';
 import RealtimeChannel from './realtimechannel';
 import Defaults from '../util/defaults';
 
-class Presence extends EventEmitter {
-  channel: RealtimeChannel | Channel;
+class RestPresence extends EventEmitter {
+  channel: RealtimeChannel | RestChannel;
   basePath: string;
 
-  constructor(channel: RealtimeChannel | Channel) {
+  constructor(channel: RealtimeChannel | RestChannel) {
     super();
     this.channel = channel;
     this.basePath = channel.basePath + '/presence';
   }
 
   get(params: any, callback: PaginatedResultCallback<PresenceMessage>): void | Promise<PresenceMessage> {
-    Logger.logAction(Logger.LOG_MICRO, 'Presence.get()', 'channel = ' + this.channel.name);
+    Logger.logAction(Logger.LOG_MICRO, 'RestPresence.get()', 'channel = ' + this.channel.name);
     /* params and callback are optional; see if params contains the callback */
     if (callback === undefined) {
       if (typeof params == 'function') {
@@ -52,7 +52,7 @@ class Presence extends EventEmitter {
     params: any,
     callback: PaginatedResultCallback<PresenceMessage>
   ): void | Promise<PaginatedResult<PresenceMessage>> {
-    Logger.logAction(Logger.LOG_MICRO, 'Presence.history()', 'channel = ' + this.channel.name);
+    Logger.logAction(Logger.LOG_MICRO, 'RestPresence.history()', 'channel = ' + this.channel.name);
     return this._history(params, callback);
   }
 
@@ -93,4 +93,4 @@ class Presence extends EventEmitter {
   }
 }
 
-export default Presence;
+export default RestPresence;

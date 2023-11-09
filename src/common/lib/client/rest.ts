@@ -3,7 +3,7 @@ import Logger, { LoggerOptions } from '../util/logger';
 import Defaults from '../util/defaults';
 import Push from './push';
 import PaginatedResource, { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
-import Channel from './channel';
+import RestChannel from './restchannel';
 import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
@@ -324,7 +324,7 @@ export class Rest {
 
 class Channels {
   client: BaseClient;
-  all: Record<string, Channel>;
+  all: Record<string, RestChannel>;
 
   constructor(client: BaseClient) {
     this.client = client;
@@ -335,7 +335,7 @@ class Channels {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
-      this.all[name] = channel = new Channel(this.client, name, channelOptions);
+      this.all[name] = channel = new RestChannel(this.client, name, channelOptions);
     } else if (channelOptions) {
       channel.setOptions(channelOptions);
     }

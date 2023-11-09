@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import Presence from './presence';
+import RestPresence from './restpresence';
 import Message, { CipherOptions } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
@@ -46,23 +46,23 @@ function normaliseChannelOptions(Crypto: IUntypedCryptoStatic | null, options?: 
   return channelOptions;
 }
 
-class Channel extends EventEmitter {
+class RestChannel extends EventEmitter {
   client: BaseClient;
   name: string;
   basePath: string;
-  private _presence: Presence;
-  get presence(): Presence {
+  private _presence: RestPresence;
+  get presence(): RestPresence {
     return this._presence;
   }
   channelOptions: ChannelOptions;
 
   constructor(client: BaseClient, name: string, channelOptions?: ChannelOptions) {
     super();
-    Logger.logAction(Logger.LOG_MINOR, 'Channel()', 'started; name = ' + name);
+    Logger.logAction(Logger.LOG_MINOR, 'RestChannel()', 'started; name = ' + name);
     this.client = client;
     this.name = name;
     this.basePath = '/channels/' + encodeURIComponent(name);
-    this._presence = new Presence(this);
+    this._presence = new RestPresence(this);
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, channelOptions);
   }
 
@@ -74,7 +74,7 @@ class Channel extends EventEmitter {
     params: RestHistoryParams | null,
     callback: PaginatedResultCallback<Message>
   ): Promise<PaginatedResult<Message>> | void {
-    Logger.logAction(Logger.LOG_MICRO, 'Channel.history()', 'channel = ' + this.name);
+    Logger.logAction(Logger.LOG_MICRO, 'RestChannel.history()', 'channel = ' + this.name);
     /* params and callback are optional; see if params contains the callback */
     if (callback === undefined) {
       if (typeof params == 'function') {
@@ -200,4 +200,4 @@ class Channel extends EventEmitter {
   }
 }
 
-export default Channel;
+export default RestChannel;

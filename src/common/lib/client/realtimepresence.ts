@@ -1,5 +1,5 @@
 import * as Utils from '../util/utils';
-import Presence from './presence';
+import RestPresence from './restpresence';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import PresenceMessage, { fromValues as presenceMessageFromValues } from '../types/presencemessage';
@@ -78,7 +78,7 @@ function newerThan(item: PresenceMessage, existing: PresenceMessage) {
   }
 }
 
-class RealtimePresence extends Presence {
+class RealtimePresence extends RestPresence {
   channel: RealtimeChannel;
   pendingPresence: { presence: PresenceMessage; callback: ErrCallback }[];
   syncComplete: boolean;
@@ -319,7 +319,7 @@ class RealtimePresence extends Presence {
       }
     }
 
-    Presence.prototype._history.call(this, params, callback);
+    RestPresence.prototype._history.call(this, params, callback);
   }
 
   setPresence(presenceSet: PresenceMessage[], isSync: boolean, syncChannelSerial?: string): void {
