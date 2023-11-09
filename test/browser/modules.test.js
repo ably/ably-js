@@ -60,27 +60,83 @@ describe('browser/modules', function () {
   });
 
   describe('Rest', () => {
+    const restScenarios = [
+      {
+        description: 'use push admin functionality',
+        action: (client) => client.push.admin.publish({ clientId: 'foo' }, { data: { bar: 'baz' } }),
+      },
+      { description: 'call `time()`', action: (client) => client.time() },
+      { description: 'call `request(...)`', action: (client) => client.request('get', '/channels/channel', 2) },
+      {
+        description: 'call `batchPublish(...)`',
+        action: (client) => client.batchPublish({ channels: ['channel'], messages: { data: { foo: 'bar' } } }),
+      },
+      {
+        description: 'call `batchPresence(...)`',
+        action: (client) => client.batchPresence(['channel']),
+      },
+    ];
+
     describe('BaseRest without explicit Rest', () => {
-      it('offers REST functionality', async () => {
-        const client = new BaseRest(ablyClientOptions(), { FetchRequest });
-        const time = await client.time();
-        expect(time).to.be.a('number');
-      });
+      for (const scenario of restScenarios) {
+        it(`allows you to ${scenario.description}`, async () => {
+          const client = new BaseRest(ablyClientOptions(), { FetchRequest });
+
+          let thrownError = null;
+          try {
+            await scenario.action(client);
+          } catch (error) {
+            thrownError = error;
+          }
+
+          expect(thrownError).to.be.null;
+        });
+      }
     });
 
     describe('BaseRealtime with Rest', () => {
-      it('offers REST functionality', async () => {
-        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest, Rest });
-        const time = await client.time();
-        expect(time).to.be.a('number');
-      });
+      for (const scenario of restScenarios) {
+        it(`allows you to ${scenario.description}`, async () => {
+          const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest, Rest });
+
+          let thrownError = null;
+          try {
+            await scenario.action(client);
+          } catch (error) {
+            thrownError = error;
+          }
+
+          expect(thrownError).to.be.null;
+        });
+      }
     });
 
     describe('BaseRealtime without Rest', () => {
-      it('throws an error when attempting to use REST functionality', async () => {
+      it('still allows publishing and subscribing', async () => {
         const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
-        expect(() => client.time()).to.throw('Rest module not provided');
+
+        const channel = client.channels.get('channel');
+        await channel.attach();
+
+        const recievedMessagePromise = new Promise((resolve) => {
+          channel.subscribe((message) => {
+            resolve(message);
+          });
+        });
+
+        await channel.publish({ data: { foo: 'bar' } });
+
+        const receivedMessage = await recievedMessagePromise;
+        expect(receivedMessage.data).to.eql({ foo: 'bar' });
       });
+
+      for (const scenario of restScenarios) {
+        it(`throws an error when attempting to ${scenario.description}`, () => {
+          const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+
+          expect(() => scenario.action(client)).to.throw('Rest module not provided');
+        });
+      }
     });
   });
 
