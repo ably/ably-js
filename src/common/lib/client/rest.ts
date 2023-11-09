@@ -15,8 +15,10 @@ import Resource from './resource';
 
 import Platform from '../../platform';
 import BaseClient from './baseclient';
+import { useTokenAuth } from './auth';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
+
 type BatchPublishSpec = API.Types.BatchPublishSpec;
 type BatchPublishSuccessResult = API.Types.BatchPublishSuccessResult;
 type BatchPublishFailureResult = API.Types.BatchPublishFailureResult;
@@ -24,6 +26,12 @@ type BatchPublishResult = BatchResult<BatchPublishSuccessResult | BatchPublishFa
 type BatchPresenceSuccessResult = API.Types.BatchPresenceSuccessResult;
 type BatchPresenceFailureResult = API.Types.BatchPresenceFailureResult;
 type BatchPresenceResult = BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>;
+
+type TokenRevocationTargetSpecifier = API.Types.TokenRevocationTargetSpecifier;
+type TokenRevocationOptions = API.Types.TokenRevocationOptions;
+type TokenRevocationSuccessResult = API.Types.TokenRevocationSuccessResult;
+type TokenRevocationFailureResult = API.Types.TokenRevocationFailureResult;
+type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
 
 const noop = function () {};
 export class Rest {
@@ -259,6 +267,54 @@ export class Rest {
         callback(null, batchResult);
       }
     );
+  }
+
+  revokeTokens(
+    specifiers: TokenRevocationTargetSpecifier[],
+    options?: TokenRevocationOptions
+  ): Promise<TokenRevocationResult> {
+    if (useTokenAuth(this.client.options)) {
+      throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
+    }
+
+    const keyName = this.client.options.keyName!;
+
+    let resolvedOptions = options ?? {};
+
+    const requestBodyDTO = {
+      targets: specifiers.map((specifier) => `${specifier.type}:${specifier.value}`),
+      ...resolvedOptions,
+    };
+
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
+
+    const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
+
+    return new Promise((resolve, reject) => {
+      Resource.post(
+        this.client,
+        `/keys/${keyName}/revokeTokens`,
+        requestBody,
+        headers,
+        { newBatchResponse: 'true' },
+        null,
+        (err, body, headers, unpacked) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          const batchResult = (
+            unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+          ) as TokenRevocationResult;
+
+          resolve(batchResult);
+        }
+      );
+    });
   }
 
   setLog(logOptions: LoggerOptions): void {

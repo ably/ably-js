@@ -11,7 +11,6 @@ import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import Platform from '../../platform';
-import Resource from './resource';
 import Defaults from '../util/defaults';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
@@ -96,7 +95,7 @@ function basicAuthForced(options: ClientOptions) {
 }
 
 /* RSA4 */
-function useTokenAuth(options: ClientOptions) {
+export function useTokenAuth(options: ClientOptions) {
   return (
     options.useTokenAuth ||
     (!basicAuthForced(options) && (options.authCallback || options.authUrl || options.token || options.tokenDetails))
@@ -1039,48 +1038,7 @@ class Auth {
     specifiers: TokenRevocationTargetSpecifier[],
     options?: TokenRevocationOptions
   ): Promise<TokenRevocationResult> {
-    if (useTokenAuth(this.client.options)) {
-      throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
-    }
-
-    const keyName = this.client.options.keyName!;
-
-    let resolvedOptions = options ?? {};
-
-    const requestBodyDTO = {
-      targets: specifiers.map((specifier) => `${specifier.type}:${specifier.value}`),
-      ...resolvedOptions,
-    };
-
-    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(this.client.options, { format });
-
-    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
-
-    const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
-
-    return new Promise((resolve, reject) => {
-      Resource.post(
-        this.client,
-        `/keys/${keyName}/revokeTokens`,
-        requestBody,
-        headers,
-        { newBatchResponse: 'true' },
-        null,
-        (err, body, headers, unpacked) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-
-          const batchResult = (
-            unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
-          ) as TokenRevocationResult;
-
-          resolve(batchResult);
-        }
-      );
-    });
+    return this.client.rest.revokeTokens(specifiers, options);
   }
 }
 

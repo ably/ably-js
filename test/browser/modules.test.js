@@ -31,12 +31,14 @@ describe('browser/modules', function () {
   let loadTestData;
   let testMessageEquality;
   let randomString;
+  let getTestApp;
 
   before((done) => {
     ablyClientOptions = window.ablyHelpers.ablyClientOptions;
     testResourcesPath = window.ablyHelpers.testResourcesPath;
     testMessageEquality = window.ablyHelpers.testMessageEquality;
     randomString = window.ablyHelpers.randomString;
+    getTestApp = window.ablyHelpers.getTestApp;
 
     loadTestData = async (dataPath) => {
       return new Promise((resolve, reject) => {
@@ -75,12 +77,20 @@ describe('browser/modules', function () {
         description: 'call `batchPresence(...)`',
         action: (client) => client.batchPresence(['channel']),
       },
+      {
+        description: 'call `auth.revokeTokens(...)`',
+        getAdditionalClientOptions: () => {
+          const testApp = getTestApp();
+          return { key: testApp.keys[4].keyStr /* this key has revocableTokens enabled */ };
+        },
+        action: (client) => client.auth.revokeTokens([{ type: 'clientId', value: 'foo' }]),
+      },
     ];
 
     describe('BaseRest without explicit Rest', () => {
       for (const scenario of restScenarios) {
         it(`allows you to ${scenario.description}`, async () => {
-          const client = new BaseRest(ablyClientOptions(), { FetchRequest });
+          const client = new BaseRest(ablyClientOptions(scenario.getAdditionalClientOptions?.()), { FetchRequest });
 
           let thrownError = null;
           try {
@@ -97,7 +107,11 @@ describe('browser/modules', function () {
     describe('BaseRealtime with Rest', () => {
       for (const scenario of restScenarios) {
         it(`allows you to ${scenario.description}`, async () => {
-          const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest, Rest });
+          const client = new BaseRealtime(ablyClientOptions(scenario.getAdditionalClientOptions?.()), {
+            WebSocketTransport,
+            FetchRequest,
+            Rest,
+          });
 
           let thrownError = null;
           try {
@@ -132,7 +146,10 @@ describe('browser/modules', function () {
 
       for (const scenario of restScenarios) {
         it(`throws an error when attempting to ${scenario.description}`, () => {
-          const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+          const client = new BaseRealtime(ablyClientOptions(scenario.getAdditionalClientOptions?.()), {
+            WebSocketTransport,
+            FetchRequest,
+          });
 
           expect(() => scenario.action(client)).to.throw('Rest module not provided');
         });
