@@ -1038,32 +1038,14 @@ class Auth {
   revokeTokens(
     specifiers: TokenRevocationTargetSpecifier[],
     options?: TokenRevocationOptions
-  ): Promise<TokenRevocationResult>;
-  revokeTokens(
-    specifiers: TokenRevocationTargetSpecifier[],
-    optionsOrCallbackArg?: TokenRevocationOptions | StandardCallback<TokenRevocationResult>,
-    callbackArg?: StandardCallback<TokenRevocationResult>
-  ): void | Promise<TokenRevocationResult> {
+  ): Promise<TokenRevocationResult> {
     if (useTokenAuth(this.client.options)) {
       throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
     }
 
     const keyName = this.client.options.keyName!;
 
-    let resolvedOptions: TokenRevocationOptions;
-
-    if (typeof optionsOrCallbackArg === 'function') {
-      callbackArg = optionsOrCallbackArg;
-      resolvedOptions = {};
-    } else {
-      resolvedOptions = optionsOrCallbackArg ?? {};
-    }
-
-    if (callbackArg === undefined) {
-      return Utils.promisify(this, 'revokeTokens', [specifiers, resolvedOptions]);
-    }
-
-    const callback = callbackArg;
+    let resolvedOptions = options ?? {};
 
     const requestBodyDTO = {
       targets: specifiers.map((specifier) => `${specifier.type}:${specifier.value}`),
@@ -1076,26 +1058,29 @@ class Auth {
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
     const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
-    Resource.post(
-      this.client,
-      `/keys/${keyName}/revokeTokens`,
-      requestBody,
-      headers,
-      { newBatchResponse: 'true' },
-      null,
-      (err, body, headers, unpacked) => {
-        if (err) {
-          callback(err);
-          return;
+
+    return new Promise((resolve, reject) => {
+      Resource.post(
+        this.client,
+        `/keys/${keyName}/revokeTokens`,
+        requestBody,
+        headers,
+        { newBatchResponse: 'true' },
+        null,
+        (err, body, headers, unpacked) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          const batchResult = (
+            unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+          ) as TokenRevocationResult;
+
+          resolve(batchResult);
         }
-
-        const batchResult = (
-          unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
-        ) as TokenRevocationResult;
-
-        callback(null, batchResult);
-      }
-    );
+      );
+    });
   }
 }
 
