@@ -10,7 +10,6 @@ const Config: IPlatformConfig = {
   binaryType: 'nodebuffer' as BinaryType,
   WebSocket,
   useProtocolHeartbeats: false,
-  msgpack: require('@ably/msgpack-js'),
   supportsBinary: true,
   preferBinary: true,
   nextTick: process.nextTick,

@@ -99,7 +99,7 @@ class Channel extends EventEmitter {
       headers: Record<string, string>,
       unpacked?: boolean
     ) {
-      return await Message.fromResponseBody(body, options, unpacked ? undefined : format);
+      return await Message.fromResponseBody(body, options, client._MsgPack, unpacked ? undefined : format);
     }).get(params as Record<string, unknown>, callback);
   }
 
@@ -177,7 +177,7 @@ class Channel extends EventEmitter {
         return;
       }
 
-      this._publish(Message.serialize(messages, format), headers, params, callback);
+      this._publish(Message.serialize(messages, client._MsgPack, format), headers, params, callback);
     });
   }
 

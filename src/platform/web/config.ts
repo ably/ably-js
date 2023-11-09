@@ -1,4 +1,3 @@
-import msgpack from './lib/util/msgpack';
 import { IPlatformConfig } from '../../common/types/IPlatformConfig';
 import * as Utils from 'common/lib/util/utils';
 
@@ -37,7 +36,6 @@ const Config: IPlatformConfig = {
   allowComet: allowComet(),
   streamingSupported: true,
   useProtocolHeartbeats: true,
-  msgpack: msgpack,
   supportsBinary: !!globalObject.TextDecoder,
   preferBinary: false,
   ArrayBuffer: globalObject.ArrayBuffer,

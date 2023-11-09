@@ -124,11 +124,17 @@ export class Rest {
     customHeaders: Record<string, string>,
     callback: StandardCallback<HttpPaginatedResponse<unknown>>
   ): Promise<HttpPaginatedResponse<unknown>> | void {
-    const useBinary = this.client.options.useBinaryProtocol,
-      encoder = useBinary ? Platform.Config.msgpack.encode : JSON.stringify,
-      decoder = useBinary ? Platform.Config.msgpack.decode : JSON.parse,
-      format = useBinary ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.client.http.supportsLinkHeaders ? undefined : format;
+    const [encoder, decoder, format] = (() => {
+      if (this.client.options.useBinaryProtocol) {
+        if (!this.client._MsgPack) {
+          Utils.throwMissingModuleError('MsgPack');
+        }
+        return [this.client._MsgPack.encode, this.client._MsgPack.decode, Utils.Format.msgpack];
+      } else {
+        return [JSON.stringify, JSON.parse, Utils.Format.json];
+      }
+    })();
+    const envelope = this.client.http.supportsLinkHeaders ? undefined : format;
     params = params || {};
     const _method = method.toLowerCase() as HttpMethods;
     const headers =
@@ -200,7 +206,7 @@ export class Rest {
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
-    const requestBody = Utils.encodeBody(requestBodyDTO, format);
+    const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
     Resource.post(
       this.client,
       '/messages',
@@ -214,7 +220,9 @@ export class Rest {
           return;
         }
 
-        const batchResults = (unpacked ? body : Utils.decodeBody(body, format)) as BatchPublishResult[];
+        const batchResults = (
+          unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+        ) as BatchPublishResult[];
 
         // I don't love the below type assertions for `callback` but not sure how to avoid them
         if (singleSpecMode) {
@@ -254,7 +262,9 @@ export class Rest {
           return;
         }
 
-        const batchResult = (unpacked ? body : Utils.decodeBody(body, format)) as BatchPresenceResult;
+        const batchResult = (
+          unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+        ) as BatchPresenceResult;
 
         callback(null, batchResult);
       }

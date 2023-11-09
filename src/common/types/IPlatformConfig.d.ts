@@ -1,15 +1,9 @@
-interface MsgPack {
-  encode(value: any, sparse?: boolean): Buffer | ArrayBuffer | undefined;
-  decode(buffer: Buffer): any;
-}
-
 export interface IPlatformConfig {
   agent: string;
   logTimestamps: boolean;
   binaryType: BinaryType;
   WebSocket: typeof WebSocket | typeof import('ws');
   useProtocolHeartbeats: boolean;
-  msgpack: MsgPack;
   supportsBinary: boolean;
   preferBinary: boolean;
   nextTick: process.nextTick;

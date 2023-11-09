@@ -9,6 +9,7 @@ import {
   decodeMessages,
   decodeEncryptedMessages,
   Crypto,
+  MsgPack,
 } from '../../build/modules/index.js';
 
 describe('browser/modules', function () {
@@ -244,6 +245,76 @@ describe('browser/modules', function () {
           });
         });
       }
+    });
+  });
+
+  describe('MsgPack', () => {
+    async function testRestUsesContentType(rest, expectedContentType) {
+      const channelName = 'channel';
+      const channel = rest.channels.get(channelName);
+      const contentTypeUsedForPublishPromise = new Promise((resolve, reject) => {
+        rest.http.do = (method, client, path, headers, body, params, callback) => {
+          if (!(method == 'post' && path == `/channels/${channelName}/messages`)) {
+            return;
+          }
+          resolve(headers['content-type']);
+          callback(null);
+        };
+      });
+
+      await channel.publish('message', 'body');
+
+      const contentTypeUsedForPublish = await contentTypeUsedForPublishPromise;
+      expect(contentTypeUsedForPublish).to.equal(expectedContentType);
+    }
+
+    async function testRealtimeUsesFormat(realtime, expectedFormat) {
+      const formatUsedForConnectionPromise = new Promise((resolve, reject) => {
+        realtime.connection.connectionManager.connectImpl = (transportParams) => {
+          resolve(transportParams.format);
+        };
+      });
+      realtime.connect();
+
+      const formatUsedForConnection = await formatUsedForConnectionPromise;
+      expect(formatUsedForConnection).to.equal(expectedFormat);
+    }
+
+    // TODO once https://github.com/ably/ably-js/issues/1424 is fixed, this should also test the case where the useBinaryProtocol option is not specified
+    describe('with useBinaryProtocol client option', () => {
+      describe('without MsgPack', () => {
+        describe('BaseRest', () => {
+          it('uses JSON', async () => {
+            const client = new BaseRest(ablyClientOptions({ useBinaryProtocol: true }), {});
+            await testRestUsesContentType(client, 'application/json');
+          });
+        });
+
+        describe('BaseRealtime', () => {
+          it('uses JSON', async () => {
+            const client = new BaseRealtime(ablyClientOptions({ useBinaryProtocol: true, autoConnect: false }), {});
+            await testRealtimeUsesFormat(client, 'json');
+          });
+        });
+      });
+
+      describe('with MsgPack', () => {
+        describe('BaseRest', () => {
+          it('uses MessagePack', async () => {
+            const client = new BaseRest(ablyClientOptions({ useBinaryProtocol: true }), { MsgPack });
+            await testRestUsesContentType(client, 'application/x-msgpack');
+          });
+        });
+
+        describe('BaseRealtime', () => {
+          it('uses MessagePack', async () => {
+            const client = new BaseRealtime(ablyClientOptions({ useBinaryProtocol: true, autoConnect: false }), {
+              MsgPack,
+            });
+            await testRealtimeUsesFormat(client, 'msgpack');
+          });
+        });
+      });
     });
   });
 });

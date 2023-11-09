@@ -1078,7 +1078,7 @@ class Auth {
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
-    const requestBody = Utils.encodeBody(requestBodyDTO, format);
+    const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
     Resource.post(
       this.client,
       `/keys/${keyName}/revokeTokens`,
@@ -1092,7 +1092,9 @@ class Auth {
           return;
         }
 
-        const batchResult = (unpacked ? body : Utils.decodeBody(body, format)) as TokenRevocationResult;
+        const batchResult = (
+          unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+        ) as TokenRevocationResult;
 
         callback(null, batchResult);
       }
