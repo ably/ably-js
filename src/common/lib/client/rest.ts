@@ -16,6 +16,8 @@ import Resource from './resource';
 import Platform from '../../platform';
 import BaseClient from './baseclient';
 import { useTokenAuth } from './auth';
+import { RestChannelMixin } from './restchannelmixin';
+import { RestPresenceMixin } from './restpresencemixin';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
 
@@ -38,6 +40,9 @@ export class Rest {
   private readonly client: BaseClient;
   readonly channels: Channels;
   readonly push: Push;
+
+  readonly channelMixin = RestChannelMixin;
+  readonly presenceMixin = RestPresenceMixin;
 
   constructor(client: BaseClient) {
     this.client = client;

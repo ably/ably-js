@@ -85,6 +85,19 @@ describe('browser/modules', function () {
         },
         action: (client) => client.auth.revokeTokens([{ type: 'clientId', value: 'foo' }]),
       },
+      {
+        description: 'call channel’s `history()`',
+        action: (client) => client.channels.get('channel').history(),
+      },
+      {
+        description: 'call channel’s `presence.history()`',
+        additionalRealtimeModules: { RealtimePresence },
+        action: (client) => client.channels.get('channel').presence.history(),
+      },
+      {
+        description: 'call channel’s `status()`',
+        action: (client) => client.channels.get('channel').status(),
+      },
     ];
 
     describe('BaseRest without explicit Rest', () => {
@@ -111,6 +124,7 @@ describe('browser/modules', function () {
             WebSocketTransport,
             FetchRequest,
             Rest,
+            ...scenario.additionalRealtimeModules,
           });
 
           let thrownError = null;
@@ -145,13 +159,22 @@ describe('browser/modules', function () {
       });
 
       for (const scenario of restScenarios) {
-        it(`throws an error when attempting to ${scenario.description}`, () => {
+        it(`throws an error when attempting to ${scenario.description}`, async () => {
           const client = new BaseRealtime(ablyClientOptions(scenario.getAdditionalClientOptions?.()), {
             WebSocketTransport,
             FetchRequest,
+            ...scenario.additionalRealtimeModules,
           });
 
-          expect(() => scenario.action(client)).to.throw('Rest module not provided');
+          let thrownError = null;
+          try {
+            await scenario.action(client);
+          } catch (error) {
+            thrownError = error;
+          }
+
+          expect(thrownError).not.to.be.null;
+          expect(thrownError.message).to.equal('Rest module not provided');
         });
       }
     });

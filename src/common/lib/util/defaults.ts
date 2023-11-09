@@ -6,6 +6,8 @@ import { version } from '../../../../package.json';
 import ClientOptions, { InternalClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
 import IDefaults from '../../types/IDefaults';
 import { MsgPack } from 'common/types/msgpack';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
+import { ChannelOptions } from 'common/types/channel';
 
 let agent = 'ably-js/' + version;
 
@@ -263,6 +265,22 @@ export function normaliseOptions(options: InternalClientOptions, MsgPack: MsgPac
     connectivityCheckUrl,
     headers,
   };
+}
+
+export function normaliseChannelOptions(Crypto: IUntypedCryptoStatic | null, options?: ChannelOptions) {
+  const channelOptions = options || {};
+  if (channelOptions.cipher) {
+    if (!Crypto) Utils.throwMissingModuleError('Crypto');
+    const cipher = Crypto.getCipher(channelOptions.cipher);
+    channelOptions.cipher = cipher.cipherParams;
+    channelOptions.channelCipher = cipher.cipher;
+  } else if ('cipher' in channelOptions) {
+    /* Don't deactivate an existing cipher unless options
+     * has a 'cipher' key that's falsey */
+    channelOptions.cipher = undefined;
+    channelOptions.channelCipher = null;
+  }
+  return channelOptions;
 }
 
 const contentTypes = {

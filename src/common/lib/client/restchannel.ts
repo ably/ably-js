@@ -1,26 +1,16 @@
 import * as Utils from '../util/utils';
-import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import RestPresence from './restpresence';
 import Message, { CipherOptions } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
-import PaginatedResource, { PaginatedResult } from './paginatedresource';
+import { PaginatedResult } from './paginatedresource';
 import Resource, { ResourceCallback } from './resource';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import BaseClient from './baseclient';
+import BaseRest from './baseclient';
 import * as API from '../../../../ably';
-import Defaults from '../util/defaults';
-import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
-
-interface RestHistoryParams {
-  start?: number;
-  end?: number;
-  direction?: string;
-  limit?: number;
-}
-
-function noop() {}
+import Defaults, { normaliseChannelOptions } from '../util/defaults';
+import { RestHistoryParams } from './restchannelmixin';
 
 const MSG_ID_ENTROPY_BYTES = 9;
 
@@ -30,39 +20,17 @@ function allEmptyIds(messages: Array<Message>) {
   });
 }
 
-function normaliseChannelOptions(Crypto: IUntypedCryptoStatic | null, options?: ChannelOptions) {
-  const channelOptions = options || {};
-  if (channelOptions.cipher) {
-    if (!Crypto) Utils.throwMissingModuleError('Crypto');
-    const cipher = Crypto.getCipher(channelOptions.cipher);
-    channelOptions.cipher = cipher.cipherParams;
-    channelOptions.channelCipher = cipher.cipher;
-  } else if ('cipher' in channelOptions) {
-    /* Don't deactivate an existing cipher unless options
-     * has a 'cipher' key that's falsey */
-    channelOptions.cipher = undefined;
-    channelOptions.channelCipher = null;
-  }
-  return channelOptions;
-}
-
-class RestChannel extends EventEmitter {
-  client: BaseClient;
+class RestChannel {
+  client: BaseRest;
   name: string;
-  basePath: string;
-  private _presence: RestPresence;
-  get presence(): RestPresence {
-    return this._presence;
-  }
+  presence: RestPresence;
   channelOptions: ChannelOptions;
 
-  constructor(client: BaseClient, name: string, channelOptions?: ChannelOptions) {
-    super();
+  constructor(client: BaseRest, name: string, channelOptions?: ChannelOptions) {
     Logger.logAction(Logger.LOG_MINOR, 'RestChannel()', 'started; name = ' + name);
-    this.client = client;
     this.name = name;
-    this.basePath = '/channels/' + encodeURIComponent(name);
-    this._presence = new RestPresence(this);
+    this.client = client;
+    this.presence = new RestPresence(this);
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, channelOptions);
   }
 
@@ -85,25 +53,7 @@ class RestChannel extends EventEmitter {
       }
     }
 
-    this._history(params, callback);
-  }
-
-  _history(params: RestHistoryParams | null, callback: PaginatedResultCallback<Message>): void {
-    const client = this.client,
-      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(client.options, { format });
-
-    Utils.mixin(headers, client.options.headers);
-
-    const options = this.channelOptions;
-    new PaginatedResource(client, this.basePath + '/messages', headers, envelope, async function (
-      body,
-      headers,
-      unpacked
-    ) {
-      return await Message.fromResponseBody(body as Message[], options, client._MsgPack, unpacked ? undefined : format);
-    }).get(params as Record<string, unknown>, callback);
+    this.client.rest.channelMixin.history(this, params, callback);
   }
 
   publish(): void | Promise<void> {
@@ -185,18 +135,19 @@ class RestChannel extends EventEmitter {
   }
 
   _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
-    Resource.post(this.client, this.basePath + '/messages', requestBody, headers, params, null, callback);
+    Resource.post(
+      this.client,
+      this.client.rest.channelMixin.basePath(this) + '/messages',
+      requestBody,
+      headers,
+      params,
+      null,
+      callback
+    );
   }
 
   status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
-    if (typeof callback !== 'function') {
-      return Utils.promisify(this, 'status', []);
-    }
-
-    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-    const headers = Defaults.defaultPostHeaders(this.client.options, { format });
-
-    Resource.get<API.Types.ChannelDetails>(this.client, this.basePath, headers, {}, format, callback || noop);
+    return this.client.rest.channelMixin.status(this, callback);
   }
 }
 

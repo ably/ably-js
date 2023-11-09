@@ -1,7 +1,6 @@
 import ProtocolMessage from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
-import RestChannel from './restchannel';
 import Logger from '../util/logger';
 import RealtimePresence from './realtimepresence';
 import Message, { CipherOptions } from '../types/message';
@@ -14,6 +13,8 @@ import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
 import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
+import { ChannelOptions } from '../../types/channel';
+import { normaliseChannelOptions } from '../util/defaults';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -48,14 +49,16 @@ function validateChannelOptions(options?: API.Types.ChannelOptions) {
   }
 }
 
-class RealtimeChannel extends RestChannel {
-  realtime: BaseRealtime;
-  private _realtimePresence: RealtimePresence | null;
+class RealtimeChannel extends EventEmitter {
+  name: string;
+  channelOptions: ChannelOptions;
+  client: BaseRealtime;
+  private _presence: RealtimePresence | null;
   get presence(): RealtimePresence {
-    if (!this._realtimePresence) {
+    if (!this._presence) {
       Utils.throwMissingModuleError('RealtimePresence');
     }
-    return this._realtimePresence;
+    return this._presence;
   }
   connectionManager: ConnectionManager;
   state: API.Types.ChannelState;
@@ -86,12 +89,14 @@ class RealtimeChannel extends RestChannel {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
 
-  constructor(realtime: BaseRealtime, name: string, options?: API.Types.ChannelOptions) {
-    super(realtime, name, options);
+  constructor(client: BaseRealtime, name: string, options?: API.Types.ChannelOptions) {
+    super();
     Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
-    this.realtime = realtime;
-    this._realtimePresence = realtime._RealtimePresence ? new realtime._RealtimePresence(this) : null;
-    this.connectionManager = realtime.connection.connectionManager;
+    this.name = name;
+    this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, options);
+    this.client = client;
+    this._presence = client._RealtimePresence ? new client._RealtimePresence(this) : null;
+    this.connectionManager = client.connection.connectionManager;
     this.state = 'initialized';
     this.subscriptions = new EventEmitter();
     this.syncChannelSerial = undefined;
@@ -106,7 +111,7 @@ class RealtimeChannel extends RestChannel {
     this._attachResume = false;
     this._decodingContext = {
       channelOptions: this.channelOptions,
-      plugins: realtime.options.plugins || {},
+      plugins: client.options.plugins || {},
       baseEncodedPreviousPayload: undefined,
     };
     this._lastPayload = {
@@ -156,7 +161,7 @@ class RealtimeChannel extends RestChannel {
       _callback(err);
       return;
     }
-    RestChannel.prototype.setOptions.call(this, options);
+    this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, options);
     if (this._decodingContext) this._decodingContext.channelOptions = this.channelOptions;
     if (this._shouldReattachToSetOptions(options)) {
       /* This does not just do _attach(true, null, callback) because that would put us
@@ -236,7 +241,7 @@ class RealtimeChannel extends RestChannel {
     } else {
       messages = [Message.fromValues({ name: args[0], data: args[1] })];
     }
-    const maxMessageSize = this.realtime.options.maxMessageSize;
+    const maxMessageSize = this.client.options.maxMessageSize;
     Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
       if (err) {
         callback(err);
@@ -258,12 +263,11 @@ class RealtimeChannel extends RestChannel {
         );
         return;
       }
-      this.__publish(messages, callback);
+      this._publish(messages, callback);
     });
   }
 
-  // Double underscore used to prevent type conflict with underlying Channel._publish method
-  __publish(messages: Array<Message>, callback: ErrCallback) {
+  _publish(messages: Array<Message>, callback: ErrCallback) {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
     const state = this.state;
     switch (state) {
@@ -483,7 +487,7 @@ class RealtimeChannel extends RestChannel {
   }
 
   sendMessage(msg: ProtocolMessage, callback?: ErrCallback): void {
-    this.connectionManager.send(msg, this.realtime.options.queueMessages, callback);
+    this.connectionManager.send(msg, this.client.options.queueMessages, callback);
   }
 
   sendPresence(presence: PresenceMessage | PresenceMessage[], callback?: ErrCallback): void {
@@ -523,8 +527,8 @@ class RealtimeChannel extends RestChannel {
         if (this.state === 'attached') {
           if (!resumed) {
             /* On a loss of continuity, the presence set needs to be re-synced */
-            if (this._realtimePresence) {
-              this._realtimePresence.onAttached(hasPresence);
+            if (this._presence) {
+              this._presence.onAttached(hasPresence);
             }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
@@ -583,8 +587,8 @@ class RealtimeChannel extends RestChannel {
             Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());
           }
         }
-        if (this._realtimePresence) {
-          this._realtimePresence.setPresence(presence, isSync, syncChannelSerial as any);
+        if (this._presence) {
+          this._presence.setPresence(presence, isSync, syncChannelSerial as any);
         }
         break;
       }
@@ -721,8 +725,8 @@ class RealtimeChannel extends RestChannel {
     if (state === this.state) {
       return;
     }
-    if (this._realtimePresence) {
-      this._realtimePresence.actOnChannelState(state, hasPresence, reason);
+    if (this._presence) {
+      this._presence.actOnChannelState(state, hasPresence, reason);
     }
     if (state === 'suspended' && this.connectionManager.state.sendEvents) {
       this.startRetryTimer();
@@ -829,7 +833,7 @@ class RealtimeChannel extends RestChannel {
         Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.startStateTimerIfNotRunning', 'timer expired');
         this.stateTimer = null;
         this.timeoutPendingState();
-      }, this.realtime.options.timeouts.realtimeRequestTimeout);
+      }, this.client.options.timeouts.realtimeRequestTimeout);
     }
   }
 
@@ -845,7 +849,7 @@ class RealtimeChannel extends RestChannel {
     if (this.retryTimer) return;
 
     this.retryCount++;
-    const retryDelay = Utils.getRetryTime(this.realtime.options.timeouts.channelRetryTimeout, this.retryCount);
+    const retryDelay = Utils.getRetryTime(this.client.options.timeouts.channelRetryTimeout, this.retryCount);
 
     this.retryTimer = setTimeout(() => {
       /* If connection is not connected, just leave in suspended, a reattach
@@ -881,6 +885,9 @@ class RealtimeChannel extends RestChannel {
       }
     }
 
+    // We fetch this first so that any module-not-provided error takes priority over other errors
+    const restMixin = this.client.rest.channelMixin;
+
     if (params && params.untilAttach) {
       if (this.state !== 'attached') {
         callback(new ErrorInfo('option untilAttach requires the channel to be attached', 40000, 400));
@@ -900,7 +907,7 @@ class RealtimeChannel extends RestChannel {
       params.from_serial = this.properties.attachSerial;
     }
 
-    RestChannel.prototype._history.call(this, params, callback);
+    return restMixin.history(this, params, callback);
   } as any;
 
   whenState = ((state: string, listener: ErrCallback) => {
@@ -933,6 +940,10 @@ class RealtimeChannel extends RestChannel {
     if (channelSerial) {
       this.properties.channelSerial = channelSerial;
     }
+  }
+
+  status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
+    return this.client.rest.channelMixin.status(this, callback);
   }
 }
 

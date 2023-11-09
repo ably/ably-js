@@ -1,5 +1,4 @@
 import * as Utils from '../util/utils';
-import RestPresence from './restpresence';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
 import PresenceMessage, { fromValues as presenceMessageFromValues } from '../types/presencemessage';
@@ -27,11 +26,11 @@ interface RealtimeHistoryParams {
 }
 
 function getClientId(realtimePresence: RealtimePresence) {
-  return realtimePresence.channel.realtime.auth.clientId;
+  return realtimePresence.channel.client.auth.clientId;
 }
 
 function isAnonymousOrWildcard(realtimePresence: RealtimePresence) {
-  const realtime = realtimePresence.channel.realtime;
+  const realtime = realtimePresence.channel.client;
   /* If not currently connected, we can't assume that we're an anonymous
    * client, as realtime may inform us of our clientId in the CONNECTED
    * message. So assume we're not anonymous and leave it to realtime to
@@ -78,7 +77,7 @@ function newerThan(item: PresenceMessage, existing: PresenceMessage) {
   }
 }
 
-class RealtimePresence extends RestPresence {
+class RealtimePresence extends EventEmitter {
   channel: RealtimeChannel;
   pendingPresence: { presence: PresenceMessage; callback: ErrCallback }[];
   syncComplete: boolean;
@@ -88,7 +87,7 @@ class RealtimePresence extends RestPresence {
   name?: string;
 
   constructor(channel: RealtimeChannel) {
-    super(channel);
+    super();
     this.channel = channel;
     this.syncComplete = false;
     this.members = new PresenceMap(this, (item) => item.clientId + ':' + item.connectionId);
@@ -244,8 +243,11 @@ class RealtimePresence extends RestPresence {
     }
   }
 
-  // Return type is any to avoid conflict with base Presence class
-  get(this: RealtimePresence, params: RealtimePresenceParams, callback: StandardCallback<PresenceMessage[]>): any {
+  get(
+    this: RealtimePresence,
+    params: RealtimePresenceParams,
+    callback: StandardCallback<PresenceMessage[]>
+  ): void | Promise<PresenceMessage> {
     const args = Array.prototype.slice.call(arguments);
     if (args.length == 1 && typeof args[0] == 'function') args.unshift(null);
 
@@ -304,6 +306,9 @@ class RealtimePresence extends RestPresence {
       }
     }
 
+    // We fetch this first so that any module-not-provided error takes priority over other errors
+    const restMixin = this.channel.client.rest.presenceMixin;
+
     if (params && params.untilAttach) {
       if (this.channel.state === 'attached') {
         delete params.untilAttach;
@@ -319,7 +324,7 @@ class RealtimePresence extends RestPresence {
       }
     }
 
-    RestPresence.prototype._history.call(this, params, callback);
+    return restMixin.history(this, params, callback);
   }
 
   setPresence(presenceSet: PresenceMessage[], isSync: boolean, syncChannelSerial?: string): void {
