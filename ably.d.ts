@@ -2394,22 +2394,6 @@ declare namespace Types {
      */
     constructor();
     /**
-     * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
-     *
-     * @param JsonObject - A `Message`-like deserialized object.
-     * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns A promise which will be fulfilled with a `Message` object.
-     */
-    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<Message>;
-    /**
-     * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
-     *
-     * @param JsonArray - An array of `Message`-like deserialized objects.
-     * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns A promise which will be fulfilled with an array of {@link Message} objects.
-     */
-    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<Message[]>;
-    /**
      * The client ID of the publisher of this message.
      */
     clientId: string;
@@ -2475,20 +2459,6 @@ declare namespace Types {
      * @internal
      */
     constructor();
-    /**
-     * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
-     *
-     * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
-     * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
-     */
-    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<PresenceMessage>;
-    /**
-     * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
-     *
-     * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
-     * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
-     */
-    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<PresenceMessage[]>;
     /**
      * The type of {@link PresenceAction} the `PresenceMessage` is for.
      */
