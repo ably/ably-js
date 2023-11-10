@@ -2388,12 +2388,6 @@ declare namespace Types {
    */
   class Message {
     /**
-     * Constructor for internal use.
-     *
-     * @internal
-     */
-    constructor();
-    /**
      * The client ID of the publisher of this message.
      */
     clientId: string;
@@ -2453,12 +2447,6 @@ declare namespace Types {
    * Contains an individual presence update sent to, or received from, Ably.
    */
   class PresenceMessage {
-    /**
-     * Constructor for internal use.
-     *
-     * @internal
-     */
-    constructor();
     /**
      * The type of {@link PresenceAction} the `PresenceMessage` is for.
      */
