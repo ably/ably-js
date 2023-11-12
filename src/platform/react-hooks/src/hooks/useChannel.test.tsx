@@ -177,27 +177,27 @@ describe('useChannel', () => {
 });
 
 describe('useChannel with deriveOptions', () => {
-  let channels: FakeAblyChannels;
-  let ablyClient: FakeAblySdk;
-  let anotherClient: FakeAblySdk;
-
   const Channels = {
     tasks: 'tasks',
     alerts: 'alerts',
   };
+
+  let channels: FakeAblyChannels;
+  let ablyClient: FakeAblySdk;
+  let anotherClient: FakeAblySdk;
+  let yetAnotherClient: FakeAblySdk;
+
   beforeEach(() => {
     channels = new FakeAblyChannels([Channels.tasks, Channels.alerts]);
     ablyClient = new FakeAblySdk().connectTo(channels);
     anotherClient = new FakeAblySdk().connectTo(channels);
+    yetAnotherClient = new FakeAblySdk().connectTo(channels);
   });
 
   it('component can use "useChannel" with "deriveOptions" and renders nothing by default', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
-        channelName={Channels.tasks}
-        deriveOptions={{ filter: '' }}
-      ></UseDerivedChannelComponent>
+      <UseDerivedChannelComponent channelName={Channels.tasks} deriveOptions={{ filter: '' }} />
     );
     const messageUl = screen.getAllByRole('derived-channel-messages')[0];
 
@@ -210,11 +210,11 @@ describe('useChannel with deriveOptions', () => {
       <UseDerivedChannelComponent
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
-      ></UseDerivedChannelComponent>
+      />
     );
     await act(async () => {
       await anotherClient.channels
-        .get('tasks')
+        .get(Channels.tasks)
         .publish({ text: 'A new task for you', extras: { headers: { user: 'robert.pike@domain.io' } } });
     });
 
@@ -229,11 +229,11 @@ describe('useChannel with deriveOptions', () => {
       <UseDerivedChannelComponent
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
-      ></UseDerivedChannelComponent>
+      />
     );
     await act(async () => {
       await anotherClient.channels
-        .get('tasks')
+        .get(Channels.tasks)
         .publish({ text: 'This one is for another Rob', extras: { headers: { user: 'robert.griesemer@domain.io' } } });
     });
 
@@ -247,10 +247,10 @@ describe('useChannel with deriveOptions', () => {
       <UseDerivedChannelComponent
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
-      ></UseDerivedChannelComponent>
+      />
     );
     await act(async () => {
-      const channel = anotherClient.channels.get('tasks');
+      const channel = anotherClient.channels.get(Channels.tasks);
       await channel.publish({
         text: 'This one is for another Rob',
         extras: { headers: { user: 'robert.griesemer@domain.io' } },
@@ -273,6 +273,42 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.childElementCount).toBe(2);
     expect(messageUl.children[0].innerHTML).toBe('This one is for the whole domain');
     expect(messageUl.children[1].innerHTML).toBe('This one is also a domain-wide fan-out');
+  });
+
+  it('component can use "useChannel" with multiple clients', async () => {
+    const cliendId = 'client';
+    const anotherClientId = 'anotherClient';
+
+    render(
+      <AblyProvider client={ablyClient as unknown as Types.RealtimePromise} id={cliendId}>
+        <AblyProvider client={anotherClient as unknown as Types.RealtimePromise} id={anotherClientId}>
+          <UseDerivedChannelComponentMultipleClients
+            clientId={cliendId}
+            channelName={Channels.tasks}
+            anotherClientId={anotherClientId}
+            anotherChannelName={Channels.alerts}
+            deriveOptions={{ filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`' }}
+          />
+        </AblyProvider>
+      </AblyProvider>
+    );
+
+    await act(async () => {
+      await yetAnotherClient.channels.get(Channels.tasks).publish({
+        text: 'A task for Griesemer',
+        extras: { headers: { user: 'robert.griesemer@domain.io' } },
+      });
+      await yetAnotherClient.channels.get(Channels.alerts).publish({
+        text: 'A company-wide alert',
+        extras: { headers: { company: 'domain' } },
+      });
+    });
+
+    const messageUl = screen.getAllByRole('derived-channel-messages')[0];
+
+    expect(messageUl.childElementCount).toBe(2);
+    expect(messageUl.children[0].innerHTML).toBe('A task for Griesemer');
+    expect(messageUl.children[1].innerHTML).toBe('A company-wide alert');
   });
 });
 
@@ -299,6 +335,26 @@ const UseChannelComponent = ({ skip }: { skip?: boolean }) => {
   const messagePreviews = messages.map((msg, index) => <li key={index}>{msg.data.text}</li>);
 
   return <ul role="messages">{messagePreviews}</ul>;
+};
+
+const UseDerivedChannelComponentMultipleClients = ({
+  channelName,
+  clientId,
+  anotherClientId,
+  anotherChannelName,
+  deriveOptions,
+}) => {
+  const [messages, setMessages] = useState<Types.Message[]>([]);
+  useChannel({ id: clientId, channelName, deriveOptions }, (message) => {
+    setMessages((prev) => [...prev, message]);
+  });
+  useChannel({ id: anotherClientId, channelName: anotherChannelName, deriveOptions }, (message) => {
+    setMessages((prev) => [...prev, message]);
+  });
+
+  const messagePreviews = messages.map((msg, index) => <li key={index}>{msg.data.text}</li>);
+
+  return <ul role="derived-channel-messages">{messagePreviews}</ul>;
 };
 
 const UseDerivedChannelComponent = ({ channelName, deriveOptions }) => {
