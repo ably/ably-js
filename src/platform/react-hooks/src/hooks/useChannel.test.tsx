@@ -134,18 +134,10 @@ describe('useChannel', () => {
   it('should use the latest version of the message callback', async () => {
     let callbackCount = 0;
 
-    const TestComponent = () => {
-      const [count, setCount] = React.useState(0);
-
-      useChannel('blah', () => {
-        callbackCount++;
-        setCount(count + 1);
-      });
-
-      return <div role="counter">{count}</div>;
-    };
-
-    renderInCtxProvider(ablyClient, <TestComponent />);
+    renderInCtxProvider(
+      ablyClient,
+      <LatestMessageCallbackComponent channelName="blah" callback={() => callbackCount++} />
+    );
 
     await act(async () => {
       ablyClient.channels.get('blah').publish({ text: 'test message 1' });
@@ -241,7 +233,7 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.childElementCount).toBe(0);
   });
 
-  it('component will update if some messages qualify', async () => {
+  it('component will update with only those messages that qualify', async () => {
     renderInCtxProvider(
       ablyClient,
       <UseDerivedChannelComponent
@@ -249,6 +241,7 @@ describe('useChannel with deriveOptions', () => {
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
       />
     );
+
     await act(async () => {
       const channel = anotherClient.channels.get(Channels.tasks);
       await channel.publish({
@@ -287,7 +280,9 @@ describe('useChannel with deriveOptions', () => {
             channelName={Channels.tasks}
             anotherClientId={anotherClientId}
             anotherChannelName={Channels.alerts}
-            deriveOptions={{ filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`' }}
+            deriveOptions={{
+              filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`',
+            }}
           />
         </AblyProvider>
       </AblyProvider>
@@ -309,6 +304,158 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.childElementCount).toBe(2);
     expect(messageUl.children[0].innerHTML).toBe('A task for Griesemer');
     expect(messageUl.children[1].innerHTML).toBe('A company-wide alert');
+  });
+
+  it('handles channel errors', async () => {
+    const onChannelError = vi.fn();
+    const reason = { message: 'channel error occurred' };
+
+    renderInCtxProvider(
+      ablyClient,
+      <UseChannelStateErrorsComponent
+        channelName={Channels.alerts}
+        onChannelError={onChannelError}
+      ></UseChannelStateErrorsComponent>
+    );
+
+    const channelErrorElem = screen.getByRole('channelError');
+    expect(onChannelError).toHaveBeenCalledTimes(0);
+    expect(channelErrorElem.innerHTML).toEqual('');
+
+    act(() => ablyClient.channels.get(Channels.alerts).emit('failed', { reason }));
+
+    expect(channelErrorElem.innerHTML).toEqual(reason.message);
+    expect(onChannelError).toHaveBeenCalledTimes(1);
+    expect(onChannelError).toHaveBeenCalledWith(reason);
+  });
+
+  it('handles connection errors', async () => {
+    const onConnectionError = vi.fn();
+    const reason = { message: 'failed to establish connection' };
+
+    renderInCtxProvider(
+      ablyClient,
+      <UseChannelStateErrorsComponent
+        channelName={Channels.alerts}
+        onConnectionError={onConnectionError}
+      ></UseChannelStateErrorsComponent>
+    );
+
+    const channelErrorElem = screen.getByRole('connectionError');
+    expect(onConnectionError).toHaveBeenCalledTimes(0);
+    expect(channelErrorElem.innerHTML).toEqual('');
+
+    act(() => ablyClient.connection.emit('failed', { reason }));
+
+    expect(channelErrorElem.innerHTML).toEqual(reason.message);
+    expect(onConnectionError).toHaveBeenCalledTimes(1);
+    expect(onConnectionError).toHaveBeenCalledWith(reason);
+  });
+
+  it('wildcard filter', async () => {
+    renderInCtxProvider(
+      ablyClient,
+      <UseDerivedChannelComponent
+        deriveOptions={{ filter: '*' }}
+        channelName={Channels.alerts}
+      ></UseDerivedChannelComponent>
+    );
+
+    await act(async () => {
+      const text = 'Will receive this text due to wildcard filter';
+      await anotherClient.channels.get(Channels.alerts).publish({ text });
+    });
+
+    const messageUl = screen.getAllByRole('derived-channel-messages')[0];
+    expect(messageUl.childElementCount).toBe(1);
+  });
+
+  it('skip param', async () => {
+    renderInCtxProvider(
+      ablyClient,
+      <UseDerivedChannelComponent
+        deriveOptions={{ filter: '*' }}
+        channelName={Channels.alerts}
+        skip
+      ></UseDerivedChannelComponent>
+    );
+
+    await act(async () => {
+      const text = 'Will skip due to "skip=true"';
+      await anotherClient.channels.get(Channels.alerts).publish({ text });
+    });
+
+    const messageUl = screen.getAllByRole('derived-channel-messages')[0];
+    expect(messageUl.childElementCount).toBe(0);
+  });
+
+  it('should use the latest version of the message callback', async () => {
+    let callbackCount = 0;
+
+    renderInCtxProvider(
+      ablyClient,
+      <LatestMessageCallbackComponent
+        channelName={Channels.tasks}
+        deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
+        callback={() => callbackCount++}
+      />
+    );
+
+    await act(async () => {
+      const channel = anotherClient.channels.get(Channels.tasks);
+      await channel.publish({
+        text: 'This one is for another Rob',
+        extras: { headers: { user: 'robert.griesemer@domain.io' } },
+      });
+      await channel.publish({
+        text: 'This one is for the whole domain',
+        extras: { headers: { company: 'domain' } },
+      });
+      await channel.publish({
+        text: 'This one is for Ken',
+        extras: { headers: { user: 'ken.thompson@domain.io' } },
+      });
+      await channel.publish({
+        text: 'This one is also a domain-wide fan-out',
+        extras: { headers: { company: 'domain' } },
+      });
+      await channel.publish({
+        text: 'This one for Mr.Pike will also get through...',
+        extras: { headers: { user: 'robert.pike@domain.io' } },
+      });
+      await channel.publish({
+        text: '.... as well as this message',
+        extras: { headers: { user: 'robert.pike@domain.io' } },
+      });
+    });
+
+    expect(callbackCount).toBe(4);
+    expect(screen.getByRole('counter').innerHTML).toEqual(`${callbackCount}`);
+  });
+
+  it('should re-subscribe if event name has changed', async () => {
+    const channel = ablyClient.channels.get(Channels.alerts);
+    channel.subscribe = vi.fn();
+    channel.unsubscribe = vi.fn();
+
+    const eventName = 'event1';
+    const newEventName = 'event2';
+
+    renderInCtxProvider(
+      ablyClient,
+      <ChangingEventComponent
+        channelName={Channels.alerts}
+        deriveOptions={{ filter: '*' }}
+        eventName={eventName}
+        newEventName={newEventName}
+      />
+    );
+
+    await waitFor(() => expect(channel.subscribe).toHaveBeenCalledWith(eventName, expect.any(Function)));
+
+    await waitFor(() => expect(channel.unsubscribe).toHaveBeenCalledWith(eventName, expect.any(Function)));
+
+    expect(channel.subscribe).toHaveBeenCalledWith(newEventName, expect.any(Function));
   });
 });
 
@@ -337,13 +484,21 @@ const UseChannelComponent = ({ skip }: { skip?: boolean }) => {
   return <ul role="messages">{messagePreviews}</ul>;
 };
 
+interface UseDerivedChannelComponentMultipleClientsProps {
+  clientId: string;
+  channelName: string;
+  anotherClientId: string;
+  anotherChannelName: string;
+  deriveOptions: Types.DeriveOptions;
+}
+
 const UseDerivedChannelComponentMultipleClients = ({
   channelName,
   clientId,
   anotherClientId,
   anotherChannelName,
   deriveOptions,
-}) => {
+}: UseDerivedChannelComponentMultipleClientsProps) => {
   const [messages, setMessages] = useState<Types.Message[]>([]);
   useChannel({ id: clientId, channelName, deriveOptions }, (message) => {
     setMessages((prev) => [...prev, message]);
@@ -357,10 +512,16 @@ const UseDerivedChannelComponentMultipleClients = ({
   return <ul role="derived-channel-messages">{messagePreviews}</ul>;
 };
 
-const UseDerivedChannelComponent = ({ channelName, deriveOptions }) => {
+interface UseDerivedChannelComponentProps {
+  channelName: string;
+  deriveOptions: Types.DeriveOptions;
+  skip?: boolean;
+}
+
+const UseDerivedChannelComponent = ({ channelName, deriveOptions, skip = false }: UseDerivedChannelComponentProps) => {
   const [messages, setMessages] = useState<Types.Message[]>([]);
 
-  useChannel({ channelName, deriveOptions }, (message) => {
+  useChannel({ channelName, deriveOptions, skip }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
 
@@ -372,10 +533,18 @@ const UseDerivedChannelComponent = ({ channelName, deriveOptions }) => {
 interface UseChannelStateErrorsComponentProps {
   onConnectionError?: (err: Types.ErrorInfo) => unknown;
   onChannelError?: (err: Types.ErrorInfo) => unknown;
+  channelName?: string;
+  deriveOptions?: Types.DeriveOptions;
 }
 
-const UseChannelStateErrorsComponent = ({ onConnectionError, onChannelError }: UseChannelStateErrorsComponentProps) => {
-  const { connectionError, channelError } = useChannel({ channelName: 'blah', onConnectionError, onChannelError });
+const UseChannelStateErrorsComponent = ({
+  onConnectionError,
+  onChannelError,
+  channelName = 'blah',
+  deriveOptions,
+}: UseChannelStateErrorsComponentProps) => {
+  const opts = { channelName, deriveOptions, onConnectionError, onChannelError };
+  const { connectionError, channelError } = useChannel(opts);
 
   return (
     <>
@@ -385,14 +554,47 @@ const UseChannelStateErrorsComponent = ({ onConnectionError, onChannelError }: U
   );
 };
 
-const ChangingEventComponent = ({ newEventName }: { newEventName: string }) => {
-  const [eventName, setEventName] = useState('event1');
+interface LatestMessageCallbackComponentProps {
+  channelName: string;
+  deriveOptions?: Types.DeriveOptions;
+  callback: () => any;
+}
 
-  useChannel('blah', eventName, vi.fn());
+const LatestMessageCallbackComponent = ({
+  channelName,
+  deriveOptions,
+  callback,
+}: LatestMessageCallbackComponentProps) => {
+  const [count, setCount] = React.useState(0);
+
+  useChannel({ channelName, deriveOptions }, () => {
+    callback();
+    setCount((count) => count + 1);
+  });
+
+  return <div role="counter">{count}</div>;
+};
+
+interface ChangingEventComponentProps {
+  newEventName: string;
+  channelName?: string;
+  deriveOptions?: Types.DeriveOptions;
+  eventName?: string;
+}
+
+const ChangingEventComponent = ({
+  channelName = 'blah',
+  eventName = 'event1',
+  newEventName,
+  deriveOptions,
+}: ChangingEventComponentProps) => {
+  const [currentEventName, setCurrentEventName] = useState(eventName);
+
+  useChannel({ channelName, deriveOptions }, currentEventName, vi.fn());
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setEventName(newEventName);
+      setCurrentEventName(newEventName);
     }, 50);
 
     return () => clearTimeout(timeoutId);
