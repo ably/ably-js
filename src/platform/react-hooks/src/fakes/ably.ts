@@ -107,6 +107,11 @@ export class ClientChannelsCollection {
       return channelConnection;
     }
   }
+
+  public getDerived(name: string, options: Types.DeriveOptions): ClientSingleChannelConnection {
+    options;
+    return this.get(name);
+  }
 }
 
 export class ClientSingleChannelConnection extends EventEmitter {

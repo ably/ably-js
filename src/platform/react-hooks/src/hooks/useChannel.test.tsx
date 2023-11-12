@@ -176,6 +176,59 @@ describe('useChannel', () => {
   });
 });
 
+describe('useChannel with deriveOptions', () => {
+  let channels: FakeAblyChannels;
+  let ablyClient: FakeAblySdk;
+  let anotherClient: FakeAblySdk;
+
+  const Channels = {
+    tasks: 'tasks',
+    alerts: 'alerts',
+  };
+  beforeEach(() => {
+    channels = new FakeAblyChannels([Channels.tasks, Channels.alerts]);
+    ablyClient = new FakeAblySdk().connectTo(channels);
+    anotherClient = new FakeAblySdk().connectTo(channels);
+  });
+
+  it('component updates when new message arrives', async () => {
+    renderInCtxProvider(
+      ablyClient,
+      <UseDerivedChannelComponent
+        channelName={Channels.tasks}
+        deriveOptions={{ filter: 'headers.user == `"robert.pike@gomail.io"`' }}
+      ></UseDerivedChannelComponent>
+    );
+    await act(async () => {
+      await anotherClient.channels
+        .get('tasks')
+        .publish({ text: 'A new task for you', extras: { headers: { user: 'robert.pike@domain.io' } } });
+    });
+
+    const messageUl = screen.getAllByRole('derived-channel-messages')[0];
+    expect(messageUl.childElementCount).toBe(1);
+    expect(messageUl.children[0].innerHTML).toBe('A new task for you');
+  });
+
+  it('component will not update if message filtered out', async () => {
+    renderInCtxProvider(
+      ablyClient,
+      <UseDerivedChannelComponent
+        channelName={Channels.tasks}
+        deriveOptions={{ filter: 'headers.user == `"robert.pike@gomail.io"`' }}
+      ></UseDerivedChannelComponent>
+    );
+    await act(async () => {
+      await anotherClient.channels
+        .get('tasks')
+        .publish({ text: 'This one is for another Rob', extras: { headers: { user: 'robert.griesemer@domain.io' } } });
+    });
+
+    const messageUl = screen.getAllByRole('derived-channel-messages')[0];
+    expect(messageUl.childElementCount).toBe(0);
+  });
+});
+
 const UseChannelComponentMultipleClients = () => {
   const [messages, updateMessages] = useState<Types.Message[]>([]);
   useChannel({ channelName: 'blah' }, (message) => {
@@ -199,6 +252,18 @@ const UseChannelComponent = ({ skip }: { skip?: boolean }) => {
   const messagePreviews = messages.map((msg, index) => <li key={index}>{msg.data.text}</li>);
 
   return <ul role="messages">{messagePreviews}</ul>;
+};
+
+const UseDerivedChannelComponent = ({ channelName, deriveOptions }) => {
+  const [messages, setMessages] = useState<Types.Message[]>([]);
+
+  useChannel({ channelName, deriveOptions }, (message) => {
+    setMessages((prev) => [...prev, message]);
+  });
+
+  const messagePreviews = messages.map((msg, index) => <li key={index}>{msg.data.text}</li>);
+
+  return <ul role="derived-channel-messages">{messagePreviews}</ul>;
 };
 
 interface UseChannelStateErrorsComponentProps {
