@@ -191,12 +191,25 @@ describe('useChannel with deriveOptions', () => {
     anotherClient = new FakeAblySdk().connectTo(channels);
   });
 
+  it('component can use "useChannel" with "deriveOptions" and renders nothing by default', async () => {
+    renderInCtxProvider(
+      ablyClient,
+      <UseDerivedChannelComponent
+        channelName={Channels.tasks}
+        deriveOptions={{ filter: '' }}
+      ></UseDerivedChannelComponent>
+    );
+    const messageUl = screen.getAllByRole('derived-channel-messages')[0];
+
+    expect(messageUl.childElementCount).toBe(0);
+  });
+
   it('component updates when new message arrives', async () => {
     renderInCtxProvider(
       ablyClient,
       <UseDerivedChannelComponent
         channelName={Channels.tasks}
-        deriveOptions={{ filter: 'headers.user == `"robert.pike@gomail.io"`' }}
+        deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
       ></UseDerivedChannelComponent>
     );
     await act(async () => {
@@ -215,7 +228,7 @@ describe('useChannel with deriveOptions', () => {
       ablyClient,
       <UseDerivedChannelComponent
         channelName={Channels.tasks}
-        deriveOptions={{ filter: 'headers.user == `"robert.pike@gomail.io"`' }}
+        deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
       ></UseDerivedChannelComponent>
     );
     await act(async () => {
@@ -226,6 +239,40 @@ describe('useChannel with deriveOptions', () => {
 
     const messageUl = screen.getAllByRole('derived-channel-messages')[0];
     expect(messageUl.childElementCount).toBe(0);
+  });
+
+  it('component will update if some messages qualify', async () => {
+    renderInCtxProvider(
+      ablyClient,
+      <UseDerivedChannelComponent
+        channelName={Channels.tasks}
+        deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
+      ></UseDerivedChannelComponent>
+    );
+    await act(async () => {
+      const channel = anotherClient.channels.get('tasks');
+      await channel.publish({
+        text: 'This one is for another Rob',
+        extras: { headers: { user: 'robert.griesemer@domain.io' } },
+      });
+      await channel.publish({
+        text: 'This one is for the whole domain',
+        extras: { headers: { company: 'domain' } },
+      });
+      await channel.publish({
+        text: 'This one is for Ken',
+        extras: { headers: { user: 'ken.thompson@domain.io' } },
+      });
+      await channel.publish({
+        text: 'This one is also a domain-wide fan-out',
+        extras: { headers: { company: 'domain' } },
+      });
+    });
+
+    const messageUl = screen.getAllByRole('derived-channel-messages')[0];
+    expect(messageUl.childElementCount).toBe(2);
+    expect(messageUl.children[0].innerHTML).toBe('This one is for the whole domain');
+    expect(messageUl.children[1].innerHTML).toBe('This one is also a domain-wide fan-out');
   });
 });
 
