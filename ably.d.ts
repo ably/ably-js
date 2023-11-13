@@ -2219,6 +2219,8 @@ declare namespace Types {
      */
     subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
     /**
+     * {@label WITH_MESSAGE_FILTER}
+     *
      * Registers a listener for messages on this channel that match the supplied filter.
      *
      * @param filter - A {@link MessageFilter}.

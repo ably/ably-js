@@ -81,6 +81,37 @@ WebPack will search your `node_modules` folder by default, so if you include `ab
 
 If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably.js` static file directly: `require('ably/build/ably.js');` (or `import * as Ably from 'ably/build/ably.js'` for typescript / ES6 modules).
 
+#### Modular (tree-shakable) variant
+
+Aimed at those who are concerned about their app’s bundle size, the modular variant of the library allows you to create a client which has only the functionality that you choose. Unused functionality can then be tree-shaken by your module bundler.
+
+The modular variant of the library provides:
+
+- a `BaseRealtime` class;
+- various modules that add functionality to a `BaseRealtime` instance, such as `Rest`, `RealtimePresence`, etc.
+
+To use this variant of the library, import the `BaseRealtime` class from `ably/modules`, along with the modules that you wish to use. Then, pass these modules to the `BaseRealtime` constructor as shown in the example below:
+
+```javascript
+import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from 'ably/modules';
+
+const options = { key: 'YOUR_ABLY_API_KEY' /* Replace with a real key from the Ably dashboard */ };
+const client = new BaseRealtime(options, {
+  WebSocketTransport,
+  FetchRequest,
+  RealtimePresence
+});
+```
+
+You must provide:
+
+- at least one HTTP request implementation; that is, one of `FetchRequest` or `XHRRequest`;
+- at least one realtime transport implementation; that is, one of `WebSocketTransport`, `XHRStreaming`, or `XHRPolling`.
+
+`BaseRealtime` offers the same API as the `Realtime` class described in the rest of this `README`. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
+
+For more information, see the [generated documentation](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/index.html) (this link points to the documentation for the `main` branch).
+
 ### TypeScript
 
 The TypeScript typings are included in the package and so all you have to do is:
