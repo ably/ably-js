@@ -6,4 +6,4 @@ npm-debug.log
 .tool-versions
 build/
 react/
-docs/generated/
+typedoc/generated/

@@ -37,6 +37,6 @@ jobs:
       - name: Upload Documentation
         uses: ably/sdk-upload-action@v1
         with:
-          sourcePath: docs/generated
+          sourcePath: typedoc/generated
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           artifactName: typedoc

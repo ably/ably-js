@@ -55,7 +55,7 @@ module.exports = {
     "test",
     "tools",
     "scripts",
-    "docs",
+    "typedoc/generated",
     "react",
     "Gruntfile.js",
   ],
