@@ -6,8 +6,6 @@ window.__testFiles__.files = {
   'build/ably-webworker.min.js': true,
   'build/ably.js': true,
   'build/ably.min.js': true,
-  'build/ably.noencryption.js': true,
-  'build/ably.noencryption.min.js': true,
   'browser/lib/util/base64.js': true,
   'node_modules/async/lib/async.js': true,
   'node_modules/@ably/vcdiff-decoder/dist/vcdiff-decoder.js': true,

@@ -55,9 +55,6 @@ require([(baseUrl + '/test/common/globals/named_dependencies.js').replace('//', 
       ably: {
         exports: 'Ably',
       },
-      'ably.noencryption': {
-        exports: 'Ably',
-      },
       'browser-base64': {
         exports: 'Base64',
       },

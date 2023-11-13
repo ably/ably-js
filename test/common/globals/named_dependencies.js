@@ -3,7 +3,6 @@ define(function () {
   return (module.exports = {
     // Ably modules
     ably: { browser: 'build/ably', node: 'build/ably-node' },
-    'ably.noencryption': { browser: 'build/ably.noencryption' },
     'vcdiff-decoder': {
       browser: 'node_modules/@ably/vcdiff-decoder/dist/vcdiff-decoder',
       node: 'node_modules/@ably/vcdiff-decoder',
