@@ -204,8 +204,9 @@ describe('useChannel with deriveOptions', () => {
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
       />
     );
-    await act(async () => {
-      await anotherClient.channels
+
+    act(() => {
+      anotherClient.channels
         .get(Channels.tasks)
         .publish({ text: 'A new task for you', extras: { headers: { user: 'robert.pike@domain.io' } } });
     });
@@ -223,8 +224,9 @@ describe('useChannel with deriveOptions', () => {
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
       />
     );
-    await act(async () => {
-      await anotherClient.channels
+
+    act(() => {
+      anotherClient.channels
         .get(Channels.tasks)
         .publish({ text: 'This one is for another Rob', extras: { headers: { user: 'robert.griesemer@domain.io' } } });
     });
@@ -242,21 +244,21 @@ describe('useChannel with deriveOptions', () => {
       />
     );
 
-    await act(async () => {
+    act(() => {
       const channel = anotherClient.channels.get(Channels.tasks);
-      await channel.publish({
+      channel.publish({
         text: 'This one is for another Rob',
         extras: { headers: { user: 'robert.griesemer@domain.io' } },
       });
-      await channel.publish({
+      channel.publish({
         text: 'This one is for the whole domain',
         extras: { headers: { company: 'domain' } },
       });
-      await channel.publish({
+      channel.publish({
         text: 'This one is for Ken',
         extras: { headers: { user: 'ken.thompson@domain.io' } },
       });
-      await channel.publish({
+      channel.publish({
         text: 'This one is also a domain-wide fan-out',
         extras: { headers: { company: 'domain' } },
       });
@@ -288,12 +290,12 @@ describe('useChannel with deriveOptions', () => {
       </AblyProvider>
     );
 
-    await act(async () => {
-      await yetAnotherClient.channels.get(Channels.tasks).publish({
+    act(() => {
+      yetAnotherClient.channels.get(Channels.tasks).publish({
         text: 'A task for Griesemer',
         extras: { headers: { user: 'robert.griesemer@domain.io' } },
       });
-      await yetAnotherClient.channels.get(Channels.alerts).publish({
+      yetAnotherClient.channels.get(Channels.alerts).publish({
         text: 'A company-wide alert',
         extras: { headers: { company: 'domain' } },
       });
@@ -361,9 +363,9 @@ describe('useChannel with deriveOptions', () => {
       ></UseDerivedChannelComponent>
     );
 
-    await act(async () => {
+    act(() => {
       const text = 'Will receive this text due to wildcard filter';
-      await anotherClient.channels.get(Channels.alerts).publish({ text });
+      anotherClient.channels.get(Channels.alerts).publish({ text });
     });
 
     const messageUl = screen.getAllByRole('derived-channel-messages')[0];
@@ -380,9 +382,9 @@ describe('useChannel with deriveOptions', () => {
       ></UseDerivedChannelComponent>
     );
 
-    await act(async () => {
+    act(() => {
       const text = 'Will skip due to "skip=true"';
-      await anotherClient.channels.get(Channels.alerts).publish({ text });
+      anotherClient.channels.get(Channels.alerts).publish({ text });
     });
 
     const messageUl = screen.getAllByRole('derived-channel-messages')[0];
@@ -401,29 +403,29 @@ describe('useChannel with deriveOptions', () => {
       />
     );
 
-    await act(async () => {
+    act(() => {
       const channel = anotherClient.channels.get(Channels.tasks);
-      await channel.publish({
+      channel.publish({
         text: 'This one is for another Rob',
         extras: { headers: { user: 'robert.griesemer@domain.io' } },
       });
-      await channel.publish({
+      channel.publish({
         text: 'This one is for the whole domain',
         extras: { headers: { company: 'domain' } },
       });
-      await channel.publish({
+      channel.publish({
         text: 'This one is for Ken',
         extras: { headers: { user: 'ken.thompson@domain.io' } },
       });
-      await channel.publish({
+      channel.publish({
         text: 'This one is also a domain-wide fan-out',
         extras: { headers: { company: 'domain' } },
       });
-      await channel.publish({
+      channel.publish({
         text: 'This one for Mr.Pike will also get through...',
         extras: { headers: { user: 'robert.pike@domain.io' } },
       });
-      await channel.publish({
+      channel.publish({
         text: '.... as well as this message',
         extras: { headers: { user: 'robert.pike@domain.io' } },
       });
