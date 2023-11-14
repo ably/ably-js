@@ -6,7 +6,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var utils = helper.Utils;
   let config = Ably.Realtime.Platform.Config;
   var closeAndFinish = helper.closeAndFinish;
-  var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
+  var createPM = Ably.protocolMessageFromDeserialized;
   var monitorConnection = helper.monitorConnection;
   var testOnAllTransports = helper.testOnAllTransports;
   var whenPromiseSettles = helper.whenPromiseSettles;

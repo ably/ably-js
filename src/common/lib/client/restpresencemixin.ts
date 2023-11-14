@@ -4,7 +4,7 @@ import * as Utils from '../util/utils';
 import { PaginatedResultCallback } from '../../types/utils';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
-import PresenceMessage from '../types/presencemessage';
+import PresenceMessage, { fromResponseBody as presenceMessageFromResponseBody } from '../types/presencemessage';
 import { CipherOptions } from '../types/message';
 import { RestChannelMixin } from './restchannelmixin';
 
@@ -41,7 +41,7 @@ export class RestPresenceMixin {
       headers,
       unpacked
     ) {
-      return await PresenceMessage.fromResponseBody(
+      return await presenceMessageFromResponseBody(
         body as Record<string, unknown>[],
         options as CipherOptions,
         client._MsgPack,

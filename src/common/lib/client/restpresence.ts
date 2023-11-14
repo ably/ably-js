@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
-import PresenceMessage from '../types/presencemessage';
+import PresenceMessage, { fromResponseBody as presenceMessageFromResponseBody } from '../types/presencemessage';
 import { CipherOptions } from '../types/message';
 import { PaginatedResultCallback } from '../../types/utils';
 import RestChannel from './restchannel';
@@ -39,7 +39,7 @@ class RestPresence {
       headers,
       envelope,
       async function (body, headers, unpacked) {
-        return await PresenceMessage.fromResponseBody(
+        return await presenceMessageFromResponseBody(
           body as Record<string, unknown>[],
           options as CipherOptions,
           client._MsgPack,

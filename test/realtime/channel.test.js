@@ -7,7 +7,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var displayError = helper.displayError;
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
-  var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
+  var createPM = Ably.protocolMessageFromDeserialized;
   var testOnAllTransports = helper.testOnAllTransports;
   var whenPromiseSettles = helper.whenPromiseSettles;
   var randomString = helper.randomString;

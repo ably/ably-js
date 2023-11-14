@@ -1,4 +1,8 @@
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, {
+  actions,
+  fromValues as protocolMessageFromValues,
+  stringify as stringifyProtocolMessage,
+} from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
@@ -21,9 +25,8 @@ export type TransportCtor = new (
   forceJsonProtocol?: boolean
 ) => Transport;
 
-const actions = ProtocolMessage.Action;
-const closeMessage = ProtocolMessage.fromValues({ action: actions.CLOSE });
-const disconnectMessage = ProtocolMessage.fromValues({ action: actions.DISCONNECT });
+const closeMessage = protocolMessageFromValues({ action: actions.CLOSE });
+const disconnectMessage = protocolMessageFromValues({ action: actions.DISCONNECT });
 
 /*
  * Transport instances inherit from EventEmitter and emit the following events:
@@ -120,7 +123,7 @@ abstract class Transport extends EventEmitter {
         'received on ' +
           this.shortName +
           ': ' +
-          ProtocolMessage.stringify(message) +
+          stringifyProtocolMessage(message) +
           '; connectionId = ' +
           this.connectionManager.connectionId
       );
@@ -239,9 +242,9 @@ abstract class Transport extends EventEmitter {
   }
 
   ping(id: string): void {
-    const msg: Record<string, number | string> = { action: ProtocolMessage.Action.HEARTBEAT };
+    const msg: Record<string, number | string> = { action: actions.HEARTBEAT };
     if (id) msg.id = id;
-    this.send(ProtocolMessage.fromValues(msg));
+    this.send(protocolMessageFromValues(msg));
   }
 
   dispose(): void {

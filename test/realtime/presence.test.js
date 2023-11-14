@@ -3,7 +3,7 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
   var utils = helper.Utils;
-  var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
+  var createPM = Ably.protocolMessageFromDeserialized;
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
   var PresenceMessage = Ably.Realtime.PresenceMessage;

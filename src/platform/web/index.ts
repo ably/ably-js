@@ -3,6 +3,7 @@ import { DefaultRest } from '../../common/lib/client/defaultrest';
 import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
 import ErrorInfo from '../../common/lib/types/errorinfo';
+import { fromDeserialized as protocolMessageFromDeserialized } from '../../common/lib/types/protocolmessage';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
@@ -52,7 +53,7 @@ if (Platform.Config.noUpgrade) {
   Platform.Defaults.upgradeTransports = [];
 }
 
-export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack };
+export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack, protocolMessageFromDeserialized };
 
 export default {
   ErrorInfo,

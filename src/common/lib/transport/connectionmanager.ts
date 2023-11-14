@@ -1,4 +1,8 @@
-import ProtocolMessage from 'common/lib/types/protocolmessage';
+import ProtocolMessage, {
+  actions,
+  stringify as stringifyProtocolMessage,
+  fromValues as protocolMessageFromValues,
+} from 'common/lib/types/protocolmessage';
 import * as Utils from 'common/lib/util/utils';
 import Protocol, { PendingMessage } from './protocol';
 import Defaults, { getAgentString } from 'common/lib/util/defaults';
@@ -10,7 +14,7 @@ import ConnectionStateChange from 'common/lib/client/connectionstatechange';
 import ConnectionErrors, { isRetriable } from './connectionerrors';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types/errorinfo';
 import Auth from 'common/lib/client/auth';
-import Message from 'common/lib/types/message';
+import Message, { getMessagesSize } from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
 import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
@@ -24,7 +28,6 @@ let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'u
 
 const haveWebStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.localSupported;
 const haveSessionStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
-const actions = ProtocolMessage.Action;
 const noop = function () {};
 const transportPreferenceName = 'ably-transport-preference';
 
@@ -62,7 +65,7 @@ function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number
   }
   const kind = action === actions.PRESENCE ? 'presence' : 'messages',
     proposed = (dest as Record<string, any>)[kind].concat((src as Record<string, any>)[kind]),
-    size = Message.getMessagesSize(proposed);
+    size = getMessagesSize(proposed);
   if (size > maxSize) {
     /* RTL6d1 */
     return false;
@@ -732,7 +735,7 @@ class ConnectionManager extends EventEmitter {
       // Send ACTIVATE to tell the server to make this transport the
       // active transport, which suspends channels until we re-attach.
       transport.send(
-        ProtocolMessage.fromValues({
+        protocolMessageFromValues({
           action: actions.ACTIVATE,
         })
       );
@@ -1777,7 +1780,7 @@ class ConnectionManager extends EventEmitter {
           activeTransport.onAuthUpdated(tokenDetails);
         }
 
-        const authMsg = ProtocolMessage.fromValues({
+        const authMsg = protocolMessageFromValues({
           action: actions.AUTH,
           auth: {
             accessToken: tokenDetails.token,
@@ -1911,7 +1914,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + ProtocolMessage.stringify(msg));
+      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + stringifyProtocolMessage(msg));
     }
     this.queue(msg, callback);
   }

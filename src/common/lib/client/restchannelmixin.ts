@@ -3,7 +3,7 @@ import RestChannel from './restchannel';
 import RealtimeChannel from './realtimechannel';
 import * as Utils from '../util/utils';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import Message from '../types/message';
+import Message, { fromResponseBody as messageFromResponseBody } from '../types/message';
 import Defaults from '../util/defaults';
 import PaginatedResource from './paginatedresource';
 import Resource from './resource';
@@ -40,7 +40,7 @@ export class RestChannelMixin {
       headers,
       unpacked
     ) {
-      return await Message.fromResponseBody(body as Message[], options, client._MsgPack, unpacked ? undefined : format);
+      return await messageFromResponseBody(body as Message[], options, client._MsgPack, unpacked ? undefined : format);
     }).get(params as Record<string, unknown>, callback);
   }
 
