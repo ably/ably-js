@@ -123,7 +123,7 @@ abstract class Transport extends EventEmitter {
         'received on ' +
           this.shortName +
           ': ' +
-          stringifyProtocolMessage(message) +
+          stringifyProtocolMessage(message, this.connectionManager.realtime._RealtimePresence) +
           '; connectionId = ' +
           this.connectionManager.connectionId
       );

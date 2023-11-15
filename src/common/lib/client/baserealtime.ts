@@ -9,8 +9,7 @@ import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
 import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
-import { ModulesMap } from './modulesmap';
-import RealtimePresence from './realtimepresence';
+import { ModulesMap, RealtimePresenceModule } from './modulesmap';
 import { TransportNames } from 'common/constants/TransportName';
 import { TransportImplementations } from 'common/platform';
 
@@ -18,7 +17,7 @@ import { TransportImplementations } from 'common/platform';
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
-  readonly _RealtimePresence: typeof RealtimePresence | null;
+  readonly _RealtimePresence: RealtimePresenceModule | null;
   // Extra transport implementations available to this client, in addition to those in Platform.Transports.bundledImplementations
   readonly _additionalTransportImplementations: TransportImplementations;
   _channels: any;

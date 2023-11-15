@@ -125,7 +125,14 @@ class WebSocketTransport extends Transport {
       'data received; length = ' + data.length + '; type = ' + typeof data
     );
     try {
-      this.onProtocolMessage(deserializeProtocolMessage(data, this.connectionManager.realtime._MsgPack, this.format));
+      this.onProtocolMessage(
+        deserializeProtocolMessage(
+          data,
+          this.connectionManager.realtime._MsgPack,
+          this.connectionManager.realtime._RealtimePresence,
+          this.format
+        )
+      );
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,
