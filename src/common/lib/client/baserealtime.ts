@@ -12,12 +12,14 @@ import * as API from '../../../../ably';
 import { ModulesMap, RealtimePresenceModule } from './modulesmap';
 import { TransportNames } from 'common/constants/TransportName';
 import { TransportImplementations } from 'common/platform';
+import { RealtimePublishing } from './realtimepublishing';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
   readonly _RealtimePresence: RealtimePresenceModule | null;
+  readonly __RealtimePublishing: typeof RealtimePublishing | null;
   // Extra transport implementations available to this client, in addition to those in Platform.Transports.bundledImplementations
   readonly _additionalTransportImplementations: TransportImplementations;
   _channels: any;
@@ -28,6 +30,7 @@ class BaseRealtime extends BaseClient {
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromModules(modules);
     this._RealtimePresence = modules.RealtimePresence ?? null;
+    this.__RealtimePublishing = modules.RealtimePublishing ?? null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
     if (options.autoConnect !== false) this.connect();
@@ -51,6 +54,13 @@ class BaseRealtime extends BaseClient {
 
   get channels() {
     return this._channels;
+  }
+
+  get _RealtimePublishing(): typeof RealtimePublishing {
+    if (!this.__RealtimePublishing) {
+      Utils.throwMissingModuleError('RealtimePublishing');
+    }
+    return this.__RealtimePublishing;
   }
 
   connect(): void {

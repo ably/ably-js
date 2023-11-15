@@ -51,4 +51,5 @@ export * from './modules/transports';
 export * from './modules/http';
 export { Rest } from '../../common/lib/client/rest';
 export { FilteredSubscriptions as MessageInteractions } from '../../common/lib/client/filteredsubscriptions';
+export { RealtimePublishing } from '../../common/lib/client/realtimepublishing';
 export { BaseRest, BaseRealtime, ErrorInfo };

@@ -7,14 +7,7 @@ import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import RealtimePresence from './realtimepresence';
-import Message, {
-  fromValues as messageFromValues,
-  fromValuesArray as messagesFromValuesArray,
-  encodeArray as encodeMessagesArray,
-  decode as decodeMessage,
-  getMessagesSize,
-  CipherOptions,
-} from '../types/message';
+import Message, { decode as decodeMessage } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import PresenceMessage, { decode as decodePresenceMessage } from '../types/presencemessage';
@@ -228,73 +221,11 @@ class RealtimeChannel extends EventEmitter {
   }
 
   publish(...args: any[]): void | Promise<void> {
-    let messages = args[0];
-    let argCount = args.length;
-    let callback = args[argCount - 1];
-
-    if (typeof callback !== 'function') {
-      return Utils.promisify(this, 'publish', arguments);
-    }
-    if (!this.connectionManager.activeState()) {
-      callback(this.connectionManager.getError());
-      return;
-    }
-    if (argCount == 2) {
-      if (Utils.isObject(messages)) messages = [messageFromValues(messages)];
-      else if (Utils.isArray(messages)) messages = messagesFromValuesArray(messages);
-      else
-        throw new ErrorInfo(
-          'The single-argument form of publish() expects a message object or an array of message objects',
-          40013,
-          400
-        );
-    } else {
-      messages = [messageFromValues({ name: args[0], data: args[1] })];
-    }
-    const maxMessageSize = this.client.options.maxMessageSize;
-    encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
-      if (err) {
-        callback(err);
-        return;
-      }
-      /* RSL1i */
-      const size = getMessagesSize(messages);
-      if (size > maxMessageSize) {
-        callback(
-          new ErrorInfo(
-            'Maximum size of messages that can be published at once exceeded ( was ' +
-              size +
-              ' bytes; limit is ' +
-              maxMessageSize +
-              ' bytes)',
-            40009,
-            400
-          )
-        );
-        return;
-      }
-      this._publish(messages, callback);
-    });
+    return this.client._RealtimePublishing.publish(this, ...args);
   }
 
   _publish(messages: Array<Message>, callback: ErrCallback) {
-    Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
-    const state = this.state;
-    switch (state) {
-      case 'failed':
-      case 'suspended':
-        callback(ErrorInfo.fromValues(this.invalidStateError()));
-        break;
-      default: {
-        Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
-        const msg = new ProtocolMessage();
-        msg.action = actions.MESSAGE;
-        msg.channel = this.name;
-        msg.messages = messages;
-        this.sendMessage(msg, callback);
-        break;
-      }
-    }
+    this.client._RealtimePublishing._publish(this, messages, callback);
   }
 
   onEvent(messages: Array<any>): void {

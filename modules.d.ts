@@ -163,6 +163,20 @@ export declare const FetchRequest: unknown;
 export declare const MessageInteractions: unknown;
 
 /**
+ * Provides a {@link BaseRealtime} instance with the ability to publish messages.
+ *
+ * To create a client that includes this module, include it in the `ModulesMap` that you pass to the {@link BaseRealtime.constructor}:
+ *
+ * ```javascript
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePublishing } from 'ably/modules';
+ * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, RealtimePublishing });
+ * ```
+ *
+ * If this module is not provided, then calling {@link Types.RealtimeChannel.publish} on a channel will cause a runtime error.
+ */
+export declare const RealtimePublishing: unknown;
+
+/**
  * Pass a `ModulesMap` to { @link BaseRest.constructor | the constructor of BaseRest } or {@link BaseRealtime.constructor | that of BaseRealtime} to specify which functionality should be made available to that client.
  */
 export interface ModulesMap {
@@ -215,6 +229,11 @@ export interface ModulesMap {
    * See {@link MessageInteractions | documentation for the `MessageInteractions` module}.
    */
   MessageInteractions?: typeof MessageInteractions;
+
+  /**
+   * See {@link RealtimePublishing | documentation for the `RealtimePublishing` module}.
+   */
+  RealtimePublishing?: typeof RealtimePublishing;
 }
 
 /**

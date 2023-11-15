@@ -10,6 +10,7 @@ import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
+import { RealtimePublishing } from './realtimepublishing';
 
 export interface PresenceMessageModule {
   presenceMessageFromValues: typeof presenceMessageFromValues;
@@ -31,6 +32,7 @@ export interface ModulesMap {
   XHRRequest?: typeof XHRRequest;
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
+  RealtimePublishing?: typeof RealtimePublishing;
 }
 
 export const allCommonModules: ModulesMap = { Rest };

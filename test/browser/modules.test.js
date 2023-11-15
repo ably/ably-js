@@ -20,6 +20,7 @@ import {
   FetchRequest,
   XHRRequest,
   MessageInteractions,
+  RealtimePublishing,
 } from '../../build/modules/index.js';
 
 describe('browser/modules', function () {
@@ -141,7 +142,7 @@ describe('browser/modules', function () {
 
     describe('BaseRealtime without Rest', () => {
       it('still allows publishing and subscribing', async () => {
-        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest, RealtimePublishing });
 
         const channel = client.channels.get('channel');
         await channel.attach();
@@ -368,7 +369,7 @@ describe('browser/modules', function () {
 
       for (const clientClassConfig of [
         { clientClass: BaseRest },
-        { clientClass: BaseRealtime, additionalModules: { WebSocketTransport } },
+        { clientClass: BaseRealtime, additionalModules: { WebSocketTransport, RealtimePublishing } },
       ]) {
         describe(clientClassConfig.clientClass.name, () => {
           it('is able to publish encrypted messages', async () => {
@@ -478,6 +479,7 @@ describe('browser/modules', function () {
           WebSocketTransport,
           FetchRequest,
           RealtimePresence,
+          RealtimePublishing,
         });
         const txChannel = txClient.channels.get('channel');
 
@@ -629,7 +631,11 @@ describe('browser/modules', function () {
     describe('BaseRealtime', () => {
       describe('without MessageInteractions', () => {
         it('is able to subscribe to and unsubscribe from channel events, as long as a MessageFilter isn’t passed', async () => {
-          const realtime = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+          const realtime = new BaseRealtime(ablyClientOptions(), {
+            WebSocketTransport,
+            FetchRequest,
+            RealtimePublishing,
+          });
           const channel = realtime.channels.get('channel');
           await channel.attach();
 
@@ -642,7 +648,11 @@ describe('browser/modules', function () {
         });
 
         it('throws an error when attempting to subscribe to channel events using a MessageFilter', async () => {
-          const realtime = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+          const realtime = new BaseRealtime(ablyClientOptions(), {
+            WebSocketTransport,
+            FetchRequest,
+            RealtimePublishing,
+          });
           const channel = realtime.channels.get('channel');
 
           let thrownError = null;
@@ -662,6 +672,7 @@ describe('browser/modules', function () {
           const realtime = new BaseRealtime(ablyClientOptions(), {
             WebSocketTransport,
             FetchRequest,
+            RealtimePublishing,
             MessageInteractions,
           });
           const channel = realtime.channels.get('channel');
@@ -708,6 +719,35 @@ describe('browser/modules', function () {
           await unfilteredSubscriptionReceivedNextMessagePromise;
 
           expect(filteredSubscriptionReceivedMessages.length).to./* (still) */ equal(1);
+        });
+      });
+    });
+  });
+
+  describe('RealtimePublishing', () => {
+    describe('BaseRealtime', () => {
+      describe('without RealtimePublishing', () => {
+        it('throws an error when attempting to publish a message', async () => {
+          const realtime = new BaseRealtime(ablyClientOptions(), {
+            WebSocketTransport,
+            FetchRequest,
+          });
+
+          const channel = realtime.channels.get('channel');
+          expect(() => channel.publish('message', { foo: 'bar' })).to.throw('RealtimePublishing module not provided');
+        });
+      });
+
+      describe('with RealtimePublishing', () => {
+        it('can publish a message', async () => {
+          const realtime = new BaseRealtime(ablyClientOptions(), {
+            WebSocketTransport,
+            FetchRequest,
+            RealtimePublishing,
+          });
+
+          const channel = realtime.channels.get('channel');
+          await channel.publish('message', { foo: 'bar' });
         });
       });
     });

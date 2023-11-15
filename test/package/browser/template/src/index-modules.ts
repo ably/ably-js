@@ -1,4 +1,11 @@
-import { BaseRealtime, Types, WebSocketTransport, FetchRequest, generateRandomKey } from 'ably/modules';
+import {
+  BaseRealtime,
+  Types,
+  WebSocketTransport,
+  FetchRequest,
+  RealtimePublishing,
+  generateRandomKey,
+} from 'ably/modules';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // This function exists to check that we can import the Types namespace and refer to its types.
@@ -17,7 +24,10 @@ async function checkStandaloneFunction() {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new BaseRealtime({ key, environment: 'sandbox' }, { WebSocketTransport, FetchRequest });
+  const realtime = new BaseRealtime(
+    { key, environment: 'sandbox' },
+    { WebSocketTransport, FetchRequest, RealtimePublishing }
+  );
 
   const channel = realtime.channels.get('channel');
   await attachChannel(channel);
