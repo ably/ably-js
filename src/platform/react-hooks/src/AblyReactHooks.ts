@@ -3,6 +3,7 @@ import { Types } from '../../../../ably.js';
 export type ChannelNameAndOptions = {
   channelName: string;
   options?: Types.ChannelOptions;
+  deriveOptions?: Types.DeriveOptions;
   id?: string;
   subscribeOnly?: boolean;
   skip?: boolean;
