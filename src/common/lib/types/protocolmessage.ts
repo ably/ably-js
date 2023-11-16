@@ -58,8 +58,6 @@ function toStringArray(array?: any[]): string {
   return '[ ' + result.join(', ') + ' ]';
 }
 
-const simpleAttributes = 'id channel channelSerial connectionId count msgSerial timestamp'.split(' ');
-
 class ProtocolMessage {
   action?: number;
   flags?: number;
@@ -133,6 +131,7 @@ class ProtocolMessage {
     let result = '[ProtocolMessage';
     if (msg.action !== undefined) result += '; action=' + ProtocolMessage.ActionName[msg.action] || msg.action;
 
+    const simpleAttributes = ['id', 'channel', 'channelSerial', 'connectionId', 'count', 'msgSerial', 'timestamp'];
     let attribute;
     for (let attribIndex = 0; attribIndex < simpleAttributes.length; attribIndex++) {
       attribute = simpleAttributes[attribIndex];
