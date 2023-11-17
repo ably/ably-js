@@ -2,6 +2,9 @@ import * as esbuild from 'esbuild';
 import * as path from 'path';
 import { explore } from 'source-map-explorer';
 
+// The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
+const minimalUsefulRealtimeBundleSizeThresholdKiB = 108;
+
 // List of all modules accepted in ModulesMap
 const moduleNames = [
   'Rest',
@@ -146,6 +149,27 @@ function printAndCheckFunctionSizes() {
   return errors;
 }
 
+function printAndCheckMinimalUsefulRealtimeBundleSize() {
+  const errors: Error[] = [];
+
+  const exports = ['BaseRealtime', 'FetchRequest', 'WebSocketTransport'];
+  const size = getImportSize(exports);
+
+  console.log(`Minimal useful Realtime (${exports.join(' + ')}): ${formatBytes(size)}`);
+
+  if (size > minimalUsefulRealtimeBundleSizeThresholdKiB * 1024) {
+    errors.push(
+      new Error(
+        `Minimal useful Realtime bundle is ${formatBytes(
+          size
+        )}, which is greater than allowed maximum of ${minimalUsefulRealtimeBundleSizeThresholdKiB} KiB.`
+      )
+    );
+  }
+
+  return errors;
+}
+
 // Performs a sense check that there are no unexpected files making a large contribution to the BaseRealtime bundle size.
 async function checkBaseRealtimeFiles() {
   const baseRealtimeBundleInfo = getBundleInfo(['BaseRealtime']);
@@ -232,6 +256,7 @@ async function checkBaseRealtimeFiles() {
 (async function run() {
   const errors: Error[] = [];
 
+  errors.push(...printAndCheckMinimalUsefulRealtimeBundleSize());
   errors.push(...printAndCheckModuleSizes());
   errors.push(...printAndCheckFunctionSizes());
   errors.push(...(await checkBaseRealtimeFiles()));
