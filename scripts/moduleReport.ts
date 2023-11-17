@@ -52,52 +52,69 @@ function getImportSize(modules: string[]) {
   return result.metafile.outputs[outfile].bytes;
 }
 
-const errors: Error[] = [];
+function printAndCheckModuleSizes() {
+  const errors: Error[] = [];
 
-['BaseRest', 'BaseRealtime'].forEach((baseClient) => {
-  const baseClientSize = getImportSize([baseClient]);
+  ['BaseRest', 'BaseRealtime'].forEach((baseClient) => {
+    const baseClientSize = getImportSize([baseClient]);
 
-  // First display the size of the base client
-  console.log(`${baseClient}: ${formatBytes(baseClientSize)}`);
+    // First display the size of the base client
+    console.log(`${baseClient}: ${formatBytes(baseClientSize)}`);
 
-  // Then display the size of each export together with the base client
-  [...moduleNames, ...Object.values(functions).map((functionData) => functionData.name)].forEach((exportName) => {
-    const size = getImportSize([baseClient, exportName]);
-    console.log(`${baseClient} + ${exportName}: ${formatBytes(size)}`);
+    // Then display the size of each export together with the base client
+    [...moduleNames, ...Object.values(functions).map((functionData) => functionData.name)].forEach((exportName) => {
+      const size = getImportSize([baseClient, exportName]);
+      console.log(`${baseClient} + ${exportName}: ${formatBytes(size)}`);
 
-    if (!(baseClientSize < size) && !(baseClient === 'BaseRest' && exportName === 'Rest')) {
-      // Emit an error if adding the module does not increase the bundle size
-      // (this means that the module is not being tree-shaken correctly).
-      errors.push(new Error(`Adding ${exportName} to ${baseClient} does not increase the bundle size.`));
-    }
+      if (!(baseClientSize < size) && !(baseClient === 'BaseRest' && exportName === 'Rest')) {
+        // Emit an error if adding the module does not increase the bundle size
+        // (this means that the module is not being tree-shaken correctly).
+        errors.push(new Error(`Adding ${exportName} to ${baseClient} does not increase the bundle size.`));
+      }
+    });
   });
-});
 
-for (const functionData of functions) {
-  const { name: functionName, transitiveImports } = functionData;
+  return errors;
+}
 
-  // First display the size of the function
-  const standaloneSize = getImportSize([functionName]);
-  console.log(`${functionName}: ${formatBytes(standaloneSize)}`);
+function printAndCheckFunctionSizes() {
+  const errors: Error[] = [];
 
-  // Then display the size of the function together with the modules we expect
-  // it to transitively import
-  if (transitiveImports.length > 0) {
-    const withTransitiveImportsSize = getImportSize([functionName, ...transitiveImports]);
-    console.log(`${functionName} + ${transitiveImports.join(' + ')}: ${formatBytes(withTransitiveImportsSize)}`);
+  for (const functionData of functions) {
+    const { name: functionName, transitiveImports } = functionData;
 
-    if (withTransitiveImportsSize > standaloneSize) {
-      // Emit an error if the bundle size is increased by adding the modules
-      // that we expect this function to have transitively imported anyway.
-      // This seemed like a useful sense check, but it might need tweaking in
-      // the future if we make future optimisations that mean that the
-      // standalone functions don’t necessarily import the whole module.
-      errors.push(
-        new Error(`Adding ${transitiveImports.join(' + ')} to ${functionName} unexpectedly increases the bundle size.`)
-      );
+    // First display the size of the function
+    const standaloneSize = getImportSize([functionName]);
+    console.log(`${functionName}: ${formatBytes(standaloneSize)}`);
+
+    // Then display the size of the function together with the modules we expect
+    // it to transitively import
+    if (transitiveImports.length > 0) {
+      const withTransitiveImportsSize = getImportSize([functionName, ...transitiveImports]);
+      console.log(`${functionName} + ${transitiveImports.join(' + ')}: ${formatBytes(withTransitiveImportsSize)}`);
+
+      if (withTransitiveImportsSize > standaloneSize) {
+        // Emit an error if the bundle size is increased by adding the modules
+        // that we expect this function to have transitively imported anyway.
+        // This seemed like a useful sense check, but it might need tweaking in
+        // the future if we make future optimisations that mean that the
+        // standalone functions don’t necessarily import the whole module.
+        errors.push(
+          new Error(
+            `Adding ${transitiveImports.join(' + ')} to ${functionName} unexpectedly increases the bundle size.`
+          )
+        );
+      }
     }
   }
+
+  return errors;
 }
+
+const errors: Error[] = [];
+
+errors.push(...printAndCheckModuleSizes());
+errors.push(...printAndCheckFunctionSizes());
 
 if (errors.length > 0) {
   for (const error of errors) {
