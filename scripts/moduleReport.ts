@@ -1,4 +1,4 @@
-const esbuild = require('esbuild');
+import * as esbuild from 'esbuild';
 
 // List of all modules accepted in ModulesMap
 const moduleNames = [
@@ -28,14 +28,14 @@ const functions = [
   { name: 'constructPresenceMessage', transitiveImports: [] },
 ];
 
-function formatBytes(bytes) {
+function formatBytes(bytes: number) {
   const kibibytes = bytes / 1024;
   const formatted = kibibytes.toFixed(2);
   return `${formatted} KiB`;
 }
 
 // Gets the bundled size in bytes of an array of named exports from 'ably/modules'
-function getImportSize(modules) {
+function getImportSize(modules: string[]) {
   const outfile = modules.join('');
   const result = esbuild.buildSync({
     stdin: {
@@ -52,7 +52,7 @@ function getImportSize(modules) {
   return result.metafile.outputs[outfile].bytes;
 }
 
-const errors = [];
+const errors: Error[] = [];
 
 ['BaseRest', 'BaseRealtime'].forEach((baseClient) => {
   const baseClientSize = getImportSize([baseClient]);
