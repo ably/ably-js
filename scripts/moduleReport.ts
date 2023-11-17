@@ -111,14 +111,16 @@ function printAndCheckFunctionSizes() {
   return errors;
 }
 
-const errors: Error[] = [];
+(function run() {
+  const errors: Error[] = [];
 
-errors.push(...printAndCheckModuleSizes());
-errors.push(...printAndCheckFunctionSizes());
+  errors.push(...printAndCheckModuleSizes());
+  errors.push(...printAndCheckFunctionSizes());
 
-if (errors.length > 0) {
-  for (const error of errors) {
-    console.log(error.message);
+  if (errors.length > 0) {
+    for (const error of errors) {
+      console.log(error.message);
+    }
+    process.exit(1);
   }
-  process.exit(1);
-}
+})();
