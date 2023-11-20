@@ -23,4 +23,7 @@ jobs:
       - run: npm run format:check
       - run: npm run check-closure-compiler
       - run: npx tsc --noEmit ably.d.ts build/ably-webworker.min.d.ts
+      # for some reason, this doesn't work in CI using `npx attw --pack .`
+      - run: npm pack
+      - run: npx attw ably-$(npm show ably version).tgz --summary
       - run: npm audit --production
