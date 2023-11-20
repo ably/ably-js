@@ -1,7 +1,5 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import * as Ably from 'ably';
-import { Types } from '../../../../ably.js';
+import { Types } from 'ably';
 import React, { useMemo } from 'react';
 
 const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'function';
@@ -31,7 +29,7 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
     throw new Error('AblyProvider: the `client` prop is required');
   }
 
-  if (!(client instanceof Ably.Realtime) && !client?.options?.promises) {
+  if (!(client instanceof Ably.Realtime) && !(client as any)?.options?.promises) {
     throw new Error('AblyProvider: the `client` prop must take an instance of Ably.Realtime.Promise');
   }
 
@@ -39,7 +37,7 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
 
   let context = getContext(id);
   if (!context) {
-    context = ctxMap[id] = React.createContext(realtime ?? 1);
+    context = ctxMap[id] = React.createContext(realtime);
   }
 
   return <context.Provider value={realtime}>{children}</context.Provider>;

@@ -1,4 +1,4 @@
-import { Types } from '../../../../../ably.js';
+import { Types } from 'ably';
 import { useEffect, useMemo, useRef } from 'react';
 import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
