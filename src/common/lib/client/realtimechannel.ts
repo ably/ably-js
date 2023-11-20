@@ -14,6 +14,7 @@ import Message, {
   decode as decodeMessage,
   getMessagesSize,
   CipherOptions,
+  EncodingDecodingContext,
 } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
@@ -86,7 +87,7 @@ class RealtimeChannel extends EventEmitter {
   _requestedFlags: Array<API.Types.ChannelMode> | null;
   _mode?: null | number;
   _attachResume: boolean;
-  _decodingContext: { channelOptions: API.Types.ChannelOptions; plugins: any; baseEncodedPreviousPayload: undefined };
+  _decodingContext: EncodingDecodingContext;
   _lastPayload: {
     messageId?: string | null;
     protocolMessageChannelSerial?: string | null;
