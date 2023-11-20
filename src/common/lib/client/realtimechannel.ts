@@ -122,7 +122,7 @@ class RealtimeChannel extends EventEmitter {
     this._attachResume = false;
     this._decodingContext = {
       channelOptions: this.channelOptions,
-      plugins: client.options.plugins || {},
+      decodeVcdiff: client._decodeVcdiff ?? undefined,
       baseEncodedPreviousPayload: undefined,
     };
     this._lastPayload = {
