@@ -13,5 +13,6 @@ define(function () {
     shared_helper: { browser: 'test/common/modules/shared_helper', node: 'test/common/modules/shared_helper' },
     async: { browser: 'node_modules/async/lib/async' },
     chai: { browser: 'node_modules/chai/chai', node: 'node_modules/chai/chai' },
+    delta_tests: { browser: 'test/realtime/shared/delta_tests', node: 'test/realtime/shared/delta_tests' },
   });
 });
