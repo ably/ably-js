@@ -111,6 +111,7 @@
     "test:webserver": "grunt test:webserver",
     "test:playwright": "node test/support/runPlaywrightTests.js",
     "test:react": "vitest run",
+    "test:package": "grunt test:package",
     "concat": "grunt concat",
     "build": "grunt build:all && npm run build:react",
     "build:node": "grunt build:node",

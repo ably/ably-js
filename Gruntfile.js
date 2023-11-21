@@ -6,6 +6,7 @@ var webpackConfig = require('./webpack.config');
 var esbuild = require('esbuild');
 var umdWrapper = require('esbuild-plugin-umd-wrapper');
 var banner = require('./src/fragments/license');
+var process = require('process');
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
@@ -27,18 +28,27 @@ module.exports = function (grunt) {
     };
   }
 
-  function execExternal(cmd) {
-    return function () {
-      var done = this.async();
-      grunt.log.ok('Executing ' + cmd);
+  async function execExternalPromises(cmd) {
+    grunt.log.ok('Executing ' + cmd);
+    return new Promise(function (resolve, reject) {
       require('child_process').exec(cmd, function (err, stdout, stderr) {
         if (err) {
-          grunt.fatal('Error executing "' + cmd + '": ' + stderr);
+          grunt.fatal('Error executing "' + cmd + '":\nstderr:\n' + stderr + '\nstdout:\n' + stdout);
+          reject(err);
         }
         console.log(stdout);
         stderr && console.error(stderr);
-        done();
+        resolve();
       });
+    });
+  }
+
+  function execExternal(cmd) {
+    return function () {
+      var done = this.async();
+      execExternalPromises(cmd)
+        .then(() => done())
+        .catch((error) => done(error));
     };
   }
 
@@ -214,6 +224,72 @@ module.exports = function (grunt) {
       ]);
     }
   );
+
+  (function () {
+    const baseDir = path.join(__dirname, 'test', 'package', 'browser');
+    const buildDir = path.join(baseDir, 'build');
+
+    grunt.registerTask(
+      'test:package:browser:prepare-project',
+      'Prepare an app to be used for testing the NPM package in a browser environment',
+      function () {
+        const done = this.async();
+
+        (async function () {
+          if (grunt.file.exists(buildDir)) {
+            grunt.file.delete(buildDir);
+          }
+
+          // Create an app based on the template
+          grunt.file.copy(path.join(baseDir, 'template'), buildDir);
+
+          // Use `npm pack` to generate a .tgz NPM package
+          await execExternalPromises('npm run build');
+          await execExternalPromises('npm pack --pack-destination test/package/browser/build');
+          const version = grunt.file.readJSON('package.json').version;
+          const packFileName = `ably-${version}.tgz`;
+
+          // Configure app to consume the generated .tgz file
+          const pwd = process.cwd();
+          process.chdir(buildDir);
+          await execExternalPromises(`npm install ${packFileName}`);
+
+          // Install further dependencies required for testing the app
+          await execExternalPromises('npm run test:install-deps');
+          process.chdir(pwd);
+        })()
+          .then(() => done(true))
+          .catch((error) => done(error));
+      }
+    );
+
+    grunt.registerTask('test:package:browser:test', 'Test the NPM package in a browser environment', function () {
+      const done = this.async();
+
+      (async function () {
+        grunt.task.requires('test:package:browser:prepare-project');
+
+        const pwd = process.cwd();
+        process.chdir(buildDir);
+
+        // Perform type checking on TypeScript code that imports ably-js
+        await execExternalPromises('npm run typecheck');
+
+        // Build bundle including ably-js
+        await execExternalPromises('npm run build');
+
+        // Test that the code which exercises ably-js behaves as expected
+        await execExternalPromises('npm run test');
+
+        process.chdir(pwd);
+      })()
+        .then(() => done(true))
+        .catch((error) => done(error));
+    });
+  })();
+
+  grunt.registerTask('test:package:browser', ['test:package:browser:prepare-project', 'test:package:browser:test']);
+  grunt.registerTask('test:package', ['test:package:browser']);
 
   grunt.registerTask('default', 'all');
 };

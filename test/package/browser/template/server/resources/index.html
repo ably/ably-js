@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ably NPM package test</title>
+  </head>
+  <body>
+    <script type="text/javascript" src="index.js"></script>
+    <script type="text/javascript">
+      (async () => {
+        try {
+          await testAblyPackage();
+          onResult(null);
+        } catch (error) {
+          console.log('Caught error', error);
+          onResult(error);
+        }
+      })();
+    </script>
+  </body>
+</html>
