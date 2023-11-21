@@ -569,5 +569,5 @@ export function arrEquals(a: any[], b: any[]) {
 }
 
 export function throwMissingModuleError(moduleName: keyof ModulesMap): never {
-  throw new ErrorInfo(`${moduleName} module not provided`, 400, 40000);
+  throw new ErrorInfo(`${moduleName} module not provided`, 40019, 400);
 }
