@@ -41,6 +41,7 @@ if (Platform.Config.noUpgrade) {
 
 export * from './modules/crypto';
 export * from './modules/message';
+export * from './modules/presencemessage';
 export * from './modules/msgpack';
 export * from './modules/realtimepresence';
 export { Rest } from '../../common/lib/client/rest';

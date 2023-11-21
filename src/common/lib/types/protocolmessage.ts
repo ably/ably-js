@@ -3,7 +3,7 @@ import { Types } from '../../../../ably';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message from './message';
-import PresenceMessage from './presencemessage';
+import PresenceMessage, { fromValues as presenceMessageFromValues } from './presencemessage';
 
 const actions = {
   HEARTBEAT: 0,
@@ -121,7 +121,7 @@ class ProtocolMessage {
     const messages = deserialized.messages as Message[];
     if (messages) for (let i = 0; i < messages.length; i++) messages[i] = Message.fromValues(messages[i]);
     const presence = deserialized.presence as PresenceMessage[];
-    if (presence) for (let i = 0; i < presence.length; i++) presence[i] = PresenceMessage.fromValues(presence[i], true);
+    if (presence) for (let i = 0; i < presence.length; i++) presence[i] = presenceMessageFromValues(presence[i], true);
     return Object.assign(new ProtocolMessage(), deserialized);
   };
 

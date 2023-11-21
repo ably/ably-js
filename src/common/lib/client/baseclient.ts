@@ -10,7 +10,6 @@ import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOption
 import * as API from '../../../../ably';
 
 import Platform from '../../platform';
-import PresenceMessage from '../types/presencemessage';
 import { ModulesMap } from './modulesmap';
 import { Rest } from './rest';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
@@ -153,7 +152,6 @@ class BaseClient {
   }
 
   static Platform = Platform;
-  static PresenceMessage = PresenceMessage;
 }
 
 export default BaseClient;
