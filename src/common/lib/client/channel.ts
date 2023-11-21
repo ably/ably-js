@@ -50,7 +50,10 @@ class Channel extends EventEmitter {
   client: BaseClient;
   name: string;
   basePath: string;
-  presence: Presence;
+  private _presence: Presence;
+  get presence(): Presence {
+    return this._presence;
+  }
   channelOptions: ChannelOptions;
 
   constructor(client: BaseClient, name: string, channelOptions?: ChannelOptions) {
@@ -59,7 +62,7 @@ class Channel extends EventEmitter {
     this.client = client;
     this.name = name;
     this.basePath = '/channels/' + encodeURIComponent(name);
-    this.presence = new Presence(this);
+    this._presence = new Presence(this);
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, channelOptions);
   }
 

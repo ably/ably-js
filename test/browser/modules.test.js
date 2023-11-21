@@ -10,6 +10,7 @@ import {
   decodeEncryptedMessages,
   Crypto,
   MsgPack,
+  RealtimePresence,
 } from '../../build/modules/index.js';
 
 describe('browser/modules', function () {
@@ -20,11 +21,13 @@ describe('browser/modules', function () {
   let testResourcesPath;
   let loadTestData;
   let testMessageEquality;
+  let randomString;
 
   before((done) => {
     ablyClientOptions = window.ablyHelpers.ablyClientOptions;
     testResourcesPath = window.ablyHelpers.testResourcesPath;
     testMessageEquality = window.ablyHelpers.testMessageEquality;
+    randomString = window.ablyHelpers.randomString;
 
     loadTestData = async (dataPath) => {
       return new Promise((resolve, reject) => {
@@ -314,6 +317,37 @@ describe('browser/modules', function () {
             await testRealtimeUsesFormat(client, 'msgpack');
           });
         });
+      });
+    });
+  });
+
+  describe('RealtimePresence', () => {
+    describe('BaseRealtime without RealtimePresence', () => {
+      it('throws an error when attempting to access the `presence` property', () => {
+        const client = new BaseRealtime(ablyClientOptions(), {});
+        const channel = client.channels.get('channel');
+
+        expect(() => channel.presence).to.throw('RealtimePresence module not provided');
+      });
+    });
+
+    describe('BaseRealtime with RealtimePresence', () => {
+      it('offers realtime presence functionality', async () => {
+        const rxChannel = new BaseRealtime(ablyClientOptions(), { RealtimePresence }).channels.get('channel');
+        const txClientId = randomString();
+        const txChannel = new BaseRealtime(ablyClientOptions({ clientId: txClientId }), {
+          RealtimePresence,
+        }).channels.get('channel');
+
+        let resolveRxPresenceMessagePromise;
+        const rxPresenceMessagePromise = new Promise((resolve, reject) => {
+          resolveRxPresenceMessagePromise = resolve;
+        });
+        await rxChannel.presence.subscribe('enter', resolveRxPresenceMessagePromise);
+        await txChannel.presence.enter();
+
+        const rxPresenceMessage = await rxPresenceMessagePromise;
+        expect(rxPresenceMessage.clientId).to.equal(txClientId);
       });
     });
   });

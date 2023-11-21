@@ -50,7 +50,13 @@ function validateChannelOptions(options?: API.Types.ChannelOptions) {
 
 class RealtimeChannel extends Channel {
   realtime: BaseRealtime;
-  presence: RealtimePresence;
+  private _realtimePresence: RealtimePresence | null;
+  get presence(): RealtimePresence {
+    if (!this._realtimePresence) {
+      Utils.throwMissingModuleError('RealtimePresence');
+    }
+    return this._realtimePresence;
+  }
   connectionManager: ConnectionManager;
   state: API.Types.ChannelState;
   subscriptions: EventEmitter;
@@ -84,7 +90,7 @@ class RealtimeChannel extends Channel {
     super(realtime, name, options);
     Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
     this.realtime = realtime;
-    this.presence = new RealtimePresence(this);
+    this._realtimePresence = realtime._RealtimePresence ? new realtime._RealtimePresence(this) : null;
     this.connectionManager = realtime.connection.connectionManager;
     this.state = 'initialized';
     this.subscriptions = new EventEmitter();
@@ -616,7 +622,9 @@ class RealtimeChannel extends Channel {
         if (this.state === 'attached') {
           if (!resumed) {
             /* On a loss of continuity, the presence set needs to be re-synced */
-            this.presence.onAttached(hasPresence);
+            if (this._realtimePresence) {
+              this._realtimePresence.onAttached(hasPresence);
+            }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
           this._allChannelChanges.emit('update', change);
@@ -674,7 +682,9 @@ class RealtimeChannel extends Channel {
             Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());
           }
         }
-        this.presence.setPresence(presence, isSync, syncChannelSerial as any);
+        if (this._realtimePresence) {
+          this._realtimePresence.setPresence(presence, isSync, syncChannelSerial as any);
+        }
         break;
       }
       case actions.MESSAGE: {
@@ -810,7 +820,9 @@ class RealtimeChannel extends Channel {
     if (state === this.state) {
       return;
     }
-    this.presence.actOnChannelState(state, hasPresence, reason);
+    if (this._realtimePresence) {
+      this._realtimePresence.actOnChannelState(state, hasPresence, reason);
+    }
     if (state === 'suspended' && this.connectionManager.state.sendEvents) {
       this.startRetryTimer();
     } else {
