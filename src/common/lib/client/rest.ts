@@ -3,7 +3,7 @@ import Logger, { LoggerOptions } from '../util/logger';
 import Defaults from '../util/defaults';
 import Push from './push';
 import PaginatedResource, { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
-import Channel from './channel';
+import RestChannel from './restchannel';
 import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
@@ -15,8 +15,12 @@ import Resource from './resource';
 
 import Platform from '../../platform';
 import BaseClient from './baseclient';
+import { useTokenAuth } from './auth';
+import { RestChannelMixin } from './restchannelmixin';
+import { RestPresenceMixin } from './restpresencemixin';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
+
 type BatchPublishSpec = API.Types.BatchPublishSpec;
 type BatchPublishSuccessResult = API.Types.BatchPublishSuccessResult;
 type BatchPublishFailureResult = API.Types.BatchPublishFailureResult;
@@ -25,11 +29,20 @@ type BatchPresenceSuccessResult = API.Types.BatchPresenceSuccessResult;
 type BatchPresenceFailureResult = API.Types.BatchPresenceFailureResult;
 type BatchPresenceResult = BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>;
 
+type TokenRevocationTargetSpecifier = API.Types.TokenRevocationTargetSpecifier;
+type TokenRevocationOptions = API.Types.TokenRevocationOptions;
+type TokenRevocationSuccessResult = API.Types.TokenRevocationSuccessResult;
+type TokenRevocationFailureResult = API.Types.TokenRevocationFailureResult;
+type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
+
 const noop = function () {};
 export class Rest {
   private readonly client: BaseClient;
   readonly channels: Channels;
   readonly push: Push;
+
+  readonly channelMixin = RestChannelMixin;
+  readonly presenceMixin = RestPresenceMixin;
 
   constructor(client: BaseClient) {
     this.client = client;
@@ -261,6 +274,54 @@ export class Rest {
     );
   }
 
+  revokeTokens(
+    specifiers: TokenRevocationTargetSpecifier[],
+    options?: TokenRevocationOptions
+  ): Promise<TokenRevocationResult> {
+    if (useTokenAuth(this.client.options)) {
+      throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
+    }
+
+    const keyName = this.client.options.keyName!;
+
+    let resolvedOptions = options ?? {};
+
+    const requestBodyDTO = {
+      targets: specifiers.map((specifier) => `${specifier.type}:${specifier.value}`),
+      ...resolvedOptions,
+    };
+
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
+
+    const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
+
+    return new Promise((resolve, reject) => {
+      Resource.post(
+        this.client,
+        `/keys/${keyName}/revokeTokens`,
+        requestBody,
+        headers,
+        { newBatchResponse: 'true' },
+        null,
+        (err, body, headers, unpacked) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          const batchResult = (
+            unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+          ) as TokenRevocationResult;
+
+          resolve(batchResult);
+        }
+      );
+    });
+  }
+
   setLog(logOptions: LoggerOptions): void {
     Logger.setLog(logOptions.level, logOptions.handler);
   }
@@ -268,7 +329,7 @@ export class Rest {
 
 class Channels {
   client: BaseClient;
-  all: Record<string, Channel>;
+  all: Record<string, RestChannel>;
 
   constructor(client: BaseClient) {
     this.client = client;
@@ -279,7 +340,7 @@ class Channels {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
-      this.all[name] = channel = new Channel(this.client, name, channelOptions);
+      this.all[name] = channel = new RestChannel(this.client, name, channelOptions);
     } else if (channelOptions) {
       channel.setOptions(channelOptions);
     }

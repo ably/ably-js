@@ -103,7 +103,7 @@ class BaseClient {
     this.__FilteredSubscriptions = modules.MessageInteractions ?? null;
   }
 
-  private get rest(): Rest {
+  get rest(): Rest {
     if (!this._rest) {
       throwMissingModuleError('Rest');
     }
