@@ -19,6 +19,7 @@ import {
   WebSocketTransport,
   FetchRequest,
   XHRRequest,
+  MessageInteractions,
 } from '../../build/modules/index.js';
 
 describe('browser/modules', function () {
@@ -501,6 +502,94 @@ describe('browser/modules', function () {
         await rest.time();
 
         expect(usedXHR).to.be.true;
+      });
+    });
+  });
+
+  describe('MessageInteractions', () => {
+    describe('BaseRealtime', () => {
+      describe('without MessageInteractions', () => {
+        it('is able to subscribe to and unsubscribe from channel events, as long as a MessageFilter isn’t passed', async () => {
+          const realtime = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+          const channel = realtime.channels.get('channel');
+          await channel.attach();
+
+          const subscribeReceivedMessagePromise = new Promise((resolve) => channel.subscribe(resolve));
+
+          await channel.publish('message', 'body');
+
+          const subscribeReceivedMessage = await subscribeReceivedMessagePromise;
+          expect(subscribeReceivedMessage.data).to.equal('body');
+        });
+
+        it('throws an error when attempting to subscribe to channel events using a MessageFilter', async () => {
+          const realtime = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+          const channel = realtime.channels.get('channel');
+
+          let thrownError = null;
+          try {
+            await channel.subscribe({ clientId: 'someClientId' }, () => {});
+          } catch (error) {
+            thrownError = error;
+          }
+
+          expect(thrownError).not.to.be.null;
+          expect(thrownError.message).to.equal('MessageInteractions module not provided');
+        });
+      });
+
+      describe('with MessageInteractions', () => {
+        it('can take a MessageFilter argument when subscribing to and unsubscribing from channel events', async () => {
+          const realtime = new BaseRealtime(ablyClientOptions(), {
+            WebSocketTransport,
+            FetchRequest,
+            MessageInteractions,
+          });
+          const channel = realtime.channels.get('channel');
+
+          await channel.attach();
+
+          // Test `subscribe` with a filter: send two messages with different clientIds, and check that unfiltered subscription receives both messages but clientId-filtered subscription only receives the matching one.
+          const messageFilter = { clientId: 'someClientId' }; // note that `unsubscribe` compares filter by reference, I found that a bit surprising
+
+          const filteredSubscriptionReceivedMessages = [];
+          channel.subscribe(messageFilter, (message) => {
+            filteredSubscriptionReceivedMessages.push(message);
+          });
+
+          const unfilteredSubscriptionReceivedFirstTwoMessagesPromise = new Promise((resolve) => {
+            const receivedMessages = [];
+            channel.subscribe(function listener(message) {
+              receivedMessages.push(message);
+              if (receivedMessages.length === 2) {
+                channel.unsubscribe(listener);
+                resolve();
+              }
+            });
+          });
+
+          await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
+          await channel.publish(await decodeMessage({ clientId: 'someOtherClientId' }));
+          await unfilteredSubscriptionReceivedFirstTwoMessagesPromise;
+
+          expect(filteredSubscriptionReceivedMessages.length).to.equal(1);
+          expect(filteredSubscriptionReceivedMessages[0].clientId).to.equal('someClientId');
+
+          // Test `unsubscribe` with a filter: call `unsubscribe` with the clientId filter, publish a message matching the filter, check that only the unfiltered listener recieves it
+          channel.unsubscribe(messageFilter);
+
+          const unfilteredSubscriptionReceivedNextMessagePromise = new Promise((resolve) => {
+            channel.subscribe(function listener() {
+              channel.unsubscribe(listener);
+              resolve();
+            });
+          });
+
+          await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
+          await unfilteredSubscriptionReceivedNextMessagePromise;
+
+          expect(filteredSubscriptionReceivedMessages.length).to./* (still) */ equal(1);
+        });
       });
     });
   });

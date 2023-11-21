@@ -16,6 +16,7 @@ import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import { throwMissingModuleError } from '../util/utils';
 import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
+import { FilteredSubscriptions } from './filteredsubscriptions';
 
 type BatchResult<T> = API.Types.BatchResult<T>;
 type BatchPublishSpec = API.Types.BatchPublishSpec;
@@ -44,6 +45,7 @@ class BaseClient {
   readonly _MsgPack: MsgPack | null;
   // Extra HTTP request implementations available to this client, in addition to those in web’s Http.bundledRequestImplementations
   readonly _additionalHTTPRequestImplementations: HTTPRequestImplementations;
+  private readonly __FilteredSubscriptions: typeof FilteredSubscriptions | null;
 
   constructor(options: ClientOptions | string, modules: ModulesMap) {
     this._additionalHTTPRequestImplementations = modules;
@@ -98,6 +100,7 @@ class BaseClient {
 
     this._rest = modules.Rest ? new modules.Rest(this) : null;
     this._Crypto = modules.Crypto ?? null;
+    this.__FilteredSubscriptions = modules.MessageInteractions ?? null;
   }
 
   private get rest(): Rest {
@@ -105,6 +108,13 @@ class BaseClient {
       throwMissingModuleError('Rest');
     }
     return this._rest;
+  }
+
+  get _FilteredSubscriptions(): typeof FilteredSubscriptions {
+    if (!this.__FilteredSubscriptions) {
+      throwMissingModuleError('MessageInteractions');
+    }
+    return this.__FilteredSubscriptions;
   }
 
   get channels() {

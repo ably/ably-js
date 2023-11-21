@@ -50,4 +50,5 @@ export * from './modules/realtimepresence';
 export * from './modules/transports';
 export * from './modules/http';
 export { Rest } from '../../common/lib/client/rest';
+export { FilteredSubscriptions as MessageInteractions } from '../../common/lib/client/filteredsubscriptions';
 export { BaseRest, BaseRealtime, ErrorInfo };
