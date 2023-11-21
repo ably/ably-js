@@ -1,11 +1,11 @@
-import TransportNames from '../constants/TransportNames';
+import TransportName from '../constants/TransportName';
 import { RestAgentOptions } from './ClientOptions';
 
 export default interface IDefaults {
   connectivityCheckUrl: string;
-  defaultTransports: TransportNames[];
-  baseTransportOrder: TransportNames[];
-  transportPreferenceOrder: TransportNames[];
-  upgradeTransports: TransportNames[];
+  defaultTransports: TransportName[];
+  baseTransportOrder: TransportName[];
+  transportPreferenceOrder: TransportName[];
+  upgradeTransports: TransportName[];
   restAgentOptions?: RestAgentOptions;
 }

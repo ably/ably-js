@@ -6,10 +6,11 @@ import Logger from '../util/logger';
 import ProtocolMessage from '../types/protocolmessage';
 import ErrorInfo from '../types/errorinfo';
 import NodeWebSocket from 'ws';
-import ConnectionManager, { TransportParams } from './connectionmanager';
+import ConnectionManager, { TransportParams, TransportStorage } from './connectionmanager';
 import Auth from '../client/auth';
+import { TransportNames } from 'common/constants/TransportName';
 
-const shortName = 'web_socket';
+const shortName = TransportNames.WebSocket;
 
 function isNodeWebSocket(ws: WebSocket | NodeWebSocket): ws is NodeWebSocket {
   return !!(ws as NodeWebSocket).on;
@@ -195,8 +196,8 @@ class WebSocketTransport extends Transport {
   }
 }
 
-function initialiseTransport(connectionManager: any): typeof WebSocketTransport {
-  if (WebSocketTransport.isAvailable()) connectionManager.supportedTransports[shortName] = WebSocketTransport;
+function initialiseTransport(transportStorage: TransportStorage): typeof WebSocketTransport {
+  if (WebSocketTransport.isAvailable()) transportStorage.supportedTransports[shortName] = WebSocketTransport;
 
   return WebSocketTransport;
 }

@@ -110,7 +110,7 @@ class ProtocolMessage {
 
   static serialize = Utils.encodeBody;
 
-  static deserialize = function (serialized: unknown, MsgPack: MsgPack, format?: Utils.Format): ProtocolMessage {
+  static deserialize = function (serialized: unknown, MsgPack: MsgPack | null, format?: Utils.Format): ProtocolMessage {
     const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, MsgPack, format);
     return ProtocolMessage.fromDeserialized(deserialized);
   };

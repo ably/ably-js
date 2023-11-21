@@ -2,7 +2,7 @@ import ProtocolMessage from 'common/lib/types/protocolmessage';
 import * as Utils from 'common/lib/util/utils';
 import Protocol, { PendingMessage } from './protocol';
 import Defaults, { getAgentString } from 'common/lib/util/defaults';
-import Platform from 'common/platform';
+import Platform, { TransportImplementations } from 'common/platform';
 import EventEmitter from '../util/eventemitter';
 import MessageQueue from './messagequeue';
 import Logger from '../util/logger';
@@ -12,14 +12,13 @@ import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types
 import Auth from 'common/lib/client/auth';
 import Message from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
-import WebSocketTransport from './websockettransport';
 import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
 import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
-
-type Realtime = any;
-type ClientOptions = any;
+import BaseRealtime from '../client/baserealtime';
+import { NormalisedClientOptions } from 'common/types/ClientOptions';
+import TransportName, { TransportNames } from 'common/constants/TransportName';
 
 let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
 
@@ -91,18 +90,16 @@ type RecoveryContext = {
   channelSerials: { [name: string]: string };
 };
 
-function decodeRecoveryKey(recoveryKey: string): RecoveryContext | null {
+function decodeRecoveryKey(recoveryKey: NormalisedClientOptions['recover']): RecoveryContext | null {
   try {
-    return JSON.parse(recoveryKey);
+    return JSON.parse(recoveryKey as string);
   } catch (e) {
     return null;
   }
 }
 
-const supportedTransports: Record<string, TransportCtor> = {};
-
 export class TransportParams {
-  options: ClientOptions;
+  options: NormalisedClientOptions;
   host: string | null;
   mode: string;
   format?: Utils.Format;
@@ -110,7 +107,7 @@ export class TransportParams {
   stream?: any;
   heartbeats?: boolean;
 
-  constructor(options: ClientOptions, host: string | null, mode: string, connectionKey?: string) {
+  constructor(options: NormalisedClientOptions, host: string | null, mode: string, connectionKey?: string) {
     this.options = options;
     this.host = host;
     this.mode = mode;
@@ -190,8 +187,9 @@ type ConnectionState = {
 };
 
 class ConnectionManager extends EventEmitter {
-  realtime: Realtime;
-  options: ClientOptions;
+  supportedTransports: Partial<Record<TransportName, TransportCtor>> = {};
+  realtime: BaseRealtime;
+  options: NormalisedClientOptions;
   states: Record<string, ConnectionState>;
   state: ConnectionState;
   errorReason: IPartialErrorInfo | string | null;
@@ -202,9 +200,9 @@ class ConnectionManager extends EventEmitter {
   connectionKey?: string;
   connectionStateTtl: number;
   maxIdleInterval: number | null;
-  transports: string[];
-  baseTransport: string;
-  upgradeTransports: string[];
+  transports: TransportName[];
+  baseTransport: TransportName;
+  upgradeTransports: TransportName[];
   transportPreference: string | null;
   httpHosts: string[];
   activeProtocol: null | Protocol;
@@ -226,10 +224,10 @@ class ConnectionManager extends EventEmitter {
     queue: { message: ProtocolMessage; transport: Transport }[];
   } = { isProcessing: false, queue: [] };
 
-  constructor(realtime: Realtime, options: ClientOptions) {
+  constructor(realtime: BaseRealtime, options: NormalisedClientOptions) {
     super();
-    ConnectionManager.initTransports();
     this.realtime = realtime;
+    this.initTransports();
     this.options = options;
     const timeouts = options.timeouts;
     /* connectingTimeout: leave preferenceConnectTimeout (~6s) to try the
@@ -305,10 +303,7 @@ class ConnectionManager extends EventEmitter {
     this.connectionStateTtl = timeouts.connectionStateTtl;
     this.maxIdleInterval = null;
 
-    this.transports = Utils.intersect(
-      options.transports || Defaults.defaultTransports,
-      ConnectionManager.supportedTransports
-    );
+    this.transports = Utils.intersect(options.transports || Defaults.defaultTransports, this.supportedTransports);
     /* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
      * that's both requested and supported. */
     this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
@@ -404,15 +399,30 @@ class ConnectionManager extends EventEmitter {
    * transport management
    *********************/
 
-  static get supportedTransports() {
-    return supportedTransports;
+  // Used by tests
+  static supportedTransports(additionalImplementations: TransportImplementations) {
+    const storage: TransportStorage = { supportedTransports: {} };
+    this.initTransports(additionalImplementations, storage);
+    return storage.supportedTransports;
   }
 
-  static initTransports() {
-    WebSocketTransport(ConnectionManager);
-    Utils.arrForEach(Platform.Transports, function (initFn) {
-      initFn(ConnectionManager);
+  private static initTransports(additionalImplementations: TransportImplementations, storage: TransportStorage) {
+    const implementations = { ...Platform.Transports.bundledImplementations, ...additionalImplementations };
+
+    const initialiseWebSocketTransport = implementations[TransportNames.WebSocket];
+    if (initialiseWebSocketTransport) {
+      initialiseWebSocketTransport(storage);
+    }
+    Utils.arrForEach(Platform.Transports.order, function (transportName) {
+      const initFn = implementations[transportName];
+      if (initFn) {
+        initFn(storage);
+      }
     });
+  }
+
+  initTransports() {
+    ConnectionManager.initTransports(this.realtime._additionalTransportImplementations, this);
   }
 
   createTransportParams(host: string | null, mode: string): TransportParams {
@@ -481,11 +491,11 @@ class ConnectionManager extends EventEmitter {
    * @param candidate, the transport to try
    * @param callback
    */
-  tryATransport(transportParams: TransportParams, candidate: string, callback: Function): void {
+  tryATransport(transportParams: TransportParams, candidate: TransportName, callback: Function): void {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
     Transport.tryConnect(
-      ConnectionManager.supportedTransports[candidate],
+      this.supportedTransports[candidate]!,
       this,
       this.realtime.auth,
       transportParams,
@@ -600,7 +610,7 @@ class ConnectionManager extends EventEmitter {
       if (mode === 'recover' && this.options.recover) {
         /* After a successful recovery, we unpersist, as a recovery key cannot
          * be used more than once */
-        this.options.recover = null;
+        delete this.options.recover;
         this.unpersistConnection();
       }
     });
@@ -1191,7 +1201,8 @@ class ConnectionManager extends EventEmitter {
     const newState = (this.state = this.states[stateChange.current as string]);
     if (stateChange.reason) {
       this.errorReason = stateChange.reason;
-      this.realtime.connection.errorReason = stateChange.reason;
+      // TODO remove this type assertion after fixing https://github.com/ably/ably-js/issues/1405
+      this.realtime.connection.errorReason = stateChange.reason as ErrorInfo;
     }
     if (newState.terminal || newState.state === 'suspended') {
       /* suspended is nonterminal, but once in the suspended state, realtime
@@ -1673,13 +1684,13 @@ class ConnectionManager extends EventEmitter {
     this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
   }
 
-  getUpgradePossibilities(): string[] {
+  getUpgradePossibilities(): TransportName[] {
     /* returns the subset of upgradeTransports to the right of the current
      * transport in upgradeTransports (if it's in there - if not, currentSerial
      * will be -1, so return upgradeTransports.slice(0) == upgradeTransports */
     const current = (this.activeProtocol as Protocol).getTransport().shortName;
     const currentSerial = Utils.arrIndexOf(this.upgradeTransports, current);
-    return this.upgradeTransports.slice(currentSerial + 1) as string[];
+    return this.upgradeTransports.slice(currentSerial + 1);
   }
 
   upgradeIfNeeded(transportParams: Record<string, any>): void {
@@ -1694,7 +1705,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    Utils.arrForEach(upgradePossibilities, (upgradeTransport: string) => {
+    Utils.arrForEach(upgradePossibilities, (upgradeTransport: TransportName) => {
       /* Note: the transport may mutate the params, so give each transport a fresh one */
       const upgradeTransportParams = this.createTransportParams(transportParams.host, 'upgrade');
       this.tryATransport(upgradeTransportParams, upgradeTransport, noop);
@@ -2097,7 +2108,7 @@ class ConnectionManager extends EventEmitter {
     this.proposedTransports.push(transport);
   }
 
-  getTransportPreference(): string {
+  getTransportPreference(): TransportName {
     return this.transportPreference || (haveWebStorage() && Platform.WebStorage?.get?.(transportPreferenceName));
   }
 
@@ -2166,3 +2177,9 @@ class ConnectionManager extends EventEmitter {
 }
 
 export default ConnectionManager;
+
+export interface TransportStorage {
+  supportedTransports: Partial<Record<TransportName, TransportCtor>>;
+}
+
+export type TransportInitialiser = (transportStorage: TransportStorage) => typeof Transport;

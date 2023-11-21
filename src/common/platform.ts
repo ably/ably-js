@@ -1,17 +1,19 @@
 import { IPlatformConfig } from './types/IPlatformConfig';
 import { IHttp } from './types/http';
-import ConnectionManager from './lib/transport/connectionmanager';
+import { TransportInitialiser } from './lib/transport/connectionmanager';
 import IDefaults from './types/IDefaults';
 import IWebStorage from './types/IWebStorage';
 import IBufferUtils from './types/IBufferUtils';
-import Transport from './lib/transport/transport';
 import * as WebBufferUtils from '../platform/web/lib/util/bufferutils';
 import * as NodeBufferUtils from '../platform/nodejs/lib/util/bufferutils';
 import { IUntypedCryptoStatic } from '../common/types/ICryptoStatic';
+import TransportName from './constants/TransportName';
 
 type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
 type BufferUtilsOutput = WebBufferUtils.Output | NodeBufferUtils.Output;
 type ToBufferOutput = WebBufferUtils.ToBufferOutput | NodeBufferUtils.ToBufferOutput;
+
+export type TransportImplementations = Partial<Record<TransportName, TransportInitialiser>>;
 
 export default class Platform {
   static Config: IPlatformConfig;
@@ -30,7 +32,11 @@ export default class Platform {
    */
   static Crypto: IUntypedCryptoStatic | null;
   static Http: typeof IHttp;
-  static Transports: Array<(connectionManager: typeof ConnectionManager) => Transport>;
+  static Transports: {
+    order: TransportName[];
+    // Transport implementations that always come with this platform
+    bundledImplementations: TransportImplementations;
+  };
   static Defaults: IDefaults;
   static WebStorage: IWebStorage | null;
 }

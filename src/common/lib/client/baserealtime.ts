@@ -11,22 +11,43 @@ import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 import { ModulesMap } from './modulesmap';
 import RealtimePresence from './realtimepresence';
+import { TransportNames } from 'common/constants/TransportName';
+import { TransportImplementations } from 'common/platform';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
   readonly _RealtimePresence: typeof RealtimePresence | null;
+  // Extra transport implementations available to this client, in addition to those in Platform.Transports.bundledImplementations
+  readonly _additionalTransportImplementations: TransportImplementations;
   _channels: any;
   connection: Connection;
 
   constructor(options: ClientOptions, modules: ModulesMap) {
     super(options, modules);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
+    this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromModules(modules);
     this._RealtimePresence = modules.RealtimePresence ?? null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
     if (options.autoConnect !== false) this.connect();
+  }
+
+  private static transportImplementationsFromModules(modules: ModulesMap) {
+    const transports: TransportImplementations = {};
+
+    if (modules.WebSocketTransport) {
+      transports[TransportNames.WebSocket] = modules.WebSocketTransport;
+    }
+    if (modules.XHRStreaming) {
+      transports[TransportNames.XhrStreaming] = modules.XHRStreaming;
+    }
+    if (modules.XHRPolling) {
+      transports[TransportNames.XhrPolling] = modules.XHRPolling;
+    }
+
+    return transports;
   }
 
   get channels() {

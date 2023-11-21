@@ -1,5 +1,5 @@
 import IDefaults from 'common/types/IDefaults';
-import TransportNames from 'common/constants/TransportNames';
+import { TransportNames } from 'common/constants/TransportName';
 
 const Defaults: IDefaults = {
   connectivityCheckUrl: 'https://internet-up.ably-realtime.com/is-the-internet-up.txt',
