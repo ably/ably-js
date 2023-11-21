@@ -26,7 +26,6 @@ export type EncodingDecodingContext = {
   channelOptions: ChannelOptions;
   plugins: {
     vcdiff?: {
-      encrypt: Function;
       decode: Function;
     };
   };
