@@ -26,7 +26,7 @@ export type EncodingDecodingContext = {
   channelOptions: ChannelOptions;
   plugins: {
     vcdiff?: {
-      decode: Function;
+      decode: (delta: Uint8Array, source: Uint8Array) => Uint8Array;
     };
   };
   baseEncodedPreviousPayload?: Buffer | BrowserBufferlike;
@@ -233,10 +233,10 @@ export async function decode(
               }
 
               // vcdiff expects Uint8Arrays, can't copy with ArrayBuffers.
-              deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
+              const deltaBaseBuffer = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
               data = Platform.BufferUtils.toBuffer(data);
 
-              data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
+              data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBaseBuffer));
               lastPayload = data;
             } catch (e) {
               throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
