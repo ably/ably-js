@@ -9,7 +9,7 @@ import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import { ErrnoException, RequestParams } from '../../types/http';
+import { RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import Resource from './resource';
 
@@ -56,11 +56,7 @@ export class Rest {
 
     Utils.mixin(headers, this.client.options.headers);
 
-    new PaginatedResource(this.client, '/stats', headers, envelope, function (
-      body: unknown,
-      headers: Record<string, string>,
-      unpacked?: boolean
-    ) {
+    new PaginatedResource(this.client, '/stats', headers, envelope, function (body, headers, unpacked) {
       const statsValues = unpacked ? body : JSON.parse(body as string);
       for (let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
       return statsValues;
@@ -87,17 +83,11 @@ export class Rest {
     };
     this.client.http.do(
       HttpMethods.Get,
-      this.client,
       timeUri,
       headers,
       null,
       params as RequestParams,
-      (
-        err?: ErrorInfo | ErrnoException | null,
-        res?: unknown,
-        headers?: Record<string, string>,
-        unpacked?: boolean
-      ) => {
+      (err, res, headers, unpacked) => {
         if (err) {
           _callback(err);
           return;
@@ -160,7 +150,7 @@ export class Rest {
       path,
       headers,
       envelope,
-      async function (resbody: unknown, headers: Record<string, string>, unpacked?: boolean) {
+      async function (resbody, headers, unpacked) {
         return Utils.ensureArray(unpacked ? resbody : decoder(resbody as string & Buffer));
       },
       /* useHttpPaginatedResponse: */ true

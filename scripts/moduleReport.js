@@ -9,6 +9,9 @@ const moduleNames = [
   'XHRPolling',
   'XHRStreaming',
   'WebSocketTransport',
+  'XHRRequest',
+  'FetchRequest',
+  'MessageInteractions',
 ];
 
 // List of all free-standing functions exported by the library along with the

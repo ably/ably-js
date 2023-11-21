@@ -8,7 +8,7 @@ import ErrorInfo from '../../common/lib/types/errorinfo';
 import BufferUtils from '../web/lib/util/bufferutils';
 // @ts-ignore
 import { createCryptoClass } from '../web/lib/util/crypto';
-import Http from '../web/lib/util/http';
+import Http from '../web/lib/http/http';
 import configFactory from './config';
 // @ts-ignore
 import Transports from '../web/lib/transport';
@@ -17,6 +17,7 @@ import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from '../web/lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
+import { defaultBundledRequestImplementations } from '../web/lib/http/request';
 
 const Config = configFactory(BufferUtils);
 
@@ -33,6 +34,8 @@ for (const clientClass of [DefaultRest, DefaultRealtime]) {
   clientClass.Crypto = Crypto;
   clientClass._MsgPack = msgpack;
 }
+
+Http.bundledRequestImplementations = defaultBundledRequestImplementations;
 
 Logger.initLogHandlers();
 

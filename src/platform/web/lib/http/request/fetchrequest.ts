@@ -1,7 +1,7 @@
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestCallback, RequestParams } from 'common/types/http';
+import { RequestCallback, RequestCallbackHeaders, RequestParams } from 'common/types/http';
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import * as Utils from 'common/lib/util/utils';
@@ -15,6 +15,16 @@ function getAblyError(responseBody: unknown, headers: Headers) {
   if (isAblyError(responseBody, headers)) {
     return responseBody.error && ErrorInfo.fromValues(responseBody.error);
   }
+}
+
+function convertHeaders(headers: Headers) {
+  const result: RequestCallbackHeaders = {};
+
+  headers.forEach((value, key) => {
+    result[key] = value;
+  });
+
+  return result;
 }
 
 export default function fetchRequest(
@@ -64,6 +74,7 @@ export default function fetchRequest(
       }
       prom.then((body) => {
         const unpacked = !!contentType && contentType.indexOf('application/x-msgpack') === -1;
+        const headers = convertHeaders(res.headers);
         if (!res.ok) {
           const err =
             getAblyError(body, res.headers) ||
@@ -72,9 +83,9 @@ export default function fetchRequest(
               null,
               res.status
             );
-          callback(err, body, res.headers, unpacked, res.status);
+          callback(err, body, headers, unpacked, res.status);
         } else {
-          callback(null, body, res.headers, unpacked, res.status);
+          callback(null, body, headers, unpacked, res.status);
         }
       });
     })

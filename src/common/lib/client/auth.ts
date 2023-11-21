@@ -538,7 +538,6 @@ class Auth {
           const body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
           this.client.http.doUri(
             HttpMethods.Post,
-            client,
             authOptions.authUrl,
             headers,
             body,
@@ -548,7 +547,6 @@ class Auth {
         } else {
           this.client.http.doUri(
             HttpMethods.Get,
-            client,
             authOptions.authUrl,
             authHeaders || {},
             null,
@@ -594,7 +592,6 @@ class Auth {
       );
       this.client.http.do(
         HttpMethods.Post,
-        client,
         tokenUri,
         requestHeaders,
         JSON.stringify(signedTokenParams),

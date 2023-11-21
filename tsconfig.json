@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
-    "lib": ["ES5", "DOM", "webworker"],
+    "lib": ["ES5", "DOM", "DOM.Iterable", "webworker"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

@@ -4,8 +4,9 @@ import Resource from './resource';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
 import BaseClient from './baseclient';
+import { RequestCallbackHeaders } from 'common/types/http';
 
-export type BodyHandler = (body: unknown, headers: Record<string, string>, unpacked?: boolean) => Promise<any>;
+export type BodyHandler = (body: unknown, headers: RequestCallbackHeaders, unpacked?: boolean) => Promise<any>;
 
 function getRelParams(linkUrl: string) {
   const urlMatch = linkUrl.match(/^\.\/(\w+)\?(.*)$/);
@@ -135,7 +136,7 @@ class PaginatedResource {
   handlePage<T>(
     err: IPartialErrorInfo | null,
     body: unknown,
-    headers: Record<string, string> | undefined,
+    headers: RequestCallbackHeaders | undefined,
     unpacked: boolean | undefined,
     statusCode: number | undefined,
     callback: PaginatedResultCallback<T>
@@ -249,14 +250,14 @@ export class PaginatedResult<T> {
 export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
   statusCode: number;
   success: boolean;
-  headers: Record<string, string>;
+  headers: RequestCallbackHeaders;
   errorCode?: number | null;
   errorMessage?: string | null;
 
   constructor(
     resource: PaginatedResource,
     items: T[],
-    headers: Record<string, string>,
+    headers: RequestCallbackHeaders,
     statusCode: number,
     relParams: any,
     err: IPartialErrorInfo | null

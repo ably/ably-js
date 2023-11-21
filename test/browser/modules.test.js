@@ -17,6 +17,9 @@ import {
   XHRPolling,
   XHRStreaming,
   WebSocketTransport,
+  FetchRequest,
+  XHRRequest,
+  MessageInteractions,
 } from '../../build/modules/index.js';
 
 describe('browser/modules', function () {
@@ -45,23 +48,21 @@ describe('browser/modules', function () {
   });
 
   describe('without any modules', () => {
-    describe('BaseRest', () => {
-      it('can be constructed', () => {
-        expect(() => new BaseRest(ablyClientOptions(), {})).not.to.throw();
+    for (const clientClass of [BaseRest, BaseRealtime]) {
+      describe(clientClass.name, () => {
+        it('throws an error due to the absence of an HTTP module', () => {
+          expect(() => new clientClass(ablyClientOptions(), {})).to.throw(
+            'No HTTP request module provided. Provide at least one of the FetchRequest or XHRRequest modules.'
+          );
+        });
       });
-    });
-
-    describe('BaseRealtime', () => {
-      it('throws an error due to absence of a transport module', () => {
-        expect(() => new BaseRealtime(ablyClientOptions(), {})).to.throw('no requested transports available');
-      });
-    });
+    }
   });
 
   describe('Rest', () => {
     describe('BaseRest without explicit Rest', () => {
       it('offers REST functionality', async () => {
-        const client = new BaseRest(ablyClientOptions(), {});
+        const client = new BaseRest(ablyClientOptions(), { FetchRequest });
         const time = await client.time();
         expect(time).to.be.a('number');
       });
@@ -69,7 +70,7 @@ describe('browser/modules', function () {
 
     describe('BaseRealtime with Rest', () => {
       it('offers REST functionality', async () => {
-        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, Rest });
+        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest, Rest });
         const time = await client.time();
         expect(time).to.be.a('number');
       });
@@ -77,7 +78,7 @@ describe('browser/modules', function () {
 
     describe('BaseRealtime without Rest', () => {
       it('throws an error when attempting to use REST functionality', async () => {
-        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport });
+        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
         expect(() => client.time()).to.throw('Rest module not provided');
       });
     });
@@ -214,10 +215,10 @@ describe('browser/modules', function () {
   describe('Crypto', () => {
     describe('without Crypto', () => {
       async function testThrowsAnErrorWhenGivenChannelOptionsWithACipher(clientClassConfig) {
-        const client = new clientClassConfig.clientClass(
-          ablyClientOptions(),
-          clientClassConfig.additionalModules ?? {}
-        );
+        const client = new clientClassConfig.clientClass(ablyClientOptions(), {
+          ...clientClassConfig.additionalModules,
+          FetchRequest,
+        });
         const key = await generateRandomKey();
         expect(() => client.channels.get('channel', { cipher: { key } })).to.throw('Crypto module not provided');
       }
@@ -242,7 +243,7 @@ describe('browser/modules', function () {
 
         // Publish the message on a channel configured to use encryption, and receive it on one not configured to use encryption
 
-        const rxClient = new BaseRealtime(clientOptions, { WebSocketTransport });
+        const rxClient = new BaseRealtime(clientOptions, { WebSocketTransport, FetchRequest });
         const rxChannel = rxClient.channels.get('channel');
         await rxChannel.attach();
 
@@ -252,7 +253,8 @@ describe('browser/modules', function () {
 
         const txMessage = { name: 'message', data: 'data' };
         const txClient = new clientClassConfig.clientClass(clientOptions, {
-          ...(clientClassConfig.additionalModules ?? {}),
+          ...clientClassConfig.additionalModules,
+          FetchRequest,
           Crypto,
         });
         const txChannel = txClient.channels.get('channel', encryptionChannelOptions);
@@ -286,7 +288,7 @@ describe('browser/modules', function () {
       const channelName = 'channel';
       const channel = rest.channels.get(channelName);
       const contentTypeUsedForPublishPromise = new Promise((resolve, reject) => {
-        rest.http.do = (method, client, path, headers, body, params, callback) => {
+        rest.http.do = (method, path, headers, body, params, callback) => {
           if (!(method == 'post' && path == `/channels/${channelName}/messages`)) {
             return;
           }
@@ -318,7 +320,7 @@ describe('browser/modules', function () {
       describe('without MsgPack', () => {
         describe('BaseRest', () => {
           it('uses JSON', async () => {
-            const client = new BaseRest(ablyClientOptions({ useBinaryProtocol: true }), {});
+            const client = new BaseRest(ablyClientOptions({ useBinaryProtocol: true }), { FetchRequest });
             await testRestUsesContentType(client, 'application/json');
           });
         });
@@ -327,6 +329,7 @@ describe('browser/modules', function () {
           it('uses JSON', async () => {
             const client = new BaseRealtime(ablyClientOptions({ useBinaryProtocol: true, autoConnect: false }), {
               WebSocketTransport,
+              FetchRequest,
             });
             await testRealtimeUsesFormat(client, 'json');
           });
@@ -337,6 +340,7 @@ describe('browser/modules', function () {
         describe('BaseRest', () => {
           it('uses MessagePack', async () => {
             const client = new BaseRest(ablyClientOptions({ useBinaryProtocol: true }), {
+              FetchRequest,
               MsgPack,
             });
             await testRestUsesContentType(client, 'application/x-msgpack');
@@ -347,6 +351,7 @@ describe('browser/modules', function () {
           it('uses MessagePack', async () => {
             const client = new BaseRealtime(ablyClientOptions({ useBinaryProtocol: true, autoConnect: false }), {
               WebSocketTransport,
+              FetchRequest,
               MsgPack,
             });
             await testRealtimeUsesFormat(client, 'msgpack');
@@ -359,7 +364,7 @@ describe('browser/modules', function () {
   describe('RealtimePresence', () => {
     describe('BaseRealtime without RealtimePresence', () => {
       it('throws an error when attempting to access the `presence` property', () => {
-        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport });
+        const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
         const channel = client.channels.get('channel');
 
         expect(() => channel.presence).to.throw('RealtimePresence module not provided');
@@ -368,12 +373,15 @@ describe('browser/modules', function () {
 
     describe('BaseRealtime with RealtimePresence', () => {
       it('offers realtime presence functionality', async () => {
-        const rxChannel = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, RealtimePresence }).channels.get(
-          'channel'
-        );
+        const rxChannel = new BaseRealtime(ablyClientOptions(), {
+          WebSocketTransport,
+          FetchRequest,
+          RealtimePresence,
+        }).channels.get('channel');
         const txClientId = randomString();
         const txChannel = new BaseRealtime(ablyClientOptions({ clientId: txClientId }), {
           WebSocketTransport,
+          FetchRequest,
           RealtimePresence,
         }).channels.get('channel');
 
@@ -435,6 +443,14 @@ describe('browser/modules', function () {
 
   describe('Transports', () => {
     describe('BaseRealtime', () => {
+      describe('without a transport module', () => {
+        it('throws an error due to absence of a transport module', () => {
+          expect(() => new BaseRealtime(ablyClientOptions(), { FetchRequest })).to.throw(
+            'no requested transports available'
+          );
+        });
+      });
+
       for (const scenario of [
         { moduleMapKey: 'WebSocketTransport', transportModule: WebSocketTransport, transportName: 'web_socket' },
         { moduleMapKey: 'XHRPolling', transportModule: XHRPolling, transportName: 'xhr_polling' },
@@ -445,6 +461,7 @@ describe('browser/modules', function () {
             const realtime = new BaseRealtime(
               ablyClientOptions({ autoConnect: false, transports: [scenario.transportName] }),
               {
+                FetchRequest,
                 [scenario.moduleMapKey]: scenario.transportModule,
               }
             );
@@ -466,6 +483,114 @@ describe('browser/modules', function () {
           });
         });
       }
+    });
+  });
+
+  describe('HTTP request implementations', () => {
+    describe('with multiple HTTP request implementations', () => {
+      it('prefers XHR', async () => {
+        let usedXHR = false;
+
+        const XHRRequestSpy = class XHRRequestSpy extends XHRRequest {
+          static createRequest(...args) {
+            usedXHR = true;
+            return super.createRequest(...args);
+          }
+        };
+
+        const rest = new BaseRest(ablyClientOptions(), { FetchRequest, XHRRequest: XHRRequestSpy });
+        await rest.time();
+
+        expect(usedXHR).to.be.true;
+      });
+    });
+  });
+
+  describe('MessageInteractions', () => {
+    describe('BaseRealtime', () => {
+      describe('without MessageInteractions', () => {
+        it('is able to subscribe to and unsubscribe from channel events, as long as a MessageFilter isn’t passed', async () => {
+          const realtime = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+          const channel = realtime.channels.get('channel');
+          await channel.attach();
+
+          const subscribeReceivedMessagePromise = new Promise((resolve) => channel.subscribe(resolve));
+
+          await channel.publish('message', 'body');
+
+          const subscribeReceivedMessage = await subscribeReceivedMessagePromise;
+          expect(subscribeReceivedMessage.data).to.equal('body');
+        });
+
+        it('throws an error when attempting to subscribe to channel events using a MessageFilter', async () => {
+          const realtime = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+          const channel = realtime.channels.get('channel');
+
+          let thrownError = null;
+          try {
+            await channel.subscribe({ clientId: 'someClientId' }, () => {});
+          } catch (error) {
+            thrownError = error;
+          }
+
+          expect(thrownError).not.to.be.null;
+          expect(thrownError.message).to.equal('MessageInteractions module not provided');
+        });
+      });
+
+      describe('with MessageInteractions', () => {
+        it('can take a MessageFilter argument when subscribing to and unsubscribing from channel events', async () => {
+          const realtime = new BaseRealtime(ablyClientOptions(), {
+            WebSocketTransport,
+            FetchRequest,
+            MessageInteractions,
+          });
+          const channel = realtime.channels.get('channel');
+
+          await channel.attach();
+
+          // Test `subscribe` with a filter: send two messages with different clientIds, and check that unfiltered subscription receives both messages but clientId-filtered subscription only receives the matching one.
+          const messageFilter = { clientId: 'someClientId' }; // note that `unsubscribe` compares filter by reference, I found that a bit surprising
+
+          const filteredSubscriptionReceivedMessages = [];
+          channel.subscribe(messageFilter, (message) => {
+            filteredSubscriptionReceivedMessages.push(message);
+          });
+
+          const unfilteredSubscriptionReceivedFirstTwoMessagesPromise = new Promise((resolve) => {
+            const receivedMessages = [];
+            channel.subscribe(function listener(message) {
+              receivedMessages.push(message);
+              if (receivedMessages.length === 2) {
+                channel.unsubscribe(listener);
+                resolve();
+              }
+            });
+          });
+
+          await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
+          await channel.publish(await decodeMessage({ clientId: 'someOtherClientId' }));
+          await unfilteredSubscriptionReceivedFirstTwoMessagesPromise;
+
+          expect(filteredSubscriptionReceivedMessages.length).to.equal(1);
+          expect(filteredSubscriptionReceivedMessages[0].clientId).to.equal('someClientId');
+
+          // Test `unsubscribe` with a filter: call `unsubscribe` with the clientId filter, publish a message matching the filter, check that only the unfiltered listener recieves it
+          channel.unsubscribe(messageFilter);
+
+          const unfilteredSubscriptionReceivedNextMessagePromise = new Promise((resolve) => {
+            channel.subscribe(function listener() {
+              channel.unsubscribe(listener);
+              resolve();
+            });
+          });
+
+          await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
+          await unfilteredSubscriptionReceivedNextMessagePromise;
+
+          expect(filteredSubscriptionReceivedMessages.length).to./* (still) */ equal(1);
+        });
+      });
     });
   });
 });

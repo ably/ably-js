@@ -1,6 +1,6 @@
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import Platform from '../../../../common/platform';
-import XHRRequest from './xhrrequest';
+import XHRRequest from '../http/request/xhrrequest';
 import ConnectionManager, { TransportParams, TransportStorage } from 'common/lib/transport/connectionmanager';
 import Auth from 'common/lib/client/auth';
 import { RequestParams } from 'common/types/http';

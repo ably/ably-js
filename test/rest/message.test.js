@@ -157,8 +157,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         originalPublish.apply(channel, arguments);
       };
 
-      Ably.Rest.Platform.Http.doUri = function (method, rest, uri, headers, body, params, callback) {
-        originalDoUri(method, rest, uri, headers, body, params, function (err) {
+      Ably.Rest.Platform.Http.doUri = function (method, uri, headers, body, params, callback) {
+        originalDoUri(method, uri, headers, body, params, function (err) {
           if (err) {
             callback(err);
             return;
