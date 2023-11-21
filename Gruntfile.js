@@ -139,18 +139,6 @@ module.exports = function (grunt) {
         outfile: 'build/ably.min.js',
         minify: true,
       }),
-      esbuild.build({
-        ...baseConfig,
-        entryPoints: ['src/platform/web-noencryption/index.ts'],
-        outfile: 'build/ably.noencryption.js',
-      }),
-
-      esbuild.build({
-        ...baseConfig,
-        entryPoints: ['src/platform/web-noencryption/index.ts'],
-        outfile: 'build/ably.noencryption.min.js',
-        minify: true,
-      }),
     ]).then(() => {
       console.log('esbuild succeeded');
       done(true);

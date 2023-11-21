@@ -26,7 +26,6 @@ jobs:
         run: |
             mkdir bundle-reports
             npm run sourcemap -- --html bundle-reports/index.html
-            npm run sourcemap:noencryption -- --html bundle-reports/noencryption.html
       - uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: eu-west-2
