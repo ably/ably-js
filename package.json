@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.4",
+    "@arethetypeswrong/cli": "^0.13.1",
     "@testing-library/react": "^13.3.0",
     "@types/crypto-js": "^4.0.1",
     "@types/jmespath": "^0.15.2",
