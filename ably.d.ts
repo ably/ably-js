@@ -1700,32 +1700,7 @@ declare namespace Types {
   /**
    * A client that offers a simple stateless API to interact directly with Ably's REST API.
    */
-  class Rest {
-    /**
-     * Construct a client object using an Ably {@link Types.ClientOptions} object.
-     *
-     * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
-     */
-    constructor(options: Types.ClientOptions);
-    /**
-     * Constructs a client object using an Ably API key or token string.
-     *
-     * @param keyOrToken - The Ably API key or token string used to validate the client.
-     */
-    constructor(keyOrToken: string);
-    /**
-     * The cryptographic functions available in the library.
-     */
-    static Crypto: Types.Crypto;
-    /**
-     * Static utilities related to messages.
-     */
-    static Message: Types.MessageStatic;
-    /**
-     * Static utilities related to presence messages.
-     */
-    static PresenceMessage: Types.PresenceMessageStatic;
-
+  abstract class Rest {
     /**
      * An {@link Types.Auth} object.
      */
@@ -1799,31 +1774,7 @@ declare namespace Types {
   /**
    * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
    */
-  class Realtime {
-    /**
-     * Construct a client object using an Ably {@link Types.ClientOptions} object.
-     *
-     * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
-     */
-    constructor(options: Types.ClientOptions);
-    /**
-     * Constructs a client object using an Ably API key or token string.
-     *
-     * @param keyOrToken - The Ably API key or token string used to validate the client.
-     */
-    constructor(keyOrToken: string);
-    /**
-     * The cryptographic functions available in the library.
-     */
-    static Crypto: Types.Crypto;
-    /**
-     * Static utilities related to messages.
-     */
-    static Message: Types.MessageStatic;
-    /**
-     * Static utilities related to presence messages.
-     */
-    static PresenceMessage: Types.PresenceMessageStatic;
+  abstract class Realtime {
     /**
      * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
      */
@@ -2388,28 +2339,6 @@ declare namespace Types {
    */
   class Message {
     /**
-     * Constructor for internal use.
-     *
-     * @internal
-     */
-    constructor();
-    /**
-     * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
-     *
-     * @param JsonObject - A `Message`-like deserialized object.
-     * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns A promise which will be fulfilled with a `Message` object.
-     */
-    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<Message>;
-    /**
-     * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
-     *
-     * @param JsonArray - An array of `Message`-like deserialized objects.
-     * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns A promise which will be fulfilled with an array of {@link Message} objects.
-     */
-    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<Message[]>;
-    /**
      * The client ID of the publisher of this message.
      */
     clientId: string;
@@ -2469,26 +2398,6 @@ declare namespace Types {
    * Contains an individual presence update sent to, or received from, Ably.
    */
   class PresenceMessage {
-    /**
-     * Constructor for internal use.
-     *
-     * @internal
-     */
-    constructor();
-    /**
-     * Decodes and decrypts a deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
-     *
-     * @param JsonObject - The deserialized `PresenceMessage`-like object to decode and decrypt.
-     * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
-     */
-    static fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<PresenceMessage>;
-    /**
-     * Decodes and decrypts an array of deserialized `PresenceMessage`-like object using the cipher in {@link ChannelOptions}. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
-     *
-     * @param JsonArray - An array of deserialized `PresenceMessage`-like objects to decode and decrypt.
-     * @param channelOptions - A {@link ChannelOptions} object containing the cipher.
-     */
-    static fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<PresenceMessage[]>;
     /**
      * The type of {@link PresenceAction} the `PresenceMessage` is for.
      */
@@ -2891,12 +2800,62 @@ declare namespace Types {
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare class Rest extends Types.Rest {}
+export declare class Rest extends Types.Rest {
+  /**
+   * Construct a client object using an Ably {@link Types.ClientOptions} object.
+   *
+   * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
+   */
+  constructor(options: Types.ClientOptions);
+  /**
+   * Constructs a client object using an Ably API key or token string.
+   *
+   * @param keyOrToken - The Ably API key or token string used to validate the client.
+   */
+  constructor(keyOrToken: string);
+  /**
+   * The cryptographic functions available in the library.
+   */
+  static Crypto: Types.Crypto;
+  /**
+   * Static utilities related to messages.
+   */
+  static Message: Types.MessageStatic;
+  /**
+   * Static utilities related to presence messages.
+   */
+  static PresenceMessage: Types.PresenceMessageStatic;
+}
 
 /**
  * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  */
-export declare class Realtime extends Types.Realtime {}
+export declare class Realtime extends Types.Realtime {
+  /**
+   * Construct a client object using an Ably {@link Types.ClientOptions} object.
+   *
+   * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
+   */
+  constructor(options: Types.ClientOptions);
+  /**
+   * Constructs a client object using an Ably API key or token string.
+   *
+   * @param keyOrToken - The Ably API key or token string used to validate the client.
+   */
+  constructor(keyOrToken: string);
+  /**
+   * The cryptographic functions available in the library.
+   */
+  static Crypto: Types.Crypto;
+  /**
+   * Static utilities related to messages.
+   */
+  static Message: Types.MessageStatic;
+  /**
+   * Static utilities related to presence messages.
+   */
+  static PresenceMessage: Types.PresenceMessageStatic;
+}
 
 /**
  * A generic Ably error object that contains an Ably-specific status code, and a generic status code. Errors returned from the Ably server are compatible with the `ErrorInfo` structure and should result in errors that inherit from `ErrorInfo`.

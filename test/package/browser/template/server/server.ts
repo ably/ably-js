@@ -3,8 +3,11 @@ import path from 'node:path';
 
 async function startWebServer(listenPort: number) {
   const server = express();
+  server.get('/', (req, res) => res.send('OK'));
   server.use(express.static(path.join(__dirname, '/resources')));
-  server.use('/index.js', express.static(path.join(__dirname, '..', 'dist', 'index.js')));
+  for (const filename of ['index-default.js', 'index-modules.js']) {
+    server.use(`/${filename}`, express.static(path.join(__dirname, '..', 'dist', filename)));
+  }
 
   server.listen(listenPort);
 }
