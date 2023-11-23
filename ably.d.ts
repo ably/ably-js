@@ -2333,7 +2333,7 @@ declare namespace Types {
     /**
      * The client ID of the publisher of this message.
      */
-    clientId: string;
+    clientId?: string;
     /**
      * The connection ID of the publisher of this message.
      */
@@ -2341,15 +2341,15 @@ declare namespace Types {
     /**
      * The message payload, if provided.
      */
-    data: any;
+    data?: any;
     /**
      * This is typically empty, as all messages received from Ably are automatically decoded client-side using this value. However, if the message encoding cannot be processed, this attribute contains the remaining transformations not applied to the `data` payload.
      */
-    encoding: string;
+    encoding?: string;
     /**
      * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `push`, `delta`, `ref` and `headers`.
      */
-    extras: any;
+    extras?: any;
     /**
      * Unique ID assigned by Ably to this message.
      */
@@ -2357,7 +2357,7 @@ declare namespace Types {
     /**
      * The event name.
      */
-    name: string;
+    name?: string;
     /**
      * Timestamp of when the message was received by Ably, as milliseconds since the Unix epoch.
      */
