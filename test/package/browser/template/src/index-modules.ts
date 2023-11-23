@@ -22,13 +22,21 @@ globalThis.testAblyPackage = async function () {
   const channel = realtime.channels.get('channel');
   await attachChannel(channel);
 
-  const receivedMessagePromise = new Promise<void>((resolve) => {
-    channel.subscribe(() => {
-      resolve();
-    });
+  const receivedMessagePromise = new Promise<Types.InboundMessage>((resolve) => {
+    channel.subscribe(resolve);
   });
 
+  // Check that we can use the TypeScript overload that accepts name and data as separate arguments
   await channel.publish('message', { foo: 'bar' });
-  await receivedMessagePromise;
+  const receivedMessage = await receivedMessagePromise;
+
+  // Check that id and timestamp of a message received from Ably can be assigned to non-optional types
+  const { id: string, timestamp: number } = receivedMessage;
+
   await checkStandaloneFunction();
+
+  channel.unsubscribe();
+
+  // Check that we can use the TypeScript overload that accepts a Message object
+  await channel.publish({ name: 'message', data: { foo: 'bar' } });
 };
