@@ -1,12 +1,27 @@
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, {
+  actions,
+  channelModes,
+  fromValues as protocolMessageFromValues,
+} from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import RealtimePresence from './realtimepresence';
-import Message, { CipherOptions } from '../types/message';
+import Message, {
+  fromValues as messageFromValues,
+  fromValuesArray as messagesFromValuesArray,
+  encodeArray as encodeMessagesArray,
+  decode as decodeMessage,
+  getMessagesSize,
+  CipherOptions,
+} from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
-import PresenceMessage, { fromValues as presenceMessageFromValues } from '../types/presencemessage';
+import PresenceMessage, {
+  fromValues as presenceMessageFromValues,
+  fromValuesArray as presenceMessagesFromValuesArray,
+  decode as decodePresenceMessage,
+} from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
@@ -25,7 +40,6 @@ interface RealtimeHistoryParams {
   from_serial?: string;
 }
 
-const actions = ProtocolMessage.Action;
 const noop = function () {};
 
 function validateChannelOptions(options?: API.Types.ChannelOptions) {
@@ -41,7 +55,7 @@ function validateChannelOptions(options?: API.Types.ChannelOptions) {
       if (
         !currentMode ||
         typeof currentMode !== 'string' ||
-        !Utils.arrIn(ProtocolMessage.channelModes, String.prototype.toUpperCase.call(currentMode))
+        !Utils.arrIn(channelModes, String.prototype.toUpperCase.call(currentMode))
       ) {
         return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
       }
@@ -230,8 +244,8 @@ class RealtimeChannel extends EventEmitter {
       return;
     }
     if (argCount == 2) {
-      if (Utils.isObject(messages)) messages = [Message.fromValues(messages)];
-      else if (Utils.isArray(messages)) messages = Message.fromValuesArray(messages);
+      if (Utils.isObject(messages)) messages = [messageFromValues(messages)];
+      else if (Utils.isArray(messages)) messages = messagesFromValuesArray(messages);
       else
         throw new ErrorInfo(
           'The single-argument form of publish() expects a message object or an array of message objects',
@@ -239,16 +253,16 @@ class RealtimeChannel extends EventEmitter {
           400
         );
     } else {
-      messages = [Message.fromValues({ name: args[0], data: args[1] })];
+      messages = [messageFromValues({ name: args[0], data: args[1] })];
     }
     const maxMessageSize = this.client.options.maxMessageSize;
-    Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
+    encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
       if (err) {
         callback(err);
         return;
       }
       /* RSL1i */
-      const size = Message.getMessagesSize(messages);
+      const size = getMessagesSize(messages);
       if (size > maxMessageSize) {
         callback(
           new ErrorInfo(
@@ -354,7 +368,7 @@ class RealtimeChannel extends EventEmitter {
 
   attachImpl(): void {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
-    const attachMsg = ProtocolMessage.fromValues({
+    const attachMsg = protocolMessageFromValues({
       action: actions.ATTACH,
       channel: this.name,
       params: this.channelOptions.params,
@@ -424,7 +438,7 @@ class RealtimeChannel extends EventEmitter {
 
   detachImpl(callback?: ErrCallback): void {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
-    const msg = ProtocolMessage.fromValues({ action: actions.DETACH, channel: this.name });
+    const msg = protocolMessageFromValues({ action: actions.DETACH, channel: this.name });
     this.sendMessage(msg, callback || noop);
   }
 
@@ -479,7 +493,7 @@ class RealtimeChannel extends EventEmitter {
     }
 
     /* send sync request */
-    const syncMessage = ProtocolMessage.fromValues({ action: actions.SYNC, channel: this.name });
+    const syncMessage = protocolMessageFromValues({ action: actions.SYNC, channel: this.name });
     if (this.syncChannelSerial) {
       syncMessage.channelSerial = this.syncChannelSerial;
     }
@@ -491,11 +505,11 @@ class RealtimeChannel extends EventEmitter {
   }
 
   sendPresence(presence: PresenceMessage | PresenceMessage[], callback?: ErrCallback): void {
-    const msg = ProtocolMessage.fromValues({
+    const msg = protocolMessageFromValues({
       action: actions.PRESENCE,
       channel: this.name,
       presence: Utils.isArray(presence)
-        ? PresenceMessage.fromValuesArray(presence)
+        ? presenceMessagesFromValuesArray(presence)
         : [presenceMessageFromValues(presence)],
     });
     this.sendMessage(msg, callback);
@@ -579,7 +593,7 @@ class RealtimeChannel extends EventEmitter {
         for (let i = 0; i < presence.length; i++) {
           try {
             presenceMsg = presence[i];
-            await PresenceMessage.decode(presenceMsg, options);
+            await decodePresenceMessage(presenceMsg, options);
             if (!presenceMsg.connectionId) presenceMsg.connectionId = connectionId;
             if (!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
             if (!presenceMsg.id) presenceMsg.id = id + ':' + i;
@@ -635,7 +649,7 @@ class RealtimeChannel extends EventEmitter {
         for (let i = 0; i < messages.length; i++) {
           const msg = messages[i];
           try {
-            await Message.decode(msg, this._decodingContext);
+            await decodeMessage(msg, this._decodingContext);
           } catch (e) {
             /* decrypt failed .. the most likely cause is that we have the wrong key */
             Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());

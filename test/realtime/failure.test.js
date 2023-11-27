@@ -6,7 +6,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var utils = helper.Utils;
   var noop = function () {};
   var simulateDroppedConnection = helper.simulateDroppedConnection;
-  var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
+  var createPM = Ably.protocolMessageFromDeserialized;
   var availableTransports = helper.availableTransports;
   var whenPromiseSettles = helper.whenPromiseSettles;
 

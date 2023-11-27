@@ -1,7 +1,14 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import RestPresence from './restpresence';
-import Message, { CipherOptions } from '../types/message';
+import Message, {
+  fromValues as messageFromValues,
+  fromValuesArray as messagesFromValuesArray,
+  encodeArray as encodeMessagesArray,
+  serialize as serializeMessage,
+  getMessagesSize,
+  CipherOptions,
+} from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
 import Resource, { ResourceCallback } from './resource';
@@ -70,13 +77,13 @@ class RestChannel {
 
     if (typeof first === 'string' || first === null) {
       /* (name, data, ...) */
-      messages = [Message.fromValues({ name: first, data: second })];
+      messages = [messageFromValues({ name: first, data: second })];
       params = arguments[2];
     } else if (Utils.isObject(first)) {
-      messages = [Message.fromValues(first)];
+      messages = [messageFromValues(first)];
       params = arguments[1];
     } else if (Utils.isArray(first)) {
-      messages = Message.fromValuesArray(first);
+      messages = messagesFromValuesArray(first);
       params = arguments[1];
     } else {
       throw new ErrorInfo(
@@ -106,14 +113,14 @@ class RestChannel {
       });
     }
 
-    Message.encodeArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
+    encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
       if (err) {
         callback(err);
         return;
       }
 
       /* RSL1i */
-      const size = Message.getMessagesSize(messages),
+      const size = getMessagesSize(messages),
         maxMessageSize = options.maxMessageSize;
       if (size > maxMessageSize) {
         callback(
@@ -130,7 +137,7 @@ class RestChannel {
         return;
       }
 
-      this._publish(Message.serialize(messages, client._MsgPack, format), headers, params, callback);
+      this._publish(serializeMessage(messages, client._MsgPack, format), headers, params, callback);
     });
   }
 

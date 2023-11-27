@@ -3,7 +3,10 @@ import * as Utils from '../util/utils';
 import Transport from './transport';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, {
+  serialize as serializeProtocolMessage,
+  deserialize as deserializeProtocolMessage,
+} from '../types/protocolmessage';
 import ErrorInfo from '../types/errorinfo';
 import NodeWebSocket from 'ws';
 import ConnectionManager, { TransportParams, TransportStorage } from './connectionmanager';
@@ -104,7 +107,7 @@ class WebSocketTransport extends Transport {
     }
     try {
       (wsConnection as NodeWebSocket).send(
-        ProtocolMessage.serialize(message, this.connectionManager.realtime._MsgPack, this.params.format)
+        serializeProtocolMessage(message, this.connectionManager.realtime._MsgPack, this.params.format)
       );
     } catch (e) {
       const msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
@@ -122,7 +125,7 @@ class WebSocketTransport extends Transport {
       'data received; length = ' + data.length + '; type = ' + typeof data
     );
     try {
-      this.onProtocolMessage(ProtocolMessage.deserialize(data, this.connectionManager.realtime._MsgPack, this.format));
+      this.onProtocolMessage(deserializeProtocolMessage(data, this.connectionManager.realtime._MsgPack, this.format));
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,

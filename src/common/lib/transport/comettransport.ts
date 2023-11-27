@@ -1,5 +1,9 @@
 import * as Utils from '../util/utils';
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, {
+  actions,
+  fromValues as protocolMessageFromValues,
+  fromDeserialized as protocolMessageFromDeserialized,
+} from '../types/protocolmessage';
 import Transport from './transport';
 import Logger from '../util/logger';
 import Defaults from '../util/defaults';
@@ -29,9 +33,9 @@ function protocolMessageFromRawError(err: ErrorInfo) {
   /* err will be either a legacy (non-protocolmessage) comet error response
    * (which will have an err.code), or a xhr/network error (which won't). */
   if (shouldBeErrorAction(err)) {
-    return [ProtocolMessage.fromValues({ action: ProtocolMessage.Action.ERROR, error: err })];
+    return [protocolMessageFromValues({ action: actions.ERROR, error: err })];
   } else {
-    return [ProtocolMessage.fromValues({ action: ProtocolMessage.Action.DISCONNECTED, error: err })];
+    return [protocolMessageFromValues({ action: actions.DISCONNECTED, error: err })];
   }
 }
 
@@ -344,7 +348,7 @@ abstract class CometTransport extends Transport {
     try {
       const items = this.decodeResponse(responseData);
       if (items && items.length)
-        for (let i = 0; i < items.length; i++) this.onProtocolMessage(ProtocolMessage.fromDeserialized(items[i]));
+        for (let i = 0; i < items.length; i++) this.onProtocolMessage(protocolMessageFromDeserialized(items[i]));
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,

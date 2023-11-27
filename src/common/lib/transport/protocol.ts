@@ -1,4 +1,4 @@
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, { actions, stringify as stringifyProtocolMessage } from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
@@ -6,8 +6,6 @@ import MessageQueue from './messagequeue';
 import ErrorInfo from '../types/errorinfo';
 import Transport from './transport';
 import { ErrCallback } from '../../types/utils';
-
-const actions = ProtocolMessage.Action;
 
 export class PendingMessage {
   message: ProtocolMessage;
@@ -76,7 +74,7 @@ class Protocol extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'Protocol.send()',
-        'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message)
+        'sending msg; ' + stringifyProtocolMessage(pendingMessage.message)
       );
     }
     pendingMessage.sendAttempted = true;

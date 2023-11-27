@@ -1,7 +1,11 @@
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import PresenceMessage, { fromValues as presenceMessageFromValues } from '../types/presencemessage';
+import PresenceMessage, {
+  fromValues as presenceMessageFromValues,
+  fromData as presenceMessageFromData,
+  encode as encodePresenceMessage,
+} from '../types/presencemessage';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
 import Multicaster from '../util/multicaster';
@@ -147,7 +151,7 @@ class RealtimePresence extends EventEmitter {
       'channel = ' + channel.name + ', id = ' + id + ', client = ' + (clientId || '(implicit) ' + getClientId(this))
     );
 
-    const presence = PresenceMessage.fromData(data);
+    const presence = presenceMessageFromData(data);
     presence.action = action;
     if (id) {
       presence.id = id;
@@ -156,7 +160,7 @@ class RealtimePresence extends EventEmitter {
       presence.clientId = clientId;
     }
 
-    PresenceMessage.encode(presence, channel.channelOptions as CipherOptions, (err: IPartialErrorInfo) => {
+    encodePresenceMessage(presence, channel.channelOptions as CipherOptions, (err: IPartialErrorInfo) => {
       if (err) {
         callback(err);
         return;
@@ -214,7 +218,7 @@ class RealtimePresence extends EventEmitter {
       'RealtimePresence.leaveClient()',
       'leaving; channel = ' + this.channel.name + ', client = ' + clientId
     );
-    const presence = PresenceMessage.fromData(data);
+    const presence = presenceMessageFromData(data);
     presence.action = 'leave';
     if (clientId) {
       presence.clientId = clientId;
