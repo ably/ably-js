@@ -465,6 +465,29 @@ describe('browser/modules', function () {
 
         expect(() => channel.presence).to.throw('RealtimePresence module not provided');
       });
+
+      it('doesn’t break when it receives a PRESENCE ProtocolMessage', async () => {
+        const rxClient = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+        const rxChannel = rxClient.channels.get('channel');
+
+        await rxChannel.attach();
+
+        const receivedMessagePromise = new Promise((resolve) => rxChannel.subscribe(resolve));
+
+        const txClient = new BaseRealtime(ablyClientOptions({ clientId: randomString() }), {
+          WebSocketTransport,
+          FetchRequest,
+          RealtimePresence,
+        });
+        const txChannel = txClient.channels.get('channel');
+
+        await txChannel.publish('message', 'body');
+        await txChannel.presence.enter();
+
+        // The idea being here that in order for receivedMessagePromise to resolve, rxClient must have first processed the PRESENCE ProtocolMessage that resulted from txChannel.presence.enter()
+
+        await receivedMessagePromise;
+      });
     });
 
     describe('BaseRealtime with RealtimePresence', () => {

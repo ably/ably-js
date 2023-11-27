@@ -1,5 +1,6 @@
 import { MsgPack } from 'common/types/msgpack';
 import { Types } from '../../../../ably';
+import { PresenceMessageModule } from '../client/modulesmap';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message, { fromValues as messageFromValues, fromValuesArray as messagesFromValuesArray } from './message';
@@ -65,26 +66,46 @@ export const channelModes = ['PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSC
 
 export const serialize = Utils.encodeBody;
 
-export function deserialize(serialized: unknown, MsgPack: MsgPack | null, format?: Utils.Format): ProtocolMessage {
+export function deserialize(
+  serialized: unknown,
+  MsgPack: MsgPack | null,
+  presenceMessageModule: PresenceMessageModule | null,
+  format?: Utils.Format
+): ProtocolMessage {
   const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, MsgPack, format);
-  return fromDeserialized(deserialized);
+  return fromDeserialized(deserialized, presenceMessageModule);
 }
 
-export function fromDeserialized(deserialized: Record<string, unknown>): ProtocolMessage {
+export function fromDeserialized(
+  deserialized: Record<string, unknown>,
+  presenceMessageModule: PresenceMessageModule | null
+): ProtocolMessage {
   const error = deserialized.error;
   if (error) deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
   const messages = deserialized.messages as Message[];
   if (messages) for (let i = 0; i < messages.length; i++) messages[i] = messageFromValues(messages[i]);
-  const presence = deserialized.presence as PresenceMessage[];
-  if (presence) for (let i = 0; i < presence.length; i++) presence[i] = presenceMessageFromValues(presence[i], true);
-  return Object.assign(new ProtocolMessage(), deserialized);
+
+  const presence = presenceMessageModule ? (deserialized.presence as PresenceMessage[]) : undefined;
+  if (presenceMessageModule) {
+    if (presence && presenceMessageModule)
+      for (let i = 0; i < presence.length; i++)
+        presence[i] = presenceMessageModule.presenceMessageFromValues(presence[i], true);
+  }
+  return Object.assign(new ProtocolMessage(), { ...deserialized, presence });
+}
+
+/**
+ * Used by the tests.
+ */
+export function fromDeserializedIncludingDependencies(deserialized: Record<string, unknown>): ProtocolMessage {
+  return fromDeserialized(deserialized, { presenceMessageFromValues, presenceMessagesFromValuesArray });
 }
 
 export function fromValues(values: unknown): ProtocolMessage {
   return Object.assign(new ProtocolMessage(), values);
 }
 
-export function stringify(msg: any): string {
+export function stringify(msg: any, presenceMessageModule: PresenceMessageModule | null): string {
   let result = '[ProtocolMessage';
   if (msg.action !== undefined) result += '; action=' + ActionName[msg.action] || msg.action;
 
@@ -96,7 +117,8 @@ export function stringify(msg: any): string {
   }
 
   if (msg.messages) result += '; messages=' + toStringArray(messagesFromValuesArray(msg.messages));
-  if (msg.presence) result += '; presence=' + toStringArray(presenceMessagesFromValuesArray(msg.presence));
+  if (msg.presence && presenceMessageModule)
+    result += '; presence=' + toStringArray(presenceMessageModule.presenceMessagesFromValuesArray(msg.presence));
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
   if (msg.flags) result += '; flags=' + flagNames.filter(msg.hasFlag).join(',');
@@ -128,6 +150,7 @@ class ProtocolMessage {
   channelSerial?: string | null;
   msgSerial?: number;
   messages?: Message[];
+  // This will be undefined if we skipped decoding this property due to user not requesting presence functionality — see `fromDeserialized`
   presence?: PresenceMessage[];
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;

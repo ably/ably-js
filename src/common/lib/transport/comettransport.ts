@@ -348,7 +348,10 @@ abstract class CometTransport extends Transport {
     try {
       const items = this.decodeResponse(responseData);
       if (items && items.length)
-        for (let i = 0; i < items.length; i++) this.onProtocolMessage(protocolMessageFromDeserialized(items[i]));
+        for (let i = 0; i < items.length; i++)
+          this.onProtocolMessage(
+            protocolMessageFromDeserialized(items[i], this.connectionManager.realtime._RealtimePresence)
+          );
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,

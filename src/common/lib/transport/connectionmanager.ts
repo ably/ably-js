@@ -1914,7 +1914,11 @@ class ConnectionManager extends EventEmitter {
       return;
     }
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'queueing msg; ' + stringifyProtocolMessage(msg));
+      Logger.logAction(
+        Logger.LOG_MICRO,
+        'ConnectionManager.send()',
+        'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence)
+      );
     }
     this.queue(msg, callback);
   }

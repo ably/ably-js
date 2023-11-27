@@ -6,12 +6,25 @@ import { TransportInitialiser } from '../transport/connectionmanager';
 import XHRRequest from 'platform/web/lib/http/request/xhrrequest';
 import fetchRequest from 'platform/web/lib/http/request/fetchrequest';
 import { FilteredSubscriptions } from './filteredsubscriptions';
+import {
+  fromValues as presenceMessageFromValues,
+  fromValuesArray as presenceMessagesFromValuesArray,
+} from '../types/presencemessage';
+
+export interface PresenceMessageModule {
+  presenceMessageFromValues: typeof presenceMessageFromValues;
+  presenceMessagesFromValuesArray: typeof presenceMessagesFromValuesArray;
+}
+
+export type RealtimePresenceModule = PresenceMessageModule & {
+  RealtimePresence: typeof RealtimePresence;
+};
 
 export interface ModulesMap {
   Rest?: typeof Rest;
   Crypto?: IUntypedCryptoStatic;
   MsgPack?: MsgPack;
-  RealtimePresence?: typeof RealtimePresence;
+  RealtimePresence?: RealtimePresenceModule;
   WebSocketTransport?: TransportInitialiser;
   XHRPolling?: TransportInitialiser;
   XHRStreaming?: TransportInitialiser;

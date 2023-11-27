@@ -17,11 +17,7 @@ import Message, {
 } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
-import PresenceMessage, {
-  fromValues as presenceMessageFromValues,
-  fromValuesArray as presenceMessagesFromValuesArray,
-  decode as decodePresenceMessage,
-} from '../types/presencemessage';
+import PresenceMessage, { decode as decodePresenceMessage } from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
@@ -109,7 +105,7 @@ class RealtimeChannel extends EventEmitter {
     this.name = name;
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, options);
     this.client = client;
-    this._presence = client._RealtimePresence ? new client._RealtimePresence(this) : null;
+    this._presence = client._RealtimePresence ? new client._RealtimePresence.RealtimePresence(this) : null;
     this.connectionManager = client.connection.connectionManager;
     this.state = 'initialized';
     this.subscriptions = new EventEmitter();
@@ -509,8 +505,8 @@ class RealtimeChannel extends EventEmitter {
       action: actions.PRESENCE,
       channel: this.name,
       presence: Utils.isArray(presence)
-        ? presenceMessagesFromValuesArray(presence)
-        : [presenceMessageFromValues(presence)],
+        ? this.client._RealtimePresence!.presenceMessagesFromValuesArray(presence)
+        : [this.client._RealtimePresence!.presenceMessageFromValues(presence)],
     });
     this.sendMessage(msg, callback);
   }
@@ -585,7 +581,12 @@ class RealtimeChannel extends EventEmitter {
         if (!message.presence) break;
       // eslint-disable-next-line no-fallthrough
       case actions.PRESENCE: {
-        const presence = message.presence as Array<PresenceMessage>;
+        const presence = message.presence;
+
+        if (!presence) {
+          break;
+        }
+
         const { id, connectionId, timestamp } = message;
 
         const options = this.channelOptions;
