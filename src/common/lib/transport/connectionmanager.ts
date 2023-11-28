@@ -992,9 +992,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.deactivateTransport()',
-        'Getting, clearing, and requeuing ' +
-          (this.activeProtocol as Protocol).messageQueue.count() +
-          ' pending messages'
+        'Getting, clearing, and requeuing ' + (currentProtocol as Protocol).messageQueue.count() + ' pending messages'
       );
       this.queuePendingMessages((currentProtocol as Protocol).getPendingMessages());
       /* Clear any messages we requeue to allow the protocol to become idle.
