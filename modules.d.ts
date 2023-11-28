@@ -24,6 +24,7 @@ export declare const constructPresenceMessage: Types.PresenceMessageStatic['from
  *
  * - { @link Types.Push | push admin }
  * - { @link BaseRealtime.time | retrieving Ably service time }
+ * - { @link BaseRealtime.stats | retrieving your application’s usage statistics }
  * - { @link BaseRealtime.request | making arbitrary REST requests }
  * - { @link BaseRealtime.batchPublish | batch publishing of messages }
  * - { @link BaseRealtime.batchPresence | batch retrieval of channel presence state }
