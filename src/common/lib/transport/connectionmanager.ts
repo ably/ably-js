@@ -992,15 +992,15 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.deactivateTransport()',
-        'Getting, clearing, and requeuing ' + (currentProtocol as Protocol).messageQueue.count() + ' pending messages'
+        'Getting, clearing, and requeuing ' + currentProtocol!.messageQueue.count() + ' pending messages'
       );
-      this.queuePendingMessages((currentProtocol as Protocol).getPendingMessages());
+      this.queuePendingMessages(currentProtocol!.getPendingMessages());
       /* Clear any messages we requeue to allow the protocol to become idle.
        * In case of an upgrade, this will trigger an immediate activation of
        * the upgrade transport, so delay a tick so this transport can finish
        * deactivating */
       Platform.Config.nextTick(function () {
-        (currentProtocol as Protocol).clearPendingMessages();
+        currentProtocol!.clearPendingMessages();
       });
       this.activeProtocol = this.host = null;
     }
@@ -1689,7 +1689,7 @@ class ConnectionManager extends EventEmitter {
     /* returns the subset of upgradeTransports to the right of the current
      * transport in upgradeTransports (if it's in there - if not, currentSerial
      * will be -1, so return upgradeTransports.slice(0) == upgradeTransports */
-    const current = (this.activeProtocol as Protocol).getTransport().shortName;
+    const current = this.activeProtocol!.getTransport().shortName;
     const currentSerial = Utils.arrIndexOf(this.upgradeTransports, current);
     return this.upgradeTransports.slice(currentSerial + 1);
   }
@@ -1764,7 +1764,7 @@ class ConnectionManager extends EventEmitter {
           this.state !== this.states.synchronizing
         ) {
           this.disconnectAllTransports(/* exceptActive: */ true);
-          const transportParams = (this.activeProtocol as Protocol).getTransport().params;
+          const transportParams = this.activeProtocol!.getTransport().params;
           Platform.Config.nextTick(() => {
             if (this.state.state === 'connected') {
               this.upgradeIfNeeded(transportParams);
@@ -1929,7 +1929,7 @@ class ConnectionManager extends EventEmitter {
       msg.msgSerial = this.msgSerial++;
     }
     try {
-      (this.activeProtocol as Protocol).send(pendingMessage);
+      this.activeProtocol!.send(pendingMessage);
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,
@@ -2102,11 +2102,11 @@ class ConnectionManager extends EventEmitter {
     };
 
     this.on('transport.active', onTransportActive);
-    this.ping((this.activeProtocol as Protocol).getTransport(), onPingComplete);
+    this.ping(this.activeProtocol!.getTransport(), onPingComplete);
   }
 
   abort(error: ErrorInfo): void {
-    (this.activeProtocol as Protocol).getTransport().fail(error);
+    this.activeProtocol!.getTransport().fail(error);
   }
 
   registerProposedTransport(transport: Transport): void {
