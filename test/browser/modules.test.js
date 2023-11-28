@@ -68,6 +68,7 @@ describe('browser/modules', function () {
         action: (client) => client.push.admin.publish({ clientId: 'foo' }, { data: { bar: 'baz' } }),
       },
       { description: 'call `time()`', action: (client) => client.time() },
+      { description: 'call `stats()`', action: (client) => client.stats() },
       { description: 'call `request(...)`', action: (client) => client.request('get', '/channels/channel', 2) },
       {
         description: 'call `batchPublish(...)`',
