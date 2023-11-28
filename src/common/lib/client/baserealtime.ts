@@ -13,12 +13,14 @@ import { ModulesMap, RealtimePresenceModule } from './modulesmap';
 import { TransportNames } from 'common/constants/TransportName';
 import { TransportImplementations } from 'common/platform';
 import { RealtimePublishing } from './realtimepublishing';
+import { Acks } from './acks';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
   readonly _RealtimePresence: RealtimePresenceModule | null;
+  readonly _Acks: typeof Acks | null;
   readonly __RealtimePublishing: typeof RealtimePublishing | null;
   // Extra transport implementations available to this client, in addition to those in Platform.Transports.bundledImplementations
   readonly _additionalTransportImplementations: TransportImplementations;
@@ -30,6 +32,7 @@ class BaseRealtime extends BaseClient {
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromModules(modules);
     this._RealtimePresence = modules.RealtimePresence ?? null;
+    this._Acks = modules.RealtimePublishing?.Acks ?? modules.RealtimePresence?.Acks ?? null;
     this.__RealtimePublishing = modules.RealtimePublishing ?? null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);

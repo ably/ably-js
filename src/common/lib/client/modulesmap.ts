@@ -11,6 +11,7 @@ import {
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
 import { RealtimePublishing } from './realtimepublishing';
+import { Acks } from './acks';
 
 export interface PresenceMessageModule {
   presenceMessageFromValues: typeof presenceMessageFromValues;
@@ -19,6 +20,7 @@ export interface PresenceMessageModule {
 
 export type RealtimePresenceModule = PresenceMessageModule & {
   RealtimePresence: typeof RealtimePresence;
+  Acks: typeof Acks;
 };
 
 export interface ModulesMap {

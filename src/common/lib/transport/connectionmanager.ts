@@ -901,23 +901,7 @@ class ConnectionManager extends EventEmitter {
 
     /* Gracefully terminate existing protocol */
     if (existingActiveProtocol) {
-      if (existingActiveProtocol.messageQueue.count() > 0) {
-        /* We could just requeue pending messages on the new transport, but
-         * actually this should never happen: transports should only take over
-         * from other active transports when upgrading, and upgrading waits for
-         * the old transport to be idle. So log an error. */
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ConnectionManager.activateTransport()',
-          'Previous active protocol (for transport ' +
-            existingActiveProtocol.transport.shortName +
-            ', new one is ' +
-            transport.shortName +
-            ') finishing with ' +
-            existingActiveProtocol.messageQueue.count() +
-            ' messages still pending'
-        );
-      }
+      existingActiveProtocol.acks?.thingMovedFromActivateTransport(existingActiveProtocol, transport);
       if (existingActiveProtocol.transport === transport) {
         const msg =
           'Assumption violated: activating a transport that was also the transport for the previous active protocol; transport = ' +
@@ -989,19 +973,7 @@ class ConnectionManager extends EventEmitter {
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
 
     if (wasActive) {
-      Logger.logAction(
-        Logger.LOG_MICRO,
-        'ConnectionManager.deactivateTransport()',
-        'Getting, clearing, and requeuing ' + currentProtocol!.messageQueue.count() + ' pending messages'
-      );
-      this.queuePendingMessages(currentProtocol!.getPendingMessages());
-      /* Clear any messages we requeue to allow the protocol to become idle.
-       * In case of an upgrade, this will trigger an immediate activation of
-       * the upgrade transport, so delay a tick so this transport can finish
-       * deactivating */
-      Platform.Config.nextTick(function () {
-        currentProtocol!.clearPendingMessages();
-      });
+      currentProtocol!.acks?.thingMovedFromDeactivateTransport(this, currentProtocol);
       this.activeProtocol = this.host = null;
     }
 
@@ -1965,17 +1937,6 @@ class ConnectionManager extends EventEmitter {
     );
     let pendingMessage;
     while ((pendingMessage = this.queuedMessages.shift())) this.sendImpl(pendingMessage);
-  }
-
-  queuePendingMessages(pendingMessages: Array<PendingMessage>): void {
-    if (pendingMessages && pendingMessages.length) {
-      Logger.logAction(
-        Logger.LOG_MICRO,
-        'ConnectionManager.queuePendingMessages()',
-        'queueing ' + pendingMessages.length + ' pending messages'
-      );
-      this.queuedMessages.prepend(pendingMessages);
-    }
   }
 
   failQueuedMessages(err: ErrorInfo): void {

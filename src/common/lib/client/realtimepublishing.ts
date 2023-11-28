@@ -11,8 +11,13 @@ import Message, {
 } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import { ErrCallback } from '../../types/utils';
+import { Acks } from './acks';
 
 export class RealtimePublishing {
+  static get Acks(): typeof Acks {
+    return Acks;
+  }
+
   static publish(channel: RealtimeChannel, ...args: any[]): void | Promise<void> {
     let messages = args[0];
     let argCount = args.length;

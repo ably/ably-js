@@ -39,6 +39,7 @@ class MessageQueue extends EventEmitter {
     this.messages.unshift.apply(this.messages, messages);
   }
 
+  // TODO maybe we could move this into Acks and then inline completeAllMessages, I think the savings would be minimal though
   completeMessages(serial: number, count: number, err?: ErrorInfo | null): void {
     Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.completeMessages()', 'serial = ' + serial + '; count = ' + count);
     err = err || null;

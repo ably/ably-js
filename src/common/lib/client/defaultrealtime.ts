@@ -16,6 +16,7 @@ import {
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
 import { RealtimePublishing } from './realtimepublishing';
+import { Acks } from './acks';
 
 /**
  `DefaultRealtime` is the class that the non tree-shakable version of the SDK exports as `Realtime`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
@@ -35,6 +36,7 @@ export class DefaultRealtime extends BaseRealtime {
         RealtimePresence,
         presenceMessageFromValues,
         presenceMessagesFromValuesArray,
+        Acks,
       },
       WebSocketTransport: initialiseWebSocketTransport,
       MessageInteractions: FilteredSubscriptions,
