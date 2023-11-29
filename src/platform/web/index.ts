@@ -28,6 +28,11 @@ Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
+// To use vcdiff on web you must use the modular variant of the library
+Platform.Vcdiff = {
+  supported: false,
+  errorMessage: 'For vcdiff functionality in the browser, you must use the modular variant of ably-js',
+};
 
 for (const clientClass of [DefaultRest, DefaultRealtime]) {
   clientClass.Crypto = Crypto;

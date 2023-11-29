@@ -250,7 +250,7 @@ define([
     expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
   }
 
-  var exports = {
+  return (module.exports = {
     setupApp: testAppModule.setup,
     tearDownApp: testAppModule.tearDown,
     createStats: testAppModule.createStatsFixtureData,
@@ -284,11 +284,5 @@ define([
     whenPromiseSettles: whenPromiseSettles,
     randomString: randomString,
     testMessageEquality: testMessageEquality,
-  };
-
-  if (typeof window !== 'undefined') {
-    window.ablyHelpers = exports;
-  }
-
-  return (module.exports = exports);
+  });
 });

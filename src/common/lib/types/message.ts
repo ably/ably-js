@@ -22,14 +22,11 @@ export type CipherOptions = {
   };
 };
 
+export type VcdiffDecoder = (delta: Uint8Array, source: Uint8Array) => Uint8Array;
+
 export type EncodingDecodingContext = {
   channelOptions: ChannelOptions;
-  plugins: {
-    vcdiff?: {
-      encrypt: Function;
-      decode: Function;
-    };
-  };
+  decodeVcdiff?: VcdiffDecoder;
   baseEncodedPreviousPayload?: Buffer | BrowserBufferlike;
 };
 
@@ -37,7 +34,6 @@ function normaliseContext(context: CipherOptions | EncodingDecodingContext | Cha
   if (!context || !(context as EncodingDecodingContext).channelOptions) {
     return {
       channelOptions: context as ChannelOptions,
-      plugins: {},
       baseEncodedPreviousPayload: undefined,
     };
   }
@@ -217,8 +213,12 @@ export async function decode(
               throw new Error('Unable to decrypt message; not an encrypted channel');
             }
           case 'vcdiff':
-            if (!context.plugins || !context.plugins.vcdiff) {
-              throw new ErrorInfo('Missing Vcdiff decoder (https://github.com/ably-forks/vcdiff-decoder)', 40019, 400);
+            if (!context.decodeVcdiff) {
+              if (Platform.Vcdiff.supported) {
+                Utils.throwMissingModuleError('Vcdiff');
+              } else {
+                throw new ErrorInfo(Platform.Vcdiff.errorMessage, 40019, 400);
+              }
             }
             if (typeof Uint8Array === 'undefined') {
               throw new ErrorInfo(
@@ -234,10 +234,10 @@ export async function decode(
               }
 
               // vcdiff expects Uint8Arrays, can't copy with ArrayBuffers.
-              deltaBase = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
+              const deltaBaseBuffer = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
               data = Platform.BufferUtils.toBuffer(data);
 
-              data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBase));
+              data = Platform.BufferUtils.arrayBufferViewToBuffer(context.decodeVcdiff(data, deltaBaseBuffer));
               lastPayload = data;
             } catch (e) {
               throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);

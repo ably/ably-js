@@ -58,15 +58,20 @@ require([(baseUrl + '/test/common/globals/named_dependencies.js').replace('//', 
       'browser-base64': {
         exports: 'Base64',
       },
-      'vcdiff-decoder': {
-        exports: 'vcdiffDecoder',
-      },
     },
 
     // dynamically load all test files
     deps: allTestFiles,
 
-    // we have to kickoff mocha
-    callback: () => mocha.run(),
+    callback: () => {
+      // (For some reason things don’t work if you return a Promise from this callback, hence the nested async function)
+      (async () => {
+        // Let modules.test.js register its tests before we run the test suite
+        await registerAblyModulesTests();
+
+        // we have to kickoff mocha
+        mocha.run();
+      })();
+    },
   });
 });

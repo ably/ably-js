@@ -565,16 +565,6 @@ declare namespace Types {
      * @defaultValue 10s
      */
     realtimeRequestTimeout?: number;
-
-    /**
-     * A map between a plugin type and a plugin object.
-     */
-    plugins?: {
-      /**
-       * A plugin capable of decoding `vcdiff`-encoded messages. For more information on how to configure a channel to use delta encoding, see the [documentation for the `@ably-forks/vcdiff-decoder` package](https://github.com/ably-forks/vcdiff-decoder#usage).
-       */
-      vcdiff?: any;
-    };
   }
 
   /**

@@ -8,6 +8,7 @@ import * as WebBufferUtils from '../platform/web/lib/util/bufferutils';
 import * as NodeBufferUtils from '../platform/nodejs/lib/util/bufferutils';
 import { IUntypedCryptoStatic } from '../common/types/ICryptoStatic';
 import TransportName from './constants/TransportName';
+import { VcdiffDecoder } from './lib/types/message';
 
 type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
 type BufferUtilsOutput = WebBufferUtils.Output | NodeBufferUtils.Output;
@@ -39,4 +40,10 @@ export default class Platform {
   };
   static Defaults: IDefaults;
   static WebStorage: IWebStorage | null;
+  static Vcdiff:
+    | { supported: false; errorMessage: string /* explains why this platform does not support vcdiff */ }
+    | {
+        supported: true;
+        bundledDecode: VcdiffDecoder | null /* { supported: true, bundledDecode: null } means that the decode implementation can be provided via ModulesMap */;
+      };
 }
