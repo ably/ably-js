@@ -2055,12 +2055,12 @@ declare namespace Types {
      */
     presence: Presence;
     /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link InboundMessage} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param params - A set of parameters which are used to specify which messages should be retrieved.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link InboundMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
-    history(params?: RestHistoryParams): Promise<PaginatedResult<Message>>;
+    history(params?: RestHistoryParams): Promise<PaginatedResult<InboundMessage>>;
     /**
      * Publishes an array of messages to the channel.
      *
@@ -2068,7 +2068,7 @@ declare namespace Types {
      * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
-    publish(messages: any[], options?: PublishOptions): Promise<void>;
+    publish(messages: Message[], options?: PublishOptions): Promise<void>;
     /**
      * Publishes a message to the channel.
      *
@@ -2076,7 +2076,7 @@ declare namespace Types {
      * @param options - Optional parameters, such as [`quickAck`](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes) sent as part of the query string.
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
-    publish(message: any, options?: PublishOptions): Promise<void>;
+    publish(message: Message, options?: PublishOptions): Promise<void>;
     /**
      * Publishes a single message to the channel with the given event name and payload.
      *
@@ -2124,14 +2124,14 @@ declare namespace Types {
      * @param event - The event name.
      * @param listener - An event listener function.
      */
-    unsubscribe(event: string, listener: messageCallback<Message>): void;
+    unsubscribe(event: string, listener: messageCallback<InboundMessage>): void;
     /**
      * Deregisters the given listener from all event names in the array.
      *
      * @param events - An array of event names.
      * @param listener - An event listener function.
      */
-    unsubscribe(events: Array<string>, listener: messageCallback<Message>): void;
+    unsubscribe(events: Array<string>, listener: messageCallback<InboundMessage>): void;
     /**
      * Deregisters all listeners for the given event name.
      *
@@ -2150,13 +2150,13 @@ declare namespace Types {
      * @param filter - A {@link MessageFilter}.
      * @param listener - An event listener function.
      */
-    unsubscribe(filter: MessageFilter, listener?: messageCallback<Message>): void;
+    unsubscribe(filter: MessageFilter, listener?: messageCallback<InboundMessage>): void;
     /**
      * Deregisters the given listener (for any/all event names). This removes an earlier subscription.
      *
      * @param listener - An event listener function.
      */
-    unsubscribe(listener: messageCallback<Message>): void;
+    unsubscribe(listener: messageCallback<InboundMessage>): void;
     /**
      * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
      */
@@ -2179,12 +2179,12 @@ declare namespace Types {
      */
     detach(): Promise<void>;
     /**
-     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link Message} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
+     * Retrieves a {@link Types.PaginatedResult} object, containing an array of historical {@link InboundMessage} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
      *
      * @param params - A set of parameters which are used to specify which presence members should be retrieved.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Message} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link InboundMessage} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
-    history(params?: RealtimeHistoryParams): Promise<PaginatedResult<Message>>;
+    history(params?: RealtimeHistoryParams): Promise<PaginatedResult<InboundMessage>>;
     /**
      * Sets the {@link ChannelOptions} for the channel.
      *
@@ -2199,7 +2199,7 @@ declare namespace Types {
      * @param listener - An event listener function.
      * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(event: string, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
+    subscribe(event: string, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
     /**
      * Registers a listener for messages on this channel for multiple event name values.
      *
@@ -2207,7 +2207,7 @@ declare namespace Types {
      * @param listener - An event listener function.
      * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(events: Array<string>, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
+    subscribe(events: Array<string>, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
     /**
      * {@label WITH_MESSAGE_FILTER}
      *
@@ -2217,14 +2217,14 @@ declare namespace Types {
      * @param listener - An event listener function.
      * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(filter: MessageFilter, listener?: messageCallback<Message>): Promise<ChannelStateChange | null>;
+    subscribe(filter: MessageFilter, listener?: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
     /**
      * Registers a listener for messages on this channel. The caller supplies a listener function, which is called each time one or more messages arrives on the channel.
      *
      * @param callback - An event listener function.
      * @returns A promise which, upon successful attachment to the channel, will be fulfilled with a {@link ChannelStateChange} object. If the channel was already attached the promise will be resolved with `null`. Upon failure, the promise will be rejected with an {@link ErrorInfo} object.
      */
-    subscribe(callback: messageCallback<Message>): Promise<ChannelStateChange | null>;
+    subscribe(callback: messageCallback<InboundMessage>): Promise<ChannelStateChange | null>;
     /**
      * Publishes a single message to the channel with the given event name and payload. When publish is called with this client library, it won't attempt to implicitly attach to the channel, so long as [transient publishing](https://ably.com/docs/realtime/channels#transient-publish) is available in the library. Otherwise, the client will implicitly attach.
      *
@@ -2239,14 +2239,14 @@ declare namespace Types {
      * @param messages - An array of {@link Message} objects.
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
-    publish(messages: any[]): Promise<void>;
+    publish(messages: Message[]): Promise<void>;
     /**
      * Publish a message to the channel. When publish is called with this client library, it won't attempt to implicitly attach to the channel.
      *
      * @param message - A {@link Message} object.
      * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
      */
-    publish(message: any): Promise<void>;
+    publish(message: Message): Promise<void>;
     /**
      * Returns a promise which is resolved when the channel reaches the specified {@link ChannelState}. If the channel is already in the specified state, the promise is resolved immediately.
      *
@@ -2329,11 +2329,11 @@ declare namespace Types {
   /**
    * Contains an individual message that is sent to, or received from, Ably.
    */
-  class Message {
+  interface Message {
     /**
      * The client ID of the publisher of this message.
      */
-    clientId: string;
+    clientId?: string;
     /**
      * The connection ID of the publisher of this message.
      */
@@ -2341,49 +2341,54 @@ declare namespace Types {
     /**
      * The message payload, if provided.
      */
-    data: any;
+    data?: any;
     /**
      * This is typically empty, as all messages received from Ably are automatically decoded client-side using this value. However, if the message encoding cannot be processed, this attribute contains the remaining transformations not applied to the `data` payload.
      */
-    encoding: string;
+    encoding?: string;
     /**
      * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `push`, `delta`, `ref` and `headers`.
      */
-    extras: any;
+    extras?: any;
     /**
      * Unique ID assigned by Ably to this message.
      */
-    id: string;
+    id?: string;
     /**
      * The event name.
      */
-    name: string;
+    name?: string;
     /**
      * Timestamp of when the message was received by Ably, as milliseconds since the Unix epoch.
      */
-    timestamp: number;
+    timestamp?: number;
   }
+
+  /**
+   * A message received from Ably.
+   */
+  type InboundMessage = Message & Required<Pick<Message, 'id' | 'timestamp'>>;
 
   /**
    * Static utilities related to messages.
    */
   interface MessageStatic {
     /**
-     * A static factory method to create a `Message` object from a deserialized Message-like object encoded using Ably's wire protocol.
+     * A static factory method to create an `InboundMessage` object from a deserialized InboundMessage-like object encoded using Ably's wire protocol.
      *
-     * @param JsonObject - A `Message`-like deserialized object.
+     * @param JsonObject - A `InboundMessage`-like deserialized object.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns A promise which will be fulfilled with a `Message` object.
+     * @returns A promise which will be fulfilled with an `InboundMessage` object.
      */
-    fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<Message>;
+    fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<InboundMessage>;
     /**
-     * A static factory method to create an array of `Message` objects from an array of deserialized Message-like object encoded using Ably's wire protocol.
+     * A static factory method to create an array of `InboundMessage` objects from an array of deserialized InboundMessage-like object encoded using Ably's wire protocol.
      *
-     * @param JsonArray - An array of `Message`-like deserialized objects.
+     * @param JsonArray - An array of `InboundMessage`-like deserialized objects.
      * @param channelOptions - A {@link ChannelOptions} object. If you have an encrypted channel, use this to allow the library to decrypt the data.
-     * @returns A promise which will be fulfilled with an array of {@link Message} objects.
+     * @returns A promise which will be fulfilled with an array of {@link InboundMessage} objects.
      */
-    fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<Message[]>;
+    fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<InboundMessage[]>;
   }
 
   /**
@@ -2601,7 +2606,7 @@ declare namespace Types {
    */
   class PaginatedResult<T> {
     /**
-     * Contains the current page of results; for example, an array of {@link Message} or {@link PresenceMessage} objects for a channel history request.
+     * Contains the current page of results; for example, an array of {@link InboundMessage} or {@link PresenceMessage} objects for a channel history request.
      */
     items: T[];
     /**
