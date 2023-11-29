@@ -242,7 +242,7 @@ export interface ModulesMap {
  *
  * `BaseRest` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Rest`](../../default/classes/Rest.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  */
-export declare class BaseRest extends Types.Rest {
+export declare class BaseRest extends Types.AbstractRest {
   /**
    * Construct a client object using an Ably {@link Types.ClientOptions} object.
    *
@@ -261,7 +261,7 @@ export declare class BaseRest extends Types.Rest {
  *
  * `BaseRealtime` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Realtime`](../../default/classes/Realtime.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  */
-export declare class BaseRealtime extends Types.Realtime {
+export declare class BaseRealtime extends Types.AbstractRealtime {
   /**
    * Construct a client object using an Ably {@link Types.ClientOptions} object.
    *

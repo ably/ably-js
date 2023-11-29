@@ -9,7 +9,7 @@ import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Types.Realtime}>{children}</AblyProvider>);
+  return render(<AblyProvider client={client as unknown as Types.AbstractRealtime}>{children}</AblyProvider>);
 }
 
 describe('useChannelStateListener', () => {
