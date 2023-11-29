@@ -8,11 +8,11 @@ const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'func
 
 interface AblyProviderProps {
   children?: React.ReactNode | React.ReactNode[] | null;
-  client?: Ably.Types.Realtime;
+  client?: Ably.Types.AbstractRealtime;
   id?: string;
 }
 
-type AblyContextType = React.Context<Types.Realtime>;
+type AblyContextType = React.Context<Types.AbstractRealtime>;
 
 // An object is appended to `React.createContext` which stores all contexts
 // indexed by id, which is used by useAbly to find the correct context when an

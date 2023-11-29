@@ -364,7 +364,7 @@ declare namespace Types {
   }
 
   /**
-   * Passes additional client-specific properties to the REST {@link Rest.constructor | `constructor()`} or the Realtime {@link Realtime.constructor | `constructor()`}.
+   * Passes additional client-specific properties to the REST {@link AbstractRest.constructor | `constructor()`} or the Realtime {@link AbstractRealtime.constructor | `constructor()`}.
    */
   interface ClientOptions extends AuthOptions {
     /**
@@ -1336,8 +1336,8 @@ declare namespace Types {
   /**
    * The `StatsParams` interface describes the parameters accepted by the following methods:
    *
-   * - {@link Rest.stats}
-   * - {@link Realtime.stats}
+   * - {@link AbstractRest.stats}
+   * - {@link AbstractRealtime.stats}
    */
   interface StatsParams {
     /**
@@ -1658,7 +1658,7 @@ declare namespace Types {
   /**
    * A client that offers a simple stateless API to interact directly with Ably's REST API.
    */
-  abstract class Rest {
+  abstract class AbstractRest {
     /**
      * An {@link Types.Auth} object.
      */
@@ -1730,9 +1730,9 @@ declare namespace Types {
   }
 
   /**
-   * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
+   * A client that extends the functionality of {@link AbstractRest} and provides additional realtime-specific features.
    */
-  abstract class Realtime {
+  abstract class AbstractRealtime {
     /**
      * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
      */
@@ -2765,7 +2765,7 @@ declare namespace Types {
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare class Rest extends Types.Rest {
+export declare class Rest extends Types.AbstractRest {
   /**
    * Construct a client object using an Ably {@link Types.ClientOptions} object.
    *
@@ -2795,7 +2795,7 @@ export declare class Rest extends Types.Rest {
 /**
  * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  */
-export declare class Realtime extends Types.Realtime {
+export declare class Realtime extends Types.AbstractRealtime {
   /**
    * Construct a client object using an Ably {@link Types.ClientOptions} object.
    *

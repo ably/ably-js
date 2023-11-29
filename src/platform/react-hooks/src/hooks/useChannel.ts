@@ -8,7 +8,7 @@ export type AblyMessageCallback = Types.messageCallback<Types.Message>;
 
 export interface ChannelResult {
   channel: Types.RealtimeChannel;
-  ably: Types.Realtime;
+  ably: Types.AbstractRealtime;
   connectionError: ErrorInfo | null;
   channelError: ErrorInfo | null;
 }
