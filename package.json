@@ -9,6 +9,7 @@
   },
   "exports": {
     ".": {
+      "types": "./ably.d.ts",
       "node": "./build/ably-node.js",
       "react-native": "./build/ably-reactnative.js",
       "default": "./build/ably.js"

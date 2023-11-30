@@ -1,0 +1,9 @@
+{
+  "include": ["**/*.ts"],
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler"
+  }
+}
