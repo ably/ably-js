@@ -1,4 +1,4 @@
-import { Types } from '../../../../ably.js';
+import { Types, ErrorInfo } from '../../../../ably.js';
 
 export type ChannelNameAndOptions = {
   channelName: string;
@@ -7,8 +7,8 @@ export type ChannelNameAndOptions = {
   subscribeOnly?: boolean;
   skip?: boolean;
 
-  onConnectionError?: (error: Types.ErrorInfo) => unknown;
-  onChannelError?: (error: Types.ErrorInfo) => unknown;
+  onConnectionError?: (error: ErrorInfo) => unknown;
+  onChannelError?: (error: ErrorInfo) => unknown;
 };
 
 export type ChannelNameAndId = {

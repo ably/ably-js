@@ -720,38 +720,6 @@ declare namespace Types {
   }
 
   /**
-   * A generic Ably error object that contains an Ably-specific status code, and a generic status code. Errors returned from the Ably server are compatible with the `ErrorInfo` structure and should result in errors that inherit from `ErrorInfo`.
-   */
-  class ErrorInfo extends Error {
-    /**
-     * Ably [error code](https://github.com/ably/ably-common/blob/main/protocol/errors.json).
-     */
-    code: number;
-    /**
-     * Additional message information, where available.
-     */
-    message: string;
-    /**
-     * HTTP Status Code corresponding to this error, where applicable.
-     */
-    statusCode: number;
-    /**
-     * The underlying cause of the error, where applicable.
-     */
-    cause?: string | Error | ErrorInfo;
-
-    /**
-     * Construct an ErrorInfo object.
-     *
-     * @param message - A string describing the error.
-     * @param code - Ably [error code](https://github.com/ably/ably-common/blob/main/protocol/errors.json).
-     * @param statusCode - HTTP Status Code corresponding to this error.
-     * @param cause - The underlying cause of the error.
-     */
-    constructor(message: string, code: number, statusCode: number, cause?: string | Error | ErrorInfo);
-  }
-
-  /**
    * Contains an Ably Token and its associated metadata.
    */
   interface TokenDetails {
@@ -1592,7 +1560,7 @@ declare namespace Types {
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
-     * @returns A promise which, upon success, will be fulfilled with an {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with an {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     request<T = any>(
       method: string,
@@ -1606,13 +1574,13 @@ declare namespace Types {
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link Types.StatsParams} interface.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     stats(params?: StatsParams | any): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
-     * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     time(): Promise<number>;
 
@@ -1620,14 +1588,14 @@ declare namespace Types {
      * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
      *
      * @param spec - A {@link Types.BatchPublishSpec} object.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
     /**
      * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
      *
      * @param specs - An array of {@link Types.BatchPublishSpec} objects.
-     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     batchPublish(
       specs: BatchPublishSpec[]
@@ -1636,7 +1604,7 @@ declare namespace Types {
      * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
      *
      * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
     /**
@@ -1683,7 +1651,7 @@ declare namespace Types {
      * @param params - The parameters to include in the URL query of the request. The parameters depend on the endpoint being queried. See the [REST API reference](https://ably.com/docs/api/rest-api) for the available parameters of each endpoint.
      * @param body - The JSON body of the request.
      * @param headers - Additional HTTP headers to include in the request.
-     * @returns A promise which, upon success, will be fulfilled with the {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with the {@link Types.HttpPaginatedResponse} response object returned by the HTTP request. This response object will contain an empty or JSON-encodable object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     request<T = any>(
       method: string,
@@ -1697,27 +1665,27 @@ declare namespace Types {
      * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link Types.PaginatedResult} object, containing an array of {@link Types.Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
      *
      * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link Types.StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link Types.StatsParams} interface.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.PaginatedResult} object containing an array of {@link Types.Stats} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     stats(params?: StatsParams | any): Promise<Types.PaginatedResult<Types.Stats>>;
     /**
      * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link Types.TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link Types.ClientOptions.queryTime} property instead of this method.
      *
-     * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with the time as milliseconds since the Unix epoch. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     time(): Promise<number>;
     /**
      * Publishes a {@link Types.BatchPublishSpec} object to one or more channels, up to a maximum of 100 channels.
      *
      * @param spec - A {@link Types.BatchPublishSpec} object.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch publish for each requested channel. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
     /**
      * Publishes one or more {@link Types.BatchPublishSpec} objects to one or more channels, up to a maximum of 100 channels.
      *
      * @param specs - An array of {@link Types.BatchPublishSpec} objects.
-     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with an array of {@link Types.BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link Types.BatchPublishSpec}. This array is in the same order as the provided {@link Types.BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     batchPublish(
       specs: BatchPublishSpec[]
@@ -1726,7 +1694,7 @@ declare namespace Types {
      * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link Types.PresenceAction}.
      *
      * @param channels - An array of one or more channel names, up to a maximum of 100 channels.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} object containing information about the result of the batch presence request for each requested channel. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
     /**
@@ -1757,7 +1725,7 @@ declare namespace Types {
      *
      * @param tokenParams - A {@link TokenParams} object.
      * @param authOptions - An {@link AuthOptions} object.
-     * @returns A promise which, upon success, will be fulfilled with a {@link TokenRequest} object. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link TokenRequest} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     createTokenRequest(tokenParams?: TokenParams, authOptions?: AuthOptions): Promise<TokenRequest>;
     /**
@@ -1773,7 +1741,7 @@ declare namespace Types {
      *
      * @param specifiers - An array of {@link TokenRevocationTargetSpecifier} objects.
      * @param options - A set of options which are used to modify the revocation request.
-     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} containing information about the result of the token revocation request for each provided [`TokenRevocationTargetSpecifier`]{@link TokenRevocationTargetSpecifier}. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with a {@link Types.BatchResult} containing information about the result of the token revocation request for each provided [`TokenRevocationTargetSpecifier`]{@link TokenRevocationTargetSpecifier}. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     revokeTokens(
       specifiers: TokenRevocationTargetSpecifier[],
@@ -2380,7 +2348,7 @@ declare namespace Types {
      * Generates a random key to be used in the encryption of the channel. If the language cryptographic randomness primitives are blocking or async, a callback is used. The callback returns a generated binary key.
      *
      * @param keyLength - The length of the key, in bits, to be generated. If not specified, this is equal to the default `keyLength` of the default algorithm: for AES this is 256 bits.
-     * @returns A promise which, upon success, will be fulfilled with the generated key as a binary, for example, a byte array. Upon failure, the promise will be rejected with an {@link Types.ErrorInfo} object which explains the error.
+     * @returns A promise which, upon success, will be fulfilled with the generated key as a binary, for example, a byte array. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
     generateRandomKey(keyLength?: number): Promise<CipherKey>;
     /**
@@ -2725,4 +2693,31 @@ export declare class Realtime extends Types.Realtime {
 /**
  * A generic Ably error object that contains an Ably-specific status code, and a generic status code. Errors returned from the Ably server are compatible with the `ErrorInfo` structure and should result in errors that inherit from `ErrorInfo`.
  */
-export declare class ErrorInfo extends Types.ErrorInfo {}
+export declare class ErrorInfo {
+  /**
+   * Ably [error code](https://github.com/ably/ably-common/blob/main/protocol/errors.json).
+   */
+  code: number;
+  /**
+   * Additional message information, where available.
+   */
+  message: string;
+  /**
+   * HTTP Status Code corresponding to this error, where applicable.
+   */
+  statusCode: number;
+  /**
+   * The underlying cause of the error, where applicable.
+   */
+  cause?: string | Error | ErrorInfo;
+
+  /**
+   * Construct an ErrorInfo object.
+   *
+   * @param message - A string describing the error.
+   * @param code - Ably [error code](https://github.com/ably/ably-common/blob/main/protocol/errors.json).
+   * @param statusCode - HTTP Status Code corresponding to this error.
+   * @param cause - The underlying cause of the error.
+   */
+  constructor(message: string, code: number, statusCode: number, cause?: string | Error | ErrorInfo);
+}

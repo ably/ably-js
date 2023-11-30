@@ -1,4 +1,4 @@
-import { Types } from '../../../../../ably.js';
+import { Types, ErrorInfo } from '../../../../../ably.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
@@ -7,8 +7,8 @@ import { useStateErrors } from './useStateErrors.js';
 export interface PresenceResult<T> {
   presenceData: PresenceMessage<T>[];
   updateStatus: (messageOrPresenceObject: T) => void;
-  connectionError: Types.ErrorInfo | null;
-  channelError: Types.ErrorInfo | null;
+  connectionError: ErrorInfo | null;
+  channelError: ErrorInfo | null;
 }
 
 export type OnPresenceMessageReceived<T> = (presenceData: PresenceMessage<T>) => void;

@@ -3,7 +3,7 @@ import { it, beforeEach, describe, expect, vi } from 'vitest';
 import { useChannel } from './useChannel.js';
 import { render, screen, waitFor } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
-import { Types } from '../../../../../ably.js';
+import { Types, ErrorInfo } from '../../../../../ably.js';
 import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
 
@@ -202,8 +202,8 @@ const UseChannelComponent = ({ skip }: { skip?: boolean }) => {
 };
 
 interface UseChannelStateErrorsComponentProps {
-  onConnectionError?: (err: Types.ErrorInfo) => unknown;
-  onChannelError?: (err: Types.ErrorInfo) => unknown;
+  onConnectionError?: (err: ErrorInfo) => unknown;
+  onChannelError?: (err: ErrorInfo) => unknown;
 }
 
 const UseChannelStateErrorsComponent = ({ onConnectionError, onChannelError }: UseChannelStateErrorsComponentProps) => {
