@@ -1748,7 +1748,7 @@ class ConnectionManager extends EventEmitter {
     this.notifyState({ state: 'closed' });
   }
 
-  onAuthUpdated(tokenDetails: API.Types.TokenDetails, callback: Function): void {
+  onAuthUpdated(tokenDetails: API.TokenDetails, callback: Function): void {
     switch (this.state.state) {
       case 'connected': {
         Logger.logAction(

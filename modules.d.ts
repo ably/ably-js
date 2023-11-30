@@ -22,17 +22,25 @@
  * @module
  */
 
-import { Types, ErrorInfo } from './ably';
+import {
+  ErrorInfo,
+  AbstractRest,
+  ClientOptions,
+  Crypto as CryptoClass,
+  MessageStatic,
+  PresenceMessageStatic,
+  AbstractRealtime,
+} from './ably';
 
-export declare const generateRandomKey: Types.Crypto['generateRandomKey'];
-export declare const getDefaultCryptoParams: Types.Crypto['getDefaultParams'];
-export declare const decodeMessage: Types.MessageStatic['fromEncoded'];
-export declare const decodeEncryptedMessage: Types.MessageStatic['fromEncoded'];
-export declare const decodeMessages: Types.MessageStatic['fromEncodedArray'];
-export declare const decodeEncryptedMessages: Types.MessageStatic['fromEncodedArray'];
-export declare const decodePresenceMessage: Types.PresenceMessageStatic['fromEncoded'];
-export declare const decodePresenceMessages: Types.PresenceMessageStatic['fromEncodedArray'];
-export declare const constructPresenceMessage: Types.PresenceMessageStatic['fromValues'];
+export declare const generateRandomKey: CryptoClass['generateRandomKey'];
+export declare const getDefaultCryptoParams: CryptoClass['getDefaultParams'];
+export declare const decodeMessage: MessageStatic['fromEncoded'];
+export declare const decodeEncryptedMessage: MessageStatic['fromEncoded'];
+export declare const decodeMessages: MessageStatic['fromEncodedArray'];
+export declare const decodeEncryptedMessages: MessageStatic['fromEncodedArray'];
+export declare const decodePresenceMessage: PresenceMessageStatic['fromEncoded'];
+export declare const decodePresenceMessages: PresenceMessageStatic['fromEncodedArray'];
+export declare const constructPresenceMessage: PresenceMessageStatic['fromValues'];
 
 /**
  * Provides REST-related functionality to a {@link BaseRealtime} client.
@@ -46,22 +54,22 @@ export declare const constructPresenceMessage: Types.PresenceMessageStatic['from
  *
  * When provided, the following functionality becomes available:
  *
- * - { @link ably!Types.Push | push admin }
+ * - { @link ably!Push | push admin }
  * - { @link BaseRealtime.time | retrieving Ably service time }
  * - { @link BaseRealtime.stats | retrieving your application’s usage statistics }
  * - { @link BaseRealtime.request | making arbitrary REST requests }
  * - { @link BaseRealtime.batchPublish | batch publishing of messages }
  * - { @link BaseRealtime.batchPresence | batch retrieval of channel presence state }
- * - { @link ably!Types.Auth.revokeTokens | requesting the revocation of tokens }
- * - { @link ably!Types.RealtimeChannel.history | retrieving the message history of a channel }
- * - { @link ably!Types.RealtimePresence.history | retrieving the presence history of a channel }
+ * - { @link ably!Auth.revokeTokens | requesting the revocation of tokens }
+ * - { @link ably!RealtimeChannel.history | retrieving the message history of a channel }
+ * - { @link ably!RealtimePresence.history | retrieving the presence history of a channel }
  *
  * If this module is not provided, then trying to use the above functionality will cause a runtime error.
  */
 export declare const Rest: unknown;
 
 /**
- * Provides a {@link BaseRest} or {@link BaseRealtime} instance with the ability to encrypt and decrypt {@link ably!Types.Message} payloads.
+ * Provides a {@link BaseRest} or {@link BaseRealtime} instance with the ability to encrypt and decrypt {@link ably!Message} payloads.
  *
  * To create a client that includes this module, include it in the `ModulesMap` that you pass to the {@link BaseRealtime.constructor}:
  *
@@ -70,7 +78,7 @@ export declare const Rest: unknown;
  * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, Crypto });
  * ```
  *
- * When provided, you can configure message encryption on a channel via the {@link ably!Types.ChannelOptions.cipher} property of the `ChannelOptions` that you pass when {@link ably!Types.Channels.get | fetching a channel}. If this module is not provided, then passing a `ChannelOptions` with a `cipher` property will cause a runtime error.
+ * When provided, you can configure message encryption on a channel via the {@link ably!ChannelOptions.cipher} property of the `ChannelOptions` that you pass when {@link ably!Channels.get | fetching a channel}. If this module is not provided, then passing a `ChannelOptions` with a `cipher` property will cause a runtime error.
  */
 export declare const Crypto: unknown;
 
@@ -84,7 +92,7 @@ export declare const Crypto: unknown;
  * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, MsgPack });
  * ```
  *
- * When provided, you can control whether the client uses MessagePack via the {@link Types.ClientOptions.useBinaryProtocol} client option. If you do not provide this module, then the library will always JSON format for encoding messages.
+ * When provided, you can control whether the client uses MessagePack via the {@link ClientOptions.useBinaryProtocol} client option. If you do not provide this module, then the library will always JSON format for encoding messages.
  */
 export declare const MsgPack: unknown;
 
@@ -98,7 +106,7 @@ export declare const MsgPack: unknown;
  * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, RealtimePresence });
  * ```
  *
- * If you do not provide this module, then attempting to access a channel’s {@link ably!Types.RealtimeChannel.presence} property will cause a runtime error.
+ * If you do not provide this module, then attempting to access a channel’s {@link ably!RealtimeChannel.presence} property will cause a runtime error.
  */
 export declare const RealtimePresence: unknown;
 
@@ -174,7 +182,7 @@ export declare const XHRRequest: unknown;
 export declare const FetchRequest: unknown;
 
 /**
- * Provides a {@link BaseRealtime} instance with the ability to filter channel subscriptions at runtime using { @link ably!Types.RealtimeChannel.subscribe:WITH_MESSAGE_FILTER | the overload of `subscribe()` that accepts a `MessageFilter` }.
+ * Provides a {@link BaseRealtime} instance with the ability to filter channel subscriptions at runtime using { @link ably!RealtimeChannel.subscribe:WITH_MESSAGE_FILTER | the overload of `subscribe()` that accepts a `MessageFilter` }.
  *
  * To create a client that includes this module, include it in the `ModulesMap` that you pass to the {@link BaseRealtime.constructor}:
  *
@@ -266,18 +274,18 @@ export interface ModulesMap {
  *
  * `BaseRest` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Rest`](../../default/classes/Rest.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  */
-export declare class BaseRest extends Types.AbstractRest {
+export declare class BaseRest extends AbstractRest {
   /**
-   * Construct a client object using an Ably {@link Types.ClientOptions} object.
+   * Construct a client object using an Ably {@link ClientOptions} object.
    *
-   * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
+   * @param options - A {@link ClientOptions} object to configure the client connection to Ably.
    * @param modules - An object which describes which functionality the client should offer. See the documentation for {@link ModulesMap}.
    *
    * You must provide at least one HTTP request implementation; that is, one of {@link FetchRequest} or {@link XHRRequest}. For minimum bundle size, favour `FetchRequest`.
    *
    * The {@link Rest} module is always implicitly included.
    */
-  constructor(options: Types.ClientOptions, modules: ModulesMap);
+  constructor(options: ClientOptions, modules: ModulesMap);
 }
 
 /**
@@ -285,11 +293,11 @@ export declare class BaseRest extends Types.AbstractRest {
  *
  * `BaseRealtime` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Realtime`](../../default/classes/Realtime.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  */
-export declare class BaseRealtime extends Types.AbstractRealtime {
+export declare class BaseRealtime extends AbstractRealtime {
   /**
-   * Construct a client object using an Ably {@link Types.ClientOptions} object.
+   * Construct a client object using an Ably {@link ClientOptions} object.
    *
-   * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
+   * @param options - A {@link ClientOptions} object to configure the client connection to Ably.
    * @param modules - An object which describes which functionality the client should offer. See the documentation for {@link ModulesMap}.
    *
    * You must provide:
@@ -297,7 +305,7 @@ export declare class BaseRealtime extends Types.AbstractRealtime {
    * - at least one HTTP request implementation; that is, one of {@link FetchRequest} or {@link XHRRequest} — for minimum bundle size, favour `FetchRequest`;
    * - at least one realtime transport implementation; that is, one of {@link WebSocketTransport}, {@link XHRStreaming}, or {@link XHRPolling} — for minimum bundle size, favour `WebSocketTransport`.
    */
-  constructor(options: Types.ClientOptions, modules: ModulesMap);
+  constructor(options: ClientOptions, modules: ModulesMap);
 }
 
 export { ErrorInfo };

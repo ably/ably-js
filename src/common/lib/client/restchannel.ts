@@ -153,7 +153,7 @@ class RestChannel {
     );
   }
 
-  status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
+  status(callback?: StandardCallback<API.ChannelDetails>): void | Promise<API.ChannelDetails> {
     return this.client.rest.channelMixin.status(this, callback);
   }
 }

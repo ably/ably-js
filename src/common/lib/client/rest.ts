@@ -19,20 +19,20 @@ import { useTokenAuth } from './auth';
 import { RestChannelMixin } from './restchannelmixin';
 import { RestPresenceMixin } from './restpresencemixin';
 
-type BatchResult<T> = API.Types.BatchResult<T>;
+type BatchResult<T> = API.BatchResult<T>;
 
-type BatchPublishSpec = API.Types.BatchPublishSpec;
-type BatchPublishSuccessResult = API.Types.BatchPublishSuccessResult;
-type BatchPublishFailureResult = API.Types.BatchPublishFailureResult;
+type BatchPublishSpec = API.BatchPublishSpec;
+type BatchPublishSuccessResult = API.BatchPublishSuccessResult;
+type BatchPublishFailureResult = API.BatchPublishFailureResult;
 type BatchPublishResult = BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>;
-type BatchPresenceSuccessResult = API.Types.BatchPresenceSuccessResult;
-type BatchPresenceFailureResult = API.Types.BatchPresenceFailureResult;
+type BatchPresenceSuccessResult = API.BatchPresenceSuccessResult;
+type BatchPresenceFailureResult = API.BatchPresenceFailureResult;
 type BatchPresenceResult = BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>;
 
-type TokenRevocationTargetSpecifier = API.Types.TokenRevocationTargetSpecifier;
-type TokenRevocationOptions = API.Types.TokenRevocationOptions;
-type TokenRevocationSuccessResult = API.Types.TokenRevocationSuccessResult;
-type TokenRevocationFailureResult = API.Types.TokenRevocationFailureResult;
+type TokenRevocationTargetSpecifier = API.TokenRevocationTargetSpecifier;
+type TokenRevocationOptions = API.TokenRevocationOptions;
+type TokenRevocationSuccessResult = API.TokenRevocationSuccessResult;
+type TokenRevocationFailureResult = API.TokenRevocationFailureResult;
 type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
 
 const noop = function () {};
