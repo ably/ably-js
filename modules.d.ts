@@ -1,4 +1,4 @@
-import { Types } from './ably';
+import { Types, ErrorInfo } from './ably';
 
 export declare const generateRandomKey: Types.Crypto['generateRandomKey'];
 export declare const getDefaultCryptoParams: Types.Crypto['getDefaultParams'];
@@ -276,4 +276,4 @@ export declare class BaseRealtime extends Types.Realtime {
   constructor(options: Types.ClientOptions, modules: ModulesMap);
 }
 
-export { Types };
+export { Types, ErrorInfo };
