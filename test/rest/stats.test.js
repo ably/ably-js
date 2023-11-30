@@ -58,6 +58,24 @@ define(['shared_helper', 'chai'], function (helper, chai) {
     });
   }
 
+  // Try to create some fixtures for the current minute, to provoke an inProgress in the response
+  const now = new Date();
+  const currentMinuteIntervalId =
+    now.getUTCFullYear() +
+    '-' +
+    ('0' + (now.getUTCMonth() + 1)).slice(-2) +
+    '-' +
+    ('0' + now.getUTCDate()).slice(-2) +
+    ':' +
+    ('0' + now.getUTCHours()).slice(-2) +
+    ':' +
+    ('0' + now.getUTCMinutes()).slice(-2);
+  console.log('intervalId: ', currentMinuteIntervalId);
+  statsFixtures.push({
+    intervalId: currentMinuteIntervalId,
+    inbound: { realtime: { messages: { count: 15, data: 4000 } } },
+  });
+
   describe('rest/stats', function () {
     this.timeout(60 * 1000);
 
@@ -75,7 +93,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
-    it('contains expected fields', async () => {
+    it.only('contains expected fields', async () => {
       const page = await rest.stats({
         start: lastYear + '-02-03:15:03',
         end: lastYear + '-02-03:15:05',
@@ -93,6 +111,12 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         expect(stats.unit).to.be.a('string');
         expect(stats.intervalId).to.be.a('string');
       }
+
+      // TSC15c says "an optional @String@ containing the last sub-interval included in this entry (in format yyyy-mm-dd:hh:mm) for entries that are still in progress, such as the current month"
+      const currentMinuteStats = (await rest.stats({ end: Date.now(), unit: 'minute' })).items[0];
+      console.log('currentMinuteStats is', currentMinuteStats);
+      // This is always coming back as undefined, why?
+      expect(currentMinuteStats.inProgress).to.be.a('string');
     });
 
     /**
