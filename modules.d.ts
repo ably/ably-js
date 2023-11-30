@@ -70,13 +70,13 @@ export declare const MsgPack: unknown;
  * To create a client that includes this module, include it in the `ModulesMap` that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from 'ably/modules';
- * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, RealtimePresence });
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresenceModule } from 'ably/modules';
+ * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, RealtimePresenceModule });
  * ```
  *
  * If you do not provide this module, then attempting to access a channel’s {@link Types.RealtimeChannel.presence} property will cause a runtime error.
  */
-export declare const RealtimePresence: unknown;
+export declare const RealtimePresenceModule: unknown;
 
 /**
  * Provides a {@link BaseRealtime} instance with the ability to establish a connection with the Ably realtime service using a [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) connection.
@@ -197,9 +197,9 @@ export interface ModulesMap {
   MsgPack?: typeof MsgPack;
 
   /**
-   * See {@link RealtimePresence | documentation for the `RealtimePresence` module}.
+   * See {@link RealtimePresenceModule | documentation for the `RealtimePresenceModule` module}.
    */
-  RealtimePresence?: typeof RealtimePresence;
+  RealtimePresenceModule?: typeof RealtimePresenceModule;
 
   /**
    * See {@link WebSocketTransport | documentation for the `WebSocketTransport` module}.

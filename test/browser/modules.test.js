@@ -10,7 +10,7 @@ import {
   decodeEncryptedMessages,
   Crypto,
   MsgPack,
-  RealtimePresence,
+  RealtimePresenceModule,
   decodePresenceMessage,
   decodePresenceMessages,
   constructPresenceMessage,
@@ -86,7 +86,7 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
         },
         {
           description: 'call channel’s `presence.history()`',
-          additionalRealtimeModules: { RealtimePresence },
+          additionalRealtimeModules: { RealtimePresenceModule },
           action: (client) => client.channels.get('channel').presence.history(),
         },
         {
@@ -452,13 +452,13 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
       });
     });
 
-    describe('RealtimePresence', () => {
-      describe('BaseRealtime without RealtimePresence', () => {
+    describe('RealtimePresenceModule', () => {
+      describe('BaseRealtime without RealtimePresenceModule', () => {
         it('throws an error when attempting to access the `presence` property', () => {
           const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
           const channel = client.channels.get('channel');
 
-          expect(() => channel.presence).to.throw('RealtimePresence module not provided');
+          expect(() => channel.presence).to.throw('RealtimePresenceModule module not provided');
         });
 
         it('doesn’t break when it receives a PRESENCE ProtocolMessage', async () => {
@@ -472,7 +472,7 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
           const txClient = new BaseRealtime(ablyClientOptions({ clientId: randomString() }), {
             WebSocketTransport,
             FetchRequest,
-            RealtimePresence,
+            RealtimePresenceModule,
           });
           const txChannel = txClient.channels.get('channel');
 
@@ -485,18 +485,18 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
         });
       });
 
-      describe('BaseRealtime with RealtimePresence', () => {
+      describe('BaseRealtime with RealtimePresenceModule', () => {
         it('offers realtime presence functionality', async () => {
           const rxChannel = new BaseRealtime(ablyClientOptions(), {
             WebSocketTransport,
             FetchRequest,
-            RealtimePresence,
+            RealtimePresenceModule,
           }).channels.get('channel');
           const txClientId = randomString();
           const txChannel = new BaseRealtime(ablyClientOptions({ clientId: txClientId }), {
             WebSocketTransport,
             FetchRequest,
-            RealtimePresence,
+            RealtimePresenceModule,
           }).channels.get('channel');
 
           let resolveRxPresenceMessagePromise;

@@ -25,7 +25,7 @@ export interface ModulesMap {
   Rest?: typeof Rest;
   Crypto?: IUntypedCryptoStatic;
   MsgPack?: MsgPack;
-  RealtimePresence?: RealtimePresenceModule;
+  RealtimePresenceModule?: RealtimePresenceModule;
   WebSocketTransport?: TransportInitialiser;
   XHRPolling?: TransportInitialiser;
   XHRStreaming?: TransportInitialiser;

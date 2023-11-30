@@ -29,7 +29,7 @@ class BaseRealtime extends BaseClient {
     super(options, modules);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromModules(modules);
-    this._RealtimePresence = modules.RealtimePresence ?? null;
+    this._RealtimePresence = modules.RealtimePresenceModule ?? null;
     this._decodeVcdiff = (modules.Vcdiff ?? (Platform.Vcdiff.supported && Platform.Vcdiff.bundledDecode)) || null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);

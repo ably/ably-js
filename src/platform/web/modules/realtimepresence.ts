@@ -11,4 +11,4 @@ const RealtimePresence: RealtimePresenceModule = {
   presenceMessagesFromValuesArray,
 };
 
-export { RealtimePresence };
+export { RealtimePresence as RealtimePresenceModule };

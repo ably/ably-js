@@ -30,7 +30,7 @@ export class DefaultRealtime extends BaseRealtime {
       ...allCommonModules,
       Crypto: DefaultRealtime.Crypto ?? undefined,
       MsgPack,
-      RealtimePresence: {
+      RealtimePresenceModule: {
         RealtimePresence,
         presenceMessageFromValues,
         presenceMessagesFromValuesArray,

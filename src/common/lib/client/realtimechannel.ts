@@ -67,7 +67,7 @@ class RealtimeChannel extends EventEmitter {
   private _presence: RealtimePresence | null;
   get presence(): RealtimePresence {
     if (!this._presence) {
-      Utils.throwMissingModuleError('RealtimePresence');
+      Utils.throwMissingModuleError('RealtimePresenceModule');
     }
     return this._presence;
   }
