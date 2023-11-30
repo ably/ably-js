@@ -42,7 +42,7 @@ function normaliseContext(context: CipherOptions | EncodingDecodingContext | Cha
 
 function normalizeCipherOptions(
   Crypto: IUntypedCryptoStatic | null,
-  options: API.Types.ChannelOptions | null
+  options: API.ChannelOptions | null
 ): ChannelOptions {
   if (options && options.cipher) {
     if (!Crypto) Utils.throwMissingModuleError('Crypto');
@@ -75,7 +75,7 @@ function getMessageSize(msg: Message) {
 export async function fromEncoded(
   Crypto: IUntypedCryptoStatic | null,
   encoded: unknown,
-  inputOptions?: API.Types.ChannelOptions
+  inputOptions?: API.ChannelOptions
 ): Promise<Message> {
   const msg = fromValues(encoded);
   const options = normalizeCipherOptions(Crypto, inputOptions ?? null);
@@ -92,7 +92,7 @@ export async function fromEncoded(
 export async function fromEncodedArray(
   Crypto: IUntypedCryptoStatic | null,
   encodedArray: Array<unknown>,
-  options?: API.Types.ChannelOptions
+  options?: API.ChannelOptions
 ): Promise<Message[]> {
   return Promise.all(
     encodedArray.map(function (encoded) {

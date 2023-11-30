@@ -143,7 +143,7 @@ class Channels extends EventEmitter {
    * events) imply connection state changes for any channel which is either
    * attached, pending, or will attempt to become attached in the future */
   propogateConnectionInterruption(connectionState: string, reason: ErrorInfo) {
-    const connectionStateToChannelState: Record<string, API.Types.ChannelState> = {
+    const connectionStateToChannelState: Record<string, API.ChannelState> = {
       closing: 'detached',
       closed: 'detached',
       failed: 'failed',
@@ -178,7 +178,7 @@ class Channels extends EventEmitter {
     return channel;
   }
 
-  getDerived(name: string, deriveOptions: API.Types.DeriveOptions, channelOptions?: ChannelOptions) {
+  getDerived(name: string, deriveOptions: API.DeriveOptions, channelOptions?: ChannelOptions) {
     if (deriveOptions.filter) {
       const filter = Utils.toBase64(deriveOptions.filter);
       const match = Utils.matchDerivedChannel(name);

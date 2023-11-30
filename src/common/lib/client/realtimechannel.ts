@@ -39,7 +39,7 @@ interface RealtimeHistoryParams {
 
 const noop = function () {};
 
-function validateChannelOptions(options?: API.Types.ChannelOptions) {
+function validateChannelOptions(options?: API.ChannelOptions) {
   if (options && 'params' in options && !Utils.isObject(options.params)) {
     return new ErrorInfo('options.params must be an object', 40000, 400);
   }
@@ -72,19 +72,16 @@ class RealtimeChannel extends EventEmitter {
     return this._presence;
   }
   connectionManager: ConnectionManager;
-  state: API.Types.ChannelState;
+  state: API.ChannelState;
   subscriptions: EventEmitter;
-  filteredSubscriptions?: Map<
-    API.Types.messageCallback<Message>,
-    Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
-  >;
+  filteredSubscriptions?: Map<API.messageCallback<Message>, Map<API.MessageFilter, API.messageCallback<Message>[]>>;
   syncChannelSerial?: string | null;
   properties: {
     attachSerial: string | null | undefined;
     channelSerial: string | null | undefined;
   };
   errorReason: ErrorInfo | string | null;
-  _requestedFlags: Array<API.Types.ChannelMode> | null;
+  _requestedFlags: Array<API.ChannelMode> | null;
   _mode?: null | number;
   _attachResume: boolean;
   _decodingContext: EncodingDecodingContext;
@@ -100,7 +97,7 @@ class RealtimeChannel extends EventEmitter {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
 
-  constructor(client: BaseRealtime, name: string, options?: API.Types.ChannelOptions) {
+  constructor(client: BaseRealtime, name: string, options?: API.ChannelOptions) {
     super();
     Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
     this.name = name;
@@ -156,7 +153,7 @@ class RealtimeChannel extends EventEmitter {
     return args;
   }
 
-  setOptions(options?: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
+  setOptions(options?: API.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
     if (!callback) {
       return Utils.promisify(this, 'setOptions', arguments);
     }
@@ -204,7 +201,7 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  _shouldReattachToSetOptions(options?: API.Types.ChannelOptions) {
+  _shouldReattachToSetOptions(options?: API.ChannelOptions) {
     if (!(this.state === 'attached' || this.state === 'attaching')) {
       return false;
     }
@@ -376,7 +373,7 @@ class RealtimeChannel extends EventEmitter {
     if (this._requestedFlags) {
       attachMsg.encodeModesToFlags(this._requestedFlags);
     } else if (this.channelOptions.modes) {
-      attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as API.Types.ChannelMode[]);
+      attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as API.ChannelMode[]);
     }
     if (this._attachResume) {
       attachMsg.setFlag('ATTACH_RESUME');
@@ -720,7 +717,7 @@ class RealtimeChannel extends EventEmitter {
   }
 
   notifyState(
-    state: API.Types.ChannelState,
+    state: API.ChannelState,
     reason?: ErrorInfo | null,
     resumed?: boolean,
     hasPresence?: boolean,
@@ -780,7 +777,7 @@ class RealtimeChannel extends EventEmitter {
     this.emit(state, change);
   }
 
-  requestState(state: API.Types.ChannelState, reason?: ErrorInfo | null): void {
+  requestState(state: API.ChannelState, reason?: ErrorInfo | null): void {
     Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.requestState', 'name = ' + this.name + ', state = ' + state);
     this.notifyState(state, reason);
     /* send the event and await response */
@@ -958,7 +955,7 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
+  status(callback?: StandardCallback<API.ChannelDetails>): void | Promise<API.ChannelDetails> {
     return this.client.rest.channelMixin.status(this, callback);
   }
 }

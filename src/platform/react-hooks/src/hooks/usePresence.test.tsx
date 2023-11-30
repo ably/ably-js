@@ -4,10 +4,10 @@ import { usePresence } from './usePresence.js';
 import { render, screen, act } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
 import { AblyProvider } from '../AblyProvider.js';
-import { Types, ErrorInfo } from '../../../../../ably.js';
+import * as Ably from '../../../../../ably.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Types.AbstractRealtime}>{children}</AblyProvider>);
+  return render(<AblyProvider client={client as unknown as Ably.AbstractRealtime}>{children}</AblyProvider>);
 }
 
 const testChannelName = 'testChannel';
@@ -97,7 +97,7 @@ describe('usePresence', () => {
   it('usePresence works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
-      <AblyProvider id="otherClient" client={otherClient as unknown as Types.AbstractRealtime}>
+      <AblyProvider id="otherClient" client={otherClient as unknown as Ably.AbstractRealtime}>
         <UsePresenceComponentMultipleClients />
       </AblyProvider>
     );
@@ -215,8 +215,8 @@ const UsePresenceComponentMultipleClients = () => {
 };
 
 interface UsePresenceStateErrorsComponentProps {
-  onConnectionError?: (err: ErrorInfo) => unknown;
-  onChannelError?: (err: ErrorInfo) => unknown;
+  onConnectionError?: (err: Ably.ErrorInfo) => unknown;
+  onChannelError?: (err: Ably.ErrorInfo) => unknown;
 }
 
 const UsePresenceStateErrorsComponent = ({

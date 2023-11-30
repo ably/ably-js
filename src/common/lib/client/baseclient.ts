@@ -18,13 +18,13 @@ import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 
-type BatchResult<T> = API.Types.BatchResult<T>;
-type BatchPublishSpec = API.Types.BatchPublishSpec;
-type BatchPublishSuccessResult = API.Types.BatchPublishSuccessResult;
-type BatchPublishFailureResult = API.Types.BatchPublishFailureResult;
+type BatchResult<T> = API.BatchResult<T>;
+type BatchPublishSpec = API.BatchPublishSpec;
+type BatchPublishSuccessResult = API.BatchPublishSuccessResult;
+type BatchPublishFailureResult = API.BatchPublishFailureResult;
 type BatchPublishResult = BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>;
-type BatchPresenceSuccessResult = API.Types.BatchPresenceSuccessResult;
-type BatchPresenceFailureResult = API.Types.BatchPresenceFailureResult;
+type BatchPresenceSuccessResult = API.BatchPresenceSuccessResult;
+type BatchPresenceFailureResult = API.BatchPresenceFailureResult;
 type BatchPresenceResult = BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>;
 
 /**

@@ -382,7 +382,7 @@ abstract class CometTransport extends Transport {
    * Now that we’ve dropped JSONP support, we may be able to revisit the above;
    * see https://github.com/ably/ably-js/issues/1214.
    */
-  onAuthUpdated = (tokenDetails: API.Types.TokenDetails): void => {
+  onAuthUpdated = (tokenDetails: API.TokenDetails): void => {
     this.authParams = { access_token: tokenDetails.token };
   };
 }

@@ -1,4 +1,4 @@
-import { Types } from 'ably';
+import * as Ably from 'ably';
 
 export class FakeAblySdk {
   public clientId: string;
@@ -79,7 +79,7 @@ class EventEmitter {
 }
 
 class Connection extends EventEmitter {
-  state: Types.ConnectionState;
+  state: Ably.ConnectionState;
 
   constructor() {
     super();
@@ -125,16 +125,16 @@ export class ClientSingleChannelConnection extends EventEmitter {
     this.state = 'attached';
   }
 
-  publish(messages: any, callback?: Types.errorCallback): void;
-  publish(name: string, messages: any, callback?: Types.errorCallback): void;
-  publish(name: string, messages: any, options?: Types.PublishOptions, callback?: Types.errorCallback): void;
+  publish(messages: any, callback?: Ably.errorCallback): void;
+  publish(name: string, messages: any, callback?: Ably.errorCallback): void;
+  publish(name: string, messages: any, options?: Ably.PublishOptions, callback?: Ably.errorCallback): void;
   public publish(...rest: any[]) {
     this.channel.publish(this.client.clientId, rest);
   }
 
   public async subscribe(
-    eventOrCallback: Types.messageCallback<Types.Message> | string | Array<string>,
-    listener?: Types.messageCallback<Types.Message>
+    eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
+    listener?: Ably.messageCallback<Ably.Message>
   ) {
     this.channel.subscribe(this.client.clientId, eventOrCallback, listener);
   }
@@ -222,14 +222,14 @@ export class Channel {
     this.presence = new ChannelPresence(this);
   }
 
-  publish(clientId: string, messages: any, callback?: Types.errorCallback): void;
-  publish(clientId: string, name: string, messages: any, callback?: Types.errorCallback): void;
+  publish(clientId: string, messages: any, callback?: Ably.errorCallback): void;
+  publish(clientId: string, name: string, messages: any, callback?: Ably.errorCallback): void;
   publish(
     clientId: string,
     name: string,
     messages: any,
-    options?: Types.PublishOptions,
-    callback?: Types.errorCallback
+    options?: Ably.PublishOptions,
+    callback?: Ably.errorCallback
   ): void;
   public publish(clientId: string, ...rest: any[]) {
     const name = rest.length <= 2 ? '' : rest[0];
@@ -257,8 +257,8 @@ export class Channel {
 
   public async subscribe(
     clientId: string,
-    eventOrCallback: Types.messageCallback<Types.Message> | string | Array<string>,
-    listener?: Types.messageCallback<Types.Message>
+    eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
+    listener?: Ably.messageCallback<Ably.Message>
   ) {
     if (!this.subscriptionsPerClient.has(clientId)) {
       this.subscriptionsPerClient.set(clientId, new Map<string, CallableFunction[]>());

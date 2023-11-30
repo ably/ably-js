@@ -3,18 +3,18 @@
 // Definitions by: Ably <https://github.com/ably/>
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
-import { Types } from './types';
+import { AbstractRest, ClientOptions, Crypto, MessageStatic, PresenceMessageStatic, AbstractRealtime } from './types';
 
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare class Rest extends Types.AbstractRest {
+export declare class Rest extends AbstractRest {
   /**
-   * Construct a client object using an Ably {@link Types.ClientOptions} object.
+   * Construct a client object using an Ably {@link ClientOptions} object.
    *
-   * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
+   * @param options - A {@link ClientOptions} object to configure the client connection to Ably.
    */
-  constructor(options: Types.ClientOptions);
+  constructor(options: ClientOptions);
   /**
    * Constructs a client object using an Ably API key or token string.
    *
@@ -24,27 +24,27 @@ export declare class Rest extends Types.AbstractRest {
   /**
    * The cryptographic functions available in the library.
    */
-  static Crypto: Types.Crypto;
+  static Crypto: Crypto;
   /**
    * Static utilities related to messages.
    */
-  static Message: Types.MessageStatic;
+  static Message: MessageStatic;
   /**
    * Static utilities related to presence messages.
    */
-  static PresenceMessage: Types.PresenceMessageStatic;
+  static PresenceMessage: PresenceMessageStatic;
 }
 
 /**
  * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  */
-export declare class Realtime extends Types.AbstractRealtime {
+export declare class Realtime extends AbstractRealtime {
   /**
-   * Construct a client object using an Ably {@link Types.ClientOptions} object.
+   * Construct a client object using an Ably {@link ClientOptions} object.
    *
-   * @param options - A {@link Types.ClientOptions} object to configure the client connection to Ably.
+   * @param options - A {@link ClientOptions} object to configure the client connection to Ably.
    */
-  constructor(options: Types.ClientOptions);
+  constructor(options: ClientOptions);
   /**
    * Constructs a client object using an Ably API key or token string.
    *
@@ -54,15 +54,15 @@ export declare class Realtime extends Types.AbstractRealtime {
   /**
    * The cryptographic functions available in the library.
    */
-  static Crypto: Types.Crypto;
+  static Crypto: Crypto;
   /**
    * Static utilities related to messages.
    */
-  static Message: Types.MessageStatic;
+  static Message: MessageStatic;
   /**
    * Static utilities related to presence messages.
    */
-  static PresenceMessage: Types.PresenceMessageStatic;
+  static PresenceMessage: PresenceMessageStatic;
 }
 
 /**
@@ -97,4 +97,4 @@ export declare class ErrorInfo {
   constructor(message: string, code: number, statusCode: number, cause?: string | Error | ErrorInfo);
 }
 
-export { Types };
+export * from './types';

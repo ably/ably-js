@@ -1,8 +1,15 @@
-import { BaseRealtime, Types, WebSocketTransport, FetchRequest, generateRandomKey } from 'ably/modules';
+import {
+  BaseRealtime,
+  InboundMessage,
+  RealtimeChannel,
+  WebSocketTransport,
+  FetchRequest,
+  generateRandomKey,
+} from 'ably/modules';
 import { createSandboxAblyAPIKey } from './sandbox';
 
-// This function exists to check that we can import the Types namespace and refer to its types.
-async function attachChannel(channel: Types.RealtimeChannel) {
+// This function exists to check that we can refer to the types exported by Ably.
+async function attachChannel(channel: RealtimeChannel) {
   await channel.attach();
 }
 
@@ -22,7 +29,7 @@ globalThis.testAblyPackage = async function () {
   const channel = realtime.channels.get('channel');
   await attachChannel(channel);
 
-  const receivedMessagePromise = new Promise<Types.InboundMessage>((resolve) => {
+  const receivedMessagePromise = new Promise<InboundMessage>((resolve) => {
     channel.subscribe(resolve);
   });
 

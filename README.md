@@ -119,9 +119,9 @@ The TypeScript typings are included in the package and so all you have to do is:
 ```typescript
 import * as Ably from 'ably';
 
-let options: Ably.Types.ClientOptions = { key: 'foo' };
+let options: Ably.ClientOptions = { key: 'foo' };
 let client = new Ably.Realtime(options); /* inferred type Ably.Realtime */
-let channel = client.channels.get('feed'); /* inferred type Ably.Types.RealtimeChannel */
+let channel = client.channels.get('feed'); /* inferred type Ably.RealtimeChannel */
 ```
 
 Intellisense in IDEs with TypeScript support is supported:

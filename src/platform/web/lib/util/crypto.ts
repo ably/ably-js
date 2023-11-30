@@ -64,7 +64,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
    * Internal: checks that the cipherParams are a valid combination. Currently
    * just checks that the calculated keyLength is a valid one for aes-cbc
    */
-  function validateCipherParams(params: API.Types.CipherParams) {
+  function validateCipherParams(params: API.CipherParams) {
     if (params.algorithm === 'aes' && params.mode === 'cbc') {
       if (params.keyLength === 128 || params.keyLength === 256) {
         return;
@@ -82,10 +82,8 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
     return string.replace('_', '/').replace('-', '+');
   }
 
-  function isCipherParams(
-    params: API.Types.CipherParams | API.Types.CipherParamOptions
-  ): params is API.Types.CipherParams {
-    // Although API.Types.CipherParams is an interface, the documentation for its `key` property makes it clear that the only valid way to form one is by using getDefaultParams. The implementation of getDefaultParams returns an instance of CipherParams.
+  function isCipherParams(params: API.CipherParams | API.CipherParamOptions): params is API.CipherParams {
+    // Although API.CipherParams is an interface, the documentation for its `key` property makes it clear that the only valid way to form one is by using getDefaultParams. The implementation of getDefaultParams returns an instance of CipherParams.
     return params instanceof CipherParams;
   }
 
@@ -100,7 +98,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
    * Crypto.getDefaultParams helper, which will fill in any fields not supplied
    * with default values and validation the result.
    */
-  class CipherParams implements API.Types.CipherParams {
+  class CipherParams implements API.CipherParams {
     algorithm: string;
     keyLength: number;
     mode: string;
@@ -144,7 +142,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
      * May optionally also contain: algorithm (defaults to AES),
      * mode (defaults to 'cbc')
      */
-    static getDefaultParams(params: API.Types.CipherParamOptions) {
+    static getDefaultParams(params: API.CipherParamOptions) {
       var key: ArrayBuffer;
 
       if (!params.key) {
@@ -182,7 +180,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
      * default keyLength if none supplied) as an ArrayBuffer
      * @param keyLength (optional) the required keyLength in bits
      */
-    static async generateRandomKey(keyLength?: number): Promise<API.Types.CipherKey> {
+    static async generateRandomKey(keyLength?: number): Promise<API.CipherKey> {
       return new Promise((resolve, reject) => {
         generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
           if (err) {

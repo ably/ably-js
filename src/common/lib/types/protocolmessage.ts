@@ -1,5 +1,5 @@
 import { MsgPack } from 'common/types/msgpack';
-import { Types } from '../../../../ably';
+import * as API from '../../../../ably';
 import { PresenceMessageModule } from '../client/modulesmap';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
@@ -159,7 +159,7 @@ class ProtocolMessage {
     return ((this.flags as number) & flags[flag]) > 0;
   };
 
-  setFlag(flag: Types.ChannelMode): number {
+  setFlag(flag: API.ChannelMode): number {
     return (this.flags = (this.flags as number) | flags[flag]);
   }
 
@@ -167,7 +167,7 @@ class ProtocolMessage {
     return this.flags && this.flags & flags.MODE_ALL;
   }
 
-  encodeModesToFlags(modes: Types.ChannelMode[]): void {
+  encodeModesToFlags(modes: API.ChannelMode[]): void {
     modes.forEach((mode) => this.setFlag(mode));
   }
 

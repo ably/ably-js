@@ -1,16 +1,16 @@
-import { Types, ErrorInfo } from '../../../../../ably.js';
+import * as Ably from '../../../../../ably.js';
 import { useEffect, useMemo, useRef } from 'react';
 import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
 
-export type AblyMessageCallback = Types.messageCallback<Types.Message>;
+export type AblyMessageCallback = Ably.messageCallback<Ably.Message>;
 
 export interface ChannelResult {
-  channel: Types.RealtimeChannel;
-  ably: Types.AbstractRealtime;
-  connectionError: ErrorInfo | null;
-  channelError: ErrorInfo | null;
+  channel: Ably.RealtimeChannel;
+  ably: Ably.AbstractRealtime;
+  connectionError: Ably.ErrorInfo | null;
+  channelError: Ably.ErrorInfo | null;
 }
 
 type SubscribeArgs = [string, AblyMessageCallback] | [AblyMessageCallback];
@@ -88,11 +88,11 @@ export function useChannel(
   return { channel, ably, connectionError, channelError };
 }
 
-async function handleChannelMount(channel: Types.RealtimeChannel, ...subscribeArgs: SubscribeArgs) {
+async function handleChannelMount(channel: Ably.RealtimeChannel, ...subscribeArgs: SubscribeArgs) {
   await (channel.subscribe as any)(...subscribeArgs);
 }
 
-async function handleChannelUnmount(channel: Types.RealtimeChannel, ...subscribeArgs: SubscribeArgs) {
+async function handleChannelUnmount(channel: Ably.RealtimeChannel, ...subscribeArgs: SubscribeArgs) {
   await (channel.unsubscribe as any)(...subscribeArgs);
 
   setTimeout(async () => {

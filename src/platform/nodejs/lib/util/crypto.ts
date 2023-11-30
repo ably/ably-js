@@ -49,7 +49,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
    * Internal: checks that the cipherParams are a valid combination. Currently
    * just checks that the calculated keyLength is a valid one for aes-cbc
    */
-  function validateCipherParams(params: API.Types.CipherParams) {
+  function validateCipherParams(params: API.CipherParams) {
     if (params.algorithm === 'aes' && params.mode === 'cbc') {
       if (params.keyLength === 128 || params.keyLength === 256) {
         return;
@@ -97,7 +97,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
    * Clients may instance a CipherParams directly and populate it, or may
    * query the implementation to obtain a default system CipherParams.
    */
-  class CipherParams implements API.Types.CipherParams {
+  class CipherParams implements API.CipherParams {
     algorithm: string;
     keyLength: number;
     mode: string;
@@ -113,9 +113,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
     }
   }
 
-  function isInstCipherParams(
-    params: API.Types.CipherParams | API.Types.CipherParamOptions
-  ): params is API.Types.CipherParams {
+  function isInstCipherParams(params: API.CipherParams | API.CipherParamOptions): params is API.CipherParams {
     /* In node, can't use instanceof CipherParams due to the vm context problem (see
      * https://github.com/nwjs/nw.js/wiki/Differences-of-JavaScript-contexts).
      * So just test for presence of all necessary attributes */
@@ -151,7 +149,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
      * May optionally also contain: algorithm (defaults to AES),
      * mode (defaults to 'cbc')
      */
-    static getDefaultParams(params: API.Types.CipherParamOptions) {
+    static getDefaultParams(params: API.CipherParamOptions) {
       var key: NodeCipherKey;
 
       if (!params.key) {
@@ -190,7 +188,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
      * @param keyLength (optional) the required keyLength in bits
      * @param callback (optional) (err, key)
      */
-    static async generateRandomKey(keyLength?: number): Promise<API.Types.CipherKey> {
+    static async generateRandomKey(keyLength?: number): Promise<API.CipherKey> {
       return new Promise((resolve, reject) => {
         generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
           if (err) {
