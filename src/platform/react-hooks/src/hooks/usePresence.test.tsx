@@ -4,7 +4,7 @@ import { usePresence } from './usePresence.js';
 import { render, screen, act } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
 import { AblyProvider } from '../AblyProvider.js';
-import { Types } from '../../../../../ably.js';
+import { Types, ErrorInfo } from '../../../../../ably.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
   return render(<AblyProvider client={client as unknown as Types.Realtime}>{children}</AblyProvider>);
@@ -215,8 +215,8 @@ const UsePresenceComponentMultipleClients = () => {
 };
 
 interface UsePresenceStateErrorsComponentProps {
-  onConnectionError?: (err: Types.ErrorInfo) => unknown;
-  onChannelError?: (err: Types.ErrorInfo) => unknown;
+  onConnectionError?: (err: ErrorInfo) => unknown;
+  onChannelError?: (err: ErrorInfo) => unknown;
 }
 
 const UsePresenceStateErrorsComponent = ({

@@ -1,4 +1,4 @@
-import { Types } from '../../../../../ably.js';
+import { Types, ErrorInfo } from '../../../../../ably.js';
 import { useEffect, useMemo, useRef } from 'react';
 import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
@@ -9,8 +9,8 @@ export type AblyMessageCallback = Types.messageCallback<Types.Message>;
 export interface ChannelResult {
   channel: Types.RealtimeChannel;
   ably: Types.Realtime;
-  connectionError: Types.ErrorInfo | null;
-  channelError: Types.ErrorInfo | null;
+  connectionError: ErrorInfo | null;
+  channelError: ErrorInfo | null;
 }
 
 type SubscribeArgs = [string, AblyMessageCallback] | [AblyMessageCallback];
