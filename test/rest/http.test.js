@@ -31,7 +31,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
         // This test should not directly validate version against Defaults.version, as
         // ultimately the version header has been derived from that value.
-        expect(headers['X-Ably-Version']).to.equal('2', 'Verify current version number');
+        expect(headers['X-Ably-Version']).to.equal('3', 'Verify current version number');
         expect(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent').to.be.ok;
         expect(headers['Ably-Agent'].indexOf('custom-agent/0.1.2') > -1, 'Verify custom agent').to.be.ok;
 
