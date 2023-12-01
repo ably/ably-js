@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "esbuild --bundle src/index-default.ts --outdir=dist && esbuild --bundle src/index-modules.ts --outdir=dist",
-    "typecheck": "tsc -noEmit",
+    "typecheck": "tsc --project src -noEmit",
     "test-support:server": "ts-node server/server.ts",
     "test": "playwright test",
     "test:install-deps": "playwright install chromium"
