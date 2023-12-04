@@ -210,31 +210,23 @@ export class Rest {
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
     const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
-    Resource.post(
-      this.client,
-      '/messages',
-      requestBody,
-      headers,
-      { newBatchResponse: 'true' },
-      null,
-      (err, body, headers, unpacked) => {
-        if (err) {
-          callback(err);
-          return;
-        }
-
-        const batchResults = (
-          unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
-        ) as BatchPublishResult[];
-
-        // I don't love the below type assertions for `callback` but not sure how to avoid them
-        if (singleSpecMode) {
-          (callback as StandardCallback<BatchPublishResult>)(null, batchResults[0]);
-        } else {
-          (callback as StandardCallback<BatchPublishResult[]>)(null, batchResults);
-        }
+    Resource.post(this.client, '/messages', requestBody, headers, {}, null, (err, body, headers, unpacked) => {
+      if (err) {
+        callback(err);
+        return;
       }
-    );
+
+      const batchResults = (
+        unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+      ) as BatchPublishResult[];
+
+      // I don't love the below type assertions for `callback` but not sure how to avoid them
+      if (singleSpecMode) {
+        (callback as StandardCallback<BatchPublishResult>)(null, batchResults[0]);
+      } else {
+        (callback as StandardCallback<BatchPublishResult[]>)(null, batchResults);
+      }
+    });
   }
 
   batchPresence(channels: string[]): Promise<BatchPresenceResult>;
@@ -257,7 +249,7 @@ export class Rest {
       this.client,
       '/presence',
       headers,
-      { newBatchResponse: 'true', channels: channelsParam },
+      { channels: channelsParam },
       null,
       (err, body, headers, unpacked) => {
         if (err) {
@@ -304,7 +296,7 @@ export class Rest {
         `/keys/${keyName}/revokeTokens`,
         requestBody,
         headers,
-        { newBatchResponse: 'true' },
+        {},
         null,
         (err, body, headers, unpacked) => {
           if (err) {
