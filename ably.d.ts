@@ -1235,8 +1235,8 @@ export interface PushChannelsParams {
 /**
  * The `StatsParams` interface describes the parameters accepted by the following methods:
  *
- * - {@link AbstractRest.stats}
- * - {@link AbstractRealtime.stats}
+ * - {@link RestClient.stats}
+ * - {@link RealtimeClient.stats}
  */
 export interface StatsParams {
   /**
@@ -1557,7 +1557,7 @@ export declare interface EventEmitter<CallbackType, ResultType, EventType> {
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare interface AbstractRest {
+export declare interface RestClient {
   /**
    * An {@link Auth} object.
    */
@@ -1629,9 +1629,9 @@ export declare interface AbstractRest {
 }
 
 /**
- * A client that extends the functionality of {@link AbstractRest} and provides additional realtime-specific features.
+ * A client that extends the functionality of {@link RestClient} and provides additional realtime-specific features.
  */
-export declare interface AbstractRealtime {
+export declare interface RealtimeClient {
   /**
    * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
    */
@@ -2645,7 +2645,7 @@ export declare interface PushChannelSubscriptions {
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare class Rest implements AbstractRest {
+export declare class Rest implements RestClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -2671,7 +2671,7 @@ export declare class Rest implements AbstractRest {
    */
   static PresenceMessage: PresenceMessageStatic;
 
-  // Requirements of AbstractRest
+  // Requirements of RestClient
 
   auth: Auth;
   channels: Channels<Channel>;
@@ -2696,7 +2696,7 @@ export declare class Rest implements AbstractRest {
 /**
  * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  */
-export declare class Realtime implements AbstractRealtime {
+export declare class Realtime implements RealtimeClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -2722,7 +2722,7 @@ export declare class Realtime implements AbstractRealtime {
    */
   static PresenceMessage: PresenceMessageStatic;
 
-  // Requirements of AbstractRealtime
+  // Requirements of RealtimeClient
 
   clientId: string;
   close(): void;

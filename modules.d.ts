@@ -24,12 +24,12 @@
 
 import {
   ErrorInfo,
-  AbstractRest,
+  RestClient,
   ClientOptions,
   Crypto as CryptoClass,
   MessageStatic,
   PresenceMessageStatic,
-  AbstractRealtime,
+  RealtimeClient,
   Auth,
   Channels,
   Channel,
@@ -290,7 +290,7 @@ export interface ModulesMap {
  *
  * `BaseRest` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Rest`](../../default/classes/Rest.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  */
-export declare class BaseRest implements AbstractRest {
+export declare class BaseRest implements RestClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -303,7 +303,7 @@ export declare class BaseRest implements AbstractRest {
    */
   constructor(options: ClientOptions, modules: ModulesMap);
 
-  // Requirements of AbstractRest
+  // Requirements of RestClient
 
   auth: Auth;
   channels: Channels<Channel>;
@@ -330,7 +330,7 @@ export declare class BaseRest implements AbstractRest {
  *
  * `BaseRealtime` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Realtime`](../../default/classes/Realtime.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  */
-export declare class BaseRealtime implements AbstractRealtime {
+export declare class BaseRealtime implements RealtimeClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -344,7 +344,7 @@ export declare class BaseRealtime implements AbstractRealtime {
    */
   constructor(options: ClientOptions, modules: ModulesMap);
 
-  // Requirements of AbstractRealtime
+  // Requirements of RealtimeClient
 
   clientId: string;
   close(): void;
