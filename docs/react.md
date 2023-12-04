@@ -1,6 +1,6 @@
 # ably-js React Hooks
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > The ably-js React Hooks are currently in the release candidate phase, and there may be breaking changes in a future non-major release.
 
 Use Ably in your React application using idiomatic, easy to use, React Hooks!
@@ -120,21 +120,12 @@ const history = channel.history((err, result) => {
 });
 ```
 
-It's also worth highlighting that the `useChannel` hook supports all of the additional parameters that the regular Ably SDK does as we're simply passing the call along. See the [Ably Channel docs](https://ably.com/docs/channels) for more info.
+We support providing [ChannelOptions](https://ably.com/docs/api/realtime-sdk/types#channel-options) to the `useChannel` hook:
 
 This means you can use features like `rewind`:
 
 ```javascript
-const { channel } = useChannel("[?rewind=100]your-channel-name", (message) => {
-    // This call will rewind 100 messages
-    console.log(message);
-});
-```
-
-We support providing [ChannelOptions](https://ably.com/docs/api/realtime-sdk/types#channel-options) to the `useChannel` hook:
-
-```javascript
-const { channel } = useChannel({ channelName: "your-channel-name", options: { ... } }, (message) => {
+const { channel } = useChannel({ channelName: "your-channel-name", options: {params: {rewind: '1'}}}, (message) => {
     ...
 });
 ```
@@ -173,7 +164,7 @@ The usePresence hook lets you [subscribe to presence events on a channel](https:
 ```javascript
 const { presenceData, updateStatus } = usePresence("your-channel-name");
 
-// Convert presence data to list items to render    
+// Convert presence data to list items to render
 const peers = presenceData.map((msg, index) => <li key={index}>{msg.clientId}: {msg.data}</li>);
 ```
 
@@ -208,7 +199,7 @@ and if you're using `TypeScript` there are type hints to make sure that updates 
 
 ```tsx
 const TypedUsePresenceComponent = () => {
-    // In this example MyPresenceType will be checked - if omitted, the shape of the initial 
+    // In this example MyPresenceType will be checked - if omitted, the shape of the initial
     // value will be used ...and if that's omitted, `any` will be the default.
 
     const { val } = usePresence<MyPresenceType>("testChannelName", { foo: "bar" });
@@ -279,7 +270,7 @@ client.authorize();
 
 When using the Ably react hooks, your Ably client may encounter a variety of errors, for example if it doesn't have permissions to attach to a channel it may encounter a channel error, or if it loses connection from the Ably network it may encounter a connection error.
 
-To allow you to handle these errors, the `useChannel` and `usePresence` hooks return connection and channel errors so that you can react to them in your components: 
+To allow you to handle these errors, the `useChannel` and `usePresence` hooks return connection and channel errors so that you can react to them in your components:
 
 ```jsx
 const { connectionError, channelError } = useChannel('my_channel', messageHandler);
@@ -350,7 +341,7 @@ You can avoid this warning by overriding the version of keyv used by adding the 
   "cacheable-request": {
     "keyv": "npm:@keyvhq/core@~1.6.6"
   }
-} 
+}
 ```
 
 ### Module not found: Can't resolve 'bufferutil'/'utf-8-validate'
