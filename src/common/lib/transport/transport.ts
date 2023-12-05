@@ -117,7 +117,7 @@ abstract class Transport extends EventEmitter {
 
   onProtocolMessage(message: ProtocolMessage): void {
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Transport.onProtocolMessage()',
         'received on ' +
@@ -132,7 +132,7 @@ abstract class Transport extends EventEmitter {
 
     switch (message.action) {
       case actions.HEARTBEAT:
-        Logger.logAction(
+        Logger.logActionNoStrip(
           Logger.LOG_MICRO,
           'Transport.onProtocolMessage()',
           this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId

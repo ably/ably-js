@@ -1187,12 +1187,13 @@ class ConnectionManager extends EventEmitter {
   }
 
   enactStateChange(stateChange: ConnectionStateChange): void {
-    const logLevel = stateChange.current === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-    Logger.logAction(
-      logLevel,
-      'Connection state',
-      stateChange.current + (stateChange.reason ? '; reason: ' + stateChange.reason : '')
-    );
+    const action = 'Connection state';
+    const message = stateChange.current + (stateChange.reason ? '; reason: ' + stateChange.reason : '');
+    if (stateChange.current === 'failed') {
+      Logger.logAction(Logger.LOG_ERROR, action, message);
+    } else {
+      Logger.logAction(Logger.LOG_MAJOR, action, message);
+    }
     Logger.logAction(
       Logger.LOG_MINOR,
       'ConnectionManager.enactStateChange',
