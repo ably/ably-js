@@ -102,13 +102,13 @@ function logResponseHandler<T>(
 ): ResourceCallback {
   return (err, body, headers, unpacked, statusCode) => {
     if (err) {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Resource.' + method + '()',
         'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err)
       );
     } else {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Resource.' + method + '()',
         'Received; ' +
@@ -215,7 +215,7 @@ class Resource {
 
     function doRequest(this: any, headers: Record<string, string>, params: Record<string, any>) {
       if (Logger.shouldLog(Logger.LOG_MICRO)) {
-        Logger.logAction(
+        Logger.logActionNoStrip(
           Logger.LOG_MICRO,
           'Resource.' + method + '()',
           'Sending; ' + urlFromPathAndParams(path, params)
@@ -238,7 +238,7 @@ class Resource {
             );
           }
         }
-        Logger.logAction(
+        Logger.logActionNoStrip(
           Logger.LOG_MICRO,
           'Resource.' + method + '()',
           'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody

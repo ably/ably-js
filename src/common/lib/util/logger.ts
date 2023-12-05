@@ -98,11 +98,23 @@ class Logger {
   }
 
   /* public static functions */
+  /**
+   * In the modular variant of the SDK, the `stripLogs` esbuild plugin strips out all calls to this method (when invoked as `Logger.logAction(...)`) except when called with level `Logger.LOG_ERROR`.
+   *
+   * The aforementioned plugin expects `level` to be an expression of the form `Logger.LOG_*`; that is, you can’t dynamically specify the log level.
+   */
   static logAction = (level: LogLevels, action: string, message?: string) => {
+    this.logActionNoStrip(level, action, message);
+  };
+
+  /**
+   * Calls to this method are never stripped by the `stripLogs` esbuild plugin. Use it for log statements that you wish to always be included in the modular variant of the SDK.
+   */
+  static logActionNoStrip(level: LogLevels, action: string, message?: string) {
     if (Logger.shouldLog(level)) {
       (level === LogLevels.Error ? Logger.logErrorHandler : Logger.logHandler)('Ably: ' + action + ': ' + message);
     }
-  };
+  }
 
   /* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */

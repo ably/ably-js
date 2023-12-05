@@ -753,12 +753,13 @@ class RealtimeChannel extends EventEmitter {
       this.errorReason = reason;
     }
     const change = new ChannelStateChange(this.state, state, resumed, hasBacklog, reason);
-    const logLevel = state === 'failed' ? Logger.LOG_ERROR : Logger.LOG_MAJOR;
-    Logger.logAction(
-      logLevel,
-      'Channel state for channel "' + this.name + '"',
-      state + (reason ? '; reason: ' + reason : '')
-    );
+    const action = 'Channel state for channel "' + this.name + '"';
+    const message = state + (reason ? '; reason: ' + reason : '');
+    if (state === 'failed') {
+      Logger.logAction(Logger.LOG_ERROR, action, message);
+    } else {
+      Logger.logAction(Logger.LOG_MAJOR, action, message);
+    }
 
     if (state !== 'attaching' && state !== 'suspended') {
       this.retryCount = 0;
