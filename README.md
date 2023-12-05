@@ -106,7 +106,14 @@ You must provide:
 
 `BaseRealtime` offers the same API as the `Realtime` class described in the rest of this `README`. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
 
-For more information, see the [generated documentation](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modules.html) (this link points to the documentation for the `main` branch).
+In order to further reduce bundle size, the modular variant of the SDK performs less logging than the default variant. It only logs:
+
+- messages that have a `logLevel` of 1 (that is, errors)
+- a small number of other network events
+
+If you need more verbose logging, use the default variant of the SDK.
+
+For more information about the modular variant of the SDK, see the [generated documentation](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modules.html) (this link points to the documentation for the `main` branch).
 
 ### TypeScript
 

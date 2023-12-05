@@ -7,6 +7,7 @@ var esbuild = require('esbuild');
 var umdWrapper = require('esbuild-plugin-umd-wrapper');
 var banner = require('./src/fragments/license');
 var process = require('process');
+var stripLogsPlugin = require('./grunt/esbuild/strip-logs').default;
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
@@ -133,7 +134,7 @@ module.exports = function (grunt) {
         entryPoints: ['src/platform/web/modules.ts'],
         outfile: 'build/modules/index.js',
         format: 'esm',
-        plugins: [],
+        plugins: [stripLogsPlugin],
       };
     }
 

@@ -74,13 +74,13 @@ function logResponseHandler(
   // TODO we need to understand what type we might expect the body to be
   return (err, body, headers, unpacked, statusCode) => {
     if (err) {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Http.' + method + '()',
         'Received Error; ' + addingParamsToUri(uri, params) + '; Error: ' + Utils.inspectError(err)
       );
     } else {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Http.' + method + '()',
         'Received; ' +
@@ -101,7 +101,7 @@ function logResponseHandler(
 
 function logRequest(method: HttpMethods, uri: string, body: HttpRequestBody, params: RequestParams) {
   if (Logger.shouldLog(Logger.LOG_MICRO)) {
-    Logger.logAction(
+    Logger.logActionNoStrip(
       Logger.LOG_MICRO,
       'Http.' + method + '()',
       'Sending; ' +
