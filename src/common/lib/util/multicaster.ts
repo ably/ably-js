@@ -5,6 +5,7 @@ type AnyFunction = (...args: any[]) => unknown;
 export interface MulticasterInstance extends Function {
   (...args: unknown[]): void;
   push: (fn: AnyFunction) => void;
+  createPromise: () => Promise<any>;
 }
 
 class Multicaster {
@@ -35,10 +36,22 @@ class Multicaster {
     this.members.push(...args);
   }
 
+  // TODO sort out this type; I think we need to tighten up the type of Multicaster in general
+  // TODO handle errors
+  createPromise(): Promise<any> {
+    let resolveCallback: AnyFunction;
+    const promise = new Promise<any>((resolve) => {
+      resolveCallback = resolve;
+    });
+    this.push(resolveCallback!);
+    return promise;
+  }
+
   static create(members?: Array<AnyFunction | undefined>): MulticasterInstance {
     const instance = new Multicaster(members);
     return Object.assign((...args: unknown[]) => instance.call(...args), {
       push: (fn: AnyFunction) => instance.push(fn),
+      createPromise: () => instance.createPromise(),
     });
   }
 }
