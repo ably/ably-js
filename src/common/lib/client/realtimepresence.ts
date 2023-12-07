@@ -251,7 +251,7 @@ class RealtimePresence extends EventEmitter {
     this: RealtimePresence,
     params: RealtimePresenceParams,
     callback: StandardCallback<PresenceMessage[]>
-  ): void | Promise<PresenceMessage> {
+  ): void | Promise<PresenceMessage[]> {
     const args = Array.prototype.slice.call(arguments);
     if (args.length == 1 && typeof args[0] == 'function') args.unshift(null);
 
