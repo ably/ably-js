@@ -251,7 +251,7 @@ class Auth {
     tokenParams: Record<string, any> | Function | null,
     authOptions?: API.AuthOptions | null | Function,
     callback?: Function
-  ): void | Promise<void> {
+  ): void | Promise<API.TokenDetails> {
     let _authOptions: API.AuthOptions | null;
     /* shuffle and normalise arguments as necessary */
     if (typeof tokenParams == 'function' && !callback) {
