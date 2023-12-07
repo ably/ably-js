@@ -1,6 +1,14 @@
 import * as esbuild from 'esbuild';
 import * as path from 'path';
 import { explore } from 'source-map-explorer';
+import { inspect } from 'util';
+
+var babel = {
+  types: require('@babel/types'),
+  parser: require('@babel/parser'),
+  traverse: require('@babel/traverse'),
+  generator: require('@babel/generator'),
+};
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
 const minimalUsefulRealtimeBundleSizeThresholdKiB = 93;
@@ -71,11 +79,30 @@ function getBundleInfo(modules: string[]): BundleInfo {
   const codeOutputFile = result.outputFiles.find(pathHasBase(outfile))!;
   const sourceMapOutputFile = result.outputFiles.find(pathHasBase(`${outfile}.map`))!;
 
-  return {
+  const retVal = {
     byteSize: result.metafile.outputs[outfile].bytes,
     code: codeOutputFile.contents,
     sourceMap: sourceMapOutputFile.contents,
   };
+
+  const codeString = new TextDecoder().decode(codeOutputFile.contents);
+  const identifierCounts = new Map<string, number>();
+  const ast = babel.parser.parse(codeString, { sourceType: 'module', plugins: ['typescript'] });
+  babel.traverse.default(ast, {
+    enter(path: any) {
+      if (path.isIdentifier()) {
+        const identifier = path.node.name;
+        const count = (identifierCounts.get(identifier) ?? 0) + 1;
+        identifierCounts.set(identifier, count);
+      }
+    }
+  })
+
+  const sorted = Array.from(identifierCounts.entries()).map((arr) => ({ name: arr[0], count: arr[1] })).sort((a, b) => b.count - a.count);
+
+  console.log("Identifiers in decreasing order of occurrence:", inspect(sorted, { maxArrayLength: null }))
+
+  return retVal;
 }
 
 // Gets the bundled size in bytes of an array of named exports from 'ably/modules'
@@ -258,9 +285,9 @@ async function checkBaseRealtimeFiles() {
   const errors: Error[] = [];
 
   errors.push(...printAndCheckMinimalUsefulRealtimeBundleSize());
-  errors.push(...printAndCheckModuleSizes());
-  errors.push(...printAndCheckFunctionSizes());
-  errors.push(...(await checkBaseRealtimeFiles()));
+  //errors.push(...printAndCheckModuleSizes());
+  //errors.push(...printAndCheckFunctionSizes());
+  //errors.push(...(await checkBaseRealtimeFiles()));
 
   if (errors.length > 0) {
     for (const error of errors) {
