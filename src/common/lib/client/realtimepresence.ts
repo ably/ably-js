@@ -11,7 +11,7 @@ import RealtimeChannel from './realtimechannel';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
 import { CipherOptions } from '../types/message';
-import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
+import { ErrCallback } from '../../types/utils';
 import { PaginatedResult } from './paginatedresource';
 
 interface RealtimePresenceParams {
@@ -101,61 +101,37 @@ class RealtimePresence extends EventEmitter {
     this.pendingPresence = [];
   }
 
-  enter(data: unknown, callback: ErrCallback): void | Promise<void> {
+  async enter(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
     }
-    return this._enterOrUpdateClient(undefined, undefined, data, 'enter', callback);
+    return this._enterOrUpdateClient(undefined, undefined, data, 'enter');
   }
 
-  update(data: unknown, callback: ErrCallback): void | Promise<void> {
+  async update(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to update presence data', 40012, 400);
     }
-    return this._enterOrUpdateClient(undefined, undefined, data, 'update', callback);
+    return this._enterOrUpdateClient(undefined, undefined, data, 'update');
   }
 
-  enterClient(clientId: string, data: unknown, callback: ErrCallback): void | Promise<void> {
-    return this._enterOrUpdateClient(undefined, clientId, data, 'enter', callback);
+  async enterClient(clientId: string, data: unknown): Promise<void> {
+    return this._enterOrUpdateClient(undefined, clientId, data, 'enter');
   }
 
-  updateClient(clientId: string, data: unknown, callback: ErrCallback): void | Promise<void> {
-    return this._enterOrUpdateClient(undefined, clientId, data, 'update', callback);
+  async updateClient(clientId: string, data: unknown): Promise<void> {
+    return this._enterOrUpdateClient(undefined, clientId, data, 'update');
   }
 
-  _enterOrUpdateClient(
+  async _enterOrUpdateClient(
     id: string | undefined,
     clientId: string | undefined,
     data: unknown,
     action: string
-  ): Promise<void>;
-  _enterOrUpdateClient(
-    id: string | undefined,
-    clientId: string | undefined,
-    data: unknown,
-    action: string,
-    callback: ErrCallback
-  ): void;
-  _enterOrUpdateClient(
-    id: string | undefined,
-    clientId: string | undefined,
-    data: unknown,
-    action: string,
-    callback?: ErrCallback
-  ): void | Promise<void> {
-    if (!callback) {
-      if (typeof data === 'function') {
-        callback = data as ErrCallback;
-        data = null;
-      } else {
-        return Utils.promisify(this, '_enterOrUpdateClient', [id, clientId, data, action]);
-      }
-    }
-
+  ): Promise<void> {
     const channel = this.channel;
     if (!channel.connectionManager.activeState()) {
-      callback(channel.connectionManager.getError());
-      return;
+      throw channel.connectionManager.getError();
     }
 
     Logger.logAction(
@@ -173,57 +149,49 @@ class RealtimePresence extends EventEmitter {
       presence.clientId = clientId;
     }
 
-    encodePresenceMessage(presence, channel.channelOptions as CipherOptions, (err: IPartialErrorInfo) => {
-      if (err) {
-        callback!(err);
-        return;
-      }
-      switch (channel.state) {
-        case 'attached':
-          channel.sendPresence(presence, callback);
-          break;
-        case 'initialized':
-        case 'detached':
-          channel.attach();
-        // eslint-disable-next-line no-fallthrough
-        case 'attaching':
-          this.pendingPresence.push({
-            presence: presence,
-            callback: callback!,
-          });
-          break;
-        default:
-          err = new PartialErrorInfo(
-            'Unable to ' + action + ' presence channel while in ' + channel.state + ' state',
-            90001
-          );
-          err.code = 90001;
-          callback!(err);
-      }
+    return new Promise((resolve, reject) => {
+      encodePresenceMessage(presence, channel.channelOptions as CipherOptions, (err: IPartialErrorInfo) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        switch (channel.state) {
+          case 'attached':
+            channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
+            break;
+          case 'initialized':
+          case 'detached':
+            channel.attach();
+          // eslint-disable-next-line no-fallthrough
+          case 'attaching':
+            this.pendingPresence.push({
+              presence: presence,
+              callback: (err) => (err ? reject(err) : resolve()),
+            });
+            break;
+          default:
+            err = new PartialErrorInfo(
+              'Unable to ' + action + ' presence channel while in ' + channel.state + ' state',
+              90001
+            );
+            err.code = 90001;
+            reject(err);
+        }
+      });
     });
   }
 
-  leave(data: unknown, callback: ErrCallback): void | Promise<void> {
+  async leave(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
     }
-    return this.leaveClient(undefined, data, callback);
+    return this.leaveClient(undefined, data);
   }
 
-  leaveClient(clientId?: string, data?: unknown, callback?: ErrCallback): void | Promise<void> {
-    if (!callback) {
-      if (typeof data === 'function') {
-        callback = data as ErrCallback;
-        data = null;
-      } else {
-        return Utils.promisify(this, 'leaveClient', [clientId, data]);
-      }
-    }
-
+  async leaveClient(clientId?: string, data?: unknown): Promise<void> {
     const channel = this.channel;
     if (!channel.connectionManager.activeState()) {
-      callback?.(channel.connectionManager.getError());
-      return;
+      throw channel.connectionManager.getError();
     }
 
     Logger.logAction(
@@ -237,92 +205,74 @@ class RealtimePresence extends EventEmitter {
       presence.clientId = clientId;
     }
 
-    switch (channel.state) {
-      case 'attached':
-        channel.sendPresence(presence, callback);
-        break;
-      case 'attaching':
-        this.pendingPresence.push({
-          presence: presence,
-          callback: callback,
-        });
-        break;
-      case 'initialized':
-      case 'failed': {
-        /* we're not attached; therefore we let any entered status
-         * timeout by itself instead of attaching just in order to leave */
-        const err = new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
-        callback?.(err);
-        break;
-      }
-      default:
-        callback?.(channel.invalidStateError());
-    }
-  }
-
-  get(
-    this: RealtimePresence,
-    params: RealtimePresenceParams,
-    callback: StandardCallback<PresenceMessage[]>
-  ): void | Promise<PresenceMessage[]> {
-    const args = Array.prototype.slice.call(arguments);
-    if (args.length == 1 && typeof args[0] == 'function') args.unshift(null);
-
-    params = args[0] as RealtimePresenceParams;
-    callback = args[1] as StandardCallback<PresenceMessage[]>;
-    const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
-
-    if (!callback) {
-      return Utils.promisify(this, 'get', args);
-    }
-
-    function returnMembers(members: PresenceMap) {
-      callback(null, params ? members.list(params) : members.values());
-    }
-
-    /* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
-    if (this.channel.state === 'suspended') {
-      if (waitForSync) {
-        callback(
-          ErrorInfo.fromValues({
-            statusCode: 400,
-            code: 91005,
-            message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
-          })
-        );
-      } else {
-        returnMembers(this.members);
-      }
-      return;
-    }
-
-    waitAttached(this.channel, callback, () => {
-      const members = this.members;
-      if (waitForSync) {
-        members.waitSync(function () {
-          returnMembers(members);
-        });
-      } else {
-        returnMembers(members);
+    return new Promise((resolve, reject) => {
+      switch (channel.state) {
+        case 'attached':
+          channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
+          break;
+        case 'attaching':
+          this.pendingPresence.push({
+            presence: presence,
+            callback: (err) => (err ? reject(err) : resolve()),
+          });
+          break;
+        case 'initialized':
+        case 'failed': {
+          /* we're not attached; therefore we let any entered status
+           * timeout by itself instead of attaching just in order to leave */
+          const err = new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
+          reject(err);
+          break;
+        }
+        default:
+          reject(channel.invalidStateError());
       }
     });
   }
 
-  history(
-    params: RealtimeHistoryParams | null,
-    callback: PaginatedResultCallback<PresenceMessage>
-  ): void | Promise<PaginatedResult<PresenceMessage>> {
-    Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
-    /* params and callback are optional; see if params contains the callback */
-    if (callback === undefined) {
-      if (typeof params == 'function') {
-        callback = params;
-        params = null;
-      } else {
-        return Utils.promisify(this, 'history', arguments);
-      }
-    }
+  async get(params?: RealtimePresenceParams): Promise<PresenceMessage[]> {
+    const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
 
+    return new Promise((resolve, reject) => {
+      function returnMembers(members: PresenceMap) {
+        resolve(params ? members.list(params) : members.values());
+      }
+
+      /* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
+      if (this.channel.state === 'suspended') {
+        if (waitForSync) {
+          reject(
+            ErrorInfo.fromValues({
+              statusCode: 400,
+              code: 91005,
+              message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
+            })
+          );
+        } else {
+          returnMembers(this.members);
+        }
+        return;
+      }
+
+      waitAttached(
+        this.channel,
+        (err) => reject(err),
+        () => {
+          const members = this.members;
+          if (waitForSync) {
+            members.waitSync(function () {
+              returnMembers(members);
+            });
+          } else {
+            returnMembers(members);
+          }
+        }
+      );
+    });
+  }
+
+  async history(params: RealtimeHistoryParams | null): Promise<PaginatedResult<PresenceMessage>> {
+    Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
     // We fetch this first so that any module-not-provided error takes priority over other errors
     const restMixin = this.channel.client.rest.presenceMixin;
 
@@ -331,17 +281,15 @@ class RealtimePresence extends EventEmitter {
         delete params.untilAttach;
         params.from_serial = this.channel.properties.attachSerial;
       } else {
-        callback(
-          new ErrorInfo(
-            'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
-            40000,
-            400
-          )
+        throw new ErrorInfo(
+          'option untilAttach requires the channel to be attached, was: ' + this.channel.state,
+          40000,
+          400
         );
       }
     }
 
-    return restMixin.history(this, params, callback);
+    return restMixin.history(this, params);
   }
 
   setPresence(presenceSet: PresenceMessage[], isSync: boolean, syncChannelSerial?: string): void {
@@ -514,24 +462,18 @@ class RealtimePresence extends EventEmitter {
     });
   }
 
-  subscribe(..._args: unknown[] /* [event], listener, [callback] */): void | Promise<void> {
+  async subscribe(..._args: unknown[] /* [event], listener */): Promise<void> {
     const args = RealtimeChannel.processListenerArgs(_args);
     const event = args[0];
     const listener = args[1];
-    let callback = args[2];
     const channel = this.channel;
 
-    if (!callback) {
-      return Utils.promisify(this, 'subscribe', [event, listener]);
-    }
-
     if (channel.state === 'failed') {
-      callback(ErrorInfo.fromValues(channel.invalidStateError()));
-      return;
+      throw ErrorInfo.fromValues(channel.invalidStateError());
     }
 
     this.subscriptions.on(event, listener);
-    channel.attach(callback);
+    await channel.attach();
   }
 
   unsubscribe(..._args: unknown[] /* [event], listener */): void {

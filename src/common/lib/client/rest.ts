@@ -8,7 +8,6 @@ import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
-import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
 import { RequestBody, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import Resource from './resource';
@@ -35,7 +34,6 @@ type TokenRevocationSuccessResult = API.TokenRevocationSuccessResult;
 type TokenRevocationFailureResult = API.TokenRevocationFailureResult;
 type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
 
-const noop = function () {};
 export class Rest {
   private readonly client: BaseClient;
   readonly channels: Channels;
@@ -50,83 +48,62 @@ export class Rest {
     this.push = new Push(this.client);
   }
 
-  stats(
-    params: RequestParams,
-    callback: StandardCallback<PaginatedResult<Stats>>
-  ): Promise<PaginatedResult<Stats>> | void {
-    /* params and callback are optional; see if params contains the callback */
-    if (callback === undefined) {
-      if (typeof params == 'function') {
-        callback = params;
-        params = null;
-      } else {
-        return Utils.promisify(this, 'stats', [params]) as Promise<PaginatedResult<Stats>>;
-      }
-    }
+  async stats(params: RequestParams): Promise<PaginatedResult<Stats>> {
     const headers = Defaults.defaultGetHeaders(this.client.options),
       format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format;
 
     Utils.mixin(headers, this.client.options.headers);
 
-    new PaginatedResource(this.client, '/stats', headers, envelope, function (body, headers, unpacked) {
-      const statsValues = unpacked ? body : JSON.parse(body as string);
-      for (let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
-      return statsValues;
-    }).get(params as Record<string, string>, callback);
+    return new Promise((resolve, reject) => {
+      new PaginatedResource(this.client, '/stats', headers, envelope, function (body, headers, unpacked) {
+        const statsValues = unpacked ? body : JSON.parse(body as string);
+        for (let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
+        return statsValues;
+      }).get(params as Record<string, string>, (err, result) => (err ? reject(err) : resolve(result)));
+    });
   }
 
-  time(params?: RequestParams | StandardCallback<number>, callback?: StandardCallback<number>): Promise<number> | void {
-    /* params and callback are optional; see if params contains the callback */
-    if (callback === undefined) {
-      if (typeof params == 'function') {
-        callback = params;
-        params = null;
-      } else {
-        return Utils.promisify(this, 'time', [params]) as Promise<number>;
-      }
-    }
-
-    const _callback = callback || noop;
-
+  async time(params?: RequestParams): Promise<number> {
     const headers = Defaults.defaultGetHeaders(this.client.options);
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
     const timeUri = (host: string) => {
       return this.client.baseUri(host) + '/time';
     };
-    this.client.http.do(
-      HttpMethods.Get,
-      timeUri,
-      headers,
-      null,
-      params as RequestParams,
-      (err, res, headers, unpacked) => {
-        if (err) {
-          _callback(err);
-          return;
+    return new Promise((resolve, reject) => {
+      this.client.http.do(
+        HttpMethods.Get,
+        timeUri,
+        headers,
+        null,
+        params as RequestParams,
+        (err, res, headers, unpacked) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          if (!unpacked) res = JSON.parse(res as string);
+          const time = (res as number[])[0];
+          if (!time) {
+            reject(new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500));
+            return;
+          }
+          /* calculate time offset only once for this device by adding to the prototype */
+          this.client.serverTimeOffset = time - Utils.now();
+          resolve(time);
         }
-        if (!unpacked) res = JSON.parse(res as string);
-        const time = (res as number[])[0];
-        if (!time) {
-          _callback(new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500));
-          return;
-        }
-        /* calculate time offset only once for this device by adding to the prototype */
-        this.client.serverTimeOffset = time - Utils.now();
-        _callback(null, time);
-      }
-    );
+      );
+    });
   }
 
-  request(
+  async request(
     method: string,
     path: string,
     version: number,
     params: RequestParams,
     body: unknown,
-    customHeaders: Record<string, string>,
-    callback: StandardCallback<HttpPaginatedResponse<unknown>>
-  ): Promise<HttpPaginatedResponse<unknown>> | void {
+    customHeaders: Record<string, string>
+  ): Promise<HttpPaginatedResponse<unknown>> {
     const [encoder, decoder, format] = (() => {
       if (this.client.options.useBinaryProtocol) {
         if (!this.client._MsgPack) {
@@ -144,12 +121,6 @@ export class Rest {
       _method == 'get'
         ? Defaults.defaultGetHeaders(this.client.options, { format, protocolVersion: version })
         : Defaults.defaultPostHeaders(this.client.options, { format, protocolVersion: version });
-
-    if (callback === undefined) {
-      return Utils.promisify(this, 'request', [method, path, version, params, body, customHeaders]) as Promise<
-        HttpPaginatedResponse<unknown>
-      >;
-    }
 
     if (typeof body !== 'string') {
       body = encoder(body) ?? null;
@@ -173,31 +144,22 @@ export class Rest {
       throw new ErrorInfo('Unsupported method ' + _method, 40500, 405);
     }
 
-    if (Utils.arrIn(Platform.Http.methodsWithBody, _method)) {
-      paginatedResource[_method as HttpMethods.Post](
-        params,
-        body as RequestBody,
-        callback as PaginatedResultCallback<unknown>
-      );
-    } else {
-      paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](
-        params,
-        callback as PaginatedResultCallback<unknown>
-      );
-    }
+    return new Promise((resolve, reject) => {
+      if (Utils.arrIn(Platform.Http.methodsWithBody, _method)) {
+        paginatedResource[_method as HttpMethods.Post](params!, body as RequestBody, (err, result) =>
+          err ? reject(err) : resolve(result)
+        );
+      } else {
+        paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](params!, (err, result) =>
+          err ? reject(err) : resolve(result)
+        );
+      }
+    });
   }
 
-  batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
+  async batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
     specOrSpecs: T
-  ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]>;
-  batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
-    specOrSpecs: T,
-    callback?: StandardCallback<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]>
-  ): void | Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
-    if (callback === undefined) {
-      return Utils.promisify(this, 'batchPublish', [specOrSpecs]);
-    }
-
+  ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
     let requestBodyDTO: BatchPublishSpec[];
     let singleSpecMode: boolean;
     if (Utils.isArray(specOrSpecs)) {
@@ -214,34 +176,28 @@ export class Rest {
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
     const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
-    Resource.post(this.client, '/messages', requestBody, headers, {}, null, (err, body, headers, unpacked) => {
-      if (err) {
-        callback(err);
-        return;
-      }
+    return new Promise((resolve, reject) => {
+      Resource.post(this.client, '/messages', requestBody, headers, {}, null, (err, body, headers, unpacked) => {
+        if (err) {
+          reject(err);
+          return;
+        }
 
-      const batchResults = (
-        unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
-      ) as BatchPublishResult[];
+        const batchResults = (
+          unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+        ) as BatchPublishResult[];
 
-      // I don't love the below type assertions for `callback` but not sure how to avoid them
-      if (singleSpecMode) {
-        (callback as StandardCallback<BatchPublishResult>)(null, batchResults[0]);
-      } else {
-        (callback as StandardCallback<BatchPublishResult[]>)(null, batchResults);
-      }
+        // I don't love the below type assertions for `resolve` but not sure how to avoid them
+        if (singleSpecMode) {
+          (resolve as (result: BatchPublishResult) => void)(batchResults[0]);
+        } else {
+          (resolve as (result: BatchPublishResult[]) => void)(batchResults);
+        }
+      });
     });
   }
 
-  batchPresence(channels: string[]): Promise<BatchPresenceResult>;
-  batchPresence(
-    channels: string[],
-    callback?: StandardCallback<BatchPresenceResult>
-  ): void | Promise<BatchPresenceResult> {
-    if (callback === undefined) {
-      return Utils.promisify(this, 'batchPresence', [channels]);
-    }
-
+  async batchPresence(channels: string[]): Promise<BatchPresenceResult> {
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       headers = Defaults.defaultPostHeaders(this.client.options, { format });
 
@@ -249,25 +205,27 @@ export class Rest {
 
     const channelsParam = channels.join(',');
 
-    Resource.get(
-      this.client,
-      '/presence',
-      headers,
-      { channels: channelsParam },
-      null,
-      (err, body, headers, unpacked) => {
-        if (err) {
-          callback(err);
-          return;
+    return new Promise((resolve, reject) => {
+      Resource.get(
+        this.client,
+        '/presence',
+        headers,
+        { channels: channelsParam },
+        null,
+        (err, body, headers, unpacked) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          const batchResult = (
+            unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
+          ) as BatchPresenceResult;
+
+          resolve(batchResult);
         }
-
-        const batchResult = (
-          unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
-        ) as BatchPresenceResult;
-
-        callback(null, batchResult);
-      }
-    );
+      );
+    });
   }
 
   async revokeTokens(
