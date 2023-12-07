@@ -285,7 +285,7 @@ class ChannelSubscriptions {
     }).get(params, callback);
   }
 
-  removeWhere(params: any, callback: PaginatedResultCallback<unknown>) {
+  removeWhere(params: any, callback: ErrCallback) {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       headers = Defaults.defaultGetHeaders(client.options, { format });
