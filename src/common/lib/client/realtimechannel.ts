@@ -436,7 +436,7 @@ class RealtimeChannel extends EventEmitter {
     this.sendMessage(msg, callback || noop);
   }
 
-  subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<ChannelStateChange> {
+  subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<ChannelStateChange | null> {
     const [event, listener, callback] = RealtimeChannel.processListenerArgs(args);
 
     if (!callback) {
