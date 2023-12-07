@@ -223,7 +223,7 @@ class ChannelSubscriptions {
     this.client = client;
   }
 
-  save(subscription: Record<string, unknown>, callback: PaginatedResultCallback<unknown>) {
+  save(subscription: Record<string, unknown>, callback: StandardCallback<PushChannelSubscription>) {
     const client = this.client;
     const body = PushChannelSubscription.fromValues(subscription);
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
@@ -249,12 +249,13 @@ class ChannelSubscriptions {
       function (err, body, headers, unpacked) {
         callback(
           err,
-          !err &&
-            PushChannelSubscription.fromResponseBody(
-              body as Record<string, any>,
-              client._MsgPack,
-              unpacked ? undefined : format
-            )
+          !err
+            ? (PushChannelSubscription.fromResponseBody(
+                body as Record<string, any>,
+                client._MsgPack,
+                unpacked ? undefined : format
+              ) as PushChannelSubscription)
+            : undefined
         );
       }
     );
