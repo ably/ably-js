@@ -53,7 +53,7 @@ class Connection extends EventEmitter {
     this.connectionManager.requestState({ state: 'connecting' });
   }
 
-  ping(callback: Function): Promise<void> | void {
+  ping(callback: Function): Promise<number> | void {
     Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
     if (!callback) {
       return Utils.promisify(this, 'ping', arguments);
