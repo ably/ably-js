@@ -408,7 +408,7 @@ class Auth {
     tokenParams: API.TokenParams | StandardCallback<API.TokenDetails> | null,
     authOptions?: any | StandardCallback<API.TokenDetails>,
     callback?: StandardCallback<API.TokenDetails>
-  ): void | Promise<void> {
+  ): void | Promise<API.TokenDetails> {
     /* shuffle and normalise arguments as necessary */
     if (typeof tokenParams == 'function' && !callback) {
       callback = tokenParams;
