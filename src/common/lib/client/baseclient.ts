@@ -129,27 +129,23 @@ class BaseClient {
     return Defaults.getHttpScheme(this.options) + host + ':' + Defaults.getPort(this.options, false);
   }
 
-  stats(
-    params: RequestParams,
-    callback: StandardCallback<PaginatedResult<Stats>>
-  ): Promise<PaginatedResult<Stats>> | void {
-    return this.rest.stats(params, callback);
+  async stats(params: RequestParams): Promise<PaginatedResult<Stats>> {
+    return this.rest.stats(params);
   }
 
-  time(params?: RequestParams | StandardCallback<number>, callback?: StandardCallback<number>): Promise<number> | void {
-    return this.rest.time(params, callback);
+  async time(params?: RequestParams): Promise<number> {
+    return this.rest.time(params);
   }
 
-  request(
+  async request(
     method: string,
     path: string,
     version: number,
     params: RequestParams,
     body: unknown,
-    customHeaders: Record<string, string>,
-    callback: StandardCallback<HttpPaginatedResponse<unknown>>
-  ): Promise<HttpPaginatedResponse<unknown>> | void {
-    return this.rest.request(method, path, version, params, body, customHeaders, callback);
+    customHeaders: Record<string, string>
+  ): Promise<HttpPaginatedResponse<unknown>> {
+    return this.rest.request(method, path, version, params, body, customHeaders);
   }
 
   batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(

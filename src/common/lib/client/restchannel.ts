@@ -13,7 +13,7 @@ import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
 import Resource, { ResourceCallback } from './resource';
 import { ChannelOptions } from '../../types/channel';
-import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
+import { StandardCallback } from '../../types/utils';
 import BaseRest from './baseclient';
 import * as API from '../../../../ably';
 import Defaults, { normaliseChannelOptions } from '../util/defaults';
@@ -45,46 +45,29 @@ class RestChannel {
     this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, options);
   }
 
-  history(
-    params: RestHistoryParams | null,
-    callback: PaginatedResultCallback<Message>
-  ): Promise<PaginatedResult<Message>> | void {
+  async history(params: RestHistoryParams | null): Promise<PaginatedResult<Message>> {
     Logger.logAction(Logger.LOG_MICRO, 'RestChannel.history()', 'channel = ' + this.name);
-    /* params and callback are optional; see if params contains the callback */
-    if (callback === undefined) {
-      if (typeof params == 'function') {
-        callback = params;
-        params = null;
-      } else {
-        return Utils.promisify(this, 'history', arguments);
-      }
-    }
-
-    this.client.rest.channelMixin.history(this, params, callback);
+    return new Promise((resolve, reject) => {
+      this.client.rest.channelMixin.history(this, params, (err, result) => (err ? reject(err) : resolve(result)));
+    });
   }
 
-  publish(): void | Promise<void> {
-    const argCount = arguments.length,
-      first = arguments[0],
-      second = arguments[1];
-    let callback = arguments[argCount - 1];
+  async publish(...args: any[]): Promise<void> {
+    const first = args[0],
+      second = args[1];
     let messages: Array<Message>;
     let params: any;
-
-    if (typeof callback !== 'function') {
-      return Utils.promisify(this, 'publish', arguments);
-    }
 
     if (typeof first === 'string' || first === null) {
       /* (name, data, ...) */
       messages = [messageFromValues({ name: first, data: second })];
-      params = arguments[2];
+      params = args[2];
     } else if (Utils.isObject(first)) {
       messages = [messageFromValues(first)];
-      params = arguments[1];
+      params = args[1];
     } else if (Utils.isArray(first)) {
       messages = messagesFromValuesArray(first);
-      params = arguments[1];
+      params = args[1];
     } else {
       throw new ErrorInfo(
         'The single-argument form of publish() expects a message object or an array of message objects',
@@ -93,8 +76,8 @@ class RestChannel {
       );
     }
 
-    if (typeof params !== 'object' || !params) {
-      /* No params supplied (so after-message argument is just the callback or undefined) */
+    if (!params) {
+      /* No params supplied */
       params = {};
     }
 
@@ -113,31 +96,35 @@ class RestChannel {
       });
     }
 
-    encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
-      if (err) {
-        callback(err);
-        return;
-      }
+    return new Promise((resolve, reject) => {
+      encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
+        if (err) {
+          reject(err);
+          return;
+        }
 
-      /* RSL1i */
-      const size = getMessagesSize(messages),
-        maxMessageSize = options.maxMessageSize;
-      if (size > maxMessageSize) {
-        callback(
-          new ErrorInfo(
-            'Maximum size of messages that can be published at once exceeded ( was ' +
-              size +
-              ' bytes; limit is ' +
-              maxMessageSize +
-              ' bytes)',
-            40009,
-            400
-          )
+        /* RSL1i */
+        const size = getMessagesSize(messages),
+          maxMessageSize = options.maxMessageSize;
+        if (size > maxMessageSize) {
+          reject(
+            new ErrorInfo(
+              'Maximum size of messages that can be published at once exceeded ( was ' +
+                size +
+                ' bytes; limit is ' +
+                maxMessageSize +
+                ' bytes)',
+              40009,
+              400
+            )
+          );
+          return;
+        }
+
+        this._publish(serializeMessage(messages, client._MsgPack, format), headers, params, (err) =>
+          err ? reject(err) : resolve()
         );
-        return;
-      }
-
-      this._publish(serializeMessage(messages, client._MsgPack, format), headers, params, callback);
+      });
     });
   }
 
@@ -153,8 +140,8 @@ class RestChannel {
     );
   }
 
-  status(callback?: StandardCallback<API.Types.ChannelDetails>): void | Promise<API.Types.ChannelDetails> {
-    return this.client.rest.channelMixin.status(this, callback);
+  async status(): Promise<API.Types.ChannelDetails> {
+    return this.client.rest.channelMixin.status(this);
   }
 }
 

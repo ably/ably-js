@@ -2,7 +2,7 @@ import * as API from '../../../../ably';
 import RestChannel from './restchannel';
 import RealtimeChannel from './realtimechannel';
 import * as Utils from '../util/utils';
-import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
+import { PaginatedResultCallback } from '../../types/utils';
 import Message, { fromResponseBody as messageFromResponseBody } from '../types/message';
 import Defaults from '../util/defaults';
 import PaginatedResource from './paginatedresource';
@@ -14,8 +14,6 @@ export interface RestHistoryParams {
   direction?: string;
   limit?: number;
 }
-
-const noop = function () {};
 
 export class RestChannelMixin {
   static basePath(channel: RestChannel | RealtimeChannel) {
@@ -44,24 +42,19 @@ export class RestChannelMixin {
     }).get(params as Record<string, unknown>, callback);
   }
 
-  static status(
-    channel: RestChannel | RealtimeChannel,
-    callback?: StandardCallback<API.Types.ChannelDetails>
-  ): void | Promise<API.Types.ChannelDetails> {
-    if (typeof callback !== 'function') {
-      return Utils.promisify(this, 'status', [channel]);
-    }
-
+  static async status(channel: RestChannel | RealtimeChannel): Promise<API.Types.ChannelDetails> {
     const format = channel.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
     const headers = Defaults.defaultPostHeaders(channel.client.options, { format });
 
-    Resource.get<API.Types.ChannelDetails>(
-      channel.client,
-      this.basePath(channel),
-      headers,
-      {},
-      format,
-      callback || noop
-    );
+    return new Promise((resolve, reject) => {
+      Resource.get<API.Types.ChannelDetails>(
+        channel.client,
+        this.basePath(channel),
+        headers,
+        {},
+        format,
+        (err, result) => (err ? reject(err) : resolve(result!))
+      );
+    });
   }
 }

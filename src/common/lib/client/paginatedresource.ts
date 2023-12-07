@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Resource from './resource';
-import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
+import { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
 import BaseClient from './baseclient';
 import { RequestCallbackHeaders } from 'common/types/http';
@@ -187,9 +187,9 @@ interface PaginatedResultLoadFunction<T> {
 export class PaginatedResult<T> {
   resource: PaginatedResource;
   items: T[];
-  first?: PaginatedResultLoadFunction<T>;
-  next?: PaginatedResultLoadFunction<T>;
-  current?: PaginatedResultLoadFunction<T>;
+  first?: () => Promise<PaginatedResult<T>>;
+  next?: () => Promise<PaginatedResult<T>>;
+  current?: () => Promise<PaginatedResult<T>>;
   hasNext?: () => boolean;
   isLast?: () => boolean;
 
@@ -200,29 +200,28 @@ export class PaginatedResult<T> {
     const self = this;
     if (relParams) {
       if ('first' in relParams) {
-        this.first = function (callback?: (result?: ErrorInfo | null) => void) {
-          if (!callback) {
-            return Utils.promisify(self, 'first', []);
-          }
-          self.get(relParams.first, callback);
+        this.first = async function () {
+          return new Promise((resolve, reject) => {
+            self.get(relParams.first, (err, result) => (err ? reject(err) : resolve(result)));
+          });
         };
       }
       if ('current' in relParams) {
-        this.current = function (callback?: (results?: ErrorInfo | null) => void) {
-          if (!callback) {
-            return Utils.promisify(self, 'current', []);
-          }
-          self.get(relParams.current, callback);
+        this.current = async function () {
+          return new Promise((resolve, reject) => {
+            self.get(relParams.current, (err, result) => (err ? reject(err) : resolve(result)));
+          });
         };
       }
-      this.next = function (callback?: (results?: ErrorInfo | null) => void) {
-        if (!callback) {
-          return Utils.promisify(self, 'next', []);
-        }
+      this.next = async function () {
         if ('next' in relParams) {
-          self.get(relParams.next, callback);
+          return new Promise((resolve, reject) => {
+            self.get(relParams.next, (err, result) => (err ? reject(err) : resolve(result)));
+          });
         } else {
-          callback(null);
+          // TODO what is this? this looks a bit odd
+          //callback(null);
+          throw new Error('there is no next page');
         }
       };
 
