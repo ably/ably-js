@@ -160,11 +160,8 @@ class Auth {
    * Instructs the library to get a token immediately and ensures Token Auth
    * is used for all future requests, storing the tokenParams and authOptions
    * given as the new defaults for subsequent use.
-   *
-   * @param callback (err, tokenDetails)
    */
-  authorize(callback: Function): void;
-  authorize(): Promise<API.TokenDetails>;
+  async authorize(): Promise<API.TokenDetails>;
 
   /**
    * Instructs the library to get a token immediately and ensures Token Auth
@@ -187,11 +184,8 @@ class Auth {
    *
    * - timestamp:  (optional) the time in ms since the epoch. If none is specified,
    *               the system will be queried for a time value to use.
-   *
-   * @param callback (err, tokenDetails)
    */
-  authorize(tokenParams: API.TokenParams | null, callback: Function): void;
-  authorize(tokenParams: API.TokenParams | null): Promise<API.TokenDetails>;
+  async authorize(tokenParams: API.TokenParams | null): Promise<API.TokenDetails>;
 
   /**
    * Instructs the library to get a token immediately and ensures Token Auth
@@ -244,71 +238,61 @@ class Auth {
    *
    * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
    *                  requestToken request
-   *
-   * @param callback (err, tokenDetails)
    */
-  authorize(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null, callback: Function): void;
-  authorize(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null): Promise<API.TokenDetails>;
+  async authorize(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null): Promise<API.TokenDetails>;
 
-  authorize(
-    tokenParams?: Record<string, any> | Function | null,
-    authOptions?: API.AuthOptions | null | Function,
-    callback?: Function
-  ): void | Promise<API.TokenDetails> {
-    let _authOptions: API.AuthOptions | null;
-    /* shuffle and normalise arguments as necessary */
-    if (typeof tokenParams == 'function' && !callback) {
-      callback = tokenParams;
-      _authOptions = tokenParams = null;
-    } else if (typeof authOptions == 'function' && !callback) {
-      callback = authOptions;
-      _authOptions = null;
-    } else {
-      _authOptions = authOptions as API.AuthOptions;
-    }
-    if (!callback) {
-      return Utils.promisify(this, 'authorize', arguments);
-    }
-
+  async authorize(
+    tokenParams?: Record<string, any> | null,
+    authOptions?: API.AuthOptions | null
+  ): Promise<API.TokenDetails> {
     /* RSA10a: authorize() call implies token auth. If a key is passed it, we
      * just check if it doesn't clash and assume we're generating a token from it */
-    if (_authOptions && _authOptions.key && this.authOptions.key !== _authOptions.key) {
+    if (authOptions && authOptions.key && this.authOptions.key !== authOptions.key) {
       throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
     }
 
-    this._forceNewToken(
-      tokenParams as API.TokenParams,
-      _authOptions,
-      (err: ErrorInfo, tokenDetails: API.TokenDetails) => {
-        if (err) {
-          if ((this.client as BaseRealtime).connection && err.statusCode === HttpStatusCodes.Forbidden) {
-            /* Per RSA4d & RSA4d1, if the auth server explicitly repudiates our right to
-             * stay connecticed by returning a 403, we actively disconnect the connection
-             * even though we may well still have time left in the old token. */
-            (this.client as BaseRealtime).connection.connectionManager.actOnErrorFromAuthorize(err);
+    return new Promise((resolve, reject) => {
+      this._forceNewToken(
+        tokenParams as API.TokenParams,
+        authOptions,
+        (err: ErrorInfo, tokenDetails: API.TokenDetails) => {
+          if (err) {
+            if ((this.client as BaseRealtime).connection && err.statusCode === HttpStatusCodes.Forbidden) {
+              /* Per RSA4d & RSA4d1, if the auth server explicitly repudiates our right to
+               * stay connecticed by returning a 403, we actively disconnect the connection
+               * even though we may well still have time left in the old token. */
+              (this.client as BaseRealtime).connection.connectionManager.actOnErrorFromAuthorize(err);
+            }
+            reject(err);
+            return;
           }
-          callback?.(err);
-          return;
-        }
 
-        /* RTC8
-         * - When authorize called by an end user and have a realtime connection,
-         * don't call back till new token has taken effect.
-         * - Use this.client.connection as a proxy for (this.client instanceof BaseRealtime),
-         * which doesn't work in node as BaseRealtime isn't part of the vm context for Rest clients */
-        if (isRealtime(this.client)) {
-          this.client.connection.connectionManager.onAuthUpdated(tokenDetails, callback || noop);
-        } else {
-          callback?.(null, tokenDetails);
+          /* RTC8
+           * - When authorize called by an end user and have a realtime connection,
+           * don't call back till new token has taken effect.
+           * - Use this.client.connection as a proxy for (this.client instanceof BaseRealtime),
+           * which doesn't work in node as BaseRealtime isn't part of the vm context for Rest clients */
+          if (isRealtime(this.client)) {
+            this.client.connection.connectionManager.onAuthUpdated(
+              tokenDetails,
+              (err: unknown, tokenDetails?: API.TokenDetails) => (err ? reject(err) : resolve(tokenDetails!))
+            );
+          } else {
+            resolve(tokenDetails);
+          }
         }
-      }
-    );
+      );
+    });
   }
 
   /* For internal use, eg by connectionManager - useful when want to call back
    * as soon as we have the new token, rather than waiting for it to take
    * effect on the connection as #authorize does */
-  _forceNewToken(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null, callback: Function) {
+  _forceNewToken(
+    tokenParams: API.TokenParams | null,
+    authOptions: API.AuthOptions | undefined | null,
+    callback: Function
+  ) {
     /* get rid of current token even if still valid */
     this.tokenDetails = null;
 
@@ -329,10 +313,8 @@ class Auth {
 
   /**
    * Request an access token
-   * @param callback (err, tokenDetails)
    */
-  requestToken(callback: StandardCallback<API.TokenDetails>): void;
-  requestToken(): Promise<API.TokenDetails>;
+  async requestToken(): Promise<API.TokenDetails>;
 
   /**
    * Request an access token
@@ -351,11 +333,8 @@ class Auth {
    *
    * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
    *                  the system will be queried for a time value to use.
-   *
-   * @param callback (err, tokenDetails)
    */
-  requestToken(tokenParams: API.TokenParams | null, callback: StandardCallback<API.TokenDetails>): void;
-  requestToken(tokenParams: API.TokenParams | null): Promise<API.TokenDetails>;
+  async requestToken(tokenParams: API.TokenParams | null): Promise<API.TokenDetails>;
 
   /**
    * Request an access token
@@ -400,41 +379,17 @@ class Auth {
    *
    * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
    *                  requestToken request
-   *
-   * @param callback (err, tokenDetails)
    */
-  requestToken(
-    tokenParams: API.TokenParams | null,
-    authOptions: API.AuthOptions,
-    callback: StandardCallback<API.TokenDetails>
-  ): void;
-  requestToken(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions): Promise<API.TokenDetails>;
+  async requestToken(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions): Promise<API.TokenDetails>;
 
-  requestToken(
-    tokenParams?: API.TokenParams | StandardCallback<API.TokenDetails> | null,
-    authOptions?: any | StandardCallback<API.TokenDetails>,
-    callback?: StandardCallback<API.TokenDetails>
-  ): void | Promise<API.TokenDetails> {
-    /* shuffle and normalise arguments as necessary */
-    if (typeof tokenParams == 'function' && !callback) {
-      callback = tokenParams;
-      authOptions = tokenParams = null;
-    } else if (typeof authOptions == 'function' && !callback) {
-      callback = authOptions;
-      authOptions = null;
-    }
-    if (!callback) {
-      return Utils.promisify(this, 'requestToken', arguments);
-    }
-
+  async requestToken(tokenParams?: API.TokenParams | null, authOptions?: any): Promise<API.TokenDetails> {
     /* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
     authOptions = authOptions || this.authOptions;
     tokenParams = tokenParams || Utils.copy(this.tokenParams);
-    const _callback = callback || noop;
 
     /* first set up whatever callback will be used to get signed
      * token requests */
-    let tokenRequestCallback,
+    let tokenRequestCallback: any,
       client = this.client;
 
     if (authOptions.authCallback) {
@@ -565,8 +520,7 @@ class Auth {
         'Auth()',
         'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help'
       );
-      _callback(new ErrorInfo(msg, 40171, 403));
-      return;
+      throw new ErrorInfo(msg, 40171, 403);
     }
 
     /* normalise token params */
@@ -597,115 +551,118 @@ class Auth {
       );
     };
 
-    let tokenRequestCallbackTimeoutExpired = false,
-      timeoutLength = this.client.options.timeouts.realtimeRequestTimeout,
-      tokenRequestCallbackTimeout = setTimeout(function () {
-        tokenRequestCallbackTimeoutExpired = true;
-        const msg = 'Token request callback timed out after ' + timeoutLength / 1000 + ' seconds';
-        Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-        _callback(new ErrorInfo(msg, 40170, 401));
-      }, timeoutLength);
+    return new Promise((resolve, reject) => {
+      let tokenRequestCallbackTimeoutExpired = false,
+        timeoutLength = this.client.options.timeouts.realtimeRequestTimeout,
+        tokenRequestCallbackTimeout = setTimeout(function () {
+          tokenRequestCallbackTimeoutExpired = true;
+          const msg = 'Token request callback timed out after ' + timeoutLength / 1000 + ' seconds';
+          Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+          reject(new ErrorInfo(msg, 40170, 401));
+        }, timeoutLength);
 
-    tokenRequestCallback(tokenParams, function (err: ErrorInfo, tokenRequestOrDetails: any, contentType: string) {
-      if (tokenRequestCallbackTimeoutExpired) return;
-      clearTimeout(tokenRequestCallbackTimeout);
+      tokenRequestCallback(tokenParams, function (err: ErrorInfo, tokenRequestOrDetails: any, contentType: string) {
+        if (tokenRequestCallbackTimeoutExpired) return;
+        clearTimeout(tokenRequestCallbackTimeout);
 
-      if (err) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'Auth.requestToken()',
-          'token request signing call returned error; err = ' + Utils.inspectError(err)
-        );
-        _callback(normaliseAuthcallbackError(err));
-        return;
-      }
-      /* the response from the callback might be a token string, a signed request or a token details */
-      if (typeof tokenRequestOrDetails === 'string') {
-        if (tokenRequestOrDetails.length === 0) {
-          _callback(new ErrorInfo('Token string is empty', 40170, 401));
-        } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
-          _callback(
-            new ErrorInfo(
-              'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
-              40170,
-              401
-            )
+        if (err) {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'Auth.requestToken()',
+            'token request signing call returned error; err = ' + Utils.inspectError(err)
           );
-        } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
-          /* common failure mode with poorly-implemented authCallbacks */
-          _callback(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
-        } else if (tokenRequestOrDetails[0] === '{' && !(contentType && contentType.indexOf('application/jwt') > -1)) {
-          _callback(
-            new ErrorInfo(
-              "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
-              40170,
-              401
-            )
-          );
-        } else {
-          _callback(null, { token: tokenRequestOrDetails } as API.TokenDetails);
+          reject(normaliseAuthcallbackError(err));
+          return;
         }
-        return;
-      }
-      if (typeof tokenRequestOrDetails !== 'object') {
-        const msg =
-          'Expected token request callback to call back with a token string or token request/details object, but got a ' +
-          typeof tokenRequestOrDetails;
-        Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-        _callback(new ErrorInfo(msg, 40170, 401));
-        return;
-      }
-      const objectSize = JSON.stringify(tokenRequestOrDetails).length;
-      if (objectSize > MAX_TOKEN_LENGTH && !authOptions.suppressMaxLengthCheck) {
-        _callback(
-          new ErrorInfo(
-            'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
-            40170,
-            401
-          )
-        );
-        return;
-      }
-      if ('issued' in tokenRequestOrDetails) {
-        /* a tokenDetails object */
-        _callback(null, tokenRequestOrDetails);
-        return;
-      }
-      if (!('keyName' in tokenRequestOrDetails)) {
-        const msg =
-          'Expected token request callback to call back with a token string, token request object, or token details object';
-        Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-        _callback(new ErrorInfo(msg, 40170, 401));
-        return;
-      }
-      /* it's a token request, so make the request */
-      tokenRequest(
-        tokenRequestOrDetails,
-        function (
-          err?: ErrorInfo | ErrnoException | null,
-          tokenResponse?: API.TokenDetails | string,
-          headers?: Record<string, string>,
-          unpacked?: boolean
-        ) {
-          if (err) {
-            Logger.logAction(
-              Logger.LOG_ERROR,
-              'Auth.requestToken()',
-              'token request API call returned error; err = ' + Utils.inspectError(err)
+        /* the response from the callback might be a token string, a signed request or a token details */
+        if (typeof tokenRequestOrDetails === 'string') {
+          if (tokenRequestOrDetails.length === 0) {
+            reject(new ErrorInfo('Token string is empty', 40170, 401));
+          } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
+            reject(
+              new ErrorInfo(
+                'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
+                40170,
+                401
+              )
             );
-            _callback(normaliseAuthcallbackError(err));
-            return;
+          } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
+            /* common failure mode with poorly-implemented authCallbacks */
+            reject(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
+          } else if (
+            tokenRequestOrDetails[0] === '{' &&
+            !(contentType && contentType.indexOf('application/jwt') > -1)
+          ) {
+            reject(
+              new ErrorInfo(
+                "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
+                40170,
+                401
+              )
+            );
+          } else {
+            resolve({ token: tokenRequestOrDetails } as API.TokenDetails);
           }
-          if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
-          Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
-          _callback(null, tokenResponse as API.TokenDetails);
+          return;
         }
-      );
+        if (typeof tokenRequestOrDetails !== 'object') {
+          const msg =
+            'Expected token request callback to call back with a token string or token request/details object, but got a ' +
+            typeof tokenRequestOrDetails;
+          Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+          reject(new ErrorInfo(msg, 40170, 401));
+          return;
+        }
+        const objectSize = JSON.stringify(tokenRequestOrDetails).length;
+        if (objectSize > MAX_TOKEN_LENGTH && !authOptions.suppressMaxLengthCheck) {
+          reject(
+            new ErrorInfo(
+              'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
+              40170,
+              401
+            )
+          );
+          return;
+        }
+        if ('issued' in tokenRequestOrDetails) {
+          /* a tokenDetails object */
+          resolve(tokenRequestOrDetails);
+          return;
+        }
+        if (!('keyName' in tokenRequestOrDetails)) {
+          const msg =
+            'Expected token request callback to call back with a token string, token request object, or token details object';
+          Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+          reject(new ErrorInfo(msg, 40170, 401));
+          return;
+        }
+        /* it's a token request, so make the request */
+        tokenRequest(
+          tokenRequestOrDetails,
+          function (
+            err?: ErrorInfo | ErrnoException | null,
+            tokenResponse?: API.TokenDetails | string,
+            headers?: Record<string, string>,
+            unpacked?: boolean
+          ) {
+            if (err) {
+              Logger.logAction(
+                Logger.LOG_ERROR,
+                'Auth.requestToken()',
+                'token request API call returned error; err = ' + Utils.inspectError(err)
+              );
+              reject(normaliseAuthcallbackError(err));
+              return;
+            }
+            if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
+            Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
+            resolve(tokenResponse as API.TokenDetails);
+          }
+        );
+      });
     });
   }
 
-  createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any, callback: Function): void;
-  createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any): Promise<API.TokenRequest>;
   /**
    * Create and sign a token request based on the given options.
    * NOTE this can only be used when the key value is available locally.
@@ -738,88 +695,73 @@ class Auth {
    *
    * - timestamp:     (optional) the time in ms since the epoch. If none is specified,
    *                  the system will be queried for a time value to use.
-   *
-   * @param callback
    */
-  createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any, callback?: Function) {
-    /* shuffle and normalise arguments as necessary */
-    if (typeof tokenParams == 'function' && !callback) {
-      callback = tokenParams;
-      authOptions = tokenParams = null;
-    } else if (typeof authOptions == 'function' && !callback) {
-      callback = authOptions;
-      authOptions = null;
-    }
-    if (!callback) {
-      return Utils.promisify(this, 'createTokenRequest', arguments);
-    }
-
+  async createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any): Promise<API.TokenRequest> {
     /* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
     authOptions = authOptions || this.authOptions;
     tokenParams = tokenParams || Utils.copy<API.TokenParams>(this.tokenParams);
 
     const key = authOptions.key;
     if (!key) {
-      callback(new ErrorInfo('No key specified', 40101, 403));
-      return;
+      throw new ErrorInfo('No key specified', 40101, 403);
     }
     const keyParts = key.split(':'),
       keyName = keyParts[0],
       keySecret = keyParts[1];
 
     if (!keySecret) {
-      callback(new ErrorInfo('Invalid key specified', 40101, 403));
-      return;
+      throw new ErrorInfo('Invalid key specified', 40101, 403);
     }
 
     if (tokenParams.clientId === '') {
-      callback(new ErrorInfo('clientId can’t be an empty string', 40012, 400));
-      return;
+      throw new ErrorInfo('clientId can’t be an empty string', 40012, 400);
     }
 
     if ('capability' in tokenParams) {
       tokenParams.capability = c14n(tokenParams.capability);
     }
 
-    const request = Utils.mixin({ keyName: keyName }, tokenParams),
+    const request: Partial<API.TokenRequest> = Utils.mixin({ keyName: keyName }, tokenParams),
       clientId = tokenParams.clientId || '',
       ttl = tokenParams.ttl || '',
       capability = tokenParams.capability || '';
 
-    ((authoriseCb) => {
-      if (request.timestamp) {
-        authoriseCb();
-        return;
-      }
-      this.getTimestamp(authOptions && authOptions.queryTime, function (err?: ErrorInfo | null, time?: number) {
-        if (err) {
-          callback!(err);
+    return new Promise((resolve, reject) => {
+      ((authoriseCb) => {
+        if (request.timestamp) {
+          authoriseCb();
           return;
         }
-        request.timestamp = time;
-        authoriseCb();
+        this.getTimestamp(authOptions && authOptions.queryTime, function (err?: ErrorInfo | null, time?: number) {
+          if (err) {
+            reject(err);
+            return;
+          }
+          request.timestamp = time;
+          authoriseCb();
+        });
+      })(function () {
+        /* nonce */
+        /* NOTE: there is no expectation that the client
+         * specifies the nonce; this is done by the library
+         * However, this can be overridden by the client
+         * simply for testing purposes. */
+        const nonce = request.nonce || (request.nonce = random()),
+          timestamp = request.timestamp;
+
+        const signText =
+          request.keyName + '\n' + ttl + '\n' + capability + '\n' + clientId + '\n' + timestamp + '\n' + nonce + '\n';
+
+        /* mac */
+        /* NOTE: there is no expectation that the client
+         * specifies the mac; this is done by the library
+         * However, this can be overridden by the client
+         * simply for testing purposes. */
+        request.mac = request.mac || hmac(signText, keySecret);
+
+        Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
+        resolve(request as API.TokenRequest);
       });
-    })(function () {
-      /* nonce */
-      /* NOTE: there is no expectation that the client
-       * specifies the nonce; this is done by the library
-       * However, this can be overridden by the client
-       * simply for testing purposes. */
-      const nonce = request.nonce || (request.nonce = random()),
-        timestamp = request.timestamp;
-
-      const signText =
-        request.keyName + '\n' + ttl + '\n' + capability + '\n' + clientId + '\n' + timestamp + '\n' + nonce + '\n';
-
-      /* mac */
-      /* NOTE: there is no expectation that the client
-       * specifies the mac; this is done by the library
-       * However, this can be overridden by the client
-       * simply for testing purposes. */
-      request.mac = request.mac || hmac(signText, keySecret);
-
-      Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
-      callback!(null, request);
     });
   }
 
@@ -895,7 +837,7 @@ class Auth {
     }
   }
 
-  _saveTokenOptions(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null) {
+  _saveTokenOptions(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | undefined | null) {
     this.method = 'token';
 
     if (tokenParams) {

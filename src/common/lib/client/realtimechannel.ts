@@ -17,13 +17,13 @@ import Message, {
   EncodingDecodingContext,
 } from '../types/message';
 import ChannelStateChange from './channelstatechange';
-import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
+import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
 import PresenceMessage, { decode as decodePresenceMessage } from '../types/presencemessage';
 import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
-import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
+import { ErrCallback, StandardCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
@@ -143,32 +143,18 @@ class RealtimeChannel extends EventEmitter {
   }
 
   static processListenerArgs(args: unknown[]): any[] {
-    /* [event], listener, [callback] */
+    /* [event], listener */
     args = Array.prototype.slice.call(args);
     if (typeof args[0] === 'function') {
       args.unshift(null);
     }
-    if (args[args.length - 1] == undefined) {
-      args.pop();
-    }
     return args;
   }
 
-  setOptions(options?: API.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
-    if (!callback) {
-      return Utils.promisify(this, 'setOptions', arguments);
-    }
-    const _callback =
-      callback ||
-      function (err?: IPartialErrorInfo | null) {
-        if (err) {
-          Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.setOptions()', 'Set options failed: ' + err.toString());
-        }
-      };
+  async setOptions(options?: API.ChannelOptions): Promise<void> {
     const err = validateChannelOptions(options);
     if (err) {
-      _callback(err);
-      return;
+      throw err;
     }
     this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, options);
     if (this._decodingContext) this._decodingContext.channelOptions = this.channelOptions;
@@ -180,25 +166,24 @@ class RealtimeChannel extends EventEmitter {
        * rejecting messages until we have confirmation that the options have changed,
        * which would unnecessarily lose message continuity. */
       this.attachImpl();
-      // Ignore 'attaching' -- could be just due to to a resume & reattach, should not
-      // call back setOptions until we're definitely attached with the new options (or
-      // else in a terminal state)
-      this._allChannelChanges.once(
-        ['attached', 'update', 'detached', 'failed'],
-        function (this: { event: string }, stateChange: ConnectionStateChange) {
-          switch (this.event) {
-            case 'update':
-            case 'attached':
-              _callback?.(null);
-              return;
-            default:
-              _callback?.(stateChange.reason);
-              return;
+      return new Promise((resolve, reject) => {
+        // Ignore 'attaching' -- could be just due to to a resume & reattach, should not
+        // call back setOptions until we're definitely attached with the new options (or
+        // else in a terminal state)
+        this._allChannelChanges.once(
+          ['attached', 'update', 'detached', 'failed'],
+          function (this: { event: string }, stateChange: ConnectionStateChange) {
+            switch (this.event) {
+              case 'update':
+              case 'attached':
+                resolve();
+                break;
+              default:
+                reject(stateChange.reason);
+            }
           }
-        }
-      );
-    } else {
-      _callback();
+        );
+      });
     }
   }
 
@@ -226,19 +211,14 @@ class RealtimeChannel extends EventEmitter {
     return false;
   }
 
-  publish(...args: any[]): void | Promise<void> {
+  async publish(...args: any[]): Promise<void> {
     let messages = args[0];
     let argCount = args.length;
-    let callback = args[argCount - 1];
 
-    if (typeof callback !== 'function') {
-      return Utils.promisify(this, 'publish', arguments);
-    }
     if (!this.connectionManager.activeState()) {
-      callback(this.connectionManager.getError());
-      return;
+      throw this.connectionManager.getError();
     }
-    if (argCount == 2) {
+    if (argCount == 1) {
       if (Utils.isObject(messages)) messages = [messageFromValues(messages)];
       else if (Utils.isArray(messages)) messages = messagesFromValuesArray(messages);
       else
@@ -251,28 +231,30 @@ class RealtimeChannel extends EventEmitter {
       messages = [messageFromValues({ name: args[0], data: args[1] })];
     }
     const maxMessageSize = this.client.options.maxMessageSize;
-    encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
-      if (err) {
-        callback(err);
-        return;
-      }
-      /* RSL1i */
-      const size = getMessagesSize(messages);
-      if (size > maxMessageSize) {
-        callback(
-          new ErrorInfo(
-            'Maximum size of messages that can be published at once exceeded ( was ' +
-              size +
-              ' bytes; limit is ' +
-              maxMessageSize +
-              ' bytes)',
-            40009,
-            400
-          )
-        );
-        return;
-      }
-      this._publish(messages, callback);
+    return new Promise((resolve, reject) => {
+      encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        /* RSL1i */
+        const size = getMessagesSize(messages);
+        if (size > maxMessageSize) {
+          reject(
+            new ErrorInfo(
+              'Maximum size of messages that can be published at once exceeded ( was ' +
+                size +
+                ' bytes; limit is ' +
+                maxMessageSize +
+                ' bytes)',
+              40009,
+              400
+            )
+          );
+          return;
+        }
+        this._publish(messages, (err) => (err ? reject(err) : resolve()));
+      });
     });
   }
 
@@ -305,18 +287,14 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  attach(): Promise<ChannelStateChange | null>;
-  attach(callback: StandardCallback<ChannelStateChange | null>): void;
-  attach(callback?: StandardCallback<ChannelStateChange | null>): void | Promise<ChannelStateChange | null> {
-    if (!callback) {
-      return Utils.promisify(this, 'attach', arguments);
-    }
+  async attach(): Promise<ChannelStateChange | null> {
     if (this.state === 'attached') {
-      callback(null, null);
-      return;
+      return null;
     }
 
-    this._attach(false, null, callback);
+    return new Promise((resolve, reject) => {
+      this._attach(false, null, (err, result) => (err ? reject(err) : resolve(result!)));
+    });
   }
 
   _attach(
@@ -387,48 +365,43 @@ class RealtimeChannel extends EventEmitter {
     this.sendMessage(attachMsg, noop);
   }
 
-  detach(callback: ErrCallback): void | Promise<void> {
-    if (!callback) {
-      return Utils.promisify(this, 'detach', arguments);
-    }
+  async detach(): Promise<void> {
     const connectionManager = this.connectionManager;
     if (!connectionManager.activeState()) {
-      callback(connectionManager.getError());
-      return;
+      throw connectionManager.getError();
     }
     switch (this.state) {
       case 'suspended':
         this.notifyState('detached');
-        callback();
-        break;
+        return;
       case 'detached':
-        callback();
-        break;
+        return;
       case 'failed':
-        callback(new ErrorInfo('Unable to detach; channel state = failed', 90001, 400));
-        break;
+        throw new ErrorInfo('Unable to detach; channel state = failed', 90001, 400);
       default:
         this.requestState('detaching');
       // eslint-disable-next-line no-fallthrough
       case 'detaching':
-        this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
-          switch (this.event) {
-            case 'detached':
-              callback();
-              break;
-            case 'attached':
-            case 'suspended':
-            case 'failed':
-              callback(
-                stateChange.reason ||
-                  connectionManager.getError() ||
-                  new ErrorInfo('Unable to detach; reason unknown; state = ' + this.event, 90000, 500)
-              );
-              break;
-            case 'attaching':
-              callback(new ErrorInfo('Detach request superseded by a subsequent attach request', 90000, 409));
-              break;
-          }
+        return new Promise((resolve, reject) => {
+          this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
+            switch (this.event) {
+              case 'detached':
+                resolve();
+                break;
+              case 'attached':
+              case 'suspended':
+              case 'failed':
+                reject(
+                  stateChange.reason ||
+                    connectionManager.getError() ||
+                    new ErrorInfo('Unable to detach; reason unknown; state = ' + this.event, 90000, 500)
+                );
+                break;
+              case 'attaching':
+                reject(new ErrorInfo('Detach request superseded by a subsequent attach request', 90000, 409));
+                break;
+            }
+          });
         });
     }
   }
@@ -439,16 +412,11 @@ class RealtimeChannel extends EventEmitter {
     this.sendMessage(msg, callback || noop);
   }
 
-  subscribe(...args: unknown[] /* [event], listener, [callback] */): void | Promise<ChannelStateChange | null> {
-    const [event, listener, callback] = RealtimeChannel.processListenerArgs(args);
-
-    if (!callback) {
-      return Utils.promisify(this, 'subscribe', [event, listener]);
-    }
+  async subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
+    const [event, listener] = RealtimeChannel.processListenerArgs(args);
 
     if (this.state === 'failed') {
-      callback?.(ErrorInfo.fromValues(this.invalidStateError()));
-      return;
+      throw ErrorInfo.fromValues(this.invalidStateError());
     }
 
     // Filtered
@@ -458,7 +426,7 @@ class RealtimeChannel extends EventEmitter {
       this.subscriptions.on(event, listener);
     }
 
-    return this.attach(callback || noop);
+    return this.attach();
   }
 
   unsubscribe(...args: unknown[] /* [event], listener */): void {
@@ -885,45 +853,33 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  history = function (
+  history = async function (
     this: RealtimeChannel,
-    params: RealtimeHistoryParams | null,
-    callback: PaginatedResultCallback<Message>
-  ): void | Promise<PaginatedResult<Message>> {
+    params: RealtimeHistoryParams | null
+  ): Promise<PaginatedResult<Message>> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
-    /* params and callback are optional; see if params contains the callback */
-    if (callback === undefined) {
-      if (typeof params == 'function') {
-        callback = params;
-        params = null;
-      } else {
-        return Utils.promisify(this, 'history', arguments);
-      }
-    }
 
     // We fetch this first so that any module-not-provided error takes priority over other errors
     const restMixin = this.client.rest.channelMixin;
 
     if (params && params.untilAttach) {
       if (this.state !== 'attached') {
-        callback(new ErrorInfo('option untilAttach requires the channel to be attached', 40000, 400));
-        return;
+        throw new ErrorInfo('option untilAttach requires the channel to be attached', 40000, 400);
       }
       if (!this.properties.attachSerial) {
-        callback(
-          new ErrorInfo(
-            'untilAttach was specified and channel is attached, but attachSerial is not defined',
-            40000,
-            400
-          )
+        throw new ErrorInfo(
+          'untilAttach was specified and channel is attached, but attachSerial is not defined',
+          40000,
+          400
         );
-        return;
       }
       delete params.untilAttach;
       params.from_serial = this.properties.attachSerial;
     }
 
-    restMixin.history(this, params, callback);
+    return new Promise((resolve, reject) => {
+      restMixin.history(this, params, (err, result) => (err ? reject(err) : resolve(result)));
+    });
   } as any;
 
   whenState = ((state: string, listener: ErrCallback) => {
@@ -958,8 +914,8 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  status(callback?: StandardCallback<API.ChannelDetails>): void | Promise<API.ChannelDetails> {
-    return this.client.rest.channelMixin.status(this, callback);
+  async status(): Promise<API.ChannelDetails> {
+    return this.client.rest.channelMixin.status(this);
   }
 }
 
