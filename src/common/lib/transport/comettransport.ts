@@ -84,7 +84,7 @@ abstract class CometTransport extends Transport {
     this.baseUri = cometScheme + host + ':' + port + '/comet/';
     const connectUri = this.baseUri + 'connect';
     Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
-    this.auth.getAuthParams((err: Error, authParams: Record<string, any>) => {
+    Utils.whenPromiseSettles(this.auth.getAuthParams(), (err: Error | null, authParams?: Record<string, any>) => {
       if (err) {
         this.disconnect(err);
         return;
@@ -93,7 +93,7 @@ abstract class CometTransport extends Transport {
         return;
       }
       this.authParams = authParams;
-      const connectParams = this.params.getConnectParams(authParams);
+      const connectParams = this.params.getConnectParams(authParams!);
       if ('stream' in connectParams) this.stream = connectParams.stream;
       Logger.logAction(
         Logger.LOG_MINOR,
