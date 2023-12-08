@@ -8,23 +8,18 @@ import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
 import { RequestCallbackHeaders } from 'common/types/http';
 
-function withAuthDetails(
+async function withAuthDetails(
   client: BaseClient,
   headers: RequestCallbackHeaders | undefined,
   params: Record<string, any>,
-  errCallback: Function,
   opCallback: Function
-) {
+): Promise<void> {
   if (client.http.supportsAuthHeaders) {
-    Utils.whenPromiseSettles(client.auth.getAuthHeaders(), function (err: Error, authHeaders: Record<string, string>) {
-      if (err) errCallback(err);
-      else opCallback(Utils.mixin(authHeaders, headers), params);
-    });
+    const authHeaders = await client.auth.getAuthHeaders();
+    opCallback(Utils.mixin(authHeaders, headers), params);
   } else {
-    Utils.whenPromiseSettles(client.auth.getAuthParams(), function (err: Error, authParams: Record<string, string>) {
-      if (err) errCallback(err);
-      else opCallback(headers, Utils.mixin(authParams, params));
-    });
+    const authParams = await client.auth.getAuthParams();
+    opCallback(headers, Utils.mixin(authParams, params));
   }
 }
 
@@ -254,7 +249,7 @@ class Resource {
               return;
             }
             /* retry ... */
-            withAuthDetails(client, headers, params, callback, doRequest);
+            withAuthDetails(client, headers, params, doRequest).catch((err) => callback(err));
           });
           return;
         }
@@ -262,7 +257,7 @@ class Resource {
       });
     }
 
-    withAuthDetails(client, headers, params, callback, doRequest);
+    withAuthDetails(client, headers, params, doRequest).catch((err) => callback(err));
   }
 }
 
