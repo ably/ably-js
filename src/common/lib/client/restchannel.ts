@@ -46,9 +46,7 @@ class RestChannel {
 
   async history(params: RestHistoryParams | null): Promise<PaginatedResult<Message>> {
     Logger.logAction(Logger.LOG_MICRO, 'RestChannel.history()', 'channel = ' + this.name);
-    return new Promise((resolve, reject) => {
-      this.client.rest.channelMixin.history(this, params, (err, result) => (err ? reject(err) : resolve(result)));
-    });
+    return this.client.rest.channelMixin.history(this, params);
   }
 
   async publish(...args: any[]): Promise<void> {
