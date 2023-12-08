@@ -55,13 +55,11 @@ export class Rest {
 
     Utils.mixin(headers, this.client.options.headers);
 
-    return new Promise((resolve, reject) => {
-      new PaginatedResource(this.client, '/stats', headers, envelope, function (body, headers, unpacked) {
-        const statsValues = unpacked ? body : JSON.parse(body as string);
-        for (let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
-        return statsValues;
-      }).get(params as Record<string, string>, (err, result) => (err ? reject(err) : resolve(result)));
-    });
+    return new PaginatedResource(this.client, '/stats', headers, envelope, function (body, headers, unpacked) {
+      const statsValues = unpacked ? body : JSON.parse(body as string);
+      for (let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
+      return statsValues;
+    }).get(params as Record<string, string>);
   }
 
   async time(params?: RequestParams): Promise<number> {
@@ -144,17 +142,15 @@ export class Rest {
       throw new ErrorInfo('Unsupported method ' + _method, 40500, 405);
     }
 
-    return new Promise((resolve, reject) => {
-      if (Utils.arrIn(Platform.Http.methodsWithBody, _method)) {
-        paginatedResource[_method as HttpMethods.Post](params!, body as RequestBody, (err, result) =>
-          err ? reject(err) : resolve(result)
-        );
-      } else {
-        paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](params!, (err, result) =>
-          err ? reject(err) : resolve(result)
-        );
-      }
-    });
+    if (Utils.arrIn(Platform.Http.methodsWithBody, _method)) {
+      return paginatedResource[_method as HttpMethods.Post](params, body as RequestBody) as Promise<
+        HttpPaginatedResponse<unknown>
+      >;
+    } else {
+      return paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](params) as Promise<
+        HttpPaginatedResponse<unknown>
+      >;
+    }
   }
 
   async batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
