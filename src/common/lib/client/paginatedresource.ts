@@ -29,7 +29,7 @@ function parseRelLinks(linkHeader: string | Array<string>) {
 
 function returnErrOnly(err: IPartialErrorInfo, body: unknown, useHPR?: boolean) {
   /* If using httpPaginatedResponse, errors from Ably are returned as part of
-   * the HPR, only do callback(err) for network errors etc. which don't
+   * the HPR, only throw `err` for network errors etc. which don't
    * return a body and/or have no ably-originated error code (non-numeric
    * error codes originate from node) */
   return !(useHPR && (body || typeof err.code === 'number'));
@@ -67,7 +67,7 @@ class PaginatedResource {
       params,
       this.envelope,
       (err, body, headers, unpacked, statusCode) => {
-        this.handlePage(err, body, headers, unpacked, statusCode, callback);
+        Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), callback);
       }
     );
   }
@@ -80,7 +80,7 @@ class PaginatedResource {
       params,
       this.envelope,
       (err, body, headers, unpacked, statusCode) => {
-        this.handlePage(err, body, headers, unpacked, statusCode, callback);
+        Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), callback);
       }
     );
   }
@@ -95,7 +95,7 @@ class PaginatedResource {
       this.envelope,
       (err, responseBody, headers, unpacked, statusCode) => {
         if (callback) {
-          this.handlePage(err, responseBody, headers, unpacked, statusCode, callback);
+          Utils.whenPromiseSettles(this.handlePage(err, responseBody, headers, unpacked, statusCode), callback);
         }
       }
     );
@@ -111,7 +111,7 @@ class PaginatedResource {
       this.envelope,
       (err, responseBody, headers, unpacked, statusCode) => {
         if (callback) {
-          this.handlePage(err, responseBody, headers, unpacked, statusCode, callback);
+          Utils.whenPromiseSettles(this.handlePage(err, responseBody, headers, unpacked, statusCode), callback);
         }
       }
     );
@@ -127,55 +127,47 @@ class PaginatedResource {
       this.envelope,
       (err, responseBody, headers, unpacked, statusCode) => {
         if (callback) {
-          this.handlePage(err, responseBody, headers, unpacked, statusCode, callback);
+          Utils.whenPromiseSettles(this.handlePage(err, responseBody, headers, unpacked, statusCode), callback);
         }
       }
     );
   }
 
-  handlePage<T>(
+  async handlePage<T>(
     err: IPartialErrorInfo | null,
     body: unknown,
     headers: RequestCallbackHeaders | undefined,
     unpacked: boolean | undefined,
-    statusCode: number | undefined,
-    callback: PaginatedResultCallback<T>
-  ): void {
+    statusCode: number | undefined
+  ): Promise<PaginatedResult<T>> {
     if (err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
       Logger.logAction(
         Logger.LOG_ERROR,
         'PaginatedResource.handlePage()',
         'Unexpected error getting resource: err = ' + Utils.inspectError(err)
       );
-      callback?.(err);
-      return;
+      throw err;
     }
 
-    const handleBody = async () => {
-      let items, linkHeader, relParams;
+    let items, linkHeader, relParams;
 
-      try {
-        items = await this.bodyHandler(body, headers || {}, unpacked);
-      } catch (e) {
-        /* If we got an error, the failure to parse the body is almost certainly
-         * due to that, so throw that in preference over the parse error */
-        throw err || e;
-      }
+    try {
+      items = await this.bodyHandler(body, headers || {}, unpacked);
+    } catch (e) {
+      /* If we got an error, the failure to parse the body is almost certainly
+       * due to that, so throw that in preference over the parse error */
+      throw err || e;
+    }
 
-      if (headers && (linkHeader = headers['Link'] || headers['link'])) {
-        relParams = parseRelLinks(linkHeader);
-      }
+    if (headers && (linkHeader = headers['Link'] || headers['link'])) {
+      relParams = parseRelLinks(linkHeader);
+    }
 
-      if (this.useHttpPaginatedResponse) {
-        return new HttpPaginatedResponse(this, items, headers || {}, statusCode as number, relParams, err);
-      } else {
-        return new PaginatedResult(this, items, relParams);
-      }
-    };
-
-    handleBody()
-      .then((result) => callback(null, result))
-      .catch((err) => callback(err, null));
+    if (this.useHttpPaginatedResponse) {
+      return new HttpPaginatedResponse(this, items, headers || {}, statusCode as number, relParams, err);
+    } else {
+      return new PaginatedResult(this, items, relParams);
+    }
   }
 }
 
@@ -238,7 +230,7 @@ export class PaginatedResult<T> {
       params,
       res.envelope,
       function (err, body, headers, unpacked, statusCode) {
-        res.handlePage(err, body, headers, unpacked, statusCode, callback);
+        Utils.whenPromiseSettles(res.handlePage(err, body, headers, unpacked, statusCode), callback);
       }
     );
   }
