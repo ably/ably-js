@@ -21,7 +21,6 @@ type TokenRevocationFailureResult = API.TokenRevocationFailureResult;
 type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
-function noop() {}
 function random() {
   return ('000000' + Math.floor(Math.random() * 1e16)).slice(-16);
 }
@@ -297,14 +296,13 @@ class Auth {
 
     logAndValidateTokenAuthMethod(this.authOptions);
 
-    return new Promise((resolve, reject) => {
-      this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: API.TokenDetails) => {
-        /* RSA10g */
-        delete this.tokenParams.timestamp;
-        delete this.authOptions.queryTime;
-        err ? reject(err) : resolve(tokenDetails!);
-      });
-    });
+    try {
+      return this._ensureValidAuthCredentials(true);
+    } finally {
+      /* RSA10g */
+      delete this.tokenParams.timestamp;
+      delete this.authOptions.queryTime;
+    }
   }
 
   /**
@@ -755,19 +753,13 @@ class Auth {
    */
   async getAuthParams(): Promise<Record<string, string>> {
     if (this.method == 'basic') return { key: this.key! };
-    else
-      return new Promise((resolve, reject) => {
-        this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.TokenDetails) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          if (!tokenDetails) {
-            throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
-          }
-          resolve({ access_token: tokenDetails.token });
-        });
-      });
+    else {
+      let tokenDetails = await this._ensureValidAuthCredentials(false);
+      if (!tokenDetails) {
+        throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
+      }
+      return { access_token: tokenDetails.token };
+    }
   }
 
   /**
@@ -778,18 +770,11 @@ class Auth {
     if (this.method == 'basic') {
       return { authorization: 'Basic ' + this.basicKey };
     } else {
-      return new Promise((resolve, reject) => {
-        this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.TokenDetails) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          if (!tokenDetails) {
-            throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
-          }
-          resolve({ authorization: 'Bearer ' + Utils.toBase64(tokenDetails.token) });
-        });
-      });
+      const tokenDetails = await this._ensureValidAuthCredentials(false);
+      if (!tokenDetails) {
+        throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
+      }
+      return { authorization: 'Bearer ' + Utils.toBase64(tokenDetails.token) };
     }
   }
 
@@ -859,65 +844,67 @@ class Auth {
 
   /* @param forceSupersede: force a new token request even if there's one in
    * progress, making all pending callbacks wait for the new one */
-  _ensureValidAuthCredentials(
-    forceSupersede: boolean,
-    callback: (err: ErrorInfo | null, token?: API.TokenDetails) => void
-  ) {
+  async _ensureValidAuthCredentials(forceSupersede: boolean): Promise<API.TokenDetails> {
     const token = this.tokenDetails;
 
     if (token) {
       if (this._tokenClientIdMismatch(token.clientId)) {
         /* 403 to trigger a permanently failed client - RSA15c */
-        callback(
-          new ErrorInfo(
-            'Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')',
-            40102,
-            403
-          )
+        throw new ErrorInfo(
+          'Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')',
+          40102,
+          403
         );
-        return;
       }
       /* RSA4b1 -- if we have a server time offset set already, we can
        * automatically remove expired tokens. Else just use the cached token. If it is
        * expired Ably will tell us and we'll discard it then. */
       if (!this.isTimeOffsetSet() || !token.expires || token.expires >= this.getTimestampUsingOffset()) {
         Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
-        callback(null, token);
-        return;
+        return token;
       }
       /* expired, so remove and fallthrough to getting a new one */
       Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
       this.tokenDetails = null;
     }
 
-    (this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster.create())).push(callback);
+    const promise = (
+      this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster.create())
+    ).createPromise();
     if (this.currentTokenRequestId !== null && !forceSupersede) {
-      return;
+      return promise;
     }
 
     /* Request a new token */
     const tokenRequestId = (this.currentTokenRequestId = getTokenRequestId());
-    Utils.whenPromiseSettles(
-      this.requestToken(this.tokenParams, this.authOptions),
-      (err: ErrorInfo | null, tokenResponse?: API.TokenDetails) => {
-        if ((this.currentTokenRequestId as number) > tokenRequestId) {
-          Logger.logAction(
-            Logger.LOG_MINOR,
-            'Auth._ensureValidAuthCredentials()',
-            'Discarding token request response; overtaken by newer one'
-          );
-          return;
-        }
-        this.currentTokenRequestId = null;
-        const callbacks = this.waitingForTokenRequest || noop;
-        this.waitingForTokenRequest = null;
-        if (err) {
-          callbacks(err);
-          return;
-        }
-        callbacks(null, (this.tokenDetails = tokenResponse));
-      }
-    );
+
+    let tokenResponse: API.TokenDetails,
+      caughtError: ErrorInfo | null = null;
+    try {
+      tokenResponse = await this.requestToken(this.tokenParams, this.authOptions);
+    } catch (err) {
+      caughtError = err as ErrorInfo;
+    }
+
+    if ((this.currentTokenRequestId as number) > tokenRequestId) {
+      Logger.logAction(
+        Logger.LOG_MINOR,
+        'Auth._ensureValidAuthCredentials()',
+        'Discarding token request response; overtaken by newer one'
+      );
+      return promise;
+    }
+
+    this.currentTokenRequestId = null;
+    const multicaster = this.waitingForTokenRequest;
+    this.waitingForTokenRequest = null;
+    if (caughtError) {
+      multicaster?.rejectAll(caughtError);
+      return promise;
+    }
+    multicaster?.resolveAll((this.tokenDetails = tokenResponse!));
+
+    return promise;
   }
 
   /* User-set: check types, '*' is disallowed, throw any errors */

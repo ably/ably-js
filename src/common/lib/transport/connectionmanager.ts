@@ -1506,7 +1506,7 @@ class ConnectionManager extends EventEmitter {
         /* Force a refetch of a new token */
         Utils.whenPromiseSettles(auth._forceNewToken(null, null), authCb);
       } else {
-        auth._ensureValidAuthCredentials(false, authCb);
+        Utils.whenPromiseSettles(auth._ensureValidAuthCredentials(false), authCb);
       }
     }
   }
