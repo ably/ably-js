@@ -258,48 +258,42 @@ class Auth {
       throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
     }
 
-    return new Promise((resolve, reject) => {
-      this._forceNewToken(
-        tokenParams as API.Types.TokenParams,
-        _authOptions,
-        (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
-          if (err) {
-            if ((this.client as BaseRealtime).connection && err.statusCode === HttpStatusCodes.Forbidden) {
-              /* Per RSA4d & RSA4d1, if the auth server explicitly repudiates our right to
-               * stay connecticed by returning a 403, we actively disconnect the connection
-               * even though we may well still have time left in the old token. */
-              (this.client as BaseRealtime).connection.connectionManager.actOnErrorFromAuthorize(err);
-            }
-            reject(err);
-            return;
-          }
+    try {
+      let tokenDetails = await this._forceNewToken(tokenParams as API.Types.TokenParams, _authOptions);
 
-          /* RTC8
-           * - When authorize called by an end user and have a realtime connection,
-           * don't call back till new token has taken effect.
-           * - Use this.client.connection as a proxy for (this.client instanceof BaseRealtime),
-           * which doesn't work in node as BaseRealtime isn't part of the vm context for Rest clients */
-          if (isRealtime(this.client)) {
-            this.client.connection.connectionManager.onAuthUpdated(
-              tokenDetails,
-              (err: unknown, tokenDetails?: API.Types.TokenDetails) => (err ? reject(err) : resolve(tokenDetails!))
-            );
-          } else {
-            resolve(tokenDetails);
-          }
-        }
-      );
-    });
+      /* RTC8
+       * - When authorize called by an end user and have a realtime connection,
+       * don't call back till new token has taken effect.
+       * - Use this.client.connection as a proxy for (this.client instanceof BaseRealtime),
+       * which doesn't work in node as BaseRealtime isn't part of the vm context for Rest clients */
+      if (isRealtime(this.client)) {
+        return new Promise((resolve, reject) => {
+          (this.client as BaseRealtime).connection.connectionManager.onAuthUpdated(
+            tokenDetails,
+            (err: unknown, tokenDetails?: API.Types.TokenDetails) => (err ? reject(err) : resolve(tokenDetails!))
+          );
+        });
+      } else {
+        return tokenDetails;
+      }
+    } catch (err) {
+      if ((this.client as BaseRealtime).connection && (err as ErrorInfo).statusCode === HttpStatusCodes.Forbidden) {
+        /* Per RSA4d & RSA4d1, if the auth server explicitly repudiates our right to
+         * stay connecticed by returning a 403, we actively disconnect the connection
+         * even though we may well still have time left in the old token. */
+        (this.client as BaseRealtime).connection.connectionManager.actOnErrorFromAuthorize(err as ErrorInfo);
+      }
+      throw err;
+    }
   }
 
   /* For internal use, eg by connectionManager - useful when want to call back
    * as soon as we have the new token, rather than waiting for it to take
    * effect on the connection as #authorize does */
-  _forceNewToken(
+  async _forceNewToken(
     tokenParams: API.Types.TokenParams | null,
-    authOptions: API.Types.AuthOptions | null,
-    callback: Function
-  ) {
+    authOptions: API.Types.AuthOptions | null
+  ): Promise<API.Types.TokenDetails> {
     /* get rid of current token even if still valid */
     this.tokenDetails = null;
 
@@ -310,11 +304,13 @@ class Auth {
 
     logAndValidateTokenAuthMethod(this.authOptions);
 
-    this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) => {
-      /* RSA10g */
-      delete this.tokenParams.timestamp;
-      delete this.authOptions.queryTime;
-      callback(err, tokenDetails);
+    return new Promise((resolve, reject) => {
+      this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) => {
+        /* RSA10g */
+        delete this.tokenParams.timestamp;
+        delete this.authOptions.queryTime;
+        err ? reject(err) : resolve(tokenDetails!);
+      });
     });
   }
 
