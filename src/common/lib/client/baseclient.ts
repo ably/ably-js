@@ -136,6 +136,9 @@ class BaseClient {
     return this.rest.stats(params, callback);
   }
 
+  time(params: RequestParams, callback: StandardCallback<number>): void;
+  time(callback: StandardCallback<number>): void;
+  time(params?: RequestParams): Promise<number>;
   time(params?: RequestParams | StandardCallback<number>, callback?: StandardCallback<number>): Promise<number> | void {
     return this.rest.time(params, callback);
   }
