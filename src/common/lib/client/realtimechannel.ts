@@ -881,9 +881,7 @@ class RealtimeChannel extends EventEmitter {
       params.from_serial = this.properties.attachSerial;
     }
 
-    return new Promise((resolve, reject) => {
-      restMixin.history(this, params, (err, result) => (err ? reject(err) : resolve(result)));
-    });
+    return restMixin.history(this, params);
   } as any;
 
   whenState = ((state: string, listener: ErrCallback) => {
