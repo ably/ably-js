@@ -305,7 +305,9 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  attach(callback?: StandardCallback<ChannelStateChange | null>): void | Promise<ChannelStateChange> {
+  attach(): Promise<ChannelStateChange | null>;
+  attach(callback: StandardCallback<ChannelStateChange | null>): void;
+  attach(callback?: StandardCallback<ChannelStateChange | null>): void | Promise<ChannelStateChange | null> {
     if (!callback) {
       return Utils.promisify(this, 'attach', arguments);
     }

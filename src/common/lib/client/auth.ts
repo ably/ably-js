@@ -164,6 +164,7 @@ class Auth {
    * @param callback (err, tokenDetails)
    */
   authorize(callback: Function): void;
+  authorize(): Promise<API.TokenDetails>;
 
   /**
    * Instructs the library to get a token immediately and ensures Token Auth
@@ -190,6 +191,7 @@ class Auth {
    * @param callback (err, tokenDetails)
    */
   authorize(tokenParams: API.TokenParams | null, callback: Function): void;
+  authorize(tokenParams: API.TokenParams | null): Promise<API.TokenDetails>;
 
   /**
    * Instructs the library to get a token immediately and ensures Token Auth
@@ -246,9 +248,10 @@ class Auth {
    * @param callback (err, tokenDetails)
    */
   authorize(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null, callback: Function): void;
+  authorize(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null): Promise<API.TokenDetails>;
 
   authorize(
-    tokenParams: Record<string, any> | Function | null,
+    tokenParams?: Record<string, any> | Function | null,
     authOptions?: API.AuthOptions | null | Function,
     callback?: Function
   ): void | Promise<API.TokenDetails> {
@@ -329,6 +332,7 @@ class Auth {
    * @param callback (err, tokenDetails)
    */
   requestToken(callback: StandardCallback<API.TokenDetails>): void;
+  requestToken(): Promise<API.TokenDetails>;
 
   /**
    * Request an access token
@@ -351,6 +355,7 @@ class Auth {
    * @param callback (err, tokenDetails)
    */
   requestToken(tokenParams: API.TokenParams | null, callback: StandardCallback<API.TokenDetails>): void;
+  requestToken(tokenParams: API.TokenParams | null): Promise<API.TokenDetails>;
 
   /**
    * Request an access token
@@ -403,9 +408,10 @@ class Auth {
     authOptions: API.AuthOptions,
     callback: StandardCallback<API.TokenDetails>
   ): void;
+  requestToken(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions): Promise<API.TokenDetails>;
 
   requestToken(
-    tokenParams: API.TokenParams | StandardCallback<API.TokenDetails> | null,
+    tokenParams?: API.TokenParams | StandardCallback<API.TokenDetails> | null,
     authOptions?: any | StandardCallback<API.TokenDetails>,
     callback?: StandardCallback<API.TokenDetails>
   ): void | Promise<API.TokenDetails> {
@@ -698,6 +704,8 @@ class Auth {
     });
   }
 
+  createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any, callback: Function): void;
+  createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any): Promise<API.TokenRequest>;
   /**
    * Create and sign a token request based on the given options.
    * NOTE this can only be used when the key value is available locally.
@@ -733,7 +741,7 @@ class Auth {
    *
    * @param callback
    */
-  createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any, callback: Function) {
+  createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any, callback?: Function) {
     /* shuffle and normalise arguments as necessary */
     if (typeof tokenParams == 'function' && !callback) {
       callback = tokenParams;
@@ -785,7 +793,7 @@ class Auth {
       }
       this.getTimestamp(authOptions && authOptions.queryTime, function (err?: ErrorInfo | null, time?: number) {
         if (err) {
-          callback(err);
+          callback!(err);
           return;
         }
         request.timestamp = time;
@@ -811,7 +819,7 @@ class Auth {
       request.mac = request.mac || hmac(signText, keySecret);
 
       Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
-      callback(null, request);
+      callback!(null, request);
     });
   }
 

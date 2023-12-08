@@ -127,8 +127,21 @@ class RealtimePresence extends EventEmitter {
     id: string | undefined,
     clientId: string | undefined,
     data: unknown,
+    action: string
+  ): Promise<void>;
+  _enterOrUpdateClient(
+    id: string | undefined,
+    clientId: string | undefined,
+    data: unknown,
     action: string,
     callback: ErrCallback
+  ): void;
+  _enterOrUpdateClient(
+    id: string | undefined,
+    clientId: string | undefined,
+    data: unknown,
+    action: string,
+    callback?: ErrCallback
   ): void | Promise<void> {
     if (!callback) {
       if (typeof data === 'function') {
@@ -162,7 +175,7 @@ class RealtimePresence extends EventEmitter {
 
     encodePresenceMessage(presence, channel.channelOptions as CipherOptions, (err: IPartialErrorInfo) => {
       if (err) {
-        callback(err);
+        callback!(err);
         return;
       }
       switch (channel.state) {
@@ -176,7 +189,7 @@ class RealtimePresence extends EventEmitter {
         case 'attaching':
           this.pendingPresence.push({
             presence: presence,
-            callback: callback,
+            callback: callback!,
           });
           break;
         default:
@@ -185,7 +198,7 @@ class RealtimePresence extends EventEmitter {
             90001
           );
           err.code = 90001;
-          callback(err);
+          callback!(err);
       }
     });
   }
