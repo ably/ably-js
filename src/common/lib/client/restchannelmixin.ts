@@ -2,10 +2,9 @@ import * as API from '../../../../ably';
 import RestChannel from './restchannel';
 import RealtimeChannel from './realtimechannel';
 import * as Utils from '../util/utils';
-import { PaginatedResultCallback } from '../../types/utils';
 import Message, { fromResponseBody as messageFromResponseBody } from '../types/message';
 import Defaults from '../util/defaults';
-import PaginatedResource from './paginatedresource';
+import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
 
 export interface RestHistoryParams {
@@ -22,9 +21,8 @@ export class RestChannelMixin {
 
   static history(
     channel: RestChannel | RealtimeChannel,
-    params: RestHistoryParams | null,
-    callback: PaginatedResultCallback<Message>
-  ): void {
+    params: RestHistoryParams | null
+  ): Promise<PaginatedResult<Message>> {
     const client = channel.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = channel.client.http.supportsLinkHeaders ? undefined : format,
@@ -33,21 +31,13 @@ export class RestChannelMixin {
     Utils.mixin(headers, client.options.headers);
 
     const options = channel.channelOptions;
-    Utils.whenPromiseSettles(
-      new PaginatedResource(client, this.basePath(channel) + '/messages', headers, envelope, async function (
-        body,
-        headers,
-        unpacked
-      ) {
-        return await messageFromResponseBody(
-          body as Message[],
-          options,
-          client._MsgPack,
-          unpacked ? undefined : format
-        );
-      }).get(params as Record<string, unknown>),
-      callback
-    );
+    return new PaginatedResource(client, this.basePath(channel) + '/messages', headers, envelope, async function (
+      body,
+      headers,
+      unpacked
+    ) {
+      return await messageFromResponseBody(body as Message[], options, client._MsgPack, unpacked ? undefined : format);
+    }).get(params as Record<string, unknown>);
   }
 
   static async status(channel: RestChannel | RealtimeChannel): Promise<API.ChannelDetails> {
