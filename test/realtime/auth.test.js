@@ -688,9 +688,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         originalTime = rest.time;
 
       /* stub time */
-      rest.time = function (callback) {
+      rest.time = async function () {
         timeRequestCount += 1;
-        originalTime.call(rest, callback);
+        return originalTime.call(rest);
       };
 
       try {

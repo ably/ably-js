@@ -554,8 +554,8 @@ class Auth {
       };
     } else if (authOptions.key) {
       Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
-      tokenRequestCallback = (params: any, cb: Function) => {
-        this.createTokenRequest(params, authOptions, cb);
+      tokenRequestCallback = (params: any, cb: StandardCallback<API.TokenRequest>) => {
+        Utils.whenPromiseSettles(this.createTokenRequest(params, authOptions), cb);
       };
     } else {
       const msg =
@@ -871,7 +871,7 @@ class Auth {
    */
   getTimestamp(queryTime: boolean, callback: StandardCallback<number>): void {
     if (!this.isTimeOffsetSet() && (queryTime || this.authOptions.queryTime)) {
-      this.client.time(callback);
+      Utils.whenPromiseSettles(this.client.time(), callback);
     } else {
       callback(null, this.getTimestampUsingOffset());
     }
@@ -967,24 +967,27 @@ class Auth {
 
     /* Request a new token */
     const tokenRequestId = (this.currentTokenRequestId = getTokenRequestId());
-    this.requestToken(this.tokenParams, this.authOptions, (err: ErrorInfo | null, tokenResponse?: API.TokenDetails) => {
-      if ((this.currentTokenRequestId as number) > tokenRequestId) {
-        Logger.logAction(
-          Logger.LOG_MINOR,
-          'Auth._ensureValidAuthCredentials()',
-          'Discarding token request response; overtaken by newer one'
-        );
-        return;
+    Utils.whenPromiseSettles(
+      this.requestToken(this.tokenParams, this.authOptions),
+      (err: ErrorInfo | null, tokenResponse?: API.TokenDetails) => {
+        if ((this.currentTokenRequestId as number) > tokenRequestId) {
+          Logger.logAction(
+            Logger.LOG_MINOR,
+            'Auth._ensureValidAuthCredentials()',
+            'Discarding token request response; overtaken by newer one'
+          );
+          return;
+        }
+        this.currentTokenRequestId = null;
+        const callbacks = this.waitingForTokenRequest || noop;
+        this.waitingForTokenRequest = null;
+        if (err) {
+          callbacks(err);
+          return;
+        }
+        callbacks(null, (this.tokenDetails = tokenResponse));
       }
-      this.currentTokenRequestId = null;
-      const callbacks = this.waitingForTokenRequest || noop;
-      this.waitingForTokenRequest = null;
-      if (err) {
-        callbacks(err);
-        return;
-      }
-      callbacks(null, (this.tokenDetails = tokenResponse));
-    });
+    );
   }
 
   /* User-set: check types, '*' is disallowed, throw any errors */
