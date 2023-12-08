@@ -54,49 +54,52 @@ class WebSocketTransport extends Transport {
     const wsScheme = options.tls ? 'wss://' : 'ws://';
     const wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
     Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
-    this.auth.getAuthParams(function (err: ErrorInfo, authParams: Record<string, string>) {
-      if (self.isDisposed) {
-        return;
-      }
-      let paramStr = '';
-      for (const param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
-      Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
-      if (err) {
-        self.disconnect(err);
-        return;
-      }
-      const connectParams = params.getConnectParams(authParams);
-      try {
-        const wsConnection = (self.wsConnection = self.createWebSocket(wsUri, connectParams));
-        wsConnection.binaryType = Platform.Config.binaryType;
-        wsConnection.onopen = function () {
-          self.onWsOpen();
-        };
-        wsConnection.onclose = function (ev: CloseEvent) {
-          self.onWsClose(ev);
-        };
-        wsConnection.onmessage = function (ev: MessageEvent) {
-          self.onWsData(ev.data);
-        };
-        wsConnection.onerror = function (ev: Event) {
-          self.onWsError(ev as ErrorEvent);
-        };
-        if (isNodeWebSocket(wsConnection)) {
-          /* node; browsers currently don't have a general eventemitter and can't detect
-           * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
-          wsConnection.on('ping', function () {
-            self.onActivity();
-          });
+    Utils.whenPromiseSettles(
+      this.auth.getAuthParams(),
+      function (err: ErrorInfo | null, authParams?: Record<string, string>) {
+        if (self.isDisposed) {
+          return;
         }
-      } catch (e) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'WebSocketTransport.connect()',
-          'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message)
-        );
-        self.disconnect(e as Error);
+        let paramStr = '';
+        for (const param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
+        Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
+        if (err) {
+          self.disconnect(err);
+          return;
+        }
+        const connectParams = params.getConnectParams(authParams!);
+        try {
+          const wsConnection = (self.wsConnection = self.createWebSocket(wsUri, connectParams));
+          wsConnection.binaryType = Platform.Config.binaryType;
+          wsConnection.onopen = function () {
+            self.onWsOpen();
+          };
+          wsConnection.onclose = function (ev: CloseEvent) {
+            self.onWsClose(ev);
+          };
+          wsConnection.onmessage = function (ev: MessageEvent) {
+            self.onWsData(ev.data);
+          };
+          wsConnection.onerror = function (ev: Event) {
+            self.onWsError(ev as ErrorEvent);
+          };
+          if (isNodeWebSocket(wsConnection)) {
+            /* node; browsers currently don't have a general eventemitter and can't detect
+             * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
+            wsConnection.on('ping', function () {
+              self.onActivity();
+            });
+          }
+        } catch (e) {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'WebSocketTransport.connect()',
+            'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message)
+          );
+          self.disconnect(e as Error);
+        }
       }
-    });
+    );
   }
 
   send(message: ProtocolMessage) {
