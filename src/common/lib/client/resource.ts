@@ -21,7 +21,7 @@ function withAuthDetails(
       else opCallback(Utils.mixin(authHeaders, headers), params);
     });
   } else {
-    client.auth.getAuthParams(function (err: Error, authParams: Record<string, string>) {
+    Utils.whenPromiseSettles(client.auth.getAuthParams(), function (err: Error, authParams: Record<string, string>) {
       if (err) errCallback(err);
       else opCallback(headers, Utils.mixin(authParams, params));
     });

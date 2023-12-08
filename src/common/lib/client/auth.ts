@@ -775,18 +775,23 @@ class Auth {
    * Get the auth query params to use for a websocket connection,
    * based on the current auth parameters
    */
-  getAuthParams(callback: Function) {
-    if (this.method == 'basic') callback(null, { key: this.key });
+  async getAuthParams(): Promise<Record<string, string>> {
+    if (this.method == 'basic') return { key: this.key! };
     else
-      this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) {
-        if (err) {
-          callback(err);
-          return;
-        }
-        if (!tokenDetails) {
-          throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
-        }
-        callback(null, { access_token: tokenDetails.token });
+      return new Promise((resolve, reject) => {
+        this._ensureValidAuthCredentials(
+          false,
+          function (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) {
+            if (err) {
+              reject(err);
+              return;
+            }
+            if (!tokenDetails) {
+              throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
+            }
+            resolve({ access_token: tokenDetails.token });
+          }
+        );
       });
   }
 

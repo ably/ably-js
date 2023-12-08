@@ -54,7 +54,7 @@ class WebSocketTransport extends Transport {
     const wsScheme = options.tls ? 'wss://' : 'ws://';
     const wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
     Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
-    this.auth.getAuthParams(function (err: ErrorInfo, authParams: Record<string, string>) {
+    Utils.whenPromiseSettles(this.auth.getAuthParams(), function (err: ErrorInfo, authParams: Record<string, string>) {
       if (self.isDisposed) {
         return;
       }
