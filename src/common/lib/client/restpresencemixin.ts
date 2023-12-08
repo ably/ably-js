@@ -24,19 +24,17 @@ export class RestPresenceMixin {
     Utils.mixin(headers, client.options.headers);
 
     const options = presence.channel.channelOptions;
-    return new Promise((resolve, reject) => {
-      new PaginatedResource(client, this.basePath(presence) + '/history', headers, envelope, async function (
-        body,
-        headers,
-        unpacked
-      ) {
-        return await presenceMessageFromResponseBody(
-          body as Record<string, unknown>[],
-          options as CipherOptions,
-          client._MsgPack,
-          unpacked ? undefined : format
-        );
-      }).get(params, (err, result) => (err ? reject(err) : resolve(result)));
-    });
+    return new PaginatedResource(client, this.basePath(presence) + '/history', headers, envelope, async function (
+      body,
+      headers,
+      unpacked
+    ) {
+      return await presenceMessageFromResponseBody(
+        body as Record<string, unknown>[],
+        options as CipherOptions,
+        client._MsgPack,
+        unpacked ? undefined : format
+      );
+    }).get(params);
   }
 }

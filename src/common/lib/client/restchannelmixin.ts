@@ -33,13 +33,21 @@ export class RestChannelMixin {
     Utils.mixin(headers, client.options.headers);
 
     const options = channel.channelOptions;
-    new PaginatedResource(client, this.basePath(channel) + '/messages', headers, envelope, async function (
-      body,
-      headers,
-      unpacked
-    ) {
-      return await messageFromResponseBody(body as Message[], options, client._MsgPack, unpacked ? undefined : format);
-    }).get(params as Record<string, unknown>, callback);
+    Utils.whenPromiseSettles(
+      new PaginatedResource(client, this.basePath(channel) + '/messages', headers, envelope, async function (
+        body,
+        headers,
+        unpacked
+      ) {
+        return await messageFromResponseBody(
+          body as Message[],
+          options,
+          client._MsgPack,
+          unpacked ? undefined : format
+        );
+      }).get(params as Record<string, unknown>),
+      callback
+    );
   }
 
   static async status(channel: RestChannel | RealtimeChannel): Promise<API.ChannelDetails> {

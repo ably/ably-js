@@ -23,22 +23,20 @@ class RestPresence {
     Utils.mixin(headers, client.options.headers);
 
     const options = this.channel.channelOptions;
-    return new Promise((resolve, reject) => {
-      new PaginatedResource(
-        client,
-        this.channel.client.rest.presenceMixin.basePath(this),
-        headers,
-        envelope,
-        async function (body, headers, unpacked) {
-          return await presenceMessageFromResponseBody(
-            body as Record<string, unknown>[],
-            options as CipherOptions,
-            client._MsgPack,
-            unpacked ? undefined : format
-          );
-        }
-      ).get(params, (err, result) => (err ? reject(err) : resolve(result)));
-    });
+    return new PaginatedResource(
+      client,
+      this.channel.client.rest.presenceMixin.basePath(this),
+      headers,
+      envelope,
+      async function (body, headers, unpacked) {
+        return await presenceMessageFromResponseBody(
+          body as Record<string, unknown>[],
+          options as CipherOptions,
+          client._MsgPack,
+          unpacked ? undefined : format
+        );
+      }
+    ).get(params);
   }
 
   async history(params: any): Promise<PaginatedResult<PresenceMessage>> {
