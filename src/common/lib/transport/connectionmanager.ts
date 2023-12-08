@@ -533,7 +533,7 @@ class ConnectionManager extends EventEmitter {
           ) {
             this.errorReason = wrappedErr.error;
             /* re-get a token and try again */
-            this.realtime.auth._forceNewToken(null, null, (err: ErrorInfo) => {
+            Utils.whenPromiseSettles(this.realtime.auth._forceNewToken(null, null), (err: ErrorInfo | null) => {
               if (err) {
                 this.actOnErrorFromAuthorize(err);
                 return;
@@ -1504,7 +1504,7 @@ class ConnectionManager extends EventEmitter {
       };
       if (this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo)) {
         /* Force a refetch of a new token */
-        auth._forceNewToken(null, null, authCb);
+        Utils.whenPromiseSettles(auth._forceNewToken(null, null), authCb);
       } else {
         auth._ensureValidAuthCredentials(false, authCb);
       }
