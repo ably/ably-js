@@ -722,43 +722,31 @@ class Auth {
       ttl = tokenParams.ttl || '',
       capability = tokenParams.capability || '';
 
-    return new Promise((resolve, reject) => {
-      ((authoriseCb) => {
-        if (request.timestamp) {
-          authoriseCb();
-          return;
-        }
-        this.getTimestamp(authOptions && authOptions.queryTime, function (err?: ErrorInfo | null, time?: number) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          request.timestamp = time;
-          authoriseCb();
-        });
-      })(function () {
-        /* nonce */
-        /* NOTE: there is no expectation that the client
-         * specifies the nonce; this is done by the library
-         * However, this can be overridden by the client
-         * simply for testing purposes. */
-        const nonce = request.nonce || (request.nonce = random()),
-          timestamp = request.timestamp;
+    if (!request.timestamp) {
+      request.timestamp = await this.getTimestamp(authOptions && authOptions.queryTime);
+    }
 
-        const signText =
-          request.keyName + '\n' + ttl + '\n' + capability + '\n' + clientId + '\n' + timestamp + '\n' + nonce + '\n';
+    /* nonce */
+    /* NOTE: there is no expectation that the client
+     * specifies the nonce; this is done by the library
+     * However, this can be overridden by the client
+     * simply for testing purposes. */
+    const nonce = request.nonce || (request.nonce = random()),
+      timestamp = request.timestamp;
 
-        /* mac */
-        /* NOTE: there is no expectation that the client
-         * specifies the mac; this is done by the library
-         * However, this can be overridden by the client
-         * simply for testing purposes. */
-        request.mac = request.mac || hmac(signText, keySecret);
+    const signText =
+      request.keyName + '\n' + ttl + '\n' + capability + '\n' + clientId + '\n' + timestamp + '\n' + nonce + '\n';
 
-        Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
-        resolve(request as API.TokenRequest);
-      });
-    });
+    /* mac */
+    /* NOTE: there is no expectation that the client
+     * specifies the mac; this is done by the library
+     * However, this can be overridden by the client
+     * simply for testing purposes. */
+    request.mac = request.mac || hmac(signText, keySecret);
+
+    Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
+
+    return request as API.TokenRequest;
   }
 
   /**
@@ -811,11 +799,11 @@ class Auth {
    * The server time offset from the local time is stored so that
    * only one request to the server to get the time is ever needed
    */
-  getTimestamp(queryTime: boolean, callback: StandardCallback<number>): void {
+  async getTimestamp(queryTime: boolean): Promise<number> {
     if (!this.isTimeOffsetSet() && (queryTime || this.authOptions.queryTime)) {
-      Utils.whenPromiseSettles(this.client.time(), callback);
+      return this.client.time();
     } else {
-      callback(null, this.getTimestampUsingOffset());
+      return this.getTimestampUsingOffset();
     }
   }
 
