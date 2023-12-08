@@ -136,19 +136,17 @@ class DeviceRegistrations {
 
     Utils.mixin(headers, client.options.headers);
 
-    return new Promise((resolve, reject) => {
-      new PaginatedResource(client, '/push/deviceRegistrations', headers, envelope, async function (
-        body,
-        headers,
-        unpacked
-      ) {
-        return DeviceDetails.fromResponseBody(
-          body as Record<string, unknown>[],
-          client._MsgPack,
-          unpacked ? undefined : format
-        );
-      }).get(params, (err, result) => (err ? reject(err) : resolve(result)));
-    });
+    return new PaginatedResource(client, '/push/deviceRegistrations', headers, envelope, async function (
+      body,
+      headers,
+      unpacked
+    ) {
+      return DeviceDetails.fromResponseBody(
+        body as Record<string, unknown>[],
+        client._MsgPack,
+        unpacked ? undefined : format
+      );
+    }).get(params);
   }
 
   async remove(deviceIdOrDetails: any): Promise<void> {
@@ -249,19 +247,17 @@ class ChannelSubscriptions {
 
     Utils.mixin(headers, client.options.headers);
 
-    return new Promise((resolve, reject) => {
-      new PaginatedResource(client, '/push/channelSubscriptions', headers, envelope, async function (
-        body,
-        headers,
-        unpacked
-      ) {
-        return PushChannelSubscription.fromResponseBody(
-          body as Record<string, unknown>[],
-          client._MsgPack,
-          unpacked ? undefined : format
-        );
-      }).get(params, (err, result) => (err ? reject(err) : resolve(result)));
-    });
+    return new PaginatedResource(client, '/push/channelSubscriptions', headers, envelope, async function (
+      body,
+      headers,
+      unpacked
+    ) {
+      return PushChannelSubscription.fromResponseBody(
+        body as Record<string, unknown>[],
+        client._MsgPack,
+        unpacked ? undefined : format
+      );
+    }).get(params);
   }
 
   async removeWhere(params: any): Promise<void> {
@@ -293,18 +289,16 @@ class ChannelSubscriptions {
 
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    return new Promise((resolve, reject) => {
-      new PaginatedResource(client, '/push/channels', headers, envelope, async function (body, headers, unpacked) {
-        const parsedBody = (
-          !unpacked && format ? Utils.decodeBody(body, client._MsgPack, format) : body
-        ) as Array<string>;
+    return new PaginatedResource(client, '/push/channels', headers, envelope, async function (body, headers, unpacked) {
+      const parsedBody = (
+        !unpacked && format ? Utils.decodeBody(body, client._MsgPack, format) : body
+      ) as Array<string>;
 
-        for (let i = 0; i < parsedBody.length; i++) {
-          parsedBody[i] = String(parsedBody[i]);
-        }
-        return parsedBody;
-      }).get(params, (err, result) => (err ? reject(err) : resolve(result)));
-    });
+      for (let i = 0; i < parsedBody.length; i++) {
+        parsedBody[i] = String(parsedBody[i]);
+      }
+      return parsedBody;
+    }).get(params);
   }
 }
 

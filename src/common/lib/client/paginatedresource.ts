@@ -59,78 +59,93 @@ class PaginatedResource {
     this.useHttpPaginatedResponse = useHttpPaginatedResponse || false;
   }
 
-  get<T1, T2>(params: Record<string, T2>, callback: PaginatedResultCallback<T1>): void {
-    Resource.get(
-      this.client,
-      this.path,
-      this.headers,
-      params,
-      this.envelope,
-      (err, body, headers, unpacked, statusCode) => {
-        Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), callback);
-      }
-    );
-  }
-
-  delete<T1, T2>(params: Record<string, T2>, callback: PaginatedResultCallback<T1>): void {
-    Resource.delete(
-      this.client,
-      this.path,
-      this.headers,
-      params,
-      this.envelope,
-      (err, body, headers, unpacked, statusCode) => {
-        Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), callback);
-      }
-    );
-  }
-
-  post<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
-    Resource.post(
-      this.client,
-      this.path,
-      body,
-      this.headers,
-      params,
-      this.envelope,
-      (err, responseBody, headers, unpacked, statusCode) => {
-        if (callback) {
-          Utils.whenPromiseSettles(this.handlePage(err, responseBody, headers, unpacked, statusCode), callback);
+  async get<T1, T2>(params: Record<string, T2>): Promise<PaginatedResult<T1>> {
+    return new Promise((resolve, reject) => {
+      Resource.get(
+        this.client,
+        this.path,
+        this.headers,
+        params,
+        this.envelope,
+        (err, body, headers, unpacked, statusCode) => {
+          // TODO sort out types of err and any, throughout these similar methods
+          Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), (err: any, result: any) =>
+            err ? reject(err) : resolve(result)
+          );
         }
-      }
-    );
+      );
+    });
   }
 
-  put<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
-    Resource.put(
-      this.client,
-      this.path,
-      body,
-      this.headers,
-      params,
-      this.envelope,
-      (err, responseBody, headers, unpacked, statusCode) => {
-        if (callback) {
-          Utils.whenPromiseSettles(this.handlePage(err, responseBody, headers, unpacked, statusCode), callback);
+  async delete<T1, T2>(params: Record<string, T2>): Promise<PaginatedResult<T1>> {
+    return new Promise((resolve, reject) => {
+      Resource.delete(
+        this.client,
+        this.path,
+        this.headers,
+        params,
+        this.envelope,
+        (err, body, headers, unpacked, statusCode) => {
+          Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), (err: any, result: any) =>
+            err ? reject(err) : resolve(result)
+          );
         }
-      }
-    );
+      );
+    });
   }
 
-  patch<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
-    Resource.patch(
-      this.client,
-      this.path,
-      body,
-      this.headers,
-      params,
-      this.envelope,
-      (err, responseBody, headers, unpacked, statusCode) => {
-        if (callback) {
-          Utils.whenPromiseSettles(this.handlePage(err, responseBody, headers, unpacked, statusCode), callback);
+  async post<T1, T2>(params: Record<string, T2>, body: unknown): Promise<PaginatedResult<T1>> {
+    return new Promise((resolve, reject) => {
+      Resource.post(
+        this.client,
+        this.path,
+        body,
+        this.headers,
+        params,
+        this.envelope,
+        (err, responseBody, headers, unpacked, statusCode) => {
+          Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), (err: any, result: any) =>
+            err ? reject(err) : resolve(result)
+          );
         }
-      }
-    );
+      );
+    });
+  }
+
+  async put<T1, T2>(params: Record<string, T2>, body: unknown): Promise<PaginatedResult<T1>> {
+    return new Promise((resolve, reject) => {
+      Resource.put(
+        this.client,
+        this.path,
+        body,
+        this.headers,
+        params,
+        this.envelope,
+        (err, responseBody, headers, unpacked, statusCode) => {
+          Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), (err: any, result: any) =>
+            err ? reject(err) : resolve(result)
+          );
+        }
+      );
+    });
+  }
+
+  async patch<T1, T2>(params: Record<string, T2>, body: unknown): Promise<PaginatedResult<T1>> {
+    return new Promise((resolve, reject) => {
+      Resource.patch(
+        this.client,
+        this.path,
+        body,
+        this.headers,
+        params,
+        this.envelope,
+        (err, responseBody, headers, unpacked, statusCode) => {
+          Utils.whenPromiseSettles(this.handlePage(err, body, headers, unpacked, statusCode), (err: any, result: any) =>
+            err ? reject(err) : resolve(result)
+          );
+        }
+      );
+    });
   }
 
   async handlePage<T>(
