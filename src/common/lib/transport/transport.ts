@@ -162,7 +162,7 @@ abstract class Transport extends EventEmitter {
         // Ignored.
         break;
       case actions.AUTH:
-        this.auth.authorize(function (err: ErrorInfo) {
+        Utils.whenPromiseSettles(this.auth.authorize(), function (err: ErrorInfo) {
           if (err) {
             Logger.logAction(
               Logger.LOG_ERROR,

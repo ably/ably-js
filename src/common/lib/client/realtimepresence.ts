@@ -54,7 +54,7 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
     case 'detached':
     case 'detaching':
     case 'attaching':
-      channel.attach(function (err: Error) {
+      Utils.whenPromiseSettles(channel.attach(), function (err: Error) {
         if (err) callback(err);
         else action();
       });
@@ -495,7 +495,7 @@ class RealtimePresence extends EventEmitter {
       );
       // RTP17g: Send ENTER containing the member id, clientId and data
       // attributes.
-      this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter', reenterCb);
+      Utils.whenPromiseSettles(this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter'), reenterCb);
     }
   }
 
