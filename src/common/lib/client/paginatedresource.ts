@@ -179,12 +179,17 @@ class PaginatedResource {
   }
 }
 
+interface PaginatedResultLoadFunction<T> {
+  (results: PaginatedResultCallback<T>): void;
+  (): Promise<PaginatedResult<T>>;
+}
+
 export class PaginatedResult<T> {
   resource: PaginatedResource;
   items: T[];
-  first?: (results: PaginatedResultCallback<T>) => void;
-  next?: (results: PaginatedResultCallback<T>) => void;
-  current?: (results: PaginatedResultCallback<T>) => void;
+  first?: PaginatedResultLoadFunction<T>;
+  next?: PaginatedResultLoadFunction<T>;
+  current?: PaginatedResultLoadFunction<T>;
   hasNext?: () => boolean;
   isLast?: () => boolean;
 
@@ -195,7 +200,7 @@ export class PaginatedResult<T> {
     const self = this;
     if (relParams) {
       if ('first' in relParams) {
-        this.first = function (callback: (result?: ErrorInfo | null) => void) {
+        this.first = function (callback?: (result?: ErrorInfo | null) => void) {
           if (!callback) {
             return Utils.promisify(self, 'first', []);
           }
@@ -203,14 +208,14 @@ export class PaginatedResult<T> {
         };
       }
       if ('current' in relParams) {
-        this.current = function (callback: (results?: ErrorInfo | null) => void) {
+        this.current = function (callback?: (results?: ErrorInfo | null) => void) {
           if (!callback) {
             return Utils.promisify(self, 'current', []);
           }
           self.get(relParams.current, callback);
         };
       }
-      this.next = function (callback: (results?: ErrorInfo | null) => void) {
+      this.next = function (callback?: (results?: ErrorInfo | null) => void) {
         if (!callback) {
           return Utils.promisify(self, 'next', []);
         }
