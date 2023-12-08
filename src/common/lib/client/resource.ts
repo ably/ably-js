@@ -16,10 +16,13 @@ function withAuthDetails(
   opCallback: Function
 ) {
   if (client.http.supportsAuthHeaders) {
-    client.auth.getAuthHeaders(function (err: Error, authHeaders: Record<string, string>) {
-      if (err) errCallback(err);
-      else opCallback(Utils.mixin(authHeaders, headers), params);
-    });
+    Utils.whenPromiseSettles(
+      client.auth.getAuthHeaders(),
+      function (err: Error | null, authHeaders?: Record<string, string>) {
+        if (err) errCallback(err);
+        else opCallback(Utils.mixin(authHeaders!, headers), params);
+      }
+    );
   } else {
     Utils.whenPromiseSettles(
       client.auth.getAuthParams(),

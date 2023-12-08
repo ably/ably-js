@@ -786,19 +786,21 @@ class Auth {
    * Get the authorization header to use for a REST or comet request,
    * based on the current auth parameters
    */
-  getAuthHeaders(callback: Function) {
+  async getAuthHeaders(): Promise<Record<string, string>> {
     if (this.method == 'basic') {
-      callback(null, { authorization: 'Basic ' + this.basicKey });
+      return { authorization: 'Basic ' + this.basicKey };
     } else {
-      this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.TokenDetails) {
-        if (err) {
-          callback(err);
-          return;
-        }
-        if (!tokenDetails) {
-          throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
-        }
-        callback(null, { authorization: 'Bearer ' + Utils.toBase64(tokenDetails.token) });
+      return new Promise((resolve, reject) => {
+        this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.TokenDetails) {
+          if (err) {
+            reject(err);
+            return;
+          }
+          if (!tokenDetails) {
+            throw new Error('Auth.getAuthParams(): _ensureValidAuthCredentials returned no error or tokenDetails');
+          }
+          resolve({ authorization: 'Bearer ' + Utils.toBase64(tokenDetails.token) });
+        });
       });
     }
   }

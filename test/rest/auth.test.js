@@ -130,15 +130,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     });
 
     it('Token generation with explicit auth', async function () {
-      var authHeaders = await new Promise((resolve, reject) => {
-        rest.auth.getAuthHeaders(function (err, authHeaders) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(authHeaders);
-        });
-      });
+      const authHeaders = await rest.auth.getAuthHeaders();
       rest.auth.authOptions.requestHeaders = authHeaders;
       var tokenDetails = await rest.auth.requestToken();
       delete rest.auth.authOptions.requestHeaders;
@@ -149,15 +141,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     });
 
     it('Token generation with explicit auth, different key', async function () {
-      var authHeaders = await new Promise((resolve, reject) => {
-        rest.auth.getAuthHeaders(function (err, authHeaders) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve(authHeaders);
-        });
-      });
+      const authHeaders = await rest.auth.getAuthHeaders();
       var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
       var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
       var tokenDetails = await rest.auth.requestToken(null, testKeyOpts);
