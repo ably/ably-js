@@ -27,6 +27,7 @@ import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../ty
 import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
+import { PaginatedResult } from './paginatedresource';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -886,7 +887,7 @@ class RealtimeChannel extends EventEmitter {
     this: RealtimeChannel,
     params: RealtimeHistoryParams | null,
     callback: PaginatedResultCallback<Message>
-  ): void | Promise<PaginatedResultCallback<Message>> {
+  ): void | Promise<PaginatedResult<Message>> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
     /* params and callback are optional; see if params contains the callback */
     if (callback === undefined) {
