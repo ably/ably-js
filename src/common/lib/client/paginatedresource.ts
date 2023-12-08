@@ -188,23 +188,17 @@ export class PaginatedResult<T> {
     if (relParams) {
       if ('first' in relParams) {
         this.first = async function () {
-          return new Promise((resolve, reject) => {
-            self.get(relParams.first, (err, result) => (err ? reject(err) : resolve(result)));
-          });
+          return self.get(relParams.first);
         };
       }
       if ('current' in relParams) {
         this.current = async function () {
-          return new Promise((resolve, reject) => {
-            self.get(relParams.current, (err, result) => (err ? reject(err) : resolve(result)));
-          });
+          return self.get(relParams.current);
         };
       }
       this.next = async function () {
         if ('next' in relParams) {
-          return new Promise((resolve, reject) => {
-            self.get(relParams.next, (err, result) => (err ? reject(err) : resolve(result)));
-          });
+          return self.get(relParams.next);
         } else {
           return null;
         }
@@ -221,18 +215,20 @@ export class PaginatedResult<T> {
 
   /* We assume that only the initial request can be a POST, and that accessing
    * the rest of a multipage set of results can always be done with GET */
-  get(params: any, callback: PaginatedResultCallback<T>): void {
+  async get(params: any): Promise<PaginatedResult<T>> {
     const res = this.resource;
-    Resource.get(
-      res.client,
-      res.path,
-      res.headers,
-      params,
-      res.envelope,
-      function (err, body, headers, unpacked, statusCode) {
-        Utils.whenPromiseSettles(res.handlePage(err, body, headers, unpacked, statusCode), callback);
-      }
-    );
+    return new Promise((resolve) => {
+      Resource.get(
+        res.client,
+        res.path,
+        res.headers,
+        params,
+        res.envelope,
+        function (err, body, headers, unpacked, statusCode) {
+          resolve(res.handlePage<T>(err, body, headers, unpacked, statusCode));
+        }
+      );
+    });
   }
 }
 
