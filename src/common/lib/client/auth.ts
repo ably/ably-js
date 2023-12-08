@@ -4,7 +4,6 @@ import Multicaster from '../util/multicaster';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
-import { StandardCallback } from '../../types/utils';
 import BaseClient from './baseclient';
 import BaseRealtime from './baserealtime';
 import ClientOptions from '../../types/ClientOptions';
@@ -738,14 +737,17 @@ class Auth {
           authoriseCb();
           return;
         }
-        this.getTimestamp(authOptions && authOptions.queryTime, function (err?: ErrorInfo | null, time?: number) {
-          if (err) {
-            reject(err);
-            return;
+        Utils.whenPromiseSettles(
+          this.getTimestamp(authOptions && authOptions.queryTime),
+          function (err?: ErrorInfo | null, time?: number) {
+            if (err) {
+              reject(err);
+              return;
+            }
+            request.timestamp = time;
+            authoriseCb();
           }
-          request.timestamp = time;
-          authoriseCb();
-        });
+        );
       })(function () {
         /* nonce */
         /* NOTE: there is no expectation that the client
@@ -827,11 +829,11 @@ class Auth {
    * The server time offset from the local time is stored so that
    * only one request to the server to get the time is ever needed
    */
-  getTimestamp(queryTime: boolean, callback: StandardCallback<number>): void {
+  async getTimestamp(queryTime: boolean): Promise<number> {
     if (!this.isTimeOffsetSet() && (queryTime || this.authOptions.queryTime)) {
-      Utils.whenPromiseSettles(this.client.time(), callback);
+      return this.client.time();
     } else {
-      callback(null, this.getTimestampUsingOffset());
+      return this.getTimestampUsingOffset();
     }
   }
 
