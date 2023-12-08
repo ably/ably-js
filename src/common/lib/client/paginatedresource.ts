@@ -61,6 +61,7 @@ class PaginatedResource {
 
   async get<T1, T2>(params: Record<string, T2>): Promise<PaginatedResult<T1>> {
     return new Promise((resolve, reject) => {
+      // OK
       Resource.get(
         this.client,
         this.path,
@@ -79,6 +80,7 @@ class PaginatedResource {
 
   async delete<T1, T2>(params: Record<string, T2>): Promise<PaginatedResult<T1>> {
     return new Promise((resolve, reject) => {
+      // OK
       Resource.delete(
         this.client,
         this.path,
@@ -96,6 +98,7 @@ class PaginatedResource {
 
   async post<T1, T2>(params: Record<string, T2>, body: unknown): Promise<PaginatedResult<T1>> {
     return new Promise((resolve, reject) => {
+      // OK
       Resource.post(
         this.client,
         this.path,
@@ -114,6 +117,7 @@ class PaginatedResource {
 
   async put<T1, T2>(params: Record<string, T2>, body: unknown): Promise<PaginatedResult<T1>> {
     return new Promise((resolve, reject) => {
+      // OK
       Resource.put(
         this.client,
         this.path,
@@ -132,6 +136,7 @@ class PaginatedResource {
 
   async patch<T1, T2>(params: Record<string, T2>, body: unknown): Promise<PaginatedResult<T1>> {
     return new Promise((resolve, reject) => {
+      // OK
       Resource.patch(
         this.client,
         this.path,
@@ -240,6 +245,7 @@ export class PaginatedResult<T> {
   async get(params: any): Promise<PaginatedResult<T>> {
     const res = this.resource;
     return new Promise((resolve, reject) => {
+      // OK
       Resource.get(
         res.client,
         res.path,

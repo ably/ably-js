@@ -172,6 +172,7 @@ export class Rest {
 
     const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
     return new Promise((resolve, reject) => {
+      // OK
       Resource.post(
         this.client,
         '/messages',
@@ -209,6 +210,7 @@ export class Rest {
     const channelsParam = channels.join(',');
 
     return new Promise((resolve, reject) => {
+      // OK
       Resource.get(
         this.client,
         '/presence',
@@ -256,6 +258,7 @@ export class Rest {
     const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
 
     return new Promise((resolve, reject) => {
+      // OK
       Resource.post(
         this.client,
         `/keys/${keyName}/revokeTokens`,

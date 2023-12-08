@@ -127,6 +127,8 @@ class RestChannel {
   }
 
   _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
+    // TODO this one is passing the callback through, but it isn't acutally made use of in the one place where it's called
+    // update this to be async, and then we can do the Resource-converting work (bear in mind that _publish is maniuplated a lot in the tests)
     Resource.post(
       this.client,
       this.client.rest.channelMixin.basePath(this) + '/messages',

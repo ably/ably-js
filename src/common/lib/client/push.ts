@@ -41,6 +41,7 @@ class Admin {
 
     const requestBody = Utils.encodeBody(body, client._MsgPack, format);
     return new Promise((resolve, reject) => {
+      // OK
       Resource.post(client, '/push/publish', requestBody, headers, params, null, (err) =>
         err ? reject(err) : resolve()
       );
@@ -68,6 +69,7 @@ class DeviceRegistrations {
 
     const requestBody = Utils.encodeBody(body, client._MsgPack, format);
     return new Promise((resolve, reject) => {
+      // OK
       Resource.put(
         client,
         '/push/deviceRegistrations/' + encodeURIComponent(device.id),
@@ -107,6 +109,7 @@ class DeviceRegistrations {
     Utils.mixin(headers, client.options.headers);
 
     return new Promise((resolve, reject) => {
+      // OK
       Resource.get(
         client,
         '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
@@ -217,6 +220,7 @@ class ChannelSubscriptions {
 
     const requestBody = Utils.encodeBody(body, client._MsgPack, format);
     return new Promise((resolve, reject) => {
+      // OK
       Resource.post(
         client,
         '/push/channelSubscriptions',

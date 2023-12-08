@@ -45,6 +45,7 @@ export class RestChannelMixin {
     const headers = Defaults.defaultPostHeaders(channel.client.options, { format });
 
     return new Promise((resolve, reject) => {
+      // OK
       Resource.get<API.Types.ChannelDetails>(
         channel.client,
         this.basePath(channel),
