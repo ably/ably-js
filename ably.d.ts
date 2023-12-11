@@ -3460,13 +3460,13 @@ declare namespace Types {
      *
      * @param results - A function which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the function will be called with information about the error.
      */
-    next(results: paginatedResultCallback<T>): void;
+    next(results: StandardCallback<PaginatedResult<T> | null>): void;
     /**
      * Returns a new `PaginatedResult` loaded with the next page of results. If there are no further pages, then `null` is returned.
      *
      * @returns A promise which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
-    next(): Promise<PaginatedResult<T>>;
+    next(): Promise<PaginatedResult<T> | null>;
     /**
      * Returns the `PaginatedResult` for the current page of results.
      *

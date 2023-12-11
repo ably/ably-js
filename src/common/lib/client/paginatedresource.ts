@@ -209,7 +209,7 @@ export class PaginatedResult<T> {
         if ('next' in relParams) {
           self.get(relParams.next, callback);
         } else {
-          callback(null);
+          callback(null, null);
         }
       };
 
