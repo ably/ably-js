@@ -116,7 +116,7 @@ class Auth {
   client: BaseClient;
   tokenParams: API.TokenParams;
   currentTokenRequestId: number | null;
-  waitingForTokenRequest: MulticasterInstance | null;
+  waitingForTokenRequest: MulticasterInstance<API.TokenDetails> | null;
   // This initialization is always overwritten and only used to prevent a TypeScript compiler error
   authOptions: API.AuthOptions = {} as API.AuthOptions;
   tokenDetails?: API.TokenDetails | null;
@@ -959,7 +959,7 @@ class Auth {
 
     /* Request a new token */
     const tokenRequestId = (this.currentTokenRequestId = getTokenRequestId());
-    this.requestToken(this.tokenParams, this.authOptions, (err: Function, tokenResponse?: API.TokenDetails) => {
+    this.requestToken(this.tokenParams, this.authOptions, (err: ErrorInfo | null, tokenResponse?: API.TokenDetails) => {
       if ((this.currentTokenRequestId as number) > tokenRequestId) {
         Logger.logAction(
           Logger.LOG_MINOR,

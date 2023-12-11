@@ -1951,10 +1951,10 @@ class ConnectionManager extends EventEmitter {
      * the dup, they'll be lost */
     if (lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
       if (!lastQueued.merged) {
-        lastQueued.callback = Multicaster.create([lastQueued.callback as any]);
+        lastQueued.callback = Multicaster.create([lastQueued.callback]);
         lastQueued.merged = true;
       }
-      (lastQueued.callback as MulticasterInstance).push(callback as any);
+      (lastQueued.callback as MulticasterInstance<void>).push(callback);
     } else {
       this.queuedMessages.push(new PendingMessage(msg, callback));
     }
