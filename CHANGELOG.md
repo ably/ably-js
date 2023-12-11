@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.48](https://github.com/ably/ably-js/tree/1.2.48) (2023-11-20)
+
+- Enable 'derived' options in 'useChannel' hook (by @rustworthy) [\#1501](https://github.com/ably/ably-js/pull/1501)
+- fix: use 'ably' as import path from react-hooks [\#1509](https://github.com/ably/ably-js/pull/1509)
+
 ## [1.2.47](https://github.com/ably/ably-js/tree/1.2.47) (2023-11-02)
 
 - fix(react): fix issue where useChannel would error upon router navigation or hmr [\#1478](https://github.com/ably/ably-js/pull/1478)

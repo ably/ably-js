@@ -139,6 +139,29 @@ const { channel } = useChannel({ channelName: "your-channel-name", options: { ..
 });
 ```
 
+[Subscription filters](https://ably.com/docs/channels#filter-subscribe) are also supported:
+
+```javascript
+const deriveOptions = { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' }
+const { channel } = useChannel({ channelName: "your-derived-channel-name", options: { ... }, deriveOptions }, (message) => {
+    ...
+});
+```
+
+Please note that attempts to publish to a derived channel (the one created or retrieved with a filter expression) will fail. In order to send messages to the channel called _"your-derived-channel-name"_ from the example above, you will need to create another channel instance without a filter expression.
+
+```javascript
+const channelName = "your-derived-channel-name";
+const options = { ... };
+const deriveOptions = { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' }
+const callback = (message) => { ... };
+
+const { channel: readOnlyChannelInstance } = useChannel({ channelName, options, deriveOptions }, callback);
+const { channel: readWriteChannelInstance } = useChannel({ channelName, options }, callback); // NB! No 'deriveOptions' passed here
+
+readWriteChannelInstance.publish("test-message", { text: "message text" });
+```
+
 ---
 
 ### usePresence

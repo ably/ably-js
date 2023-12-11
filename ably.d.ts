@@ -2620,7 +2620,7 @@ declare namespace Types {
      *
      * @returns A promise which, upon success, will be fulfilled with a page of results for message and presence history, stats, and REST presence requests. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
      */
-    next(): Promise<PaginatedResult<T>>;
+    next(): Promise<PaginatedResult<T> | null>;
     /**
      * Returns the `PaginatedResult` for the current page of results.
      */

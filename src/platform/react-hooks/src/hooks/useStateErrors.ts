@@ -1,4 +1,4 @@
-import { Types } from '../../../../../ably.js';
+import { Types } from 'ably';
 import { useState } from 'react';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
 import { useChannelStateListener } from './useChannelStateListener.js';

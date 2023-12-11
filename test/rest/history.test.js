@@ -236,5 +236,14 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       expect(message.data).to.equal(badMessage.data, 'Verify data preserved');
       expect(message.encoding).to.equal(badMessage.encoding, 'Verify encoding preserved');
     });
+
+    restTestOnJsonMsgpack('history_no_next_page', async function (rest, channelName) {
+      const channel = rest.channels.get(channelName);
+
+      const firstPage = await channel.history();
+      const secondPage = await firstPage.next();
+
+      expect(secondPage).to.equal(null);
+    });
   });
 });

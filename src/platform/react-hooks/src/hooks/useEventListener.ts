@@ -1,4 +1,4 @@
-import { Types } from '../../../../../ably.js';
+import { Types } from 'ably';
 import { useEffect, useRef } from 'react';
 
 type EventListener<T> = (stateChange: T) => any;
