@@ -444,6 +444,26 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       }
     });
 
+    restTestOnJsonMsgpack('history_no_next_page', function (done, rest, channelName) {
+      const channel = rest.channels.get(channelName);
+
+      channel.history(function (err, firstPage) {
+        if (err) {
+          done(err);
+          return;
+        }
+        firstPage.next(function (err, secondPage) {
+          if (err) {
+            done(err);
+            return;
+          }
+
+          expect(secondPage).to.equal(null);
+          done();
+        });
+      });
+    });
+
     if (typeof Promise !== 'undefined') {
       it('historyPromise', function (done) {
         var rest = helper.AblyRest({ promises: true });
