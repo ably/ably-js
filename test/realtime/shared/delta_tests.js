@@ -91,7 +91,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               });
 
               async.timesSeries(testData.length, function (i, cb) {
-                channel.publish(i.toString(), testData[i], cb);
+                whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
               });
             });
 
@@ -129,7 +129,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               });
 
               async.timesSeries(testData.length, function (i, cb) {
-                channel.publish(i.toString(), testData[i], cb);
+                whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
               });
             });
 
@@ -193,7 +193,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               });
 
               async.timesSeries(testData.length, function (i, cb) {
-                channel.publish(i.toString(), testData[i], cb);
+                whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
               });
             });
 
@@ -241,7 +241,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               });
 
               async.timesSeries(testData.length, function (i, cb) {
-                channel.publish(i.toString(), testData[i], cb);
+                whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
               });
             });
 
@@ -273,7 +273,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 closeAndFinish(done, realtime);
               });
               async.timesSeries(testData.length, function (i, cb) {
-                channel.publish(i.toString(), testData[i], cb);
+                whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
               });
             });
 

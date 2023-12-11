@@ -399,8 +399,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             async.eachSeries(
               testArguments,
               function iterator(args, callback) {
-                args.push(callback);
-                restChannel.publish.apply(restChannel, args);
+                whenPromiseSettles(restChannel.publish.apply(restChannel, args), callback);
               },
               function (err) {
                 if (err) {
@@ -607,12 +606,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var realtime = helper.AblyRealtime(realtimeOpts);
         var channel = realtime.channels.get('publish ' + JSON.stringify(realtimeOpts));
         /* subscribe to event */
-        channel.subscribe(
-          'event0',
-          function () {
+        whenPromiseSettles(
+          channel.subscribe('event0', function () {
             --count;
             checkFinish();
-          },
+          }),
           function () {
             var dataFn = function () {
               return 'Hello world at: ' + new Date();

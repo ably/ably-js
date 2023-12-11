@@ -251,7 +251,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          failChan.subscribe('event', noop, function (err) {
+          whenPromiseSettles(failChan.subscribe('event', noop), function (err) {
             try {
               expect(err, 'subscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');
@@ -284,7 +284,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          failChan.presence.subscribe('event', noop, function (err) {
+          whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
             try {
               expect(err, 'presence subscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');
@@ -295,7 +295,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          failChan.presence.subscribe('event', noop, function (err) {
+          whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
             try {
               expect(err, 'presence unsubscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');

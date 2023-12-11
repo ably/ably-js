@@ -477,7 +477,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         }
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -606,9 +606,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           return;
         }
         var rxChannel = rxRealtime.channels.get(channelName, { cipher: { key: key } });
-        rxChannel.subscribe(
-          'event0',
-          function (msg) {
+        whenPromiseSettles(
+          rxChannel.subscribe('event0', function (msg) {
             try {
               expect(msg.data == messageText).to.be.ok;
             } catch (err) {
@@ -616,7 +615,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return;
             }
             closeAndFinish(done, [txRealtime, rxRealtime]);
-          },
+          }),
           function () {
             var txChannel = txRealtime.channels.get(channelName, { cipher: { key: key } });
             txChannel.publish('event0', messageText);

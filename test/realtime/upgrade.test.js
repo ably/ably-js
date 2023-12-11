@@ -5,7 +5,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
   var rest;
   var publishIntervalHelper = function (currentMessageNum, channel, dataFn, onPublish) {
     return function (currentMessageNum) {
-      channel.publish('event0', dataFn(), function () {
+      whenPromiseSettles(channel.publish('event0', dataFn()), function () {
         onPublish();
       });
     };
@@ -223,12 +223,11 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         var realtime = helper.AblyRealtime(transportOpts);
         var channel = realtime.channels.get('upgradepublish0');
         /* subscribe to event */
-        channel.subscribe(
-          'event0',
-          function () {
+        whenPromiseSettles(
+          channel.subscribe('event0', function () {
             --count;
             checkFinish();
-          },
+          }),
           function () {
             var dataFn = function () {
               return 'Hello world at: ' + new Date();
@@ -257,12 +256,11 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         var realtime = helper.AblyRealtime(transportOpts);
         var channel = realtime.channels.get('upgradepublish1');
         /* subscribe to event */
-        channel.subscribe(
-          'event0',
-          function () {
+        whenPromiseSettles(
+          channel.subscribe('event0', function () {
             --count;
             checkFinish();
-          },
+          }),
           function () {
             var dataFn = function () {
               return 'Hello world at: ' + new Date();
