@@ -11,8 +11,9 @@ import Message, {
 } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
-import Resource, { ResourceCallback } from './resource';
+import Resource from './resource';
 import { ChannelOptions } from '../../types/channel';
+import { ErrCallback } from '../../types/utils';
 import BaseRest from './baseclient';
 import * as API from '../../../../ably';
 import Defaults, { normaliseChannelOptions } from '../util/defaults';
@@ -125,7 +126,7 @@ class RestChannel {
     });
   }
 
-  _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
+  _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ErrCallback): void {
     Resource.post(
       this.client,
       this.client.rest.channelMixin.basePath(this) + '/messages',
@@ -133,7 +134,7 @@ class RestChannel {
       headers,
       params,
       null,
-      callback
+      (err) => callback(err)
     );
   }
 
