@@ -351,8 +351,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var channelName = 'presenceMessageAction';
       var clientChannel = clientRealtime.channels.get(channelName);
       var presence = clientChannel.presence;
-      presence.subscribe(
-        function (presenceMessage) {
+      whenPromiseSettles(
+        presence.subscribe(function (presenceMessage) {
           try {
             expect(presenceMessage.action).to.equal('enter', 'Action should contain string "enter"');
           } catch (err) {
@@ -360,7 +360,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             return;
           }
           closeAndFinish(done, clientRealtime);
-        },
+        }),
         function onPresenceSubscribe(err) {
           if (err) {
             closeAndFinish(done, clientRealtime, err);

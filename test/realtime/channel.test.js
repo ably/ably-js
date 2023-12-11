@@ -686,7 +686,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             async.series(
               [
                 function (cb) {
-                  channel.attach(cb);
+                  whenPromiseSettles(channel.attach(), cb);
                 },
                 function (cb) {
                   var channelUpdated = false;
@@ -1100,13 +1100,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         realtime.connection.on('connected', function () {
           channelByEvent = realtime.channels.get('channelsubscribe1-event');
-          channelByEvent.subscribe('event', listenerByEvent, function () {
+          whenPromiseSettles(channelByEvent.subscribe('event', listenerByEvent), function () {
             channelByEvent.publish('event', 'data');
             channelByListener = realtime.channels.get('channelsubscribe1-listener');
-            channelByListener.subscribe(null, listenerNoEvent, function () {
+            whenPromiseSettles(channelByListener.subscribe(null, listenerNoEvent), function () {
               channelByListener.publish(null, 'data');
               channelAll = realtime.channels.get('channelsubscribe1-all');
-              channelAll.subscribe(listenerAllEvents, function () {
+              whenPromiseSettles(channelAll.subscribe(listenerAllEvents), function () {
                 channelAll.publish(null, 'data');
               });
             });
