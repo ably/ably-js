@@ -13,7 +13,6 @@ import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
 import { ChannelOptions } from '../../types/channel';
-import { ErrCallback } from '../../types/utils';
 import BaseRest from './baseclient';
 import * as API from '../../../../ably';
 import Defaults, { normaliseChannelOptions } from '../util/defaults';
@@ -94,7 +93,7 @@ class RestChannel {
       });
     }
 
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
         if (err) {
           reject(err);
@@ -119,23 +118,25 @@ class RestChannel {
           return;
         }
 
-        this._publish(serializeMessage(messages, client._MsgPack, format), headers, params, (err) =>
-          err ? reject(err) : resolve()
-        );
+        resolve();
       });
     });
+
+    await this._publish(serializeMessage(messages, client._MsgPack, format), headers, params);
   }
 
-  _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ErrCallback): void {
-    Resource.post(
-      this.client,
-      this.client.rest.channelMixin.basePath(this) + '/messages',
-      requestBody,
-      headers,
-      params,
-      null,
-      (err) => callback(err)
-    );
+  async _publish(requestBody: unknown, headers: Record<string, string>, params: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+      Resource.post(
+        this.client,
+        this.client.rest.channelMixin.basePath(this) + '/messages',
+        requestBody,
+        headers,
+        params,
+        null,
+        (err) => (err ? reject(err) : resolve())
+      );
+    });
   }
 
   async status(): Promise<API.ChannelDetails> {
