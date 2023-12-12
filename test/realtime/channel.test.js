@@ -482,7 +482,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel.whenState('attached', function () {
           firedImmediately = true;
           try {
-            expect(channel.state).to.equal('attached', 'whenState fired when attached');
+            expect(channel.state).to.equal('attached-nah', 'whenState fired when attached');
             closeAndFinish(done, realtime);
           } catch (err) {
             closeAndFinish(done, realtime, err);

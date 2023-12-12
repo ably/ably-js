@@ -57,7 +57,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return msg.clientId == 'client_int';
             });
             expect(encodedMessage.data).to.deep.equal(decodedMessage.data, 'Verify message decoding works correctly');
-            expect(encodedMessage.encoding).to.equal(null, 'Decoding should remove encoding field');
+            expect(encodedMessage.encoding).to.equal(10, 'Decoding should remove encoding field');
             expect(decodedMessage.encoding).to.equal(null, 'Decoding should remove encoding field');
             expect(boolMessage.data).to.equal('true', 'should not attempt to parse string data when no encoding field');
             expect(intMessage.data).to.equal('24', 'should not attempt to parse string data when no encoding field');
