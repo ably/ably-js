@@ -57,7 +57,6 @@
     "async": "ably-forks/async#requirejs",
     "aws-sdk": "^2.1413.0",
     "chai": "^4.2.0",
-    "copy-webpack-plugin": "^11.0.0",
     "cors": "^2.8.5",
     "esbuild": "^0.18.10",
     "esbuild-plugin-umd-wrapper": "^1.0.7",

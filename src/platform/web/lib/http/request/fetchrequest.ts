@@ -5,7 +5,7 @@ import { RequestCallback, RequestCallbackHeaders, RequestParams } from 'common/t
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import * as Utils from 'common/lib/util/utils';
-import { getGlobalObject } from 'common/lib/util/utils';
+import { getGlobalObject, isWebWorkerContext } from 'common/lib/util/utils';
 
 function isAblyError(responseBody: unknown, headers: Headers): responseBody is { error?: ErrorInfo } {
   return !!headers.get('x-ably-errorcode');
@@ -55,7 +55,7 @@ export default function fetchRequest(
     body: body as any,
   };
 
-  if (!Platform.Config.isWebworker) {
+  if (!isWebWorkerContext()) {
     requestInit.credentials = fetchHeaders.has('authorization') ? 'include' : 'same-origin';
   }
 

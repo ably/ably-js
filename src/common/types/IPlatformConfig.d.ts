@@ -27,5 +27,4 @@ export interface IPlatformConfig {
     byteLength: number,
     callback: (err: Error | null, result: ArrayBuffer | null) => void
   ) => void;
-  isWebworker?: boolean;
 }

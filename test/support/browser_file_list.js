@@ -3,7 +3,6 @@ window.__testFiles__.files = {
   'build/ably-nativescript.js': true,
   'build/ably-node.js': true,
   'build/ably-reactnative.js': true,
-  'build/ably-webworker.min.js': true,
   'build/ably.js': true,
   'build/ably.min.js': true,
   'browser/lib/util/base64.js': true,
