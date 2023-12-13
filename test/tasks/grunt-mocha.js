@@ -45,6 +45,8 @@ module.exports = function (grunt) {
         runTests += ' --fgrep ' + fgrep;
       }
 
+      runTests += ` --reporter ${path.join(__dirname, '..', 'support', 'mocha_reporter.js')}`;
+
       var done = this.async(),
         nodeExecutable = 'node';
 

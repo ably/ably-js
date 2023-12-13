@@ -7,3 +7,5 @@ npm-debug.log
 build/
 react/
 docs/generated/
+junit/
+test/support/mocha_junit_reporter/build/

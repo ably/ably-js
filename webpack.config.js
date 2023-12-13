@@ -5,6 +5,7 @@ const banner = require('./src/fragments/license');
 const CopyPlugin = require('copy-webpack-plugin');
 // This is needed for baseUrl to resolve correctly from tsconfig
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+const nodeExternals = require('webpack-node-externals');
 
 const baseConfig = {
   mode: 'production',
@@ -221,6 +222,68 @@ const commonJsNoEncryptionConfig = {
   },
 };
 
+function createMochaJUnitReporterConfigs() {
+  const dir = path.join(__dirname, 'test', 'support', 'mocha_junit_reporter');
+
+  const baseConfig = {
+    mode: 'development',
+    entry: path.join(dir, 'index.js'),
+    module: {
+      // TODO understand this and what it's trying to parse
+      rules: [
+        {
+          use: [
+            {
+              // To support use of optional chaining in mocha-junit-reporter
+              loader: 'babel-loader',
+              options: {
+                presets: [['@babel/preset-env']],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    externals: {
+      mocha: 'mocha.Mocha',
+    },
+    output: {
+      path: path.join(dir, 'build'),
+    },
+  };
+
+  const browserConfig = {
+    ...baseConfig,
+    externals: {
+      mocha: 'mocha.Mocha',
+    },
+    output: {
+      ...baseConfig.output,
+      filename: 'browser.js',
+      library: 'MochaJUnitReporter',
+    },
+    resolve: {
+      modules: [path.resolve(dir, 'shims'), 'node_modules'],
+    },
+  };
+
+  const nodeConfig = {
+    ...baseConfig,
+    target: 'node',
+    output: {
+      ...baseConfig.output,
+      filename: 'node.js',
+      libraryTarget: 'umd',
+    },
+    externals: [nodeExternals({ allowlist: 'mocha-junit-reporter' })],
+  };
+
+  return {
+    mochaJUnitReporterBrowser: browserConfig,
+    mochaJUnitReporterNode: nodeConfig,
+  };
+}
+
 module.exports = {
   node: nodeConfig,
   browser: browserConfig,
@@ -232,4 +295,5 @@ module.exports = {
   noEncryptionMin: noEncryptionMinConfig,
   commonJs: commonJsConfig,
   commonJsNoEncryption: commonJsNoEncryptionConfig,
+  ...createMochaJUnitReporterConfigs(),
 };
