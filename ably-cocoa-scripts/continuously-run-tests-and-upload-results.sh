@@ -64,7 +64,9 @@ do
   echo "ITERATION ${iteration}: Running NPM script ${script_name} with a timeout of ${allowed_execution_time} seconds." 2>&1
 
   set +e
-  timeout --kill-after=20 ${allowed_execution_time} npm run $script_name
+  #timeout --kill-after=20 ${allowed_execution_time} npm run $script_name
+  # Something is causing the test:playwright script to never exit; I wonder if it’s `timeout`. Let’s try without for now.
+  npm run $script_name
   tests_exit_value=$?
   set -e
 
