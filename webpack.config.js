@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path');
-const { BannerPlugin } = require('webpack');
+const { BannerPlugin, ProvidePlugin } = require('webpack');
 const banner = require('./src/fragments/license');
 const CopyPlugin = require('copy-webpack-plugin');
 // This is needed for baseUrl to resolve correctly from tsconfig
@@ -218,6 +218,11 @@ function createMochaJUnitReporterConfigs() {
       filename: 'browser.js',
       library: 'MochaJUnitReporter',
     },
+    plugins: [
+      new ProvidePlugin({
+        process: 'process/browser.js',
+      }),
+    ],
     resolve: {
       fallback: {
         // These are the modules suggested by Webpack, post v5-upgrade, to replace v4’s built-in shims.
