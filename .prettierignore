@@ -1,1 +1,2 @@
 test/common/ably-common/
+test/support/mocha_junit_reporter/build/
