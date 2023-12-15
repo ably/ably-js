@@ -4,7 +4,7 @@ define(['ably', 'chai'], function (Ably, chai) {
   var expect = chai.expect;
   var Defaults = Ably.Realtime.Platform.Defaults;
 
-  describe('rest/defaults', function () {
+  describe.only('rest/defaults', function () {
     it('Init with no endpoint-related options', function () {
       var normalisedOptions = Defaults.normaliseOptions({});
 
