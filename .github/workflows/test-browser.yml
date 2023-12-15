@@ -7,7 +7,7 @@ on:
 
 jobs:
   test-browser:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
         fail-fast: false
         matrix:
@@ -29,10 +29,6 @@ jobs:
         run: npx playwright install --with-deps
       - env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
-        run: npm run test:playwright
-      - name: Upload test results
-        if: always()
-        uses: ably/test-observability-action@v1
-        with:
-          server-auth: ${{ secrets.TEST_OBSERVABILITY_SERVER_AUTH_KEY }}
-          path: './junit'
+          TEST_OBSERVABILITY_SERVER_AUTH_KEY: ${{ secrets.TEST_OBSERVABILITY_SERVER_AUTH_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./ably-cocoa-scripts/continuously-run-tests-and-upload-results.sh --script test:playwright --job-index ${{ strategy.job-index }}
