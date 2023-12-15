@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Types } from '../../../../../ably.js';
+import { Types } from 'ably';
 import { ChannelNameAndId, ChannelNameAndOptions, channelOptionsWithAgent } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useEventListener } from './useEventListener.js';

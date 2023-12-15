@@ -7,11 +7,11 @@ on:
 
 jobs:
   test-browser:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
         fail-fast: false
         matrix:
-            browser: [chromium, firefox, webkit]
+            browser: [webkit]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -29,4 +29,6 @@ jobs:
         run: npx playwright install --with-deps
       - env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
-        run: npm run test:playwright
+          TEST_OBSERVABILITY_SERVER_AUTH_KEY: ${{ secrets.TEST_OBSERVABILITY_SERVER_AUTH_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./ably-cocoa-scripts/continuously-run-tests-and-upload-results.sh --script test:playwright --job-index ${{ strategy.job-index }}

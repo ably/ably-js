@@ -1,4 +1,4 @@
-import { Types } from '../../../../../ably.js';
+import { Types } from 'ably';
 import { useAbly } from './useAbly.js';
 import { useEventListener } from './useEventListener.js';
 

@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [12.x, 14.x, 16.x]
+        node-version: [16.x]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -25,6 +25,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
-      - run: npm run test:node
-        env:
+      - env:
           CI: true
+          TEST_OBSERVABILITY_SERVER_AUTH_KEY: ${{ secrets.TEST_OBSERVABILITY_SERVER_AUTH_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./ably-cocoa-scripts/continuously-run-tests-and-upload-results.sh --script test:node --job-index ${{ strategy.job-index }}

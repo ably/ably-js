@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Resource from './resource';
-import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
+import { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
 import BaseClient from './baseclient';
 import { RequestCallbackHeaders } from 'common/types/http';
@@ -195,7 +195,7 @@ export class PaginatedResult<T> {
     const self = this;
     if (relParams) {
       if ('first' in relParams) {
-        this.first = function (callback: (result?: ErrorInfo | null) => void) {
+        this.first = function (callback) {
           if (!callback) {
             return Utils.promisify(self, 'first', []);
           }
@@ -203,21 +203,21 @@ export class PaginatedResult<T> {
         };
       }
       if ('current' in relParams) {
-        this.current = function (callback: (results?: ErrorInfo | null) => void) {
+        this.current = function (callback) {
           if (!callback) {
             return Utils.promisify(self, 'current', []);
           }
           self.get(relParams.current, callback);
         };
       }
-      this.next = function (callback: (results?: ErrorInfo | null) => void) {
+      this.next = function (callback) {
         if (!callback) {
           return Utils.promisify(self, 'next', []);
         }
         if ('next' in relParams) {
           self.get(relParams.next, callback);
         } else {
-          callback(null);
+          callback(null, null);
         }
       };
 

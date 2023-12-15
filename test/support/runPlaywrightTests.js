@@ -3,6 +3,8 @@ const path = require('path');
 const serverProcess = require('child_process').fork(path.resolve(__dirname, '..', 'web_server'), {
   env: { PLAYWRIGHT_TEST: 1 },
 });
+const fs = require('fs');
+const jUnitDirectoryPath = require('./junit_directory_path');
 
 const port = process.env.PORT || 3000;
 const host = 'localhost';
@@ -22,7 +24,7 @@ const runTests = async (browserType) => {
 
   console.log(`\nrunning tests in ${browserType.name()}`);
 
-  await new Promise((resolve) => {
+  await new Promise((resolve, reject) => {
     // Expose a function inside the playwright browser to log to the NodeJS process stdout
     page.exposeFunction('onTestLog', ({ detail }) => {
       console.log(detail);
@@ -33,14 +35,24 @@ const runTests = async (browserType) => {
     });
 
     // Expose a function inside the playwright browser to exit with the right status code when tests pass/fail
-    page.exposeFunction('onTestResult', ({ detail }) => {
+    page.exposeFunction('onTestResult', ({ detail, jUnitReport }) => {
       console.log(`${browserType.name()} tests complete: ${detail.passes}/${detail.total} passed`);
+
+      try {
+        if (!fs.existsSync(jUnitDirectoryPath)) {
+          fs.mkdirSync(jUnitDirectoryPath);
+        }
+        const filename = `playwright-${browserType.name()}.junit`;
+        fs.writeFileSync(path.join(jUnitDirectoryPath, filename), detail.jUnitReport, { encoding: 'utf-8' });
+      } catch (err) {
+        reject(new Error(`Failed to write JUnit report: ${err.message}`));
+      }
+
       if (detail.pass) {
         browser.close();
         resolve();
       } else {
-        console.log(`${browserType.name()} tests failed, exiting with code 1`);
-        process.exit(1);
+        reject(new Error(`${browserType.name()} tests failed, exiting with code 1`));
       }
     });
 
@@ -58,6 +70,8 @@ const runTests = async (browserType) => {
 };
 
 (async () => {
+  let caughtError;
+
   try {
     if (browserEnv) {
       // If the PLAYWRIGHT_BROWSER env var is set, only run tests in the specified browser...
@@ -68,7 +82,14 @@ const runTests = async (browserType) => {
       await runTests(playwright.webkit);
       await runTests(playwright.firefox);
     }
-  } finally {
-    serverProcess.kill();
+  } catch (error) {
+    caughtError = error;
+  }
+
+  serverProcess.kill();
+
+  if (caughtError) {
+    console.log(caughtError.message);
+    process.exit(1);
   }
 })();
