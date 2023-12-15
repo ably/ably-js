@@ -13,6 +13,7 @@
 # GITHUB_TOKEN: A GitHub access token. If provided, the script will perform a GitHub API call in order to discover the web URL for the current job, and will include this URL in the observability server upload.
 
 set -e
+set -o pipefail
 
 # 1. Check dependencies.
 
