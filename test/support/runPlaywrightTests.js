@@ -24,7 +24,7 @@ const runTests = async (browserType) => {
 
   console.log(`\nrunning tests in ${browserType.name()}`);
 
-  await new Promise((resolve) => {
+  await new Promise((resolve, reject) => {
     // Expose a function inside the playwright browser to log to the NodeJS process stdout
     page.exposeFunction('onTestLog', ({ detail }) => {
       console.log(detail);
@@ -45,16 +45,14 @@ const runTests = async (browserType) => {
         const filename = `playwright-${browserType.name()}.junit`;
         fs.writeFileSync(path.join(jUnitDirectoryPath, filename), detail.jUnitReport, { encoding: 'utf-8' });
       } catch (err) {
-        console.log('Failed to write JUnit report, exiting with code 2: ', err);
-        process.exit(2);
+        reject(new Error(`Failed to write JUnit report: ${err.message}`));
       }
 
       if (detail.pass) {
         browser.close();
         resolve();
       } else {
-        console.log(`${browserType.name()} tests failed, exiting with code 1`);
-        process.exit(1);
+        reject(new Error(`${browserType.name()} tests failed, exiting with code 1`));
       }
     });
 
@@ -72,6 +70,8 @@ const runTests = async (browserType) => {
 };
 
 (async () => {
+  let caughtError;
+
   try {
     if (browserEnv) {
       // If the PLAYWRIGHT_BROWSER env var is set, only run tests in the specified browser...
@@ -82,7 +82,14 @@ const runTests = async (browserType) => {
       await runTests(playwright.webkit);
       await runTests(playwright.firefox);
     }
-  } finally {
-    serverProcess.kill();
+  } catch (error) {
+    caughtError = error;
+  }
+
+  serverProcess.kill();
+
+  if (caughtError) {
+    console.log(caughtError.message);
+    process.exit(1);
   }
 })();
