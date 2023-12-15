@@ -28,7 +28,7 @@ This SDK supports the following platforms:
 
 **TypeScript:** see [below](#typescript)
 
-**WebWorkers:** Browser bundle supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can also use a [modular variant](#modular-tree-shakable-variant) of the library in Web Workers.
+**WebWorkers:** The browser bundle supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can also use the [modular variant](#modular-tree-shakable-variant) of the library in Web Workers.
 
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
 
