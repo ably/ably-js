@@ -1,6 +1,6 @@
 # Ably JavaScript Client Library SDK API Reference (modular variant)
 
-You are currently viewing the modular (tree-shakable) variant of the Ably JavaScript Client Library SDK. View the callback-based variant [here](../default/index.html).
+You are currently viewing the modular (tree-shakable) variant of the Ably JavaScript Client Library SDK. View the default variant [here](../default/index.html).
 
 To get started with the Ably JavaScript Client Library SDK, follow the [Quickstart Guide](https://ably.com/docs/quick-start-guide) or view the introductions to the [realtime](https://ably.com/docs/realtime/usage) and [REST](https://ably.com/docs/rest/usage) interfaces.
 
