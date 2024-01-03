@@ -1,4 +1,5 @@
-import { BaseRealtime, Types, WebSocketTransport, FetchRequest, generateRandomKey } from 'ably/modules';
+import { BaseRealtime, WebSocketTransport, FetchRequest, generateRandomKey } from 'ably/modules';
+import { Types } from 'ably';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // This function exists to check that we can import the Types namespace and refer to its types.

@@ -110,7 +110,7 @@ You must provide:
 
 `BaseRealtime` offers the same API as the `Realtime` class described in the rest of this `README`. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
 
-For more information, see the [generated documentation](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/index.html) (this link points to the documentation for the `main` branch).
+For more information, see the [generated documentation](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modules.html) (this link points to the documentation for the `main` branch).
 
 ### TypeScript
 

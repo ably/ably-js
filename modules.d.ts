@@ -1,3 +1,27 @@
+/**
+ * You are currently viewing the modular (tree-shakable) variant of the Ably JavaScript Client Library SDK. View the default variant {@link ably | here}.
+ *
+ * To get started with the Ably JavaScript Client Library SDK, follow the [Quickstart Guide](https://ably.com/docs/quick-start-guide) or view the introductions to the [realtime](https://ably.com/docs/realtime/usage) and [REST](https://ably.com/docs/rest/usage) interfaces.
+ *
+ * ## No `static` class functionality
+ *
+ * In contrast to the default variant of the SDK, the modular variant does not expose any functionality via `static` class properties or methods, since they cannot be tree-shaken by module bundlers. Instead, it exports free-standing functions which provide the same functionality. These are:
+ *
+ * | `static` version                           | Replacement in modular variant                                                     |
+ * | ------------------------------------------ | ---------------------------------------------------------------------------------- |
+ * | `Crypto.generateRandomKey()`               | [`generateRandomKey()`](../functions/modules.generateRandomKey.html)               |
+ * | `Crypto.getDefaultParams()`                | [`getDefaultCryptoParams()`](../functions/modules.getDefaultCryptoParams.html)     |
+ * | `MessageStatic.fromEncoded()`              | [`decodeMessage()`](../functions/modules.decodeMessage.html)                       |
+ * | `MessageStatic.fromEncoded()`              | [`decodeEncryptedMessage()`](../functions/modules.decodeEncryptedMessage.html)     |
+ * | `MessageStatic.fromEncodedArray()`         | [`decodeMessages()`](../functions/modules.decodeMessages.html)                     |
+ * | `MessageStatic.fromEncodedArray()`         | [`decodeEncryptedMessages()`](../functions/modules.decodeEncryptedMessages.html)   |
+ * | `PresenceMessageStatic.fromEncoded()`      | [`decodePresenceMessage()`](../functions/modules.decodePresenceMessage.html)       |
+ * | `PresenceMessageStatic.fromEncodedArray()` | [`decodePresenceMessages()`](../functions/modules.decodePresenceMessages.html)     |
+ * | `PresenceMessageStatic.fromValues()`       | [`constructPresenceMessage()`](../functions/modules.constructPresenceMessage.html) |
+ *
+ * @module
+ */
+
 import { Types, ErrorInfo } from './ably';
 
 export declare const generateRandomKey: Types.Crypto['generateRandomKey'];
@@ -22,22 +46,22 @@ export declare const constructPresenceMessage: Types.PresenceMessageStatic['from
  *
  * When provided, the following functionality becomes available:
  *
- * - { @link Types.Push | push admin }
+ * - { @link ably!Types.Push | push admin }
  * - { @link BaseRealtime.time | retrieving Ably service time }
  * - { @link BaseRealtime.stats | retrieving your application’s usage statistics }
  * - { @link BaseRealtime.request | making arbitrary REST requests }
  * - { @link BaseRealtime.batchPublish | batch publishing of messages }
  * - { @link BaseRealtime.batchPresence | batch retrieval of channel presence state }
- * - { @link Types.Auth.revokeTokens | requesting the revocation of tokens }
- * - { @link Types.RealtimeChannel.history | retrieving the message history of a channel }
- * - { @link Types.RealtimePresence.history | retrieving the presence history of a channel }
+ * - { @link ably!Types.Auth.revokeTokens | requesting the revocation of tokens }
+ * - { @link ably!Types.RealtimeChannel.history | retrieving the message history of a channel }
+ * - { @link ably!Types.RealtimePresence.history | retrieving the presence history of a channel }
  *
  * If this module is not provided, then trying to use the above functionality will cause a runtime error.
  */
 export declare const Rest: unknown;
 
 /**
- * Provides a {@link BaseRest} or {@link BaseRealtime} instance with the ability to encrypt and decrypt {@link Types.Message} payloads.
+ * Provides a {@link BaseRest} or {@link BaseRealtime} instance with the ability to encrypt and decrypt {@link ably!Types.Message} payloads.
  *
  * To create a client that includes this module, include it in the `ModulesMap` that you pass to the {@link BaseRealtime.constructor}:
  *
@@ -46,7 +70,7 @@ export declare const Rest: unknown;
  * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, Crypto });
  * ```
  *
- * When provided, you can configure message encryption on a channel via the {@link Types.ChannelOptions.cipher} property of the `ChannelOptions` that you pass when {@link Types.Channels.get | fetching a channel}. If this module is not provided, then passing a `ChannelOptions` with a `cipher` property will cause a runtime error.
+ * When provided, you can configure message encryption on a channel via the {@link ably!Types.ChannelOptions.cipher} property of the `ChannelOptions` that you pass when {@link ably!Types.Channels.get | fetching a channel}. If this module is not provided, then passing a `ChannelOptions` with a `cipher` property will cause a runtime error.
  */
 export declare const Crypto: unknown;
 
@@ -74,7 +98,7 @@ export declare const MsgPack: unknown;
  * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, RealtimePresence });
  * ```
  *
- * If you do not provide this module, then attempting to access a channel’s {@link Types.RealtimeChannel.presence} property will cause a runtime error.
+ * If you do not provide this module, then attempting to access a channel’s {@link ably!Types.RealtimeChannel.presence} property will cause a runtime error.
  */
 export declare const RealtimePresence: unknown;
 
@@ -150,7 +174,7 @@ export declare const XHRRequest: unknown;
 export declare const FetchRequest: unknown;
 
 /**
- * Provides a {@link BaseRealtime} instance with the ability to filter channel subscriptions at runtime using { @link Types.RealtimeChannel.subscribe:WITH_MESSAGE_FILTER | the overload of `subscribe()` that accepts a `MessageFilter` }.
+ * Provides a {@link BaseRealtime} instance with the ability to filter channel subscriptions at runtime using { @link ably!Types.RealtimeChannel.subscribe:WITH_MESSAGE_FILTER | the overload of `subscribe()` that accepts a `MessageFilter` }.
  *
  * To create a client that includes this module, include it in the `ModulesMap` that you pass to the {@link BaseRealtime.constructor}:
  *
@@ -276,4 +300,4 @@ export declare class BaseRealtime extends Types.AbstractRealtime {
   constructor(options: Types.ClientOptions, modules: ModulesMap);
 }
 
-export { Types, ErrorInfo };
+export { ErrorInfo };
