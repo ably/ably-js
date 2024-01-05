@@ -6,7 +6,7 @@ import PresenceMessage, {
   fromData as presenceMessageFromData,
   encode as encodePresenceMessage,
 } from '../types/presencemessage';
-import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
+import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
@@ -149,36 +149,32 @@ class RealtimePresence extends EventEmitter {
       presence.clientId = clientId;
     }
 
-    return new Promise((resolve, reject) => {
-      encodePresenceMessage(presence, channel.channelOptions as CipherOptions, (err: IPartialErrorInfo) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        switch (channel.state) {
-          case 'attached':
-            channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
-            break;
-          case 'initialized':
-          case 'detached':
-            channel.attach();
-          // eslint-disable-next-line no-fallthrough
-          case 'attaching':
-            this.pendingPresence.push({
-              presence: presence,
-              callback: (err) => (err ? reject(err) : resolve()),
-            });
-            break;
-          default:
-            err = new PartialErrorInfo(
-              'Unable to ' + action + ' presence channel while in ' + channel.state + ' state',
-              90001
-            );
-            err.code = 90001;
-            reject(err);
-        }
-      });
-    });
+    await encodePresenceMessage(presence, channel.channelOptions as CipherOptions);
+    switch (channel.state) {
+      case 'attached':
+        return new Promise((resolve, reject) => {
+          channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
+        });
+      case 'initialized':
+      case 'detached':
+        channel.attach();
+      // eslint-disable-next-line no-fallthrough
+      case 'attaching':
+        return new Promise((resolve, reject) => {
+          this.pendingPresence.push({
+            presence: presence,
+            callback: (err) => (err ? reject(err) : resolve()),
+          });
+        });
+      default: {
+        const err = new PartialErrorInfo(
+          'Unable to ' + action + ' presence channel while in ' + channel.state + ' state',
+          90001
+        );
+        err.code = 90001;
+        throw err;
+      }
+    }
   }
 
   async leave(data: unknown): Promise<void> {

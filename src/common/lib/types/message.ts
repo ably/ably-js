@@ -125,11 +125,7 @@ async function encrypt<T extends Message | PresenceMessage>(msg: T, options: Cip
   });
 }
 
-export function encode<T extends Message | PresenceMessage>(
-  msg: T,
-  options: CipherOptions,
-  callback: StandardCallback<T>
-): void {
+export async function encode<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
   const data = msg.data;
   const nativeDataType =
     typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
@@ -144,26 +140,19 @@ export function encode<T extends Message | PresenceMessage>(
   }
 
   if (options != null && options.cipher) {
-    Utils.whenPromiseSettles(encrypt(msg, options), callback);
+    return encrypt(msg, options);
   } else {
-    callback(null, msg);
+    return msg;
   }
 }
 
-export function encodeArray(messages: Array<Message>, options: CipherOptions, callback: Function): void {
-  let processed = 0;
-  for (let i = 0; i < messages.length; i++) {
-    encode(messages[i], options, function (err: Error) {
-      if (err) {
-        callback(err);
-        return;
-      }
-      processed++;
-      if (processed == messages.length) {
-        callback(null, messages);
-      }
-    });
-  }
+export function encodeArray(
+  messages: Array<Message>,
+  options: CipherOptions,
+  callback: StandardCallback<Array<Message>>
+): void {
+  const promises = messages.map((message) => encode(message, options));
+  return Utils.whenPromiseSettles(Promise.all(promises), callback);
 }
 
 export const serialize = Utils.encodeBody;

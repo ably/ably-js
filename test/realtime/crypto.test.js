@@ -223,7 +223,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-          Message.encode(testMessage, channelOpts, function () {
+          whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
             /* compare */
             testMessageEquality(done, testMessage, encryptedMessage);
           });
@@ -240,7 +240,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-          Message.encode(testMessage, channelOpts, function () {
+          whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
             /* compare */
             testMessageEquality(done, testMessage, encryptedMessage);
           });
@@ -314,7 +314,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           2,
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-            Message.encode(testMessage, channelOpts, function () {
+            whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               var messageFromMsgpack = Message.fromValues(
@@ -348,7 +348,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           2,
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-            Message.encode(testMessage, channelOpts, function () {
+            whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               var messageFromMsgpack = Message.fromValues(

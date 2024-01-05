@@ -10,7 +10,6 @@ import * as API from '../../../../ably';
 import Platform from 'common/platform';
 import PresenceMessage from './presencemessage';
 import { ChannelOptions } from 'common/types/channel';
-import { StandardCallback } from 'common/types/utils';
 
 /**
  `DefaultMessage` is the class returned by `DefaultRest` and `DefaultRealtime`’s `Message` static property. It introduces the static methods described in the `MessageStatic` interface of the public API of the non tree-shakable version of the library.
@@ -30,12 +29,8 @@ export class DefaultMessage extends Message {
   }
 
   // Used by tests
-  static encode<T extends Message | PresenceMessage>(
-    msg: T,
-    options: CipherOptions,
-    callback: StandardCallback<T>
-  ): void {
-    encode(msg, options, callback);
+  static async encode<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
+    return encode(msg, options);
   }
 
   // Used by tests
