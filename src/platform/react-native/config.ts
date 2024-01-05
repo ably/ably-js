@@ -31,9 +31,11 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
     TextEncoder: global.TextEncoder,
     TextDecoder: global.TextDecoder,
     getRandomArrayBuffer: (function (RNRandomBytes) {
-      return function (byteLength: number, callback: (err: Error | null, result: ArrayBuffer | null) => void) {
-        RNRandomBytes.randomBytes(byteLength, function (err: Error | null, base64String: string | null) {
-          callback(err, base64String ? bufferUtils.toArrayBuffer(bufferUtils.base64Decode(base64String)) : null);
+      return async function (byteLength: number) {
+        return new Promise((resolve, reject) => {
+          RNRandomBytes.randomBytes(byteLength, function (err: Error | null, base64String: string | null) {
+            err ? reject(err) : resolve(bufferUtils.toArrayBuffer(bufferUtils.base64Decode(base64String!)));
+          });
         });
       };
       // Installing @types/react-native would fix this but conflicts with @types/node
