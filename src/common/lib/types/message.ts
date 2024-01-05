@@ -8,7 +8,6 @@ import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/
 import * as API from '../../../../ably';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import { MsgPack } from 'common/types/msgpack';
-import { StandardCallback } from 'common/types/utils';
 
 export type CipherOptions = {
   channelCipher: {
@@ -146,13 +145,8 @@ export async function encode<T extends Message | PresenceMessage>(msg: T, option
   }
 }
 
-export function encodeArray(
-  messages: Array<Message>,
-  options: CipherOptions,
-  callback: StandardCallback<Array<Message>>
-): void {
-  const promises = messages.map((message) => encode(message, options));
-  return Utils.whenPromiseSettles(Promise.all(promises), callback);
+export async function encodeArray(messages: Array<Message>, options: CipherOptions): Promise<Array<Message>> {
+  return Promise.all(messages.map((message) => encode(message, options)));
 }
 
 export const serialize = Utils.encodeBody;

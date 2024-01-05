@@ -231,30 +231,22 @@ class RealtimeChannel extends EventEmitter {
       messages = [messageFromValues({ name: args[0], data: args[1] })];
     }
     const maxMessageSize = this.client.options.maxMessageSize;
+    await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
+    /* RSL1i */
+    const size = getMessagesSize(messages);
+    if (size > maxMessageSize) {
+      throw new ErrorInfo(
+        'Maximum size of messages that can be published at once exceeded ( was ' +
+          size +
+          ' bytes; limit is ' +
+          maxMessageSize +
+          ' bytes)',
+        40009,
+        400
+      );
+    }
     return new Promise((resolve, reject) => {
-      encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error | null) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        /* RSL1i */
-        const size = getMessagesSize(messages);
-        if (size > maxMessageSize) {
-          reject(
-            new ErrorInfo(
-              'Maximum size of messages that can be published at once exceeded ( was ' +
-                size +
-                ' bytes; limit is ' +
-                maxMessageSize +
-                ' bytes)',
-              40009,
-              400
-            )
-          );
-          return;
-        }
-        this._publish(messages, (err) => (err ? reject(err) : resolve()));
-      });
+      this._publish(messages, (err) => (err ? reject(err) : resolve()));
     });
   }
 
