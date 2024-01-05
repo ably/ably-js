@@ -36,10 +36,7 @@ export interface ISpecificPlatformConfig {
   atob?: typeof atob | null;
   TextEncoder?: typeof TextEncoder;
   TextDecoder?: typeof TextDecoder;
-  getRandomArrayBuffer?: (
-    byteLength: number,
-    callback: (err: Error | null, result: ArrayBuffer | null) => void
-  ) => void;
+  getRandomArrayBuffer?: (byteLength: number) => Promise<ArrayBuffer>;
   isWebworker?: boolean;
 }
 

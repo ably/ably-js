@@ -30,11 +30,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
    */
   var generateRandom: (byteLength: number) => Promise<ArrayBuffer>;
   if (config.getRandomArrayBuffer) {
-    generateRandom = async (byteLength) => {
-      return new Promise((resolve, reject) => {
-        config.getRandomArrayBuffer!(byteLength, (err, result) => (err ? reject(err) : resolve(result!)));
-      });
-    };
+    generateRandom = config.getRandomArrayBuffer;
   } else if (typeof Uint32Array !== 'undefined' && config.getRandomValues) {
     generateRandom = async function (bytes) {
       var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
