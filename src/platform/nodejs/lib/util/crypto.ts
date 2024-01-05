@@ -186,7 +186,6 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
      * Generate a random encryption key from the supplied keylength (or the
      * default keyLength if none supplied) as a Buffer
      * @param keyLength (optional) the required keyLength in bits
-     * @param callback (optional) (err, key)
      */
     static async generateRandomKey(keyLength?: number): Promise<API.CipherKey> {
       return new Promise((resolve, reject) => {
