@@ -178,62 +178,95 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             closeAndFinish(done, realtime, err);
             return;
           }
+
+          let transportSendCallback;
+
           /* Sabotage sending the message */
           transport.send = function (msg) {
             if (msg.action == 15) {
               expect(msg.msgSerial).to.equal(0, 'Expect msgSerial to be 0');
+
+              if (!transportSendCallback) {
+                done(new Error('transport.send override called before transportSendCallback populated'));
+              }
+
+              transportSendCallback(null);
             }
           };
 
-          async.parallel(
+          let publishCallback;
+
+          async.series(
             [
               function (cb) {
+                transportSendCallback = cb;
+
                 /* Sabotaged publish */
                 whenPromiseSettles(channel.publish('first', null), function (err) {
-                  try {
-                    expect(!err, 'Check publish happened (eventually) without err').to.be.ok;
-                  } catch (err) {
-                    cb(err);
-                    return;
+                  if (!publishCallback) {
+                    done(new Error('publish completed before publishCallback populated'));
                   }
-                  cb();
+                  publishCallback(err);
                 });
               },
-              function (cb) {
-                /* After the disconnect, on reconnect, spy on transport.send again */
-                connectionManager.once('transport.pending', function (transport) {
-                  var oldSend = transport.send;
 
-                  transport.send = function (msg, msgCb) {
-                    if (msg.action === 15) {
-                      if (msg.messages[0].name === 'first') {
+              // We wait for transport.send to recieve the message that we just
+              // published before we proceed to disconnecting the transport, to
+              // make sure that the message got marked as `sendAttempted`.
+
+              function (cb) {
+                async.parallel(
+                  [
+                    function (cb) {
+                      publishCallback = function (err) {
                         try {
-                          expect(msg.msgSerial).to.equal(0, 'Expect msgSerial of original message to still be 0');
-                          expect(msg.messages.length).to.equal(
-                            1,
-                            'Expect second message to not have been merged with the attempted message'
-                          );
-                        } catch (err) {
-                          cb(err);
-                          return;
-                        }
-                      } else if (msg.messages[0].name === 'second') {
-                        try {
-                          expect(msg.msgSerial).to.equal(1, 'Expect msgSerial of new message to be 1');
+                          expect(!err, 'Check publish happened (eventually) without err').to.be.ok;
                         } catch (err) {
                           cb(err);
                           return;
                         }
                         cb();
-                      }
-                    }
-                    oldSend.call(transport, msg, msgCb);
-                  };
-                  channel.publish('second', null);
-                });
+                      };
+                    },
+                    function (cb) {
+                      /* After the disconnect, on reconnect, spy on transport.send again */
+                      connectionManager.once('transport.pending', function (transport) {
+                        var oldSend = transport.send;
 
-                /* Disconnect the transport (will automatically reconnect and resume) () */
-                connectionManager.disconnectAllTransports();
+                        transport.send = function (msg, msgCb) {
+                          if (msg.action === 15) {
+                            if (msg.messages[0].name === 'first') {
+                              try {
+                                expect(msg.msgSerial).to.equal(0, 'Expect msgSerial of original message to still be 0');
+                                expect(msg.messages.length).to.equal(
+                                  1,
+                                  'Expect second message to not have been merged with the attempted message'
+                                );
+                              } catch (err) {
+                                cb(err);
+                                return;
+                              }
+                            } else if (msg.messages[0].name === 'second') {
+                              try {
+                                expect(msg.msgSerial).to.equal(1, 'Expect msgSerial of new message to be 1');
+                              } catch (err) {
+                                cb(err);
+                                return;
+                              }
+                              cb();
+                            }
+                          }
+                          oldSend.call(transport, msg, msgCb);
+                        };
+                        channel.publish('second', null);
+                      });
+
+                      /* Disconnect the transport (will automatically reconnect and resume) () */
+                      connectionManager.disconnectAllTransports();
+                    },
+                  ],
+                  cb
+                );
               },
             ],
             function (err) {
