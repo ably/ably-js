@@ -111,17 +111,10 @@ async function encrypt<T extends Message | PresenceMessage>(msg: T, options: Cip
     data = Platform.BufferUtils.utf8Encode(String(data));
     encoding = encoding + 'utf-8/';
   }
-  return new Promise((resolve, reject) => {
-    cipher.encrypt(data, function (err: Error, data: unknown) {
-      if (err) {
-        reject(err);
-        return;
-      }
-      msg.data = data;
-      msg.encoding = encoding + 'cipher+' + cipher.algorithm;
-      resolve(msg);
-    });
-  });
+  const ciphertext = await cipher.encrypt(data);
+  msg.data = ciphertext;
+  msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+  return msg;
 }
 
 export async function encode<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
