@@ -7,82 +7,79 @@ import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorin
 import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
 import { RequestCallbackHeaders } from 'common/types/http';
+import { ErrnoException } from '../../types/http';
 
-function withAuthDetails(
+async function withAuthDetails<T>(
   client: BaseClient,
   headers: RequestCallbackHeaders | undefined,
   params: Record<string, any>,
-  errCallback: Function,
   opCallback: Function
-) {
+): Promise<ResourceResult<T>> {
   if (client.http.supportsAuthHeaders) {
-    Utils.whenPromiseSettles(
-      client.auth.getAuthHeaders(),
-      function (err: Error | null, authHeaders?: Record<string, string>) {
-        if (err) errCallback(err);
-        else opCallback(Utils.mixin(authHeaders!, headers), params);
-      }
-    );
+    const authHeaders = await client.auth.getAuthHeaders();
+    return opCallback(Utils.mixin(authHeaders!, headers), params);
   } else {
-    Utils.whenPromiseSettles(
-      client.auth.getAuthParams(),
-      function (err: Error | null, authParams?: Record<string, string>) {
-        if (err) errCallback(err);
-        else opCallback(headers, Utils.mixin(authParams!, params));
-      }
-    );
+    const authParams = await client.auth.getAuthParams();
+    return opCallback(headers, Utils.mixin(authParams!, params));
   }
 }
 
 function unenvelope<T>(
-  callback: ResourceCallback<T>,
+  result: ResourceResult<T>,
   MsgPack: MsgPack | null,
   format: Utils.Format | null
-): ResourceCallback<T> {
-  return (err, body, outerHeaders, unpacked, outerStatusCode) => {
-    if (err && !body) {
-      callback(err);
-      return;
-    }
+): ResourceResult<T> {
+  if (result._err && !result._body) {
+    return { _err: result._err };
+  }
 
-    if (!unpacked) {
-      try {
-        body = Utils.decodeBody(body, MsgPack, format);
-      } catch (e) {
-        if (Utils.isErrorInfoOrPartialErrorInfo(e)) {
-          callback(e);
-        } else {
-          callback(new PartialErrorInfo(Utils.inspectError(e), null));
-        }
-        return;
+  let body = result._body;
+
+  if (!result._unpacked) {
+    try {
+      body = Utils.decodeBody(body, MsgPack, format);
+    } catch (e) {
+      if (Utils.isErrorInfoOrPartialErrorInfo(e)) {
+        return { _err: e };
+      } else {
+        return { _err: new PartialErrorInfo(Utils.inspectError(e), null) };
       }
     }
+  }
 
-    if (!body) {
-      callback(new PartialErrorInfo('unenvelope(): Response body is missing', null));
-      return;
+  if (!body) {
+    return { _err: new PartialErrorInfo('unenvelope(): Response body is missing', null) };
+  }
+
+  const { statusCode: wrappedStatusCode, response, headers: wrappedHeaders } = body as Record<string, any>;
+
+  if (wrappedStatusCode === undefined) {
+    /* Envelope already unwrapped by the transport */
+    return { ...result, _body: body, _unpacked: true };
+  }
+
+  if (wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
+    /* handle wrapped errors */
+    let wrappedErr = (response && response.error) || result._err;
+    if (!wrappedErr) {
+      wrappedErr = new Error('Error in unenveloping ' + body);
+      wrappedErr.statusCode = wrappedStatusCode;
     }
+    return {
+      _err: wrappedErr,
+      _body: response,
+      _headers: wrappedHeaders,
+      _unpacked: true,
+      _statusCode: wrappedStatusCode,
+    };
+  }
 
-    const { statusCode: wrappedStatusCode, response, headers: wrappedHeaders } = body as Record<string, any>;
-
-    if (wrappedStatusCode === undefined) {
-      /* Envelope already unwrapped by the transport */
-      callback(err, body, outerHeaders, true, outerStatusCode);
-      return;
-    }
-
-    if (wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
-      /* handle wrapped errors */
-      let wrappedErr = (response && response.error) || err;
-      if (!wrappedErr) {
-        wrappedErr = new Error('Error in unenveloping ' + body);
-        wrappedErr.statusCode = wrappedStatusCode;
-      }
-      callback(wrappedErr, response, wrappedHeaders, true, wrappedStatusCode);
-      return;
-    }
-
-    callback(err, response, wrappedHeaders, true, wrappedStatusCode);
+  return {
+    _err: result._err,
+    _body: response,
+    _headers: wrappedHeaders,
+    _unpacked: true,
+    _statusCode: wrappedStatusCode,
   };
 }
 
@@ -100,46 +97,28 @@ function urlFromPathAndParams(path: string, params: Record<string, any>) {
   return path + (params ? '?' : '') + paramString(params);
 }
 
-function logResponseHandler<T>(
-  callback: ResourceCallback<T>,
-  method: HttpMethods,
-  path: string,
-  params: Record<string, string>
-): ResourceCallback {
-  return (err, body, headers, unpacked, statusCode) => {
-    if (err) {
-      Logger.logAction(
-        Logger.LOG_MICRO,
-        'Resource.' + method + '()',
-        'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err)
-      );
-    } else {
-      Logger.logAction(
-        Logger.LOG_MICRO,
-        'Resource.' + method + '()',
-        'Received; ' +
-          urlFromPathAndParams(path, params) +
-          '; Headers: ' +
-          paramString(headers as Record<string, any>) +
-          '; StatusCode: ' +
-          statusCode +
-          '; Body: ' +
-          (Platform.BufferUtils.isBuffer(body) ? body.toString() : body)
-      );
-    }
-    if (callback) {
-      callback(err, body as T, headers, unpacked, statusCode);
-    }
-  };
+function logResult<T>(result: ResourceResult<T>, method: HttpMethods, path: string, params: Record<string, string>) {
+  if (result._err) {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'Resource.' + method + '()',
+      'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(result._err)
+    );
+  } else {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'Resource.' + method + '()',
+      'Received; ' +
+        urlFromPathAndParams(path, params) +
+        '; Headers: ' +
+        paramString(result._headers as Record<string, any>) +
+        '; StatusCode: ' +
+        result._statusCode +
+        '; Body: ' +
+        (Platform.BufferUtils.isBuffer(result._body) ? result._body.toString() : result._body)
+    );
+  }
 }
-
-export type ResourceCallback<T = unknown> = (
-  err: IPartialErrorInfo | null,
-  body?: T,
-  headers?: RequestCallbackHeaders,
-  unpacked?: boolean,
-  statusCode?: number
-) => void;
 
 export interface ResourceResponse<T> {
   _body?: T;
@@ -335,32 +314,15 @@ class Resource {
     envelope: Utils.Format | null,
     throwError: boolean
   ): Promise<ResourceResponse<T> | ResourceResult<T>> {
-    let callback: ResourceCallback<T>;
-
-    const promise = new Promise<ResourceResponse<T> | ResourceResult<T>>((resolve, reject) => {
-      callback = (err, body, headers, unpacked, statusCode) => {
-        if (throwError) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve({ _body: body, _headers: headers, _unpacked: unpacked, _statusCode: statusCode });
-          }
-        } else {
-          resolve({ _err: err, _body: body, _headers: headers, _unpacked: unpacked, _statusCode: statusCode });
-        }
-      };
-    });
-
-    if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      callback = logResponseHandler(callback!, method, path, params);
-    }
-
     if (envelope) {
-      callback = unenvelope(callback!, client._MsgPack, envelope);
       (params = params || {})['envelope'] = envelope;
     }
 
-    function doRequest(this: any, headers: Record<string, string>, params: Record<string, any>) {
+    async function doRequest(
+      this: any,
+      headers: Record<string, string>,
+      params: Record<string, any>
+    ): Promise<ResourceResult<T>> {
       if (Logger.shouldLog(Logger.LOG_MICRO)) {
         Logger.logAction(
           Logger.LOG_MICRO,
@@ -392,26 +354,58 @@ class Resource {
         );
       }
 
-      client.http.do(method, path, headers, body, params, function (err, res, resHeaders, unpacked, statusCode) {
-        if (err && Auth.isTokenErr(err as ErrorInfo)) {
-          /* token has expired, so get a new one */
-          Utils.whenPromiseSettles(client.auth.authorize(null, null), function (err: ErrorInfo | null) {
-            if (err) {
-              callback(err);
-              return;
-            }
-            /* retry ... */
-            withAuthDetails(client, headers, params, callback, doRequest);
-          });
-          return;
-        }
-        callback(err as ErrorInfo, res as T | undefined, resHeaders, unpacked, statusCode);
+      // TODO mangle these property names too
+      type HttpResult = {
+        error?: ErrnoException | IPartialErrorInfo | null;
+        body?: unknown;
+        headers?: RequestCallbackHeaders;
+        unpacked?: boolean;
+        statusCode?: number;
+      };
+
+      const httpResult = await new Promise<HttpResult>((resolve) => {
+        client.http.do(method, path, headers, body, params, function (error, body, headers, unpacked, statusCode) {
+          resolve({ error, body, headers, unpacked, statusCode });
+        });
       });
+
+      if (httpResult.error && Auth.isTokenErr(httpResult.error as ErrorInfo)) {
+        /* token has expired, so get a new one */
+        await client.auth.authorize(null, null);
+        /* retry ... */
+        return withAuthDetails(client, headers, params, doRequest);
+      }
+
+      return {
+        _err: httpResult.error as ErrorInfo,
+        _body: httpResult.body as T | undefined,
+        _headers: httpResult.headers,
+        _unpacked: httpResult.unpacked,
+        _statusCode: httpResult.statusCode,
+      };
     }
 
-    withAuthDetails(client, headers, params, callback!, doRequest);
+    let result = await withAuthDetails<T>(client, headers, params, doRequest);
 
-    return promise;
+    if (envelope) {
+      result = unenvelope(result, client._MsgPack, envelope);
+    }
+
+    if (Logger.shouldLog(Logger.LOG_MICRO)) {
+      logResult(result, method, path, params);
+    }
+
+    if (throwError) {
+      if (result._err) {
+        throw result._err;
+      } else {
+        const response: Omit<ResourceResult<T>, '_err'> & Pick<Partial<ResourceResult<T>>, '_err'> = { ...result };
+        delete response._err;
+        return response;
+      }
+    }
+
+    return result;
   }
 }
 
