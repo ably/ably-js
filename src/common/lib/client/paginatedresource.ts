@@ -1,6 +1,6 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
-import Resource from './resource';
+import Resource, { ResourceResult } from './resource';
 import { IPartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { RequestBody, RequestCallbackHeaders } from 'common/types/http';
@@ -59,115 +59,63 @@ class PaginatedResource {
   }
 
   async get<T1, T2>(params: Record<string, T2>): Promise<PaginatedResult<T1>> {
-    return new Promise((resolve) => {
-      Resource.get(
-        this.client,
-        this.path,
-        this.headers,
-        params,
-        this.envelope,
-        (err, body, headers, unpacked, statusCode) => {
-          resolve(this.handlePage(err, body, headers, unpacked, statusCode));
-        }
-      );
-    });
+    const result = await Resource.get<T1>(this.client, this.path, this.headers, params, this.envelope, false);
+    return this.handlePage(result);
   }
 
   async delete<T1, T2>(params: Record<string, T2>): Promise<PaginatedResult<T1>> {
-    return new Promise((resolve) => {
-      Resource.delete(
-        this.client,
-        this.path,
-        this.headers,
-        params,
-        this.envelope,
-        (err, body, headers, unpacked, statusCode) => {
-          resolve(this.handlePage(err, body, headers, unpacked, statusCode));
-        }
-      );
-    });
+    const result = await Resource.delete<T1>(this.client, this.path, this.headers, params, this.envelope, false);
+    return this.handlePage(result);
   }
 
   async post<T1, T2>(params: Record<string, T2>, body: RequestBody | null): Promise<PaginatedResult<T1>> {
-    return new Promise((resolve) => {
-      Resource.post(
-        this.client,
-        this.path,
-        body,
-        this.headers,
-        params,
-        this.envelope,
-        (err, responseBody, headers, unpacked, statusCode) => {
-          resolve(this.handlePage(err, responseBody, headers, unpacked, statusCode));
-        }
-      );
-    });
+    const result = await Resource.post<T1>(this.client, this.path, body, this.headers, params, this.envelope, false);
+    return this.handlePage(result);
   }
 
   async put<T1, T2>(params: Record<string, T2>, body: RequestBody | null): Promise<PaginatedResult<T1>> {
-    return new Promise((resolve) => {
-      Resource.put(
-        this.client,
-        this.path,
-        body,
-        this.headers,
-        params,
-        this.envelope,
-        (err, responseBody, headers, unpacked, statusCode) => {
-          resolve(this.handlePage(err, responseBody, headers, unpacked, statusCode));
-        }
-      );
-    });
+    const result = await Resource.put<T1>(this.client, this.path, body, this.headers, params, this.envelope, false);
+    return this.handlePage(result);
   }
 
   async patch<T1, T2>(params: Record<string, T2>, body: RequestBody | null): Promise<PaginatedResult<T1>> {
-    return new Promise((resolve) => {
-      Resource.patch(
-        this.client,
-        this.path,
-        body,
-        this.headers,
-        params,
-        this.envelope,
-        (err, responseBody, headers, unpacked, statusCode) => {
-          resolve(this.handlePage(err, responseBody, headers, unpacked, statusCode));
-        }
-      );
-    });
+    const result = await Resource.patch<T1>(this.client, this.path, body, this.headers, params, this.envelope, false);
+    return this.handlePage(result);
   }
 
-  async handlePage<T>(
-    err: IPartialErrorInfo | null,
-    body: unknown,
-    headers: RequestCallbackHeaders | undefined,
-    unpacked: boolean | undefined,
-    statusCode: number | undefined
-  ): Promise<PaginatedResult<T>> {
-    if (err && returnErrOnly(err, body, this.useHttpPaginatedResponse)) {
+  async handlePage<T>(result: ResourceResult<T>): Promise<PaginatedResult<T>> {
+    if (result.err && returnErrOnly(result.err, result.body, this.useHttpPaginatedResponse)) {
       Logger.logAction(
         Logger.LOG_ERROR,
         'PaginatedResource.handlePage()',
-        'Unexpected error getting resource: err = ' + Utils.inspectError(err)
+        'Unexpected error getting resource: err = ' + Utils.inspectError(result.err)
       );
-      throw err;
+      throw result.err;
     }
 
     let items, linkHeader, relParams;
 
     try {
-      items = await this.bodyHandler(body, headers || {}, unpacked);
+      items = await this.bodyHandler(result.body, result.headers || {}, result.unpacked);
     } catch (e) {
       /* If we got an error, the failure to parse the body is almost certainly
        * due to that, so throw that in preference over the parse error */
-      throw err || e;
+      throw result.err || e;
     }
 
-    if (headers && (linkHeader = headers['Link'] || headers['link'])) {
+    if (result.headers && (linkHeader = result.headers['Link'] || result.headers['link'])) {
       relParams = parseRelLinks(linkHeader);
     }
 
     if (this.useHttpPaginatedResponse) {
-      return new HttpPaginatedResponse(this, items, headers || {}, statusCode as number, relParams, err);
+      return new HttpPaginatedResponse(
+        this,
+        items,
+        result.headers || {},
+        result.statusCode as number,
+        relParams,
+        result.err
+      );
     } else {
       return new PaginatedResult(this, items, relParams);
     }
@@ -220,18 +168,8 @@ export class PaginatedResult<T> {
    * the rest of a multipage set of results can always be done with GET */
   async get(params: any): Promise<PaginatedResult<T>> {
     const res = this.resource;
-    return new Promise((resolve) => {
-      Resource.get(
-        res.client,
-        res.path,
-        res.headers,
-        params,
-        res.envelope,
-        function (err, body, headers, unpacked, statusCode) {
-          resolve(res.handlePage<T>(err, body, headers, unpacked, statusCode));
-        }
-      );
-    });
+    const result = await Resource.get<T>(res.client, res.path, res.headers, params, res.envelope, false);
+    return res.handlePage(result);
   }
 }
 

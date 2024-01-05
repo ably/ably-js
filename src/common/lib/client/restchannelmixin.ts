@@ -44,10 +44,15 @@ export class RestChannelMixin {
     const format = channel.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
     const headers = Defaults.defaultPostHeaders(channel.client.options, { format });
 
-    return new Promise((resolve, reject) => {
-      Resource.get<API.ChannelDetails>(channel.client, this.basePath(channel), headers, {}, format, (err, result) =>
-        err ? reject(err) : resolve(result!)
-      );
-    });
+    const response = await Resource.get<API.ChannelDetails>(
+      channel.client,
+      this.basePath(channel),
+      headers,
+      {},
+      format,
+      true
+    );
+
+    return response.body!;
   }
 }
