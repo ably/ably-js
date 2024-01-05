@@ -6,7 +6,6 @@ import ICipher from '../../../../common/types/ICipher';
 import { CryptoDataTypes } from '../../../../common/types/cryptoDataTypes';
 import BufferUtils, { Bufferlike, Output as BufferUtilsOutput } from './bufferutils';
 import { IPlatformConfig } from 'common/types/IPlatformConfig';
-import * as Utils from '../../../../common/lib/util/utils';
 
 // The type to which ./msgpack.ts deserializes elements of the `bin` or `ext` type
 type MessagePackBinaryType = ArrayBuffer;
@@ -255,16 +254,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 
       const encryptAsync = async () => {
-        const iv = await new Promise((resolve: (iv: IV) => void, reject: (error: Error) => void) => {
-          this.getIv((error, iv) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(iv!);
-            }
-          });
-        });
-
+        const iv = await this.getIv();
         const cryptoKey = await crypto.subtle.importKey('raw', this.key, this.webCryptoAlgorithm, false, ['encrypt']);
         const ciphertext = await crypto.subtle.encrypt({ name: this.webCryptoAlgorithm, iv }, cryptoKey, plaintext);
 
@@ -291,21 +281,15 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
       return crypto.subtle.decrypt({ name: this.webCryptoAlgorithm, iv }, cryptoKey, ciphertextBody);
     }
 
-    getIv(callback: (error: Error | null, iv: ArrayBuffer | null) => void) {
+    async getIv(): Promise<ArrayBuffer> {
       if (this.iv) {
         var iv = this.iv;
         this.iv = null;
-        callback(null, iv);
-        return;
+        return iv;
       }
 
-      Utils.whenPromiseSettles(generateRandom(DEFAULT_BLOCKLENGTH), function (err, randomBlock) {
-        if (err) {
-          callback(err as Error, null);
-          return;
-        }
-        callback(null, bufferUtils.toArrayBuffer(randomBlock!));
-      });
+      const randomBlock = await generateRandom(DEFAULT_BLOCKLENGTH);
+      return bufferUtils.toArrayBuffer(randomBlock);
     }
   }
 
