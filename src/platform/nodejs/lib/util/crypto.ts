@@ -8,6 +8,8 @@ import ICipher from '../../../../common/types/ICipher';
 import { CryptoDataTypes } from '../../../../common/types/cryptoDataTypes';
 import { Cipher as NodeCipher, CipherKey as NodeCipherKey } from 'crypto';
 import BufferUtils, { Bufferlike, Output as BufferUtilsOutput } from './bufferutils';
+import util from 'util';
+import * as Utils from '../../../../common/lib/util/utils';
 
 // The type to which ably-forks/msgpack-js deserializes elements of the `bin` or `ext` type
 type MessagePackBinaryType = Buffer;
@@ -27,12 +29,9 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
   /**
    * Internal: generate a buffer of secure random bytes of the given length
    * @param bytes
-   * @param callback (optional)
    */
-  function generateRandom(bytes: number): Buffer;
-  function generateRandom(bytes: number, callback: (err: Error | null, buf: Buffer) => void): void;
-  function generateRandom(bytes: number, callback?: (err: Error | null, buf: Buffer) => void) {
-    return callback === undefined ? crypto.randomBytes(bytes) : crypto.randomBytes(bytes, callback);
+  async function generateRandom(bytes: number): Promise<Buffer> {
+    return util.promisify(crypto.randomBytes)(bytes);
   }
 
   /**
@@ -188,16 +187,11 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
      * @param keyLength (optional) the required keyLength in bits
      */
     static async generateRandomKey(keyLength?: number): Promise<API.CipherKey> {
-      return new Promise((resolve, reject) => {
-        generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
-          if (err) {
-            const errorInfo = new ErrorInfo('Failed to generate random key: ' + err.message, 500, 50000, err);
-            reject(errorInfo);
-          } else {
-            resolve(buf!);
-          }
-        });
-      });
+      try {
+        return generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8);
+      } catch (err) {
+        throw new ErrorInfo('Failed to generate random key: ' + (err as Error).message, 500, 50000, err as Error);
+      }
     }
 
     /**
@@ -208,10 +202,9 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
     static getCipher(params: IGetCipherParams<IV>) {
       var cipherParams = isInstCipherParams(params) ? (params as CipherParams) : this.getDefaultParams(params);
 
-      var iv = params.iv || generateRandom(DEFAULT_BLOCKLENGTH);
       return {
         cipherParams: cipherParams,
-        cipher: new CBCCipher(cipherParams, iv),
+        cipher: new CBCCipher(cipherParams, params.iv ?? null),
       };
     }
   }
@@ -222,51 +215,61 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
     algorithm: string;
     key: NodeCipherKey;
     iv: Buffer | null;
-    encryptCipher: NodeCipher;
-    blockLength: number;
+    encryptCipher: NodeCipher | null = null;
 
-    constructor(params: CipherParams, iv: Buffer) {
+    constructor(params: CipherParams, iv: Buffer | null) {
       this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
       this.key = params.key;
       this.iv = iv;
-      this.encryptCipher = crypto.createCipheriv(this.algorithm, this.key, this.iv);
-      this.blockLength = this.iv.length;
     }
 
     encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data?: OutputCiphertext) => void) {
-      Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
-      var plaintextBuffer = bufferUtils.toBuffer(plaintext);
-      var plaintextLength = plaintextBuffer.length,
-        paddedLength = getPaddedLength(plaintextLength),
-        iv = this.getIv();
-      var cipherOut = this.encryptCipher.update(
-        Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
-      );
-      var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
-      return callback(null, ciphertext);
+      const promise = (async () => {
+        Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+
+        const iv = await this.getIv();
+        if (!this.encryptCipher) {
+          this.encryptCipher = crypto.createCipheriv(this.algorithm, this.key, iv);
+        }
+
+        var plaintextBuffer = bufferUtils.toBuffer(plaintext);
+        var plaintextLength = plaintextBuffer.length,
+          paddedLength = getPaddedLength(plaintextLength);
+        var cipherOut = this.encryptCipher.update(
+          Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
+        );
+        var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
+        return ciphertext;
+      })();
+
+      Utils.whenPromiseSettles(promise, callback);
     }
 
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
-      var blockLength = this.blockLength,
-        decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, blockLength)),
-        plaintext = toBuffer(decryptCipher.update(ciphertext.slice(blockLength))),
+      var decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, DEFAULT_BLOCKLENGTH)),
+        plaintext = toBuffer(decryptCipher.update(ciphertext.slice(DEFAULT_BLOCKLENGTH))),
         final = decryptCipher.final();
       if (final && final.length) plaintext = Buffer.concat([plaintext, toBuffer(final)]);
       return plaintext;
     }
 
-    getIv() {
+    async getIv() {
       if (this.iv) {
         var iv = this.iv;
         this.iv = null;
         return iv;
       }
 
-      var randomBlock = generateRandom(DEFAULT_BLOCKLENGTH);
-      /* Since the iv for a new block is the ciphertext of the last, this
-       * sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
-       * returning it */
-      return toBuffer(this.encryptCipher.update(randomBlock));
+      var randomBlock = await generateRandom(DEFAULT_BLOCKLENGTH);
+
+      if (!this.encryptCipher) {
+        return randomBlock;
+      } else {
+        /* Since the iv for a new block is the ciphertext of the last, this
+         * sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
+         * returning it */
+        return toBuffer(this.encryptCipher.update(randomBlock));
+      }
     }
   }
 
