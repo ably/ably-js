@@ -20,7 +20,7 @@ This SDK supports the following platforms:
 
 **Node.js:** version 8.17 or newer. (1.1.x versions work on Node.js 4.5 or newer). We do not currently provide an ESM bundle, please [contact us](https://www.ably.com/contact) if you would would like to use ably-js in a NodeJS ESM project.
 
-**React (release candidate)** We offer a set of React Hooks which make it seamless to use ably-js in your React application. See the [React Hooks documentation](./docs/react.md) for more details.
+**React (release candidate):** We offer a set of React Hooks which make it seamless to use ably-js in your React application. See the [React Hooks documentation](./docs/react.md) for more details.
 
 **React Native:** We aim to support all platforms supported by React Native. If you find any issues please raise an issue or [contact us](https://www.ably.com/contact).
 
@@ -28,11 +28,7 @@ This SDK supports the following platforms:
 
 **TypeScript:** see [below](#typescript)
 
-**WebWorkers**: We build a separate bundle which supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can import it like this:
-
-```js
-import Ably from 'ably/build/ably-webworker.min';
-```
+**WebWorkers:** The browser bundle supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can also use the [modular variant](#modular-tree-shakable-variant) of the library in Web Workers.
 
 We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
 
