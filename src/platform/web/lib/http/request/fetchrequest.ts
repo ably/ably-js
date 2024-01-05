@@ -54,7 +54,7 @@ export default function fetchRequest(
     body: body as any,
   };
 
-  if (!Utils.isWebWorkerContext()) {
+  if (!Platform.Config.isWebworker) {
     requestInit.credentials = fetchHeaders.has('authorization') ? 'include' : 'same-origin';
   }
 

@@ -571,13 +571,3 @@ export function arrEquals(a: any[], b: any[]) {
 export function throwMissingModuleError(moduleName: keyof ModulesMap): never {
   throw new ErrorInfo(`${moduleName} module not provided`, 40019, 400);
 }
-
-// from: https://stackoverflow.com/a/18002694
-export function isWebWorkerContext(): boolean {
-  // run this in global scope of window or worker. since window.self = window, we're ok
-  if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
-    return true;
-  } else {
-    return false;
-  }
-}
