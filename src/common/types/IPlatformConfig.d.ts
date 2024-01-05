@@ -23,7 +23,7 @@ export interface ICommonPlatformConfig {
  */
 export interface ISpecificPlatformConfig {
   addEventListener?: typeof window.addEventListener | typeof global.addEventListener | null;
-  getRandomValues?: (arr: ArrayBufferView, callback?: (error: Error | null) => void) => void;
+  getRandomValues?: (arr: ArrayBufferView) => Promise<void>;
   userAgent?: string | null;
   inherits?: typeof import('util').inherits;
   currentUrl?: string;

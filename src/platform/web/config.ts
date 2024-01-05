@@ -71,11 +71,8 @@ const Config: IPlatformConfig = {
     if (crypto === undefined) {
       return undefined;
     }
-    return function (arr: ArrayBufferView, callback?: (error: Error | null) => void) {
+    return async function (arr: ArrayBufferView) {
       crypto.getRandomValues(arr);
-      if (callback) {
-        callback(null);
-      }
     };
   })(globalObject.crypto || msCrypto),
   isWebworker: isWebWorkerContext(),
