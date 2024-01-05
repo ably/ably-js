@@ -93,34 +93,22 @@ class RestChannel {
       });
     }
 
-    await new Promise<void>((resolve, reject) => {
-      encodeMessagesArray(messages, this.channelOptions as CipherOptions, (err: Error) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+    await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
 
-        /* RSL1i */
-        const size = getMessagesSize(messages),
-          maxMessageSize = options.maxMessageSize;
-        if (size > maxMessageSize) {
-          reject(
-            new ErrorInfo(
-              'Maximum size of messages that can be published at once exceeded ( was ' +
-                size +
-                ' bytes; limit is ' +
-                maxMessageSize +
-                ' bytes)',
-              40009,
-              400
-            )
-          );
-          return;
-        }
-
-        resolve();
-      });
-    });
+    /* RSL1i */
+    const size = getMessagesSize(messages),
+      maxMessageSize = options.maxMessageSize;
+    if (size > maxMessageSize) {
+      throw new ErrorInfo(
+        'Maximum size of messages that can be published at once exceeded ( was ' +
+          size +
+          ' bytes; limit is ' +
+          maxMessageSize +
+          ' bytes)',
+        40009,
+        400
+      );
+    }
 
     await this._publish(serializeMessage(messages, client._MsgPack, format), headers, params);
   }
