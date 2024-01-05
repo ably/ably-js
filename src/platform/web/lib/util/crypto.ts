@@ -6,6 +6,7 @@ import ICipher from '../../../../common/types/ICipher';
 import { CryptoDataTypes } from '../../../../common/types/cryptoDataTypes';
 import BufferUtils, { Bufferlike, Output as BufferUtilsOutput } from './bufferutils';
 import { IPlatformConfig } from 'common/types/IPlatformConfig';
+import * as Utils from '../../../../common/lib/util/utils';
 
 // The type to which ./msgpack.ts deserializes elements of the `bin` or `ext` type
 type MessagePackBinaryType = ArrayBuffer;
@@ -27,24 +28,27 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
   /**
    * Internal: generate an array of secure random data corresponding to the given length of bytes
    * @param bytes
-   * @param callback
    */
-  var generateRandom: (byteLength: number, callback: (error: Error | null, result: ArrayBuffer | null) => void) => void;
+  var generateRandom: (byteLength: number) => Promise<ArrayBuffer>;
   if (config.getRandomArrayBuffer) {
-    generateRandom = config.getRandomArrayBuffer;
+    generateRandom = async (byteLength) => {
+      return new Promise((resolve, reject) => {
+        config.getRandomArrayBuffer!(byteLength, (err, result) => (err ? reject(err) : resolve(result!)));
+      });
+    };
   } else if (typeof Uint32Array !== 'undefined' && config.getRandomValues) {
-    generateRandom = function (bytes, callback) {
+    generateRandom = async function (bytes) {
       var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
       var words = bytes / 4,
         nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
-      config.getRandomValues!(nativeArray, function (err) {
-        if (typeof callback !== 'undefined') {
-          callback(err, bufferUtils.toArrayBuffer(nativeArray));
-        }
+      return new Promise((resolve, reject) => {
+        config.getRandomValues!(nativeArray, (err) =>
+          err ? reject(err) : resolve(bufferUtils.toArrayBuffer(nativeArray))
+        );
       });
     };
   } else {
-    generateRandom = function (bytes, callback) {
+    generateRandom = async function (bytes) {
       Logger.logAction(
         Logger.LOG_MAJOR,
         'Ably.Crypto.generateRandom()',
@@ -56,7 +60,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
         array[i] = Math.floor(Math.random() * UINT32_SUP);
       }
 
-      callback(null, bufferUtils.toArrayBuffer(array));
+      return bufferUtils.toArrayBuffer(array);
     };
   }
 
@@ -181,16 +185,11 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
      * @param keyLength (optional) the required keyLength in bits
      */
     static async generateRandomKey(keyLength?: number): Promise<API.CipherKey> {
-      return new Promise((resolve, reject) => {
-        generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
-          if (err) {
-            const errorInfo = new ErrorInfo('Failed to generate random key: ' + err.message, 400, 50000, err);
-            reject(errorInfo);
-          } else {
-            resolve(buf!);
-          }
-        });
-      });
+      try {
+        return await generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8);
+      } catch (err) {
+        throw new ErrorInfo('Failed to generate random key: ' + (err as Error).message, 400, 50000, err as Error);
+      }
     }
 
     /**
@@ -300,9 +299,9 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
         return;
       }
 
-      generateRandom(DEFAULT_BLOCKLENGTH, function (err, randomBlock) {
+      Utils.whenPromiseSettles(generateRandom(DEFAULT_BLOCKLENGTH), function (err, randomBlock) {
         if (err) {
-          callback(err, null);
+          callback(err as Error, null);
           return;
         }
         callback(null, bufferUtils.toArrayBuffer(randomBlock!));
