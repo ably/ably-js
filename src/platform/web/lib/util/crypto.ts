@@ -251,7 +251,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
       return output;
     }
 
-    encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data: OutputCiphertext | null) => void) {
+    encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data?: OutputCiphertext) => void) {
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 
       const encryptAsync = async () => {
@@ -276,7 +276,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
           callback(null, ciphertext);
         })
         .catch((error) => {
-          callback(error, null);
+          callback(error);
         });
     }
 

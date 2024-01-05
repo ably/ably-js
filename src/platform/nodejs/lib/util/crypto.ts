@@ -233,7 +233,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
       this.blockLength = this.iv.length;
     }
 
-    encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data: OutputCiphertext | null) => void) {
+    encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data?: OutputCiphertext) => void) {
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
       var plaintextBuffer = bufferUtils.toBuffer(plaintext);
       var plaintextLength = plaintextBuffer.length,
