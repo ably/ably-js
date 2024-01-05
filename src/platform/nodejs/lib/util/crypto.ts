@@ -9,7 +9,6 @@ import { CryptoDataTypes } from '../../../../common/types/cryptoDataTypes';
 import { Cipher as NodeCipher, CipherKey as NodeCipherKey } from 'crypto';
 import BufferUtils, { Bufferlike, Output as BufferUtilsOutput } from './bufferutils';
 import util from 'util';
-import * as Utils from '../../../../common/lib/util/utils';
 
 // The type to which ably-forks/msgpack-js deserializes elements of the `bin` or `ext` type
 type MessagePackBinaryType = Buffer;
@@ -223,26 +222,22 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
       this.iv = iv;
     }
 
-    encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data?: OutputCiphertext) => void) {
-      const promise = (async () => {
-        Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+    async encrypt(plaintext: InputPlaintext): Promise<OutputCiphertext> {
+      Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 
-        const iv = await this.getIv();
-        if (!this.encryptCipher) {
-          this.encryptCipher = crypto.createCipheriv(this.algorithm, this.key, iv);
-        }
+      const iv = await this.getIv();
+      if (!this.encryptCipher) {
+        this.encryptCipher = crypto.createCipheriv(this.algorithm, this.key, iv);
+      }
 
-        var plaintextBuffer = bufferUtils.toBuffer(plaintext);
-        var plaintextLength = plaintextBuffer.length,
-          paddedLength = getPaddedLength(plaintextLength);
-        var cipherOut = this.encryptCipher.update(
-          Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
-        );
-        var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
-        return ciphertext;
-      })();
-
-      Utils.whenPromiseSettles(promise, callback);
+      var plaintextBuffer = bufferUtils.toBuffer(plaintext);
+      var plaintextLength = plaintextBuffer.length,
+        paddedLength = getPaddedLength(plaintextLength);
+      var cipherOut = this.encryptCipher.update(
+        Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
+      );
+      var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
+      return ciphertext;
     }
 
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {

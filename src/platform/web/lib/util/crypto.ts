@@ -250,24 +250,14 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
       return output;
     }
 
-    encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data?: OutputCiphertext) => void) {
+    async encrypt(plaintext: InputPlaintext): Promise<OutputCiphertext> {
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 
-      const encryptAsync = async () => {
-        const iv = await this.getIv();
-        const cryptoKey = await crypto.subtle.importKey('raw', this.key, this.webCryptoAlgorithm, false, ['encrypt']);
-        const ciphertext = await crypto.subtle.encrypt({ name: this.webCryptoAlgorithm, iv }, cryptoKey, plaintext);
+      const iv = await this.getIv();
+      const cryptoKey = await crypto.subtle.importKey('raw', this.key, this.webCryptoAlgorithm, false, ['encrypt']);
+      const ciphertext = await crypto.subtle.encrypt({ name: this.webCryptoAlgorithm, iv }, cryptoKey, plaintext);
 
-        return this.concat(iv, ciphertext);
-      };
-
-      encryptAsync()
-        .then((ciphertext) => {
-          callback(null, ciphertext);
-        })
-        .catch((error) => {
-          callback(error);
-        });
+      return this.concat(iv, ciphertext);
     }
 
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
