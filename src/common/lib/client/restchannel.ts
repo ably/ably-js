@@ -126,17 +126,15 @@ class RestChannel {
   }
 
   async _publish(requestBody: unknown, headers: Record<string, string>, params: any): Promise<void> {
-    return new Promise((resolve, reject) => {
-      Resource.post(
-        this.client,
-        this.client.rest.channelMixin.basePath(this) + '/messages',
-        requestBody,
-        headers,
-        params,
-        null,
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
+    await Resource.post(
+      this.client,
+      this.client.rest.channelMixin.basePath(this) + '/messages',
+      requestBody,
+      headers,
+      params,
+      null,
+      true
+    );
   }
 
   async status(): Promise<API.ChannelDetails> {

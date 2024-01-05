@@ -170,25 +170,19 @@ export class Rest {
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
     const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
-    return new Promise((resolve, reject) => {
-      Resource.post(this.client, '/messages', requestBody, headers, {}, null, (err, body, headers, unpacked) => {
-        if (err) {
-          reject(err);
-          return;
-        }
 
-        const batchResults = (
-          unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
-        ) as BatchPublishResult[];
+    const response = await Resource.post(this.client, '/messages', requestBody, headers, {}, null, true);
 
-        // I don't love the below type assertions for `resolve` but not sure how to avoid them
-        if (singleSpecMode) {
-          (resolve as (result: BatchPublishResult) => void)(batchResults[0]);
-        } else {
-          (resolve as (result: BatchPublishResult[]) => void)(batchResults);
-        }
-      });
-    });
+    const batchResults = (
+      response._unpacked ? response._body : Utils.decodeBody(response._body, this.client._MsgPack, format)
+    ) as BatchPublishResult[];
+
+    // I don't love the below type assertions but not sure how to avoid them
+    if (singleSpecMode) {
+      return batchResults[0] as T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[];
+    } else {
+      return batchResults as T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[];
+    }
   }
 
   async batchPresence(channels: string[]): Promise<BatchPresenceResult> {
@@ -199,27 +193,11 @@ export class Rest {
 
     const channelsParam = channels.join(',');
 
-    return new Promise((resolve, reject) => {
-      Resource.get(
-        this.client,
-        '/presence',
-        headers,
-        { channels: channelsParam },
-        null,
-        (err, body, headers, unpacked) => {
-          if (err) {
-            reject(err);
-            return;
-          }
+    const response = await Resource.get(this.client, '/presence', headers, { channels: channelsParam }, null, true);
 
-          const batchResult = (
-            unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
-          ) as BatchPresenceResult;
-
-          resolve(batchResult);
-        }
-      );
-    });
+    return (
+      response._unpacked ? response._body : Utils.decodeBody(response._body, this.client._MsgPack, format)
+    ) as BatchPresenceResult;
   }
 
   async revokeTokens(
@@ -246,28 +224,19 @@ export class Rest {
 
     const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
 
-    return new Promise((resolve, reject) => {
-      Resource.post(
-        this.client,
-        `/keys/${keyName}/revokeTokens`,
-        requestBody,
-        headers,
-        {},
-        null,
-        (err, body, headers, unpacked) => {
-          if (err) {
-            reject(err);
-            return;
-          }
+    const response = await Resource.post(
+      this.client,
+      `/keys/${keyName}/revokeTokens`,
+      requestBody,
+      headers,
+      {},
+      null,
+      true
+    );
 
-          const batchResult = (
-            unpacked ? body : Utils.decodeBody(body, this.client._MsgPack, format)
-          ) as TokenRevocationResult;
-
-          resolve(batchResult);
-        }
-      );
-    });
+    return (
+      response._unpacked ? response._body : Utils.decodeBody(response._body, this.client._MsgPack, format)
+    ) as TokenRevocationResult;
   }
 
   setLog(logOptions: LoggerOptions): void {

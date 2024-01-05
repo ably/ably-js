@@ -40,11 +40,7 @@ class Admin {
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
     const requestBody = Utils.encodeBody(body, client._MsgPack, format);
-    return new Promise((resolve, reject) => {
-      Resource.post(client, '/push/publish', requestBody, headers, params, null, (err) =>
-        err ? reject(err) : resolve()
-      );
-    });
+    await Resource.post(client, '/push/publish', requestBody, headers, params, null, true);
   }
 }
 
@@ -67,27 +63,21 @@ class DeviceRegistrations {
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
     const requestBody = Utils.encodeBody(body, client._MsgPack, format);
-    return new Promise((resolve, reject) => {
-      Resource.put(
-        client,
-        '/push/deviceRegistrations/' + encodeURIComponent(device.id),
-        requestBody,
-        headers,
-        params,
-        null,
-        (err, body, headers, unpacked) => {
-          err
-            ? reject(err)
-            : resolve(
-                DeviceDetails.fromResponseBody(
-                  body as Record<string, unknown>,
-                  client._MsgPack,
-                  unpacked ? undefined : format
-                ) as DeviceDetails
-              );
-        }
-      );
-    });
+    const response = await Resource.put(
+      client,
+      '/push/deviceRegistrations/' + encodeURIComponent(device.id),
+      requestBody,
+      headers,
+      params,
+      null,
+      true
+    );
+
+    return DeviceDetails.fromResponseBody(
+      response._body as Record<string, unknown>,
+      client._MsgPack,
+      response._unpacked ? undefined : format
+    ) as DeviceDetails;
   }
 
   async get(deviceIdOrDetails: any): Promise<DeviceDetails> {
@@ -106,26 +96,20 @@ class DeviceRegistrations {
 
     Utils.mixin(headers, client.options.headers);
 
-    return new Promise((resolve, reject) => {
-      Resource.get(
-        client,
-        '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
-        headers,
-        {},
-        null,
-        function (err, body, headers, unpacked) {
-          err
-            ? reject(err)
-            : resolve(
-                DeviceDetails.fromResponseBody(
-                  body as Record<string, unknown>,
-                  client._MsgPack,
-                  unpacked ? undefined : format
-                ) as DeviceDetails
-              );
-        }
-      );
-    });
+    const response = await Resource.get(
+      client,
+      '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
+      headers,
+      {},
+      null,
+      true
+    );
+
+    return DeviceDetails.fromResponseBody(
+      response._body as Record<string, unknown>,
+      client._MsgPack,
+      response._unpacked ? undefined : format
+    ) as DeviceDetails;
   }
 
   async list(params: any): Promise<PaginatedResult<unknown>> {
@@ -168,16 +152,14 @@ class DeviceRegistrations {
 
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    return new Promise((resolve, reject) => {
-      Resource['delete'](
-        client,
-        '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
-        headers,
-        params,
-        null,
-        (err) => (err ? reject(err) : resolve())
-      );
-    });
+    await Resource['delete'](
+      client,
+      '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
+      headers,
+      params,
+      null,
+      true
+    );
   }
 
   async removeWhere(params: any): Promise<void> {
@@ -189,11 +171,7 @@ class DeviceRegistrations {
 
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    return new Promise((resolve, reject) => {
-      Resource['delete'](client, '/push/deviceRegistrations', headers, params, null, (err) =>
-        err ? reject(err) : resolve()
-      );
-    });
+    await Resource['delete'](client, '/push/deviceRegistrations', headers, params, null, true);
   }
 }
 
@@ -216,27 +194,21 @@ class ChannelSubscriptions {
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
     const requestBody = Utils.encodeBody(body, client._MsgPack, format);
-    return new Promise((resolve, reject) => {
-      Resource.post(
-        client,
-        '/push/channelSubscriptions',
-        requestBody,
-        headers,
-        params,
-        null,
-        function (err, body, headers, unpacked) {
-          err
-            ? reject(err)
-            : resolve(
-                PushChannelSubscription.fromResponseBody(
-                  body as Record<string, any>,
-                  client._MsgPack,
-                  unpacked ? undefined : format
-                ) as PushChannelSubscription
-              );
-        }
-      );
-    });
+    const response = await Resource.post(
+      client,
+      '/push/channelSubscriptions',
+      requestBody,
+      headers,
+      params,
+      null,
+      true
+    );
+
+    return PushChannelSubscription.fromResponseBody(
+      response._body as Record<string, any>,
+      client._MsgPack,
+      response._unpacked ? undefined : format
+    ) as PushChannelSubscription;
   }
 
   async list(params: any): Promise<PaginatedResult<unknown>> {
@@ -269,11 +241,7 @@ class ChannelSubscriptions {
 
     if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    return new Promise((resolve, reject) => {
-      Resource['delete'](client, '/push/channelSubscriptions', headers, params, null, (err) =>
-        err ? reject(err) : resolve()
-      );
-    });
+    await Resource['delete'](client, '/push/channelSubscriptions', headers, params, null, true);
   }
 
   /* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */

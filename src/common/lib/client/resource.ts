@@ -141,66 +141,191 @@ export type ResourceCallback<T = unknown> = (
   statusCode?: number
 ) => void;
 
+export interface ResourceResponse<T> {
+  _body?: T;
+  _headers?: RequestCallbackHeaders;
+  _unpacked?: boolean;
+  _statusCode?: number;
+}
+
+export interface ResourceResult<T> extends ResourceResponse<T> {
+  /**
+   * Any error returned by the underlying HTTP client.
+   */
+  _err: IPartialErrorInfo | null;
+}
+
 class Resource {
-  static get<T = unknown>(
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `_err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async get<T = unknown>(
     client: BaseClient,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback<T>
-  ): void {
-    Resource.do(HttpMethods.Get, client, path, null, headers, params, envelope, callback);
-  }
-
-  static delete(
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async get<T = unknown>(
     client: BaseClient,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
-  ): void {
-    Resource.do(HttpMethods.Delete, client, path, null, headers, params, envelope, callback);
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async get<T = unknown>(
+    client: BaseClient,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Get, client, path, null, headers, params, envelope, throwError ?? false);
   }
 
-  static post(
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `_err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async delete<T = unknown>(
+    client: BaseClient,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async delete<T = unknown>(
+    client: BaseClient,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async delete<T = unknown>(
+    client: BaseClient,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Delete, client, path, null, headers, params, envelope, throwError);
+  }
+
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `_err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async post<T = unknown>(
     client: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
-  ): void {
-    Resource.do(HttpMethods.Post, client, path, body, headers, params, envelope, callback);
-  }
-
-  static patch(
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async post<T = unknown>(
     client: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
-  ): void {
-    Resource.do(HttpMethods.Patch, client, path, body, headers, params, envelope, callback);
-  }
-
-  static put(
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async post<T = unknown>(
     client: BaseClient,
     path: string,
     body: unknown,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
-  ): void {
-    Resource.do(HttpMethods.Put, client, path, body, headers, params, envelope, callback);
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Post, client, path, body, headers, params, envelope, throwError);
   }
 
-  static do<T>(
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `_err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async patch<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async patch<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async patch<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Patch, client, path, body, headers, params, envelope, throwError);
+  }
+
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `_err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async put<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async put<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async put<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: unknown,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Put, client, path, body, headers, params, envelope, throwError);
+  }
+
+  static async do<T>(
     method: HttpMethods,
     client: BaseClient,
     path: string,
@@ -208,14 +333,30 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback<T>
-  ): void {
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    let callback: ResourceCallback<T>;
+
+    const promise = new Promise<ResourceResponse<T> | ResourceResult<T>>((resolve, reject) => {
+      callback = (err, body, headers, unpacked, statusCode) => {
+        if (throwError) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ _body: body, _headers: headers, _unpacked: unpacked, _statusCode: statusCode });
+          }
+        } else {
+          resolve({ _err: err, _body: body, _headers: headers, _unpacked: unpacked, _statusCode: statusCode });
+        }
+      };
+    });
+
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      callback = logResponseHandler(callback, method, path, params);
+      callback = logResponseHandler(callback!, method, path, params);
     }
 
     if (envelope) {
-      callback = callback && unenvelope(callback, client._MsgPack, envelope);
+      callback = unenvelope(callback!, client._MsgPack, envelope);
       (params = params || {})['envelope'] = envelope;
     }
 
@@ -268,7 +409,9 @@ class Resource {
       });
     }
 
-    withAuthDetails(client, headers, params, callback, doRequest);
+    withAuthDetails(client, headers, params, callback!, doRequest);
+
+    return promise;
   }
 }
 
