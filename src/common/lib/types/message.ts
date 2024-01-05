@@ -8,6 +8,7 @@ import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/
 import * as API from '../../../../ably';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import { MsgPack } from 'common/types/msgpack';
+import { StandardCallback } from 'common/types/utils';
 
 export type CipherOptions = {
   channelCipher: {
@@ -101,7 +102,7 @@ export async function fromEncodedArray(
   );
 }
 
-function encrypt(msg: Message | PresenceMessage, options: CipherOptions, callback: Function) {
+async function encrypt<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
   let data = msg.data,
     encoding = msg.encoding,
     cipher = options.channelCipher;
@@ -111,18 +112,24 @@ function encrypt(msg: Message | PresenceMessage, options: CipherOptions, callbac
     data = Platform.BufferUtils.utf8Encode(String(data));
     encoding = encoding + 'utf-8/';
   }
-  cipher.encrypt(data, function (err: Error, data: unknown) {
-    if (err) {
-      callback(err);
-      return;
-    }
-    msg.data = data;
-    msg.encoding = encoding + 'cipher+' + cipher.algorithm;
-    callback(null, msg);
+  return new Promise((resolve, reject) => {
+    cipher.encrypt(data, function (err: Error, data: unknown) {
+      if (err) {
+        reject(err);
+        return;
+      }
+      msg.data = data;
+      msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+      resolve(msg);
+    });
   });
 }
 
-export function encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function): void {
+export function encode<T extends Message | PresenceMessage>(
+  msg: T,
+  options: CipherOptions,
+  callback: StandardCallback<T>
+): void {
   const data = msg.data;
   const nativeDataType =
     typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
@@ -137,7 +144,7 @@ export function encode(msg: Message | PresenceMessage, options: CipherOptions, c
   }
 
   if (options != null && options.cipher) {
-    encrypt(msg, options, callback);
+    Utils.whenPromiseSettles(encrypt(msg, options), callback);
   } else {
     callback(null, msg);
   }
