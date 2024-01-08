@@ -266,7 +266,7 @@ export class Rest {
     );
   }
 
-  revokeTokens(
+  async revokeTokens(
     specifiers: TokenRevocationTargetSpecifier[],
     options?: TokenRevocationOptions
   ): Promise<TokenRevocationResult> {
