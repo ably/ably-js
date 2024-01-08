@@ -320,14 +320,14 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect(result.results[0].appliesAt).to.be.greaterThan(serverTimeThirtySecondsAfterStartOfTest);
     });
 
-    it('throws an error when using token auth', function () {
+    it('throws an error when using token auth', async function () {
       const rest = helper.AblyRest({
         useTokenAuth: true,
       });
 
       let verifiedError = false;
       try {
-        rest.auth.revokeTokens([{ type: 'clientId', value: 'clientId1' }], function () {});
+        await rest.auth.revokeTokens([{ type: 'clientId', value: 'clientId1' }], function () {});
       } catch (err) {
         expect(err.statusCode).to.equal(401);
         expect(err.code).to.equal(40162);
