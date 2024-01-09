@@ -6,7 +6,7 @@ export type RestAgentOptions = {
   maxSockets: number;
 };
 
-export default interface ClientOptions extends API.Types.ClientOptions {
+export default interface ClientOptions extends API.ClientOptions {
   restAgentOptions?: RestAgentOptions;
   pushFullWait?: boolean;
   agents?: Record<string, string | undefined>;

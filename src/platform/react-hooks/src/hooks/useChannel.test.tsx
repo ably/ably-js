@@ -3,12 +3,12 @@ import { it, beforeEach, describe, expect, vi } from 'vitest';
 import { useChannel } from './useChannel.js';
 import { render, screen, waitFor } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
-import { Types } from '../../../../../ably.js';
+import * as Ably from '../../../../../ably.js';
 import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Types.Realtime}>{children}</AblyProvider>);
+  return render(<AblyProvider client={client as unknown as Ably.AbstractRealtime}>{children}</AblyProvider>);
 }
 
 describe('useChannel', () => {
@@ -57,7 +57,7 @@ describe('useChannel', () => {
   it('useChannel works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
-      <AblyProvider client={otherClient as unknown as Types.Realtime} id="otherClient">
+      <AblyProvider client={otherClient as unknown as Ably.AbstractRealtime} id="otherClient">
         <UseChannelComponentMultipleClients />
       </AblyProvider>
     );
@@ -177,7 +177,7 @@ describe('useChannel', () => {
 });
 
 const UseChannelComponentMultipleClients = () => {
-  const [messages, updateMessages] = useState<Types.Message[]>([]);
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
   useChannel({ channelName: 'blah' }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
@@ -191,7 +191,7 @@ const UseChannelComponentMultipleClients = () => {
 };
 
 const UseChannelComponent = ({ skip }: { skip?: boolean }) => {
-  const [messages, updateMessages] = useState<Types.Message[]>([]);
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
   useChannel({ channelName: 'blah', skip }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
@@ -202,8 +202,8 @@ const UseChannelComponent = ({ skip }: { skip?: boolean }) => {
 };
 
 interface UseChannelStateErrorsComponentProps {
-  onConnectionError?: (err: Types.ErrorInfo) => unknown;
-  onChannelError?: (err: Types.ErrorInfo) => unknown;
+  onConnectionError?: (err: Ably.ErrorInfo) => unknown;
+  onChannelError?: (err: Ably.ErrorInfo) => unknown;
 }
 
 const UseChannelStateErrorsComponent = ({ onConnectionError, onChannelError }: UseChannelStateErrorsComponentProps) => {

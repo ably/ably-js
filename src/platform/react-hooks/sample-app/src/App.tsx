@@ -1,4 +1,4 @@
-import { Types } from 'ably';
+import * as Ably from 'ably';
 import React, { useState } from 'react';
 import {
   useChannel,
@@ -10,7 +10,7 @@ import {
 import './App.css';
 
 function App() {
-  const [messages, updateMessages] = useState<Types.Message[]>([]);
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
   const [skip, setSkip] = useState(false);
   const { channel, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
     updateMessages((prev) => [...prev, message]);
@@ -32,8 +32,8 @@ function App() {
 
   const [ablyErr, setAblyErr] = useState('');
   const [channelState, setChannelState] = useState(channel.state);
-  const [previousChannelState, setPreviousChannelState] = useState<undefined | Types.ChannelState>();
-  const [channelStateReason, setChannelStateReason] = useState<undefined | Types.ErrorInfo>();
+  const [previousChannelState, setPreviousChannelState] = useState<undefined | Ably.ChannelState>();
+  const [channelStateReason, setChannelStateReason] = useState<undefined | Ably.ErrorInfo>();
 
   useChannelStateListener('your-channel-name', (stateChange) => {
     setAblyErr(JSON.stringify(stateChange.reason));
@@ -106,7 +106,7 @@ function App() {
 function ConnectionState() {
   const ably = useAbly();
   const [connectionState, setConnectionState] = useState(ably.connection.state);
-  const [connectionError, setConnectionError] = useState<Types.ErrorInfo | null>(null);
+  const [connectionError, setConnectionError] = useState<Ably.ErrorInfo | null>(null);
   useConnectionStateListener((stateChange) => {
     console.log(stateChange);
     setConnectionState(stateChange.current);

@@ -26,7 +26,7 @@ export interface IConvertibleToErrorInfo {
   statusCode: number;
 }
 
-export default class ErrorInfo extends Error implements IPartialErrorInfo, API.Types.ErrorInfo {
+export default class ErrorInfo extends Error implements IPartialErrorInfo, API.ErrorInfo {
   code: number;
   statusCode: number;
   cause?: string | Error | ErrorInfo;

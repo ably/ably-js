@@ -133,6 +133,6 @@
     "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modules.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "modulereport": "tsc --noEmit scripts/moduleReport.ts && esr scripts/moduleReport.ts",
-    "docs": "typedoc --entryPoints ably.d.ts --out typedoc/generated/default --readme typedoc/landing-pages/default.md && typedoc --entryPoints modules.d.ts --out typedoc/generated/modules --name \"ably (modular version)\" --readme typedoc/landing-pages/modules.md && cp typedoc/landing-pages/choose-library.html typedoc/generated/index.html"
+    "docs": "typedoc"
   }
 }

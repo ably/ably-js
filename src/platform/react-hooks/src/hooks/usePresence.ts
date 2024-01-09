@@ -1,4 +1,4 @@
-import { Types } from '../../../../../ably.js';
+import * as Ably from '../../../../../ably.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
@@ -7,12 +7,12 @@ import { useStateErrors } from './useStateErrors.js';
 export interface PresenceResult<T> {
   presenceData: PresenceMessage<T>[];
   updateStatus: (messageOrPresenceObject: T) => void;
-  connectionError: Types.ErrorInfo | null;
-  channelError: Types.ErrorInfo | null;
+  connectionError: Ably.ErrorInfo | null;
+  channelError: Ably.ErrorInfo | null;
 }
 
 export type OnPresenceMessageReceived<T> = (presenceData: PresenceMessage<T>) => void;
-export type UseStatePresenceUpdate = (presenceData: Types.PresenceMessage[]) => void;
+export type UseStatePresenceUpdate = (presenceData: Ably.PresenceMessage[]) => void;
 
 export function usePresence<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,
@@ -48,7 +48,7 @@ export function usePresence<T = any>(
 
   const [presenceData, updatePresenceData] = useState<Array<PresenceMessage<T>>>([]);
 
-  const updatePresence = async (message?: Types.PresenceMessage) => {
+  const updatePresence = async (message?: Ably.PresenceMessage) => {
     const snapshot = await channel.presence.get();
     updatePresenceData(snapshot);
 
@@ -104,7 +104,7 @@ export function usePresence<T = any>(
 }
 
 interface PresenceMessage<T = any> {
-  action: Types.PresenceAction;
+  action: Ably.PresenceAction;
   clientId: string;
   connectionId: string;
   data: T;

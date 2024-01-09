@@ -1,14 +1,14 @@
-import { Types } from '../../../../ably.js';
+import * as Ably from '../../../../ably.js';
 
 export type ChannelNameAndOptions = {
   channelName: string;
-  options?: Types.ChannelOptions;
+  options?: Ably.ChannelOptions;
   id?: string;
   subscribeOnly?: boolean;
   skip?: boolean;
 
-  onConnectionError?: (error: Types.ErrorInfo) => unknown;
-  onChannelError?: (error: Types.ErrorInfo) => unknown;
+  onConnectionError?: (error: Ably.ErrorInfo) => unknown;
+  onChannelError?: (error: Ably.ErrorInfo) => unknown;
 };
 
 export type ChannelNameAndId = {
@@ -19,7 +19,7 @@ export type ChannelParameters = string | ChannelNameAndOptions;
 
 export const version = '1.2.47';
 
-export function channelOptionsWithAgent(options?: Types.ChannelOptions) {
+export function channelOptionsWithAgent(options?: Ably.ChannelOptions) {
   return {
     ...options,
     params: {

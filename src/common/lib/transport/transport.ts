@@ -321,7 +321,7 @@ abstract class Transport extends EventEmitter {
     transport.connect();
   }
 
-  onAuthUpdated?: (tokenDetails: API.Types.TokenDetails) => void;
+  onAuthUpdated?: (tokenDetails: API.TokenDetails) => void;
 }
 
 export default Transport;

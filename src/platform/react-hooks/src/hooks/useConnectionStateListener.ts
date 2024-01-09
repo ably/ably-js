@@ -1,19 +1,19 @@
-import { Types } from '../../../../../ably.js';
+import * as Ably from '../../../../../ably.js';
 import { useAbly } from './useAbly.js';
 import { useEventListener } from './useEventListener.js';
 
-type ConnectionStateListener = (stateChange: Types.ConnectionStateChange) => any;
+type ConnectionStateListener = (stateChange: Ably.ConnectionStateChange) => any;
 
 export function useConnectionStateListener(listener: ConnectionStateListener, id?: string);
 
 export function useConnectionStateListener(
-  state: Types.ConnectionState | Types.ConnectionState[],
+  state: Ably.ConnectionState | Ably.ConnectionState[],
   listener: ConnectionStateListener,
   id?: string
 );
 
 export function useConnectionStateListener(
-  stateOrListener?: Types.ConnectionState | Types.ConnectionState[] | ConnectionStateListener,
+  stateOrListener?: Ably.ConnectionState | Ably.ConnectionState[] | ConnectionStateListener,
   listenerOrId?: string | ConnectionStateListener,
   id = 'default'
 ) {
@@ -23,5 +23,5 @@ export function useConnectionStateListener(
   const listener = typeof listenerOrId === 'function' ? listenerOrId : (stateOrListener as ConnectionStateListener);
   const state = typeof stateOrListener !== 'function' ? stateOrListener : undefined;
 
-  useEventListener<Types.ConnectionState, Types.ConnectionStateChange>(ably.connection, listener, state);
+  useEventListener<Ably.ConnectionState, Ably.ConnectionStateChange>(ably.connection, listener, state);
 }

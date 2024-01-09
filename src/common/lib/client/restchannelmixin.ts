@@ -46,8 +46,8 @@ export class RestChannelMixin {
 
   static status(
     channel: RestChannel | RealtimeChannel,
-    callback?: StandardCallback<API.Types.ChannelDetails>
-  ): void | Promise<API.Types.ChannelDetails> {
+    callback?: StandardCallback<API.ChannelDetails>
+  ): void | Promise<API.ChannelDetails> {
     if (typeof callback !== 'function') {
       return Utils.promisify(this, 'status', [channel]);
     }
@@ -55,13 +55,6 @@ export class RestChannelMixin {
     const format = channel.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
     const headers = Defaults.defaultPostHeaders(channel.client.options, { format });
 
-    Resource.get<API.Types.ChannelDetails>(
-      channel.client,
-      this.basePath(channel),
-      headers,
-      {},
-      format,
-      callback || noop
-    );
+    Resource.get<API.ChannelDetails>(channel.client, this.basePath(channel), headers, {}, format, callback || noop);
   }
 }

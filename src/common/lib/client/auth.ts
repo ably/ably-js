@@ -13,11 +13,11 @@ import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import Platform from '../../platform';
 import Defaults from '../util/defaults';
 
-type BatchResult<T> = API.Types.BatchResult<T>;
-type TokenRevocationTargetSpecifier = API.Types.TokenRevocationTargetSpecifier;
-type TokenRevocationOptions = API.Types.TokenRevocationOptions;
-type TokenRevocationSuccessResult = API.Types.TokenRevocationSuccessResult;
-type TokenRevocationFailureResult = API.Types.TokenRevocationFailureResult;
+type BatchResult<T> = API.BatchResult<T>;
+type TokenRevocationTargetSpecifier = API.TokenRevocationTargetSpecifier;
+type TokenRevocationOptions = API.TokenRevocationOptions;
+type TokenRevocationSuccessResult = API.TokenRevocationSuccessResult;
+type TokenRevocationFailureResult = API.TokenRevocationFailureResult;
 type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
 
 const MAX_TOKEN_LENGTH = Math.pow(2, 17);
@@ -74,7 +74,7 @@ function c14n(capability?: string | Record<string, Array<string>>) {
   return JSON.stringify(c14nCapability);
 }
 
-function logAndValidateTokenAuthMethod(authOptions: API.Types.AuthOptions) {
+function logAndValidateTokenAuthMethod(authOptions: API.AuthOptions) {
   if (authOptions.authCallback) {
     Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
   } else if (authOptions.authUrl) {
@@ -114,12 +114,12 @@ function getTokenRequestId() {
 
 class Auth {
   client: BaseClient;
-  tokenParams: API.Types.TokenParams;
+  tokenParams: API.TokenParams;
   currentTokenRequestId: number | null;
   waitingForTokenRequest: ReturnType<typeof Multicaster.create> | null;
   // This initialization is always overwritten and only used to prevent a TypeScript compiler error
-  authOptions: API.Types.AuthOptions = {} as API.Types.AuthOptions;
-  tokenDetails?: API.Types.TokenDetails | null;
+  authOptions: API.AuthOptions = {} as API.AuthOptions;
+  tokenDetails?: API.TokenDetails | null;
   method?: string;
   key?: string;
   basicKey?: string;
@@ -141,7 +141,7 @@ class Auth {
           'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help'
         );
       }
-      this._saveTokenOptions(options.defaultTokenParams as API.Types.TokenDetails, options);
+      this._saveTokenOptions(options.defaultTokenParams as API.TokenDetails, options);
       logAndValidateTokenAuthMethod(this.authOptions);
     } else {
       /* Basic auth */
@@ -189,7 +189,7 @@ class Auth {
    *
    * @param callback (err, tokenDetails)
    */
-  authorize(tokenParams: API.Types.TokenParams | null, callback: Function): void;
+  authorize(tokenParams: API.TokenParams | null, callback: Function): void;
 
   /**
    * Instructs the library to get a token immediately and ensures Token Auth
@@ -245,18 +245,14 @@ class Auth {
    *
    * @param callback (err, tokenDetails)
    */
-  authorize(
-    tokenParams: API.Types.TokenParams | null,
-    authOptions: API.Types.AuthOptions | null,
-    callback: Function
-  ): void;
+  authorize(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null, callback: Function): void;
 
   authorize(
     tokenParams: Record<string, any> | Function | null,
-    authOptions?: API.Types.AuthOptions | null | Function,
+    authOptions?: API.AuthOptions | null | Function,
     callback?: Function
   ): void | Promise<void> {
-    let _authOptions: API.Types.AuthOptions | null;
+    let _authOptions: API.AuthOptions | null;
     /* shuffle and normalise arguments as necessary */
     if (typeof tokenParams == 'function' && !callback) {
       callback = tokenParams;
@@ -265,7 +261,7 @@ class Auth {
       callback = authOptions;
       _authOptions = null;
     } else {
-      _authOptions = authOptions as API.Types.AuthOptions;
+      _authOptions = authOptions as API.AuthOptions;
     }
     if (!callback) {
       return Utils.promisify(this, 'authorize', arguments);
@@ -278,9 +274,9 @@ class Auth {
     }
 
     this._forceNewToken(
-      tokenParams as API.Types.TokenParams,
+      tokenParams as API.TokenParams,
       _authOptions,
-      (err: ErrorInfo, tokenDetails: API.Types.TokenDetails) => {
+      (err: ErrorInfo, tokenDetails: API.TokenDetails) => {
         if (err) {
           if ((this.client as BaseRealtime).connection && err.statusCode === HttpStatusCodes.Forbidden) {
             /* Per RSA4d & RSA4d1, if the auth server explicitly repudiates our right to
@@ -309,11 +305,7 @@ class Auth {
   /* For internal use, eg by connectionManager - useful when want to call back
    * as soon as we have the new token, rather than waiting for it to take
    * effect on the connection as #authorize does */
-  _forceNewToken(
-    tokenParams: API.Types.TokenParams | null,
-    authOptions: API.Types.AuthOptions | null,
-    callback: Function
-  ) {
+  _forceNewToken(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null, callback: Function) {
     /* get rid of current token even if still valid */
     this.tokenDetails = null;
 
@@ -324,7 +316,7 @@ class Auth {
 
     logAndValidateTokenAuthMethod(this.authOptions);
 
-    this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) => {
+    this._ensureValidAuthCredentials(true, (err: ErrorInfo | null, tokenDetails?: API.TokenDetails) => {
       /* RSA10g */
       delete this.tokenParams.timestamp;
       delete this.authOptions.queryTime;
@@ -336,7 +328,7 @@ class Auth {
    * Request an access token
    * @param callback (err, tokenDetails)
    */
-  requestToken(callback: StandardCallback<API.Types.TokenDetails>): void;
+  requestToken(callback: StandardCallback<API.TokenDetails>): void;
 
   /**
    * Request an access token
@@ -358,7 +350,7 @@ class Auth {
    *
    * @param callback (err, tokenDetails)
    */
-  requestToken(tokenParams: API.Types.TokenParams | null, callback: StandardCallback<API.Types.TokenDetails>): void;
+  requestToken(tokenParams: API.TokenParams | null, callback: StandardCallback<API.TokenDetails>): void;
 
   /**
    * Request an access token
@@ -407,15 +399,15 @@ class Auth {
    * @param callback (err, tokenDetails)
    */
   requestToken(
-    tokenParams: API.Types.TokenParams | null,
-    authOptions: API.Types.AuthOptions,
-    callback: StandardCallback<API.Types.TokenDetails>
+    tokenParams: API.TokenParams | null,
+    authOptions: API.AuthOptions,
+    callback: StandardCallback<API.TokenDetails>
   ): void;
 
   requestToken(
-    tokenParams: API.Types.TokenParams | StandardCallback<API.Types.TokenDetails> | null,
-    authOptions?: any | StandardCallback<API.Types.TokenDetails>,
-    callback?: StandardCallback<API.Types.TokenDetails>
+    tokenParams: API.TokenParams | StandardCallback<API.TokenDetails> | null,
+    authOptions?: any | StandardCallback<API.TokenDetails>,
+    callback?: StandardCallback<API.TokenDetails>
   ): void | Promise<void> {
     /* shuffle and normalise arguments as necessary */
     if (typeof tokenParams == 'function' && !callback) {
@@ -645,7 +637,7 @@ class Auth {
             )
           );
         } else {
-          _callback(null, { token: tokenRequestOrDetails } as API.Types.TokenDetails);
+          _callback(null, { token: tokenRequestOrDetails } as API.TokenDetails);
         }
         return;
       }
@@ -685,7 +677,7 @@ class Auth {
         tokenRequestOrDetails,
         function (
           err?: ErrorInfo | ErrnoException | null,
-          tokenResponse?: API.Types.TokenDetails | string,
+          tokenResponse?: API.TokenDetails | string,
           headers?: Record<string, string>,
           unpacked?: boolean
         ) {
@@ -700,7 +692,7 @@ class Auth {
           }
           if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
           Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
-          _callback(null, tokenResponse as API.Types.TokenDetails);
+          _callback(null, tokenResponse as API.TokenDetails);
         }
       );
     });
@@ -741,7 +733,7 @@ class Auth {
    *
    * @param callback
    */
-  createTokenRequest(tokenParams: API.Types.TokenParams | null, authOptions: any, callback: Function) {
+  createTokenRequest(tokenParams: API.TokenParams | null, authOptions: any, callback: Function) {
     /* shuffle and normalise arguments as necessary */
     if (typeof tokenParams == 'function' && !callback) {
       callback = tokenParams;
@@ -756,7 +748,7 @@ class Auth {
 
     /* RSA9h: if authOptions passed in, they're used instead of stored, don't merge them */
     authOptions = authOptions || this.authOptions;
-    tokenParams = tokenParams || Utils.copy<API.Types.TokenParams>(this.tokenParams);
+    tokenParams = tokenParams || Utils.copy<API.TokenParams>(this.tokenParams);
 
     const key = authOptions.key;
     if (!key) {
@@ -830,7 +822,7 @@ class Auth {
   getAuthParams(callback: Function) {
     if (this.method == 'basic') callback(null, { key: this.key });
     else
-      this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) {
+      this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.TokenDetails) {
         if (err) {
           callback(err);
           return;
@@ -850,7 +842,7 @@ class Auth {
     if (this.method == 'basic') {
       callback(null, { authorization: 'Basic ' + this.basicKey });
     } else {
-      this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.Types.TokenDetails) {
+      this._ensureValidAuthCredentials(false, function (err: ErrorInfo | null, tokenDetails?: API.TokenDetails) {
         if (err) {
           callback(err);
           return;
@@ -885,7 +877,7 @@ class Auth {
     return this.client.serverTimeOffset !== null;
   }
 
-  _saveBasicOptions(authOptions: API.Types.AuthOptions) {
+  _saveBasicOptions(authOptions: API.AuthOptions) {
     this.method = 'basic';
     this.key = authOptions.key;
     this.basicKey = Utils.toBase64(authOptions.key as string);
@@ -895,7 +887,7 @@ class Auth {
     }
   }
 
-  _saveTokenOptions(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions | null) {
+  _saveTokenOptions(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null) {
     this.method = 'token';
 
     if (tokenParams) {
@@ -911,7 +903,7 @@ class Auth {
         /* options.token may contain a token string or, for convenience, a TokenDetails */
         authOptions.tokenDetails =
           typeof authOptions.token === 'string'
-            ? ({ token: authOptions.token } as API.Types.TokenDetails)
+            ? ({ token: authOptions.token } as API.TokenDetails)
             : authOptions.token;
       }
 
@@ -931,7 +923,7 @@ class Auth {
    * progress, making all pending callbacks wait for the new one */
   _ensureValidAuthCredentials(
     forceSupersede: boolean,
-    callback: (err: ErrorInfo | null, token?: API.Types.TokenDetails) => void
+    callback: (err: ErrorInfo | null, token?: API.TokenDetails) => void
   ) {
     const token = this.tokenDetails;
 
@@ -967,7 +959,7 @@ class Auth {
 
     /* Request a new token */
     const tokenRequestId = (this.currentTokenRequestId = getTokenRequestId());
-    this.requestToken(this.tokenParams, this.authOptions, (err: Function, tokenResponse?: API.Types.TokenDetails) => {
+    this.requestToken(this.tokenParams, this.authOptions, (err: Function, tokenResponse?: API.TokenDetails) => {
       if ((this.currentTokenRequestId as number) > tokenRequestId) {
         Logger.logAction(
           Logger.LOG_MINOR,

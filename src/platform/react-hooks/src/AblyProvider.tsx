@@ -1,18 +1,17 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import * as Ably from 'ably';
-import { Types } from '../../../../ably.js';
 import React, { useMemo } from 'react';
 
 const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'function';
 
 interface AblyProviderProps {
   children?: React.ReactNode | React.ReactNode[] | null;
-  client?: Ably.Types.Realtime;
+  client?: Ably.Ably.AbstractRealtime;
   id?: string;
 }
 
-type AblyContextType = React.Context<Types.Realtime>;
+type AblyContextType = React.Context<Ably.AbstractRealtime>;
 
 // An object is appended to `React.createContext` which stores all contexts
 // indexed by id, which is used by useAbly to find the correct context when an

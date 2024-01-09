@@ -11,7 +11,7 @@ function toActionValue(actionString: string) {
   return actions.indexOf(actionString);
 }
 
-export async function fromEncoded(encoded: unknown, options?: API.Types.ChannelOptions): Promise<PresenceMessage> {
+export async function fromEncoded(encoded: unknown, options?: API.ChannelOptions): Promise<PresenceMessage> {
   const msg = fromValues(encoded as PresenceMessage | Record<string, unknown>, true);
   /* if decoding fails at any point, catch and return the message decoded to
    * the fullest extent possible */
@@ -25,7 +25,7 @@ export async function fromEncoded(encoded: unknown, options?: API.Types.ChannelO
 
 export async function fromEncodedArray(
   encodedArray: unknown[],
-  options?: API.Types.ChannelOptions
+  options?: API.ChannelOptions
 ): Promise<PresenceMessage[]> {
   return Promise.all(
     encodedArray.map(function (encoded) {

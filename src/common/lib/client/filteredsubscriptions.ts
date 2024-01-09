@@ -3,13 +3,9 @@ import RealtimeChannel from './realtimechannel';
 import Message from '../types/message';
 
 export class FilteredSubscriptions {
-  static subscribeFilter(
-    channel: RealtimeChannel,
-    filter: API.Types.MessageFilter,
-    listener: API.Types.messageCallback<Message>
-  ) {
+  static subscribeFilter(channel: RealtimeChannel, filter: API.MessageFilter, listener: API.messageCallback<Message>) {
     const filteredListener = (m: Message) => {
-      const mapping: { [key in keyof API.Types.MessageFilter]: any } = {
+      const mapping: { [key in keyof API.MessageFilter]: any } = {
         name: m.name,
         refTimeserial: m.extras?.ref?.timeserial,
         refType: m.extras?.ref?.type,
@@ -19,7 +15,7 @@ export class FilteredSubscriptions {
       // Check if any values are defined in the filter and if they match the value in the message object
       if (
         Object.entries(filter).find(([key, value]) =>
-          value !== undefined ? mapping[key as keyof API.Types.MessageFilter] !== value : false
+          value !== undefined ? mapping[key as keyof API.MessageFilter] !== value : false
         )
       ) {
         return;
@@ -33,36 +29,36 @@ export class FilteredSubscriptions {
   // Adds a new filtered subscription
   static addFilteredSubscription(
     channel: RealtimeChannel,
-    filter: API.Types.MessageFilter,
-    realListener: API.Types.messageCallback<Message>,
-    filteredListener: API.Types.messageCallback<Message>
+    filter: API.MessageFilter,
+    realListener: API.messageCallback<Message>,
+    filteredListener: API.messageCallback<Message>
   ) {
     if (!channel.filteredSubscriptions) {
       channel.filteredSubscriptions = new Map<
-        API.Types.messageCallback<Message>,
-        Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>
+        API.messageCallback<Message>,
+        Map<API.MessageFilter, API.messageCallback<Message>[]>
       >();
     }
     if (channel.filteredSubscriptions.has(realListener)) {
       const realListenerMap = channel.filteredSubscriptions.get(realListener) as Map<
-        API.Types.MessageFilter,
-        API.Types.messageCallback<Message>[]
+        API.MessageFilter,
+        API.messageCallback<Message>[]
       >;
       // Add the filtered listener to the map, or append to the array if this filter has already been used
       realListenerMap.set(filter, realListenerMap?.get(filter)?.concat(filteredListener) || [filteredListener]);
     } else {
       channel.filteredSubscriptions.set(
         realListener,
-        new Map<API.Types.MessageFilter, API.Types.messageCallback<Message>[]>([[filter, [filteredListener]]])
+        new Map<API.MessageFilter, API.messageCallback<Message>[]>([[filter, [filteredListener]]])
       );
     }
   }
 
   static getAndDeleteFilteredSubscriptions(
     channel: RealtimeChannel,
-    filter: API.Types.MessageFilter | undefined,
-    realListener: API.Types.messageCallback<Message> | undefined
-  ): API.Types.messageCallback<Message>[] {
+    filter: API.MessageFilter | undefined,
+    realListener: API.messageCallback<Message> | undefined
+  ): API.messageCallback<Message>[] {
     // No filtered subscriptions map means there has been no filtered subscriptions yet, so return nothing
     if (!channel.filteredSubscriptions) {
       return [];
@@ -82,9 +78,9 @@ export class FilteredSubscriptions {
           return listenerMaps;
         })
         .reduce(
-          (prev, cur) => (cur ? (prev as API.Types.messageCallback<Message>[]).concat(...cur) : prev),
+          (prev, cur) => (cur ? (prev as API.messageCallback<Message>[]).concat(...cur) : prev),
           []
-        ) as API.Types.messageCallback<Message>[];
+        ) as API.messageCallback<Message>[];
     }
 
     // No subscriptions for this listener
@@ -92,8 +88,8 @@ export class FilteredSubscriptions {
       return [];
     }
     const realListenerMap = channel.filteredSubscriptions.get(realListener) as Map<
-      API.Types.MessageFilter,
-      API.Types.messageCallback<Message>[]
+      API.MessageFilter,
+      API.messageCallback<Message>[]
     >;
     // If no filter is specified return all listeners using that function
     if (!filter) {
