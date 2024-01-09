@@ -247,7 +247,7 @@ class Resource {
         function (
           err: ErrorInfo | ErrnoException | null | undefined,
           res: any,
-          headers: Record<string, string>,
+          resHeaders: Record<string, string>,
           unpacked?: boolean,
           statusCode?: number
         ) {
@@ -263,7 +263,7 @@ class Resource {
             });
             return;
           }
-          callback(err as ErrorInfo, res, headers, unpacked, statusCode);
+          callback(err as ErrorInfo, res, resHeaders, unpacked, statusCode);
         }
       );
     }
