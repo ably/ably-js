@@ -2,7 +2,6 @@
 const path = require('path');
 const { BannerPlugin } = require('webpack');
 const banner = require('./src/fragments/license');
-const CopyPlugin = require('copy-webpack-plugin');
 // This is needed for baseUrl to resolve correctly from tsconfig
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 
@@ -64,26 +63,6 @@ const nodeConfig = {
   },
 };
 
-const browserConfig = {
-  ...baseConfig,
-  output: {
-    ...baseConfig.output,
-    filename: 'ably.js',
-  },
-  entry: {
-    index: platformPath('web'),
-  },
-  resolve: {
-    ...baseConfig.resolve,
-    fallback: {
-      crypto: false,
-    },
-  },
-  optimization: {
-    minimize: false,
-  },
-};
-
 const nativeScriptConfig = {
   ...baseConfig,
   output: {
@@ -137,38 +116,8 @@ const reactNativeConfig = {
   },
 };
 
-const webworkerConfig = {
-  target: ['webworker', 'es5'],
-  ...browserConfig,
-  entry: {
-    index: platformPath('web', 'index-webworker.ts'),
-  },
-  output: {
-    ...baseConfig.output,
-    filename: 'ably-webworker.min.js',
-    globalObject: 'this',
-  },
-  optimization: {
-    minimize: true,
-  },
-  performance: {
-    hints: 'warning',
-  },
-  plugins: [
-    new CopyPlugin({
-      patterns: [
-        {
-          from: path.resolve(__dirname, 'src', 'fragments', 'ably.d.ts'),
-          to: path.resolve(__dirname, 'build', 'ably-webworker.min.d.ts'),
-        },
-      ],
-    }),
-  ],
-};
-
 module.exports = {
   node: nodeConfig,
-  webworker: webworkerConfig,
   nativeScript: nativeScriptConfig,
   reactNative: reactNativeConfig,
 };

@@ -20,6 +20,16 @@ function allowComet() {
   return !globalObject.WebSocket || !loc || !loc.origin || loc.origin.indexOf('http') > -1;
 }
 
+// from: https://stackoverflow.com/a/18002694
+export function isWebWorkerContext(): boolean {
+  // run this in global scope of window or worker. since window.self = window, we're ok
+  if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 const userAgent = globalObject.navigator && globalObject.navigator.userAgent.toString();
 const currentUrl = globalObject.location && globalObject.location.href;
 
@@ -68,6 +78,7 @@ const Config: IPlatformConfig = {
       }
     };
   })(globalObject.crypto || msCrypto),
+  isWebworker: isWebWorkerContext(),
 };
 
 export default Config;

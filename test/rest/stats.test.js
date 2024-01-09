@@ -75,6 +75,27 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
+    it('contains expected fields', async () => {
+      // To provoke a non-undefined `inProgress` in the response, we publish a message and fetch stats for the current hour. (I wasn’t able to provoke a non-undefined `inProgress` using stats API fixtures.)
+      const now = new Date(await rest.time());
+      // If the hour is about to turn, wait for it to turn (with a 5-second extra wait to hopefully account for clock differences between Ably servers).
+      if (now.getUTCMinutes() === 59 && now.getUTCSeconds() > 45) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (5 + (60 - now.getUTCSeconds()))));
+      }
+      await rest.channels.get('channel').publish('message', 'data');
+      // ably.com documentation says "The most recent statistics are delayed by up to six seconds."
+      await new Promise((resolve) => setTimeout(resolve, 6000 + 4000 /* a bit of extra tolerance */));
+
+      const stats = (await rest.stats({ end: Date.now(), unit: 'hour' })).items[0];
+
+      expect(stats.entries).to.be.a('object');
+      expect(stats.schema).to.be.a('string');
+      expect(stats.appId).to.be.a('string');
+      expect(stats.inProgress).to.be.a('string');
+      expect(stats.unit).to.be.a('string');
+      expect(stats.intervalId).to.be.a('string');
+    });
+
     /**
      * Using an interval ID string format, check minute-level inbound and outbound stats match fixture data (forwards)
      * @spec : (RSC6b4)
@@ -91,8 +112,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var totalInbound = 0,
         totalOutbound = 0;
       for (var i = 0; i < stats.length; i++) {
-        totalInbound += stats[i].inbound.all.messages.count;
-        totalOutbound += stats[i].outbound.all.messages.count;
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
       }
 
       expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
@@ -115,8 +136,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var totalInbound = 0,
         totalOutbound = 0;
       for (var i = 0; i < stats.length; i++) {
-        totalInbound += stats[i].inbound.all.messages.count;
-        totalOutbound += stats[i].outbound.all.messages.count;
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
       }
 
       expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
@@ -140,8 +161,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var totalInbound = 0,
         totalOutbound = 0;
       for (var i = 0; i < stats.length; i++) {
-        totalInbound += stats[i].inbound.all.messages.count;
-        totalOutbound += stats[i].outbound.all.messages.count;
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
       }
 
       expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
@@ -164,8 +185,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var totalInbound = 0,
         totalOutbound = 0;
       for (var i = 0; i < stats.length; i++) {
-        totalInbound += stats[i].inbound.all.messages.count;
-        totalOutbound += stats[i].outbound.all.messages.count;
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
       }
 
       expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
@@ -188,8 +209,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var totalInbound = 0,
         totalOutbound = 0;
       for (var i = 0; i < stats.length; i++) {
-        totalInbound += stats[i].inbound.all.messages.count;
-        totalOutbound += stats[i].outbound.all.messages.count;
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
       }
 
       expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
@@ -212,8 +233,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var totalInbound = 0,
         totalOutbound = 0;
       for (var i = 0; i < stats.length; i++) {
-        totalInbound += stats[i].inbound.all.messages.count;
-        totalOutbound += stats[i].outbound.all.messages.count;
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
       }
 
       expect(totalInbound).to.equal(60, 'Verify all inbound messages found');
@@ -236,8 +257,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var totalInbound = 0,
         totalOutbound = 0;
       for (var i = 0; i < stats.length; i++) {
-        totalInbound += stats[i].inbound.all.messages.count;
-        totalOutbound += stats[i].outbound.all.messages.count;
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
       }
 
       expect(totalInbound).to.equal(50, 'Verify all inbound messages found');
@@ -257,7 +278,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(7000, 'Verify all published message data found');
 
       /* get next page */
@@ -266,7 +287,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(6000, 'Verify all published message data found');
 
       /* get next page */
@@ -275,7 +296,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(5000, 'Verify all published message data found');
 
       /* verify no further pages */
@@ -284,7 +305,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var page = await page.first();
       var totalData = 0;
       var stats = page.items;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(7000, 'Verify all published message data found');
     });
 
@@ -301,7 +322,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(5000, 'Verify all published message data found');
 
       /* get next page */
@@ -310,7 +331,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(6000, 'Verify all published message data found');
 
       /* get next page */
@@ -319,7 +340,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(7000, 'Verify all published message data found');
 
       /* verify no further pages */
@@ -328,7 +349,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var page = await page.first();
       var totalData = 0;
       var stats = page.items;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(5000, 'Verify all published message data found');
     });
 
@@ -344,7 +365,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(7000, 'Verify all published message data found');
 
       /* get next page */
@@ -353,7 +374,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(6000, 'Verify all published message data found');
 
       /* get next page */
@@ -362,7 +383,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var stats = page.items;
       expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
       var totalData = 0;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(5000, 'Verify all published message data found');
 
       /* verify no further pages */
@@ -371,7 +392,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       var page = await page.first();
       var totalData = 0;
       var stats = page.items;
-      for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
       expect(totalData).to.equal(7000, 'Verify all published message data found');
     });
   });

@@ -125,7 +125,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     restTestOnJsonMsgpack('request_batch_api_success', async function (rest, name) {
       var body = { channels: [name + '1', name + '2'], messages: { data: 'foo' } };
 
-      const res = await rest.request('POST', '/messages', Defaults.protocolVersion, {}, body, {});
+      const res = await rest.request('POST', '/messages', 2, {}, body, {});
       expect(res.success).to.equal(true, 'Check res.success is true for a success');
       expect(res.statusCode).to.equal(201, 'Check res.statusCode is 201 for a success');
       expect(res.errorCode).to.equal(null, 'Check res.errorCode is null for a success');
@@ -145,7 +145,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     restTestOnJsonMsgpack.skip('request_batch_api_partial_success', async function (rest, name) {
       var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
 
-      var res = await rest.request('POST', '/messages', Defaults.protocolVersion, {}, body, {});
+      var res = await rest.request('POST', '/messages', 2, {}, body, {});
       expect(res.success).to.equal(false, 'Check res.success is false for a partial failure');
       expect(res.statusCode).to.equal(400, 'Check HPR.statusCode is 400 for a partial failure');
       expect(res.errorCode).to.equal(40020, 'Check HPR.errorCode is 40020 for a partial failure');

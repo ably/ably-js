@@ -752,122 +752,6 @@ declare namespace Types {
   }
 
   /**
-   * Contains the aggregate counts for messages and data transferred.
-   */
-  interface StatsMessageCount {
-    /**
-     * The count of all messages.
-     */
-    count: number;
-    /**
-     * The total number of bytes transferred for all messages.
-     */
-    data: number;
-  }
-
-  /**
-   * Contains a breakdown of summary stats data for different (channel vs presence) message types.
-   */
-  interface StatsMessageTypes {
-    /**
-     * A {@link StatsMessageCount} object containing the count and byte value of messages and presence messages.
-     */
-    all: StatsMessageCount;
-    /**
-     * A {@link StatsMessageCount} object containing the count and byte value of messages.
-     */
-    messages: StatsMessageCount;
-    /**
-     * A {@link StatsMessageCount} object containing the count and byte value of presence messages.
-     */
-    presence: StatsMessageCount;
-  }
-
-  /**
-   * Contains the aggregate counts for requests made.
-   */
-  interface StatsRequestCount {
-    /**
-     * The number of requests that failed.
-     */
-    failed: number;
-    /**
-     * The number of requests that were refused, typically as a result of permissions or a limit being exceeded.
-     */
-    refused: number;
-    /**
-     * The number of requests that succeeded.
-     */
-    succeeded: number;
-  }
-
-  /**
-   * Contains the aggregate data for usage of a resource in a specific scope.
-   */
-  interface StatsResourceCount {
-    /**
-     * The average number of resources of this type used for this period.
-     */
-    mean: number;
-    /**
-     * The minimum total resources of this type used for this period.
-     */
-    min: number;
-    /**
-     * The total number of resources opened of this type.
-     */
-    opened: number;
-    /**
-     * The peak number of resources of this type used for this period.
-     */
-    peak: number;
-    /**
-     * The number of resource requests refused within this period.
-     */
-    refused: number;
-  }
-
-  /**
-   * Contains a breakdown of summary stats data for different (TLS vs non-TLS) connection types.
-   */
-  interface StatsConnectionTypes {
-    /**
-     * A {@link StatsResourceCount} object containing a breakdown of usage by scope over TLS connections (both TLS and non-TLS).
-     */
-    all: StatsResourceCount;
-    /**
-     * A {@link StatsResourceCount} object containing a breakdown of usage by scope over non-TLS connections.
-     */
-    plain: StatsResourceCount;
-    /**
-     * A {@link StatsResourceCount} object containing a breakdown of usage by scope over TLS connections.
-     */
-    tls: StatsResourceCount;
-  }
-
-  /**
-   * Contains a breakdown of summary stats data for traffic over various transport types.
-   */
-  interface StatsMessageTraffic {
-    /**
-     * A {@link StatsMessageTypes} object containing a breakdown of usage by message type for all messages (includes `realtime`, `rest` and `webhook` messages).
-     */
-    all: StatsMessageTypes;
-    /**
-     * A {@link StatsMessageTypes} object containing a breakdown of usage by message type for messages transferred over a realtime transport such as WebSocket.
-     */
-    realtime: StatsMessageTypes;
-    /**
-     * A {@link StatsMessageTypes} object containing a breakdown of usage by message type for messages transferred over a rest transport such as WebSocket.
-     */
-    rest: StatsMessageTypes;
-    /**
-     * A {@link StatsMessageTypes} object containing a breakdown of usage by message type for messages delivered using webhooks.
-     */
-    webhook: StatsMessageTypes;
-  }
-
-  /**
    * Contains an Ably Token and its associated metadata.
    */
   interface TokenDetails {
@@ -2564,41 +2448,25 @@ declare namespace Types {
    */
   class Stats {
     /**
-     * A {@link StatsMessageTypes} object containing the aggregate count of all message stats.
-     */
-    all: StatsMessageTypes;
-    /**
-     * A {@link StatsRequestCount} object containing a breakdown of API Requests.
-     */
-    apiRequests: StatsRequestCount;
-    /**
-     * A {@link StatsResourceCount} object containing a breakdown of channels.
-     */
-    channels: StatsResourceCount;
-    /**
-     * A {@link StatsConnectionTypes} object containing a breakdown of connection related stats, such as min, mean and peak connections.
-     */
-    connections: StatsConnectionTypes;
-    /**
-     * A {@link StatsMessageTraffic} object containing the aggregate count of inbound message stats.
-     */
-    inbound: StatsMessageTraffic;
-    /**
      * The UTC time at which the time period covered begins. If `unit` is set to `minute` this will be in the format `YYYY-mm-dd:HH:MM`, if `hour` it will be `YYYY-mm-dd:HH`, if `day` it will be `YYYY-mm-dd:00` and if `month` it will be `YYYY-mm-01:00`.
      */
     intervalId: string;
     /**
-     * A {@link StatsMessageTraffic} object containing the aggregate count of outbound message stats.
+     * For entries that are still in progress, such as the current month: the last sub-interval included in this entry (in format yyyy-mm-dd:hh:mm:ss), else undefined.
      */
-    outbound: StatsMessageTraffic;
+    inProgress?: string;
     /**
-     * A {@link StatsMessageTypes} object containing the aggregate count of persisted message stats.
+     * The statistics for this time interval and time period. See the JSON schema which the {@link Stats.schema | `schema`} property points to for more information.
      */
-    persisted: StatsMessageTypes;
+    entries: Partial<Record<string, number>>;
     /**
-     * A {@link StatsRequestCount} object containing a breakdown of Ably Token requests.
+     * The URL of a [JSON Schema](https://json-schema.org/) which describes the structure of this `Stats` object.
      */
-    tokenRequests: StatsRequestCount;
+    schema: string;
+    /**
+     * The ID of the Ably application the statistics are for.
+     */
+    appId: string;
   }
 
   /**

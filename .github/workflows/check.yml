@@ -21,7 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
-      - run: npx tsc --noEmit ably.d.ts modules.d.ts build/ably-webworker.min.d.ts
+      - run: npx tsc --noEmit ably.d.ts modules.d.ts
       # for some reason, this doesn't work in CI using `npx attw --pack .`
       - run: npm pack
       - run: npx attw ably-$(npm show ably version).tgz --summary --exclude-entrypoints 'ably/modules'
