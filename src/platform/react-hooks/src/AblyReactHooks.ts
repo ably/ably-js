@@ -3,6 +3,7 @@ import * as Ably from '../../../../ably.js';
 export type ChannelNameAndOptions = {
   channelName: string;
   options?: Ably.ChannelOptions;
+  deriveOptions?: Ably.DeriveOptions;
   id?: string;
   subscribeOnly?: boolean;
   skip?: boolean;
@@ -17,7 +18,7 @@ export type ChannelNameAndId = {
 };
 export type ChannelParameters = string | ChannelNameAndOptions;
 
-export const version = '1.2.47';
+export const version = '1.2.48';
 
 export function channelOptionsWithAgent(options?: Ably.ChannelOptions) {
   return {

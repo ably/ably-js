@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
 import * as Ably from 'ably';
 import React, { useMemo } from 'react';
 
@@ -7,7 +5,7 @@ const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'func
 
 interface AblyProviderProps {
   children?: React.ReactNode | React.ReactNode[] | null;
-  client?: Ably.Ably.AbstractRealtime;
+  client?: Ably.AbstractRealtime;
   id?: string;
 }
 
@@ -34,7 +32,7 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
 
   let context = getContext(id);
   if (!context) {
-    context = ctxMap[id] = React.createContext(realtime ?? 1);
+    context = ctxMap[id] = React.createContext(realtime);
   }
 
   return <context.Provider value={realtime}>{children}</context.Provider>;
