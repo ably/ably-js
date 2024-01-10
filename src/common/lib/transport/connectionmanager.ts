@@ -432,16 +432,14 @@ class ConnectionManager extends EventEmitter {
     return new TransportParams(this.options, host, mode, this.connectionKey);
   }
 
-  getTransportParams(callback: Function): void {
-    const decideMode = (modeCb: Function) => {
+  async getTransportParams(): Promise<TransportParams> {
+    const decideMode = async (): Promise<string> => {
       if (this.connectionKey) {
-        modeCb('resume');
-        return;
+        return 'resume';
       }
 
       if (typeof this.options.recover === 'string') {
-        modeCb('recover');
-        return;
+        return 'recover';
       }
 
       const recoverFn = this.options.recover,
@@ -452,40 +450,41 @@ class ConnectionManager extends EventEmitter {
           'ConnectionManager.getTransportParams()',
           'Calling clientOptions-provided recover function with last session data'
         );
-        recoverFn(lastSessionData, (shouldRecover?: boolean) => {
-          if (shouldRecover) {
-            this.options.recover = lastSessionData.recoveryKey;
-            modeCb('recover');
-          } else {
-            modeCb('clean');
-          }
+        return new Promise((resolve) => {
+          recoverFn(lastSessionData, (shouldRecover?: boolean) => {
+            if (shouldRecover) {
+              this.options.recover = lastSessionData.recoveryKey;
+              resolve('recover');
+            } else {
+              resolve('clean');
+            }
+          });
         });
-        return;
       }
-      modeCb('clean');
+      return 'clean';
     };
 
-    decideMode((mode: string) => {
-      const transportParams = this.createTransportParams(null, mode);
-      if (mode === 'recover') {
-        Logger.logAction(
-          Logger.LOG_MINOR,
-          'ConnectionManager.getTransportParams()',
-          'Transport recovery mode = recover; recoveryKey = ' + this.options.recover
-        );
-        const recoveryContext = decodeRecoveryKey(this.options.recover);
-        if (recoveryContext) {
-          this.msgSerial = recoveryContext.msgSerial;
-        }
-      } else {
-        Logger.logAction(
-          Logger.LOG_MINOR,
-          'ConnectionManager.getTransportParams()',
-          'Transport params = ' + transportParams.toString()
-        );
+    const mode = await decideMode();
+
+    const transportParams = this.createTransportParams(null, mode);
+    if (mode === 'recover') {
+      Logger.logAction(
+        Logger.LOG_MINOR,
+        'ConnectionManager.getTransportParams()',
+        'Transport recovery mode = recover; recoveryKey = ' + this.options.recover
+      );
+      const recoveryContext = decodeRecoveryKey(this.options.recover);
+      if (recoveryContext) {
+        this.msgSerial = recoveryContext.msgSerial;
       }
-      callback(transportParams);
-    });
+    } else {
+      Logger.logAction(
+        Logger.LOG_MINOR,
+        'ConnectionManager.getTransportParams()',
+        'Transport params = ' + transportParams.toString()
+      );
+    }
+    return transportParams;
   }
 
   /**
@@ -1470,9 +1469,9 @@ class ConnectionManager extends EventEmitter {
 
     const connect = () => {
       this.checkConnectionStateFreshness();
-      this.getTransportParams((transportParams: TransportParams) => {
-        if (transportParams.mode === 'recover' && transportParams.options.recover) {
-          const recoveryContext = decodeRecoveryKey(transportParams.options.recover);
+      Utils.whenNonRejectingPromiseSettles(this.getTransportParams(), (transportParams) => {
+        if (transportParams!.mode === 'recover' && transportParams!.options.recover) {
+          const recoveryContext = decodeRecoveryKey(transportParams!.options.recover);
           if (recoveryContext) {
             this.realtime.channels.recoverChannels(recoveryContext.channelSerials);
           }
@@ -1481,7 +1480,7 @@ class ConnectionManager extends EventEmitter {
         if (connectCount !== this.connectCounter) {
           return;
         }
-        this.connectImpl(transportParams, connectCount);
+        this.connectImpl(transportParams!, connectCount);
       });
     };
 
