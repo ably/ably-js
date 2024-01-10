@@ -38,8 +38,6 @@ interface RealtimeHistoryParams {
   from_serial?: string;
 }
 
-const noop = function () {};
-
 function validateChannelOptions(options?: API.ChannelOptions) {
   if (options && 'params' in options && !Utils.isObject(options.params)) {
     return new ErrorInfo('options.params must be an object', 40000, 400);
@@ -261,9 +259,7 @@ class RealtimeChannel extends EventEmitter {
         msg.action = actions.MESSAGE;
         msg.channel = this.name;
         msg.messages = messages;
-        return new Promise((resolve, reject) => {
-          this.sendMessage(msg, (err) => (err ? reject(err) : resolve()));
-        });
+        return this.sendMessage(msg);
       }
     }
   }
@@ -348,7 +344,7 @@ class RealtimeChannel extends EventEmitter {
     if (this._lastPayload.decodeFailureRecoveryInProgress) {
       attachMsg.channelSerial = this._lastPayload.protocolMessageChannelSerial;
     }
-    this.sendMessage(attachMsg, noop);
+    this.sendMessage(attachMsg);
   }
 
   async detach(): Promise<void> {
@@ -395,9 +391,7 @@ class RealtimeChannel extends EventEmitter {
   async detachImpl(): Promise<void> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
     const msg = protocolMessageFromValues({ action: actions.DETACH, channel: this.name });
-    return new Promise((resolve, reject) => {
-      this.sendMessage(msg, (err) => (err ? reject(err) : resolve()));
-    });
+    return this.sendMessage(msg);
   }
 
   async subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
@@ -453,8 +447,10 @@ class RealtimeChannel extends EventEmitter {
     connectionManager.send(syncMessage);
   }
 
-  sendMessage(msg: ProtocolMessage, callback?: ErrCallback): void {
-    this.connectionManager.send(msg, this.client.options.queueMessages, callback);
+  async sendMessage(msg: ProtocolMessage): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.connectionManager.send(msg, this.client.options.queueMessages, (err) => (err ? reject(err) : resolve()));
+    });
   }
 
   sendPresence(presence: PresenceMessage | PresenceMessage[], callback?: ErrCallback): void {
@@ -465,7 +461,7 @@ class RealtimeChannel extends EventEmitter {
         ? this.client._RealtimePresence!.presenceMessagesFromValuesArray(presence)
         : [this.client._RealtimePresence!.presenceMessageFromValues(presence)],
     });
-    this.sendMessage(msg, callback);
+    Utils.whenPromiseSettles(this.sendMessage(msg), callback);
   }
 
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.

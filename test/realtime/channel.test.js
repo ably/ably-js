@@ -1139,7 +1139,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* Sabotage the reattach attempt, then simulate a server-sent detach */
-            channel.sendMessage = function () {};
+            channel.sendMessage = async function () {
+              return new Promise(() => {});
+            };
             realtime.options.timeouts.realtimeRequestTimeout = 100;
             channel.once(function (stateChange) {
               expect(stateChange.current).to.equal('attaching', 'Channel reattach attempt happens immediately');
@@ -1181,7 +1183,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       realtime.connection.once('connected', function () {
         var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
         /* Mock sendMessage to respond to attaches with a DETACHED */
-        channel.sendMessage = function (msg) {
+        channel.sendMessage = async function (msg) {
           try {
             expect(msg.action).to.equal(10, 'check attach action');
           } catch (err) {
@@ -1197,6 +1199,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               })
             );
           });
+
+          return new Promise(() => {});
         };
         whenPromiseSettles(channel.attach(), function (err) {
           try {
@@ -1323,7 +1327,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = realtime.channels.get(channelName);
 
       /* Stub out the channel's ability to communicate */
-      channel.sendMessage = function () {};
+      channel.sendMessage = async function () {
+        return new Promise(() => {});
+      };
 
       async.series(
         [
@@ -1384,8 +1390,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             /* Have the connection go into the suspended state, and check that the
              * channel goes into the suspended state and doesn't try to reattach
              * until the connection reconnects */
-            channel.sendMessage = function (msg) {
+            channel.sendMessage = async function (msg) {
               expect(false, 'Channel tried to send a message ' + JSON.stringify(msg)).to.be.ok;
+              return new Promise(() => {});
             };
             realtime.options.timeouts.realtimeRequestTimeout = 2000;
 
@@ -1401,7 +1408,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             realtime.connection.once(function (stateChange) {
               expect(stateChange.current).to.equal('connecting', 'Check we try to connect again');
               /* We no longer want to fail the test for an attach, but still want to sabotage it */
-              channel.sendMessage = function () {};
+              channel.sendMessage = async function () {
+                return new Promise(() => {});
+              };
               cb();
             });
           },
@@ -1448,7 +1457,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             /* Sabotage the detach attempt, detach, then simulate a server-sent attached while
              * the detach is ongoing. Expect to see the library reassert the detach */
             let detachCount = 0;
-            channel.sendMessage = function (msg) {
+            channel.sendMessage = async function (msg) {
               expect(msg.action).to.equal(12, 'Check we only see a detach. No attaches!');
               expect(channel.state).to.equal('detaching', 'Check still in detaching state after both detaches');
               detachCount++;
@@ -1456,6 +1465,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 /* we got our second detach! */
                 cb();
               }
+              return new Promise(() => {});
             };
             /* */
             channel.detach();
