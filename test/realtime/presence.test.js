@@ -1160,14 +1160,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         presence = channel.presence;
 
       var originalSendPresence = channel.sendPresence;
-      channel.sendPresence = function (presence, callback) {
+      channel.sendPresence = async function (presence) {
         try {
           expect(!presence.clientId, 'Client ID should not be present as it is implicit').to.be.ok;
         } catch (err) {
           closeAndFinish(done, client, err);
-          return;
+          return new Promise(() => {});
         }
-        originalSendPresence.apply(channel, arguments);
+        return originalSendPresence.apply(channel, arguments);
       };
 
       whenPromiseSettles(presence.enter(null), function (err) {

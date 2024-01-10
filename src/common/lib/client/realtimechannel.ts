@@ -453,7 +453,7 @@ class RealtimeChannel extends EventEmitter {
     });
   }
 
-  sendPresence(presence: PresenceMessage | PresenceMessage[], callback?: ErrCallback): void {
+  async sendPresence(presence: PresenceMessage | PresenceMessage[]): Promise<void> {
     const msg = protocolMessageFromValues({
       action: actions.PRESENCE,
       channel: this.name,
@@ -461,7 +461,7 @@ class RealtimeChannel extends EventEmitter {
         ? this.client._RealtimePresence!.presenceMessagesFromValuesArray(presence)
         : [this.client._RealtimePresence!.presenceMessageFromValues(presence)],
     });
-    Utils.whenPromiseSettles(this.sendMessage(msg), callback);
+    return this.sendMessage(msg);
   }
 
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
