@@ -23,7 +23,7 @@ import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
-import { ErrCallback, StandardCallback } from '../../types/utils';
+import { ErrCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
@@ -160,7 +160,7 @@ class RealtimeChannel extends EventEmitter {
     this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, options);
     if (this._decodingContext) this._decodingContext.channelOptions = this.channelOptions;
     if (this._shouldReattachToSetOptions(options, previousChannelOptions)) {
-      /* This does not just do _attach(true, null, callback) because that would put us
+      /* This does not just do _attach(true, null) because that would put us
        * into the 'attaching' state until we receive the new attached, which is
        * conceptually incorrect: we are still attached, we just have a pending request to
        * change some channel params. Per RTL17 going into the attaching state would mean
@@ -264,8 +264,8 @@ class RealtimeChannel extends EventEmitter {
         msg.channel = this.name;
         msg.messages = messages;
         return new Promise((resolve, reject) => {
-          this.sendMessage(msg, (err) => err ? reject(err) : resolve());
-        })
+          this.sendMessage(msg, (err) => (err ? reject(err) : resolve()));
+        });
       }
     }
   }
@@ -284,53 +284,49 @@ class RealtimeChannel extends EventEmitter {
       return null;
     }
 
-    return new Promise((resolve, reject) => {
-      this._attach(false, null, (err, result) => (err ? reject(err) : resolve(result!)));
-    });
+    return this._attach(false, null);
   }
 
-  _attach(
-    forceReattach: boolean,
-    attachReason: ErrorInfo | null,
-    callback?: StandardCallback<ChannelStateChange>
-  ): void {
-    if (!callback) {
-      callback = function (err?: ErrorInfo | null) {
-        if (err) {
-          Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel._attach()', 'Channel attach failed: ' + err.toString());
-        }
-      };
-    }
-
-    const connectionManager = this.connectionManager;
-    if (!connectionManager.activeState()) {
-      callback(connectionManager.getError());
-      return;
-    }
-
-    if (this.state !== 'attaching' || forceReattach) {
-      this.requestState('attaching', attachReason);
-    }
-
-    this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
-      switch (this.event) {
-        case 'attached':
-          callback?.(null, stateChange);
-          break;
-        case 'detached':
-        case 'suspended':
-        case 'failed':
-          callback?.(
-            stateChange.reason ||
-              connectionManager.getError() ||
-              new ErrorInfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500)
-          );
-          break;
-        case 'detaching':
-          callback?.(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
-          break;
+  async _attach(forceReattach: boolean, attachReason: ErrorInfo | null): Promise<ChannelStateChange> {
+    try {
+      const connectionManager = this.connectionManager;
+      if (!connectionManager.activeState()) {
+        throw connectionManager.getError();
       }
-    });
+
+      if (this.state !== 'attaching' || forceReattach) {
+        this.requestState('attaching', attachReason);
+      }
+
+      return await new Promise((resolve, reject) => {
+        this.once(function (this: { event: string }, stateChange: ChannelStateChange) {
+          switch (this.event) {
+            case 'attached':
+              resolve(stateChange);
+              break;
+            case 'detached':
+            case 'suspended':
+            case 'failed':
+              reject(
+                stateChange.reason ||
+                  connectionManager.getError() ||
+                  new ErrorInfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500)
+              );
+              break;
+            case 'detaching':
+              reject(new ErrorInfo('Attach request superseded by a subsequent detach request', 90000, 409));
+              break;
+          }
+        });
+      });
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'RealtimeChannel._attach()',
+        'Channel attach failed: ' + (err as ErrorInfo).toString()
+      );
+      throw err;
+    }
   }
 
   attachImpl(): void {
@@ -669,7 +665,7 @@ class RealtimeChannel extends EventEmitter {
         'Starting decode failure recovery process.'
       );
       this._lastPayload.decodeFailureRecoveryInProgress = true;
-      this._attach(true, reason, () => {
+      Utils.whenPromiseSettles(this._attach(true, reason), () => {
         this._lastPayload.decodeFailureRecoveryInProgress = false;
       });
     }
