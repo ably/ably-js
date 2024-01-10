@@ -239,11 +239,8 @@ class RealtimePresence extends EventEmitter {
 
     const members = this.members;
     if (waitForSync) {
-      return new Promise((resolve) => {
-        members.waitSync(function () {
-          resolve(listMembers(members));
-        });
-      });
+      await members.waitSync();
+      return listMembers(members);
     } else {
       return listMembers(members);
     }
@@ -604,7 +601,7 @@ class PresenceMap extends EventEmitter {
     this.emit('sync');
   }
 
-  waitSync(callback: () => void) {
+  async waitSync() {
     const syncInProgress = this.syncInProgress;
     Logger.logAction(
       Logger.LOG_MINOR,
@@ -612,10 +609,9 @@ class PresenceMap extends EventEmitter {
       'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress
     );
     if (!syncInProgress) {
-      callback();
       return;
     }
-    this.once('sync', callback);
+    return this.once('sync');
   }
 
   clear() {
