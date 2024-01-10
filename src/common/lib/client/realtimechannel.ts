@@ -392,10 +392,12 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  detachImpl(callback?: ErrCallback): void {
+  async detachImpl(): Promise<void> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
     const msg = protocolMessageFromValues({ action: actions.DETACH, channel: this.name });
-    this.sendMessage(msg, callback || noop);
+    return new Promise((resolve, reject) => {
+      this.sendMessage(msg, (err) => (err ? reject(err) : resolve()));
+    });
   }
 
   async subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
