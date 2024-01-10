@@ -245,27 +245,25 @@ class RealtimeChannel extends EventEmitter {
         400
       );
     }
-    return new Promise((resolve, reject) => {
-      this._publish(messages, (err) => (err ? reject(err) : resolve()));
-    });
+    return this._publish(messages);
   }
 
-  _publish(messages: Array<Message>, callback: ErrCallback) {
+  async _publish(messages: Array<Message>): Promise<void> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
     const state = this.state;
     switch (state) {
       case 'failed':
       case 'suspended':
-        callback(ErrorInfo.fromValues(this.invalidStateError()));
-        break;
+        throw ErrorInfo.fromValues(this.invalidStateError());
       default: {
         Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
         const msg = new ProtocolMessage();
         msg.action = actions.MESSAGE;
         msg.channel = this.name;
         msg.messages = messages;
-        this.sendMessage(msg, callback);
-        break;
+        return new Promise((resolve, reject) => {
+          this.sendMessage(msg, (err) => err ? reject(err) : resolve());
+        })
       }
     }
   }
