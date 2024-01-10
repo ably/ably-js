@@ -1520,7 +1520,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             if (!channel.presence.syncComplete) {
-              channel.presence.members.waitSync(cb);
+              whenPromiseSettles(channel.presence.members.waitSync(), cb);
             } else {
               cb();
             }
@@ -1564,7 +1564,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             if (channel.presence.syncComplete) {
               channel.sync();
             }
-            channel.presence.members.waitSync(cb);
+            whenPromiseSettles(channel.presence.members.waitSync(), cb);
           },
           function (cb) {
             /* Now just wait for an enter! */
@@ -1641,7 +1641,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             if (!channel.presence.syncComplete) {
-              channel.presence.members.waitSync(cb);
+              whenPromiseSettles(channel.presence.members.waitSync(), cb);
             } else {
               cb();
             }
