@@ -1588,10 +1588,10 @@ export declare abstract class AbstractRest {
   /**
    * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link PaginatedResult} object, containing an array of {@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
    *
-   * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link StatsParams} interface.
+   * @param params - A set of parameters which are used to specify which statistics should be retrieved. If you do not provide this argument, then this method will use the default parameters described in the {@link StatsParams} interface.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Stats} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
+  stats(params?: StatsParams): Promise<PaginatedResult<Stats>>;
   /**
    * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link ClientOptions.queryTime} property instead of this method.
    *
@@ -1679,10 +1679,10 @@ export declare abstract class AbstractRealtime {
   /**
    * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link PaginatedResult} object, containing an array of {@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
    *
-   * @param params - A set of parameters which are used to specify which statistics should be retrieved. This parameter should be a {@link StatsParams} object. For reasons of backwards compatibility this parameter will also accept `any`; this ability will be removed in the next major release of this SDK. If you do not provide this argument, then this method will use the default parameters described in the {@link StatsParams} interface.
+   * @param params - A set of parameters which are used to specify which statistics should be retrieved. If you do not provide this argument, then this method will use the default parameters described in the {@link StatsParams} interface.
    * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Stats} objects. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
+  stats(params?: StatsParams): Promise<PaginatedResult<Stats>>;
   /**
    * Retrieves the time from the Ably service as milliseconds since the Unix epoch. Clients that do not have access to a sufficiently well maintained time source and wish to issue Ably {@link TokenRequest | `TokenRequest`s} with a more accurate timestamp should use the {@link ClientOptions.queryTime} property instead of this method.
    *
