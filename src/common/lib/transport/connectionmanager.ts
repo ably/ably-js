@@ -1758,7 +1758,7 @@ class ConnectionManager extends EventEmitter {
     this.notifyState({ state: 'closed' });
   }
 
-  onAuthUpdated(tokenDetails: API.TokenDetails, callback: Function): void {
+  async onAuthUpdated(tokenDetails: API.TokenDetails): Promise<API.TokenDetails> {
     switch (this.state.state) {
       case 'connected': {
         Logger.logAction(
@@ -1798,23 +1798,24 @@ class ConnectionManager extends EventEmitter {
         });
         this.send(authMsg);
 
-        /* The answer will come back as either a connectiondetails event
-         * (realtime sends a CONNECTED to acknowledge the reauth) or a
-         * statechange to failed */
-        const successListener = () => {
-          this.off(failureListener);
-          callback(null, tokenDetails);
-        };
-        const failureListener = (stateChange: ConnectionStateChange) => {
-          if (stateChange.current === 'failed') {
-            this.off(successListener);
+        return new Promise((resolve, reject) => {
+          /* The answer will come back as either a connectiondetails event
+           * (realtime sends a CONNECTED to acknowledge the reauth) or a
+           * statechange to failed */
+          const successListener = () => {
             this.off(failureListener);
-            callback(stateChange.reason || this.getStateError());
-          }
-        };
-        this.once('connectiondetails', successListener);
-        this.on('connectionstate', failureListener);
-        break;
+            resolve(tokenDetails);
+          };
+          const failureListener = (stateChange: ConnectionStateChange) => {
+            if (stateChange.current === 'failed') {
+              this.off(successListener);
+              this.off(failureListener);
+              reject(stateChange.reason || this.getStateError());
+            }
+          };
+          this.once('connectiondetails', successListener);
+          this.on('connectionstate', failureListener);
+        });
       }
 
       case 'connecting':
@@ -1832,31 +1833,33 @@ class ConnectionManager extends EventEmitter {
           'ConnectionManager.onAuthUpdated()',
           'Connection state is ' + this.state.state + '; waiting until either connected or failed'
         );
-        const listener = (stateChange: ConnectionStateChange) => {
-          switch (stateChange.current) {
-            case 'connected':
-              this.off(listener);
-              callback(null, tokenDetails);
-              break;
-            case 'failed':
-            case 'closed':
-            case 'suspended':
-              this.off(listener);
-              callback(stateChange.reason || this.getStateError());
-              break;
-            default:
-              /* ignore till we get either connected or failed */
-              break;
+        return new Promise((resolve, reject) => {
+          const listener = (stateChange: ConnectionStateChange) => {
+            switch (stateChange.current) {
+              case 'connected':
+                this.off(listener);
+                resolve(tokenDetails);
+                break;
+              case 'failed':
+              case 'closed':
+              case 'suspended':
+                this.off(listener);
+                reject(stateChange.reason || this.getStateError());
+                break;
+              default:
+                /* ignore till we get either connected or failed */
+                break;
+            }
+          };
+          this.on('connectionstate', listener);
+          if (this.state.state === 'connecting') {
+            /* can happen if in the connecting state but no transport was pending
+             * yet, so disconnectAllTransports did not trigger a disconnected state */
+            this.startConnect();
+          } else {
+            this.requestState({ state: 'connecting' });
           }
-        };
-        this.on('connectionstate', listener);
-        if (this.state.state === 'connecting') {
-          /* can happen if in the connecting state but no transport was pending
-           * yet, so disconnectAllTransports did not trigger a disconnected state */
-          this.startConnect();
-        } else {
-          this.requestState({ state: 'connecting' });
-        }
+        });
       }
     }
   }
