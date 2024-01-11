@@ -30,3 +30,9 @@ jobs:
       - env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
         run: npm run test:playwright
+      - name: Upload test results
+        if: always()
+        uses: ably/test-observability-action@v1
+        with:
+          server-auth: ${{ secrets.TEST_OBSERVABILITY_SERVER_AUTH_KEY }}
+          path: './junit'

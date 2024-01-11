@@ -3,6 +3,8 @@ const path = require('path');
 const serverProcess = require('child_process').fork(path.resolve(__dirname, '..', 'web_server'), {
   env: { PLAYWRIGHT_TEST: 1 },
 });
+const fs = require('fs');
+const jUnitDirectoryPath = require('./junit_directory_path');
 
 const port = process.env.PORT || 3000;
 const host = 'localhost';
@@ -35,6 +37,18 @@ const runTests = async (browserType) => {
     // Expose a function inside the playwright browser to exit with the right status code when tests pass/fail
     page.exposeFunction('onTestResult', ({ detail }) => {
       console.log(`${browserType.name()} tests complete: ${detail.passes}/${detail.total} passed`);
+
+      try {
+        if (!fs.existsSync(jUnitDirectoryPath)) {
+          fs.mkdirSync(jUnitDirectoryPath);
+        }
+        const filename = `playwright-${browserType.name()}.junit`;
+        fs.writeFileSync(path.join(jUnitDirectoryPath, filename), detail.jUnitReport, { encoding: 'utf-8' });
+      } catch (err) {
+        console.log('Failed to write JUnit report, exiting with code 2: ', err);
+        process.exit(2);
+      }
+
       if (detail.pass) {
         browser.close();
         resolve();
