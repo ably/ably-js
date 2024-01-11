@@ -104,7 +104,9 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         // the initial connection. (No immediate reconnect attempt since it was never
         // connected in the first place)
         var oldTransport = connection.connectionManager.tryATransport;
-        connection.connectionManager.tryATransport = function () {};
+        connection.connectionManager.tryATransport = async function () {
+          return new Promise(() => {});
+        };
 
         connection.once('disconnected', function () {
           var disconnectedAt = new Date();
@@ -148,7 +150,9 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           onlineEvent = new Event('online', { bubbles: true });
 
         // Easiest way to have all transports attempt fail it to stub out tryATransport
-        connection.connectionManager.tryATransport = function () {};
+        connection.connectionManager.tryATransport = async function () {
+          return new Promise(() => {});
+        };
 
         connection.on('failed', function () {
           closeAndFinish(done, realtime, new Error('connection to server failed'));
