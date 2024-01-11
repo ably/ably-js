@@ -498,82 +498,79 @@ class ConnectionManager extends EventEmitter {
   async tryATransport(transportParams: TransportParams, candidate: TransportName): Promise<TryATransportResult> {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
-    return new Promise((resolve) => {
-      Transport.tryConnect(
-        this.supportedTransports[candidate]!,
-        this,
-        this.realtime.auth,
-        transportParams,
-        (wrappedErr: { error: ErrorInfo; event: string } | null, transport?: Transport) => {
-          const state = this.state;
-          if (state == this.states.closing || state == this.states.closed || state == this.states.failed) {
-            if (transport) {
-              Logger.logAction(
-                Logger.LOG_MINOR,
-                'ConnectionManager.tryATransport()',
-                'connection ' + state.state + ' while we were attempting the transport; closing ' + transport
-              );
-              transport.close();
-            }
-            resolve({ _fatal: true });
-            return;
-          }
+    const { _wrappedErr: wrappedErr, _transport: transport } = await Transport.tryConnect(
+      this.supportedTransports[candidate]!,
+      this,
+      this.realtime.auth,
+      transportParams
+    );
 
-          if (wrappedErr) {
-            Logger.logAction(
-              Logger.LOG_MINOR,
-              'ConnectionManager.tryATransport()',
-              'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString()
-            );
+    // TODO this is the place to put it where it fixes the currrent issue, whether it’s the _right_ place I don't know
+    // hmm, this still seems too early
+    //transport?.setShouldQueueEvents(false);
 
-            /* Comet transport onconnect token errors can be dealt with here.
-             * Websocket ones only happen after the transport claims to be viable,
-             * so are dealt with as non-onconnect token errors */
-            if (
-              Auth.isTokenErr(wrappedErr.error) &&
-              !(this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo))
-            ) {
-              this.errorReason = wrappedErr.error;
-              /* re-get a token and try again */
-              resolve(
-                (async () => {
-                  try {
-                    await this.realtime.auth._forceNewToken(null, null);
-                  } catch (err) {
-                    this.actOnErrorFromAuthorize(err as ErrorInfo);
-                    // TODO this doesn't seem right though, why was it never calling its callback?
-                    return new Promise(() => {});
-                  }
-                  return this.tryATransport(transportParams, candidate);
-                })()
-              );
-            } else if (wrappedErr.event === 'failed') {
-              /* Error that's fatal to the connection */
-              this.notifyState({ state: 'failed', error: wrappedErr.error });
-              resolve({ _fatal: true });
-            } else if (wrappedErr.event === 'disconnected') {
-              if (!isRetriable(wrappedErr.error)) {
-                /* Error received from the server that does not call for trying a fallback host, eg a rate limit */
-                this.notifyState({ state: this.states.connecting.failState as string, error: wrappedErr.error });
-                resolve({ _fatal: true });
-              } else {
-                /* Error with that transport only; continue trying other fallback hosts */
-                resolve({ _fatal: false });
-              }
-            }
-            return;
-          }
+    const state = this.state;
+    if (state == this.states.closing || state == this.states.closed || state == this.states.failed) {
+      if (transport) {
+        Logger.logAction(
+          Logger.LOG_MINOR,
+          'ConnectionManager.tryATransport()',
+          'connection ' + state.state + ' while we were attempting the transport; closing ' + transport
+        );
+        transport.close();
+      }
+      return { _fatal: true };
+    }
 
-          Logger.logAction(
-            Logger.LOG_MICRO,
-            'ConnectionManager.tryATransport()',
-            'viable transport ' + candidate + '; setting pending'
-          );
-          this.setTransportPending(transport as Transport, transportParams);
-          resolve({ _fatal: null, _transport: transport! });
-        }
+    if (wrappedErr) {
+      Logger.logAction(
+        Logger.LOG_MINOR,
+        'ConnectionManager.tryATransport()',
+        'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString()
       );
-    });
+
+      /* Comet transport onconnect token errors can be dealt with here.
+       * Websocket ones only happen after the transport claims to be viable,
+       * so are dealt with as non-onconnect token errors */
+      if (Auth.isTokenErr(wrappedErr.error) && !(this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo))) {
+        this.errorReason = wrappedErr.error;
+        /* re-get a token and try again */
+        return (async () => {
+          try {
+            await this.realtime.auth._forceNewToken(null, null);
+          } catch (err) {
+            this.actOnErrorFromAuthorize(err as ErrorInfo);
+            // TODO this doesn't seem right though, why was it never calling its callback?
+            return new Promise(() => {});
+          }
+          return this.tryATransport(transportParams, candidate);
+        })();
+      } else if (wrappedErr.event === 'failed') {
+        /* Error that's fatal to the connection */
+        this.notifyState({ state: 'failed', error: wrappedErr.error });
+        return { _fatal: true };
+      } else if (wrappedErr.event === 'disconnected') {
+        if (!isRetriable(wrappedErr.error)) {
+          /* Error received from the server that does not call for trying a fallback host, eg a rate limit */
+          this.notifyState({ state: this.states.connecting.failState as string, error: wrappedErr.error });
+          return { _fatal: true };
+        } else {
+          /* Error with that transport only; continue trying other fallback hosts */
+          return { _fatal: false };
+        }
+      }
+      // TODO why was this not calling its callback in this case?
+      return new Promise(() => {});
+    }
+
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'ConnectionManager.tryATransport()',
+      'viable transport ' + candidate + '; setting pending'
+    );
+    this.setTransportPending(transport as Transport, transportParams);
+    transport!.setShouldQueueEvents(false);
+    return { _fatal: null, _transport: transport! };
   }
 
   /**
