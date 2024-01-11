@@ -57,6 +57,9 @@ class EventEmitter {
   events: Record<string, Array<Function>>;
   anyOnce: Array<Function>;
   eventsOnce: Record<string, Array<Function>>;
+  private shouldQueueEvents = false;
+  private isDequeueingEvents = false;
+  private queuedEvents: { event: string; args: unknown[] }[] = [];
 
   constructor() {
     this.any = [];
@@ -195,6 +198,15 @@ class EventEmitter {
    * @param args the arguments to pass to the listener
    */
   emit(event: string, ...args: unknown[] /* , args... */) {
+    // TODO to preserve the order, I think that everything should go via the queue (in case someone calls `emit` inside a callback) — check this
+    if (this.shouldQueueEvents) {
+      this.queuedEvents.push({ event, args });
+    } else {
+      this.emitImpl(event, ...args);
+    }
+  }
+
+  emitImpl(event: string, ...args: unknown[] /* , args... */) {
     const eventThis = { event };
     const listeners: Function[] = [];
 
@@ -218,6 +230,18 @@ class EventEmitter {
     Utils.arrForEach(listeners, function (listener) {
       callListener(eventThis, listener, args);
     });
+  }
+
+  setShouldQueueEvents(shouldQueueEvents: boolean) {
+    this.shouldQueueEvents = shouldQueueEvents;
+    if (!shouldQueueEvents && !this.isDequeueingEvents) {
+      this.isDequeueingEvents = true;
+      while (this.queuedEvents.length > 0) {
+        const event = this.queuedEvents.shift()!;
+        this.emitImpl(event.event, ...event.args);
+      }
+      this.isDequeueingEvents = false;
+    }
   }
 
   /**
