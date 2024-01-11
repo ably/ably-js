@@ -2062,66 +2062,69 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  ping(transport: Transport | null, callback: Function): void {
+  async ping(transport: Transport | null): Promise<number> {
     /* if transport is specified, try that */
     if (transport) {
-      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
+      return new Promise((resolve, reject) => {
+        Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
 
-      const onTimeout = function () {
-        transport.off('heartbeat', onHeartbeat);
-        callback(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
-      };
-
-      const pingStart = Utils.now(),
-        id = Utils.cheapRandStr();
-
-      const onHeartbeat = function (responseId: string) {
-        if (responseId === id) {
+        const onTimeout = function () {
           transport.off('heartbeat', onHeartbeat);
-          clearTimeout(timer);
-          const responseTime = Utils.now() - pingStart;
-          callback(null, responseTime);
-        }
-      };
+          reject(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
+        };
 
-      const timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
+        const pingStart = Utils.now(),
+          id = Utils.cheapRandStr();
 
-      transport.on('heartbeat', onHeartbeat);
-      transport.ping(id);
-      return;
+        const onHeartbeat = function (responseId: string) {
+          if (responseId === id) {
+            transport.off('heartbeat', onHeartbeat);
+            clearTimeout(timer);
+            const responseTime = Utils.now() - pingStart;
+            resolve(responseTime);
+          }
+        };
+
+        const timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
+
+        transport.on('heartbeat', onHeartbeat);
+        transport.ping(id);
+      });
     }
 
     /* if we're not connected, don't attempt */
     if (this.state.state !== 'connected') {
-      callback(new ErrorInfo('Unable to ping service; not connected', 40000, 400));
-      return;
+      throw new ErrorInfo('Unable to ping service; not connected', 40000, 400);
     }
 
-    /* no transport was specified, so use the current (connected) one
-     * but ensure that we retry if the transport is superseded before we complete */
-    let completed = false;
+    return new Promise((resolve, reject) => {
+      /* no transport was specified, so use the current (connected) one
+       * but ensure that we retry if the transport is superseded before we complete */
+      let completed = false;
 
-    const onPingComplete = (err: Error, responseTime: number) => {
-      this.off('transport.active', onTransportActive);
-      if (!completed) {
-        completed = true;
-        callback(err, responseTime);
-      }
-    };
+      const onPingComplete = (err: Error | null, responseTime?: number) => {
+        this.off('transport.active', onTransportActive);
+        if (!completed) {
+          completed = true;
+          err ? reject(err) : resolve(responseTime!);
+        }
+      };
 
-    const onTransportActive = () => {
-      if (!completed) {
-        /* ensure that no callback happens for the currently outstanding operation */
-        completed = true;
-        /* repeat but picking up the new transport */
-        Platform.Config.nextTick(() => {
-          this.ping(null, callback);
-        });
-      }
-    };
+      const onTransportActive = () => {
+        if (!completed) {
+          /* ensure that no callback happens for the currently outstanding operation */
+          completed = true;
+          /* repeat but picking up the new transport */
+          Platform.Config.nextTick(() => {
+            resolve(this.ping(null));
+          });
+        }
+      };
 
-    this.on('transport.active', onTransportActive);
-    this.ping((this.activeProtocol as Protocol).getTransport(), onPingComplete);
+      this.on('transport.active', onTransportActive);
+      // TODO maybe we can do a bit better and make use of the promise here
+      Utils.whenPromiseSettles(this.ping((this.activeProtocol as Protocol).getTransport()), onPingComplete);
+    });
   }
 
   abort(error: ErrorInfo): void {

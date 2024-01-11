@@ -54,9 +54,7 @@ class Connection extends EventEmitter {
 
   async ping(): Promise<number> {
     Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
-    return new Promise((resolve, reject) => {
-      this.connectionManager.ping(null, (err: unknown, result: number) => (err ? reject(err) : resolve(result)));
-    });
+    return this.connectionManager.ping(null);
   }
 
   close(): void {
