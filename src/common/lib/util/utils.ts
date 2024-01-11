@@ -2,6 +2,7 @@ import Platform from 'common/platform';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
 import { ModulesMap } from '../client/modulesmap';
 import { MsgPack } from 'common/types/msgpack';
+import Logger from './logger';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
@@ -458,6 +459,15 @@ export function whenPromiseSettles<T, E = unknown>(
     .catch((err) => {
       callback?.(err);
     });
+}
+
+/**
+ * As `whenPromiseSettles`, but for a promise that is not expected to reject.
+ */
+export function whenNonRejectingPromiseSettles<T>(promise: Promise<T>, callback?: (result: T) => void) {
+  promise.then(callback).catch((err) => {
+    Logger.logAction(Logger.LOG_ERROR, 'Promise that was expected not to reject was rejected:', err.message);
+  });
 }
 
 export function decodeBody<T>(body: unknown, MsgPack: MsgPack | null, format?: Format | null): T {
