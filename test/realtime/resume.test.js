@@ -598,9 +598,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             var connectionManager = resumed_receiver_realtime.connection.connectionManager;
 
             var sendOrig = connectionManager.send;
-            connectionManager.send = function (msg, queueEvent, callback) {
+            connectionManager.send = async function (msg, queueEvent) {
               msg.setFlag('ATTACH_RESUME');
-              sendOrig.call(connectionManager, msg, queueEvent, callback);
+              return sendOrig.call(connectionManager, msg, queueEvent);
             };
 
             var resumed_receiver_channel = resumed_receiver_realtime.channels.get(testName, { params: { rewind: 1 } });

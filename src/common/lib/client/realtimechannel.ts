@@ -448,9 +448,7 @@ class RealtimeChannel extends EventEmitter {
   }
 
   async sendMessage(msg: ProtocolMessage): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.connectionManager.send(msg, this.client.options.queueMessages, (err) => (err ? reject(err) : resolve()));
-    });
+    return this.connectionManager.send(msg, this.client.options.queueMessages);
   }
 
   async sendPresence(presence: PresenceMessage | PresenceMessage[]): Promise<void> {

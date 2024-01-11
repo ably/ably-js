@@ -28,7 +28,6 @@ let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'u
 
 const haveWebStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.localSupported;
 const haveSessionStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
-const noop = function () {};
 const transportPreferenceName = 'ably-transport-preference';
 
 const sessionRecoveryName = 'ably-connection-recovery';
@@ -1910,21 +1909,20 @@ class ConnectionManager extends EventEmitter {
    * event queueing
    ******************/
 
-  send(msg: ProtocolMessage, queueEvent?: boolean, callback?: ErrCallback): void {
-    callback = callback || noop;
+  async send(msg: ProtocolMessage, queueEvent?: boolean): Promise<void> {
     const state = this.state;
 
     if (state.sendEvents) {
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
-      this.sendImpl(new PendingMessage(msg, callback));
-      return;
+      return new Promise((resolve, reject) => {
+        this.sendImpl(new PendingMessage(msg, (err) => (err ? reject(err) : resolve())));
+      });
     }
     const shouldQueue = (queueEvent && state.queueEvents) || state.forceQueueEvents;
     if (!shouldQueue) {
       const err = 'rejecting event, queueEvent was ' + queueEvent + ', state was ' + state.state;
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
-      callback(this.errorReason || new ErrorInfo(err, 90000, 400));
-      return;
+      throw this.errorReason || new ErrorInfo(err, 90000, 400);
     }
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
       Logger.logAction(
@@ -1933,7 +1931,9 @@ class ConnectionManager extends EventEmitter {
         'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence)
       );
     }
-    this.queue(msg, callback);
+    return new Promise((resolve, reject) => {
+      this.queue(msg, (err) => (err ? reject(err) : resolve()));
+    });
   }
 
   sendImpl(pendingMessage: PendingMessage): void {
