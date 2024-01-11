@@ -18,7 +18,6 @@ import Message, { getMessagesSize } from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
 import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
-import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import BaseRealtime from '../client/baserealtime';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
@@ -1931,9 +1930,7 @@ class ConnectionManager extends EventEmitter {
         'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence)
       );
     }
-    return new Promise((resolve, reject) => {
-      this.queue(msg, (err) => (err ? reject(err) : resolve()));
-    });
+    return this.queue(msg);
   }
 
   sendImpl(pendingMessage: PendingMessage): void {
@@ -1954,22 +1951,25 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  queue(msg: ProtocolMessage, callback: ErrCallback): void {
+  queue(msg: ProtocolMessage): Promise<void> {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
-    const lastQueued = this.queuedMessages.last();
-    const maxSize = this.options.maxMessageSize;
-    /* If have already attempted to send a message, don't merge more messages
-     * into it, as if the previous send actually succeeded and realtime ignores
-     * the dup, they'll be lost */
-    if (lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
-      if (!lastQueued.merged) {
-        lastQueued.callback = Multicaster.create([lastQueued.callback]);
-        lastQueued.merged = true;
+
+    return new Promise((resolve, reject) => {
+      const lastQueued = this.queuedMessages.last();
+      const maxSize = this.options.maxMessageSize;
+      /* If have already attempted to send a message, don't merge more messages
+       * into it, as if the previous send actually succeeded and realtime ignores
+       * the dup, they'll be lost */
+      if (lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
+        if (!lastQueued.merged) {
+          lastQueued.callback = Multicaster.create([lastQueued.callback]);
+          lastQueued.merged = true;
+        }
+        (lastQueued.callback as MulticasterInstance<void>).push((err) => (err ? reject(err) : resolve()));
+      } else {
+        this.queuedMessages.push(new PendingMessage(msg, (err) => (err ? reject(err) : resolve())));
       }
-      (lastQueued.callback as MulticasterInstance<void>).push(callback);
-    } else {
-      this.queuedMessages.push(new PendingMessage(msg, callback));
-    }
+    });
   }
 
   sendQueuedMessages(): void {
