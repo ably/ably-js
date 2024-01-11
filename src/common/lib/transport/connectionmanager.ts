@@ -189,6 +189,11 @@ type ConnectionState = {
   error?: IPartialErrorInfo;
 };
 
+type TryATransportResult = {
+  _fatal: boolean | null;
+  _transport?: Transport;
+};
+
 class ConnectionManager extends EventEmitter {
   supportedTransports: Partial<Record<TransportName, TransportCtor>> = {};
   realtime: BaseRealtime;
@@ -491,80 +496,86 @@ class ConnectionManager extends EventEmitter {
    * Attempt to connect using a given transport
    * @param transportParams
    * @param candidate, the transport to try
-   * @param callback
    */
-  tryATransport(transportParams: TransportParams, candidate: TransportName, callback: Function): void {
+  async tryATransport(transportParams: TransportParams, candidate: TransportName): Promise<TryATransportResult> {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
-    Transport.tryConnect(
-      this.supportedTransports[candidate]!,
-      this,
-      this.realtime.auth,
-      transportParams,
-      (wrappedErr: { error: ErrorInfo; event: string } | null, transport?: Transport) => {
-        const state = this.state;
-        if (state == this.states.closing || state == this.states.closed || state == this.states.failed) {
-          if (transport) {
+    return new Promise((resolve) => {
+      Transport.tryConnect(
+        this.supportedTransports[candidate]!,
+        this,
+        this.realtime.auth,
+        transportParams,
+        (wrappedErr: { error: ErrorInfo; event: string } | null, transport?: Transport) => {
+          const state = this.state;
+          if (state == this.states.closing || state == this.states.closed || state == this.states.failed) {
+            if (transport) {
+              Logger.logAction(
+                Logger.LOG_MINOR,
+                'ConnectionManager.tryATransport()',
+                'connection ' + state.state + ' while we were attempting the transport; closing ' + transport
+              );
+              transport.close();
+            }
+            resolve({ _fatal: true });
+            return;
+          }
+
+          if (wrappedErr) {
             Logger.logAction(
               Logger.LOG_MINOR,
               'ConnectionManager.tryATransport()',
-              'connection ' + state.state + ' while we were attempting the transport; closing ' + transport
+              'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString()
             );
-            transport.close();
-          }
-          callback(true);
-          return;
-        }
 
-        if (wrappedErr) {
-          Logger.logAction(
-            Logger.LOG_MINOR,
-            'ConnectionManager.tryATransport()',
-            'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString()
-          );
-
-          /* Comet transport onconnect token errors can be dealt with here.
-           * Websocket ones only happen after the transport claims to be viable,
-           * so are dealt with as non-onconnect token errors */
-          if (
-            Auth.isTokenErr(wrappedErr.error) &&
-            !(this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo))
-          ) {
-            this.errorReason = wrappedErr.error;
-            /* re-get a token and try again */
-            Utils.whenPromiseSettles(this.realtime.auth._forceNewToken(null, null), (err: ErrorInfo | null) => {
-              if (err) {
-                this.actOnErrorFromAuthorize(err);
-                return;
+            /* Comet transport onconnect token errors can be dealt with here.
+             * Websocket ones only happen after the transport claims to be viable,
+             * so are dealt with as non-onconnect token errors */
+            if (
+              Auth.isTokenErr(wrappedErr.error) &&
+              !(this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo))
+            ) {
+              this.errorReason = wrappedErr.error;
+              /* re-get a token and try again */
+              resolve(
+                (async () => {
+                  try {
+                    await this.realtime.auth._forceNewToken(null, null);
+                  } catch (err) {
+                    this.actOnErrorFromAuthorize(err as ErrorInfo);
+                    // TODO this doesn't seem right though, why was it never calling its callback?
+                    return new Promise(() => {});
+                  }
+                  return this.tryATransport(transportParams, candidate);
+                })()
+              );
+            } else if (wrappedErr.event === 'failed') {
+              /* Error that's fatal to the connection */
+              this.notifyState({ state: 'failed', error: wrappedErr.error });
+              resolve({ _fatal: true });
+            } else if (wrappedErr.event === 'disconnected') {
+              if (!isRetriable(wrappedErr.error)) {
+                /* Error received from the server that does not call for trying a fallback host, eg a rate limit */
+                this.notifyState({ state: this.states.connecting.failState as string, error: wrappedErr.error });
+                resolve({ _fatal: true });
+              } else {
+                /* Error with that transport only; continue trying other fallback hosts */
+                resolve({ _fatal: false });
               }
-              this.tryATransport(transportParams, candidate, callback);
-            });
-          } else if (wrappedErr.event === 'failed') {
-            /* Error that's fatal to the connection */
-            this.notifyState({ state: 'failed', error: wrappedErr.error });
-            callback(true);
-          } else if (wrappedErr.event === 'disconnected') {
-            if (!isRetriable(wrappedErr.error)) {
-              /* Error received from the server that does not call for trying a fallback host, eg a rate limit */
-              this.notifyState({ state: this.states.connecting.failState as string, error: wrappedErr.error });
-              callback(true);
-            } else {
-              /* Error with that transport only; continue trying other fallback hosts */
-              callback(false);
             }
+            return;
           }
-          return;
-        }
 
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'ConnectionManager.tryATransport()',
-          'viable transport ' + candidate + '; setting pending'
-        );
-        this.setTransportPending(transport as Transport, transportParams);
-        callback(null, transport);
-      }
-    );
+          Logger.logAction(
+            Logger.LOG_MICRO,
+            'ConnectionManager.tryATransport()',
+            'viable transport ' + candidate + '; setting pending'
+          );
+          this.setTransportPending(transport as Transport, transportParams);
+          resolve({ _fatal: null, _transport: transport! });
+        }
+      );
+    });
   }
 
   /**
@@ -1588,16 +1599,16 @@ class ConnectionManager extends EventEmitter {
     /* For connectPreference, just use the main host. If host fallback is needed, do it in connectBase.
      * The wstransport it will substitute the httphost for an appropriate wshost */
     transportParams.host = this.httpHosts[0];
-    this.tryATransport(transportParams, preference, (fatal: boolean, transport: Transport) => {
+    Utils.whenNonRejectingPromiseSettles(this.tryATransport(transportParams, preference), (result) => {
       clearTimeout(preferenceTimeout);
-      if (preferenceTimeoutExpired && transport) {
+      if (preferenceTimeoutExpired && result._transport) {
         /* Viable, but too late - connectImpl() will already be trying
          * connectBase, and we weren't in upgrade mode. Just remove the
          * onconnected listener and get rid of it */
-        transport.off();
-        transport.disconnect();
-        Utils.arrDeleteValue(this.pendingTransports, transport);
-      } else if (!transport && !fatal) {
+        result._transport.off();
+        result._transport.disconnect();
+        Utils.arrDeleteValue(this.pendingTransports, result._transport);
+      } else if (!result._transport && !result._fatal) {
         /* Preference failed in a transport-specific way. Try more */
         this.unpersistTransportPreference();
         this.connectImpl(transportParams, connectCount);
@@ -1618,11 +1629,11 @@ class ConnectionManager extends EventEmitter {
       this.notifyState({ state: this.states.connecting.failState as string, error: err });
     };
     const candidateHosts = this.httpHosts.slice();
-    const hostAttemptCb = (fatal: boolean, transport: Transport) => {
+    const hostAttemptCb = (result: TryATransportResult) => {
       if (connectCount !== this.connectCounter) {
         return;
       }
-      if (!transport && !fatal) {
+      if (!result._transport && !result._fatal) {
         tryFallbackHosts();
       }
     };
@@ -1673,7 +1684,7 @@ class ConnectionManager extends EventEmitter {
          * its dns. Try the fallback hosts. We could try them simultaneously but
          * that would potentially cause a huge spike in load on the load balancer */
         transportParams.host = Utils.arrPopRandomElement(candidateHosts);
-        this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
+        Utils.whenNonRejectingPromiseSettles(this.tryATransport(transportParams, this.baseTransport), hostAttemptCb);
       });
     };
 
@@ -1683,7 +1694,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
+    Utils.whenNonRejectingPromiseSettles(this.tryATransport(transportParams, this.baseTransport), hostAttemptCb);
   }
 
   getUpgradePossibilities(): TransportName[] {
@@ -1710,7 +1721,7 @@ class ConnectionManager extends EventEmitter {
     Utils.arrForEach(upgradePossibilities, (upgradeTransport: TransportName) => {
       /* Note: the transport may mutate the params, so give each transport a fresh one */
       const upgradeTransportParams = this.createTransportParams(transportParams.host, 'upgrade');
-      this.tryATransport(upgradeTransportParams, upgradeTransport, noop);
+      this.tryATransport(upgradeTransportParams, upgradeTransport);
     });
   }
 

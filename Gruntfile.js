@@ -128,7 +128,7 @@ module.exports = function (grunt) {
       format: 'esm',
       plugins: [],
       // TODO understand this syntax, do for base too, document why these are named as they are, link to issue, comment on issue
-      mangleProps: /(_body|_headers|_unpacked|_statusCode|_err)/,
+      mangleProps: /(_body|_headers|_unpacked|_statusCode|_err|_fatal|_transport)/,
     };
 
     // For reasons I don't understand this build fails when run asynchronously
