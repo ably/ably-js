@@ -11,10 +11,35 @@ import './App.css';
 
 function App() {
   const [messages, updateMessages] = useState<Ably.Message[]>([]);
+  const [derivedChannelMessages, updateDerivedChannelMessages] = useState<Ably.Message[]>([]);
+  const [frontOficeOnlyMessages, updateFrontOfficeOnlyMessages] = useState<Ably.Message[]>([]);
+
   const [skip, setSkip] = useState(false);
   const { channel, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
+
+  useChannel(
+    {
+      channelName: 'your-derived-channel-name',
+      deriveOptions: { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' },
+    },
+    (message) => {
+      updateDerivedChannelMessages((prev) => [...prev, message]);
+    }
+  );
+
+  useChannel(
+    {
+      channelName: 'your-derived-channel-name',
+      deriveOptions: { filter: 'headers.role == `"front-office"` || headers.company == `"domain"`' },
+    },
+    (message) => {
+      updateFrontOfficeOnlyMessages((prev) => [...prev, message]);
+    }
+  );
+
+  const { channel: anotherChannelPublisher } = useChannel({ channelName: 'your-derived-channel-name' });
 
   const { presenceData, updateStatus } = usePresence(
     { channelName: 'your-channel-name', skip },
@@ -42,7 +67,14 @@ function App() {
     setChannelStateReason(stateChange.reason ?? undefined);
   });
 
-  const messagePreviews = messages.map((msg, index) => <li key={index}>{msg.data.text}</li>);
+  const messagePreviews = messages.map((message, idx) => <MessagePreview key={idx} message={message} />);
+  const derivedChannelMessagePreviews = derivedChannelMessages.map((message, idx) => (
+    <MessagePreview key={idx} message={message} />
+  ));
+  const frontOfficeMessagePreviews = frontOficeOnlyMessages.map((message, idx) => (
+    <MessagePreview key={idx} message={message} />
+  ));
+
   const presentClients = presenceData.map((msg, index) => (
     <li key={index}>
       {msg.clientId}: {JSON.stringify(msg.data)}
@@ -69,6 +101,57 @@ function App() {
         >
           Update status to hello
         </button>
+        <button
+          onClick={() => {
+            anotherChannelPublisher.publish({
+              name: 'test-message',
+              data: {
+                text: 'This is a message for Rob',
+              },
+              extras: {
+                headers: {
+                  email: 'rob.pike@domain.com',
+                },
+              },
+            });
+          }}
+        >
+          Send Message to Rob Only
+        </button>
+        <button
+          onClick={() => {
+            anotherChannelPublisher.publish({
+              name: 'test-message',
+              data: {
+                text: 'This is a company-wide message',
+              },
+              extras: {
+                headers: {
+                  company: 'domain',
+                },
+              },
+            });
+          }}
+        >
+          Send Company-wide message
+        </button>
+        <button
+          onClick={() => {
+            anotherChannelPublisher.publish({
+              name: 'test-message',
+              data: {
+                text: 'This is a message for front office employees only',
+              },
+              extras: {
+                headers: {
+                  role: 'front-office',
+                },
+              },
+            });
+          }}
+        >
+          Send message to Front Office
+        </button>
       </div>
 
       <div style={{ position: 'fixed', width: '250px' }}>
@@ -94,13 +177,23 @@ function App() {
         <div>{ablyErr}</div>
 
         <h2>Messages</h2>
-        <ul>{messagePreviews}</ul>
+        {<ul>{messagePreviews}</ul>}
+
+        <h2>Derived Channel Messages</h2>
+        <ul>{derivedChannelMessagePreviews}</ul>
+
+        <h2>Front Office Messages</h2>
+        <ul>{frontOfficeMessagePreviews}</ul>
 
         <h2>Present Clients</h2>
         <ul>{presentClients}</ul>
       </div>
     </div>
   );
+}
+
+function MessagePreview({ message }: { message: Ably.Message }) {
+  return <li>{message.data.text}</li>;
 }
 
 function ConnectionState() {

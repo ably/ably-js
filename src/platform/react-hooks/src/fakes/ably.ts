@@ -1,4 +1,5 @@
 import * as Ably from 'ably';
+import { search } from 'jmespath';
 
 export class FakeAblySdk {
   public clientId: string;
@@ -90,7 +91,7 @@ class Connection extends EventEmitter {
 export class ClientChannelsCollection {
   private client: FakeAblySdk;
   private channels: FakeAblyChannels;
-  private _channelConnections: Map<string, ClientSingleChannelConnection>;
+  private _channelConnections: Map<string, ClientSingleChannelConnection | ClientSingleDerivedChannelConnection>;
 
   constructor(client: FakeAblySdk, channels: FakeAblyChannels) {
     this.client = client;
@@ -107,6 +108,16 @@ export class ClientChannelsCollection {
       this._channelConnections.set(name, channelConnection);
       return channelConnection;
     }
+  }
+
+  public getDerived(name: string, options: Ably.DeriveOptions): ClientSingleDerivedChannelConnection {
+    let channelConnection = this._channelConnections.get(name);
+    if (channelConnection) return channelConnection as ClientSingleDerivedChannelConnection;
+
+    const channel = this.channels.get(name);
+    channelConnection = new ClientSingleDerivedChannelConnection(this.client, channel, options);
+    this._channelConnections.set(name, channelConnection);
+    return channelConnection;
   }
 }
 
@@ -144,6 +155,32 @@ export class ClientSingleChannelConnection extends EventEmitter {
   }
 
   public detach() {
+    this.channel.subscriptionsPerClient.delete(this.client.clientId);
+  }
+}
+
+export class ClientSingleDerivedChannelConnection extends EventEmitter {
+  private client: FakeAblySdk;
+  private channel: Channel;
+  private deriveOpts: Ably.DeriveOptions;
+
+  constructor(client: FakeAblySdk, channel: Channel, deriveOptions?: Ably.DeriveOptions) {
+    super();
+    this.client = client;
+    this.channel = channel;
+    this.deriveOpts = deriveOptions;
+  }
+
+  public async subscribe(
+    eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
+    listener?: Ably.messageCallback<Ably.Message>
+  ) {
+    if (typeof eventOrCallback === 'function') eventOrCallback.deriveOptions = this.deriveOpts;
+    if (typeof listener === 'function') listener.deriveOpts = this.deriveOpts;
+    this.channel.subscribe(this.client.clientId, eventOrCallback, listener);
+  }
+
+  public unsubscribe() {
     this.channel.subscriptionsPerClient.delete(this.client.clientId);
   }
 }
@@ -247,7 +284,11 @@ export class Channel {
         }
 
         for (const subscription of subs) {
-          subscription(messageEnvelope);
+          const filter = subscription.deriveOptions?.filter;
+          if (!filter) return subscription(messageEnvelope);
+          const headers = messageEnvelope.data?.extras?.headers;
+          const found = search({ headers }, filter);
+          if (found) subscription(messageEnvelope);
         }
       }
 

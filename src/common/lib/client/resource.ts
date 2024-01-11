@@ -245,7 +245,7 @@ class Resource {
         );
       }
 
-      client.http.do(method, path, headers, body, params, function (err, res, headers, unpacked, statusCode) {
+      client.http.do(method, path, headers, body, params, function (err, res, resHeaders, unpacked, statusCode) {
         if (err && Auth.isTokenErr(err as ErrorInfo)) {
           /* token has expired, so get a new one */
           client.auth.authorize(null, null, function (err: ErrorInfo) {
@@ -258,7 +258,7 @@ class Resource {
           });
           return;
         }
-        callback(err as ErrorInfo, res as T | undefined, headers, unpacked, statusCode);
+        callback(err as ErrorInfo, res as T | undefined, resHeaders, unpacked, statusCode);
       });
     }
 

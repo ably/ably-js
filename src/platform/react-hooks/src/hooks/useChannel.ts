@@ -37,18 +37,23 @@ export function useChannel(
 
   const ably = useAbly(channelHookOptions.id);
 
-  const { channelName, options: channelOptions, skip } = channelHookOptions;
+  const { channelName, options: channelOptions, deriveOptions, skip } = channelHookOptions;
 
   const channelEvent = typeof eventOrCallback === 'string' ? eventOrCallback : null;
   const ablyMessageCallback = typeof eventOrCallback === 'string' ? callback : eventOrCallback;
 
+  const deriveOptionsRef = useRef(deriveOptions);
   const channelOptionsRef = useRef(channelOptions);
   const ablyMessageCallbackRef = useRef(ablyMessageCallback);
 
-  const channel = useMemo(
-    () => ably.channels.get(channelName, channelOptionsWithAgent(channelOptionsRef.current)),
-    [ably, channelName]
-  );
+  const channel = useMemo(() => {
+    const derived = deriveOptionsRef.current;
+    const withAgent = channelOptionsWithAgent(channelOptionsRef.current);
+    const channel = derived
+      ? ably.channels.getDerived(channelName, derived, withAgent)
+      : ably.channels.get(channelName, withAgent);
+    return channel;
+  }, [ably, channelName]);
 
   const { connectionError, channelError } = useStateErrors(channelHookOptions);
 
@@ -58,6 +63,10 @@ export function useChannel(
     }
     channelOptionsRef.current = channelOptions;
   }, [channel, channelOptions]);
+
+  useEffect(() => {
+    deriveOptionsRef.current = deriveOptions;
+  }, [deriveOptions]);
 
   useEffect(() => {
     ablyMessageCallbackRef.current = ablyMessageCallback;
