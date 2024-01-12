@@ -51,7 +51,8 @@ export interface IHttp {
     params: RequestParams,
     callback?: RequestCallback
   ): void;
-  checkConnectivity?: (callback: (connected: boolean) => void) => void;
+  // Should not throw an error.
+  checkConnectivity?: () => Promise<boolean /* TODO "whether connected"? */>;
 }
 
 export interface ErrnoException extends Error {
