@@ -118,7 +118,7 @@ abstract class CometTransport extends Transport {
         }
         this.onData(data);
       });
-      connectRequest.on('complete', (err: ErrorInfo) => {
+      connectRequest.on('complete', (err: ErrorInfo | null) => {
         if (!this.recvRequest) {
           /* the transport was disposed before we connected */
           err = err || new ErrorInfo('Request cancelled', 80003, 400);

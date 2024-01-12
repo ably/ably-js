@@ -159,7 +159,7 @@ var NodeCometTransport = function (connectionManager) {
       if (statusCode == HttpStatusCodes.NoContent) {
         /* cause the stream to flow, and thus end */
         res.resume();
-        self.complete();
+        self.complete(null);
         return;
       }
 
@@ -314,7 +314,7 @@ var NodeCometTransport = function (connectionManager) {
       req.abort();
       this.req = null;
     }
-    this.complete({ statusCode: 400, code: 80003, message: 'Cancelled' });
+    this.complete(new ErrorInfo('Cancelled', 80003, 400));
   };
 
   return NodeCometTransport;
