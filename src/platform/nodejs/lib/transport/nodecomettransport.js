@@ -65,14 +65,6 @@ var NodeCometTransport = function (transportStorage) {
     CometTransport.prototype.dispose.call(this);
   };
 
-  /* valid in non-streaming mode only, or data only contains last update */
-  NodeCometTransport.prototype.request = function (uri, params, body, requestMode, callback) {
-    var req = this.createRequest(uri, params, body, requestMode);
-    req.once('complete', callback);
-    req.exec();
-    return req;
-  };
-
   NodeCometTransport.prototype.createRequest = function (uri, headers, params, body, requestMode) {
     return new Request(uri, headers, params, body, requestMode, this.format, this.timeouts, this);
   };
