@@ -1,6 +1,6 @@
 import Logger from '../util/logger';
 import * as Utils from '../util/utils';
-import Multicaster from '../util/multicaster';
+import Multicaster, { MulticasterInstance } from '../util/multicaster';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
@@ -116,7 +116,7 @@ class Auth {
   client: BaseClient;
   tokenParams: API.TokenParams;
   currentTokenRequestId: number | null;
-  waitingForTokenRequest: ReturnType<typeof Multicaster.create> | null;
+  waitingForTokenRequest: MulticasterInstance | null;
   // This initialization is always overwritten and only used to prevent a TypeScript compiler error
   authOptions: API.AuthOptions = {} as API.AuthOptions;
   tokenDetails?: API.TokenDetails | null;
