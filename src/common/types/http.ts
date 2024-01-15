@@ -151,99 +151,74 @@ export class Http {
     return Defaults.getHosts(client.options);
   }
 
-  do(
+  /**
+   * This method will not throw any errors; rather, it will communicate any error by populating the {@link RequestResult.error} property of the returned {@link RequestResult}.
+   */
+  async do(
     method: HttpMethods,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback?: RequestCallback | undefined
-  ): void {
-    /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
-    const client = this.client;
-    if (!client) {
-      throw new Error('http.do called without client');
-    }
-
-    const uriFromHost =
-      typeof path === 'function'
-        ? path
-        : function (host: string) {
-            return client.baseUri(host) + path;
-          };
-
-    const currentFallback = client._currentFallback;
-    if (currentFallback) {
-      if (currentFallback.validUntil > Date.now()) {
-        /* Use stored fallback */
-        Utils.whenPromiseSettles(
-          this.doUri(method, uriFromHost(currentFallback.host), headers, body, params),
-          (err: any, result) => {
-            // doUri isn’t meant to throw an error, but handle any just in case
-            if (err) {
-              callback?.(err);
-              return;
-            }
-
-            if (result!.error && this.platformHttp.shouldFallback(result!.error as ErrnoException)) {
-              /* unstore the fallback and start from the top with the default sequence */
-              client._currentFallback = null;
-              this.do(method, path, headers, body, params, callback);
-              return;
-            }
-            callback?.(result!.error, result!.body, result!.headers, result!.unpacked, result!.statusCode);
-          }
-        );
-        return;
-      } else {
-        /* Fallback expired; remove it and fallthrough to normal sequence */
-        client._currentFallback = null;
+    params: RequestParams
+  ): Promise<RequestResult> {
+    try {
+      /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
+      const client = this.client;
+      if (!client) {
+        return { error: new ErrorInfo('http.do called without client', 50000, 500) };
       }
-    }
 
-    const hosts = this._getHosts(client);
-
-    /* see if we have one or more than one host */
-    if (hosts.length === 1) {
-      Utils.whenPromiseSettles(this.doUri(method, uriFromHost(hosts[0]), headers, body, params), (err: any, result) =>
-        err
-          ? callback?.(err) // doUri isn’t meant to throw an error, but handle any just in case
-          : callback?.(result!.error, result!.body, result!.headers, result!.unpacked, result!.statusCode)
-      );
-      return;
-    }
-
-    const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
-      const host = candidateHosts.shift();
-      Utils.whenPromiseSettles(
-        this.doUri(method, uriFromHost(host as string), headers, body, params),
-        (err: any, result) => {
-          // doUri isn’t meant to throw an error, but handle any just in case
-          if (err) {
-            callback?.(err);
-            return;
-          }
-
-          if (
-            result!.error &&
-            this.platformHttp.shouldFallback(result!.error as ErrnoException) &&
-            candidateHosts.length
-          ) {
-            tryAHost(candidateHosts, true);
-            return;
-          }
-          if (persistOnSuccess) {
-            /* RSC15f */
-            client._currentFallback = {
-              host: host as string,
-              validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
+      const uriFromHost =
+        typeof path === 'function'
+          ? path
+          : function (host: string) {
+              return client.baseUri(host) + path;
             };
+
+      const currentFallback = client._currentFallback;
+      if (currentFallback) {
+        if (currentFallback.validUntil > Date.now()) {
+          /* Use stored fallback */
+          const result = await this.doUri(method, uriFromHost(currentFallback.host), headers, body, params);
+          if (result.error && this.platformHttp.shouldFallback(result.error as ErrnoException)) {
+            /* unstore the fallback and start from the top with the default sequence */
+            client._currentFallback = null;
+            return this.do(method, path, headers, body, params);
           }
-          callback?.(result!.error, result!.body, result!.headers, result!.unpacked, result!.statusCode);
+          return result;
+        } else {
+          /* Fallback expired; remove it and fallthrough to normal sequence */
+          client._currentFallback = null;
         }
-      );
-    };
-    tryAHost(hosts);
+      }
+
+      const hosts = this._getHosts(client);
+
+      /* see if we have one or more than one host */
+      if (hosts.length === 1) {
+        return this.doUri(method, uriFromHost(hosts[0]), headers, body, params);
+      }
+
+      const tryAHost = async (candidateHosts: Array<string>, persistOnSuccess?: boolean): Promise<RequestResult> => {
+        const host = candidateHosts.shift();
+        const result = await this.doUri(method, uriFromHost(host as string), headers, body, params);
+        if (result.error && this.platformHttp.shouldFallback(result.error as ErrnoException) && candidateHosts.length) {
+          return tryAHost(candidateHosts, true);
+        }
+        if (persistOnSuccess) {
+          /* RSC15f */
+          client._currentFallback = {
+            host: host as string,
+            validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
+          };
+        }
+        return result;
+      };
+      return tryAHost(hosts);
+    } catch (err) {
+      // Handle any unexpected error, to ensure we always meet our contract of not throwing any errors
+      return { error: new ErrorInfo(`Unexpected error in Http.do: ${Utils.inspectError(err)}`, 500, 50000) };
+    }
   }
 
   /**

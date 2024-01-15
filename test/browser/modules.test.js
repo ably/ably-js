@@ -394,12 +394,12 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
         const channelName = 'channel';
         const channel = rest.channels.get(channelName);
         const contentTypeUsedForPublishPromise = new Promise((resolve, reject) => {
-          rest.http.do = (method, path, headers, body, params, callback) => {
+          rest.http.do = async (method, path, headers, body, params) => {
             if (!(method == 'post' && path == `/channels/${channelName}/messages`)) {
-              return;
+              return new Promise(() => {});
             }
             resolve(headers['content-type']);
-            callback(null);
+            return { error: null };
           };
         });
 

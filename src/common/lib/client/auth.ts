@@ -588,13 +588,18 @@ class Auth {
         'Auth.requestToken().requestToken',
         'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams)
       );
-      this.client.http.do(
-        HttpMethods.Post,
-        tokenUri,
-        requestHeaders,
-        JSON.stringify(signedTokenParams),
-        null,
-        tokenCb as RequestCallback
+      Utils.whenPromiseSettles(
+        this.client.http.do(HttpMethods.Post, tokenUri, requestHeaders, JSON.stringify(signedTokenParams), null),
+        (err: any, result) =>
+          err
+            ? (tokenCb as RequestCallback)(err) // doUri isn’t meant to throw an error, but handle any just in case
+            : (tokenCb as RequestCallback)(
+                result!.error,
+                result!.body,
+                result!.headers,
+                result!.unpacked,
+                result!.statusCode
+              )
       );
     };
 

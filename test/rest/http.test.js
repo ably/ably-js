@@ -25,7 +25,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var originalDo = rest.http.do;
 
       // Intercept Http.do with test
-      function testRequestHandler(method, path, headers, body, params, callback) {
+      async function testRequestHandler(method, path, headers, body, params) {
         expect('X-Ably-Version' in headers, 'Verify version header exists').to.be.ok;
         expect('Ably-Agent' in headers, 'Verify agent header exists').to.be.ok;
 
@@ -47,7 +47,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           expect(headers['Ably-Agent'].indexOf('nodejs') > -1, 'Verify agent').to.be.ok;
         }
 
-        originalDo.call(rest.http, method, path, headers, body, params, callback);
+        return originalDo.call(rest.http, method, path, headers, body, params);
       }
 
       rest.http.do = testRequestHandler;

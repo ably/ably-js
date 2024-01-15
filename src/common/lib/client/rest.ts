@@ -68,30 +68,26 @@ export class Rest {
     const timeUri = (host: string) => {
       return this.client.baseUri(host) + '/time';
     };
-    return new Promise((resolve, reject) => {
-      this.client.http.do(
-        HttpMethods.Get,
-        timeUri,
-        headers,
-        null,
-        params as RequestParams,
-        (err, body, headers, unpacked) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          if (!unpacked) body = JSON.parse(body as string);
-          const time = (body as number[])[0];
-          if (!time) {
-            reject(new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500));
-            return;
-          }
-          /* calculate time offset only once for this device by adding to the prototype */
-          this.client.serverTimeOffset = time - Utils.now();
-          resolve(time);
-        }
-      );
-    });
+
+    let { error, body, unpacked } = await this.client.http.do(
+      HttpMethods.Get,
+      timeUri,
+      headers,
+      null,
+      params as RequestParams
+    );
+
+    if (error) {
+      throw error;
+    }
+    if (!unpacked) body = JSON.parse(body as string);
+    const time = (body as number[])[0];
+    if (!time) {
+      throw new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500);
+    }
+    /* calculate time offset only once for this device by adding to the prototype */
+    this.client.serverTimeOffset = time - Utils.now();
+    return time;
   }
 
   async request(
