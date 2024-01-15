@@ -12,6 +12,14 @@ export type RequestCallback = (
   unpacked?: boolean,
   statusCode?: number
 ) => void;
+// TODO explain these methods don’t throw
+export type RequestResult = {
+  error?: ErrnoException | IPartialErrorInfo | null;
+  body?: unknown;
+  headers?: RequestCallbackHeaders;
+  unpacked?: boolean;
+  statusCode?: number;
+};
 export type RequestParams = Record<string, string> | null;
 
 export interface IHttpStatic {
@@ -31,9 +39,8 @@ export interface IHttp {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    body: unknown,
-    callback: RequestCallback
-  ) => void;
+    body: unknown
+  ) => Promise<RequestResult>;
   _getHosts: (client: BaseClient) => string[];
   do(
     method: HttpMethods,

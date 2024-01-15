@@ -7,6 +7,7 @@ import {
   PathParameter,
   RequestCallback,
   RequestParams,
+  RequestResult,
 } from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
 import got, { Response, Options, CancelableRequest, Agents } from 'got';
@@ -271,9 +272,8 @@ const Http: IHttpStatic = class {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    body: unknown,
-    callback: RequestCallback
-  ) => void = undefined;
+    body: unknown
+  ) => Promise<RequestResult> = undefined;
 };
 
 export default Http;

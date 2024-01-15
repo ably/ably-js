@@ -1,8 +1,14 @@
 import Platform from 'common/platform';
 import * as Utils from 'common/lib/util/utils';
 import Defaults from 'common/lib/util/defaults';
-import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestCallback, RequestParams } from 'common/types/http';
+import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types/errorinfo';
+import {
+  ErrnoException,
+  RequestCallback,
+  RequestCallbackHeaders,
+  RequestParams,
+  RequestResult,
+} from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import BaseRealtime from 'common/lib/client/baserealtime';
@@ -77,26 +83,35 @@ const Http = class {
 
     if (Platform.Config.xhrSupported && xhrRequestImplementation) {
       this.supportsAuthHeaders = true;
-      this.Request = function (
+      this.Request = async function (
         method: HttpMethods,
         uri: string,
         headers: Record<string, string> | null,
         params: RequestParams,
-        body: unknown,
-        callback: RequestCallback
+        body: unknown
       ) {
-        const req = xhrRequestImplementation.createRequest(
-          uri,
-          headers,
-          params,
-          body,
-          XHRStates.REQ_SEND,
-          (client && client.options.timeouts) ?? null,
-          method
-        );
-        req.once('complete', callback);
-        req.exec();
-        return req;
+        return new Promise((resolve) => {
+          const req = xhrRequestImplementation.createRequest(
+            uri,
+            headers,
+            params,
+            body,
+            XHRStates.REQ_SEND,
+            (client && client.options.timeouts) ?? null,
+            method
+          );
+          req.once(
+            'complete',
+            (
+              error?: ErrnoException | IPartialErrorInfo | null,
+              body?: unknown,
+              headers?: RequestCallbackHeaders,
+              unpacked?: boolean,
+              statusCode?: number
+            ) => resolve({ error, body, headers, unpacked, statusCode })
+          );
+          req.exec();
+        });
       };
       if (client?.options.disableConnectivityCheck) {
         this.checkConnectivity = async function () {
@@ -132,8 +147,26 @@ const Http = class {
       }
     } else if (Platform.Config.fetchSupported && fetchRequestImplementation) {
       this.supportsAuthHeaders = true;
-      this.Request = (method, uri, headers, params, body, callback) => {
-        fetchRequestImplementation(method, client ?? null, uri, headers, params, body, callback);
+      this.Request = async (method, uri, headers, params, body) => {
+        return new Promise((resolve) => {
+          fetchRequestImplementation(
+            method,
+            client ?? null,
+            uri,
+            headers,
+            params,
+            body,
+            (
+              error?: ErrnoException | IPartialErrorInfo | null,
+              body?: unknown,
+              headers?: RequestCallbackHeaders,
+              unpacked?: boolean,
+              statusCode?: number
+            ) => {
+              resolve({ error, body, headers, unpacked, statusCode });
+            }
+          );
+        });
       };
       this.checkConnectivity = async function () {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
@@ -146,11 +179,11 @@ const Http = class {
         });
       };
     } else {
-      this.Request = (method, uri, headers, params, body, callback) => {
+      this.Request = async () => {
         const error = hasImplementation
           ? new PartialErrorInfo('no supported HTTP transports available', null, 400)
           : createMissingImplementationError();
-        callback(error, null);
+        return { error };
       };
     }
   }
@@ -185,16 +218,19 @@ const Http = class {
           callback?.(new PartialErrorInfo('Request invoked before assigned to', null, 500));
           return;
         }
-        this.Request(method, uriFromHost(currentFallback.host), headers, params, body, (err?, ...args) => {
-          // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
-          if (err && shouldFallback(err as ErrorInfo)) {
-            /* unstore the fallback and start from the top with the default sequence */
-            client._currentFallback = null;
-            this.do(method, path, headers, body, params, callback);
-            return;
+        Utils.whenNonRejectingPromiseSettles(
+          this.Request(method, uriFromHost(currentFallback.host), headers, params, body),
+          (result) => {
+            // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
+            if (result.error && shouldFallback(result.error as ErrorInfo)) {
+              /* unstore the fallback and start from the top with the default sequence */
+              client._currentFallback = null;
+              this.do(method, path, headers, body, params, callback);
+              return;
+            }
+            callback?.(result.error, result.body, result.headers, result.unpacked, result.statusCode);
           }
-          callback?.(err, ...args);
-        });
+        );
         return;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
@@ -244,7 +280,9 @@ const Http = class {
       callback(new PartialErrorInfo('Request invoked before assigned to', null, 500));
       return;
     }
-    this.Request(method, uri, headers, params, body, callback);
+    Utils.whenNonRejectingPromiseSettles(this.Request(method, uri, headers, params, body), (result) => {
+      callback(result.error, result.body, result.headers, result.unpacked, result.statusCode);
+    });
   }
 
   Request?: (
@@ -252,9 +290,8 @@ const Http = class {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    body: unknown,
-    callback: RequestCallback
-  ) => void;
+    body: unknown
+  ) => Promise<RequestResult>;
 
   checkConnectivity?: () => Promise<boolean> = undefined;
 
