@@ -15,7 +15,7 @@ class Multicaster {
     this.members = (members as Array<AnyFunction>) || [];
   }
 
-  call(...args: unknown[]): void {
+  private call(...args: unknown[]): void {
     for (const member of this.members) {
       if (member) {
         try {
