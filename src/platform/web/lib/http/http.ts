@@ -2,13 +2,7 @@ import Platform from 'common/platform';
 import * as Utils from 'common/lib/util/utils';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from 'common/lib/types/errorinfo';
-import {
-  ErrnoException,
-  RequestCallback,
-  RequestCallbackHeaders,
-  RequestParams,
-  RequestResult,
-} from 'common/types/http';
+import { ErrnoException, RequestCallbackHeaders, RequestParams, RequestResult } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import BaseRealtime from 'common/lib/client/baserealtime';
@@ -124,25 +118,24 @@ const Http = class {
             '(XHRRequest)Http.checkConnectivity()',
             'Sending; ' + connectivityCheckUrl
           );
-          return new Promise((resolve) => {
-            this.doUri(
-              HttpMethods.Get,
-              connectivityCheckUrl,
-              null,
-              null,
-              connectivityCheckParams,
-              function (err, responseText, headers, unpacked, statusCode) {
-                let result = false;
-                if (!connectivityUrlIsDefault) {
-                  result = !err && isSuccessCode(statusCode as number);
-                } else {
-                  result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-                }
-                Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-                resolve(result);
-              }
-            );
-          });
+
+          const requestResult = await this.doUri(
+            HttpMethods.Get,
+            connectivityCheckUrl,
+            null,
+            null,
+            connectivityCheckParams
+          );
+
+          let result = false;
+          if (!connectivityUrlIsDefault) {
+            result = !requestResult.error && isSuccessCode(requestResult.statusCode as number);
+          } else {
+            result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
+          }
+
+          Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+          return result;
         };
       }
     } else if (Platform.Config.fetchSupported && fetchRequestImplementation) {
@@ -170,13 +163,10 @@ const Http = class {
       };
       this.checkConnectivity = async function () {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
-        return new Promise((resolve) => {
-          this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null, function (err, responseText) {
-            const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-            Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
-            resolve(result);
-          });
-        });
+        const requestResult = await this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null);
+        const result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
+        Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
+        return result;
       };
     } else {
       this.Request = async () => {
@@ -234,65 +224,41 @@ const Http = class {
 
     /* if there is only one host do it */
     if (hosts.length === 1) {
-      return new Promise((resolve) => {
-        this.doUri(
-          method,
-          uriFromHost(hosts[0]),
-          headers,
-          body,
-          params,
-          (error, body, headers, unpacked, statusCode) => {
-            resolve({ error, body, headers, unpacked, statusCode });
-          }
-        );
-      });
+      return this.doUri(method, uriFromHost(hosts[0]), headers, body, params);
     }
 
     /* hosts is an array with preferred host plus at least one fallback */
     const tryAHost = async (candidateHosts: Array<string>, persistOnSuccess?: boolean): Promise<RequestResult> => {
       const host = candidateHosts.shift();
-      return new Promise((resolve) => {
-        this.doUri(
-          method,
-          uriFromHost(host as string),
-          headers,
-          body,
-          params,
-          function (error, body, headers, unpacked, statusCode) {
-            // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
-            if (error && shouldFallback(error as ErrorInfo) && candidateHosts.length) {
-              resolve(tryAHost(candidateHosts, true));
-            }
-            if (persistOnSuccess) {
-              /* RSC15f */
-              client._currentFallback = {
-                host: host as string,
-                validUntil: Utils.now() + client.options.timeouts.fallbackRetryTimeout,
-              };
-            }
-            resolve({ error, body, headers, unpacked, statusCode });
-          }
-        );
-      });
+      const result = await this.doUri(method, uriFromHost(host as string), headers, body, params);
+
+      // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
+      if (result.error && shouldFallback(result.error as ErrorInfo) && candidateHosts.length) {
+        return tryAHost(candidateHosts, true);
+      }
+      if (persistOnSuccess) {
+        /* RSC15f */
+        client._currentFallback = {
+          host: host as string,
+          validUntil: Utils.now() + client.options.timeouts.fallbackRetryTimeout,
+        };
+      }
+      return result;
     };
     return tryAHost(hosts);
   }
 
-  doUri(
+  async doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
+    params: RequestParams
+  ): Promise<RequestResult> {
     if (!this.Request) {
-      callback(new PartialErrorInfo('Request invoked before assigned to', null, 500));
-      return;
+      throw new PartialErrorInfo('Request invoked before assigned to', null, 500);
     }
-    Utils.whenNonRejectingPromiseSettles(this.Request(method, uri, headers, params, body), (result) => {
-      callback(result.error, result.body, result.headers, result.unpacked, result.statusCode);
-    });
+    return this.Request(method, uri, headers, params, body);
   }
 
   Request?: (

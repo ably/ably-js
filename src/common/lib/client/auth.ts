@@ -477,22 +477,22 @@ class Auth {
           const headers = authHeaders || {};
           headers['content-type'] = 'application/x-www-form-urlencoded';
           const body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-          this.client.http.doUri(
-            HttpMethods.Post,
-            authOptions.authUrl,
-            headers,
-            body,
-            providedQsParams as Record<string, string>,
-            authUrlRequestCallback as RequestCallback
+          Utils.whenNonRejectingPromiseSettles(
+            this.client.http.doUri(
+              HttpMethods.Post,
+              authOptions.authUrl,
+              headers,
+              body,
+              providedQsParams as Record<string, string>
+            ),
+            ({ error, body, headers, unpacked, statusCode }) =>
+              (authUrlRequestCallback as RequestCallback)(error, body, headers, unpacked, statusCode)
           );
         } else {
-          this.client.http.doUri(
-            HttpMethods.Get,
-            authOptions.authUrl,
-            authHeaders || {},
-            null,
-            authParams,
-            authUrlRequestCallback as RequestCallback
+          Utils.whenNonRejectingPromiseSettles(
+            this.client.http.doUri(HttpMethods.Get, authOptions.authUrl, authHeaders || {}, null, authParams),
+            ({ error, body, headers, unpacked, statusCode }) =>
+              (authUrlRequestCallback as RequestCallback)(error, body, headers, unpacked, statusCode)
           );
         }
       };

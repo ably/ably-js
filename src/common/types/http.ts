@@ -54,9 +54,8 @@ export interface IHttp {
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
-    params: RequestParams,
-    callback?: RequestCallback
-  ): void;
+    params: RequestParams
+  ): Promise<RequestResult>;
   // Should not throw an error.
   checkConnectivity?: () => Promise<boolean /* TODO "whether connected"? */>;
 }

@@ -5,7 +5,6 @@ import {
   ErrnoException,
   IHttpStatic,
   PathParameter,
-  RequestCallback,
   RequestParams,
   RequestResult,
 } from '../../../../common/types/http';
@@ -35,11 +34,14 @@ import { shallowEquals, throwMissingModuleError } from 'common/lib/util/utils';
 
 const globalAgentPool: Array<{ options: RestAgentOptions; agents: Agents }> = [];
 
-const handler = function (uri: string, params: unknown, client: BaseClient | null, callback?: RequestCallback) {
-  return function (err: ErrnoException | null, response?: Response, body?: unknown) {
-    if (err) {
-      callback?.(err);
-      return;
+const handler = function (
+  uri: string,
+  params: unknown,
+  client: BaseClient | null
+): (err: ErrnoException | null, response?: Response, body?: unknown) => Promise<RequestResult> {
+  return async function (error, response, body) {
+    if (error) {
+      return { error };
     }
     const statusCode = (response as Response).statusCode,
       headers = (response as Response).headers;
@@ -62,10 +64,9 @@ const handler = function (uri: string, params: unknown, client: BaseClient | nul
             Number(headers['x-ably-errorcode']),
             statusCode
           );
-      callback?.(error, body, headers, true, statusCode);
-      return;
+      return { error, body, headers, unpacked: true, statusCode };
     }
-    callback?.(null, body, headers, false, statusCode);
+    return { error: null, body, headers, unpacked: false, statusCode };
   };
 };
 
@@ -136,24 +137,14 @@ const Http: IHttpStatic = class {
     if (currentFallback) {
       if (currentFallback.validUntil > Date.now()) {
         /* Use stored fallback */
-        return new Promise((resolve) => {
-          this.doUri(
-            method,
-            uriFromHost(currentFallback.host),
-            headers,
-            body,
-            params,
-            (error, resBody, resHeaders, unpacked, statusCode) => {
-              if (error && shouldFallback(error as ErrnoException)) {
-                /* unstore the fallback and start from the top with the default sequence */
-                client._currentFallback = null;
-                resolve(this.do(method, path, headers, body, params));
-                return;
-              }
-              resolve({ error, body: resBody, headers: resHeaders, unpacked, statusCode });
-            }
-          );
-        });
+        const result = await this.doUri(method, uriFromHost(currentFallback.host), headers, body, params);
+
+        if (result.error && shouldFallback(result.error as ErrnoException)) {
+          /* unstore the fallback and start from the top with the default sequence */
+          client._currentFallback = null;
+          return this.do(method, path, headers, body, params);
+        }
+        return result;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
         client._currentFallback = null;
@@ -164,56 +155,35 @@ const Http: IHttpStatic = class {
 
     /* see if we have one or more than one host */
     if (hosts.length === 1) {
-      return new Promise((resolve) => {
-        this.doUri(
-          method,
-          uriFromHost(hosts[0]),
-          headers,
-          body,
-          params,
-          (error, resBody, resHeaders, unpacked, statusCode) => {
-            resolve({ error, body: resBody, headers: resHeaders, unpacked, statusCode });
-          }
-        );
-      });
+      return this.doUri(method, uriFromHost(hosts[0]), headers, body, params);
     }
 
     const tryAHost = async (candidateHosts: Array<string>, persistOnSuccess?: boolean): Promise<RequestResult> => {
       const host = candidateHosts.shift();
-      return new Promise((resolve) => {
-        this.doUri(
-          method,
-          uriFromHost(host as string),
-          headers,
-          body,
-          params,
-          function (error, resBody, resHeaders, unpacked, statusCode) {
-            if (error && shouldFallback(error as ErrnoException) && candidateHosts.length) {
-              return tryAHost(candidateHosts, true);
-            }
-            if (persistOnSuccess) {
-              /* RSC15f */
-              client._currentFallback = {
-                host: host as string,
-                validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
-              };
-            }
-            resolve({ error, body: resBody, headers: resHeaders, unpacked, statusCode });
-          }
-        );
-      });
+      const result = await this.doUri(method, uriFromHost(host as string), headers, body, params);
+
+      if (result.error && shouldFallback(result.error as ErrnoException) && candidateHosts.length) {
+        return tryAHost(candidateHosts, true);
+      }
+      if (persistOnSuccess) {
+        /* RSC15f */
+        client._currentFallback = {
+          host: host as string,
+          validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
+        };
+      }
+      return result;
     };
     return tryAHost(hosts);
   }
 
-  doUri(
+  async doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
+    params: RequestParams
+  ): Promise<RequestResult> {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
@@ -253,17 +223,15 @@ const Http: IHttpStatic = class {
     // the same endpoint, inappropriately retrying 429s, etc
     doOptions.retry = { limit: 0 };
 
-    (got[method](doOptions) as CancelableRequest<Response>)
-      .then((res: Response) => {
-        handler(uri, params, this.client, callback)(null, res, res.body);
-      })
-      .catch((err: ErrnoException) => {
-        if (err instanceof got.HTTPError) {
-          handler(uri, params, this.client, callback)(null, err.response, err.response.body);
-          return;
-        }
-        handler(uri, params, this.client, callback)(err);
-      });
+    try {
+      const res = await (got[method](doOptions) as CancelableRequest<Response>);
+      return handler(uri, params, this.client)(null, res, res.body);
+    } catch (err) {
+      if (err instanceof got.HTTPError) {
+        return handler(uri, params, this.client)(null, err.response, err.response.body);
+      }
+      return handler(uri, params, this.client)(err as ErrnoException);
+    }
   }
 
   checkConnectivity = async (): Promise<boolean> => {
@@ -274,22 +242,18 @@ const Http: IHttpStatic = class {
     const connectivityCheckParams = this.client?.options.connectivityCheckParams ?? null;
     const connectivityUrlIsDefault = !this.client?.options.connectivityCheckUrl;
 
-    return new Promise((resolve) => {
-      this.doUri(
-        HttpMethods.Get,
-        connectivityCheckUrl,
-        null,
-        null,
-        connectivityCheckParams,
-        function (err, responseText, headers, unpacked, statusCode) {
-          if (!err && !connectivityUrlIsDefault) {
-            resolve(isSuccessCode(statusCode as number));
-            return;
-          }
-          resolve(!err && (responseText as Buffer | string)?.toString().trim() === 'yes');
-        }
-      );
-    });
+    const { error, statusCode, body } = await this.doUri(
+      HttpMethods.Get,
+      connectivityCheckUrl,
+      null,
+      null,
+      connectivityCheckParams
+    );
+
+    if (!error && !connectivityUrlIsDefault) {
+      return isSuccessCode(statusCode as number);
+    }
+    return !error && (body as Buffer | string)?.toString().trim() === 'yes';
   };
 
   Request?: (
