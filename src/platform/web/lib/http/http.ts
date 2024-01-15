@@ -113,19 +113,7 @@ const Http = class {
     } else if (Platform.Config.fetchSupported && fetchRequestImplementation) {
       this.supportsAuthHeaders = true;
       this.Request = async (method, uri, headers, params, body) => {
-        return new Promise((resolve) => {
-          fetchRequestImplementation(
-            method,
-            client ?? null,
-            uri,
-            headers,
-            params,
-            body,
-            (error, body, headers, unpacked, statusCode) => {
-              resolve({ error, body, headers, unpacked, statusCode });
-            }
-          );
-        });
+        return fetchRequestImplementation(method, client ?? null, uri, headers, params, body);
       };
       this.checkConnectivity = async function () {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
