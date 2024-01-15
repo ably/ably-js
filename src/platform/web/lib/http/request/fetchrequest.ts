@@ -1,7 +1,7 @@
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestCallback, RequestCallbackHeaders, RequestParams } from 'common/types/http';
+import { RequestCallbackHeaders, RequestParams, RequestResult } from 'common/types/http';
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import * as Utils from 'common/lib/util/utils';
@@ -26,27 +26,30 @@ function convertHeaders(headers: Headers) {
   return result;
 }
 
-export default function fetchRequest(
+export default async function fetchRequest(
   method: HttpMethods,
   client: BaseClient | null,
   uri: string,
   headers: Record<string, string> | null,
   params: RequestParams,
-  body: unknown,
-  callback: RequestCallback
-) {
+  body: unknown
+): Promise<RequestResult> {
   const fetchHeaders = new Headers(headers || {});
   const _method = method ? method.toUpperCase() : Utils.isEmptyArg(body) ? 'GET' : 'POST';
 
   const controller = new AbortController();
 
-  const timeout = setTimeout(
-    () => {
-      controller.abort();
-      callback(new PartialErrorInfo('Request timed out', null, 408));
-    },
-    client ? client.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
-  );
+  // TODO sort out this type (because of Node / DOM incompatibility) — see our typing of clearTimeout
+  let timeout: NodeJS.Timeout | number;
+  const timeoutPromise: Promise<RequestResult> = new Promise((resolve, reject) => {
+    timeout = setTimeout(
+      () => {
+        controller.abort();
+        reject(new PartialErrorInfo('Request timed out', null, 408));
+      },
+      client ? client.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
+    );
+  });
 
   const requestInit: RequestInit = {
     method: _method,
@@ -58,10 +61,12 @@ export default function fetchRequest(
     requestInit.credentials = fetchHeaders.has('authorization') ? 'include' : 'same-origin';
   }
 
-  Utils.getGlobalObject()
-    .fetch(uri + '?' + new URLSearchParams(params || {}), requestInit)
-    .then((res) => {
-      clearTimeout(timeout);
+  const resultPromise = (async (): Promise<RequestResult> => {
+    try {
+      const res = await Utils.getGlobalObject().fetch(uri + '?' + new URLSearchParams(params || {}), requestInit);
+
+      clearTimeout(timeout!);
+
       const contentType = res.headers.get('Content-Type');
       let prom;
       if (contentType && contentType.indexOf('application/x-msgpack') > -1) {
@@ -71,25 +76,29 @@ export default function fetchRequest(
       } else {
         prom = res.text();
       }
-      prom.then((body) => {
-        const unpacked = !!contentType && contentType.indexOf('application/x-msgpack') === -1;
-        const headers = convertHeaders(res.headers);
-        if (!res.ok) {
-          const err =
-            getAblyError(body, res.headers) ||
-            new PartialErrorInfo(
-              'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
-              null,
-              res.status
-            );
-          callback(err, body, headers, unpacked, res.status);
-        } else {
-          callback(null, body, headers, unpacked, res.status);
-        }
-      });
-    })
-    .catch((err) => {
-      clearTimeout(timeout);
-      callback(err);
-    });
+
+      const body = await prom;
+      const unpacked = !!contentType && contentType.indexOf('application/x-msgpack') === -1;
+      const headers = convertHeaders(res.headers);
+
+      if (!res.ok) {
+        const error =
+          getAblyError(body, res.headers) ||
+          new PartialErrorInfo(
+            'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
+            null,
+            res.status
+          );
+
+        return { error, body, headers, unpacked, statusCode: res.status };
+      } else {
+        return { error: null, body, headers, unpacked, statusCode: res.status };
+      }
+    } catch (error) {
+      clearTimeout(timeout!);
+      throw error;
+    }
+  })();
+
+  return Promise.race([timeoutPromise, resultPromise]);
 }
