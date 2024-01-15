@@ -47,9 +47,8 @@ export interface IHttp {
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
-    params: RequestParams,
-    callback?: RequestCallback
-  ): void;
+    params: RequestParams
+  ): Promise<RequestResult>;
   doUri(
     method: HttpMethods,
     uri: string,

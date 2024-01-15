@@ -189,14 +189,13 @@ const Http = class {
   }
 
   /* Unlike for doUri, the 'client' param here is mandatory, as it's used to generate the hosts */
-  do(
+  async do(
     method: HttpMethods,
     path: string,
     headers: Record<string, string> | null,
     body: unknown,
-    params: RequestParams,
-    callback?: RequestCallback
-  ): void {
+    params: RequestParams
+  ): Promise<RequestResult> {
     /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
     const client = this.client;
     if (!client) {
@@ -215,23 +214,16 @@ const Http = class {
       if (currentFallback.validUntil > Utils.now()) {
         /* Use stored fallback */
         if (!this.Request) {
-          callback?.(new PartialErrorInfo('Request invoked before assigned to', null, 500));
-          return;
+          return { error: new PartialErrorInfo('Request invoked before assigned to', null, 500) };
         }
-        Utils.whenNonRejectingPromiseSettles(
-          this.Request(method, uriFromHost(currentFallback.host), headers, params, body),
-          (result) => {
-            // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
-            if (result.error && shouldFallback(result.error as ErrorInfo)) {
-              /* unstore the fallback and start from the top with the default sequence */
-              client._currentFallback = null;
-              this.do(method, path, headers, body, params, callback);
-              return;
-            }
-            callback?.(result.error, result.body, result.headers, result.unpacked, result.statusCode);
-          }
-        );
-        return;
+        const result = await this.Request(method, uriFromHost(currentFallback.host), headers, params, body);
+        // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
+        if (result.error && shouldFallback(result.error as ErrorInfo)) {
+          /* unstore the fallback and start from the top with the default sequence */
+          client._currentFallback = null;
+          return this.do(method, path, headers, body, params);
+        }
+        return result;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
         client._currentFallback = null;
@@ -242,30 +234,48 @@ const Http = class {
 
     /* if there is only one host do it */
     if (hosts.length === 1) {
-      this.doUri(method, uriFromHost(hosts[0]), headers, body, params, callback as RequestCallback);
-      return;
+      return new Promise((resolve) => {
+        this.doUri(
+          method,
+          uriFromHost(hosts[0]),
+          headers,
+          body,
+          params,
+          (error, body, headers, unpacked, statusCode) => {
+            resolve({ error, body, headers, unpacked, statusCode });
+          }
+        );
+      });
     }
 
     /* hosts is an array with preferred host plus at least one fallback */
-    const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
+    const tryAHost = async (candidateHosts: Array<string>, persistOnSuccess?: boolean): Promise<RequestResult> => {
       const host = candidateHosts.shift();
-      this.doUri(method, uriFromHost(host as string), headers, body, params, function (err, ...args) {
-        // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
-        if (err && shouldFallback(err as ErrorInfo) && candidateHosts.length) {
-          tryAHost(candidateHosts, true);
-          return;
-        }
-        if (persistOnSuccess) {
-          /* RSC15f */
-          client._currentFallback = {
-            host: host as string,
-            validUntil: Utils.now() + client.options.timeouts.fallbackRetryTimeout,
-          };
-        }
-        callback?.(err, ...args);
+      return new Promise((resolve) => {
+        this.doUri(
+          method,
+          uriFromHost(host as string),
+          headers,
+          body,
+          params,
+          function (error, body, headers, unpacked, statusCode) {
+            // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
+            if (error && shouldFallback(error as ErrorInfo) && candidateHosts.length) {
+              resolve(tryAHost(candidateHosts, true));
+            }
+            if (persistOnSuccess) {
+              /* RSC15f */
+              client._currentFallback = {
+                host: host as string,
+                validUntil: Utils.now() + client.options.timeouts.fallbackRetryTimeout,
+              };
+            }
+            resolve({ error, body, headers, unpacked, statusCode });
+          }
+        );
       });
     };
-    tryAHost(hosts);
+    return tryAHost(hosts);
   }
 
   doUri(

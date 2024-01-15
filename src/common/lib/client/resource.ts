@@ -7,7 +7,6 @@ import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorin
 import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
 import { RequestCallbackHeaders } from 'common/types/http';
-import { ErrnoException } from '../../types/http';
 
 async function withAuthDetails<T>(
   client: BaseClient,
@@ -354,20 +353,7 @@ class Resource {
         );
       }
 
-      // TODO mangle these property names too
-      type HttpResult = {
-        error?: ErrnoException | IPartialErrorInfo | null;
-        body?: unknown;
-        headers?: RequestCallbackHeaders;
-        unpacked?: boolean;
-        statusCode?: number;
-      };
-
-      const httpResult = await new Promise<HttpResult>((resolve) => {
-        client.http.do(method, path, headers, body, params, function (error, body, headers, unpacked, statusCode) {
-          resolve({ error, body, headers, unpacked, statusCode });
-        });
-      });
+      const httpResult = await client.http.do(method, path, headers, body, params);
 
       if (httpResult.error && Auth.isTokenErr(httpResult.error as ErrorInfo)) {
         /* token has expired, so get a new one */

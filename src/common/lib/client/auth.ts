@@ -530,13 +530,10 @@ class Auth {
         'Auth.requestToken().requestToken',
         'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams)
       );
-      this.client.http.do(
-        HttpMethods.Post,
-        tokenUri,
-        requestHeaders,
-        JSON.stringify(signedTokenParams),
-        null,
-        tokenCb as RequestCallback
+      Utils.whenNonRejectingPromiseSettles(
+        this.client.http.do(HttpMethods.Post, tokenUri, requestHeaders, JSON.stringify(signedTokenParams), null),
+        (result) =>
+          (tokenCb as RequestCallback)(result.error, result.body, result.headers, result.unpacked, result.statusCode)
       );
     };
 

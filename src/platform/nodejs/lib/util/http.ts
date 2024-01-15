@@ -112,14 +112,13 @@ const Http: IHttpStatic = class {
     this.client = client ?? null;
   }
 
-  do(
+  async do(
     method: HttpMethods,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
+    params: RequestParams
+  ): Promise<RequestResult> {
     /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
     const client = this.client;
     if (!client) {
@@ -137,16 +136,24 @@ const Http: IHttpStatic = class {
     if (currentFallback) {
       if (currentFallback.validUntil > Date.now()) {
         /* Use stored fallback */
-        this.doUri(method, uriFromHost(currentFallback.host), headers, body, params, (err, ...args) => {
-          if (err && shouldFallback(err as ErrnoException)) {
-            /* unstore the fallback and start from the top with the default sequence */
-            client._currentFallback = null;
-            this.do(method, path, headers, body, params, callback);
-            return;
-          }
-          callback(err, ...args);
+        return new Promise((resolve) => {
+          this.doUri(
+            method,
+            uriFromHost(currentFallback.host),
+            headers,
+            body,
+            params,
+            (error, resBody, resHeaders, unpacked, statusCode) => {
+              if (error && shouldFallback(error as ErrnoException)) {
+                /* unstore the fallback and start from the top with the default sequence */
+                client._currentFallback = null;
+                resolve(this.do(method, path, headers, body, params));
+                return;
+              }
+              resolve({ error, body: resBody, headers: resHeaders, unpacked, statusCode });
+            }
+          );
         });
-        return;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
         client._currentFallback = null;
@@ -157,28 +164,46 @@ const Http: IHttpStatic = class {
 
     /* see if we have one or more than one host */
     if (hosts.length === 1) {
-      this.doUri(method, uriFromHost(hosts[0]), headers, body, params, callback);
-      return;
+      return new Promise((resolve) => {
+        this.doUri(
+          method,
+          uriFromHost(hosts[0]),
+          headers,
+          body,
+          params,
+          (error, resBody, resHeaders, unpacked, statusCode) => {
+            resolve({ error, body: resBody, headers: resHeaders, unpacked, statusCode });
+          }
+        );
+      });
     }
 
-    const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
+    const tryAHost = async (candidateHosts: Array<string>, persistOnSuccess?: boolean): Promise<RequestResult> => {
       const host = candidateHosts.shift();
-      this.doUri(method, uriFromHost(host as string), headers, body, params, function (err, ...args) {
-        if (err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
-          tryAHost(candidateHosts, true);
-          return;
-        }
-        if (persistOnSuccess) {
-          /* RSC15f */
-          client._currentFallback = {
-            host: host as string,
-            validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
-          };
-        }
-        callback(err, ...args);
+      return new Promise((resolve) => {
+        this.doUri(
+          method,
+          uriFromHost(host as string),
+          headers,
+          body,
+          params,
+          function (error, resBody, resHeaders, unpacked, statusCode) {
+            if (error && shouldFallback(error as ErrnoException) && candidateHosts.length) {
+              return tryAHost(candidateHosts, true);
+            }
+            if (persistOnSuccess) {
+              /* RSC15f */
+              client._currentFallback = {
+                host: host as string,
+                validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
+              };
+            }
+            resolve({ error, body: resBody, headers: resHeaders, unpacked, statusCode });
+          }
+        );
       });
     };
-    tryAHost(hosts);
+    return tryAHost(hosts);
   }
 
   doUri(
