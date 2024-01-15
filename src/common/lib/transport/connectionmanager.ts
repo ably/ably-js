@@ -1661,13 +1661,8 @@ class ConnectionManager extends EventEmitter {
         giveUp(new PartialErrorInfo('Internal error: Http.checkConnectivity not set', null, 500));
         return;
       }
-      this.realtime.http.checkConnectivity((err?: ErrorInfo | null, connectivity?: boolean) => {
+      this.realtime.http.checkConnectivity((connectivity: boolean) => {
         if (connectCount !== this.connectCounter) {
-          return;
-        }
-        /* we know err won't happen but handle it here anyway */
-        if (err) {
-          giveUp(err);
           return;
         }
         if (!connectivity) {

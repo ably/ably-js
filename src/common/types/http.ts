@@ -1,6 +1,6 @@
 import HttpMethods from '../constants/HttpMethods';
 import BaseClient from '../lib/client/baseclient';
-import ErrorInfo, { IPartialErrorInfo } from '../lib/types/errorinfo';
+import { IPartialErrorInfo } from '../lib/types/errorinfo';
 import { Agents } from 'got';
 
 export type PathParameter = string | ((host: string) => string);
@@ -51,7 +51,7 @@ export interface IHttp {
     params: RequestParams,
     callback?: RequestCallback
   ): void;
-  checkConnectivity?: (callback: (err?: ErrorInfo | null, connected?: boolean) => void) => void;
+  checkConnectivity?: (callback: (connected: boolean) => void) => void;
 }
 
 export interface ErrnoException extends Error {

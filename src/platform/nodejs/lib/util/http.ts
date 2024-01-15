@@ -240,9 +240,9 @@ const Http: IHttpStatic = class {
       });
   }
 
-  checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
+  checkConnectivity = (callback: (connected: boolean) => void): void => {
     if (this.client?.options.disableConnectivityCheck) {
-      callback(null, true);
+      callback(true);
       return;
     }
     const connectivityCheckUrl = this.client?.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
@@ -257,10 +257,10 @@ const Http: IHttpStatic = class {
       connectivityCheckParams,
       function (err, responseText, headers, unpacked, statusCode) {
         if (!err && !connectivityUrlIsDefault) {
-          callback(null, isSuccessCode(statusCode as number));
+          callback(isSuccessCode(statusCode as number));
           return;
         }
-        callback(null, !err && (responseText as Buffer | string)?.toString().trim() === 'yes');
+        callback(!err && (responseText as Buffer | string)?.toString().trim() === 'yes');
       }
     );
   };

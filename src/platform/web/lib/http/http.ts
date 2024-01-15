@@ -99,11 +99,11 @@ const Http = class {
         return req;
       };
       if (client?.options.disableConnectivityCheck) {
-        this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
-          callback(null, true);
+        this.checkConnectivity = function (callback: (connectivity: true) => void) {
+          callback(true);
         };
       } else {
-        this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+        this.checkConnectivity = function (callback: (connectivity: boolean) => void) {
           Logger.logAction(
             Logger.LOG_MICRO,
             '(XHRRequest)Http.checkConnectivity()',
@@ -123,7 +123,7 @@ const Http = class {
                 result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
               }
               Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-              callback(null, result);
+              callback(result);
             }
           );
         };
@@ -133,12 +133,12 @@ const Http = class {
       this.Request = (method, uri, headers, params, body, callback) => {
         fetchRequestImplementation(method, client ?? null, uri, headers, params, body, callback);
       };
-      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+      this.checkConnectivity = function (callback: (connectivity: boolean) => void) {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
         this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null, function (err, responseText) {
           const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
           Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
-          callback(null, result);
+          callback(result);
         });
       };
     } else {
@@ -252,7 +252,7 @@ const Http = class {
     callback: RequestCallback
   ) => void;
 
-  checkConnectivity?: (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) => void = undefined;
+  checkConnectivity?: (callback: (connectivity: boolean) => void) => void = undefined;
 
   supportsAuthHeaders = false;
   supportsLinkHeaders = false;
