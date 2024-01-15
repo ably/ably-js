@@ -1,7 +1,7 @@
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestBody, RequestCallback, RequestCallbackError, RequestParams, RequestResult } from 'common/types/http';
+import { RequestBody, RequestCallbackError, RequestParams, RequestResult } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import XHRStates from 'common/constants/XHRStates';
@@ -49,26 +49,35 @@ const Http = class {
 
     if (Platform.Config.xhrSupported && xhrRequestImplementation) {
       this.supportsAuthHeaders = true;
-      this.Request = function (
+      this.Request = async function (
         method: HttpMethods,
         uri: string,
         headers: Record<string, string> | null,
         params: RequestParams,
-        body: RequestBody | null,
-        callback: RequestCallback
+        body: RequestBody | null
       ) {
-        const req = xhrRequestImplementation.createRequest(
-          uri,
-          headers,
-          params,
-          body,
-          XHRStates.REQ_SEND,
-          (client && client.options.timeouts) ?? null,
-          method
-        );
-        req.once('complete', callback);
-        req.exec();
-        return req;
+        return new Promise((resolve) => {
+          const req = xhrRequestImplementation.createRequest(
+            uri,
+            headers,
+            params,
+            body,
+            XHRStates.REQ_SEND,
+            (client && client.options.timeouts) ?? null,
+            method
+          );
+          req.once(
+            'complete',
+            (
+              error: RequestResult['error'],
+              body: RequestResult['body'],
+              headers: RequestResult['headers'],
+              unpacked: RequestResult['unpacked'],
+              statusCode: RequestResult['statusCode']
+            ) => resolve({ error, body, headers, unpacked, statusCode })
+          );
+          req.exec();
+        });
       };
       if (client?.options.disableConnectivityCheck) {
         this.checkConnectivity = async function () {
@@ -103,8 +112,20 @@ const Http = class {
       }
     } else if (Platform.Config.fetchSupported && fetchRequestImplementation) {
       this.supportsAuthHeaders = true;
-      this.Request = (method, uri, headers, params, body, callback) => {
-        fetchRequestImplementation(method, client ?? null, uri, headers, params, body, callback);
+      this.Request = async (method, uri, headers, params, body) => {
+        return new Promise((resolve) => {
+          fetchRequestImplementation(
+            method,
+            client ?? null,
+            uri,
+            headers,
+            params,
+            body,
+            (error, body, headers, unpacked, statusCode) => {
+              resolve({ error, body, headers, unpacked, statusCode });
+            }
+          );
+        });
       };
       this.checkConnectivity = async function () {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
@@ -114,11 +135,11 @@ const Http = class {
         return result;
       };
     } else {
-      this.Request = (method, uri, headers, params, body, callback) => {
+      this.Request = async () => {
         const error = hasImplementation
           ? new PartialErrorInfo('no supported HTTP transports available', null, 400)
           : createMissingImplementationError();
-        callback(error, null);
+        return { error };
       };
     }
   }
@@ -133,11 +154,7 @@ const Http = class {
     if (!this.Request) {
       return { error: new PartialErrorInfo('Request invoked before assigned to', null, 500) };
     }
-    return new Promise((resolve) => {
-      this.Request!(method, uri, headers, params, body, (error, resBody, resHeaders, unpacked, statusCode) =>
-        resolve({ error, body: resBody, headers: resHeaders, unpacked, statusCode })
-      );
-    });
+    return this.Request(method, uri, headers, params, body);
   }
 
   private Request?: (
@@ -145,9 +162,8 @@ const Http = class {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    body: RequestBody | null,
-    callback: RequestCallback
-  ) => void;
+    body: RequestBody | null
+  ) => Promise<RequestResult>;
 
   checkConnectivity?: () => Promise<boolean> = undefined;
 
