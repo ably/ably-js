@@ -1,7 +1,6 @@
 import HttpMethods from '../constants/HttpMethods';
 import BaseClient from '../lib/client/baseclient';
 import ErrorInfo, { IPartialErrorInfo } from '../lib/types/errorinfo';
-import { Agents } from 'got';
 
 export type PathParameter = string | ((host: string) => string);
 export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
@@ -24,7 +23,6 @@ export interface IHttpStatic {
 export interface IHttp {
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
-  agent?: Agents | null;
 
   _getHosts: (client: BaseClient) => string[];
   do(
