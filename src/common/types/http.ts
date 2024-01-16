@@ -2,6 +2,8 @@ import Platform from 'common/platform';
 import HttpMethods from '../constants/HttpMethods';
 import BaseClient from '../lib/client/baseclient';
 import ErrorInfo, { IPartialErrorInfo } from '../lib/types/errorinfo';
+import Logger from 'common/lib/util/logger';
+import * as Utils from 'common/lib/util/utils';
 
 export type PathParameter = string | ((host: string) => string);
 export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
@@ -47,6 +49,67 @@ export interface IHttp {
    * @param error An error returned by {@link doUri}’s callback.
    */
   shouldFallback(error: RequestCallbackError): boolean;
+}
+
+function addingParamsToUri(uri: string, params: Record<string, any> | null) {
+  return uri + (params ? '?' : '') + paramString(params);
+}
+
+function paramString(params: Record<string, any> | null) {
+  const paramPairs = [];
+  if (params) {
+    for (const needle in params) {
+      paramPairs.push(needle + '=' + params[needle]);
+    }
+  }
+  return paramPairs.join('&');
+}
+
+function logResponseHandler(
+  callback: RequestCallback | undefined,
+  method: HttpMethods,
+  uri: string,
+  params: Record<string, string> | null
+): RequestCallback {
+  // TODO we need to understand what type we might expect the body to be
+  return (err, body, headers, unpacked, statusCode) => {
+    if (err) {
+      Logger.logAction(
+        Logger.LOG_MICRO,
+        'Http.' + method + '()',
+        'Received Error; ' + addingParamsToUri(uri, params) + '; Error: ' + Utils.inspectError(err)
+      );
+    } else {
+      Logger.logAction(
+        Logger.LOG_MICRO,
+        'Http.' + method + '()',
+        'Received; ' +
+          addingParamsToUri(uri, params) +
+          '; Headers: ' +
+          paramString(headers as Record<string, any>) +
+          '; StatusCode: ' +
+          statusCode +
+          '; Body' +
+          (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
+      );
+    }
+    if (callback) {
+      callback(err, body, headers, unpacked, statusCode);
+    }
+  };
+}
+
+function logRequest(method: HttpMethods, uri: string, body: HttpRequestBody, params: RequestParams) {
+  if (Logger.shouldLog(Logger.LOG_MICRO)) {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'Http.' + method + '()',
+      'Sending; ' +
+        addingParamsToUri(uri, params) +
+        '; Body' +
+        (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
+    );
+  }
 }
 
 // TODO name, explain
@@ -151,6 +214,12 @@ export class Http {
     params: RequestParams,
     callback?: RequestCallback | undefined
   ): void {
+    if (Logger.shouldLog(Logger.LOG_MICRO)) {
+      callback = logResponseHandler(callback, method, uri, params);
+    }
+
+    logRequest(method, uri, body, params);
+
     this.http.doUri(method, uri, headers, body, params, callback);
   }
 }
