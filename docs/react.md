@@ -125,7 +125,7 @@ We support providing [ChannelOptions](https://ably.com/docs/api/realtime-sdk/typ
 This means you can use features like `rewind`:
 
 ```javascript
-const { channel } = useChannel({ channelName: "your-channel-name", options: {params: {rewind: '1'}}}, (message) => {
+const { channel } = useChannel({ channelName: "your-channel-name", options: { params: { rewind: '1' } } }, (message) => {
     ...
 });
 ```
