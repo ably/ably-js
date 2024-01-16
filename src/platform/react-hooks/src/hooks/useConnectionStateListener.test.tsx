@@ -9,7 +9,7 @@ import { AblyProvider } from '../AblyProvider.js';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Ably.AbstractRealtime}>{children}</AblyProvider>);
+  return render(<AblyProvider client={client as unknown as Ably.RealtimeClient}>{children}</AblyProvider>);
 }
 
 describe('useConnectionStateListener', () => {

@@ -24,12 +24,28 @@
 
 import {
   ErrorInfo,
-  AbstractRest,
+  RestClient,
   ClientOptions,
   Crypto as CryptoClass,
   MessageStatic,
   PresenceMessageStatic,
-  AbstractRealtime,
+  RealtimeClient,
+  Auth,
+  Channels,
+  Channel,
+  HttpPaginatedResponse,
+  StatsParams,
+  PaginatedResult,
+  Stats,
+  BatchPublishSpec,
+  BatchResult,
+  BatchPublishSuccessResult,
+  BatchPresenceFailureResult,
+  BatchPresenceSuccessResult,
+  BatchPublishFailureResult,
+  Push,
+  RealtimeChannel,
+  Connection,
 } from './ably';
 
 export declare const generateRandomKey: CryptoClass['generateRandomKey'];
@@ -274,7 +290,7 @@ export interface ModulesMap {
  *
  * `BaseRest` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Rest`](../../default/classes/Rest.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  */
-export declare class BaseRest extends AbstractRest {
+export declare class BaseRest implements RestClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -286,6 +302,27 @@ export declare class BaseRest extends AbstractRest {
    * The {@link Rest} module is always implicitly included.
    */
   constructor(options: ClientOptions, modules: ModulesMap);
+
+  // Requirements of RestClient
+
+  auth: Auth;
+  channels: Channels<Channel>;
+  request<T = any>(
+    method: string,
+    path: string,
+    version: number,
+    params?: any,
+    body?: any[] | any,
+    headers?: any
+  ): Promise<HttpPaginatedResponse<T>>;
+  stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
+  time(): Promise<number>;
+  batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+  batchPublish(
+    specs: BatchPublishSpec[]
+  ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+  batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
+  push: Push;
 }
 
 /**
@@ -293,7 +330,7 @@ export declare class BaseRest extends AbstractRest {
  *
  * `BaseRealtime` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Realtime`](../../default/classes/Realtime.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
  */
-export declare class BaseRealtime extends AbstractRealtime {
+export declare class BaseRealtime implements RealtimeClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -306,6 +343,31 @@ export declare class BaseRealtime extends AbstractRealtime {
    * - at least one realtime transport implementation; that is, one of {@link WebSocketTransport}, {@link XHRStreaming}, or {@link XHRPolling} — for minimum bundle size, favour `WebSocketTransport`.
    */
   constructor(options: ClientOptions, modules: ModulesMap);
+
+  // Requirements of RealtimeClient
+
+  clientId: string;
+  close(): void;
+  connect(): void;
+  auth: Auth;
+  channels: Channels<RealtimeChannel>;
+  connection: Connection;
+  request<T = any>(
+    method: string,
+    path: string,
+    version: number,
+    params?: any,
+    body?: any[] | any,
+    headers?: any
+  ): Promise<HttpPaginatedResponse<T>>;
+  stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
+  time(): Promise<number>;
+  batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+  batchPublish(
+    specs: BatchPublishSpec[]
+  ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+  batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
+  push: Push;
 }
 
 export { ErrorInfo };

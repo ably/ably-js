@@ -7,7 +7,7 @@ import { AblyProvider } from '../AblyProvider.js';
 import * as Ably from '../../../../../ably.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Ably.AbstractRealtime}>{children}</AblyProvider>);
+  return render(<AblyProvider client={client as unknown as Ably.RealtimeClient}>{children}</AblyProvider>);
 }
 
 const testChannelName = 'testChannel';
@@ -97,7 +97,7 @@ describe('usePresence', () => {
   it('usePresence works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
-      <AblyProvider id="otherClient" client={otherClient as unknown as Ably.AbstractRealtime}>
+      <AblyProvider id="otherClient" client={otherClient as unknown as Ably.RealtimeClient}>
         <UsePresenceComponentMultipleClients />
       </AblyProvider>
     );

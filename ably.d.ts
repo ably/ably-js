@@ -375,7 +375,7 @@ export interface ChannelMetrics {
 }
 
 /**
- * Passes additional client-specific properties to the REST {@link AbstractRest.constructor | `constructor()`} or the Realtime {@link AbstractRealtime.constructor | `constructor()`}.
+ * Passes additional client-specific properties to the REST constructor or the Realtime constructor.
  */
 export interface ClientOptions extends AuthOptions {
   /**
@@ -1235,8 +1235,8 @@ export interface PushChannelsParams {
 /**
  * The `StatsParams` interface describes the parameters accepted by the following methods:
  *
- * - {@link AbstractRest.stats}
- * - {@link AbstractRealtime.stats}
+ * - {@link RestClient.stats}
+ * - {@link RealtimeClient.stats}
  */
 export interface StatsParams {
   /**
@@ -1472,7 +1472,7 @@ export type recoverConnectionCallback = (
   callback: recoverConnectionCompletionCallback
 ) => void;
 
-// Internal Classes
+// Internal Interfaces
 
 // To allow a uniform (callback) interface between on and once even in the
 // promisified version of the lib, but still allow once to be used in a way
@@ -1481,7 +1481,7 @@ export type recoverConnectionCallback = (
 /**
  * A generic interface for event registration and delivery used in a number of the types in the Realtime client library. For example, the {@link Connection} object emits events for connection state using the `EventEmitter` pattern.
  */
-export declare class EventEmitter<CallbackType, ResultType, EventType> {
+export declare interface EventEmitter<CallbackType, ResultType, EventType> {
   /**
    * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
    *
@@ -1553,11 +1553,11 @@ export declare class EventEmitter<CallbackType, ResultType, EventType> {
   listeners(eventName?: EventType): CallbackType[] | null;
 }
 
-// Classes
+// Interfaces
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare abstract class AbstractRest {
+export declare interface RestClient {
   /**
    * An {@link Auth} object.
    */
@@ -1629,9 +1629,9 @@ export declare abstract class AbstractRest {
 }
 
 /**
- * A client that extends the functionality of {@link AbstractRest} and provides additional realtime-specific features.
+ * A client that extends the functionality of {@link RestClient} and provides additional realtime-specific features.
  */
-export declare abstract class AbstractRealtime {
+export declare interface RealtimeClient {
   /**
    * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. A `clientId` may also be implicit in a token used to instantiate the library; an error will be raised if a `clientId` specified here conflicts with the `clientId` implicit in the token.
    */
@@ -1721,7 +1721,7 @@ export declare abstract class AbstractRealtime {
 /**
  * Creates Ably {@link TokenRequest} objects and obtains Ably Tokens from Ably to subsequently issue to less trusted clients.
  */
-export declare class Auth {
+export declare interface Auth {
   /**
    * A client ID, used for identifying this client when publishing messages or for presence purposes. The `clientId` can be any non-empty string, except it cannot contain a `*`. This option is primarily intended to be used in situations where the library is instantiated with a key. Note that a `clientId` may also be implicit in a token used to instantiate the library. An error is raised if a `clientId` specified here conflicts with the `clientId` implicit in the token. Find out more about [identified clients](https://ably.com/docs/core-features/authentication#identified-clients).
    */
@@ -1767,7 +1767,7 @@ export declare class Auth {
 /**
  * Enables the retrieval of the current and historic presence set for a channel.
  */
-export declare class Presence {
+export declare interface Presence {
   /**
    * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns a {@link PaginatedResult} object, containing an array of {@link PresenceMessage} objects.
    *
@@ -1787,7 +1787,7 @@ export declare class Presence {
 /**
  * Enables the presence set to be entered and subscribed to, and the historic presence set to be retrieved for a channel.
  */
-export declare class RealtimePresence {
+export declare interface RealtimePresence {
   /**
    * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed. Set to `true` when the sync is complete.
    */
@@ -1908,7 +1908,7 @@ export declare class RealtimePresence {
 /**
  * Enables messages to be published and historic messages to be retrieved for a channel.
  */
-export declare class Channel {
+export declare interface Channel {
   /**
    * The channel name.
    */
@@ -1961,7 +1961,7 @@ export declare class Channel {
 /**
  * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresence} object of a channel.
  */
-export declare class RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
+export declare interface RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
   /**
    * The channel name.
    */
@@ -2158,7 +2158,7 @@ export type MessageFilter = {
 /**
  * Creates and destroys {@link Channel} and {@link RealtimeChannel} objects.
  */
-export declare class Channels<T> {
+export declare interface Channels<T> {
   /**
    * Creates a new {@link Channel} or {@link RealtimeChannel} object, with the specified {@link ChannelOptions}, or returns the existing channel object.
    *
@@ -2258,7 +2258,7 @@ export interface MessageStatic {
 /**
  * Contains an individual presence update sent to, or received from, Ably.
  */
-export declare class PresenceMessage {
+export declare interface PresenceMessage {
   /**
    * The type of {@link PresenceAction} the `PresenceMessage` is for.
    */
@@ -2375,7 +2375,8 @@ export interface Crypto {
 /**
  * Enables the management of a connection to Ably.
  */
-export declare class Connection extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
+export declare interface Connection
+  extends EventEmitter<connectionEventCallback, ConnectionStateChange, ConnectionEvent> {
   /**
    * An {@link ErrorInfo} object describing the last error received if a connection failure occurs.
    */
@@ -2426,7 +2427,7 @@ export declare class Connection extends EventEmitter<connectionEventCallback, Co
 /**
  * Contains application statistics for a specified time interval and time period.
  */
-export declare class Stats {
+export declare interface Stats {
   /**
    * The UTC time at which the time period covered begins. If `unit` is set to `minute` this will be in the format `YYYY-mm-dd:HH:MM`, if `hour` it will be `YYYY-mm-dd:HH`, if `day` it will be `YYYY-mm-dd:00` and if `month` it will be `YYYY-mm-01:00`.
    */
@@ -2452,7 +2453,7 @@ export declare class Stats {
 /**
  * Contains a page of results for message or presence history, stats, or REST presence requests. A `PaginatedResult` response from a REST API paginated query is also accompanied by metadata that indicates the relative queries available to the `PaginatedResult` object.
  */
-export declare class PaginatedResult<T> {
+export declare interface PaginatedResult<T> {
   /**
    * Contains the current page of results; for example, an array of {@link InboundMessage} or {@link PresenceMessage} objects for a channel history request.
    */
@@ -2490,7 +2491,7 @@ export declare class PaginatedResult<T> {
 /**
  * A superset of {@link PaginatedResult} which represents a page of results plus metadata indicating the relative queries available to it. `HttpPaginatedResponse` additionally carries information about the response to an HTTP request.
  */
-export declare class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
+export declare interface HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
   /**
    * The HTTP status code of the response.
    */
@@ -2516,7 +2517,7 @@ export declare class HttpPaginatedResponse<T = any> extends PaginatedResult<T> {
 /**
  * Enables a device to be registered and deregistered from receiving push notifications.
  */
-export declare class Push {
+export declare interface Push {
   /**
    * A {@link PushAdmin} object.
    */
@@ -2526,7 +2527,7 @@ export declare class Push {
 /**
  * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
  */
-export declare class PushAdmin {
+export declare interface PushAdmin {
   /**
    * A {@link PushDeviceRegistrations} object.
    */
@@ -2548,7 +2549,7 @@ export declare class PushAdmin {
 /**
  * Enables the management of push notification registrations with Ably.
  */
-export declare class PushDeviceRegistrations {
+export declare interface PushDeviceRegistrations {
   /**
    * Registers or updates a {@link DeviceDetails} object with Ably. Returns the new, or updated {@link DeviceDetails} object.
    *
@@ -2603,7 +2604,7 @@ export declare class PushDeviceRegistrations {
 /**
  * Enables device push channel subscriptions.
  */
-export declare class PushChannelSubscriptions {
+export declare interface PushChannelSubscriptions {
   /**
    * Subscribes a device, or a group of devices sharing the same `clientId` to push notifications on a channel. Returns a {@link PushChannelSubscription} object.
    *
@@ -2644,7 +2645,7 @@ export declare class PushChannelSubscriptions {
 /**
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  */
-export declare class Rest extends AbstractRest {
+export declare class Rest implements RestClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -2669,12 +2670,33 @@ export declare class Rest extends AbstractRest {
    * Static utilities related to presence messages.
    */
   static PresenceMessage: PresenceMessageStatic;
+
+  // Requirements of RestClient
+
+  auth: Auth;
+  channels: Channels<Channel>;
+  request<T = any>(
+    method: string,
+    path: string,
+    version: number,
+    params?: any,
+    body?: any[] | any,
+    headers?: any
+  ): Promise<HttpPaginatedResponse<T>>;
+  stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
+  time(): Promise<number>;
+  batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+  batchPublish(
+    specs: BatchPublishSpec[]
+  ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+  batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
+  push: Push;
 }
 
 /**
  * A client that extends the functionality of {@link Rest} and provides additional realtime-specific features.
  */
-export declare class Realtime extends AbstractRealtime {
+export declare class Realtime implements RealtimeClient {
   /**
    * Construct a client object using an Ably {@link ClientOptions} object.
    *
@@ -2699,6 +2721,31 @@ export declare class Realtime extends AbstractRealtime {
    * Static utilities related to presence messages.
    */
   static PresenceMessage: PresenceMessageStatic;
+
+  // Requirements of RealtimeClient
+
+  clientId: string;
+  close(): void;
+  connect(): void;
+  auth: Auth;
+  channels: Channels<RealtimeChannel>;
+  connection: Connection;
+  request<T = any>(
+    method: string,
+    path: string,
+    version: number,
+    params?: any,
+    body?: any[] | any,
+    headers?: any
+  ): Promise<HttpPaginatedResponse<T>>;
+  stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
+  time(): Promise<number>;
+  batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
+  batchPublish(
+    specs: BatchPublishSpec[]
+  ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
+  batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
+  push: Push;
 }
 
 /**

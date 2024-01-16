@@ -8,7 +8,7 @@ import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Ably.AbstractRealtime}>{children}</AblyProvider>);
+  return render(<AblyProvider client={client as unknown as Ably.RealtimeClient}>{children}</AblyProvider>);
 }
 
 describe('useChannel', () => {
@@ -57,7 +57,7 @@ describe('useChannel', () => {
   it('useChannel works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
-      <AblyProvider client={otherClient as unknown as Ably.AbstractRealtime} id="otherClient">
+      <AblyProvider client={otherClient as unknown as Ably.RealtimeClient} id="otherClient">
         <UseChannelComponentMultipleClients />
       </AblyProvider>
     );
