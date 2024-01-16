@@ -6,7 +6,12 @@ import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
-import { RequestBody, RequestCallbackHeaders } from 'common/types/http';
+import {
+  RequestBody,
+  RequestCallbackHeaders,
+  appendingParams as urlFromPathAndParams,
+  paramString,
+} from 'common/types/http';
 
 function withAuthDetails(
   client: BaseClient,
@@ -78,20 +83,6 @@ function unenvelope<T>(
 
     callback(err, response, wrappedHeaders, true, wrappedStatusCode);
   };
-}
-
-function paramString(params: Record<string, any>) {
-  const paramPairs = [];
-  if (params) {
-    for (const needle in params) {
-      paramPairs.push(needle + '=' + params[needle]);
-    }
-  }
-  return paramPairs.join('&');
-}
-
-function urlFromPathAndParams(path: string, params: Record<string, any>) {
-  return path + (params ? '?' : '') + paramString(params);
 }
 
 function logResponseHandler<T>(

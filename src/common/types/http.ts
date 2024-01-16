@@ -4,6 +4,8 @@ import BaseRealtime from 'common/lib/client/baserealtime';
 import HttpMethods from '../constants/HttpMethods';
 import BaseClient from '../lib/client/baseclient';
 import ErrorInfo, { IPartialErrorInfo } from '../lib/types/errorinfo';
+import Logger from 'common/lib/util/logger';
+import * as Utils from 'common/lib/util/utils';
 
 export type PathParameter = string | ((host: string) => string);
 export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
@@ -46,6 +48,66 @@ export interface IPlatformHttp {
    * @param error An error returned by {@link doUri}’s callback.
    */
   shouldFallback(error: RequestCallbackError): boolean;
+}
+
+export function paramString(params: Record<string, any> | null) {
+  const paramPairs = [];
+  if (params) {
+    for (const needle in params) {
+      paramPairs.push(needle + '=' + params[needle]);
+    }
+  }
+  return paramPairs.join('&');
+}
+
+export function appendingParams(uri: string, params: Record<string, any> | null) {
+  return uri + (params ? '?' : '') + paramString(params);
+}
+
+function logResponseHandler(
+  callback: RequestCallback | undefined,
+  method: HttpMethods,
+  uri: string,
+  params: Record<string, string> | null
+): RequestCallback {
+  return (err, body, headers, unpacked, statusCode) => {
+    if (err) {
+      Logger.logAction(
+        Logger.LOG_MICRO,
+        'Http.' + method + '()',
+        'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(err)
+      );
+    } else {
+      Logger.logAction(
+        Logger.LOG_MICRO,
+        'Http.' + method + '()',
+        'Received; ' +
+          appendingParams(uri, params) +
+          '; Headers: ' +
+          paramString(headers as Record<string, any>) +
+          '; StatusCode: ' +
+          statusCode +
+          '; Body' +
+          (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
+      );
+    }
+    if (callback) {
+      callback(err, body, headers, unpacked, statusCode);
+    }
+  };
+}
+
+function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, params: RequestParams) {
+  if (Logger.shouldLog(Logger.LOG_MICRO)) {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'Http.' + method + '()',
+      'Sending; ' +
+        appendingParams(uri, params) +
+        '; Body' +
+        (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
+    );
+  }
 }
 
 export class Http {
@@ -160,6 +222,12 @@ export class Http {
     params: RequestParams,
     callback?: RequestCallback | undefined
   ): void {
+    logRequest(method, uri, body, params);
+
+    if (Logger.shouldLog(Logger.LOG_MICRO)) {
+      callback = logResponseHandler(callback, method, uri, params);
+    }
+
     this.platformHttp.doUri(method, uri, headers, body, params, callback);
   }
 }
