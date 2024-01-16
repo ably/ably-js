@@ -5,7 +5,7 @@ import { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
 import { StandardCallback } from '../../types/utils';
-import { IPlatformHttp, RequestParams } from '../../types/http';
+import { Http, RequestParams } from '../../types/http';
 import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 
@@ -37,7 +37,7 @@ class BaseClient {
     validUntil: number;
   };
   serverTimeOffset: number | null;
-  http: IPlatformHttp;
+  http: Http;
   auth: Auth;
 
   private readonly _rest: Rest | null;
@@ -95,7 +95,7 @@ class BaseClient {
     this._currentFallback = null;
 
     this.serverTimeOffset = null;
-    this.http = new Platform.Http(this);
+    this.http = new Http(this);
     this.auth = new Auth(this, normalOptions);
 
     this._rest = modules.Rest ? new modules.Rest(this) : null;

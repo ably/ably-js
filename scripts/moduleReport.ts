@@ -3,7 +3,7 @@ import * as path from 'path';
 import { explore } from 'source-map-explorer';
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
-const minimalUsefulRealtimeBundleSizeThresholdKiB = 108;
+const minimalUsefulRealtimeBundleSizeThresholdKiB = 109;
 
 // List of all modules accepted in ModulesMap
 const moduleNames = [
@@ -212,6 +212,7 @@ async function checkBaseRealtimeFiles() {
     'src/common/lib/util/logger.ts',
     'src/common/lib/util/multicaster.ts',
     'src/common/lib/util/utils.ts',
+    'src/common/types/http.ts',
     'src/platform/web/config.ts',
     'src/platform/web/lib/http/http.ts',
     'src/platform/web/lib/util/bufferutils.ts',

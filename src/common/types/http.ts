@@ -1,3 +1,4 @@
+import Platform from 'common/platform';
 import HttpMethods from '../constants/HttpMethods';
 import BaseClient from '../lib/client/baseclient';
 import ErrorInfo, { IPartialErrorInfo } from '../lib/types/errorinfo';
@@ -42,6 +43,54 @@ export interface IPlatformHttp {
     callback?: RequestCallback
   ): void;
   checkConnectivity?: (callback: (err?: ErrorInfo | null, connected?: boolean) => void) => void;
+}
+
+export class Http {
+  private readonly platformHttp: IPlatformHttp;
+  checkConnectivity?: (callback: (err?: ErrorInfo | null, connected?: boolean) => void) => void;
+
+  constructor(private readonly client?: BaseClient) {
+    this.platformHttp = new Platform.Http(client);
+
+    this.checkConnectivity = this.platformHttp.checkConnectivity
+      ? (callback: (err?: ErrorInfo | null, connected?: boolean) => void) =>
+          this.platformHttp.checkConnectivity!(callback)
+      : undefined;
+  }
+
+  get supportsAuthHeaders() {
+    return this.platformHttp.supportsAuthHeaders;
+  }
+
+  get supportsLinkHeaders() {
+    return this.platformHttp.supportsLinkHeaders;
+  }
+
+  _getHosts(client: BaseClient) {
+    return this.platformHttp._getHosts(client);
+  }
+
+  do(
+    method: HttpMethods,
+    path: PathParameter,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback?: RequestCallback | undefined
+  ): void {
+    this.platformHttp.do(method, path, headers, body, params, callback);
+  }
+
+  doUri(
+    method: HttpMethods,
+    uri: string,
+    headers: Record<string, string> | null,
+    body: unknown,
+    params: RequestParams,
+    callback?: RequestCallback | undefined
+  ): void {
+    this.platformHttp.doUri(method, uri, headers, body, params, callback);
+  }
 }
 
 export interface ErrnoException extends Error {
