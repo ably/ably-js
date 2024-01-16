@@ -64,7 +64,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Base token generation case
      */
     it('authbase0', function (done) {
-      var realtime = helper.AblyRealtime();
+      var realtime = helper.AblyRealtime({ queryTime: true });
       whenPromiseSettles(realtime.auth.requestToken(), function (err, tokenDetails) {
         if (err) {
           closeAndFinish(done, realtime, err);
