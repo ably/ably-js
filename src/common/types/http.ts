@@ -26,14 +26,6 @@ export interface IHttp {
   supportsLinkHeaders: boolean;
   agent?: Agents | null;
 
-  Request?: (
-    method: HttpMethods,
-    uri: string,
-    headers: Record<string, string> | null,
-    params: RequestParams,
-    body: unknown,
-    callback: RequestCallback
-  ) => void;
   _getHosts: (client: BaseClient) => string[];
   do(
     method: HttpMethods,

@@ -264,15 +264,6 @@ const Http: IHttpStatic = class {
       }
     );
   };
-
-  Request?: (
-    method: HttpMethods,
-    uri: string,
-    headers: Record<string, string> | null,
-    params: RequestParams,
-    body: unknown,
-    callback: RequestCallback
-  ) => void = undefined;
 };
 
 export default Http;

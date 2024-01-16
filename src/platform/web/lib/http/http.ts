@@ -243,7 +243,7 @@ const Http = class {
     this.Request(method, uri, headers, params, body, callback);
   }
 
-  Request?: (
+  private Request?: (
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
