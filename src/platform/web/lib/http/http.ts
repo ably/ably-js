@@ -177,11 +177,7 @@ const Http = class {
     if (currentFallback) {
       if (currentFallback.validUntil > Utils.now()) {
         /* Use stored fallback */
-        if (!this.Request) {
-          callback?.(new PartialErrorInfo('Request invoked before assigned to', null, 500));
-          return;
-        }
-        this.Request(method, uriFromHost(currentFallback.host), headers, params, body, (err?, ...args) => {
+        this.doUri(method, uriFromHost(currentFallback.host), headers, body, params, (err?, ...args) => {
           // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
           if (err && shouldFallback(err as ErrorInfo)) {
             /* unstore the fallback and start from the top with the default sequence */
