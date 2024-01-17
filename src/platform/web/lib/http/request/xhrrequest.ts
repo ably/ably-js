@@ -5,7 +5,7 @@ import Logger from 'common/lib/util/logger';
 import Defaults from 'common/lib/util/defaults';
 import HttpMethods from 'common/constants/HttpMethods';
 import IXHRRequest from 'common/types/IXHRRequest';
-import { RequestParams } from 'common/types/http';
+import { HttpRequestBody, RequestParams } from 'common/types/http';
 import XHRStates from 'common/constants/XHRStates';
 import Platform from 'common/platform';
 
@@ -68,7 +68,7 @@ function getHeadersAsObject(xhr: XMLHttpRequest) {
 class XHRRequest extends EventEmitter implements IXHRRequest {
   uri: string;
   headers: Record<string, string>;
-  body: unknown;
+  body: HttpRequestBody;
   method: string;
   requestMode: number;
   timeouts: Record<string, number>;
@@ -83,7 +83,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     uri: string,
     headers: Record<string, string> | null,
     params: Record<string, string>,
-    body: unknown,
+    body: HttpRequestBody,
     requestMode: number,
     timeouts: Record<string, number>,
     method?: HttpMethods
@@ -108,7 +108,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    body: unknown,
+    body: HttpRequestBody,
     requestMode: number,
     timeouts: Record<string, number> | null,
     method?: HttpMethods
@@ -339,7 +339,8 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
         }
       }
     };
-    xhr.send(body as any);
+    // TODO how is this accepting Buffer?
+    xhr.send(body);
   }
 
   dispose(): void {

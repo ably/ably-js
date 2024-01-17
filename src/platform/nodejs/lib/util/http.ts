@@ -3,6 +3,7 @@ import Defaults from 'common/lib/util/defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import {
   ErrnoException,
+  HttpRequestBody,
   IHttpStatic,
   RequestCallback,
   RequestCallbackError,
@@ -17,6 +18,7 @@ import BaseRealtime from 'common/lib/client/baserealtime';
 import { RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 import { shallowEquals, throwMissingModuleError } from 'common/lib/util/utils';
+import BufferUtils from './bufferutils';
 
 /***************************************************
  *
@@ -85,7 +87,7 @@ const Http: IHttpStatic = class {
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: HttpRequestBody,
     params: RequestParams,
     callback: RequestCallback
   ): void {
@@ -113,7 +115,14 @@ const Http: IHttpStatic = class {
     }
 
     if (body) {
-      doOptions.body = body as Buffer;
+      // TODO remove
+      //     body?: string | Buffer | Readable;
+      if ((Platform.BufferUtils as typeof BufferUtils).isBuffer(body)) {
+        // TODO this isn't really necessary, but oh well
+        doOptions.body = (Platform.BufferUtils as typeof BufferUtils).toBuffer(body);
+      } else {
+        doOptions.body = body;
+      }
     }
     if (params) doOptions.searchParams = params;
 

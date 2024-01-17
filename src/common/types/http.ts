@@ -22,6 +22,12 @@ export interface IHttpStatic {
   methodsWithoutBody: Array<HttpMethods>;
 }
 
+export type HttpRequestBody =
+  | Buffer /* from looking at what the Node implementation will take */
+  | string /* from looking at what auth sends */
+  | ArrayBuffer /* from looking at what Rest.request creates when encoding MsgPack */
+  | null;
+
 export interface IHttp {
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
@@ -31,7 +37,7 @@ export interface IHttp {
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: HttpRequestBody,
     params: RequestParams,
     callback?: RequestCallback
   ): void;
@@ -72,7 +78,7 @@ export class Http {
     method: HttpMethods,
     path: PathParameter,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: HttpRequestBody,
     params: RequestParams,
     callback?: RequestCallback | undefined
   ): void {
@@ -141,7 +147,7 @@ export class Http {
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: HttpRequestBody,
     params: RequestParams,
     callback?: RequestCallback | undefined
   ): void {

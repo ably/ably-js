@@ -1,7 +1,7 @@
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestCallback, RequestCallbackHeaders, RequestParams } from 'common/types/http';
+import { HttpRequestBody, RequestCallback, RequestCallbackHeaders, RequestParams } from 'common/types/http';
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import * as Utils from 'common/lib/util/utils';
@@ -32,7 +32,7 @@ export default function fetchRequest(
   uri: string,
   headers: Record<string, string> | null,
   params: RequestParams,
-  body: unknown,
+  body: HttpRequestBody,
   callback: RequestCallback
 ) {
   const fetchHeaders = new Headers(headers || {});
@@ -51,7 +51,8 @@ export default function fetchRequest(
   const requestInit: RequestInit = {
     method: _method,
     headers: fetchHeaders,
-    body: body as any,
+    // TODO why does this work?
+    body,
   };
 
   if (!Platform.Config.isWebworker) {

@@ -1,7 +1,7 @@
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestCallback, RequestCallbackError, RequestParams } from 'common/types/http';
+import { HttpRequestBody, RequestCallback, RequestCallbackError, RequestParams } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import BaseRealtime from 'common/lib/client/baserealtime';
@@ -55,7 +55,7 @@ const Http = class {
         uri: string,
         headers: Record<string, string> | null,
         params: RequestParams,
-        body: unknown,
+        body: HttpRequestBody,
         callback: RequestCallback
       ) {
         const req = xhrRequestImplementation.createRequest(
@@ -128,7 +128,7 @@ const Http = class {
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: HttpRequestBody,
     params: RequestParams,
     callback: RequestCallback
   ): void {
@@ -144,7 +144,7 @@ const Http = class {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    body: unknown,
+    body: HttpRequestBody,
     callback: RequestCallback
   ) => void;
 

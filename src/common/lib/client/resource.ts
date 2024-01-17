@@ -6,7 +6,7 @@ import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
-import { RequestCallbackHeaders } from 'common/types/http';
+import { HttpRequestBody, RequestCallbackHeaders } from 'common/types/http';
 
 function withAuthDetails(
   client: BaseClient,
@@ -161,7 +161,7 @@ class Resource {
   static post(
     client: BaseClient,
     path: string,
-    body: unknown,
+    body: HttpRequestBody,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
@@ -173,7 +173,7 @@ class Resource {
   static patch(
     client: BaseClient,
     path: string,
-    body: unknown,
+    body: HttpRequestBody,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
@@ -185,7 +185,7 @@ class Resource {
   static put(
     client: BaseClient,
     path: string,
-    body: unknown,
+    body: HttpRequestBody,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
@@ -198,7 +198,7 @@ class Resource {
     method: HttpMethods,
     client: BaseClient,
     path: string,
-    body: unknown,
+    body: HttpRequestBody,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,

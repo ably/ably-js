@@ -9,7 +9,7 @@ import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import { RequestParams } from '../../types/http';
+import { HttpRequestBody, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import Resource from './resource';
 
@@ -123,7 +123,8 @@ export class Rest {
     path: string,
     version: number,
     params: RequestParams,
-    body: unknown,
+    // TODO yeah but what does the API say?
+    body: HttpRequestBody,
     customHeaders: Record<string, string>,
     callback: StandardCallback<HttpPaginatedResponse<unknown>>
   ): Promise<HttpPaginatedResponse<unknown>> | void {
@@ -151,8 +152,9 @@ export class Rest {
       >;
     }
 
+    // TODO what's this about being able to pass a string? seems like a string goes straight through? spec says it's meant to be JsonObject | JsonArray
     if (typeof body !== 'string') {
-      body = encoder(body);
+      body = encoder(body) ?? null;
     }
     Utils.mixin(headers, this.client.options.headers);
     if (customHeaders) {

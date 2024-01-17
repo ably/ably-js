@@ -5,7 +5,7 @@ import { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
 import { StandardCallback } from '../../types/utils';
-import { Http, RequestParams } from '../../types/http';
+import { Http, HttpRequestBody, RequestParams } from '../../types/http';
 import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 
@@ -145,7 +145,8 @@ class BaseClient {
     path: string,
     version: number,
     params: RequestParams,
-    body: unknown,
+    // TODO what does API say?
+    body: HttpRequestBody,
     customHeaders: Record<string, string>,
     callback: StandardCallback<HttpPaginatedResponse<unknown>>
   ): Promise<HttpPaginatedResponse<unknown>> | void {
