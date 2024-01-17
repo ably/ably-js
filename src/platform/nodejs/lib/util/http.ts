@@ -4,8 +4,8 @@ import ErrorInfo from 'common/lib/types/errorinfo';
 import {
   ErrnoException,
   IHttpStatic,
-  PathParameter,
   RequestCallback,
+  RequestCallbackError,
   RequestParams,
 } from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
@@ -68,116 +68,17 @@ const handler = function (uri: string, params: unknown, client: BaseClient | nul
   };
 };
 
-function shouldFallback(err: ErrnoException) {
-  const { code, statusCode } = err;
-  return (
-    code === 'ENETUNREACH' ||
-    code === 'EHOSTUNREACH' ||
-    code === 'EHOSTDOWN' ||
-    code === 'ETIMEDOUT' ||
-    code === 'ESOCKETTIMEDOUT' ||
-    code === 'ENOTFOUND' ||
-    code === 'ECONNRESET' ||
-    code === 'ECONNREFUSED' ||
-    (statusCode >= 500 && statusCode <= 504)
-  );
-}
-
-function getHosts(client: BaseClient): string[] {
-  /* If we're a connected realtime client, try the endpoint we're connected
-   * to first -- but still have fallbacks, being connected is not an absolute
-   * guarantee that a datacenter has free capacity to service REST requests. */
-  const connection = (client as BaseRealtime).connection;
-  const connectionHost = connection && connection.connectionManager.host;
-
-  if (connectionHost) {
-    return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
-  }
-
-  return Defaults.getHosts(client.options);
-}
-
 const Http: IHttpStatic = class {
   static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   private agent: Agents | null = null;
-  _getHosts = getHosts;
   supportsAuthHeaders = true;
   supportsLinkHeaders = true;
   private client: BaseClient | null;
 
   constructor(client?: BaseClient) {
     this.client = client ?? null;
-  }
-
-  do(
-    method: HttpMethods,
-    path: PathParameter,
-    headers: Record<string, string> | null,
-    body: unknown,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
-    /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
-    const client = this.client;
-    if (!client) {
-      throw new Error('http.do called without client');
-    }
-
-    const uriFromHost =
-      typeof path === 'function'
-        ? path
-        : function (host: string) {
-            return client.baseUri(host) + path;
-          };
-
-    const currentFallback = client._currentFallback;
-    if (currentFallback) {
-      if (currentFallback.validUntil > Date.now()) {
-        /* Use stored fallback */
-        this.doUri(method, uriFromHost(currentFallback.host), headers, body, params, (err, ...args) => {
-          if (err && shouldFallback(err as ErrnoException)) {
-            /* unstore the fallback and start from the top with the default sequence */
-            client._currentFallback = null;
-            this.do(method, path, headers, body, params, callback);
-            return;
-          }
-          callback(err, ...args);
-        });
-        return;
-      } else {
-        /* Fallback expired; remove it and fallthrough to normal sequence */
-        client._currentFallback = null;
-      }
-    }
-
-    const hosts = getHosts(client);
-
-    /* see if we have one or more than one host */
-    if (hosts.length === 1) {
-      this.doUri(method, uriFromHost(hosts[0]), headers, body, params, callback);
-      return;
-    }
-
-    const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
-      const host = candidateHosts.shift();
-      this.doUri(method, uriFromHost(host as string), headers, body, params, function (err, ...args) {
-        if (err && shouldFallback(err as ErrnoException) && candidateHosts.length) {
-          tryAHost(candidateHosts, true);
-          return;
-        }
-        if (persistOnSuccess) {
-          /* RSC15f */
-          client._currentFallback = {
-            host: host as string,
-            validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
-          };
-        }
-        callback(err, ...args);
-      });
-    };
-    tryAHost(hosts);
   }
 
   doUri(
@@ -264,6 +165,35 @@ const Http: IHttpStatic = class {
       }
     );
   };
+
+  shouldFallback(err: RequestCallbackError) {
+    const { code, statusCode } = err as ErrnoException;
+    return (
+      code === 'ENETUNREACH' ||
+      code === 'EHOSTUNREACH' ||
+      code === 'EHOSTDOWN' ||
+      code === 'ETIMEDOUT' ||
+      code === 'ESOCKETTIMEDOUT' ||
+      code === 'ENOTFOUND' ||
+      code === 'ECONNRESET' ||
+      code === 'ECONNREFUSED' ||
+      (statusCode >= 500 && statusCode <= 504)
+    );
+  }
+
+  _getHosts(client: BaseClient): string[] {
+    /* If we're a connected realtime client, try the endpoint we're connected
+     * to first -- but still have fallbacks, being connected is not an absolute
+     * guarantee that a datacenter has free capacity to service REST requests. */
+    const connection = (client as BaseRealtime).connection;
+    const connectionHost = connection && connection.connectionManager.host;
+
+    if (connectionHost) {
+      return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
+    }
+
+    return Defaults.getHosts(client.options);
+  }
 };
 
 export default Http;
