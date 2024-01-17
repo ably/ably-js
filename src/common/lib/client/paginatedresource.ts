@@ -4,7 +4,7 @@ import Resource from './resource';
 import { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
 import BaseClient from './baseclient';
-import { RequestCallbackHeaders } from 'common/types/http';
+import { RequestBody, RequestCallbackHeaders } from 'common/types/http';
 
 export type BodyHandler = (body: unknown, headers: RequestCallbackHeaders, unpacked?: boolean) => Promise<any>;
 
@@ -85,7 +85,7 @@ class PaginatedResource {
     );
   }
 
-  post<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
+  post<T1, T2>(params: Record<string, T2>, body: RequestBody | null, callback: PaginatedResultCallback<T1>): void {
     Resource.post(
       this.client,
       this.path,
@@ -101,7 +101,7 @@ class PaginatedResource {
     );
   }
 
-  put<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
+  put<T1, T2>(params: Record<string, T2>, body: RequestBody | null, callback: PaginatedResultCallback<T1>): void {
     Resource.put(
       this.client,
       this.path,
@@ -117,7 +117,7 @@ class PaginatedResource {
     );
   }
 
-  patch<T1, T2>(params: Record<string, T2>, body: unknown, callback: PaginatedResultCallback<T1>): void {
+  patch<T1, T2>(params: Record<string, T2>, body: RequestBody | null, callback: PaginatedResultCallback<T1>): void {
     Resource.patch(
       this.client,
       this.path,

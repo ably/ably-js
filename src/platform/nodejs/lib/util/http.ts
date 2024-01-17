@@ -3,6 +3,7 @@ import Defaults from 'common/lib/util/defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import {
   ErrnoException,
+  RequestBody,
   IPlatformHttpStatic,
   RequestCallback,
   RequestCallbackError,
@@ -84,7 +85,7 @@ const Http: IPlatformHttpStatic = class {
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: RequestBody | null,
     params: RequestParams,
     callback: RequestCallback
   ): void {

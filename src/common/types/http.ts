@@ -16,6 +16,10 @@ export type RequestCallback = (
   statusCode?: number
 ) => void;
 export type RequestParams = Record<string, string> | null;
+export type RequestBody =
+  | Buffer // only on Node
+  | ArrayBuffer // only on web
+  | string;
 
 export interface IPlatformHttpStatic {
   new (client?: BaseClient): IPlatformHttp;
@@ -32,7 +36,7 @@ export interface IPlatformHttp {
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: RequestBody | null,
     params: RequestParams,
     callback?: RequestCallback
   ): void;
@@ -83,7 +87,7 @@ export class Http {
     method: HttpMethods,
     path: PathParameter,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: RequestBody | null,
     params: RequestParams,
     callback?: RequestCallback | undefined
   ): void {
@@ -152,7 +156,7 @@ export class Http {
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
-    body: unknown,
+    body: RequestBody | null,
     params: RequestParams,
     callback?: RequestCallback | undefined
   ): void {

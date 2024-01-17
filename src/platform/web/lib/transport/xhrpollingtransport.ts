@@ -3,7 +3,7 @@ import CometTransport from '../../../../common/lib/transport/comettransport';
 import XHRRequest from '../http/request/xhrrequest';
 import ConnectionManager, { TransportParams, TransportStorage } from 'common/lib/transport/connectionmanager';
 import Auth from 'common/lib/client/auth';
-import { RequestParams } from 'common/types/http';
+import { RequestBody, RequestParams } from 'common/types/http';
 import { TransportNames } from 'common/constants/TransportName';
 
 var shortName = TransportNames.XhrPolling;
@@ -27,7 +27,7 @@ class XHRPollingTransport extends CometTransport {
     uri: string,
     headers: Record<string, string>,
     params: RequestParams,
-    body: unknown,
+    body: RequestBody | null,
     requestMode: number
   ) {
     return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
