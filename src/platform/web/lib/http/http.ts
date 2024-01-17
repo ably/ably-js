@@ -1,11 +1,9 @@
 import Platform from 'common/platform';
-import * as Utils from 'common/lib/util/utils';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestCallback, RequestParams } from 'common/types/http';
+import { RequestCallback, RequestCallbackError, RequestParams } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
-import BaseRealtime from 'common/lib/client/baserealtime';
 import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
@@ -13,32 +11,6 @@ import { isSuccessCode } from 'common/constants/HttpStatusCodes';
 import { ModulesMap } from 'common/lib/client/modulesmap';
 
 export type HTTPRequestImplementations = Pick<ModulesMap, 'XHRRequest' | 'FetchRequest'>;
-
-function shouldFallback(errorInfo: ErrorInfo) {
-  const statusCode = errorInfo.statusCode as number;
-  /* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
-   * detail to know whether it's fallback-fixable, but it may be (eg if a
-   * network issue), so try just in case */
-  return (
-    (statusCode === 408 && !errorInfo.code) ||
-    (statusCode === 400 && !errorInfo.code) ||
-    (statusCode >= 500 && statusCode <= 504)
-  );
-}
-
-function getHosts(client: BaseClient): string[] {
-  /* If we're a connected realtime client, try the endpoint we're connected
-   * to first -- but still have fallbacks, being connected is not an absolute
-   * guarantee that a datacenter has free capacity to service REST requests. */
-  const connection = (client as BaseRealtime).connection,
-    connectionHost = connection && connection.connectionManager.host;
-
-  if (connectionHost) {
-    return [connectionHost].concat(Defaults.getFallbackHosts(client.options));
-  }
-
-  return Defaults.getHosts(client.options);
-}
 
 function createMissingImplementationError() {
   return new ErrorInfo(
@@ -151,79 +123,6 @@ const Http = class {
     }
   }
 
-  /* Unlike for doUri, the 'client' param here is mandatory, as it's used to generate the hosts */
-  do(
-    method: HttpMethods,
-    path: string,
-    headers: Record<string, string> | null,
-    body: unknown,
-    params: RequestParams,
-    callback?: RequestCallback
-  ): void {
-    /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
-    const client = this.client;
-    if (!client) {
-      throw new Error('http.do called without client');
-    }
-
-    const uriFromHost =
-      typeof path == 'function'
-        ? path
-        : function (host: string) {
-            return client.baseUri(host) + path;
-          };
-
-    const currentFallback = client._currentFallback;
-    if (currentFallback) {
-      if (currentFallback.validUntil > Utils.now()) {
-        /* Use stored fallback */
-        this.doUri(method, uriFromHost(currentFallback.host), headers, body, params, (err?, ...args) => {
-          // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
-          if (err && shouldFallback(err as ErrorInfo)) {
-            /* unstore the fallback and start from the top with the default sequence */
-            client._currentFallback = null;
-            this.do(method, path, headers, body, params, callback);
-            return;
-          }
-          callback?.(err, ...args);
-        });
-        return;
-      } else {
-        /* Fallback expired; remove it and fallthrough to normal sequence */
-        client._currentFallback = null;
-      }
-    }
-
-    const hosts = getHosts(client);
-
-    /* if there is only one host do it */
-    if (hosts.length === 1) {
-      this.doUri(method, uriFromHost(hosts[0]), headers, body, params, callback as RequestCallback);
-      return;
-    }
-
-    /* hosts is an array with preferred host plus at least one fallback */
-    const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
-      const host = candidateHosts.shift();
-      this.doUri(method, uriFromHost(host as string), headers, body, params, function (err, ...args) {
-        // This typecast is safe because ErrnoExceptions are only thrown in NodeJS
-        if (err && shouldFallback(err as ErrorInfo) && candidateHosts.length) {
-          tryAHost(candidateHosts, true);
-          return;
-        }
-        if (persistOnSuccess) {
-          /* RSC15f */
-          client._currentFallback = {
-            host: host as string,
-            validUntil: Utils.now() + client.options.timeouts.fallbackRetryTimeout,
-          };
-        }
-        callback?.(err, ...args);
-      });
-    };
-    tryAHost(hosts);
-  }
-
   doUri(
     method: HttpMethods,
     uri: string,
@@ -253,7 +152,17 @@ const Http = class {
   supportsAuthHeaders = false;
   supportsLinkHeaders = false;
 
-  _getHosts = getHosts;
+  shouldFallback(errorInfo: RequestCallbackError) {
+    const statusCode = errorInfo.statusCode as number;
+    /* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
+     * detail to know whether it's fallback-fixable, but it may be (eg if a
+     * network issue), so try just in case */
+    return (
+      (statusCode === 408 && !errorInfo.code) ||
+      (statusCode === 400 && !errorInfo.code) ||
+      (statusCode >= 500 && statusCode <= 504)
+    );
+  }
 };
 
 export default Http;
