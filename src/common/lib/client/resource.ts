@@ -217,14 +217,6 @@ class Resource {
 
     function doRequest(this: any, headers: Record<string, string>, params: Record<string, any>) {
       if (Logger.shouldLog(Logger.LOG_MICRO)) {
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'Resource.' + method + '()',
-          'Sending; ' + urlFromPathAndParams(path, params)
-        );
-      }
-
-      if (Logger.shouldLog(Logger.LOG_MICRO)) {
         let decodedBody = body;
         if (headers['content-type']?.indexOf('msgpack') > 0) {
           try {
