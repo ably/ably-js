@@ -117,8 +117,8 @@ function logResponseHandler<T>(
           paramString(headers as Record<string, any>) +
           '; StatusCode: ' +
           statusCode +
-          '; Body: ' +
-          (Platform.BufferUtils.isBuffer(body) ? body.toString() : body)
+          '; Body' +
+          (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
       );
     }
     if (callback) {
