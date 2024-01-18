@@ -5,7 +5,7 @@ import { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
 import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
 import { StandardCallback } from '../../types/utils';
-import { IHttp, RequestParams } from '../../types/http';
+import { IPlatformHttp, RequestParams } from '../../types/http';
 import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../../ably';
 
@@ -37,7 +37,7 @@ class BaseClient {
     validUntil: number;
   };
   serverTimeOffset: number | null;
-  http: IHttp;
+  http: IPlatformHttp;
   auth: Auth;
 
   private readonly _rest: Rest | null;

@@ -3,7 +3,7 @@ import Defaults from 'common/lib/util/defaults';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import {
   ErrnoException,
-  IHttpStatic,
+  IPlatformHttpStatic,
   PathParameter,
   RequestCallback,
   RequestParams,
@@ -97,7 +97,7 @@ function getHosts(client: BaseClient): string[] {
   return Defaults.getHosts(client.options);
 }
 
-const Http: IHttpStatic = class {
+const Http: IPlatformHttpStatic = class {
   static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
   static methodsWithBody = [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];

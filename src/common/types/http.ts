@@ -13,14 +13,14 @@ export type RequestCallback = (
 ) => void;
 export type RequestParams = Record<string, string> | null;
 
-export interface IHttpStatic {
-  new (client?: BaseClient): IHttp;
+export interface IPlatformHttpStatic {
+  new (client?: BaseClient): IPlatformHttp;
   methods: Array<HttpMethods>;
   methodsWithBody: Array<HttpMethods>;
   methodsWithoutBody: Array<HttpMethods>;
 }
 
-export interface IHttp {
+export interface IPlatformHttp {
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
 
