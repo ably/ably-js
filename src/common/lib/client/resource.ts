@@ -118,7 +118,9 @@ function logResponseHandler<T>(
           '; StatusCode: ' +
           statusCode +
           '; Body' +
-          (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
+          (Platform.BufferUtils.isBuffer(body)
+            ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body)
+            : ': ' + Platform.Config.inspect(body))
       );
     }
     if (callback) {
