@@ -1,9 +1,11 @@
 import * as esbuild from 'esbuild';
 import * as path from 'path';
 import { explore } from 'source-map-explorer';
+import { promisify } from 'util';
+import { gzip } from 'zlib';
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
-const minimalUsefulRealtimeBundleSizeThresholdKiB = 94;
+const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 94, gzip: 29 };
 
 // List of all modules accepted in ModulesMap
 const moduleNames = [
@@ -46,6 +48,15 @@ interface BundleInfo {
   sourceMap: Uint8Array;
 }
 
+interface ByteSizes {
+  rawByteSize: number;
+  gzipEncodedByteSize: number;
+}
+
+function formatByteSizes(sizes: ByteSizes) {
+  return `raw: ${formatBytes(sizes.rawByteSize)}; gzip: ${formatBytes(sizes.gzipEncodedByteSize)}`;
+}
+
 // Uses esbuild to create a bundle containing the named exports from 'ably/modules'
 function getBundleInfo(modules: string[]): BundleInfo {
   const outfile = modules.join('');
@@ -79,9 +90,14 @@ function getBundleInfo(modules: string[]): BundleInfo {
 }
 
 // Gets the bundled size in bytes of an array of named exports from 'ably/modules'
-function getImportSize(modules: string[]) {
+async function getImportSizes(modules: string[]): Promise<ByteSizes> {
   const bundleInfo = getBundleInfo(modules);
-  return bundleInfo.byteSize;
+
+  return {
+    rawByteSize: bundleInfo.byteSize,
+    // I’m trusting that the default settings of the `gzip` function (e.g. compression level) are somewhat representative of how gzip compression is normally used when serving files in the real world
+    gzipEncodedByteSize: (await promisify(gzip)(bundleInfo.code)).byteLength,
+  };
 }
 
 async function runSourceMapExplorer(bundleInfo: BundleInfo) {
@@ -91,48 +107,48 @@ async function runSourceMapExplorer(bundleInfo: BundleInfo) {
   });
 }
 
-function printAndCheckModuleSizes() {
+async function printAndCheckModuleSizes() {
   const errors: Error[] = [];
 
-  ['BaseRest', 'BaseRealtime'].forEach((baseClient) => {
-    const baseClientSize = getImportSize([baseClient]);
+  for (const baseClient of ['BaseRest', 'BaseRealtime']) {
+    const baseClientSizes = await getImportSizes([baseClient]);
 
     // First display the size of the base client
-    console.log(`${baseClient}: ${formatBytes(baseClientSize)}`);
+    console.log(`${baseClient}: ${formatByteSizes(baseClientSizes)}`);
 
     // Then display the size of each export together with the base client
-    [...moduleNames, ...functions.map((functionData) => functionData.name)].forEach((exportName) => {
-      const size = getImportSize([baseClient, exportName]);
-      console.log(`${baseClient} + ${exportName}: ${formatBytes(size)}`);
+    for (const exportName of [...moduleNames, ...functions.map((functionData) => functionData.name)]) {
+      const sizes = await getImportSizes([baseClient, exportName]);
+      console.log(`${baseClient} + ${exportName}: ${formatByteSizes(sizes)}`);
 
-      if (!(baseClientSize < size) && !(baseClient === 'BaseRest' && exportName === 'Rest')) {
+      if (!(baseClientSizes.rawByteSize < sizes.rawByteSize) && !(baseClient === 'BaseRest' && exportName === 'Rest')) {
         // Emit an error if adding the module does not increase the bundle size
         // (this means that the module is not being tree-shaken correctly).
         errors.push(new Error(`Adding ${exportName} to ${baseClient} does not increase the bundle size.`));
       }
-    });
-  });
+    }
+  }
 
   return errors;
 }
 
-function printAndCheckFunctionSizes() {
+async function printAndCheckFunctionSizes() {
   const errors: Error[] = [];
 
   for (const functionData of functions) {
     const { name: functionName, transitiveImports } = functionData;
 
     // First display the size of the function
-    const standaloneSize = getImportSize([functionName]);
-    console.log(`${functionName}: ${formatBytes(standaloneSize)}`);
+    const standaloneSizes = await getImportSizes([functionName]);
+    console.log(`${functionName}: ${formatByteSizes(standaloneSizes)}`);
 
     // Then display the size of the function together with the modules we expect
     // it to transitively import
     if (transitiveImports.length > 0) {
-      const withTransitiveImportsSize = getImportSize([functionName, ...transitiveImports]);
-      console.log(`${functionName} + ${transitiveImports.join(' + ')}: ${formatBytes(withTransitiveImportsSize)}`);
+      const withTransitiveImportsSizes = await getImportSizes([functionName, ...transitiveImports]);
+      console.log(`${functionName} + ${transitiveImports.join(' + ')}: ${formatByteSizes(withTransitiveImportsSizes)}`);
 
-      if (withTransitiveImportsSize > standaloneSize) {
+      if (withTransitiveImportsSizes.rawByteSize > standaloneSizes.rawByteSize) {
         // Emit an error if the bundle size is increased by adding the modules
         // that we expect this function to have transitively imported anyway.
         // This seemed like a useful sense check, but it might need tweaking in
@@ -150,20 +166,30 @@ function printAndCheckFunctionSizes() {
   return errors;
 }
 
-function printAndCheckMinimalUsefulRealtimeBundleSize() {
+async function printAndCheckMinimalUsefulRealtimeBundleSize() {
   const errors: Error[] = [];
 
   const exports = ['BaseRealtime', 'FetchRequest', 'WebSocketTransport'];
-  const size = getImportSize(exports);
+  const sizes = await getImportSizes(exports);
 
-  console.log(`Minimal useful Realtime (${exports.join(' + ')}): ${formatBytes(size)}`);
+  console.log(`Minimal useful Realtime (${exports.join(' + ')}): ${formatByteSizes(sizes)}`);
 
-  if (size > minimalUsefulRealtimeBundleSizeThresholdKiB * 1024) {
+  if (sizes.rawByteSize > minimalUsefulRealtimeBundleSizeThresholdsKiB.raw * 1024) {
     errors.push(
       new Error(
-        `Minimal useful Realtime bundle is ${formatBytes(
-          size
-        )}, which is greater than allowed maximum of ${minimalUsefulRealtimeBundleSizeThresholdKiB} KiB.`
+        `Minimal raw useful Realtime bundle is ${formatBytes(
+          sizes.rawByteSize
+        )}, which is greater than allowed maximum of ${minimalUsefulRealtimeBundleSizeThresholdsKiB.raw} KiB.`
+      )
+    );
+  }
+
+  if (sizes.gzipEncodedByteSize > minimalUsefulRealtimeBundleSizeThresholdsKiB.gzip * 1024) {
+    errors.push(
+      new Error(
+        `Minimal gzipped useful Realtime bundle is ${formatBytes(
+          sizes.gzipEncodedByteSize
+        )}, which is greater than allowed maximum of ${minimalUsefulRealtimeBundleSizeThresholdsKiB.gzip} KiB.`
       )
     );
   }
@@ -258,9 +284,9 @@ async function checkBaseRealtimeFiles() {
 (async function run() {
   const errors: Error[] = [];
 
-  errors.push(...printAndCheckMinimalUsefulRealtimeBundleSize());
-  errors.push(...printAndCheckModuleSizes());
-  errors.push(...printAndCheckFunctionSizes());
+  errors.push(...(await printAndCheckMinimalUsefulRealtimeBundleSize()));
+  errors.push(...(await printAndCheckModuleSizes()));
+  errors.push(...(await printAndCheckFunctionSizes()));
   errors.push(...(await checkBaseRealtimeFiles()));
 
   if (errors.length > 0) {
