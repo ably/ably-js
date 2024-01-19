@@ -300,9 +300,6 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
         return;
       }
 
-      /* Since the iv for a new block is the ciphertext of the last, this
-       * sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
-       * returning it */
       generateRandom(DEFAULT_BLOCKLENGTH, function (err, randomBlock) {
         if (err) {
           callback(err, null);
