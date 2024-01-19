@@ -7,3 +7,5 @@ npm-debug.log
 build/
 react/
 typedoc/generated/
+junit/
+test/support/mocha_junit_reporter/build/

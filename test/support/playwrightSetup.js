@@ -2,9 +2,29 @@ const { EVENT_RUN_END, EVENT_TEST_FAIL, EVENT_TEST_PASS, EVENT_SUITE_BEGIN, EVEN
 
 const { ok: passSymbol, err: failSymbol } = Mocha.reporters.Base.symbols;
 
+class InMemoryMochaJUnitReporter extends MochaJUnitReporter {
+  onGotReport;
+
+  // Bit of a hack, we override this internal method of MochaJUnitReporter to
+  // get access to the test report without trying to write it to disk (which we
+  // can’t since we’re in browser)
+  writeXmlToDisk(xml, filePath) {
+    this.onGotReport(xml);
+  }
+}
+
 class CustomEventReporter extends Mocha.reporters.HTML {
+  jUnitReporter;
+  jUnitReport;
+  testResultStats;
+
   constructor(runner) {
     super(runner);
+    this.junitReporter = new InMemoryMochaJUnitReporter(runner);
+    this.junitReporter.onGotReport = (report) => {
+      this.jUnitReport = report;
+      this.gotResults();
+    };
     this.indents = 0;
     this.failedTests = [];
 
@@ -30,16 +50,8 @@ class CustomEventReporter extends Mocha.reporters.HTML {
         if (this.failedTests.length > 0) {
           this.logToNodeConsole('\nfailed tests: \n' + this.failedTests.map((x) => ' - ' + x).join('\n') + '\n');
         }
-        runner.stats &&
-          window.dispatchEvent(
-            new CustomEvent('testResult', {
-              detail: {
-                pass: runner.stats && runner.stats.failures === 0,
-                passes: runner.stats.passes,
-                total: runner.stats.passes + runner.stats.failures,
-              },
-            })
-          );
+        this.testResultStats = runner.stats;
+        this.gotResults();
       });
   }
 
@@ -57,6 +69,23 @@ class CustomEventReporter extends Mocha.reporters.HTML {
 
   decreaseIndent() {
     this.indents--;
+  }
+
+  gotResults() {
+    if (!this.testResultStats || !this.jUnitReport) {
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('testResult', {
+        detail: {
+          pass: this.testResultStats && this.testResultStats.failures === 0,
+          passes: this.testResultStats.passes,
+          total: this.testResultStats.passes + this.testResultStats.failures,
+          jUnitReport: this.jUnitReport,
+        },
+      })
+    );
   }
 }
 
