@@ -62,6 +62,10 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
           action: (client) => client.push.admin.publish({ clientId: 'foo' }, { data: { bar: 'baz' } }),
         },
         { description: 'call `time()`', action: (client) => client.time() },
+        {
+          description: 'call `auth.createTokenRequest()` with `queryTime` option',
+          action: (client) => client.auth.createTokenRequest({ queryTime: true }),
+        },
         { description: 'call `stats()`', action: (client) => client.stats() },
         { description: 'call `request(...)`', action: (client) => client.request('get', '/channels/channel', 2) },
         {
@@ -151,6 +155,13 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
 
           const receivedMessage = await recievedMessagePromise;
           expect(receivedMessage.data).to.eql({ foo: 'bar' });
+        });
+
+        it('allows `auth.createTokenRequest()` without `queryTime` option', async () => {
+          const client = new BaseRealtime(ablyClientOptions(), { WebSocketTransport, FetchRequest });
+
+          const tokenRequest = await client.auth.createTokenRequest();
+          expect(tokenRequest).to.be.an('object');
         });
 
         for (const scenario of restScenarios) {
