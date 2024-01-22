@@ -32,7 +32,7 @@ var Config = {
   createHmac: null,
   msgpack: msgpack,
   supportsBinary: typeof TextDecoder !== 'undefined' && TextDecoder,
-  preferBinary: false,
+  preferBinary: false, // Motivation as on web; see `preferBinary` comment there.
   ArrayBuffer: ArrayBuffer,
   atob: null,
   nextTick: function (f) {
