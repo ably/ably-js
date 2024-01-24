@@ -101,7 +101,7 @@ function printAndCheckModuleSizes() {
     console.log(`${baseClient}: ${formatBytes(baseClientSize)}`);
 
     // Then display the size of each export together with the base client
-    [...moduleNames, ...Object.values(functions).map((functionData) => functionData.name)].forEach((exportName) => {
+    [...moduleNames, ...functions.map((functionData) => functionData.name)].forEach((exportName) => {
       const size = getImportSize([baseClient, exportName]);
       console.log(`${baseClient} + ${exportName}: ${formatBytes(size)}`);
 
