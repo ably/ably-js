@@ -3,7 +3,7 @@ import * as path from 'path';
 import { explore } from 'source-map-explorer';
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
-const minimalUsefulRealtimeBundleSizeThresholdKiB = 109;
+const minimalUsefulRealtimeBundleSizeThresholdKiB = 94;
 
 // List of all modules accepted in ModulesMap
 const moduleNames = [

@@ -58,6 +58,7 @@ module.exports = {
     "typedoc/generated",
     "react",
     "Gruntfile.js",
+    "grunt",
   ],
   settings: {
     jsdoc: {

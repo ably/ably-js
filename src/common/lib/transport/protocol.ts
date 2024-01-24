@@ -71,7 +71,7 @@ class Protocol extends EventEmitter {
       this.messageQueue.push(pendingMessage);
     }
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Protocol.send()',
         'sending msg; ' +

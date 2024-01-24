@@ -72,13 +72,13 @@ function logResponseHandler(
 ): RequestCallback {
   return (err, body, headers, unpacked, statusCode) => {
     if (err) {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Http.' + method + '()',
         'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(err)
       );
     } else {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Http.' + method + '()',
         'Received; ' +
@@ -99,7 +99,7 @@ function logResponseHandler(
 
 function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, params: RequestParams) {
   if (Logger.shouldLog(Logger.LOG_MICRO)) {
-    Logger.logAction(
+    Logger.logActionNoStrip(
       Logger.LOG_MICRO,
       'Http.' + method + '()',
       'Sending; ' +
