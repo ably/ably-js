@@ -8,6 +8,8 @@ import Table from 'cli-table';
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
 const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 94, gzip: 29 };
 
+const baseClientNames = ['BaseRest', 'BaseRealtime'];
+
 // List of all modules accepted in ModulesMap
 const moduleNames = [
   'Rest',
@@ -117,7 +119,7 @@ async function runSourceMapExplorer(bundleInfo: BundleInfo) {
 async function calculateAndCheckModuleSizes(): Promise<Output> {
   const output: Output = { tableRows: [], errors: [] };
 
-  for (const baseClient of ['BaseRest', 'BaseRealtime']) {
+  for (const baseClient of baseClientNames) {
     const baseClientSizes = await getImportSizes([baseClient]);
 
     // First output the size of the base client
@@ -205,6 +207,13 @@ async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Outpu
   }
 
   return output;
+}
+
+async function calculateAllModulesBundleSize(): Promise<Output> {
+  const exports = [...baseClientNames, ...moduleNames, ...functions.map((val) => val.name)];
+  const sizes = await getImportSizes(exports);
+
+  return { tableRows: [{ description: 'All modules', sizes }], errors: [] };
 }
 
 // Performs a sense check that there are no unexpected files making a large contribution to the BaseRealtime bundle size.
@@ -295,6 +304,7 @@ async function checkBaseRealtimeFiles() {
   const output = (
     await Promise.all([
       calculateAndCheckMinimalUsefulRealtimeBundleSize(),
+      calculateAllModulesBundleSize(),
       calculateAndCheckModuleSizes(),
       calculateAndCheckFunctionSizes(),
     ])
