@@ -9,7 +9,7 @@ import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
 import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import { RequestParams } from '../../types/http';
+import { RequestBody, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
 import Resource from './resource';
 
@@ -152,7 +152,7 @@ export class Rest {
     }
 
     if (typeof body !== 'string') {
-      body = encoder(body);
+      body = encoder(body) ?? null;
     }
     Utils.mixin(headers, this.client.options.headers);
     if (customHeaders) {
@@ -174,7 +174,11 @@ export class Rest {
     }
 
     if (Utils.arrIn(Platform.Http.methodsWithBody, _method)) {
-      paginatedResource[_method as HttpMethods.Post](params, body, callback as PaginatedResultCallback<unknown>);
+      paginatedResource[_method as HttpMethods.Post](
+        params,
+        body as RequestBody,
+        callback as PaginatedResultCallback<unknown>
+      );
     } else {
       paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](
         params,
