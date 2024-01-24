@@ -468,7 +468,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         function recvAll(recvCb) {
           var received = 0;
           channel.subscribe('event0', function (msg) {
-            expect(msg.data == messageText).to.be.ok;
+            try {
+              expect(msg.data == messageText).to.be.ok;
+            } catch (error) {
+              recvCb(error);
+            }
             if (++received == iterations) recvCb(null);
           });
         }
