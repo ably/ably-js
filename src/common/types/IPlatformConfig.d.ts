@@ -1,4 +1,9 @@
-export interface IPlatformConfig {
+/**
+ * Interface for common config properties shared between all platforms and that are relevant for all platforms.
+ *
+ * These properties must always be required and set for each platform.
+ */
+export interface ICommonPlatformConfig {
   agent: string;
   logTimestamps: boolean;
   binaryType: BinaryType;
@@ -9,6 +14,14 @@ export interface IPlatformConfig {
   nextTick: process.nextTick;
   inspect: (value: unknown) => string;
   stringByteSize: Buffer.byteLength;
+}
+
+/**
+ * Interface for platform specific config properties that do make sense on some platforms but not on others.
+ *
+ * These properties should always be optional, so that only relevant platforms would set them.
+ */
+export interface ISpecificPlatformConfig {
   addEventListener?: typeof window.addEventListener | typeof global.addEventListener | null;
   getRandomValues?: (arr: ArrayBufferView, callback?: (error: Error | null) => void) => void;
   userAgent?: string | null;
@@ -29,3 +42,5 @@ export interface IPlatformConfig {
   ) => void;
   isWebworker?: boolean;
 }
+
+export type IPlatformConfig = ICommonPlatformConfig & ISpecificPlatformConfig;
