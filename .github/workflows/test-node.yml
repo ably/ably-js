@@ -28,3 +28,9 @@ jobs:
       - run: npm run test:node
         env:
           CI: true
+      - name: Upload test results
+        if: always()
+        uses: ably/test-observability-action@v1
+        with:
+          server-auth: ${{ secrets.TEST_OBSERVABILITY_SERVER_AUTH_KEY }}
+          path: './junit'

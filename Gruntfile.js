@@ -58,8 +58,8 @@ module.exports = function (grunt) {
     pkgVersion: grunt.file.readJSON('package.json').version,
     webpack: {
       all: Object.values(webpackConfig),
-      node: webpackConfig.node,
-      browser: [webpackConfig.browser, webpackConfig.browserMin],
+      node: [webpackConfig.node, webpackConfig.mochaJUnitReporterNode],
+      browser: [webpackConfig.browser, webpackConfig.browserMin, webpackConfig.mochaJUnitReporterBrowser],
     },
   };
 
