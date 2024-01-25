@@ -46,6 +46,9 @@ import {
   Push,
   RealtimeChannel,
   Connection,
+  // The ESLint warning is triggered because we only use this type in a documentation comment.
+  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+  AuthOptions,
 } from './ably';
 
 export declare const generateRandomKey: CryptoClass['generateRandomKey'];
@@ -72,6 +75,7 @@ export declare const constructPresenceMessage: PresenceMessageStatic['fromValues
  *
  * - { @link ably!Push | push admin }
  * - { @link BaseRealtime.time | retrieving Ably service time }
+ * - { @link ably!Auth.createTokenRequest | creating a token request } using the { @link ably!AuthOptions.queryTime } option
  * - { @link BaseRealtime.stats | retrieving your application’s usage statistics }
  * - { @link BaseRealtime.request | making arbitrary REST requests }
  * - { @link BaseRealtime.batchPublish | batch publishing of messages }
