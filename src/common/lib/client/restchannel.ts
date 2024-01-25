@@ -18,6 +18,7 @@ import BaseRest from './baseclient';
 import * as API from '../../../../ably';
 import Defaults, { normaliseChannelOptions } from '../util/defaults';
 import { RestHistoryParams } from './restchannelmixin';
+import { RequestBody } from 'common/types/http';
 
 const MSG_ID_ENTROPY_BYTES = 9;
 
@@ -141,7 +142,12 @@ class RestChannel {
     });
   }
 
-  _publish(requestBody: unknown, headers: Record<string, string>, params: any, callback: ResourceCallback): void {
+  _publish(
+    requestBody: RequestBody | null,
+    headers: Record<string, string>,
+    params: any,
+    callback: ResourceCallback
+  ): void {
     Resource.post(
       this.client,
       this.client.rest.channelMixin.basePath(this) + '/messages',

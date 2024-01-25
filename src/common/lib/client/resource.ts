@@ -6,7 +6,12 @@ import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
-import { RequestCallbackHeaders } from 'common/types/http';
+import {
+  RequestBody,
+  RequestCallbackHeaders,
+  appendingParams as urlFromPathAndParams,
+  paramString,
+} from 'common/types/http';
 
 function withAuthDetails(
   client: BaseClient,
@@ -80,20 +85,6 @@ function unenvelope<T>(
   };
 }
 
-function paramString(params: Record<string, any>) {
-  const paramPairs = [];
-  if (params) {
-    for (const needle in params) {
-      paramPairs.push(needle + '=' + params[needle]);
-    }
-  }
-  return paramPairs.join('&');
-}
-
-function urlFromPathAndParams(path: string, params: Record<string, any>) {
-  return path + (params ? '?' : '') + paramString(params);
-}
-
 function logResponseHandler<T>(
   callback: ResourceCallback<T>,
   method: HttpMethods,
@@ -117,8 +108,10 @@ function logResponseHandler<T>(
           paramString(headers as Record<string, any>) +
           '; StatusCode: ' +
           statusCode +
-          '; Body: ' +
-          (Platform.BufferUtils.isBuffer(body) ? body.toString() : body)
+          '; Body' +
+          (Platform.BufferUtils.isBuffer(body)
+            ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body)
+            : ': ' + Platform.Config.inspect(body))
       );
     }
     if (callback) {
@@ -161,7 +154,7 @@ class Resource {
   static post(
     client: BaseClient,
     path: string,
-    body: unknown,
+    body: RequestBody | null,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
@@ -173,7 +166,7 @@ class Resource {
   static patch(
     client: BaseClient,
     path: string,
-    body: unknown,
+    body: RequestBody | null,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
@@ -185,7 +178,7 @@ class Resource {
   static put(
     client: BaseClient,
     path: string,
-    body: unknown,
+    body: RequestBody | null,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
@@ -198,7 +191,7 @@ class Resource {
     method: HttpMethods,
     client: BaseClient,
     path: string,
-    body: unknown,
+    body: RequestBody | null,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
@@ -214,14 +207,6 @@ class Resource {
     }
 
     function doRequest(this: any, headers: Record<string, string>, params: Record<string, any>) {
-      if (Logger.shouldLog(Logger.LOG_MICRO)) {
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'Resource.' + method + '()',
-          'Sending; ' + urlFromPathAndParams(path, params)
-        );
-      }
-
       if (Logger.shouldLog(Logger.LOG_MICRO)) {
         let decodedBody = body;
         if (headers['content-type']?.indexOf('msgpack') > 0) {

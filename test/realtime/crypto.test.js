@@ -468,7 +468,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         function recvAll(recvCb) {
           var received = 0;
           channel.subscribe('event0', function (msg) {
-            expect(msg.data == messageText).to.be.ok;
+            try {
+              expect(msg.data == messageText).to.be.ok;
+            } catch (error) {
+              recvCb(error);
+            }
             if (++received == iterations) recvCb(null);
           });
         }
@@ -499,6 +503,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     it('multiple_send_text_20_100', function (done) {
       _multiple_send(done, true, 20, 100);
+    });
+
+    it('multiple_send_binary_10_10', function (done) {
+      _multiple_send(done, false, 10, 10);
+    });
+
+    it('multiple_send_text_10_10', function (done) {
+      _multiple_send(done, true, 10, 10);
     });
 
     function _single_send_separate_realtimes(done, txOpts, rxOpts) {

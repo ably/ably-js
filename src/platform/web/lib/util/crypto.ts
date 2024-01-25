@@ -33,8 +33,8 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
   if (config.getRandomArrayBuffer) {
     generateRandom = config.getRandomArrayBuffer;
   } else if (typeof Uint32Array !== 'undefined' && config.getRandomValues) {
-    var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
     generateRandom = function (bytes, callback) {
+      var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
       var words = bytes / 4,
         nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
       config.getRandomValues!(nativeArray, function (err) {
@@ -300,9 +300,6 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
         return;
       }
 
-      /* Since the iv for a new block is the ciphertext of the last, this
-       * sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
-       * returning it */
       generateRandom(DEFAULT_BLOCKLENGTH, function (err, randomBlock) {
         if (err) {
           callback(err, null);

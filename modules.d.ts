@@ -46,6 +46,9 @@ import {
   Push,
   RealtimeChannel,
   Connection,
+  // The ESLint warning is triggered because we only use this type in a documentation comment.
+  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+  AuthOptions,
 } from './ably';
 
 export declare const generateRandomKey: CryptoClass['generateRandomKey'];
@@ -72,6 +75,7 @@ export declare const constructPresenceMessage: PresenceMessageStatic['fromValues
  *
  * - { @link ably!Push | push admin }
  * - { @link BaseRealtime.time | retrieving Ably service time }
+ * - { @link ably!Auth.createTokenRequest | creating a token request } using the { @link ably!AuthOptions.queryTime } option
  * - { @link BaseRealtime.stats | retrieving your application’s usage statistics }
  * - { @link BaseRealtime.request | making arbitrary REST requests }
  * - { @link BaseRealtime.batchPublish | batch publishing of messages }
@@ -289,6 +293,15 @@ export interface ModulesMap {
  * A client that offers a simple stateless API to interact directly with Ably's REST API.
  *
  * `BaseRest` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Rest`](../../default/classes/Rest.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
+ *
+ * > **Note**
+ * >
+ * > In order to further reduce bundle size, `BaseRest` performs less logging than the `Rest` class exported by the default variant of the SDK. It only logs:
+ * >
+ * > - messages that have a {@link ClientOptions.logLevel | `logLevel`} of 1 (that is, errors)
+ * > - a small number of other network events
+ * >
+ * > If you need more verbose logging, use the default variant of the SDK.
  */
 export declare class BaseRest implements RestClient {
   /**
@@ -329,6 +342,15 @@ export declare class BaseRest implements RestClient {
  * A client that extends the functionality of {@link BaseRest} and provides additional realtime-specific features.
  *
  * `BaseRealtime` is the equivalent, in the modular variant of the Ably Client Library SDK, of the [`Realtime`](../../default/classes/Realtime.html) class in the default variant of the SDK. The difference is that its constructor allows you to decide exactly which functionality the client should include. This allows unused functionality to be tree-shaken, reducing bundle size.
+ *
+ * > **Note**
+ * >
+ * > In order to further reduce bundle size, `BaseRealtime` performs less logging than the `Realtime` class exported by the default variant of the SDK. It only logs:
+ * >
+ * > - messages that have a {@link ClientOptions.logLevel | `logLevel`} of 1 (that is, errors)
+ * > - a small number of other network events
+ * >
+ * > If you need more verbose logging, use the default variant of the SDK.
  */
 export declare class BaseRealtime implements RealtimeClient {
   /**

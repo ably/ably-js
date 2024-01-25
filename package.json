@@ -48,8 +48,12 @@
   "devDependencies": {
     "@ably/vcdiff-decoder": "1.0.6",
     "@arethetypeswrong/cli": "^0.13.1",
+    "@babel/generator": "^7.23.6",
+    "@babel/parser": "^7.23.6",
     "@babel/preset-env": "^7.23.6",
+    "@babel/traverse": "^7.23.7",
     "@testing-library/react": "^13.3.0",
+    "@types/cli-table": "^0.3.4",
     "@types/jmespath": "^0.15.2",
     "@types/node": "^18.0.0",
     "@types/request": "^2.48.7",
@@ -61,6 +65,7 @@
     "aws-sdk": "^2.1413.0",
     "babel-loader": "^8.3.0",
     "chai": "^4.2.0",
+    "cli-table": "^0.3.11",
     "cors": "^2.8.5",
     "esbuild": "^0.18.10",
     "esbuild-plugin-umd-wrapper": "^1.0.7",
@@ -139,10 +144,10 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "prepare": "npm run build",
-    "format": "prettier --write --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modules.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/chrome-mv3.md",
-    "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modules.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s",
+    "format": "prettier --write --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modules.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/chrome-mv3.md grunt",
+    "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modules.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s grunt",
     "sourcemap": "source-map-explorer build/ably.min.js",
-    "modulereport": "tsc --noEmit scripts/moduleReport.ts && esr scripts/moduleReport.ts",
+    "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
     "docs": "typedoc"
   }
 }

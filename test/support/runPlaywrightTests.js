@@ -1,6 +1,6 @@
 const playwright = require('playwright');
 const path = require('path');
-const serverProcess = require('child_process').fork(path.resolve(__dirname, '..', 'web_server'), {
+const mochaWebServerProcess = require('child_process').fork(path.resolve(__dirname, '..', 'web_server'), {
   env: { PLAYWRIGHT_TEST: 1 },
 });
 const fs = require('fs');
@@ -24,7 +24,7 @@ const runTests = async (browserType) => {
 
   console.log(`\nrunning tests in ${browserType.name()}`);
 
-  await new Promise((resolve) => {
+  await new Promise((resolve, reject) => {
     // Expose a function inside the playwright browser to log to the NodeJS process stdout
     page.exposeFunction('onTestLog', ({ detail }) => {
       console.log(detail);
@@ -53,8 +53,7 @@ const runTests = async (browserType) => {
         browser.close();
         resolve();
       } else {
-        console.log(`${browserType.name()} tests failed, exiting with code 1`);
-        process.exit(1);
+        reject(new Error(`${browserType.name()} tests failed, exiting with code 1`));
       }
     });
 
@@ -72,6 +71,8 @@ const runTests = async (browserType) => {
 };
 
 (async () => {
+  let caughtError;
+
   try {
     if (browserEnv) {
       // If the PLAYWRIGHT_BROWSER env var is set, only run tests in the specified browser...
@@ -82,7 +83,18 @@ const runTests = async (browserType) => {
       await runTests(playwright.webkit);
       await runTests(playwright.firefox);
     }
-  } finally {
-    serverProcess.kill();
+  } catch (error) {
+    // save error for now, we must ensure we end mocha web server first.
+    // if we end current process too early, mocha web server will be left running,
+    // causing problems when launching tests second time.
+    caughtError = error;
+  }
+
+  mochaWebServerProcess.kill();
+
+  // now whem mocha web server is terminated, if there was an error, we can log it and exit with a failure code
+  if (caughtError) {
+    console.log(caughtError.message);
+    process.exit(1);
   }
 })();
