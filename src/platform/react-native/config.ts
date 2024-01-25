@@ -16,7 +16,7 @@ const Platform: IPlatformConfig = {
   createHmac: null,
   msgpack: msgpack,
   supportsBinary: !!(typeof TextDecoder !== 'undefined' && TextDecoder),
-  preferBinary: false,
+  preferBinary: false, // Motivation as on web; see `preferBinary` comment there.
   ArrayBuffer: typeof ArrayBuffer !== 'undefined' && ArrayBuffer,
   atob: global.atob,
   nextTick: function (f: Function) {
