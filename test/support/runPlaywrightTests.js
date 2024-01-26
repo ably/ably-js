@@ -8,14 +8,7 @@ const jUnitDirectoryPath = require('./junit_directory_path');
 
 const port = process.env.PORT || 3000;
 const host = 'localhost';
-
-const browserEnv = process.env.PLAYWRIGHT_BROWSER;
-
-if (!['chromium', 'firefox', 'webkit'].includes(browserEnv)) {
-  throw new Error(
-    `PLAYWRIGHT_BROWSER environment variable must be either 'chromium', 'webkit' or 'firefox' (currently ${browserEnv})`
-  );
-}
+const playwrightBrowsers = ['chromium', 'firefox', 'webkit'];
 
 const runTests = async (browserType) => {
   const browser = await browserType.launch();
@@ -74,25 +67,27 @@ const runTests = async (browserType) => {
   let caughtError;
 
   try {
-    if (browserEnv) {
-      // If the PLAYWRIGHT_BROWSER env var is set, only run tests in the specified browser...
-      await runTests(playwright[browserEnv]);
-    } else {
-      // ...otherwise run all the browsers
-      await runTests(playwright.chromium);
-      await runTests(playwright.webkit);
-      await runTests(playwright.firefox);
+    const browserEnv = process.env.PLAYWRIGHT_BROWSER;
+
+    if (!playwrightBrowsers.includes(browserEnv)) {
+      throw new Error(
+        `PLAYWRIGHT_BROWSER environment variable must be one of: ${playwrightBrowsers.join(
+          ', '
+        )}. Currently: ${browserEnv}`
+      );
     }
+
+    await runTests(playwright[browserEnv]);
   } catch (error) {
     // save error for now, we must ensure we end mocha web server first.
     // if we end current process too early, mocha web server will be left running,
-    // causing problems when launching tests second time.
+    // causing problems when launching tests the second time.
     caughtError = error;
   }
 
   mochaWebServerProcess.kill();
 
-  // now whem mocha web server is terminated, if there was an error, we can log it and exit with a failure code
+  // now when mocha web server is terminated, if there was an error, we can log it and exit with a failure code
   if (caughtError) {
     console.log(caughtError.message);
     process.exit(1);
