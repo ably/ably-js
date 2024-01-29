@@ -12,9 +12,9 @@
  */
 
 /**
- * The `ChannelState` namespace describes the possible values of the {@link ChannelState:type} type.
+ * The `ChannelStates` namespace describes the possible values of the {@link ChannelState} type.
  */
-declare namespace ChannelState {
+declare namespace ChannelStates {
   /**
    * The channel has been initialized but no attach has yet been attempted.
    */
@@ -47,20 +47,19 @@ declare namespace ChannelState {
 /**
  * Describes the possible states of a {@link Channel} or {@link RealtimeChannel} object.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type ChannelState =
-  | ChannelState.FAILED
-  | ChannelState.INITIALIZED
-  | ChannelState.SUSPENDED
-  | ChannelState.ATTACHED
-  | ChannelState.ATTACHING
-  | ChannelState.DETACHED
-  | ChannelState.DETACHING;
+  | ChannelStates.FAILED
+  | ChannelStates.INITIALIZED
+  | ChannelStates.SUSPENDED
+  | ChannelStates.ATTACHED
+  | ChannelStates.ATTACHING
+  | ChannelStates.DETACHED
+  | ChannelStates.DETACHING;
 
 /**
- * The `ChannelEvent` namespace describes the possible values of the {@link ChannelEvent:type} type.
+ * The `ChannelEvents` namespace describes the possible values of the {@link ChannelEvent} type.
  */
-declare namespace ChannelEvent {
+declare namespace ChannelEvents {
   /**
    * The channel has been initialized but no attach has yet been attempted.
    */
@@ -97,21 +96,20 @@ declare namespace ChannelEvent {
 /**
  * Describes the events emitted by a {@link Channel} or {@link RealtimeChannel} object. An event is either an `UPDATE` or a {@link ChannelState}.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type ChannelEvent =
-  | ChannelEvent.FAILED
-  | ChannelEvent.INITIALIZED
-  | ChannelEvent.SUSPENDED
-  | ChannelEvent.ATTACHED
-  | ChannelEvent.ATTACHING
-  | ChannelEvent.DETACHED
-  | ChannelEvent.DETACHING
-  | ChannelEvent.UPDATE;
+  | ChannelEvents.FAILED
+  | ChannelEvents.INITIALIZED
+  | ChannelEvents.SUSPENDED
+  | ChannelEvents.ATTACHED
+  | ChannelEvents.ATTACHING
+  | ChannelEvents.DETACHED
+  | ChannelEvents.DETACHING
+  | ChannelEvents.UPDATE;
 
 /**
- * The `ConnectionState` namespace describes the possible values of the {@link ConnectionState:type} type.
+ * The `ConnectionStates` namespace describes the possible values of the {@link ConnectionState} type.
  */
-declare namespace ConnectionState {
+declare namespace ConnectionStates {
   /**
    * A connection with this state has been initialized but no connection has yet been attempted.
    */
@@ -148,21 +146,20 @@ declare namespace ConnectionState {
 /**
  * Describes the realtime {@link Connection} object states.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type ConnectionState =
-  | ConnectionState.INITIALIZED
-  | ConnectionState.CONNECTED
-  | ConnectionState.CONNECTING
-  | ConnectionState.DISCONNECTED
-  | ConnectionState.SUSPENDED
-  | ConnectionState.CLOSED
-  | ConnectionState.CLOSING
-  | ConnectionState.FAILED;
+  | ConnectionStates.INITIALIZED
+  | ConnectionStates.CONNECTED
+  | ConnectionStates.CONNECTING
+  | ConnectionStates.DISCONNECTED
+  | ConnectionStates.SUSPENDED
+  | ConnectionStates.CLOSED
+  | ConnectionStates.CLOSING
+  | ConnectionStates.FAILED;
 
 /**
- * The `ConnectionEvent` namespace describes the possible values of the {@link ConnectionEvent:type} type.
+ * The `ConnectionEvents` namespace describes the possible values of the {@link ConnectionEvent} type.
  */
-declare namespace ConnectionEvent {
+declare namespace ConnectionEvents {
   /**
    * A connection with this state has been initialized but no connection has yet been attempted.
    */
@@ -203,22 +200,21 @@ declare namespace ConnectionEvent {
 /**
  * Describes the events emitted by a {@link Connection} object. An event is either an `UPDATE` or a {@link ConnectionState}.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type ConnectionEvent =
-  | ConnectionEvent.INITIALIZED
-  | ConnectionEvent.CONNECTED
-  | ConnectionEvent.CONNECTING
-  | ConnectionEvent.DISCONNECTED
-  | ConnectionEvent.SUSPENDED
-  | ConnectionEvent.CLOSED
-  | ConnectionEvent.CLOSING
-  | ConnectionEvent.FAILED
-  | ConnectionEvent.UPDATE;
+  | ConnectionEvents.INITIALIZED
+  | ConnectionEvents.CONNECTED
+  | ConnectionEvents.CONNECTING
+  | ConnectionEvents.DISCONNECTED
+  | ConnectionEvents.SUSPENDED
+  | ConnectionEvents.CLOSED
+  | ConnectionEvents.CLOSING
+  | ConnectionEvents.FAILED
+  | ConnectionEvents.UPDATE;
 
 /**
- * The `PresenceAction` namespace describes the possible values of the {@link PresenceAction:type} type.
+ * The `PresenceActions` namespace describes the possible values of the {@link PresenceAction} type.
  */
-declare namespace PresenceAction {
+declare namespace PresenceActions {
   /**
    * A member is not present in the channel.
    */
@@ -243,18 +239,17 @@ declare namespace PresenceAction {
 /**
  * Describes the possible actions members in the presence set can emit.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type PresenceAction =
-  | PresenceAction.ABSENT
-  | PresenceAction.PRESENT
-  | PresenceAction.ENTER
-  | PresenceAction.LEAVE
-  | PresenceAction.UPDATE;
+  | PresenceActions.ABSENT
+  | PresenceActions.PRESENT
+  | PresenceActions.ENTER
+  | PresenceActions.LEAVE
+  | PresenceActions.UPDATE;
 
 /**
- * The `StatsIntervalGranularity` namespace describes the possible values of the {@link StatsIntervalGranularity:type} type.
+ * The `StatsIntervalGranularities` namespace describes the possible values of the {@link StatsIntervalGranularity} type.
  */
-declare namespace StatsIntervalGranularity {
+declare namespace StatsIntervalGranularities {
   /**
    * Interval unit over which statistics are gathered as minutes.
    */
@@ -275,12 +270,11 @@ declare namespace StatsIntervalGranularity {
 /**
  * Describes the interval unit over which statistics are gathered.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type StatsIntervalGranularity =
-  | StatsIntervalGranularity.MINUTE
-  | StatsIntervalGranularity.HOUR
-  | StatsIntervalGranularity.DAY
-  | StatsIntervalGranularity.MONTH;
+  | StatsIntervalGranularities.MINUTE
+  | StatsIntervalGranularities.HOUR
+  | StatsIntervalGranularities.DAY
+  | StatsIntervalGranularities.MONTH;
 
 /**
  * HTTP Methods, used internally.
@@ -298,8 +292,7 @@ declare namespace HTTPMethods {
 /**
  * HTTP Methods, used internally.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export type HTTPMethods = HTTPMethods.GET | HTTPMethods.POST;
+export type HTTPMethod = HTTPMethods.GET | HTTPMethods.POST;
 
 /**
  * A type which specifies the valid transport names. [See here](https://faqs.ably.com/which-transports-are-supported) for more information.
@@ -353,7 +346,7 @@ export interface ChannelMetrics {
    */
   connections: number;
   /**
-   * The number of realtime connections attached to the channel with permission to enter the presence set, regardless of whether or not they have entered it. This requires the `presence` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PRESENCE}.
+   * The number of realtime connections attached to the channel with permission to enter the presence set, regardless of whether or not they have entered it. This requires the `presence` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelModes.PRESENCE}.
    */
   presenceConnections: number;
   /**
@@ -361,15 +354,15 @@ export interface ChannelMetrics {
    */
   presenceMembers: number;
   /**
-   * The number of realtime attachments receiving presence messages on the channel. This requires the `subscribe` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PRESENCE_SUBSCRIBE}.
+   * The number of realtime attachments receiving presence messages on the channel. This requires the `subscribe` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelModes.PRESENCE_SUBSCRIBE}.
    */
   presenceSubscribers: number;
   /**
-   * The number of realtime attachments permitted to publish messages to the channel. This requires the `publish` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.PUBLISH}.
+   * The number of realtime attachments permitted to publish messages to the channel. This requires the `publish` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelModes.PUBLISH}.
    */
   publishers: number;
   /**
-   * The number of realtime attachments receiving messages on the channel. This requires the `subscribe` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelMode.SUBSCRIBE}.
+   * The number of realtime attachments receiving messages on the channel. This requires the `subscribe` capability and for a client to not have specified a {@link ChannelMode} flag that excludes {@link ChannelModes.SUBSCRIBE}.
    */
   subscribers: number;
 }
@@ -507,14 +500,14 @@ export interface ClientOptions extends AuthOptions {
   disableConnectivityCheck?: boolean;
 
   /**
-   * If the connection is still in the {@link ConnectionState.DISCONNECTED} state after this delay in milliseconds, the client library will attempt to reconnect automatically. The default is 15 seconds.
+   * If the connection is still in the {@link ConnectionStates.DISCONNECTED} state after this delay in milliseconds, the client library will attempt to reconnect automatically. The default is 15 seconds.
    *
    * @defaultValue 15s
    */
   disconnectedRetryTimeout?: number;
 
   /**
-   * When the connection enters the {@link ConnectionState.SUSPENDED} state, after this delay in milliseconds, if the state is still {@link ConnectionState.SUSPENDED | `SUSPENDED`}, the client library attempts to reconnect automatically. The default is 30 seconds.
+   * When the connection enters the {@link ConnectionStates.SUSPENDED} state, after this delay in milliseconds, if the state is still {@link ConnectionStates.SUSPENDED | `SUSPENDED`}, the client library attempts to reconnect automatically. The default is 30 seconds.
    *
    * @defaultValue 30s
    */
@@ -610,9 +603,9 @@ export interface AuthOptions {
   /**
    * The HTTP verb to use for any request made to the `authUrl`, either `GET` or `POST`. The default value is `GET`.
    *
-   * @defaultValue `HTTPMethods.GET`
+   * @defaultValue `HTTPMethod.GET`
    */
-  authMethod?: HTTPMethods;
+  authMethod?: HTTPMethod;
 
   /**
    * A set of key-value pair params to be added to any request made to the `authUrl`. When the `authMethod` is `GET`, query params are added to the URL, whereas when `authMethod` is `POST`, the params are sent as URL encoded form data. Useful when an application requires these to be added to validate the request or implement the response.
@@ -798,9 +791,9 @@ export interface TokenRequest {
 export type ChannelParams = { [key: string]: string };
 
 /**
- * The `ChannelMode` namespace describes the possible values of the {@link ChannelMode:type} type.
+ * The `ChannelModes` namespace describes the possible values of the {@link ChannelMode} type.
  */
-declare namespace ChannelMode {
+declare namespace ChannelModes {
   /**
    * The client can publish messages.
    */
@@ -826,13 +819,12 @@ declare namespace ChannelMode {
 /**
  * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type ChannelMode =
-  | ChannelMode.PUBLISH
-  | ChannelMode.SUBSCRIBE
-  | ChannelMode.PRESENCE
-  | ChannelMode.PRESENCE_SUBSCRIBE
-  | ChannelMode.ATTACH_RESUME;
+  | ChannelModes.PUBLISH
+  | ChannelModes.SUBSCRIBE
+  | ChannelModes.PRESENCE
+  | ChannelModes.PRESENCE_SUBSCRIBE
+  | ChannelModes.ATTACH_RESUME;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
@@ -918,7 +910,7 @@ export interface RestPresenceParams {
  */
 export interface RealtimePresenceParams {
   /**
-   * Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is {@link ChannelState.ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
+   * Sets whether to wait for a full presence set synchronization between Ably and the clients on the channel to complete before returning the results. Synchronization begins as soon as the channel is {@link ChannelStates.ATTACHED}. When set to `true` the results will be returned as soon as the sync is complete. When set to `false` the current list of members will be returned without the sync completing. The default is `true`.
    *
    * @defaultValue `true`
    */
@@ -977,7 +969,7 @@ export interface ChannelStateChange {
    */
   current: ChannelState;
   /**
-   * The previous state. For the {@link ChannelEvent.UPDATE} event, this is equal to the `current` {@link ChannelState}.
+   * The previous state. For the {@link ChannelEvents.UPDATE} event, this is equal to the `current` {@link ChannelState}.
    */
   previous: ChannelState;
   /**
@@ -1003,7 +995,7 @@ export interface ConnectionStateChange {
    */
   current: ConnectionState;
   /**
-   * The previous {@link ConnectionState}. For the {@link ConnectionEvent.UPDATE} event, this is equal to the current {@link ConnectionState}.
+   * The previous {@link ConnectionState}. For the {@link ConnectionEvents.UPDATE} event, this is equal to the current {@link ConnectionState}.
    */
   previous: ConnectionState;
   /**
@@ -1017,9 +1009,9 @@ export interface ConnectionStateChange {
 }
 
 /**
- * The `DevicePlatform` namespace describes the possible values of the {@link DevicePlatform:type} type.
+ * The `DevicePlatforms` namespace describes the possible values of the {@link DevicePlatform} type.
  */
-declare namespace DevicePlatform {
+declare namespace DevicePlatforms {
   /**
    * The device platform is Android.
    */
@@ -1037,13 +1029,12 @@ declare namespace DevicePlatform {
 /**
  * Describes the device receiving push notifications.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export type DevicePlatform = DevicePlatform.ANDROID | DevicePlatform.IOS | DevicePlatform.BROWSER;
+export type DevicePlatform = DevicePlatforms.ANDROID | DevicePlatforms.IOS | DevicePlatforms.BROWSER;
 
 /**
- * The `DeviceFormFactor` namespace describes the possible values of the {@link DeviceFormFactor:type} type.
+ * The `DeviceFormFactors` namespace describes the possible values of the {@link DeviceFormFactor} type.
  */
-declare namespace DeviceFormFactor {
+declare namespace DeviceFormFactors {
   /**
    * The device is a phone.
    */
@@ -1081,16 +1072,15 @@ declare namespace DeviceFormFactor {
 /**
  * Describes the type of device receiving a push notification.
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type DeviceFormFactor =
-  | DeviceFormFactor.PHONE
-  | DeviceFormFactor.TABLET
-  | DeviceFormFactor.DESKTOP
-  | DeviceFormFactor.TV
-  | DeviceFormFactor.WATCH
-  | DeviceFormFactor.CAR
-  | DeviceFormFactor.EMBEDDED
-  | DeviceFormFactor.OTHER;
+  | DeviceFormFactors.PHONE
+  | DeviceFormFactors.TABLET
+  | DeviceFormFactors.DESKTOP
+  | DeviceFormFactors.TV
+  | DeviceFormFactors.WATCH
+  | DeviceFormFactors.CAR
+  | DeviceFormFactors.EMBEDDED
+  | DeviceFormFactors.OTHER;
 
 /**
  * Contains the properties of a device registered for push notifications.
@@ -1861,7 +1851,7 @@ export declare interface RealtimePresence {
    */
   enter(data?: any): Promise<void>;
   /**
-   * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceAction.ENTER} event.
+   * Updates the `data` payload for a presence member. If called before entering the presence set, this is treated as an {@link PresenceActions.ENTER} event.
    *
    * @param data - The payload to update for the presence member.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2397,11 +2387,11 @@ export declare interface Connection
    */
   readonly state: ConnectionState;
   /**
-   * Causes the connection to close, entering the {@link ConnectionState.CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to {@link Connection.connect | `connect()`}.
+   * Causes the connection to close, entering the {@link ConnectionStates.CLOSING} state. Once closed, the library does not attempt to re-establish the connection without an explicit call to {@link Connection.connect | `connect()`}.
    */
   close(): void;
   /**
-   * Explicitly calling `connect()` is unnecessary unless the `autoConnect` attribute of the {@link ClientOptions} object is `false`. Unless already connected or connecting, this method causes the connection to open, entering the {@link ConnectionState.CONNECTING} state.
+   * Explicitly calling `connect()` is unnecessary unless the `autoConnect` attribute of the {@link ClientOptions} object is `false`. Unless already connected or connecting, this method causes the connection to open, entering the {@link ConnectionStates.CONNECTING} state.
    */
   connect(): void;
 
