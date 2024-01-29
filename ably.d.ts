@@ -1133,7 +1133,7 @@ declare namespace Types {
     /**
      * Controls the verbosity of the logs output from the library. Valid values are: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
      */
-    level?: number;
+    level?: 0 | 1 | 2 | 3 | 4;
 
     /**
      * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
