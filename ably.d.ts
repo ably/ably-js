@@ -833,11 +833,6 @@ export type ChannelMode =
   | ChannelMode.PRESENCE
   | ChannelMode.PRESENCE_SUBSCRIBE
   | ChannelMode.ATTACH_RESUME;
-/**
- * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
- */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export type ChannelModes = Array<ChannelMode>;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
@@ -854,7 +849,7 @@ export interface ChannelOptions {
   /**
    * An array of {@link ChannelMode} objects.
    */
-  modes?: ChannelModes;
+  modes?: ChannelMode[];
 }
 
 /**
@@ -1981,7 +1976,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
   /**
    * An array of {@link ChannelMode} objects.
    */
-  modes: ChannelModes;
+  modes: ChannelMode[];
   /**
    * Deregisters the given listener for the specified event name. This removes an earlier event-specific subscription.
    *
