@@ -10,13 +10,6 @@ import * as Utils from 'common/lib/util/utils';
 export type PathParameter = string | ((host: string) => string);
 export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
 export type RequestCallbackError = ErrnoException | IPartialErrorInfo;
-export type RequestCallback = (
-  error: RequestCallbackError | null,
-  body?: unknown,
-  headers?: RequestCallbackHeaders,
-  unpacked?: boolean,
-  statusCode?: number
-) => void;
 
 /**
  * The `body`, `headers`, `unpacked`, and `statusCode` properties of a `RequestResult` may be populated even if its `error` property is non-null.

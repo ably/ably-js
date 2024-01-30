@@ -2,14 +2,14 @@ import Logger from '../util/logger';
 import * as Utils from '../util/utils';
 import Multicaster, { MulticasterInstance } from '../util/multicaster';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
-import { ErrnoException, RequestCallback, RequestParams } from '../../types/http';
+import { RequestCallbackError, RequestParams, RequestResult } from '../../types/http';
 import * as API from '../../../../ably';
 import BaseClient from './baseclient';
 import BaseRealtime from './baserealtime';
 import ClientOptions from '../../types/ClientOptions';
 import HttpMethods from '../../constants/HttpMethods';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
-import Platform from '../../platform';
+import Platform, { Bufferlike } from '../../platform';
 import Defaults from '../util/defaults';
 
 type BatchResult<T> = API.BatchResult<T>;
@@ -395,7 +395,7 @@ class Auth {
     let tokenRequestCallback: (
         data: API.TokenParams,
         callback: (
-          error: API.ErrorInfo | string | null,
+          error: API.ErrorInfo | RequestCallbackError | string | null,
           tokenRequestOrDetails: API.TokenDetails | API.TokenRequest | string | null,
           contentType?: string
         ) => void
@@ -429,28 +429,38 @@ class Auth {
         }
         /* RSA8c2 */
         const authParams = Utils.mixin({}, resolvedAuthOptions.authParams || {}, params) as RequestParams;
-        const authUrlRequestCallback = function (
-          err: ErrorInfo,
-          body: string,
-          headers: Record<string, string>,
-          unpacked: any
-        ) {
-          let contentType;
-          if (err) {
+        const authUrlRequestCallback = function (result: RequestResult) {
+          let body = (result.body ?? null) as string | Bufferlike | API.TokenDetails | API.TokenRequest | null;
+
+          let contentType: string | null = null;
+          if (result.error) {
             Logger.logAction(
               Logger.LOG_MICRO,
               'Auth.requestToken().tokenRequestCallback',
-              'Received Error: ' + Utils.inspectError(err)
+              'Received Error: ' + Utils.inspectError(result.error)
             );
           } else {
-            contentType = headers['content-type'];
+            const contentTypeHeaderOrHeaders = result.headers!['content-type'] ?? null;
+            if (Utils.isArray(contentTypeHeaderOrHeaders)) {
+              // Combine multiple header values into a comma-separated list per https://datatracker.ietf.org/doc/html/rfc9110#section-5.2; see https://github.com/ably/ably-js/issues/1616 for doing this consistently across the codebase.
+              contentType = contentTypeHeaderOrHeaders.join(', ');
+            } else {
+              contentType = contentTypeHeaderOrHeaders;
+            }
             Logger.logAction(
               Logger.LOG_MICRO,
               'Auth.requestToken().tokenRequestCallback',
               'Received; content-type: ' + contentType + '; body: ' + Utils.inspectBody(body)
             );
           }
-          if (err || unpacked) return cb(err, body);
+          if (result.error) {
+            cb(result.error, null);
+            return;
+          }
+          if (result.unpacked) {
+            cb(null, body as Exclude<typeof body, Bufferlike>);
+            return;
+          }
           if (Platform.BufferUtils.isBuffer(body)) body = body.toString();
           if (!contentType) {
             cb(new ErrorInfo('authUrl response is missing a content-type header', 40170, 401), null);
@@ -472,12 +482,12 @@ class Auth {
             return;
           }
           if (json) {
-            if (body.length > MAX_TOKEN_LENGTH) {
+            if ((body as string).length > MAX_TOKEN_LENGTH) {
               cb(new ErrorInfo('authUrl response exceeded max permitted length', 40170, 401), null);
               return;
             }
             try {
-              body = JSON.parse(body);
+              body = JSON.parse(body as string);
             } catch (e) {
               cb(
                 new ErrorInfo(
@@ -490,7 +500,7 @@ class Auth {
               return;
             }
           }
-          cb(null, body, contentType);
+          cb(null, body as Exclude<typeof body, Bufferlike>, contentType);
         };
         Logger.logAction(
           Logger.LOG_MICRO,
@@ -517,28 +527,16 @@ class Auth {
             ),
             (err: any, result) =>
               err
-                ? (authUrlRequestCallback as RequestCallback)(err) // doUri isn’t meant to throw an error, but handle any just in case
-                : (authUrlRequestCallback as RequestCallback)(
-                    result!.error,
-                    result!.body,
-                    result!.headers,
-                    result!.unpacked,
-                    result!.statusCode
-                  )
+                ? authUrlRequestCallback(err) // doUri isn’t meant to throw an error, but handle any just in case
+                : authUrlRequestCallback(result!)
           );
         } else {
           Utils.whenPromiseSettles(
             this.client.http.doUri(HttpMethods.Get, resolvedAuthOptions.authUrl!, authHeaders || {}, null, authParams),
             (err: any, result) =>
               err
-                ? (authUrlRequestCallback as RequestCallback)(err) // doUri isn’t meant to throw an error, but handle any just in case
-                : (authUrlRequestCallback as RequestCallback)(
-                    result!.error,
-                    result!.body,
-                    result!.headers,
-                    result!.unpacked,
-                    result!.statusCode
-                  )
+                ? authUrlRequestCallback(err) // doUri isn’t meant to throw an error, but handle any just in case
+                : authUrlRequestCallback(result!)
           );
         }
       };
@@ -568,12 +566,7 @@ class Auth {
 
     const tokenRequest = (
       signedTokenParams: Record<string, any>,
-      tokenCb: (
-        err: ErrorInfo | ErrnoException | null,
-        tokenResponse?: API.TokenDetails | string,
-        headers?: Record<string, string>,
-        unpacked?: boolean
-      ) => void
+      tokenCb: (err: RequestCallbackError | null, tokenResponse?: API.TokenDetails | string, unpacked?: boolean) => void
     ) => {
       const keyName = signedTokenParams.keyName,
         path = '/keys/' + keyName + '/requestToken',
@@ -592,14 +585,8 @@ class Auth {
         this.client.http.do(HttpMethods.Post, tokenUri, requestHeaders, JSON.stringify(signedTokenParams), null),
         (err: any, result) =>
           err
-            ? (tokenCb as RequestCallback)(err) // doUri isn’t meant to throw an error, but handle any just in case
-            : (tokenCb as RequestCallback)(
-                result!.error,
-                result!.body,
-                result!.headers,
-                result!.unpacked,
-                result!.statusCode
-              )
+            ? tokenCb(err) // doUri isn’t meant to throw an error, but handle any just in case
+            : tokenCb(result!.error, result!.body as API.TokenDetails | string | undefined, result!.unpacked)
       );
     };
 
@@ -690,7 +677,7 @@ class Auth {
           return;
         }
         /* it's a token request, so make the request */
-        tokenRequest(tokenRequestOrDetails, function (err, tokenResponse, headers, unpacked) {
+        tokenRequest(tokenRequestOrDetails, function (err, tokenResponse, unpacked) {
           if (err) {
             Logger.logAction(
               Logger.LOG_ERROR,
