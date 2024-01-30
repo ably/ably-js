@@ -79,37 +79,29 @@ export function appendingParams(uri: string, params: Record<string, any> | null)
   return uri + (params ? '?' : '') + paramString(params);
 }
 
-function logResponseHandler(
-  callback: RequestCallback | undefined,
-  method: HttpMethods,
-  uri: string,
-  params: Record<string, string> | null
-): RequestCallback {
-  return (err, body, headers, unpacked, statusCode) => {
-    if (err) {
-      Logger.logActionNoStrip(
-        Logger.LOG_MICRO,
-        'Http.' + method + '()',
-        'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(err)
-      );
-    } else {
-      Logger.logActionNoStrip(
-        Logger.LOG_MICRO,
-        'Http.' + method + '()',
-        'Received; ' +
-          appendingParams(uri, params) +
-          '; Headers: ' +
-          paramString(headers as Record<string, any>) +
-          '; StatusCode: ' +
-          statusCode +
-          '; Body' +
-          (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
-      );
-    }
-    if (callback) {
-      callback(err, body, headers, unpacked, statusCode);
-    }
-  };
+function logResult(result: RequestResult, method: HttpMethods, uri: string, params: Record<string, string> | null) {
+  if (result.error) {
+    Logger.logActionNoStrip(
+      Logger.LOG_MICRO,
+      'Http.' + method + '()',
+      'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(result.error)
+    );
+  } else {
+    Logger.logActionNoStrip(
+      Logger.LOG_MICRO,
+      'Http.' + method + '()',
+      'Received; ' +
+        appendingParams(uri, params) +
+        '; Headers: ' +
+        paramString(result.headers as Record<string, any>) +
+        '; StatusCode: ' +
+        result.statusCode +
+        '; Body' +
+        (Platform.BufferUtils.isBuffer(result.body)
+          ? ' (Base64): ' + Platform.BufferUtils.base64Encode(result.body)
+          : ': ' + result.body)
+    );
+  }
 }
 
 function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, params: RequestParams) {
@@ -184,15 +176,24 @@ export class Http {
     if (currentFallback) {
       if (currentFallback.validUntil > Date.now()) {
         /* Use stored fallback */
-        this.doUri(method, uriFromHost(currentFallback.host), headers, body, params, (err, ...args) => {
-          if (err && this.platformHttp.shouldFallback(err as ErrnoException)) {
-            /* unstore the fallback and start from the top with the default sequence */
-            client._currentFallback = null;
-            this.do(method, path, headers, body, params, callback);
-            return;
+        Utils.whenPromiseSettles(
+          this.doUri(method, uriFromHost(currentFallback.host), headers, body, params),
+          (err: any, result) => {
+            // doUri isn’t meant to throw an error, but handle any just in case
+            if (err) {
+              callback?.(err);
+              return;
+            }
+
+            if (result!.error && this.platformHttp.shouldFallback(result!.error as ErrnoException)) {
+              /* unstore the fallback and start from the top with the default sequence */
+              client._currentFallback = null;
+              this.do(method, path, headers, body, params, callback);
+              return;
+            }
+            callback?.(result!.error, result!.body, result!.headers, result!.unpacked, result!.statusCode);
           }
-          callback?.(err, ...args);
-        });
+        );
         return;
       } else {
         /* Fallback expired; remove it and fallthrough to normal sequence */
@@ -204,49 +205,66 @@ export class Http {
 
     /* see if we have one or more than one host */
     if (hosts.length === 1) {
-      this.doUri(method, uriFromHost(hosts[0]), headers, body, params, callback);
+      Utils.whenPromiseSettles(this.doUri(method, uriFromHost(hosts[0]), headers, body, params), (err: any, result) =>
+        err
+          ? callback?.(err) // doUri isn’t meant to throw an error, but handle any just in case
+          : callback?.(result!.error, result!.body, result!.headers, result!.unpacked, result!.statusCode)
+      );
       return;
     }
 
     const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
       const host = candidateHosts.shift();
-      this.doUri(method, uriFromHost(host as string), headers, body, params, (err, ...args) => {
-        if (err && this.platformHttp.shouldFallback(err as ErrnoException) && candidateHosts.length) {
-          tryAHost(candidateHosts, true);
-          return;
+      Utils.whenPromiseSettles(
+        this.doUri(method, uriFromHost(host as string), headers, body, params),
+        (err: any, result) => {
+          // doUri isn’t meant to throw an error, but handle any just in case
+          if (err) {
+            callback?.(err);
+            return;
+          }
+
+          if (
+            result!.error &&
+            this.platformHttp.shouldFallback(result!.error as ErrnoException) &&
+            candidateHosts.length
+          ) {
+            tryAHost(candidateHosts, true);
+            return;
+          }
+          if (persistOnSuccess) {
+            /* RSC15f */
+            client._currentFallback = {
+              host: host as string,
+              validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
+            };
+          }
+          callback?.(result!.error, result!.body, result!.headers, result!.unpacked, result!.statusCode);
         }
-        if (persistOnSuccess) {
-          /* RSC15f */
-          client._currentFallback = {
-            host: host as string,
-            validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
-          };
-        }
-        callback?.(err, ...args);
-      });
+      );
     };
     tryAHost(hosts);
   }
 
-  doUri(
+  /**
+   * This method will not throw any errors; rather, it will communicate any error by populating the {@link RequestResult.error} property of the returned {@link RequestResult}.
+   */
+  async doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback?: RequestCallback | undefined
-  ): void {
+    params: RequestParams
+  ): Promise<RequestResult> {
     logRequest(method, uri, body, params);
 
+    const result = await this.platformHttp.doUri(method, uri, headers, body, params);
+
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      callback = logResponseHandler(callback, method, uri, params);
+      logResult(result, method, uri, params);
     }
 
-    Utils.whenPromiseSettles(this.platformHttp.doUri(method, uri, headers, body, params), (err: any, result) =>
-      err
-        ? callback?.(err) // doUri isn’t meant to throw an error, but handle any just in case
-        : callback?.(result!.error, result!.body, result!.headers, result!.unpacked, result!.statusCode)
-    );
+    return result;
   }
 }
 

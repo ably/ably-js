@@ -507,22 +507,38 @@ class Auth {
           const headers = authHeaders || {};
           headers['content-type'] = 'application/x-www-form-urlencoded';
           const body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
-          this.client.http.doUri(
-            HttpMethods.Post,
-            resolvedAuthOptions.authUrl!,
-            headers,
-            body,
-            providedQsParams as Record<string, string>,
-            authUrlRequestCallback as RequestCallback
+          Utils.whenPromiseSettles(
+            this.client.http.doUri(
+              HttpMethods.Post,
+              resolvedAuthOptions.authUrl!,
+              headers,
+              body,
+              providedQsParams as Record<string, string>
+            ),
+            (err: any, result) =>
+              err
+                ? (authUrlRequestCallback as RequestCallback)(err) // doUri isn’t meant to throw an error, but handle any just in case
+                : (authUrlRequestCallback as RequestCallback)(
+                    result!.error,
+                    result!.body,
+                    result!.headers,
+                    result!.unpacked,
+                    result!.statusCode
+                  )
           );
         } else {
-          this.client.http.doUri(
-            HttpMethods.Get,
-            resolvedAuthOptions.authUrl!,
-            authHeaders || {},
-            null,
-            authParams,
-            authUrlRequestCallback as RequestCallback
+          Utils.whenPromiseSettles(
+            this.client.http.doUri(HttpMethods.Get, resolvedAuthOptions.authUrl!, authHeaders || {}, null, authParams),
+            (err: any, result) =>
+              err
+                ? (authUrlRequestCallback as RequestCallback)(err) // doUri isn’t meant to throw an error, but handle any just in case
+                : (authUrlRequestCallback as RequestCallback)(
+                    result!.error,
+                    result!.body,
+                    result!.headers,
+                    result!.unpacked,
+                    result!.statusCode
+                  )
           );
         }
       };
