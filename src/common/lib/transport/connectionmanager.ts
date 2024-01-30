@@ -1657,26 +1657,29 @@ class ConnectionManager extends EventEmitter {
         giveUp(new PartialErrorInfo('Internal error: Http.checkConnectivity not set', null, 500));
         return;
       }
-      this.realtime.http.checkConnectivity((err?: ErrorInfo | null, connectivity?: boolean) => {
-        if (connectCount !== this.connectCounter) {
-          return;
+      Utils.whenPromiseSettles(
+        this.realtime.http.checkConnectivity(),
+        (err?: ErrorInfo | null, connectivity?: boolean) => {
+          if (connectCount !== this.connectCounter) {
+            return;
+          }
+          /* we know err won't happen but handle it here anyway */
+          if (err) {
+            giveUp(err);
+            return;
+          }
+          if (!connectivity) {
+            /* the internet isn't reachable, so don't try the fallback hosts */
+            giveUp(new ErrorInfo('Unable to connect (network unreachable)', 80003, 404));
+            return;
+          }
+          /* the network is there, so there's a problem with the main host, or
+           * its dns. Try the fallback hosts. We could try them simultaneously but
+           * that would potentially cause a huge spike in load on the load balancer */
+          transportParams.host = Utils.arrPopRandomElement(candidateHosts);
+          this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
         }
-        /* we know err won't happen but handle it here anyway */
-        if (err) {
-          giveUp(err);
-          return;
-        }
-        if (!connectivity) {
-          /* the internet isn't reachable, so don't try the fallback hosts */
-          giveUp(new ErrorInfo('Unable to connect (network unreachable)', 80003, 404));
-          return;
-        }
-        /* the network is there, so there's a problem with the main host, or
-         * its dns. Try the fallback hosts. We could try them simultaneously but
-         * that would potentially cause a huge spike in load on the load balancer */
-        transportParams.host = Utils.arrPopRandomElement(candidateHosts);
-        this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
-      });
+      );
     };
 
     if (this.forceFallbackHost && candidateHosts.length) {

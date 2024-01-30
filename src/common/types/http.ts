@@ -3,7 +3,7 @@ import Platform from 'common/platform';
 import BaseRealtime from 'common/lib/client/baserealtime';
 import HttpMethods from '../constants/HttpMethods';
 import BaseClient from '../lib/client/baseclient';
-import ErrorInfo, { IPartialErrorInfo } from '../lib/types/errorinfo';
+import { IPartialErrorInfo } from '../lib/types/errorinfo';
 import Logger from 'common/lib/util/logger';
 import * as Utils from 'common/lib/util/utils';
 
@@ -112,14 +112,13 @@ function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, 
 
 export class Http {
   private readonly platformHttp: IPlatformHttp;
-  checkConnectivity?: (callback: (err?: ErrorInfo | null, connected?: boolean) => void) => void;
+  checkConnectivity?: () => Promise<boolean>;
 
   constructor(private readonly client?: BaseClient) {
     this.platformHttp = new Platform.Http(client);
 
     this.checkConnectivity = this.platformHttp.checkConnectivity
-      ? (callback: (err?: ErrorInfo | null, connected?: boolean) => void) =>
-          Utils.whenPromiseSettles(this.platformHttp.checkConnectivity!(), callback)
+      ? () => this.platformHttp.checkConnectivity!()
       : undefined;
   }
 
