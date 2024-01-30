@@ -10,7 +10,7 @@ import { IUntypedCryptoStatic } from '../common/types/ICryptoStatic';
 import TransportName from './constants/TransportName';
 import { VcdiffDecoder } from './lib/types/message';
 
-type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
+export type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
 type BufferUtilsOutput = WebBufferUtils.Output | NodeBufferUtils.Output;
 type ToBufferOutput = WebBufferUtils.ToBufferOutput | NodeBufferUtils.ToBufferOutput;
 
