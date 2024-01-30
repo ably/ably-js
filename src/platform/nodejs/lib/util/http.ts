@@ -141,29 +141,30 @@ const Http: IPlatformHttpStatic = class {
       });
   }
 
-  checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
+  checkConnectivity = async (): Promise<boolean> => {
     if (this.client?.options.disableConnectivityCheck) {
-      callback(null, true);
-      return;
+      return true;
     }
     const connectivityCheckUrl = this.client?.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
     const connectivityCheckParams = this.client?.options.connectivityCheckParams ?? null;
     const connectivityUrlIsDefault = !this.client?.options.connectivityCheckUrl;
 
-    this.doUri(
-      HttpMethods.Get,
-      connectivityCheckUrl,
-      null,
-      null,
-      connectivityCheckParams,
-      function (err, responseText, headers, unpacked, statusCode) {
-        if (!err && !connectivityUrlIsDefault) {
-          callback(null, isSuccessCode(statusCode as number));
-          return;
+    return new Promise((resolve) => {
+      this.doUri(
+        HttpMethods.Get,
+        connectivityCheckUrl,
+        null,
+        null,
+        connectivityCheckParams,
+        function (err, responseText, headers, unpacked, statusCode) {
+          if (!err && !connectivityUrlIsDefault) {
+            resolve(isSuccessCode(statusCode as number));
+            return;
+          }
+          resolve(!err && (responseText as Buffer | string)?.toString().trim() === 'yes');
         }
-        callback(null, !err && (responseText as Buffer | string)?.toString().trim() === 'yes');
-      }
-    );
+      );
+    });
   };
 
   shouldFallback(err: RequestCallbackError) {

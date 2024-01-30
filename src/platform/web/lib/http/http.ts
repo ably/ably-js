@@ -71,33 +71,35 @@ const Http = class {
         return req;
       };
       if (client?.options.disableConnectivityCheck) {
-        this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
-          callback(null, true);
+        this.checkConnectivity = async function () {
+          return true;
         };
       } else {
-        this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+        this.checkConnectivity = async function () {
           Logger.logAction(
             Logger.LOG_MICRO,
             '(XHRRequest)Http.checkConnectivity()',
             'Sending; ' + connectivityCheckUrl
           );
-          this.doUri(
-            HttpMethods.Get,
-            connectivityCheckUrl,
-            null,
-            null,
-            connectivityCheckParams,
-            function (err, responseText, headers, unpacked, statusCode) {
-              let result = false;
-              if (!connectivityUrlIsDefault) {
-                result = !err && isSuccessCode(statusCode as number);
-              } else {
-                result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+          return new Promise((resolve) => {
+            this.doUri(
+              HttpMethods.Get,
+              connectivityCheckUrl,
+              null,
+              null,
+              connectivityCheckParams,
+              function (err, responseText, headers, unpacked, statusCode) {
+                let result = false;
+                if (!connectivityUrlIsDefault) {
+                  result = !err && isSuccessCode(statusCode as number);
+                } else {
+                  result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+                }
+                Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+                resolve(result);
               }
-              Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-              callback(null, result);
-            }
-          );
+            );
+          });
         };
       }
     } else if (Platform.Config.fetchSupported && fetchRequestImplementation) {
@@ -105,12 +107,14 @@ const Http = class {
       this.Request = (method, uri, headers, params, body, callback) => {
         fetchRequestImplementation(method, client ?? null, uri, headers, params, body, callback);
       };
-      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+      this.checkConnectivity = async function () {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
-        this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null, function (err, responseText) {
-          const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-          Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
-          callback(null, result);
+        return new Promise((resolve) => {
+          this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null, function (err, responseText) {
+            const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
+            Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
+            resolve(result);
+          });
         });
       };
     } else {
@@ -147,7 +151,7 @@ const Http = class {
     callback: RequestCallback
   ) => void;
 
-  checkConnectivity?: (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) => void = undefined;
+  checkConnectivity?: () => Promise<boolean> = undefined;
 
   supportsAuthHeaders = false;
   supportsLinkHeaders = false;

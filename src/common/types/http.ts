@@ -42,7 +42,7 @@ export interface IPlatformHttp {
     params: RequestParams,
     callback?: RequestCallback
   ): void;
-  checkConnectivity?: (callback: (err?: ErrorInfo | null, connected?: boolean) => void) => void;
+  checkConnectivity?: () => Promise<boolean>;
 
   /**
    * @param error An error returned by {@link doUri}’s callback.
@@ -119,7 +119,7 @@ export class Http {
 
     this.checkConnectivity = this.platformHttp.checkConnectivity
       ? (callback: (err?: ErrorInfo | null, connected?: boolean) => void) =>
-          this.platformHttp.checkConnectivity!(callback)
+          Utils.whenPromiseSettles(this.platformHttp.checkConnectivity!(), callback)
       : undefined;
   }
 
