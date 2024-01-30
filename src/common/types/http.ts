@@ -8,16 +8,16 @@ import Logger from 'common/lib/util/logger';
 import * as Utils from 'common/lib/util/utils';
 
 export type PathParameter = string | ((host: string) => string);
-export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
-export type RequestCallbackError = ErrnoException | IPartialErrorInfo;
+export type ResponseHeaders = Partial<Record<string, string | string[]>>;
+export type RequestResultError = ErrnoException | IPartialErrorInfo;
 
 /**
  * The `body`, `headers`, `unpacked`, and `statusCode` properties of a `RequestResult` may be populated even if its `error` property is non-null.
  */
 export type RequestResult = {
-  error: RequestCallbackError | null;
+  error: RequestResultError | null;
   body?: unknown;
-  headers?: RequestCallbackHeaders;
+  headers?: ResponseHeaders;
   unpacked?: boolean;
   statusCode?: number;
 };
@@ -55,7 +55,7 @@ export interface IPlatformHttp {
   /**
    * @param error An error from the {@link RequestResult.error} property of a result returned by {@link doUri}.
    */
-  shouldFallback(error: RequestCallbackError): boolean;
+  shouldFallback(error: RequestResultError): boolean;
 }
 
 export function paramString(params: Record<string, any> | null) {

@@ -1,13 +1,7 @@
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import {
-  RequestBody,
-  RequestCallbackError,
-  RequestCallbackHeaders,
-  RequestParams,
-  RequestResult,
-} from 'common/types/http';
+import { RequestBody, RequestResultError, ResponseHeaders, RequestParams, RequestResult } from 'common/types/http';
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import * as Utils from 'common/lib/util/utils';
@@ -23,7 +17,7 @@ function getAblyError(responseBody: unknown, headers: Headers) {
 }
 
 function convertHeaders(headers: Headers) {
-  const result: RequestCallbackHeaders = {};
+  const result: ResponseHeaders = {};
 
   headers.forEach((value, key) => {
     result[key] = value;
@@ -100,7 +94,7 @@ export default async function fetchRequest(
       }
     } catch (error) {
       clearTimeout(timeout!);
-      return { error: error as RequestCallbackError };
+      return { error: error as RequestResultError };
     }
   })();
 

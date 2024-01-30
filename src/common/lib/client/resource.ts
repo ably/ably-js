@@ -6,16 +6,11 @@ import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
-import {
-  RequestBody,
-  RequestCallbackHeaders,
-  appendingParams as urlFromPathAndParams,
-  paramString,
-} from 'common/types/http';
+import { RequestBody, ResponseHeaders, appendingParams as urlFromPathAndParams, paramString } from 'common/types/http';
 
 async function withAuthDetails<T>(
   client: BaseClient,
-  headers: RequestCallbackHeaders | undefined,
+  headers: ResponseHeaders | undefined,
   params: Record<string, any>,
   opCallback: Function
 ): Promise<ResourceResult<T>> {
@@ -102,7 +97,7 @@ function logResult<T>(result: ResourceResult<T>, method: HttpMethods, path: stri
 
 export interface ResourceResponse<T> {
   body?: T;
-  headers?: RequestCallbackHeaders;
+  headers?: ResponseHeaders;
   unpacked?: boolean;
   statusCode?: number;
 }
