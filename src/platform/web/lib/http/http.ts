@@ -1,7 +1,7 @@
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestBody, RequestCallbackError, RequestParams, RequestResult } from 'common/types/http';
+import { RequestBody, RequestResultError, RequestParams, RequestResult } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import XHRStates from 'common/constants/XHRStates';
@@ -158,7 +158,7 @@ const Http = class {
   supportsAuthHeaders = false;
   supportsLinkHeaders = false;
 
-  shouldFallback(errorInfo: RequestCallbackError) {
+  shouldFallback(errorInfo: RequestResultError) {
     const statusCode = errorInfo.statusCode as number;
     /* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
      * detail to know whether it's fallback-fixable, but it may be (eg if a

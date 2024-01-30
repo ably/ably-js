@@ -2,7 +2,7 @@ import Logger from '../util/logger';
 import * as Utils from '../util/utils';
 import Multicaster, { MulticasterInstance } from '../util/multicaster';
 import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
-import { RequestCallbackError, RequestParams, RequestResult } from '../../types/http';
+import { RequestResultError, RequestParams, RequestResult } from '../../types/http';
 import * as API from '../../../../ably';
 import BaseClient from './baseclient';
 import BaseRealtime from './baserealtime';
@@ -395,7 +395,7 @@ class Auth {
     let tokenRequestCallback: (
         data: API.TokenParams,
         callback: (
-          error: API.ErrorInfo | RequestCallbackError | string | null,
+          error: API.ErrorInfo | RequestResultError | string | null,
           tokenRequestOrDetails: API.TokenDetails | API.TokenRequest | string | null,
           contentType?: string
         ) => void
@@ -566,7 +566,7 @@ class Auth {
 
     const tokenRequest = (
       signedTokenParams: Record<string, any>,
-      tokenCb: (err: RequestCallbackError | null, tokenResponse?: API.TokenDetails | string, unpacked?: boolean) => void
+      tokenCb: (err: RequestResultError | null, tokenResponse?: API.TokenDetails | string, unpacked?: boolean) => void
     ) => {
       const keyName = signedTokenParams.keyName,
         path = '/keys/' + keyName + '/requestToken',

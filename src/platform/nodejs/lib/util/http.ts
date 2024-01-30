@@ -5,7 +5,7 @@ import {
   ErrnoException,
   RequestBody,
   IPlatformHttpStatic,
-  RequestCallbackError,
+  RequestResultError,
   RequestParams,
   RequestResult,
 } from '../../../../common/types/http';
@@ -158,7 +158,7 @@ const Http: IPlatformHttpStatic = class {
     return !error && (body as Buffer | string)?.toString().trim() === 'yes';
   };
 
-  shouldFallback(err: RequestCallbackError) {
+  shouldFallback(err: RequestResultError) {
     const { code, statusCode } = err as ErrnoException;
     return (
       code === 'ENETUNREACH' ||
