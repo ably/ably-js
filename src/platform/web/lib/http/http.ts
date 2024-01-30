@@ -1,7 +1,7 @@
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestBody, RequestCallback, RequestCallbackError, RequestParams } from 'common/types/http';
+import { RequestBody, RequestCallback, RequestCallbackError, RequestParams, RequestResult } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import XHRStates from 'common/constants/XHRStates';
@@ -81,25 +81,24 @@ const Http = class {
             '(XHRRequest)Http.checkConnectivity()',
             'Sending; ' + connectivityCheckUrl
           );
-          return new Promise((resolve) => {
-            this.doUri(
-              HttpMethods.Get,
-              connectivityCheckUrl,
-              null,
-              null,
-              connectivityCheckParams,
-              function (err, responseText, headers, unpacked, statusCode) {
-                let result = false;
-                if (!connectivityUrlIsDefault) {
-                  result = !err && isSuccessCode(statusCode as number);
-                } else {
-                  result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-                }
-                Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-                resolve(result);
-              }
-            );
-          });
+
+          const requestResult = await this.doUri(
+            HttpMethods.Get,
+            connectivityCheckUrl,
+            null,
+            null,
+            connectivityCheckParams
+          );
+
+          let result = false;
+          if (!connectivityUrlIsDefault) {
+            result = !requestResult.error && isSuccessCode(requestResult.statusCode as number);
+          } else {
+            result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
+          }
+
+          Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+          return result;
         };
       }
     } else if (Platform.Config.fetchSupported && fetchRequestImplementation) {
@@ -109,13 +108,10 @@ const Http = class {
       };
       this.checkConnectivity = async function () {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
-        return new Promise((resolve) => {
-          this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null, function (err, responseText) {
-            const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-            Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
-            resolve(result);
-          });
-        });
+        const requestResult = await this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null);
+        const result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
+        Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
+        return result;
       };
     } else {
       this.Request = (method, uri, headers, params, body, callback) => {
@@ -127,19 +123,21 @@ const Http = class {
     }
   }
 
-  doUri(
+  async doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
+    params: RequestParams
+  ): Promise<RequestResult> {
     if (!this.Request) {
-      callback(new PartialErrorInfo('Request invoked before assigned to', null, 500));
-      return;
+      return { error: new PartialErrorInfo('Request invoked before assigned to', null, 500) };
     }
-    this.Request(method, uri, headers, params, body, callback);
+    return new Promise((resolve) => {
+      this.Request!(method, uri, headers, params, body, (error, resBody, resHeaders, unpacked, statusCode) =>
+        resolve({ error, body: resBody, headers: resHeaders, unpacked, statusCode })
+      );
+    });
   }
 
   private Request?: (

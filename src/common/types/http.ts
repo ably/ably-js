@@ -17,6 +17,18 @@ export type RequestCallback = (
   unpacked?: boolean,
   statusCode?: number
 ) => void;
+
+/**
+ * The `body`, `headers`, `unpacked`, and `statusCode` properties of a `RequestResult` may be populated even if its `error` property is non-null.
+ */
+export type RequestResult = {
+  error: RequestCallbackError | null;
+  body?: unknown;
+  headers?: RequestCallbackHeaders;
+  unpacked?: boolean;
+  statusCode?: number;
+};
+
 export type RequestParams = Record<string, string> | null;
 export type RequestBody =
   | Buffer // only on Node
@@ -34,18 +46,21 @@ export interface IPlatformHttp {
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
 
+  /**
+   * This method should not throw any errors; rather, it should communicate any error by populating the {@link RequestResult.error} property of the returned {@link RequestResult}.
+   */
   doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback?: RequestCallback
-  ): void;
+    params: RequestParams
+  ): Promise<RequestResult>;
+
   checkConnectivity?: () => Promise<boolean>;
 
   /**
-   * @param error An error returned by {@link doUri}’s callback.
+   * @param error An error from the {@link RequestResult.error} property of a result returned by {@link doUri}.
    */
   shouldFallback(error: RequestCallbackError): boolean;
 }
@@ -227,7 +242,11 @@ export class Http {
       callback = logResponseHandler(callback, method, uri, params);
     }
 
-    this.platformHttp.doUri(method, uri, headers, body, params, callback);
+    Utils.whenPromiseSettles(this.platformHttp.doUri(method, uri, headers, body, params), (err: any, result) =>
+      err
+        ? callback?.(err) // doUri isn’t meant to throw an error, but handle any just in case
+        : callback?.(result!.error, result!.body, result!.headers, result!.unpacked, result!.statusCode)
+    );
   }
 }
 
