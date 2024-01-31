@@ -533,7 +533,7 @@ class ConnectionManager extends EventEmitter {
           ) {
             this.errorReason = wrappedErr.error;
             /* re-get a token and try again */
-            this.realtime.auth._forceNewToken(null, null, (err: ErrorInfo) => {
+            Utils.whenPromiseSettles(this.realtime.auth._forceNewToken(null, null), (err: ErrorInfo | null) => {
               if (err) {
                 this.actOnErrorFromAuthorize(err);
                 return;
@@ -1504,9 +1504,9 @@ class ConnectionManager extends EventEmitter {
       };
       if (this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo)) {
         /* Force a refetch of a new token */
-        auth._forceNewToken(null, null, authCb);
+        Utils.whenPromiseSettles(auth._forceNewToken(null, null), authCb);
       } else {
-        auth._ensureValidAuthCredentials(false, authCb);
+        Utils.whenPromiseSettles(auth._ensureValidAuthCredentials(false), authCb);
       }
     }
   }
@@ -1951,10 +1951,10 @@ class ConnectionManager extends EventEmitter {
      * the dup, they'll be lost */
     if (lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
       if (!lastQueued.merged) {
-        lastQueued.callback = Multicaster.create([lastQueued.callback as any]);
+        lastQueued.callback = Multicaster.create([lastQueued.callback]);
         lastQueued.merged = true;
       }
-      (lastQueued.callback as MulticasterInstance).push(callback as any);
+      (lastQueued.callback as MulticasterInstance<void>).push(callback);
     } else {
       this.queuedMessages.push(new PendingMessage(msg, callback));
     }

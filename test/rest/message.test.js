@@ -24,11 +24,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = rest.channels.get('rest_implicit_client_id_0');
 
       var originalPublish = channel._publish;
-      channel._publish = function (requestBody) {
+      channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
         expect(!message.clientId, 'client ID is not added by the client library as it is implicit').to.be.ok;
-        originalPublish.apply(channel, arguments);
+        return originalPublish.apply(channel, arguments);
       };
 
       await channel.publish('event0', null);
@@ -46,14 +46,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = rest.channels.get('rest_explicit_client_id_0');
 
       var originalPublish = channel._publish;
-      channel._publish = function (requestBody) {
+      channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
         expect(
           message.clientId == clientId,
           'client ID is added by the client library as it is explicit in the publish'
         ).to.be.ok;
-        originalPublish.apply(channel, arguments);
+        return originalPublish.apply(channel, arguments);
       };
 
       await channel.publish({ name: 'event0', clientId: clientId });
@@ -76,14 +76,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = rest.channels.get('rest_explicit_client_id_1');
 
       var originalPublish = channel._publish;
-      channel._publish = function (requestBody) {
+      channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
         expect(
           message.clientId == invalidClientId,
           'invalid client ID is added by the client library as it is explicit in the publish'
         ).to.be.ok;
-        originalPublish.apply(channel, arguments);
+        return originalPublish.apply(channel, arguments);
       };
 
       try {
@@ -143,7 +143,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         originalPublish = channel._publish,
         originalDoUri = Ably.Realtime._Http.doUri;
 
-      channel._publish = function (requestBody) {
+      channel._publish = async function (requestBody) {
         var messageOne = JSON.parse(requestBody)[0];
         var messageTwo = JSON.parse(requestBody)[1];
         expect(messageOne.name).to.equal('one', 'Outgoing message 1 interecepted');
@@ -154,7 +154,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         expect(idTwo, 'id set on message 2').to.be.ok;
         expect(idOne && idOne.split(':')[1]).to.equal('0', 'check zero-based index');
         expect(idTwo && idTwo.split(':')[1]).to.equal('1', 'check zero-based index');
-        originalPublish.apply(channel, arguments);
+        return originalPublish.apply(channel, arguments);
       };
 
       Ably.Rest._Http.doUri = function (method, uri, headers, body, params, callback) {
@@ -186,9 +186,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var originalPublish = channel._publish;
 
       /* Stub out _publish to check params */
-      channel._publish = function (requestBody, headers, params) {
+      channel._publish = async function (requestBody, headers, params) {
         expect(params && params.testParam).to.equal('testParamValue');
-        originalPublish.apply(channel, arguments);
+        return originalPublish.apply(channel, arguments);
       };
 
       await channel.publish('foo', 'bar', { testParam: 'testParamValue' });

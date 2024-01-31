@@ -1,4 +1,3 @@
-import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import ConnectionManager from '../transport/connectionmanager';
 import Logger from '../util/logger';
@@ -53,12 +52,11 @@ class Connection extends EventEmitter {
     this.connectionManager.requestState({ state: 'connecting' });
   }
 
-  ping(callback: Function): Promise<void> | void {
+  async ping(): Promise<number> {
     Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
-    if (!callback) {
-      return Utils.promisify(this, 'ping', arguments);
-    }
-    this.connectionManager.ping(null, callback);
+    return new Promise((resolve, reject) => {
+      this.connectionManager.ping(null, (err: unknown, result: number) => (err ? reject(err) : resolve(result)));
+    });
   }
 
   close(): void {

@@ -444,12 +444,20 @@ export const trim = (String.prototype.trim as unknown)
       return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
     };
 
-export function promisify<T>(ob: Record<string, any>, fnName: string, args: IArguments | unknown[]): Promise<T> {
-  return new Promise(function (resolve, reject) {
-    ob[fnName](...(args as unknown[]), function (err: Error, res: unknown) {
-      err ? reject(err) : resolve(res as T);
+/**
+ * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
+ */
+export function whenPromiseSettles<T, E = unknown>(
+  promise: Promise<T>,
+  callback?: (err: E | null, result?: T) => void
+) {
+  promise
+    .then((result) => {
+      callback?.(null, result);
+    })
+    .catch((err) => {
+      callback?.(err);
     });
-  });
 }
 
 export function decodeBody<T>(body: unknown, MsgPack: MsgPack | null, format?: Format | null): T {

@@ -27,24 +27,20 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
   /**
    * Internal: generate an array of secure random data corresponding to the given length of bytes
    * @param bytes
-   * @param callback
    */
-  var generateRandom: (byteLength: number, callback: (error: Error | null, result: ArrayBuffer | null) => void) => void;
+  var generateRandom: (byteLength: number) => Promise<ArrayBuffer>;
   if (config.getRandomArrayBuffer) {
     generateRandom = config.getRandomArrayBuffer;
   } else if (typeof Uint32Array !== 'undefined' && config.getRandomValues) {
-    generateRandom = function (bytes, callback) {
+    generateRandom = async function (bytes) {
       var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
       var words = bytes / 4,
         nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
-      config.getRandomValues!(nativeArray, function (err) {
-        if (typeof callback !== 'undefined') {
-          callback(err, bufferUtils.toArrayBuffer(nativeArray));
-        }
-      });
+      await config.getRandomValues!(nativeArray);
+      return bufferUtils.toArrayBuffer(nativeArray);
     };
   } else {
-    generateRandom = function (bytes, callback) {
+    generateRandom = async function (bytes) {
       Logger.logAction(
         Logger.LOG_MAJOR,
         'Ably.Crypto.generateRandom()',
@@ -56,7 +52,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
         array[i] = Math.floor(Math.random() * UINT32_SUP);
       }
 
-      callback(null, bufferUtils.toArrayBuffer(array));
+      return bufferUtils.toArrayBuffer(array);
     };
   }
 
@@ -181,16 +177,11 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
      * @param keyLength (optional) the required keyLength in bits
      */
     static async generateRandomKey(keyLength?: number): Promise<API.CipherKey> {
-      return new Promise((resolve, reject) => {
-        generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8, function (err, buf) {
-          if (err) {
-            const errorInfo = new ErrorInfo('Failed to generate random key: ' + err.message, 400, 50000, err);
-            reject(errorInfo);
-          } else {
-            resolve(buf!);
-          }
-        });
-      });
+      try {
+        return await generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8);
+      } catch (err) {
+        throw new ErrorInfo('Failed to generate random key: ' + (err as Error).message, 400, 50000, err as Error);
+      }
     }
 
     /**
@@ -252,33 +243,14 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
       return output;
     }
 
-    encrypt(plaintext: InputPlaintext, callback: (error: Error | null, data: OutputCiphertext | null) => void) {
+    async encrypt(plaintext: InputPlaintext): Promise<OutputCiphertext> {
       Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 
-      const encryptAsync = async () => {
-        const iv = await new Promise((resolve: (iv: IV) => void, reject: (error: Error) => void) => {
-          this.getIv((error, iv) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(iv!);
-            }
-          });
-        });
+      const iv = await this.getIv();
+      const cryptoKey = await crypto.subtle.importKey('raw', this.key, this.webCryptoAlgorithm, false, ['encrypt']);
+      const ciphertext = await crypto.subtle.encrypt({ name: this.webCryptoAlgorithm, iv }, cryptoKey, plaintext);
 
-        const cryptoKey = await crypto.subtle.importKey('raw', this.key, this.webCryptoAlgorithm, false, ['encrypt']);
-        const ciphertext = await crypto.subtle.encrypt({ name: this.webCryptoAlgorithm, iv }, cryptoKey, plaintext);
-
-        return this.concat(iv, ciphertext);
-      };
-
-      encryptAsync()
-        .then((ciphertext) => {
-          callback(null, ciphertext);
-        })
-        .catch((error) => {
-          callback(error, null);
-        });
+      return this.concat(iv, ciphertext);
     }
 
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
@@ -292,21 +264,15 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
       return crypto.subtle.decrypt({ name: this.webCryptoAlgorithm, iv }, cryptoKey, ciphertextBody);
     }
 
-    getIv(callback: (error: Error | null, iv: ArrayBuffer | null) => void) {
+    async getIv(): Promise<ArrayBuffer> {
       if (this.iv) {
         var iv = this.iv;
         this.iv = null;
-        callback(null, iv);
-        return;
+        return iv;
       }
 
-      generateRandom(DEFAULT_BLOCKLENGTH, function (err, randomBlock) {
-        if (err) {
-          callback(err, null);
-          return;
-        }
-        callback(null, bufferUtils.toArrayBuffer(randomBlock!));
-      });
+      const randomBlock = await generateRandom(DEFAULT_BLOCKLENGTH);
+      return bufferUtils.toArrayBuffer(randomBlock);
     }
   }
 

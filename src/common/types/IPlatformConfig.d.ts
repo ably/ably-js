@@ -23,7 +23,7 @@ export interface ICommonPlatformConfig {
  */
 export interface ISpecificPlatformConfig {
   addEventListener?: typeof window.addEventListener | typeof global.addEventListener | null;
-  getRandomValues?: (arr: ArrayBufferView, callback?: (error: Error | null) => void) => void;
+  getRandomValues?: (arr: ArrayBufferView) => Promise<void>;
   userAgent?: string | null;
   inherits?: typeof import('util').inherits;
   currentUrl?: string;
@@ -36,10 +36,7 @@ export interface ISpecificPlatformConfig {
   atob?: typeof atob | null;
   TextEncoder?: typeof TextEncoder;
   TextDecoder?: typeof TextDecoder;
-  getRandomArrayBuffer?: (
-    byteLength: number,
-    callback: (err: Error | null, result: ArrayBuffer | null) => void
-  ) => void;
+  getRandomArrayBuffer?: (byteLength: number) => Promise<ArrayBuffer>;
   isWebworker?: boolean;
 }
 

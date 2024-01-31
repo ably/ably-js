@@ -45,13 +45,10 @@ var Config = {
   },
   TextEncoder: global.TextEncoder,
   TextDecoder: global.TextDecoder,
-  getRandomValues: function (arr, callback) {
+  getRandomValues: async function (arr) {
     var bytes = randomBytes(arr.length);
     for (var i = 0; i < arr.length; i++) {
       arr[i] = bytes[i];
-    }
-    if (callback) {
-      callback(null);
     }
   },
 };

@@ -101,7 +101,7 @@ export async function fromEncodedArray(
   );
 }
 
-function encrypt(msg: Message | PresenceMessage, options: CipherOptions, callback: Function) {
+async function encrypt<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
   let data = msg.data,
     encoding = msg.encoding,
     cipher = options.channelCipher;
@@ -111,18 +111,13 @@ function encrypt(msg: Message | PresenceMessage, options: CipherOptions, callbac
     data = Platform.BufferUtils.utf8Encode(String(data));
     encoding = encoding + 'utf-8/';
   }
-  cipher.encrypt(data, function (err: Error, data: unknown) {
-    if (err) {
-      callback(err);
-      return;
-    }
-    msg.data = data;
-    msg.encoding = encoding + 'cipher+' + cipher.algorithm;
-    callback(null, msg);
-  });
+  const ciphertext = await cipher.encrypt(data);
+  msg.data = ciphertext;
+  msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+  return msg;
 }
 
-export function encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function): void {
+export async function encode<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
   const data = msg.data;
   const nativeDataType =
     typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
@@ -137,26 +132,14 @@ export function encode(msg: Message | PresenceMessage, options: CipherOptions, c
   }
 
   if (options != null && options.cipher) {
-    encrypt(msg, options, callback);
+    return encrypt(msg, options);
   } else {
-    callback(null, msg);
+    return msg;
   }
 }
 
-export function encodeArray(messages: Array<Message>, options: CipherOptions, callback: Function): void {
-  let processed = 0;
-  for (let i = 0; i < messages.length; i++) {
-    encode(messages[i], options, function (err: Error) {
-      if (err) {
-        callback(err);
-        return;
-      }
-      processed++;
-      if (processed == messages.length) {
-        callback(null, messages);
-      }
-    });
-  }
+export async function encodeArray(messages: Array<Message>, options: CipherOptions): Promise<Array<Message>> {
+  return Promise.all(messages.map((message) => encode(message, options)));
 }
 
 export const serialize = Utils.encodeBody;

@@ -686,7 +686,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             async.series(
               [
                 function (cb) {
-                  channel.attach(cb);
+                  whenPromiseSettles(channel.attach(), cb);
                 },
                 function (cb) {
                   var channelUpdated = false;
@@ -1100,13 +1100,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         realtime.connection.on('connected', function () {
           channelByEvent = realtime.channels.get('channelsubscribe1-event');
-          channelByEvent.subscribe('event', listenerByEvent, function () {
+          whenPromiseSettles(channelByEvent.subscribe('event', listenerByEvent), function () {
             channelByEvent.publish('event', 'data');
             channelByListener = realtime.channels.get('channelsubscribe1-listener');
-            channelByListener.subscribe(null, listenerNoEvent, function () {
+            whenPromiseSettles(channelByListener.subscribe(null, listenerNoEvent), function () {
               channelByListener.publish(null, 'data');
               channelAll = realtime.channels.get('channelsubscribe1-all');
-              channelAll.subscribe(listenerAllEvents, function () {
+              whenPromiseSettles(channelAll.subscribe(listenerAllEvents), function () {
                 channelAll.publish(null, 'data');
               });
             });
@@ -1535,7 +1535,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime = helper.AblyRealtime();
       var channelName = 'attach_returns_state_chnage';
       var channel = realtime.channels.get(channelName);
-      channel.attach(function (err, stateChange) {
+      whenPromiseSettles(channel.attach(), function (err, stateChange) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -1550,7 +1550,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
 
         // for an already-attached channel, null is returned
-        channel.attach(function (err, stateChange) {
+        whenPromiseSettles(channel.attach(), function (err, stateChange) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -1571,9 +1571,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime = helper.AblyRealtime();
       var channelName = 'subscribe_returns_state_chnage';
       var channel = realtime.channels.get(channelName);
-      channel.subscribe(
-        function () {}, // message listener
-        // attach callback
+      whenPromiseSettles(
+        channel.subscribe(
+          function () {} // message listener
+        ),
         function (err, stateChange) {
           if (err) {
             closeAndFinish(done, realtime, err);
@@ -1599,7 +1600,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var channel = realtime.channels.get(channelName, channelOpts);
 
       // attach with rewind but no channel history - hasBacklog should be false
-      channel.attach(function (err, stateChange) {
+      whenPromiseSettles(channel.attach(), function (err, stateChange) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -1624,12 +1625,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var restChannel = rest.channels.get(channelName);
 
       // attach with rewind after publishing - hasBacklog should be true
-      restChannel.publish('foo', 'bar', function (err) {
+      whenPromiseSettles(restChannel.publish('foo', 'bar'), function (err) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
         }
-        rtChannel.attach(function (err, stateChange) {
+        whenPromiseSettles(rtChannel.attach(), function (err, stateChange) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;

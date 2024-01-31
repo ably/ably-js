@@ -29,8 +29,8 @@ export class DefaultMessage extends Message {
   }
 
   // Used by tests
-  static encode(msg: Message | PresenceMessage, options: CipherOptions, callback: Function): void {
-    encode(msg, options, callback);
+  static async encode<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
+    return encode(msg, options);
   }
 
   // Used by tests

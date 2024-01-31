@@ -12,182 +12,280 @@ import {
   appendingParams as urlFromPathAndParams,
   paramString,
 } from 'common/types/http';
+import { ErrnoException } from '../../types/http';
 
-function withAuthDetails(
+async function withAuthDetails<T>(
   client: BaseClient,
   headers: RequestCallbackHeaders | undefined,
   params: Record<string, any>,
-  errCallback: Function,
   opCallback: Function
-) {
+): Promise<ResourceResult<T>> {
   if (client.http.supportsAuthHeaders) {
-    client.auth.getAuthHeaders(function (err: Error, authHeaders: Record<string, string>) {
-      if (err) errCallback(err);
-      else opCallback(Utils.mixin(authHeaders, headers), params);
-    });
+    const authHeaders = await client.auth.getAuthHeaders();
+    return opCallback(Utils.mixin(authHeaders!, headers), params);
   } else {
-    client.auth.getAuthParams(function (err: Error, authParams: Record<string, string>) {
-      if (err) errCallback(err);
-      else opCallback(headers, Utils.mixin(authParams, params));
-    });
+    const authParams = await client.auth.getAuthParams();
+    return opCallback(headers, Utils.mixin(authParams!, params));
   }
 }
 
 function unenvelope<T>(
-  callback: ResourceCallback<T>,
+  result: ResourceResult<T>,
   MsgPack: MsgPack | null,
   format: Utils.Format | null
-): ResourceCallback<T> {
-  return (err, body, outerHeaders, unpacked, outerStatusCode) => {
-    if (err && !body) {
-      callback(err);
-      return;
-    }
+): ResourceResult<T> {
+  if (result.err && !result.body) {
+    return { err: result.err };
+  }
 
-    if (!unpacked) {
-      try {
-        body = Utils.decodeBody(body, MsgPack, format);
-      } catch (e) {
-        if (Utils.isErrorInfoOrPartialErrorInfo(e)) {
-          callback(e);
-        } else {
-          callback(new PartialErrorInfo(Utils.inspectError(e), null));
-        }
-        return;
+  let body = result.body;
+
+  if (!result.unpacked) {
+    try {
+      body = Utils.decodeBody(body, MsgPack, format);
+    } catch (e) {
+      if (Utils.isErrorInfoOrPartialErrorInfo(e)) {
+        return { err: e };
+      } else {
+        return { err: new PartialErrorInfo(Utils.inspectError(e), null) };
       }
     }
+  }
 
-    if (!body) {
-      callback(new PartialErrorInfo('unenvelope(): Response body is missing', null));
-      return;
+  if (!body) {
+    return { err: new PartialErrorInfo('unenvelope(): Response body is missing', null) };
+  }
+
+  const { statusCode: wrappedStatusCode, response, headers: wrappedHeaders } = body as Record<string, any>;
+
+  if (wrappedStatusCode === undefined) {
+    /* Envelope already unwrapped by the transport */
+    return { ...result, body, unpacked: true };
+  }
+
+  if (wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
+    /* handle wrapped errors */
+    let wrappedErr = (response && response.error) || result.err;
+    if (!wrappedErr) {
+      wrappedErr = new Error('Error in unenveloping ' + body);
+      wrappedErr.statusCode = wrappedStatusCode;
     }
+    return { err: wrappedErr, body: response, headers: wrappedHeaders, unpacked: true, statusCode: wrappedStatusCode };
+  }
 
-    const { statusCode: wrappedStatusCode, response, headers: wrappedHeaders } = body as Record<string, any>;
-
-    if (wrappedStatusCode === undefined) {
-      /* Envelope already unwrapped by the transport */
-      callback(err, body, outerHeaders, true, outerStatusCode);
-      return;
-    }
-
-    if (wrappedStatusCode < 200 || wrappedStatusCode >= 300) {
-      /* handle wrapped errors */
-      let wrappedErr = (response && response.error) || err;
-      if (!wrappedErr) {
-        wrappedErr = new Error('Error in unenveloping ' + body);
-        wrappedErr.statusCode = wrappedStatusCode;
-      }
-      callback(wrappedErr, response, wrappedHeaders, true, wrappedStatusCode);
-      return;
-    }
-
-    callback(err, response, wrappedHeaders, true, wrappedStatusCode);
-  };
+  return { err: result.err, body: response, headers: wrappedHeaders, unpacked: true, statusCode: wrappedStatusCode };
 }
 
-function logResponseHandler<T>(
-  callback: ResourceCallback<T>,
-  method: HttpMethods,
-  path: string,
-  params: Record<string, string>
-): ResourceCallback {
-  return (err, body, headers, unpacked, statusCode) => {
-    if (err) {
-      Logger.logAction(
-        Logger.LOG_MICRO,
-        'Resource.' + method + '()',
-        'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(err)
-      );
-    } else {
-      Logger.logAction(
-        Logger.LOG_MICRO,
-        'Resource.' + method + '()',
-        'Received; ' +
-          urlFromPathAndParams(path, params) +
-          '; Headers: ' +
-          paramString(headers as Record<string, any>) +
-          '; StatusCode: ' +
-          statusCode +
-          '; Body' +
-          (Platform.BufferUtils.isBuffer(body)
-            ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body)
-            : ': ' + Platform.Config.inspect(body))
-      );
-    }
-    if (callback) {
-      callback(err, body as T, headers, unpacked, statusCode);
-    }
-  };
+function logResult<T>(result: ResourceResult<T>, method: HttpMethods, path: string, params: Record<string, string>) {
+  if (result.err) {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'Resource.' + method + '()',
+      'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(result.err)
+    );
+  } else {
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'Resource.' + method + '()',
+      'Received; ' +
+        urlFromPathAndParams(path, params) +
+        '; Headers: ' +
+        paramString(result.headers as Record<string, any>) +
+        '; StatusCode: ' +
+        result.statusCode +
+        '; Body: ' +
+        (Platform.BufferUtils.isBuffer(result.body)
+          ? ' (Base64): ' + Platform.BufferUtils.base64Encode(result.body)
+          : ': ' + Platform.Config.inspect(result.body))
+    );
+  }
 }
 
-export type ResourceCallback<T = unknown> = (
-  err: IPartialErrorInfo | null,
-  body?: T,
-  headers?: RequestCallbackHeaders,
-  unpacked?: boolean,
-  statusCode?: number
-) => void;
+export interface ResourceResponse<T> {
+  body?: T;
+  headers?: RequestCallbackHeaders;
+  unpacked?: boolean;
+  statusCode?: number;
+}
+
+export interface ResourceResult<T> extends ResourceResponse<T> {
+  /**
+   * Any error returned by the underlying HTTP client.
+   */
+  err: IPartialErrorInfo | null;
+}
 
 class Resource {
-  static get<T = unknown>(
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async get<T = unknown>(
     client: BaseClient,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback<T>
-  ): void {
-    Resource.do(HttpMethods.Get, client, path, null, headers, params, envelope, callback);
-  }
-
-  static delete(
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async get<T = unknown>(
     client: BaseClient,
     path: string,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
-  ): void {
-    Resource.do(HttpMethods.Delete, client, path, null, headers, params, envelope, callback);
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async get<T = unknown>(
+    client: BaseClient,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Get, client, path, null, headers, params, envelope, throwError ?? false);
   }
 
-  static post(
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async delete<T = unknown>(
+    client: BaseClient,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async delete<T = unknown>(
+    client: BaseClient,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async delete<T = unknown>(
+    client: BaseClient,
+    path: string,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Delete, client, path, null, headers, params, envelope, throwError);
+  }
+
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async post<T = unknown>(
     client: BaseClient,
     path: string,
     body: RequestBody | null,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
-  ): void {
-    Resource.do(HttpMethods.Post, client, path, body, headers, params, envelope, callback);
-  }
-
-  static patch(
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async post<T = unknown>(
     client: BaseClient,
     path: string,
     body: RequestBody | null,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
-  ): void {
-    Resource.do(HttpMethods.Patch, client, path, body, headers, params, envelope, callback);
-  }
-
-  static put(
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async post<T = unknown>(
     client: BaseClient,
     path: string,
     body: RequestBody | null,
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback
-  ): void {
-    Resource.do(HttpMethods.Put, client, path, body, headers, params, envelope, callback);
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Post, client, path, body, headers, params, envelope, throwError);
   }
 
-  static do<T>(
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async patch<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: RequestBody | null,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async patch<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: RequestBody | null,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async patch<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: RequestBody | null,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Patch, client, path, body, headers, params, envelope, throwError);
+  }
+
+  /**
+   * @param throwError Whether to throw any error returned by the underlying HTTP client.
+   *
+   * If you specify `true`, then this method will return a `ResourceResponse<T>`, and if the underlying HTTP client returns an error, this method call will throw that error. If you specify `false`, then it will return a `ResourceResult<T>`, whose `err` property contains any error that was returned by the underlying HTTP client.
+   */
+  static async put<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: RequestBody | null,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: true
+  ): Promise<ResourceResponse<T>>;
+  static async put<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: RequestBody | null,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: false
+  ): Promise<ResourceResult<T>>;
+  static async put<T = unknown>(
+    client: BaseClient,
+    path: string,
+    body: RequestBody | null,
+    headers: Record<string, string>,
+    params: Record<string, any>,
+    envelope: Utils.Format | null,
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
+    return Resource.do(HttpMethods.Put, client, path, body, headers, params, envelope, throwError);
+  }
+
+  static async do<T>(
     method: HttpMethods,
     client: BaseClient,
     path: string,
@@ -195,18 +293,17 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    callback: ResourceCallback<T>
-  ): void {
-    if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      callback = logResponseHandler(callback, method, path, params);
-    }
-
+    throwError: boolean
+  ): Promise<ResourceResponse<T> | ResourceResult<T>> {
     if (envelope) {
-      callback = callback && unenvelope(callback, client._MsgPack, envelope);
       (params = params || {})['envelope'] = envelope;
     }
 
-    function doRequest(this: any, headers: Record<string, string>, params: Record<string, any>) {
+    async function doRequest(
+      this: any,
+      headers: Record<string, string>,
+      params: Record<string, any>
+    ): Promise<ResourceResult<T>> {
       if (Logger.shouldLog(Logger.LOG_MICRO)) {
         let decodedBody = body;
         if (headers['content-type']?.indexOf('msgpack') > 0) {
@@ -230,24 +327,57 @@ class Resource {
         );
       }
 
-      client.http.do(method, path, headers, body, params, function (err, res, resHeaders, unpacked, statusCode) {
-        if (err && Auth.isTokenErr(err as ErrorInfo)) {
-          /* token has expired, so get a new one */
-          client.auth.authorize(null, null, function (err: ErrorInfo) {
-            if (err) {
-              callback(err);
-              return;
-            }
-            /* retry ... */
-            withAuthDetails(client, headers, params, callback, doRequest);
-          });
-          return;
-        }
-        callback(err as ErrorInfo, res as T | undefined, resHeaders, unpacked, statusCode);
+      type HttpResult = {
+        error?: ErrnoException | IPartialErrorInfo | null;
+        body?: unknown;
+        headers?: RequestCallbackHeaders;
+        unpacked?: boolean;
+        statusCode?: number;
+      };
+
+      const httpResult = await new Promise<HttpResult>((resolve) => {
+        client.http.do(method, path, headers, body, params, function (error, body, headers, unpacked, statusCode) {
+          resolve({ error, body, headers, unpacked, statusCode });
+        });
       });
+
+      if (httpResult.error && Auth.isTokenErr(httpResult.error as ErrorInfo)) {
+        /* token has expired, so get a new one */
+        await client.auth.authorize(null, null);
+        /* retry ... */
+        return withAuthDetails(client, headers, params, doRequest);
+      }
+
+      return {
+        err: httpResult.error as ErrorInfo,
+        body: httpResult.body as T | undefined,
+        headers: httpResult.headers,
+        unpacked: httpResult.unpacked,
+        statusCode: httpResult.statusCode,
+      };
     }
 
-    withAuthDetails(client, headers, params, callback, doRequest);
+    let result = await withAuthDetails<T>(client, headers, params, doRequest);
+
+    if (envelope) {
+      result = unenvelope(result, client._MsgPack, envelope);
+    }
+
+    if (Logger.shouldLog(Logger.LOG_MICRO)) {
+      logResult(result, method, path, params);
+    }
+
+    if (throwError) {
+      if (result.err) {
+        throw result.err;
+      } else {
+        const response: Omit<ResourceResult<T>, 'err'> & Pick<Partial<ResourceResult<T>>, 'err'> = { ...result };
+        delete response.err;
+        return response;
+      }
+    }
+
+    return result;
   }
 }
 

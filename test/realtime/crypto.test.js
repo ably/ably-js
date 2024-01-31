@@ -223,7 +223,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-          Message.encode(testMessage, channelOpts, function () {
+          whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
             /* compare */
             testMessageEquality(done, testMessage, encryptedMessage);
           });
@@ -240,7 +240,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-          Message.encode(testMessage, channelOpts, function () {
+          whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
             /* compare */
             testMessageEquality(done, testMessage, encryptedMessage);
           });
@@ -314,7 +314,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           2,
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-            Message.encode(testMessage, channelOpts, function () {
+            whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               var messageFromMsgpack = Message.fromValues(
@@ -348,7 +348,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           2,
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-            Message.encode(testMessage, channelOpts, function () {
+            whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               var messageFromMsgpack = Message.fromValues(
@@ -477,7 +477,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         }
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -606,9 +606,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           return;
         }
         var rxChannel = rxRealtime.channels.get(channelName, { cipher: { key: key } });
-        rxChannel.subscribe(
-          'event0',
-          function (msg) {
+        whenPromiseSettles(
+          rxChannel.subscribe('event0', function (msg) {
             try {
               expect(msg.data == messageText).to.be.ok;
             } catch (err) {
@@ -616,7 +615,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return;
             }
             closeAndFinish(done, [txRealtime, rxRealtime]);
-          },
+          }),
           function () {
             var txChannel = txRealtime.channels.get(channelName, { cipher: { key: key } });
             txChannel.publish('event0', messageText);
