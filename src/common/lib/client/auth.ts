@@ -553,7 +553,7 @@ class Auth {
     const tokenRequest = (
       signedTokenParams: Record<string, any>,
       tokenCb: (
-        err?: ErrorInfo | ErrnoException | null,
+        err: ErrorInfo | ErrnoException | null,
         tokenResponse?: API.TokenDetails | string,
         headers?: Record<string, string>,
         unpacked?: boolean
@@ -669,28 +669,20 @@ class Auth {
           return;
         }
         /* it's a token request, so make the request */
-        tokenRequest(
-          tokenRequestOrDetails,
-          function (
-            err,
-            tokenResponse,
-            headers,
-            unpacked,
-          ) {
-            if (err) {
-              Logger.logAction(
-                Logger.LOG_ERROR,
-                'Auth.requestToken()',
-                'token request API call returned error; err = ' + Utils.inspectError(err)
-              );
-              reject(normaliseAuthcallbackError(err));
-              return;
-            }
-            if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
-            Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
-            resolve(tokenResponse as API.TokenDetails);
+        tokenRequest(tokenRequestOrDetails, function (err, tokenResponse, headers, unpacked) {
+          if (err) {
+            Logger.logAction(
+              Logger.LOG_ERROR,
+              'Auth.requestToken()',
+              'token request API call returned error; err = ' + Utils.inspectError(err)
+            );
+            reject(normaliseAuthcallbackError(err));
+            return;
           }
-        );
+          if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
+          Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
+          resolve(tokenResponse as API.TokenDetails);
+        });
       });
     });
   }

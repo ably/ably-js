@@ -11,7 +11,7 @@ export type PathParameter = string | ((host: string) => string);
 export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
 export type RequestCallbackError = ErrnoException | IPartialErrorInfo;
 export type RequestCallback = (
-  error?: RequestCallbackError | null,
+  error: RequestCallbackError | null,
   body?: unknown,
   headers?: RequestCallbackHeaders,
   unpacked?: boolean,
