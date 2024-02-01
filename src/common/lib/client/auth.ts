@@ -73,7 +73,7 @@ function c14n(capability?: string | Record<string, Array<string>>) {
   return JSON.stringify(c14nCapability);
 }
 
-function logAndValidateTokenAuthMethod(authOptions: API.AuthOptions) {
+function logAndValidateTokenAuthMethod(authOptions: AuthOptions) {
   if (authOptions.authCallback) {
     Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
   } else if (authOptions.authUrl) {
@@ -111,13 +111,23 @@ function getTokenRequestId() {
   return trId++;
 }
 
+/**
+ * Auth options used only for testing.
+ */
+type PrivateAuthOptions = {
+  requestHeaders?: Record<string, string>;
+  suppressMaxLengthCheck?: boolean;
+};
+
+type AuthOptions = API.AuthOptions & PrivateAuthOptions;
+
 class Auth {
   client: BaseClient;
   tokenParams: API.TokenParams;
   currentTokenRequestId: number | null;
   waitingForTokenRequest: MulticasterInstance<API.TokenDetails> | null;
   // This initialization is always overwritten and only used to prevent a TypeScript compiler error
-  authOptions: API.AuthOptions = {} as API.AuthOptions;
+  authOptions: AuthOptions = {} as AuthOptions;
   tokenDetails?: API.TokenDetails | null;
   method?: string;
   key?: string;
@@ -238,11 +248,11 @@ class Auth {
    * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
    *                  requestToken request
    */
-  async authorize(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null): Promise<API.TokenDetails>;
+  async authorize(tokenParams: API.TokenParams | null, authOptions: AuthOptions | null): Promise<API.TokenDetails>;
 
   async authorize(
     tokenParams?: Record<string, any> | null,
-    authOptions?: API.AuthOptions | null
+    authOptions?: AuthOptions | null
   ): Promise<API.TokenDetails> {
     /* RSA10a: authorize() call implies token auth. If a key is passed it, we
      * just check if it doesn't clash and assume we're generating a token from it */
@@ -284,7 +294,7 @@ class Auth {
    * effect on the connection as #authorize does */
   async _forceNewToken(
     tokenParams: API.TokenParams | null,
-    authOptions: API.AuthOptions | null
+    authOptions: AuthOptions | null
   ): Promise<API.TokenDetails> {
     /* get rid of current token even if still valid */
     this.tokenDetails = null;
@@ -374,9 +384,9 @@ class Auth {
    * - requestHeaders (optional, unsupported, for testing only) extra headers to add to the
    *                  requestToken request
    */
-  async requestToken(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions): Promise<API.TokenDetails>;
+  async requestToken(tokenParams: API.TokenParams | null, authOptions: AuthOptions): Promise<API.TokenDetails>;
 
-  async requestToken(tokenParams?: API.TokenParams | null, authOptions?: any): Promise<API.TokenDetails> {
+  async requestToken(tokenParams?: API.TokenParams | null, authOptions?: AuthOptions): Promise<API.TokenDetails> {
     /* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
     const resolvedAuthOptions = authOptions || this.authOptions;
     const resolvedTokenParams = tokenParams || Utils.copy(this.tokenParams);
@@ -399,13 +409,16 @@ class Auth {
         const usePost = resolvedAuthOptions.authMethod && resolvedAuthOptions.authMethod.toLowerCase() === 'post';
         let providedQsParams;
         /* Combine authParams with any qs params given in the authUrl */
-        const queryIdx = resolvedAuthOptions.authUrl.indexOf('?');
+        const queryIdx = resolvedAuthOptions.authUrl!.indexOf('?');
         if (queryIdx > -1) {
-          providedQsParams = Utils.parseQueryString(resolvedAuthOptions.authUrl.slice(queryIdx));
-          resolvedAuthOptions.authUrl = resolvedAuthOptions.authUrl.slice(0, queryIdx);
+          providedQsParams = Utils.parseQueryString(resolvedAuthOptions.authUrl!.slice(queryIdx));
+          resolvedAuthOptions.authUrl = resolvedAuthOptions.authUrl!.slice(0, queryIdx);
           if (!usePost) {
             /* In case of conflict, authParams take precedence over qs params in the authUrl */
-            resolvedAuthOptions.authParams = Utils.mixin(providedQsParams, resolvedAuthOptions.authParams);
+            resolvedAuthOptions.authParams = Utils.mixin(
+              providedQsParams,
+              resolvedAuthOptions.authParams
+            ) as typeof resolvedAuthOptions.authParams;
           }
         }
         /* RSA8c2 */
@@ -484,7 +497,7 @@ class Auth {
           const body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
           this.client.http.doUri(
             HttpMethods.Post,
-            resolvedAuthOptions.authUrl,
+            resolvedAuthOptions.authUrl!,
             headers,
             body,
             providedQsParams as Record<string, string>,
@@ -493,7 +506,7 @@ class Auth {
         } else {
           this.client.http.doUri(
             HttpMethods.Get,
-            resolvedAuthOptions.authUrl,
+            resolvedAuthOptions.authUrl!,
             authHeaders || {},
             null,
             authParams,
@@ -805,7 +818,7 @@ class Auth {
     return this.client.serverTimeOffset !== null;
   }
 
-  _saveBasicOptions(authOptions: API.AuthOptions) {
+  _saveBasicOptions(authOptions: AuthOptions) {
     this.method = 'basic';
     this.key = authOptions.key;
     this.basicKey = Utils.toBase64(authOptions.key as string);
@@ -815,7 +828,7 @@ class Auth {
     }
   }
 
-  _saveTokenOptions(tokenParams: API.TokenParams | null, authOptions: API.AuthOptions | null) {
+  _saveTokenOptions(tokenParams: API.TokenParams | null, authOptions: AuthOptions | null) {
     this.method = 'token';
 
     if (tokenParams) {
