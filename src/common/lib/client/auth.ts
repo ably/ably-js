@@ -378,38 +378,38 @@ class Auth {
 
   async requestToken(tokenParams?: API.TokenParams | null, authOptions?: any): Promise<API.TokenDetails> {
     /* RSA8e: if authOptions passed in, they're used instead of stored, don't merge them */
-    authOptions = authOptions || this.authOptions;
-    tokenParams = tokenParams || Utils.copy(this.tokenParams);
+    const resolvedAuthOptions = authOptions || this.authOptions;
+    const resolvedTokenParams = tokenParams || Utils.copy(this.tokenParams);
 
     /* first set up whatever callback will be used to get signed
      * token requests */
     let tokenRequestCallback: any,
       client = this.client;
 
-    if (authOptions.authCallback) {
+    if (resolvedAuthOptions.authCallback) {
       Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authCallback');
-      tokenRequestCallback = authOptions.authCallback;
-    } else if (authOptions.authUrl) {
+      tokenRequestCallback = resolvedAuthOptions.authCallback;
+    } else if (resolvedAuthOptions.authUrl) {
       Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
       tokenRequestCallback = (params: Record<string, unknown>, cb: Function) => {
-        const authHeaders = Utils.mixin({ accept: 'application/json, text/plain' }, authOptions.authHeaders) as Record<
-          string,
-          string
-        >;
-        const usePost = authOptions.authMethod && authOptions.authMethod.toLowerCase() === 'post';
+        const authHeaders = Utils.mixin(
+          { accept: 'application/json, text/plain' },
+          resolvedAuthOptions.authHeaders
+        ) as Record<string, string>;
+        const usePost = resolvedAuthOptions.authMethod && resolvedAuthOptions.authMethod.toLowerCase() === 'post';
         let providedQsParams;
         /* Combine authParams with any qs params given in the authUrl */
-        const queryIdx = authOptions.authUrl.indexOf('?');
+        const queryIdx = resolvedAuthOptions.authUrl.indexOf('?');
         if (queryIdx > -1) {
-          providedQsParams = Utils.parseQueryString(authOptions.authUrl.slice(queryIdx));
-          authOptions.authUrl = authOptions.authUrl.slice(0, queryIdx);
+          providedQsParams = Utils.parseQueryString(resolvedAuthOptions.authUrl.slice(queryIdx));
+          resolvedAuthOptions.authUrl = resolvedAuthOptions.authUrl.slice(0, queryIdx);
           if (!usePost) {
             /* In case of conflict, authParams take precedence over qs params in the authUrl */
-            authOptions.authParams = Utils.mixin(providedQsParams, authOptions.authParams);
+            resolvedAuthOptions.authParams = Utils.mixin(providedQsParams, resolvedAuthOptions.authParams);
           }
         }
         /* RSA8c2 */
-        const authParams = Utils.mixin({}, authOptions.authParams || {}, params) as RequestParams;
+        const authParams = Utils.mixin({}, resolvedAuthOptions.authParams || {}, params) as RequestParams;
         const authUrlRequestCallback = function (
           err: ErrorInfo,
           body: string,
@@ -471,7 +471,7 @@ class Auth {
           Logger.LOG_MICRO,
           'Auth.requestToken().tokenRequestCallback',
           'Requesting token from ' +
-            authOptions.authUrl +
+            resolvedAuthOptions.authUrl +
             '; Params: ' +
             JSON.stringify(authParams) +
             '; method: ' +
@@ -484,7 +484,7 @@ class Auth {
           const body = Utils.toQueryString(authParams).slice(1); /* slice is to remove the initial '?' */
           this.client.http.doUri(
             HttpMethods.Post,
-            authOptions.authUrl,
+            resolvedAuthOptions.authUrl,
             headers,
             body,
             providedQsParams as Record<string, string>,
@@ -493,7 +493,7 @@ class Auth {
         } else {
           this.client.http.doUri(
             HttpMethods.Get,
-            authOptions.authUrl,
+            resolvedAuthOptions.authUrl,
             authHeaders || {},
             null,
             authParams,
@@ -501,10 +501,10 @@ class Auth {
           );
         }
       };
-    } else if (authOptions.key) {
+    } else if (resolvedAuthOptions.key) {
       Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
       tokenRequestCallback = (params: any, cb: StandardCallback<API.TokenRequest>) => {
-        Utils.whenPromiseSettles(this.createTokenRequest(params, authOptions), cb);
+        Utils.whenPromiseSettles(this.createTokenRequest(params, resolvedAuthOptions), cb);
       };
     } else {
       const msg =
@@ -518,8 +518,10 @@ class Auth {
     }
 
     /* normalise token params */
-    if ('capability' in (tokenParams as Record<string, any>))
-      (tokenParams as Record<string, any>).capability = c14n((tokenParams as Record<string, any>).capability);
+    if ('capability' in (resolvedTokenParams as Record<string, any>))
+      (resolvedTokenParams as Record<string, any>).capability = c14n(
+        (resolvedTokenParams as Record<string, any>).capability
+      );
 
     const tokenRequest = (signedTokenParams: Record<string, any>, tokenCb: Function) => {
       const keyName = signedTokenParams.keyName,
@@ -529,7 +531,7 @@ class Auth {
         };
 
       const requestHeaders = Defaults.defaultPostHeaders(this.client.options);
-      if (authOptions.requestHeaders) Utils.mixin(requestHeaders, authOptions.requestHeaders);
+      if (resolvedAuthOptions.requestHeaders) Utils.mixin(requestHeaders, resolvedAuthOptions.requestHeaders);
       Logger.logAction(
         Logger.LOG_MICRO,
         'Auth.requestToken().requestToken',
@@ -555,105 +557,108 @@ class Auth {
           reject(new ErrorInfo(msg, 40170, 401));
         }, timeoutLength);
 
-      tokenRequestCallback(tokenParams, function (err: ErrorInfo, tokenRequestOrDetails: any, contentType: string) {
-        if (tokenRequestCallbackTimeoutExpired) return;
-        clearTimeout(tokenRequestCallbackTimeout);
+      tokenRequestCallback(
+        resolvedTokenParams,
+        function (err: ErrorInfo, tokenRequestOrDetails: any, contentType: string) {
+          if (tokenRequestCallbackTimeoutExpired) return;
+          clearTimeout(tokenRequestCallbackTimeout);
 
-        if (err) {
-          Logger.logAction(
-            Logger.LOG_ERROR,
-            'Auth.requestToken()',
-            'token request signing call returned error; err = ' + Utils.inspectError(err)
-          );
-          reject(normaliseAuthcallbackError(err));
-          return;
-        }
-        /* the response from the callback might be a token string, a signed request or a token details */
-        if (typeof tokenRequestOrDetails === 'string') {
-          if (tokenRequestOrDetails.length === 0) {
-            reject(new ErrorInfo('Token string is empty', 40170, 401));
-          } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
-            reject(
-              new ErrorInfo(
-                'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
-                40170,
-                401
-              )
+          if (err) {
+            Logger.logAction(
+              Logger.LOG_ERROR,
+              'Auth.requestToken()',
+              'token request signing call returned error; err = ' + Utils.inspectError(err)
             );
-          } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
-            /* common failure mode with poorly-implemented authCallbacks */
-            reject(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
-          } else if (
-            tokenRequestOrDetails[0] === '{' &&
-            !(contentType && contentType.indexOf('application/jwt') > -1)
-          ) {
-            reject(
-              new ErrorInfo(
-                "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
-                40170,
-                401
-              )
-            );
-          } else {
-            resolve({ token: tokenRequestOrDetails } as API.TokenDetails);
+            reject(normaliseAuthcallbackError(err));
+            return;
           }
-          return;
-        }
-        if (typeof tokenRequestOrDetails !== 'object') {
-          const msg =
-            'Expected token request callback to call back with a token string or token request/details object, but got a ' +
-            typeof tokenRequestOrDetails;
-          Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-          reject(new ErrorInfo(msg, 40170, 401));
-          return;
-        }
-        const objectSize = JSON.stringify(tokenRequestOrDetails).length;
-        if (objectSize > MAX_TOKEN_LENGTH && !authOptions.suppressMaxLengthCheck) {
-          reject(
-            new ErrorInfo(
-              'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
-              40170,
-              401
-            )
-          );
-          return;
-        }
-        if ('issued' in tokenRequestOrDetails) {
-          /* a tokenDetails object */
-          resolve(tokenRequestOrDetails);
-          return;
-        }
-        if (!('keyName' in tokenRequestOrDetails)) {
-          const msg =
-            'Expected token request callback to call back with a token string, token request object, or token details object';
-          Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
-          reject(new ErrorInfo(msg, 40170, 401));
-          return;
-        }
-        /* it's a token request, so make the request */
-        tokenRequest(
-          tokenRequestOrDetails,
-          function (
-            err?: ErrorInfo | ErrnoException | null,
-            tokenResponse?: API.TokenDetails | string,
-            headers?: Record<string, string>,
-            unpacked?: boolean
-          ) {
-            if (err) {
-              Logger.logAction(
-                Logger.LOG_ERROR,
-                'Auth.requestToken()',
-                'token request API call returned error; err = ' + Utils.inspectError(err)
+          /* the response from the callback might be a token string, a signed request or a token details */
+          if (typeof tokenRequestOrDetails === 'string') {
+            if (tokenRequestOrDetails.length === 0) {
+              reject(new ErrorInfo('Token string is empty', 40170, 401));
+            } else if (tokenRequestOrDetails.length > MAX_TOKEN_LENGTH) {
+              reject(
+                new ErrorInfo(
+                  'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
+                  40170,
+                  401
+                )
               );
-              reject(normaliseAuthcallbackError(err));
-              return;
+            } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
+              /* common failure mode with poorly-implemented authCallbacks */
+              reject(new ErrorInfo('Token string was literal null/undefined', 40170, 401));
+            } else if (
+              tokenRequestOrDetails[0] === '{' &&
+              !(contentType && contentType.indexOf('application/jwt') > -1)
+            ) {
+              reject(
+                new ErrorInfo(
+                  "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
+                  40170,
+                  401
+                )
+              );
+            } else {
+              resolve({ token: tokenRequestOrDetails } as API.TokenDetails);
             }
-            if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
-            Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
-            resolve(tokenResponse as API.TokenDetails);
+            return;
           }
-        );
-      });
+          if (typeof tokenRequestOrDetails !== 'object') {
+            const msg =
+              'Expected token request callback to call back with a token string or token request/details object, but got a ' +
+              typeof tokenRequestOrDetails;
+            Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+            reject(new ErrorInfo(msg, 40170, 401));
+            return;
+          }
+          const objectSize = JSON.stringify(tokenRequestOrDetails).length;
+          if (objectSize > MAX_TOKEN_LENGTH && !resolvedAuthOptions.suppressMaxLengthCheck) {
+            reject(
+              new ErrorInfo(
+                'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
+                40170,
+                401
+              )
+            );
+            return;
+          }
+          if ('issued' in tokenRequestOrDetails) {
+            /* a tokenDetails object */
+            resolve(tokenRequestOrDetails);
+            return;
+          }
+          if (!('keyName' in tokenRequestOrDetails)) {
+            const msg =
+              'Expected token request callback to call back with a token string, token request object, or token details object';
+            Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+            reject(new ErrorInfo(msg, 40170, 401));
+            return;
+          }
+          /* it's a token request, so make the request */
+          tokenRequest(
+            tokenRequestOrDetails,
+            function (
+              err?: ErrorInfo | ErrnoException | null,
+              tokenResponse?: API.TokenDetails | string,
+              headers?: Record<string, string>,
+              unpacked?: boolean
+            ) {
+              if (err) {
+                Logger.logAction(
+                  Logger.LOG_ERROR,
+                  'Auth.requestToken()',
+                  'token request API call returned error; err = ' + Utils.inspectError(err)
+                );
+                reject(normaliseAuthcallbackError(err));
+                return;
+              }
+              if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
+              Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
+              resolve(tokenResponse as API.TokenDetails);
+            }
+          );
+        }
+      );
     });
   }
 
