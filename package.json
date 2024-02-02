@@ -68,7 +68,7 @@
     "cli-table": "^0.3.11",
     "cors": "^2.8.5",
     "esbuild": "^0.18.10",
-    "esbuild-plugin-umd-wrapper": "^1.0.7",
+    "esbuild-plugin-umd-wrapper": "ably-forks/esbuild-plugin-umd-wrapper#1.0.7-optional-amd-named-module",
     "esbuild-runner": "^2.2.2",
     "eslint": "^7.13.0",
     "eslint-plugin-import": "^2.28.0",
