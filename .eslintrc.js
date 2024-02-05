@@ -31,12 +31,12 @@ module.exports = {
     {
       files: ["**/*.{ts,tsx}"],
       rules: {
-	"comma-dangle": ["error", "only-multiline"],
-	"@typescript-eslint/no-unused-vars": ["error"],
-
-	// TypeScript already enforces these rules better than any eslint setup can
-	"no-undef": "off",
-	"no-dupe-class-members": "off",
+        "comma-dangle": ["error", "only-multiline"],
+        "@typescript-eslint/no-unused-vars": ["error", { "varsIgnorePattern": "^_" }],
+        // TypeScript already enforces these rules better than any eslint setup can
+        "no-undef": "off",
+        "no-dupe-class-members": "off",
+        "no-unused-vars": "off",
       },
     },
     {
