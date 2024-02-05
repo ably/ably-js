@@ -1698,6 +1698,5 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
       });
     });
-
   });
 });

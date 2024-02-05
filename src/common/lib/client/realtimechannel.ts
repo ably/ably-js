@@ -135,6 +135,7 @@ class RealtimeChannel extends Channel {
   }
 
   setOptions(options?: API.Types.ChannelOptions, callback?: ErrCallback): void | Promise<void> {
+    const previousChannelOptions = this.channelOptions;
     if (!callback) {
       if (this.rest.options.promises) {
         return Utils.promisify(this, 'setOptions', arguments);
@@ -154,7 +155,7 @@ class RealtimeChannel extends Channel {
     }
     Channel.prototype.setOptions.call(this, options);
     if (this._decodingContext) this._decodingContext.channelOptions = this.channelOptions;
-    if (this._shouldReattachToSetOptions(options)) {
+    if (this._shouldReattachToSetOptions(options, previousChannelOptions)) {
       /* This does not just do _attach(true, null, callback) because that would put us
        * into the 'attaching' state until we receive the new attached, which is
        * conceptually incorrect: we are still attached, we just have a pending request to
@@ -184,24 +185,25 @@ class RealtimeChannel extends Channel {
     }
   }
 
-  _shouldReattachToSetOptions(options?: API.Types.ChannelOptions) {
+  _shouldReattachToSetOptions(options: API.Types.ChannelOptions | undefined, prevOptions: API.Types.ChannelOptions) {
     if (!(this.state === 'attached' || this.state === 'attaching')) {
       return false;
     }
     if (options?.params) {
       // Don't check against the `agent` param - it isn't returned in the ATTACHED message
-      const requestedParams = Object.assign({}, options.params);
-      delete requestedParams.agent;
-      if (Object.keys(requestedParams).length !== 0 && !this.params) {
+      const requestedParams = omitAgent(options.params);
+      const existingParams = omitAgent(prevOptions.params);
+
+      if (Object.keys(requestedParams).length !== Object.keys(existingParams).length) {
         return true;
       }
 
-      if (this.params && !Utils.shallowEquals(this.params, requestedParams)) {
+      if (!Utils.shallowEquals(existingParams, requestedParams)) {
         return true;
       }
     }
     if (options?.modes) {
-      if (!this.modes || !Utils.arrEquals(options.modes, this.modes)) {
+      if (!prevOptions.modes || !Utils.arrEquals(options.modes, prevOptions.modes)) {
         return true;
       }
     }
@@ -1050,6 +1052,11 @@ class RealtimeChannel extends Channel {
       this.properties.channelSerial = channelSerial;
     }
   }
+}
+
+function omitAgent(channelParams?: API.Types.ChannelParams) {
+  const { agent: _, ...paramsWithoutAgent } = channelParams || {};
+  return paramsWithoutAgent;
 }
 
 export default RealtimeChannel;
