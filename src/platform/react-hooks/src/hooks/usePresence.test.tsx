@@ -1,10 +1,10 @@
 import React from 'react';
+import { type Types } from 'ably';
 import { it, beforeEach, describe, expect, vi } from 'vitest';
 import { usePresence } from './usePresence.js';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
 import { AblyProvider } from '../AblyProvider.js';
-import { Types } from '../../../../../ably.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
   return render(<AblyProvider client={client as unknown as Types.RealtimePromise}>{children}</AblyProvider>);
@@ -159,6 +159,34 @@ describe('usePresence', () => {
     expect(connectionErrorElem.innerHTML).toEqual(reason.message);
     expect(onConnectionError).toHaveBeenCalledTimes(1);
     expect(onConnectionError).toHaveBeenCalledWith(reason);
+  });
+
+  it('should not affect existing presence listeners when hook unmounts', async () => {
+    const enterListener = vi.fn();
+    const leaveListener = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.subscribe('enter', enterListener);
+    ablyClient.channels.get(testChannelName).presence.subscribe('leave', leaveListener);
+
+    const { unmount } = renderInCtxProvider(ablyClient, <UsePresenceComponent></UsePresenceComponent>);
+
+    // Wait for `usePresence` to be rendered and effects applied
+    await waitFor(() => {
+      expect(enterListener).toHaveBeenCalledWith(expect.objectContaining({ data: 'bar' }));
+    });
+
+    unmount();
+
+    // Wait for `usePresence` to be fully unmounted and effect's clean-ups applied
+    await waitFor(() => {
+      expect(leaveListener).toHaveBeenCalledOnce();
+    });
+
+    ablyClient.channels.get(testChannelName).presence.enter('baz');
+
+    // Check that listener still exists
+    await waitFor(() => {
+      expect(enterListener).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz' }));
+    });
   });
 });
 
