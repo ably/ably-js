@@ -2386,17 +2386,13 @@ export declare interface Connection
    */
   id?: string;
   /**
-   * A unique private connection key used to recover or resume a connection, assigned by Ably. When recovering a connection explicitly, the `recoveryKey` is used in the recover client options as it contains both the key and the last message serial. This private connection key can also be used by other REST clients to publish on behalf of this client. See the [publishing over REST on behalf of a realtime client docs](https://ably.com/docs/rest/channels#publish-on-behalf) for more info.
+   * A unique private connection key used to recover or resume a connection, assigned by Ably. This private connection key can also be used by other REST clients to publish on behalf of this client. See the [publishing over REST on behalf of a realtime client docs](https://ably.com/docs/rest/channels#publish-on-behalf) for more info. (If you want to explicitly recover a connection in a different SDK instance, see createRecoveryKey() instead)
    */
   key?: string;
   /**
-   * The recovery key string can be used by another client to recover this connection's state in the recover client options property. See [connection state recover options](https://ably.com/docs/realtime/connection#connection-state-recover-options) for more information.
+   * createRecoveryKey method returns a string that can be used by another client to recover this connection's state in the recover client options property. See [connection state recover options](https://ably.com/docs/connect/states?lang=javascript#connection-state-recovery) for more information.
    */
-  recoveryKey: string | null;
-  /**
-   * The serial number of the last message to be received on this connection, used automatically by the library when recovering or resuming a connection. When recovering a connection explicitly, the `recoveryKey` is used in the recover client options as it contains both the key and the last message serial.
-   */
-  serial: number;
+  createRecoveryKey(): string | null;
   /**
    * The current {@link ConnectionState} of the connection.
    */
