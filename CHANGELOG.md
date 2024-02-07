@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [1.2.49](https://github.com/ably/ably-js/tree/1.2.49) (2024-02-07)
+
+- \[React-Hooks\] `usePresence` unsubscribes all listeners on unmount and run `Presence.leave` even if connection has been terminated [\#1610](https://github.com/ably/ably-js/issues/1610)
+- `RealtimeChannels.get()` with options parameter throws an exception when executed during the `attaching` state. [\#1609](https://github.com/ably/ably-js/issues/1609)
+
 ## [1.2.48](https://github.com/ably/ably-js/tree/1.2.48) (2023-11-20)
 
 - Enable 'derived' options in 'useChannel' hook (by @rustworthy) [\#1501](https://github.com/ably/ably-js/pull/1501)
