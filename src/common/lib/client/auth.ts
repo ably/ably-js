@@ -550,7 +550,15 @@ class Auth {
         (resolvedTokenParams as Record<string, any>).capability
       );
 
-    const tokenRequest = (signedTokenParams: Record<string, any>, tokenCb: Function) => {
+    const tokenRequest = (
+      signedTokenParams: Record<string, any>,
+      tokenCb: (
+        err?: ErrorInfo | ErrnoException | null,
+        tokenResponse?: API.TokenDetails | string,
+        headers?: Record<string, string>,
+        unpacked?: boolean
+      ) => void
+    ) => {
       const keyName = signedTokenParams.keyName,
         path = '/keys/' + keyName + '/requestToken',
         tokenUri = function (host: string) {
@@ -664,10 +672,10 @@ class Auth {
         tokenRequest(
           tokenRequestOrDetails,
           function (
-            err?: ErrorInfo | ErrnoException | null,
-            tokenResponse?: API.TokenDetails | string,
-            headers?: Record<string, string>,
-            unpacked?: boolean
+            err,
+            tokenResponse,
+            headers,
+            unpacked,
           ) {
             if (err) {
               Logger.logAction(
