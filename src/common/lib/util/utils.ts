@@ -455,8 +455,9 @@ export function whenPromiseSettles<T, E = unknown>(
     .then((result) => {
       callback?.(null, result);
     })
-    .catch((err) => {
-      callback?.(err);
+    .catch((err: unknown) => {
+      // We make no guarantees about the type of the error that gets passed to the callback. Issue https://github.com/ably/ably-js/issues/1617 will think about how to correctly handle error types.
+      callback?.(err as E);
     });
 }
 
