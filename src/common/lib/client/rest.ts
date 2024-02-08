@@ -75,13 +75,13 @@ export class Rest {
         headers,
         null,
         params as RequestParams,
-        (err, res, headers, unpacked) => {
+        (err, body, headers, unpacked) => {
           if (err) {
             reject(err);
             return;
           }
-          if (!unpacked) res = JSON.parse(res as string);
-          const time = (res as number[])[0];
+          if (!unpacked) body = JSON.parse(body as string);
+          const time = (body as number[])[0];
           if (!time) {
             reject(new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500));
             return;
