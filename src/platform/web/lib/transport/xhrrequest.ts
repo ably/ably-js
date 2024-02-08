@@ -129,7 +129,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
   }
 
   complete(
-    err?: IPartialErrorInfo | null,
+    err: IPartialErrorInfo | null,
     body?: unknown,
     headers?: Record<string, string> | null,
     unpacked?: boolean | null,
@@ -317,7 +317,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       onProgress();
       this.streamComplete = true;
       Platform.Config.nextTick(() => {
-        this.complete();
+        this.complete(null);
       });
     };
 
