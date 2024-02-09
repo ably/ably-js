@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import * as Ably from 'ably';
 
 import App from './App.js';
-import { AblyProvider } from '../../src/index.js';
+import { AblyProvider, ChannelProvider } from '../../src/index.js';
 
 const container = document.getElementById('root')!;
 
@@ -22,7 +22,9 @@ const root = createRoot(container);
 root.render(
   <React.StrictMode>
     <AblyProvider client={client}>
-      <App />
+      <ChannelProvider channelName="your-channel-name" options={{ modes: ['PRESENCE'] }}>
+        <App />
+      </ChannelProvider>
     </AblyProvider>
   </React.StrictMode>
 );

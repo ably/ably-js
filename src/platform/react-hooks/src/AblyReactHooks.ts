@@ -2,7 +2,6 @@ import * as Ably from 'ably';
 
 export type ChannelNameAndOptions = {
   channelName: string;
-  options?: Ably.ChannelOptions;
   deriveOptions?: Ably.DeriveOptions;
   id?: string;
   subscribeOnly?: boolean;

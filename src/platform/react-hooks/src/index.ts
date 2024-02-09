@@ -5,3 +5,4 @@ export * from './hooks/useAbly.js';
 export * from './AblyProvider.js';
 export * from './hooks/useChannelStateListener.js';
 export * from './hooks/useConnectionStateListener.js';
+export { ChannelProvider } from './ChannelProvider.js';
