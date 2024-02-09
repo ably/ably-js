@@ -18,7 +18,7 @@ export type ChannelNameAndId = {
 };
 export type ChannelParameters = string | ChannelNameAndOptions;
 
-export const version = '1.2.48';
+export const version = '1.2.49';
 
 export function channelOptionsWithAgent(options?: Ably.ChannelOptions) {
   return {

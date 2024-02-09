@@ -1,4 +1,4 @@
-import * as Ably from '../../../../../ably.js';
+import type * as Ably from 'ably';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
@@ -13,6 +13,8 @@ export interface PresenceResult<T> {
 
 export type OnPresenceMessageReceived<T> = (presenceData: PresenceMessage<T>) => void;
 export type UseStatePresenceUpdate = (presenceData: Ably.PresenceMessage[]) => void;
+
+const INACTIVE_CONNECTION_STATES: Ably.ConnectionState[] = ['suspended', 'closing', 'closed', 'failed'];
 
 export function usePresence<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,
@@ -69,14 +71,15 @@ export function usePresence<T = any>(
   };
 
   const onUnmount = () => {
-    if (channel.state == 'attached') {
+    // if connection is in one of inactive states, leave call will produce exception
+    if (channel.state === 'attached' && !INACTIVE_CONNECTION_STATES.includes(ably.connection.state)) {
       if (!subscribeOnly) {
         channel.presence.leave();
       }
     }
-    channel.presence.unsubscribe('enter');
-    channel.presence.unsubscribe('leave');
-    channel.presence.unsubscribe('update');
+    channel.presence.unsubscribe('enter', updatePresence);
+    channel.presence.unsubscribe('leave', updatePresence);
+    channel.presence.unsubscribe('update', updatePresence);
   };
 
   const useEffectHook = () => {

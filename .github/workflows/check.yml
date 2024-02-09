@@ -24,7 +24,7 @@ jobs:
       - run: npx tsc --noEmit ably.d.ts modules.d.ts
       # for some reason, this doesn't work in CI using `npx attw --pack .`
       - run: npm pack
-      - run: npx attw ably-$(npm show ably version).tgz --summary --exclude-entrypoints 'ably/modules'
+      - run: npx attw ably-$(node -e "console.log(require('./package.json').version)").tgz --summary --exclude-entrypoints 'ably/modules'
       # TODO understand this unexpected-module-syntax error (https://github.com/ably/ably-js/issues/1546)
-      - run: npx attw ably-$(npm show ably version).tgz --summary --entrypoints 'ably/modules' --ignore-rules unexpected-module-syntax
+      - run: npx attw ably-$(node -e "console.log(require('./package.json').version)").tgz --summary --entrypoints 'ably/modules' --ignore-rules unexpected-module-syntax
       - run: npm audit --production
