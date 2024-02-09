@@ -217,8 +217,8 @@ export class ClientPresenceConnection {
     this.presence.enter(this.client.clientId, message);
   }
 
-  public unsubscribe(key: string) {
-    this.presence.unsubscribe(this.client.clientId, key);
+  public unsubscribe(key: string, listener?: any) {
+    this.presence.unsubscribe(this.client.clientId, key, listener);
   }
 
   private toPressenceMessage(data: any) {
@@ -374,9 +374,13 @@ export class ChannelPresence {
     this.triggerSubs('enter', data);
   }
 
-  public unsubscribe(clientId: string, key: string) {
+  public unsubscribe(clientId: string, key: string, listener?: any) {
     const subsForClient = this.subscriptionsPerClient.get(clientId);
-    subsForClient?.set(key, []);
+    if (listener) {
+      subsForClient?.set(key, subsForClient?.get(key)?.filter((l) => l !== listener) ?? []);
+    } else {
+      subsForClient?.set(key, []);
+    }
   }
 
   private triggerSubs(subType: string, data: any) {

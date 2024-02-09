@@ -485,9 +485,9 @@ export interface ClientOptions extends AuthOptions {
   tlsPort?: number;
 
   /**
-   * When `true`, the more efficient MsgPack binary encoding is used. When `false`, JSON text encoding is used. The default is `true`.
+   * When `true`, the more efficient MsgPack binary encoding is used. When `false`, JSON text encoding is used. The default is `true` for Node.js, and `false` for all other platforms.
    *
-   * @defaultValue `true`
+   * @defaultValue `true` for Node.js, `false` for all other platforms
    */
   useBinaryProtocol?: boolean;
 

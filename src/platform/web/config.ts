@@ -47,6 +47,10 @@ const Config: IPlatformConfig = {
   streamingSupported: true,
   useProtocolHeartbeats: true,
   supportsBinary: !!globalObject.TextDecoder,
+  /* Per Paddy (https://ably-real-time.slack.com/archives/CURL4U2FP/p1705674537763479) web intentionally prefers JSON to MessagePack:
+   *
+   * > browsers' support for binary types in general was historically poor, and JSON transport performance is significantly better in a browser than msgpack. In modern browsers then binary is supported consistently, but I'd still expect that JSON encode/decode performance is dramatically better than msgpack in a browser.
+   */
   preferBinary: false,
   ArrayBuffer: globalObject.ArrayBuffer,
   atob: globalObject.atob,

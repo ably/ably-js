@@ -13,7 +13,7 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
     streamingSupported: true,
     useProtocolHeartbeats: true,
     supportsBinary: !!(typeof TextDecoder !== 'undefined' && TextDecoder),
-    preferBinary: false,
+    preferBinary: false, // Motivation as on web; see `preferBinary` comment there.
     ArrayBuffer: typeof ArrayBuffer !== 'undefined' && ArrayBuffer,
     atob: global.atob,
     nextTick: function (f: Function) {
