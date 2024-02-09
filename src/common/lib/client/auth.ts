@@ -268,12 +268,7 @@ class Auth {
        * - Use this.client.connection as a proxy for (this.client instanceof BaseRealtime),
        * which doesn't work in node as BaseRealtime isn't part of the vm context for Rest clients */
       if (isRealtime(this.client)) {
-        return new Promise((resolve, reject) => {
-          (this.client as BaseRealtime).connection.connectionManager.onAuthUpdated(
-            tokenDetails,
-            (err: unknown, tokenDetails?: API.TokenDetails) => (err ? reject(err) : resolve(tokenDetails!))
-          );
-        });
+        return (this.client as BaseRealtime).connection.connectionManager.onAuthUpdated(tokenDetails);
       } else {
         return tokenDetails;
       }

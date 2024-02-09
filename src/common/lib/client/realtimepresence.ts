@@ -43,24 +43,19 @@ function isAnonymousOrWildcard(realtimePresence: RealtimePresence) {
   return (!clientId || clientId === '*') && realtime.connection.state === 'connected';
 }
 
-/* Callback is called only in the event of an error */
-function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: () => void) {
+async function waitAttached(channel: RealtimeChannel) {
   switch (channel.state) {
     case 'attached':
     case 'suspended':
-      action();
       break;
     case 'initialized':
     case 'detached':
     case 'detaching':
     case 'attaching':
-      Utils.whenPromiseSettles(channel.attach(), function (err: Error | null) {
-        if (err) callback(err);
-        else action();
-      });
+      await channel.attach();
       break;
     default:
-      callback(ErrorInfo.fromValues(channel.invalidStateError()));
+      throw ErrorInfo.fromValues(channel.invalidStateError());
   }
 }
 
@@ -152,9 +147,7 @@ class RealtimePresence extends EventEmitter {
     await encodePresenceMessage(presence, channel.channelOptions as CipherOptions);
     switch (channel.state) {
       case 'attached':
-        return new Promise((resolve, reject) => {
-          channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
-        });
+        return channel.sendPresence(presence);
       case 'initialized':
       case 'detached':
         channel.attach();
@@ -201,70 +194,55 @@ class RealtimePresence extends EventEmitter {
       presence.clientId = clientId;
     }
 
-    return new Promise((resolve, reject) => {
-      switch (channel.state) {
-        case 'attached':
-          channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
-          break;
-        case 'attaching':
+    switch (channel.state) {
+      case 'attached':
+        return channel.sendPresence(presence);
+      case 'attaching':
+        return new Promise((resolve, reject) => {
           this.pendingPresence.push({
             presence: presence,
             callback: (err) => (err ? reject(err) : resolve()),
           });
-          break;
-        case 'initialized':
-        case 'failed': {
-          /* we're not attached; therefore we let any entered status
-           * timeout by itself instead of attaching just in order to leave */
-          const err = new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
-          reject(err);
-          break;
-        }
-        default:
-          reject(channel.invalidStateError());
-      }
-    });
+        });
+      case 'initialized':
+      case 'failed':
+        /* we're not attached; therefore we let any entered status
+         * timeout by itself instead of attaching just in order to leave */
+        throw new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
+      default:
+        throw channel.invalidStateError();
+    }
   }
 
   async get(params?: RealtimePresenceParams): Promise<PresenceMessage[]> {
     const waitForSync = !params || ('waitForSync' in params ? params.waitForSync : true);
 
-    return new Promise((resolve, reject) => {
-      function returnMembers(members: PresenceMap) {
-        resolve(params ? members.list(params) : members.values());
-      }
+    function listMembers(members: PresenceMap) {
+      return params ? members.list(params) : members.values();
+    }
 
-      /* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
-      if (this.channel.state === 'suspended') {
-        if (waitForSync) {
-          reject(
-            ErrorInfo.fromValues({
-              statusCode: 400,
-              code: 91005,
-              message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
-            })
-          );
-        } else {
-          returnMembers(this.members);
-        }
-        return;
+    /* Special-case the suspended state: can still get (stale) presence set if waitForSync is false */
+    if (this.channel.state === 'suspended') {
+      if (waitForSync) {
+        throw ErrorInfo.fromValues({
+          statusCode: 400,
+          code: 91005,
+          message: 'Presence state is out of sync due to channel being in the SUSPENDED state',
+        });
+      } else {
+        return listMembers(this.members);
       }
+    }
 
-      waitAttached(
-        this.channel,
-        (err) => reject(err),
-        () => {
-          const members = this.members;
-          if (waitForSync) {
-            members.waitSync(function () {
-              returnMembers(members);
-            });
-          } else {
-            returnMembers(members);
-          }
-        }
-      );
-    });
+    await waitAttached(this.channel);
+
+    const members = this.members;
+    if (waitForSync) {
+      await members.waitSync();
+      return listMembers(members);
+    } else {
+      return listMembers(members);
+    }
   }
 
   async history(params: RealtimeHistoryParams | null): Promise<PaginatedResult<PresenceMessage>> {
@@ -378,7 +356,7 @@ class RealtimePresence extends EventEmitter {
         presenceArray.push(event.presence);
         multicaster.push(event.callback);
       }
-      this.channel.sendPresence(presenceArray, multicaster);
+      Utils.whenPromiseSettles(this.channel.sendPresence(presenceArray), multicaster);
     }
   }
 
@@ -622,7 +600,7 @@ class PresenceMap extends EventEmitter {
     this.emit('sync');
   }
 
-  waitSync(callback: () => void) {
+  async waitSync() {
     const syncInProgress = this.syncInProgress;
     Logger.logAction(
       Logger.LOG_MINOR,
@@ -630,10 +608,9 @@ class PresenceMap extends EventEmitter {
       'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress
     );
     if (!syncInProgress) {
-      callback();
       return;
     }
-    this.once('sync', callback);
+    return this.once('sync');
   }
 
   clear() {

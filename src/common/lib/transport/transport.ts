@@ -13,10 +13,10 @@ import * as API from '../../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Platform from 'common/platform';
 
-export type TryConnectCallback = (
-  wrappedErr: { error: ErrorInfo; event: string } | null,
-  transport?: Transport
-) => void;
+export type TryConnectResult = {
+  wrappedErr: { error: ErrorInfo; event: string } | null;
+  transport?: Transport;
+};
 
 export type TransportCtor = new (
   connectionManager: ConnectionManager,
@@ -285,40 +285,43 @@ abstract class Transport extends EventEmitter {
     }
   }
 
-  static tryConnect(
+  // TODO describe the queue events behaviour
+  static async tryConnect(
     transportCtor: TransportCtor,
     connectionManager: ConnectionManager,
     auth: Auth,
-    transportParams: TransportParams,
-    callback: TryConnectCallback
-  ): void {
-    const transport = new transportCtor(connectionManager, auth, transportParams);
+    transportParams: TransportParams
+  ): Promise<TryConnectResult> {
+    return new Promise((resolve) => {
+      const transport = new transportCtor(connectionManager, auth, transportParams);
 
-    let transportAttemptTimer: NodeJS.Timeout | number;
+      let transportAttemptTimer: NodeJS.Timeout | number;
 
-    const errorCb = function (this: { event: string }, err: ErrorInfo) {
-      clearTimeout(transportAttemptTimer);
-      callback({ event: this.event, error: err });
-    };
+      const errorCb = function (this: { event: string }, err: ErrorInfo) {
+        clearTimeout(transportAttemptTimer);
+        resolve({ wrappedErr: { event: this.event, error: err } });
+      };
 
-    const realtimeRequestTimeout = connectionManager.options.timeouts.realtimeRequestTimeout;
-    transportAttemptTimer = setTimeout(() => {
-      transport.off(['preconnect', 'disconnected', 'failed']);
-      transport.dispose();
-      errorCb.call(
-        { event: 'disconnected' },
-        new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500)
-      );
-    }, realtimeRequestTimeout);
+      const realtimeRequestTimeout = connectionManager.options.timeouts.realtimeRequestTimeout;
+      transportAttemptTimer = setTimeout(() => {
+        transport.off(['preconnect', 'disconnected', 'failed']);
+        transport.dispose();
+        errorCb.call(
+          { event: 'disconnected' },
+          new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500)
+        );
+      }, realtimeRequestTimeout);
 
-    transport.on(['failed', 'disconnected'], errorCb);
-    transport.on('preconnect', function () {
-      Logger.logAction(Logger.LOG_MINOR, 'Transport.tryConnect()', 'viable transport ' + transport);
-      clearTimeout(transportAttemptTimer);
-      transport.off(['failed', 'disconnected'], errorCb);
-      callback(null, transport);
+      transport.on(['failed', 'disconnected'], errorCb);
+      transport.on('preconnect', function () {
+        Logger.logAction(Logger.LOG_MINOR, 'Transport.tryConnect()', 'viable transport ' + transport);
+        clearTimeout(transportAttemptTimer);
+        transport.off(['failed', 'disconnected'], errorCb);
+        transport.setShouldQueueEvents(true);
+        resolve({ wrappedErr: null, transport: transport });
+      });
+      transport.connect();
     });
-    transport.connect();
   }
 
   onAuthUpdated?: (tokenDetails: API.TokenDetails) => void;

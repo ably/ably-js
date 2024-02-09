@@ -524,7 +524,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             helper.becomeSuspended(realtime, cb);
           },
           function (cb) {
-            realtime.connection.connectionManager.tryATransport = function (transportParams) {
+            realtime.connection.connectionManager.tryATransport = async function (transportParams) {
               try {
                 expect(transportParams.mode).to.equal('clean', 'Check library didn’t try to resume');
               } catch (err) {
@@ -532,6 +532,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 return;
               }
               cb();
+              return new Promise(() => {});
             };
             connection.connect();
           },
@@ -557,7 +558,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         /* noop-out onProtocolMessage so that a DISCONNECTED message doesn't
          * reset the last activity timer */
         connectionManager.activeProtocol.getTransport().onProtocolMessage = function () {};
-        connectionManager.tryATransport = function (transportParams) {
+        connectionManager.tryATransport = async function (transportParams) {
           try {
             expect(transportParams.mode).to.equal('clean', 'Check library didn’t try to resume');
           } catch (err) {
@@ -565,6 +566,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             return;
           }
           closeAndFinish(done, realtime);
+          return new Promise(() => {});
         };
         connectionManager.disconnectAllTransports();
       });
@@ -596,9 +598,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             var connectionManager = resumed_receiver_realtime.connection.connectionManager;
 
             var sendOrig = connectionManager.send;
-            connectionManager.send = function (msg, queueEvent, callback) {
+            connectionManager.send = async function (msg, queueEvent) {
               msg.setFlag('ATTACH_RESUME');
-              sendOrig.call(connectionManager, msg, queueEvent, callback);
+              return sendOrig.call(connectionManager, msg, queueEvent);
             };
 
             var resumed_receiver_channel = resumed_receiver_realtime.channels.get(testName, { params: { rewind: 1 } });

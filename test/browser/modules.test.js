@@ -598,11 +598,11 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
               let firstTransportCandidate;
               const connectionManager = realtime.connection.connectionManager;
               const originalTryATransport = connectionManager.tryATransport;
-              realtime.connection.connectionManager.tryATransport = (transportParams, candidate, callback) => {
+              realtime.connection.connectionManager.tryATransport = async (transportParams, candidate) => {
                 if (!firstTransportCandidate) {
                   firstTransportCandidate = candidate;
                 }
-                originalTryATransport.bind(connectionManager)(transportParams, candidate, callback);
+                return originalTryATransport.bind(connectionManager)(transportParams, candidate);
               };
 
               realtime.connect();

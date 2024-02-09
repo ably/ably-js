@@ -18,7 +18,6 @@ import Message, { getMessagesSize } from 'common/lib/types/message';
 import Multicaster, { MulticasterInstance } from 'common/lib/util/multicaster';
 import Transport, { TransportCtor } from './transport';
 import * as API from '../../../../ably';
-import { ErrCallback } from 'common/types/utils';
 import HttpStatusCodes from 'common/constants/HttpStatusCodes';
 import BaseRealtime from '../client/baserealtime';
 import { NormalisedClientOptions } from 'common/types/ClientOptions';
@@ -28,7 +27,6 @@ let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'u
 
 const haveWebStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.localSupported;
 const haveSessionStorage = () => typeof Platform.WebStorage !== 'undefined' && Platform.WebStorage?.sessionSupported;
-const noop = function () {};
 const transportPreferenceName = 'ably-transport-preference';
 
 const sessionRecoveryName = 'ably-connection-recovery';
@@ -187,6 +185,11 @@ type ConnectionState = {
   forceQueueEvents?: boolean;
   retryImmediately?: boolean;
   error?: IPartialErrorInfo;
+};
+
+type TryATransportResult = {
+  fatal: boolean | null;
+  transport?: Transport;
 };
 
 class ConnectionManager extends EventEmitter {
@@ -432,16 +435,14 @@ class ConnectionManager extends EventEmitter {
     return new TransportParams(this.options, host, mode, this.connectionKey);
   }
 
-  getTransportParams(callback: Function): void {
-    const decideMode = (modeCb: Function) => {
+  async getTransportParams(): Promise<TransportParams> {
+    const decideMode = async (): Promise<string> => {
       if (this.connectionKey) {
-        modeCb('resume');
-        return;
+        return 'resume';
       }
 
       if (typeof this.options.recover === 'string') {
-        modeCb('recover');
-        return;
+        return 'recover';
       }
 
       const recoverFn = this.options.recover,
@@ -452,120 +453,124 @@ class ConnectionManager extends EventEmitter {
           'ConnectionManager.getTransportParams()',
           'Calling clientOptions-provided recover function with last session data'
         );
-        recoverFn(lastSessionData, (shouldRecover?: boolean) => {
-          if (shouldRecover) {
-            this.options.recover = lastSessionData.recoveryKey;
-            modeCb('recover');
-          } else {
-            modeCb('clean');
-          }
+        return new Promise((resolve) => {
+          recoverFn(lastSessionData, (shouldRecover?: boolean) => {
+            if (shouldRecover) {
+              this.options.recover = lastSessionData.recoveryKey;
+              resolve('recover');
+            } else {
+              resolve('clean');
+            }
+          });
         });
-        return;
       }
-      modeCb('clean');
+      return 'clean';
     };
 
-    decideMode((mode: string) => {
-      const transportParams = this.createTransportParams(null, mode);
-      if (mode === 'recover') {
-        Logger.logAction(
-          Logger.LOG_MINOR,
-          'ConnectionManager.getTransportParams()',
-          'Transport recovery mode = recover; recoveryKey = ' + this.options.recover
-        );
-        const recoveryContext = decodeRecoveryKey(this.options.recover);
-        if (recoveryContext) {
-          this.msgSerial = recoveryContext.msgSerial;
-        }
-      } else {
-        Logger.logAction(
-          Logger.LOG_MINOR,
-          'ConnectionManager.getTransportParams()',
-          'Transport params = ' + transportParams.toString()
-        );
+    const mode = await decideMode();
+
+    const transportParams = this.createTransportParams(null, mode);
+    if (mode === 'recover') {
+      Logger.logAction(
+        Logger.LOG_MINOR,
+        'ConnectionManager.getTransportParams()',
+        'Transport recovery mode = recover; recoveryKey = ' + this.options.recover
+      );
+      const recoveryContext = decodeRecoveryKey(this.options.recover);
+      if (recoveryContext) {
+        this.msgSerial = recoveryContext.msgSerial;
       }
-      callback(transportParams);
-    });
+    } else {
+      Logger.logAction(
+        Logger.LOG_MINOR,
+        'ConnectionManager.getTransportParams()',
+        'Transport params = ' + transportParams.toString()
+      );
+    }
+    return transportParams;
   }
 
   /**
    * Attempt to connect using a given transport
    * @param transportParams
    * @param candidate, the transport to try
-   * @param callback
    */
-  tryATransport(transportParams: TransportParams, candidate: TransportName, callback: Function): void {
+  async tryATransport(transportParams: TransportParams, candidate: TransportName): Promise<TryATransportResult> {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
-    Transport.tryConnect(
+    const { wrappedErr: wrappedErr, transport: transport } = await Transport.tryConnect(
       this.supportedTransports[candidate]!,
       this,
       this.realtime.auth,
-      transportParams,
-      (wrappedErr: { error: ErrorInfo; event: string } | null, transport?: Transport) => {
-        const state = this.state;
-        if (state == this.states.closing || state == this.states.closed || state == this.states.failed) {
-          if (transport) {
-            Logger.logAction(
-              Logger.LOG_MINOR,
-              'ConnectionManager.tryATransport()',
-              'connection ' + state.state + ' while we were attempting the transport; closing ' + transport
-            );
-            transport.close();
-          }
-          callback(true);
-          return;
-        }
-
-        if (wrappedErr) {
-          Logger.logAction(
-            Logger.LOG_MINOR,
-            'ConnectionManager.tryATransport()',
-            'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString()
-          );
-
-          /* Comet transport onconnect token errors can be dealt with here.
-           * Websocket ones only happen after the transport claims to be viable,
-           * so are dealt with as non-onconnect token errors */
-          if (
-            Auth.isTokenErr(wrappedErr.error) &&
-            !(this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo))
-          ) {
-            this.errorReason = wrappedErr.error;
-            /* re-get a token and try again */
-            Utils.whenPromiseSettles(this.realtime.auth._forceNewToken(null, null), (err: ErrorInfo | null) => {
-              if (err) {
-                this.actOnErrorFromAuthorize(err);
-                return;
-              }
-              this.tryATransport(transportParams, candidate, callback);
-            });
-          } else if (wrappedErr.event === 'failed') {
-            /* Error that's fatal to the connection */
-            this.notifyState({ state: 'failed', error: wrappedErr.error });
-            callback(true);
-          } else if (wrappedErr.event === 'disconnected') {
-            if (!isRetriable(wrappedErr.error)) {
-              /* Error received from the server that does not call for trying a fallback host, eg a rate limit */
-              this.notifyState({ state: this.states.connecting.failState as string, error: wrappedErr.error });
-              callback(true);
-            } else {
-              /* Error with that transport only; continue trying other fallback hosts */
-              callback(false);
-            }
-          }
-          return;
-        }
-
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'ConnectionManager.tryATransport()',
-          'viable transport ' + candidate + '; setting pending'
-        );
-        this.setTransportPending(transport as Transport, transportParams);
-        callback(null, transport);
-      }
+      transportParams
     );
+
+    // TODO this is the place to put it where it fixes the currrent issue, whether it’s the _right_ place I don't know
+    // hmm, this still seems too early
+    //transport?.setShouldQueueEvents(false);
+
+    const state = this.state;
+    if (state == this.states.closing || state == this.states.closed || state == this.states.failed) {
+      if (transport) {
+        Logger.logAction(
+          Logger.LOG_MINOR,
+          'ConnectionManager.tryATransport()',
+          'connection ' + state.state + ' while we were attempting the transport; closing ' + transport
+        );
+        transport.close();
+      }
+      return { fatal: true };
+    }
+
+    if (wrappedErr) {
+      Logger.logAction(
+        Logger.LOG_MINOR,
+        'ConnectionManager.tryATransport()',
+        'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString()
+      );
+
+      /* Comet transport onconnect token errors can be dealt with here.
+       * Websocket ones only happen after the transport claims to be viable,
+       * so are dealt with as non-onconnect token errors */
+      if (Auth.isTokenErr(wrappedErr.error) && !(this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo))) {
+        this.errorReason = wrappedErr.error;
+        /* re-get a token and try again */
+        return (async () => {
+          try {
+            await this.realtime.auth._forceNewToken(null, null);
+          } catch (err) {
+            this.actOnErrorFromAuthorize(err as ErrorInfo);
+            // TODO this doesn't seem right though, why was it never calling its callback?
+            return new Promise(() => {});
+          }
+          return this.tryATransport(transportParams, candidate);
+        })();
+      } else if (wrappedErr.event === 'failed') {
+        /* Error that's fatal to the connection */
+        this.notifyState({ state: 'failed', error: wrappedErr.error });
+        return { fatal: true };
+      } else if (wrappedErr.event === 'disconnected') {
+        if (!isRetriable(wrappedErr.error)) {
+          /* Error received from the server that does not call for trying a fallback host, eg a rate limit */
+          this.notifyState({ state: this.states.connecting.failState as string, error: wrappedErr.error });
+          return { fatal: true };
+        } else {
+          /* Error with that transport only; continue trying other fallback hosts */
+          return { fatal: false };
+        }
+      }
+      // TODO why was this not calling its callback in this case?
+      return new Promise(() => {});
+    }
+
+    Logger.logAction(
+      Logger.LOG_MICRO,
+      'ConnectionManager.tryATransport()',
+      'viable transport ' + candidate + '; setting pending'
+    );
+    this.setTransportPending(transport as Transport, transportParams);
+    transport!.setShouldQueueEvents(false);
+    return { fatal: null, transport: transport! };
   }
 
   /**
@@ -1470,9 +1475,9 @@ class ConnectionManager extends EventEmitter {
 
     const connect = () => {
       this.checkConnectionStateFreshness();
-      this.getTransportParams((transportParams: TransportParams) => {
-        if (transportParams.mode === 'recover' && transportParams.options.recover) {
-          const recoveryContext = decodeRecoveryKey(transportParams.options.recover);
+      Utils.whenNonRejectingPromiseSettles(this.getTransportParams(), (transportParams) => {
+        if (transportParams!.mode === 'recover' && transportParams!.options.recover) {
+          const recoveryContext = decodeRecoveryKey(transportParams!.options.recover);
           if (recoveryContext) {
             this.realtime.channels.recoverChannels(recoveryContext.channelSerials);
           }
@@ -1481,7 +1486,7 @@ class ConnectionManager extends EventEmitter {
         if (connectCount !== this.connectCounter) {
           return;
         }
-        this.connectImpl(transportParams, connectCount);
+        this.connectImpl(transportParams!, connectCount);
       });
     };
 
@@ -1590,16 +1595,16 @@ class ConnectionManager extends EventEmitter {
     /* For connectPreference, just use the main host. If host fallback is needed, do it in connectBase.
      * The wstransport it will substitute the httphost for an appropriate wshost */
     transportParams.host = this.httpHosts[0];
-    this.tryATransport(transportParams, preference, (fatal: boolean, transport: Transport) => {
+    Utils.whenNonRejectingPromiseSettles(this.tryATransport(transportParams, preference), (result) => {
       clearTimeout(preferenceTimeout);
-      if (preferenceTimeoutExpired && transport) {
+      if (preferenceTimeoutExpired && result.transport) {
         /* Viable, but too late - connectImpl() will already be trying
          * connectBase, and we weren't in upgrade mode. Just remove the
          * onconnected listener and get rid of it */
-        transport.off();
-        transport.disconnect();
-        Utils.arrDeleteValue(this.pendingTransports, transport);
-      } else if (!transport && !fatal) {
+        result.transport.off();
+        result.transport.disconnect();
+        Utils.arrDeleteValue(this.pendingTransports, result.transport);
+      } else if (!result.transport && !result.fatal) {
         /* Preference failed in a transport-specific way. Try more */
         this.unpersistTransportPreference();
         this.connectImpl(transportParams, connectCount);
@@ -1620,11 +1625,11 @@ class ConnectionManager extends EventEmitter {
       this.notifyState({ state: this.states.connecting.failState as string, error: err });
     };
     const candidateHosts = this.httpHosts.slice();
-    const hostAttemptCb = (fatal: boolean, transport: Transport) => {
+    const hostAttemptCb = (result: TryATransportResult) => {
       if (connectCount !== this.connectCounter) {
         return;
       }
-      if (!transport && !fatal) {
+      if (!result.transport && !result.fatal) {
         tryFallbackHosts();
       }
     };
@@ -1677,7 +1682,7 @@ class ConnectionManager extends EventEmitter {
            * its dns. Try the fallback hosts. We could try them simultaneously but
            * that would potentially cause a huge spike in load on the load balancer */
           transportParams.host = Utils.arrPopRandomElement(candidateHosts);
-          this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
+          Utils.whenNonRejectingPromiseSettles(this.tryATransport(transportParams, this.baseTransport), hostAttemptCb);
         }
       );
     };
@@ -1688,7 +1693,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
+    Utils.whenNonRejectingPromiseSettles(this.tryATransport(transportParams, this.baseTransport), hostAttemptCb);
   }
 
   getUpgradePossibilities(): TransportName[] {
@@ -1715,7 +1720,7 @@ class ConnectionManager extends EventEmitter {
     Utils.arrForEach(upgradePossibilities, (upgradeTransport: TransportName) => {
       /* Note: the transport may mutate the params, so give each transport a fresh one */
       const upgradeTransportParams = this.createTransportParams(transportParams.host, 'upgrade');
-      this.tryATransport(upgradeTransportParams, upgradeTransport, noop);
+      this.tryATransport(upgradeTransportParams, upgradeTransport);
     });
   }
 
@@ -1752,7 +1757,7 @@ class ConnectionManager extends EventEmitter {
     this.notifyState({ state: 'closed' });
   }
 
-  onAuthUpdated(tokenDetails: API.TokenDetails, callback: Function): void {
+  async onAuthUpdated(tokenDetails: API.TokenDetails): Promise<API.TokenDetails> {
     switch (this.state.state) {
       case 'connected': {
         Logger.logAction(
@@ -1792,23 +1797,24 @@ class ConnectionManager extends EventEmitter {
         });
         this.send(authMsg);
 
-        /* The answer will come back as either a connectiondetails event
-         * (realtime sends a CONNECTED to acknowledge the reauth) or a
-         * statechange to failed */
-        const successListener = () => {
-          this.off(failureListener);
-          callback(null, tokenDetails);
-        };
-        const failureListener = (stateChange: ConnectionStateChange) => {
-          if (stateChange.current === 'failed') {
-            this.off(successListener);
+        return new Promise((resolve, reject) => {
+          /* The answer will come back as either a connectiondetails event
+           * (realtime sends a CONNECTED to acknowledge the reauth) or a
+           * statechange to failed */
+          const successListener = () => {
             this.off(failureListener);
-            callback(stateChange.reason || this.getStateError());
-          }
-        };
-        this.once('connectiondetails', successListener);
-        this.on('connectionstate', failureListener);
-        break;
+            resolve(tokenDetails);
+          };
+          const failureListener = (stateChange: ConnectionStateChange) => {
+            if (stateChange.current === 'failed') {
+              this.off(successListener);
+              this.off(failureListener);
+              reject(stateChange.reason || this.getStateError());
+            }
+          };
+          this.once('connectiondetails', successListener);
+          this.on('connectionstate', failureListener);
+        });
       }
 
       case 'connecting':
@@ -1826,31 +1832,33 @@ class ConnectionManager extends EventEmitter {
           'ConnectionManager.onAuthUpdated()',
           'Connection state is ' + this.state.state + '; waiting until either connected or failed'
         );
-        const listener = (stateChange: ConnectionStateChange) => {
-          switch (stateChange.current) {
-            case 'connected':
-              this.off(listener);
-              callback(null, tokenDetails);
-              break;
-            case 'failed':
-            case 'closed':
-            case 'suspended':
-              this.off(listener);
-              callback(stateChange.reason || this.getStateError());
-              break;
-            default:
-              /* ignore till we get either connected or failed */
-              break;
+        return new Promise((resolve, reject) => {
+          const listener = (stateChange: ConnectionStateChange) => {
+            switch (stateChange.current) {
+              case 'connected':
+                this.off(listener);
+                resolve(tokenDetails);
+                break;
+              case 'failed':
+              case 'closed':
+              case 'suspended':
+                this.off(listener);
+                reject(stateChange.reason || this.getStateError());
+                break;
+              default:
+                /* ignore till we get either connected or failed */
+                break;
+            }
+          };
+          this.on('connectionstate', listener);
+          if (this.state.state === 'connecting') {
+            /* can happen if in the connecting state but no transport was pending
+             * yet, so disconnectAllTransports did not trigger a disconnected state */
+            this.startConnect();
+          } else {
+            this.requestState({ state: 'connecting' });
           }
-        };
-        this.on('connectionstate', listener);
-        if (this.state.state === 'connecting') {
-          /* can happen if in the connecting state but no transport was pending
-           * yet, so disconnectAllTransports did not trigger a disconnected state */
-          this.startConnect();
-        } else {
-          this.requestState({ state: 'connecting' });
-        }
+        });
       }
     }
   }
@@ -1901,21 +1909,20 @@ class ConnectionManager extends EventEmitter {
    * event queueing
    ******************/
 
-  send(msg: ProtocolMessage, queueEvent?: boolean, callback?: ErrCallback): void {
-    callback = callback || noop;
+  async send(msg: ProtocolMessage, queueEvent?: boolean): Promise<void> {
     const state = this.state;
 
     if (state.sendEvents) {
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
-      this.sendImpl(new PendingMessage(msg, callback));
-      return;
+      return new Promise((resolve, reject) => {
+        this.sendImpl(new PendingMessage(msg, (err) => (err ? reject(err) : resolve())));
+      });
     }
     const shouldQueue = (queueEvent && state.queueEvents) || state.forceQueueEvents;
     if (!shouldQueue) {
       const err = 'rejecting event, queueEvent was ' + queueEvent + ', state was ' + state.state;
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
-      callback(this.errorReason || new ErrorInfo(err, 90000, 400));
-      return;
+      throw this.errorReason || new ErrorInfo(err, 90000, 400);
     }
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
       Logger.logAction(
@@ -1924,7 +1931,7 @@ class ConnectionManager extends EventEmitter {
         'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence)
       );
     }
-    this.queue(msg, callback);
+    return this.queue(msg);
   }
 
   sendImpl(pendingMessage: PendingMessage): void {
@@ -1945,22 +1952,25 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  queue(msg: ProtocolMessage, callback: ErrCallback): void {
+  queue(msg: ProtocolMessage): Promise<void> {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
-    const lastQueued = this.queuedMessages.last();
-    const maxSize = this.options.maxMessageSize;
-    /* If have already attempted to send a message, don't merge more messages
-     * into it, as if the previous send actually succeeded and realtime ignores
-     * the dup, they'll be lost */
-    if (lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
-      if (!lastQueued.merged) {
-        lastQueued.callback = Multicaster.create([lastQueued.callback]);
-        lastQueued.merged = true;
+
+    return new Promise((resolve, reject) => {
+      const lastQueued = this.queuedMessages.last();
+      const maxSize = this.options.maxMessageSize;
+      /* If have already attempted to send a message, don't merge more messages
+       * into it, as if the previous send actually succeeded and realtime ignores
+       * the dup, they'll be lost */
+      if (lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
+        if (!lastQueued.merged) {
+          lastQueued.callback = Multicaster.create([lastQueued.callback]);
+          lastQueued.merged = true;
+        }
+        (lastQueued.callback as MulticasterInstance<void>).push((err) => (err ? reject(err) : resolve()));
+      } else {
+        this.queuedMessages.push(new PendingMessage(msg, (err) => (err ? reject(err) : resolve())));
       }
-      (lastQueued.callback as MulticasterInstance<void>).push(callback);
-    } else {
-      this.queuedMessages.push(new PendingMessage(msg, callback));
-    }
+    });
   }
 
   sendQueuedMessages(): void {
@@ -2049,66 +2059,69 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  ping(transport: Transport | null, callback: Function): void {
+  async ping(transport: Transport | null): Promise<number> {
     /* if transport is specified, try that */
     if (transport) {
-      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
+      return new Promise((resolve, reject) => {
+        Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
 
-      const onTimeout = function () {
-        transport.off('heartbeat', onHeartbeat);
-        callback(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
-      };
-
-      const pingStart = Utils.now(),
-        id = Utils.cheapRandStr();
-
-      const onHeartbeat = function (responseId: string) {
-        if (responseId === id) {
+        const onTimeout = function () {
           transport.off('heartbeat', onHeartbeat);
-          clearTimeout(timer);
-          const responseTime = Utils.now() - pingStart;
-          callback(null, responseTime);
-        }
-      };
+          reject(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
+        };
 
-      const timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
+        const pingStart = Utils.now(),
+          id = Utils.cheapRandStr();
 
-      transport.on('heartbeat', onHeartbeat);
-      transport.ping(id);
-      return;
+        const onHeartbeat = function (responseId: string) {
+          if (responseId === id) {
+            transport.off('heartbeat', onHeartbeat);
+            clearTimeout(timer);
+            const responseTime = Utils.now() - pingStart;
+            resolve(responseTime);
+          }
+        };
+
+        const timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
+
+        transport.on('heartbeat', onHeartbeat);
+        transport.ping(id);
+      });
     }
 
     /* if we're not connected, don't attempt */
     if (this.state.state !== 'connected') {
-      callback(new ErrorInfo('Unable to ping service; not connected', 40000, 400));
-      return;
+      throw new ErrorInfo('Unable to ping service; not connected', 40000, 400);
     }
 
-    /* no transport was specified, so use the current (connected) one
-     * but ensure that we retry if the transport is superseded before we complete */
-    let completed = false;
+    return new Promise((resolve, reject) => {
+      /* no transport was specified, so use the current (connected) one
+       * but ensure that we retry if the transport is superseded before we complete */
+      let completed = false;
 
-    const onPingComplete = (err: Error, responseTime: number) => {
-      this.off('transport.active', onTransportActive);
-      if (!completed) {
-        completed = true;
-        callback(err, responseTime);
-      }
-    };
+      const onPingComplete = (err: Error | null, responseTime?: number) => {
+        this.off('transport.active', onTransportActive);
+        if (!completed) {
+          completed = true;
+          err ? reject(err) : resolve(responseTime!);
+        }
+      };
 
-    const onTransportActive = () => {
-      if (!completed) {
-        /* ensure that no callback happens for the currently outstanding operation */
-        completed = true;
-        /* repeat but picking up the new transport */
-        Platform.Config.nextTick(() => {
-          this.ping(null, callback);
-        });
-      }
-    };
+      const onTransportActive = () => {
+        if (!completed) {
+          /* ensure that no callback happens for the currently outstanding operation */
+          completed = true;
+          /* repeat but picking up the new transport */
+          Platform.Config.nextTick(() => {
+            resolve(this.ping(null));
+          });
+        }
+      };
 
-    this.on('transport.active', onTransportActive);
-    this.ping((this.activeProtocol as Protocol).getTransport(), onPingComplete);
+      this.on('transport.active', onTransportActive);
+      // TODO maybe we can do a bit better and make use of the promise here
+      Utils.whenPromiseSettles(this.ping((this.activeProtocol as Protocol).getTransport()), onPingComplete);
+    });
   }
 
   abort(error: ErrorInfo): void {

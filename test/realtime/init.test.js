@@ -283,17 +283,16 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         expect(realtime.connection.connectionManager.httpHosts[0]).to.equal('a', 'Verify given restHost is first');
         /* Replace chooseTransportForHost with a spy, then try calling
          * chooseHttpTransport to see what host is picked */
-        realtime.connection.connectionManager.tryATransport = function (transportParams, transport, cb) {
+        realtime.connection.connectionManager.tryATransport = async function (transportParams, transport) {
           switch (transportParams.host) {
             case 'a':
-              cb(false);
-              break;
+              return { fatal: false };
             case 'b':
             case 'c':
             case 'd':
             case 'e':
               /* should be called twice */
-              cb(false);
+              return { fatal: false };
           }
         };
         realtime.connection.on('disconnected', function (stateChange) {
