@@ -7,9 +7,14 @@ import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
 import * as Ably from 'ably';
 import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
+import { ChannelProvider } from '../ChannelProvider.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Ably.RealtimeClient}>{children}</AblyProvider>);
+  return render(
+    <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+      <ChannelProvider channelName="blah">{children}</ChannelProvider>
+    </AblyProvider>
+  );
 }
 
 describe('useChannelStateListener', () => {

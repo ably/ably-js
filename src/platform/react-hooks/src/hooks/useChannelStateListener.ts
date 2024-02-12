@@ -2,6 +2,7 @@ import * as Ably from 'ably';
 import { ChannelNameAndId, ChannelNameAndOptions } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useEventListener } from './useEventListener.js';
+import { useChannelProviderCheck } from './useChannelProviderCheck.js';
 
 type ChannelStateListener = (stateChange: Ably.ChannelStateChange) => any;
 
@@ -25,6 +26,7 @@ export function useChannelStateListener(
   const { channelName } = channelHookOptions;
 
   const ably = useAbly(id);
+  useChannelProviderCheck(channelHookOptions);
   const channel = ably.channels.get(channelName);
 
   const _listener = typeof listener === 'function' ? listener : (stateOrListener as ChannelStateListener);

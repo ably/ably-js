@@ -1,8 +1,9 @@
 import * as Ably from 'ably';
 import { useEffect, useMemo, useRef } from 'react';
-import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
+import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
+import { useChannelProviderCheck } from './useChannelProviderCheck.js';
 
 export type AblyMessageCallback = Ably.messageCallback<Ably.Message>;
 
@@ -36,6 +37,7 @@ export function useChannel(
       : { channelName: channelNameOrNameAndOptions };
 
   const ably = useAbly(channelHookOptions.id);
+  useChannelProviderCheck(channelHookOptions);
 
   const { channelName, deriveOptions, skip } = channelHookOptions;
 

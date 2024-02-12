@@ -104,7 +104,7 @@ export class ClientChannelsCollection {
     if (channelConnection) {
       return channelConnection;
     } else {
-      channelConnection = new ClientSingleChannelConnection(this.client, this.channels.get(name));
+      channelConnection = new ClientSingleChannelConnection(this.client, this.channels.get(name), name);
       this._channelConnections.set(name, channelConnection);
       return channelConnection;
     }
@@ -115,7 +115,7 @@ export class ClientChannelsCollection {
     if (channelConnection) return channelConnection as ClientSingleDerivedChannelConnection;
 
     const channel = this.channels.get(name);
-    channelConnection = new ClientSingleDerivedChannelConnection(this.client, channel, options);
+    channelConnection = new ClientSingleDerivedChannelConnection(this.client, channel, options, name);
     this._channelConnections.set(name, channelConnection);
     return channelConnection;
   }
@@ -127,13 +127,15 @@ export class ClientSingleChannelConnection extends EventEmitter {
 
   public presence: any;
   public state: string;
+  public name: string;
 
-  constructor(client: FakeAblySdk, channel: Channel) {
+  constructor(client: FakeAblySdk, channel: Channel, name: string) {
     super();
     this.client = client;
     this.channel = channel;
     this.presence = new ClientPresenceConnection(this.client, this.channel.presence);
     this.state = 'attached';
+    this.name = name;
   }
 
   publish(messages: any, callback?: Ably.errorCallback): void;
@@ -157,18 +159,24 @@ export class ClientSingleChannelConnection extends EventEmitter {
   public detach() {
     this.channel.subscriptionsPerClient.delete(this.client.clientId);
   }
+
+  public async setOptions() {
+    // do nothing
+  }
 }
 
 export class ClientSingleDerivedChannelConnection extends EventEmitter {
   private client: FakeAblySdk;
   private channel: Channel;
   private deriveOpts: Ably.DeriveOptions;
+  public name?: string;
 
-  constructor(client: FakeAblySdk, channel: Channel, deriveOptions?: Ably.DeriveOptions) {
+  constructor(client: FakeAblySdk, channel: Channel, deriveOptions?: Ably.DeriveOptions, name?: string) {
     super();
     this.client = client;
     this.channel = channel;
     this.deriveOpts = deriveOptions;
+    this.name = name;
   }
 
   public async subscribe(
@@ -182,6 +190,10 @@ export class ClientSingleDerivedChannelConnection extends EventEmitter {
 
   public unsubscribe() {
     this.channel.subscriptionsPerClient.delete(this.client.clientId);
+  }
+
+  public async setOptions() {
+    // do nothing
   }
 }
 
@@ -327,6 +339,10 @@ export class Channel {
       const subs = subsForClient.get(key);
       subs.push(callback);
     }
+  }
+
+  public async setOptions() {
+    // do nothing
   }
 }
 
