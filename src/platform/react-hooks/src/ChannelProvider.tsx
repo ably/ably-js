@@ -12,20 +12,20 @@ interface ChannelProviderProps {
 }
 
 export const ChannelProvider = ({ id = 'default', channelName, options, children }: ChannelProviderProps) => {
-  const { client, channelToOptions } = React.useContext(getContext(id));
+  const { client, _channelToOptions } = React.useContext(getContext(id));
 
   const channel = client.channels.get(channelName);
 
   useEffect(() => {
-    if (channelToOptions[channelName]) {
+    if (_channelToOptions[channelName]) {
       throw new Error('You can not use more than one `ChannelProvider` with the same channel name');
     }
     channel.setOptions(channelOptionsWithAgent(options));
-    channelToOptions[channelName] = options ?? {};
+    _channelToOptions[channelName] = options ?? {};
     return () => {
-      delete channelToOptions[channelName];
+      delete _channelToOptions[channelName];
     };
-  }, [channel, channelName, options, channelToOptions]);
+  }, [channel, channelName, options, _channelToOptions]);
 
   useEffect(() => {
     const handleChannelAttached = () => {

@@ -1,5 +1,5 @@
 import * as Ably from 'ably';
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 
 const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'function';
 
@@ -11,7 +11,7 @@ interface AblyProviderProps {
 
 interface AblyContextProps {
   client: Ably.RealtimeClient;
-  channelToOptions: Record<string, Ably.ChannelOptions>;
+  _channelToOptions: Record<string, Ably.ChannelOptions>;
 }
 
 type AblyContextType = React.Context<AblyContextProps>;
@@ -29,12 +29,10 @@ export function getContext(ctxId = 'default'): AblyContextType {
 }
 
 export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderProps) => {
-  const channelToOptionsRef = useRef<Record<string, Ably.Types.ChannelOptions>>({});
-
   const value: AblyContextProps = useMemo(
     () => ({
       client,
-      channelToOptions: channelToOptionsRef.current,
+      _channelToOptions: {},
     }),
     [client]
   );
@@ -45,7 +43,7 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
 
   let context = getContext(id);
   if (!context) {
-    context = ctxMap[id] = React.createContext({ client, channelToOptions: {} });
+    context = ctxMap[id] = React.createContext({ client, _channelToOptions: {} });
   }
 
   return <context.Provider value={value}>{children}</context.Provider>;
