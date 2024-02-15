@@ -1,4 +1,4 @@
-import * as Ably from '../../../../../ably.js';
+import * as Ably from 'ably';
 import { useAbly } from './useAbly.js';
 import { useEventListener } from './useEventListener.js';
 

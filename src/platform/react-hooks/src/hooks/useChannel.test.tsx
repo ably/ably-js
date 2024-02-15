@@ -3,7 +3,7 @@ import { it, beforeEach, describe, expect, vi } from 'vitest';
 import { useChannel } from './useChannel.js';
 import { render, screen, waitFor } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
-import * as Ably from '../../../../../ably.js';
+import * as Ably from 'ably';
 import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
 
