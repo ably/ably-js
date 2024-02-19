@@ -17,12 +17,14 @@ import Message from '../types/message';
 class Realtime extends Rest {
   channels: any;
   connection: Connection;
+  readonly channelGroups;
 
   constructor(options: ClientOptions) {
     super(options);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this.connection = new Connection(this, this.options);
     this.channels = new Channels(this);
+    this.channelGroups = new ChannelGroups(this.channels);
     if (options.autoConnect !== false) this.connect();
   }
 
@@ -49,6 +51,88 @@ class Realtime extends Rest {
   static ProtocolMessage = ProtocolMessage;
   static Message = Message;
   static Crypto?: typeof Platform.Crypto;
+}
+
+class ChannelGroups {
+  groups: Record<string, ChannelGroup> = {};
+
+  constructor(readonly channels: Channels) {}
+
+  get(filter: string): ChannelGroup {
+    let group = this.groups[filter];
+
+    if (group) {
+      return group;
+    }
+
+    return (this.groups[filter] = new ChannelGroup(this.channels, filter));
+  }
+}
+
+class ChannelGroup {
+  currentChannels: string[];
+  active: RealtimeChannel;
+  subsciptions: EventEmitter;
+  subscribedChannels: Record<string, RealtimeChannel> = {};
+  expression: RegExp;
+
+  constructor(readonly channels: Channels, filter: string) {
+    this.currentChannels = [];
+    this.subsciptions = new EventEmitter();
+    this.active = channels.get('active', { params: { rewind: '1' } });
+    this.active.subscribe((msg: any) => this.updateActiveChannels(msg.data));
+    this.expression = new RegExp(filter);
+  }
+
+  private updateActiveChannels(data: any) {
+    const activeChannels = data as { active: string[] };
+    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'received active channels ' + data);
+
+    const matched = activeChannels.active.filter((x) => this.expression.test(x));
+
+    const { add, remove } = this.diffSets(this.currentChannels, matched);
+    this.currentChannels = matched;
+
+    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'computed channel diffs ' + { add, remove });
+
+    this.removeSubscriptions(remove);
+    this.addSubscrptions(add);
+  }
+
+  private diffSets(current: string[], updated: string[]): { add: string[]; remove: string[] } {
+    const remove = current.filter((x) => !updated.includes(x));
+    const add = updated.filter((x) => !current.includes(x));
+
+    return { add, remove };
+  }
+
+  private addSubscrptions(channels: string[]) {
+    channels.forEach((channel) => {
+      if (this.subscribedChannels[channel]) {
+        return;
+      }
+
+      this.subscribedChannels[channel] = this.channels.get(channel, { params: { rewind: '5s' } });
+      this.subscribedChannels[channel].subscribe((msg: any) => {
+        this.subsciptions.emit('message', channel, msg);
+      });
+    });
+  }
+
+  private removeSubscriptions(channels: string[]) {
+    channels.forEach((channel) => {
+      if (!this.subscribedChannels[channel]) {
+        return;
+      }
+
+      this.subscribedChannels[channel].unsubscribe();
+      delete this.subscribedChannels[channel];
+    });
+  }
+
+  subscribe(cb: (channel: string, msg: any) => void) {
+    this.subsciptions.on('message', cb);
+  }
 }
 
 class Channels extends EventEmitter {
