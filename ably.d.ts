@@ -1000,6 +1000,14 @@ declare namespace Types {
     modes?: ChannelModes;
   }
 
+  interface ConsumerGroupOptions {
+    name: string;
+  }
+
+  interface ChannelGroupOptions {
+    consumerGroup?: ConsumerGroupOptions;
+  }
+
   /**
    * Passes additional properties to a {@link RealtimeChannelBase} name to produce a new derived channel
    */

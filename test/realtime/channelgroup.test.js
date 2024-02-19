@@ -24,10 +24,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         /* set up realtime */
         var realtime = helper.AblyRealtime();
+        realtime.options.clientId = 'testclient';
 
         /* connect and attach */
-        realtime.connection.on('connected', function () {
-          const channelGroup = realtime.channelGroups.get('.*');
+        realtime.connection.on('connected', async function () {
+          const channelGroup = await realtime.channelGroups.get('.*');
 
           var testMsg = { active: ['channel1', 'channel2', 'channel3'] };
           var activeChannel = realtime.channels.get('active');
@@ -76,10 +77,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         /* set up realtime */
         var realtime = helper.AblyRealtime();
+        realtime.options.clientId = 'testclient';
 
         /* connect and attach */
-        realtime.connection.on('connected', function () {
-          const channelGroup = realtime.channelGroups.get('include:.*');
+        realtime.connection.on('connected', async function () {
+          const channelGroup = await realtime.channelGroups.get('include:.*');
 
           var testMsg = { active: ['include:channel1', 'stream3'] };
           var activeChannel = realtime.channels.get('active');
@@ -121,10 +123,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         /* set up realtime */
         var realtime = helper.AblyRealtime();
+        realtime.options.clientId = 'testclient';
 
         /* connect and attach */
-        realtime.connection.on('connected', function () {
-          const channelGroup = realtime.channelGroups.get('group:.*');
+        realtime.connection.on('connected', async function () {
+          const channelGroup = await realtime.channelGroups.get('group:.*');
 
           var testMsg = { active: ['group:channel1', 'group:channel2', 'group:channel3'] };
           var activeChannel = realtime.channels.get('active');
@@ -176,6 +179,94 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         monitorConnection(done, realtime);
       } catch (err) {
         closeAndFinish(done, realtime, err);
+      }
+    });
+
+    it('partitions over consumer group', function (done) {
+      try {
+        /* set up realtime */
+        var realtime1 = helper.AblyRealtime();
+        var realtime2 = helper.AblyRealtime();
+        realtime2.options.clientId = 'xz';
+        realtime1.options.clientId = '93';
+
+        /* connect and attach */
+        realtime1.connection.on('connected', async function () {
+          const channelGroup1 = await realtime1.channelGroups.get('part.*', { consumerGroup: { name: 'testgroup' } });
+          const channelGroup2 = await realtime2.channelGroups.get('part.*', { consumerGroup: { name: 'testgroup' } });
+          const part1 = realtime2.channels.get('part1');
+          const part2 = realtime2.channels.get('part:2');
+
+          // Wait for both consumers to appear in the group
+          await new Promise((resolve, reject) => {
+            const ch = realtime1.channels.get('testgroup');
+
+            ch.presence.subscribe(() => {
+              ch.presence.get({ waitForSync: true }, (err, result) => {
+                if (err) {
+                  reject(err);
+                  ch.presence.unsubscribe();
+                }
+                if (result.length == 2) {
+                  resolve();
+                  ch.presence.unsubscribe();
+                }
+              });
+            });
+          });
+
+          channelGroup2.subscribe((channel, msg) => {
+            try {
+              expect(channel).to.equal('part:2', 'Unexpected channel name in group participant realtime1');
+              expect(msg.data).to.equal(
+                'partition 2 test data',
+                'Unexpected message data in group participant realtime1'
+              );
+            } catch (err) {
+              closeAndFinish(done, [realtime1, realtime2], err);
+              return;
+            }
+
+            // Publish a final message to partition2, to end the test
+            part1.publish('done', 'partition 1 test data');
+          });
+
+          channelGroup1.subscribe((channel, msg) => {
+            try {
+              expect(channel).to.equal('part1', 'Unexpected channel name in group participant realtime2');
+              expect(msg.data).to.equal(
+                'partition 1 test data',
+                'Unexpected message data in group participant realtime2'
+              );
+            } catch (err) {
+              closeAndFinish(done, [realtime1, realtime2], err);
+              return;
+            }
+
+            if (msg.name === 'done') {
+              closeAndFinish(done, [realtime1, realtime2]);
+            }
+          });
+
+          var testMsg = { active: ['part1', 'part:2'] };
+          var activeChannel = realtime1.channels.get('active');
+
+          activeChannel.attach(function (err) {
+            if (err) {
+              closeAndFinish(done, [realtime1, realtime2], err);
+              return;
+            }
+
+            /* publish active channels */
+            activeChannel.publish('event0', testMsg);
+            // Publish a message to each of the partitions
+            part1.publish('event0', 'partition 1 test data');
+            part2.publish('event0', 'partition 2 test data');
+          });
+        });
+        monitorConnection(done, realtime1);
+      } catch (err) {
+        closeAndFinish(done, [realtime1, realtime2], err);
       }
     });
   });

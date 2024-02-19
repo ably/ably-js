@@ -13,6 +13,7 @@ import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import Platform from 'common/platform';
 import Message from '../types/message';
+import HashRing from 'hashring';
 
 class Realtime extends Rest {
   channels: any;
@@ -58,14 +59,96 @@ class ChannelGroups {
 
   constructor(readonly channels: Channels) {}
 
-  get(filter: string): ChannelGroup {
+  async get(filter: string, options?: API.Types.ChannelGroupOptions): Promise<ChannelGroup> {
     let group = this.groups[filter];
 
     if (group) {
       return group;
     }
 
-    return (this.groups[filter] = new ChannelGroup(this.channels, filter));
+    group = this.groups[filter] = new ChannelGroup(this.channels, filter, options);
+    await group.join();
+
+    return group;
+  }
+}
+
+class ConsumerGroup extends EventEmitter {
+  private channel?: RealtimeChannel;
+  private currentMembers: string[] = [];
+  private hashring?: HashRing;
+  private myClientId?: string;
+
+  constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
+    super();
+  }
+
+  async join() {
+    if (!this.consumerGroupName) {
+      // If no name is specified, then don't enforce the consumer group
+      // this is the equivalent of a no-op group where every channel
+      // is considered to be assigned to this client.
+      return;
+    }
+
+    this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
+    this.myClientId = this.channels.realtime.options.clientId!;
+    this.hashring = new HashRing(this.myClientId!);
+
+    await this.channel.presence.enter(null, (err) => {
+      if (err) {
+        Logger.logAction(
+          Logger.LOG_ERROR,
+          'ConsumerGroup.join()',
+          'failed to enter presence set on consumer group channel:' + err
+        );
+      }
+    });
+
+    this.channel!.presence!.subscribe(() => {
+      this.computeMembership();
+    });
+  }
+
+  computeMembership() {
+    this.channel!.presence.get({ waitForSync: true }, (err, result) => {
+      if (err) {
+        Logger.logAction(
+          Logger.LOG_ERROR,
+          'ConsumerGroup.computeMembership()',
+          'failed to get presence set on consumer group channel:' + err
+        );
+        return;
+      }
+
+      const memberIds = result?.filter((member) => member.clientId).map((member) => member.clientId!) || [];
+      const { add, remove } = diffSets(this.currentMembers, memberIds);
+
+      Logger.logAction(
+        Logger.LOG_DEBUG,
+        'ConsumerGroup.computeMembership()',
+        'computed member diffs ' + { add, remove }
+      );
+
+      add.forEach((member) => {
+        this.hashring!.add(member);
+      });
+
+      remove.forEach((member) => {
+        this.hashring!.remove(member);
+      });
+
+      this.emit('membership');
+    });
+  }
+
+  assigned(channel: string): boolean {
+    if (!this.consumerGroupName) {
+      // Consumer group is not enabled, every channel
+      // is considered assigned to this client
+      return true;
+    }
+    return this.myClientId === this.hashring!.get(channel);
   }
 }
 
@@ -75,35 +158,34 @@ class ChannelGroup {
   subsciptions: EventEmitter;
   subscribedChannels: Record<string, RealtimeChannel> = {};
   expression: RegExp;
+  consumerGroup: ConsumerGroup;
 
-  constructor(readonly channels: Channels, filter: string) {
+  constructor(readonly channels: Channels, filter: string, options?: API.Types.ChannelGroupOptions) {
     this.currentChannels = [];
     this.subsciptions = new EventEmitter();
     this.active = channels.get('active', { params: { rewind: '1' } });
-    this.active.subscribe((msg: any) => this.updateActiveChannels(msg.data));
+    this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
+    this.consumerGroup.on('membership', () => this.updateActiveChannels(this.currentChannels));
     this.expression = new RegExp(filter);
   }
 
-  private updateActiveChannels(data: any) {
-    const activeChannels = data as { active: string[] };
-    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'received active channels ' + data);
+  async join() {
+    await this.consumerGroup.join();
+    this.active.subscribe((msg: any) => this.updateActiveChannels(msg.data.active));
+  }
 
-    const matched = activeChannels.active.filter((x) => this.expression.test(x));
+  private updateActiveChannels(activeChannels: string[]) {
+    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'received active channels ' + activeChannels);
 
-    const { add, remove } = this.diffSets(this.currentChannels, matched);
+    const matched = activeChannels.filter((x) => this.expression.test(x)).filter((x) => this.consumerGroup.assigned(x));
+
+    const { add, remove } = diffSets(this.currentChannels, matched);
     this.currentChannels = matched;
 
     Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'computed channel diffs ' + { add, remove });
 
     this.removeSubscriptions(remove);
     this.addSubscrptions(add);
-  }
-
-  private diffSets(current: string[], updated: string[]): { add: string[]; remove: string[] } {
-    const remove = current.filter((x) => !updated.includes(x));
-    const add = updated.filter((x) => !current.includes(x));
-
-    return { add, remove };
   }
 
   private addSubscrptions(channels: string[]) {
@@ -133,6 +215,13 @@ class ChannelGroup {
   subscribe(cb: (channel: string, msg: any) => void) {
     this.subsciptions.on('message', cb);
   }
+}
+
+function diffSets(current: string[], updated: string[]): { add: string[]; remove: string[] } {
+  const remove = current.filter((x) => !updated.includes(x));
+  const add = updated.filter((x) => !current.includes(x));
+
+  return { add, remove };
 }
 
 class Channels extends EventEmitter {
