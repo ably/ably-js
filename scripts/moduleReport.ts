@@ -22,6 +22,7 @@ const pluginNames = [
   'XHRRequest',
   'FetchRequest',
   'MessageInteractions',
+  'ChannelGroups',
 ];
 
 // List of all free-standing functions exported by the library along with the

@@ -32,6 +32,7 @@ import {
   RealtimeClient,
   Auth,
   Channels,
+  ChannelGroups as ChannelGroupsImpl,
   Channel,
   HttpPaginatedResponse,
   StatsParams,
@@ -130,6 +131,25 @@ export declare const MsgPack: unknown;
  * If you do not provide this plugin, then attempting to access a channel’s {@link ably!RealtimeChannel.presence} property will cause a runtime error.
  */
 export declare const RealtimePresence: unknown;
+
+/**
+ * The module is experimental and the API is subject to change.
+ *
+ * Provides a {@link BaseRealtime} instance with the ability to interact with the experiemental channel groups feature.
+ *
+ * To create a client that includes this module, include it in the `ModulesMap` that you pass to the {@link BaseRealtime.constructor}:
+ *
+ * ```javascript
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence, ChannelGroups } from 'ably/modules';
+ * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, RealtimePresence, ChannelGroups });
+ * ```
+ *
+ * If you do not provide this module, then attempting to use the functionality of channel groups will cause a runtime error.
+ *
+ * Note that in the experimental client-side simulation of ChannelGroups, you must provide the RealtimePresence module
+ * which is required for internal coordination among consumers.
+ */
+export declare const ChannelGroups: unknown;
 
 /**
  * Provides a {@link BaseRealtime} instance with the ability to establish a connection with the Ably realtime service using a [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) connection.
@@ -239,6 +259,11 @@ export interface ModularPlugins {
    * See {@link RealtimePresence | documentation for the `RealtimePresence` plugin}.
    */
   RealtimePresence?: typeof RealtimePresence;
+
+  /**
+   * See {@link ChannelGroups | documentation for the `ChannelGroups` module}.
+   */
+  ChannelGroups?: typeof ChannelGroups;
 
   /**
    * See {@link WebSocketTransport | documentation for the `WebSocketTransport` plugin}.
@@ -353,6 +378,10 @@ export declare class BaseRealtime implements RealtimeClient {
   connect(): void;
   auth: Auth;
   channels: Channels<RealtimeChannel>;
+  /**
+   * This is a preview feature and may change in a future non-major release.
+   */
+  channelGroups: ChannelGroupsImpl;
   connection: Connection;
   request<T = any>(
     method: string,

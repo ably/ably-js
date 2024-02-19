@@ -860,6 +860,56 @@ export interface ChannelOptions {
 }
 
 /**
+ * Describes the consumer group. Consumers in the same group will partition the channels of that group.
+ */
+interface ConsumerGroupOptions {
+  /**
+   * The name of the consumer group.
+   * Channels will be partitioned across consumers in the same group identified by this name.
+   */
+  name: string;
+}
+
+/**
+ * Allows specifying properties of a {@link ChannelGroup}
+ */
+interface ChannelGroupOptions {
+  /**
+   * Options for a consumer group used to partition the channels in the channel group across consumers in the consumer group.
+   */
+  consumerGroup?: ConsumerGroupOptions;
+  /**
+   * The name of the channel that receives the set of active channels in the group.
+   * For correct behaviour, this channel should have persist-last enabled.
+   * Note that this is a temporary option only required for the client-side simulation of channel groups.
+   *
+   * @defaultValue $ably:active
+   */
+  activeChannel?: string;
+  /**
+   * The rewind interval to use when attaching to the matched channels in the group.
+   * This faciltates at-least-once delivery in the event of a consumer group scaling event.
+   * Note that this is a temporary option only required for the client-side simulation of channel groups.
+   *
+   * @defaultValue 5s
+   */
+  rewind?: string;
+
+  /**
+   * The time for which the client will remain subscribed to a given channel after the last message is received.
+   * In the client-side simulation of channel groups, subscribing to the channel has the effect of keeping
+   * the channel active for the duration of the subscription. This timeout is used to determine how long to remain
+   * subscribed to a channel while no messages are received on it. It is possible that a message is sent after the
+   * client unsubscribes and before the channel becomes inactive, which means the client may not re-subscribe to the
+   * channel and could miss a message.
+   * Note that this is a temporary option only required for the client-side simulation of channel groups.
+   *
+   * @defaultValue 60 * 60 * 1000 (1 hour)
+   */
+  subscriptionTimeout?: number;
+}
+
+/**
  * Passes additional properties to a {@link RealtimeChannel} name to produce a new derived channel
  */
 export interface DeriveOptions {
@@ -1427,6 +1477,13 @@ export interface TokenRevocationFailureResult {
  */
 export type messageCallback<T> = (message: T) => void;
 /**
+ * A callback which returns a channel and message argument, used for {@link ChannelGroup} subscriptions.
+ *
+ * @param channel - The channel name on which the message was received.
+ * @param message - The message which triggered the callback.
+ */
+export type channelAndMessageCallback<T> = (channel: string, message: T) => void;
+/**
  * The callback used for the events emitted by {@link RealtimeChannel}.
  *
  * @param changeStateChange - The state change that occurred.
@@ -1959,6 +2016,41 @@ export declare interface Channel {
 }
 
 /**
+ * This is a preview feature and may change in a future non-major release.
+ *
+ * Enables messages to be subscribed to on a group of channels.
+ */
+export declare interface ChannelGroup {
+  /**
+   * Registers a listener for messages on this channel group. The caller supplies a listener function, which is called each time one or more messages arrives on the channels in the group.
+   *
+   * @param callback - An event listener function.
+   */
+  subscribe(callback: channelAndMessageCallback<InboundMessage>): Promise<void>;
+
+  /**
+   * Deregisters a listener for messages on this channel group.
+   *
+   * @param callback - An event listener function.
+   */
+  unsubscribe(callback: channelAndMessageCallback<InboundMessage>): void;
+
+  /**
+   * Joins the consumer group if one was created for this channel group,
+   * and returns a promise that is resolved when the channel group is attached
+   * to the active channel.
+   */
+  join(): Promise<void>;
+
+  /**
+   * Leaves the consumer group if one was created for this channel group,
+   * and returns a promise that is resolved when the channel group is detached
+   * from the active channel.
+   */
+  leave(): Promise<void>;
+}
+
+/**
  * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresence} object of a channel.
  */
 export declare interface RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
@@ -2168,7 +2260,8 @@ export declare interface Channels<T> {
    */
   get(name: string, channelOptions?: ChannelOptions): T;
   /**
-   * @experimental This is a preview feature and may change in a future non-major release.
+   * This is a preview feature and may change in a future non-major release.
+   *
    * This experimental method allows you to create custom realtime data feeds by selectively subscribing
    * to receive only part of the data from the channel.
    * See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
@@ -2188,6 +2281,22 @@ export declare interface Channels<T> {
    * @param name - The channel name.
    */
   release(name: string): void;
+}
+
+/**
+ * This is a preview feature and may change in a future non-major release.
+ *
+ * Creates and destroys {@link ChannelGroup} objects.
+ */
+export declare interface ChannelGroups {
+  /**
+   * Creates a new {@link ChannelGroup} object, with the specified {@link ChannelGroupOptions}, or returns the existing channel group object.
+   *
+   * @param filter - A regular expression defining the channel group. Only wildcards are supported.
+   * @param options - A {@link ChannelGroupOptions} object.
+   * @returns A {@link ChannelGroup} object.
+   */
+  get(filter: string, options?: ChannelGroupOptions): ChannelGroup;
 }
 
 /**
@@ -2725,6 +2834,10 @@ export declare class Realtime implements RealtimeClient {
   connect(): void;
   auth: Auth;
   channels: Channels<RealtimeChannel>;
+  /**
+   * This is a preview feature and may change in a future non-major release.
+   */
+  channelGroups: ChannelGroups;
   connection: Connection;
   request<T = any>(
     method: string,

@@ -10,6 +10,7 @@ import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
+import { ChannelGroups } from './baserealtime';
 
 export interface PresenceMessagePlugin {
   presenceMessageFromValues: typeof presenceMessageFromValues;
@@ -31,6 +32,7 @@ export interface ModularPlugins {
   XHRRequest?: typeof XHRRequest;
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
+  ChannelGroups?: typeof ChannelGroups;
 }
 
 export const allCommonModularPlugins: ModularPlugins = { Rest };
