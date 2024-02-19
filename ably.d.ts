@@ -327,6 +327,14 @@ export interface ChannelStatus {
   occupancy: ChannelOccupancy;
 }
 
+  interface ConsumerGroupOptions {
+    name: string;
+  }
+
+  interface ChannelGroupOptions {
+    consumerGroup?: ConsumerGroupOptions;
+  }
+
 /**
  * Contains the metrics of a {@link Channel} or {@link RealtimeChannel} object.
  */
