@@ -34,38 +34,6 @@ import { createMissingModuleError, shallowEquals } from 'common/lib/util/utils';
 
 const globalAgentPool: Array<{ options: RestAgentOptions; agents: Agents }> = [];
 
-const handler = function (uri: string, params: unknown, client: BaseClient | null) {
-  return function (err: ErrnoException | null, response?: Response, body?: unknown) {
-    if (err) {
-      return { error: err };
-    }
-    const statusCode = (response as Response).statusCode,
-      headers = (response as Response).headers;
-    if (statusCode >= 300) {
-      switch (headers['content-type']) {
-        case 'application/json':
-          body = JSON.parse(body as string);
-          break;
-        case 'application/x-msgpack':
-          if (!client?._MsgPack) {
-            return { error: createMissingModuleError('MsgPack') };
-          }
-          body = client._MsgPack.decode(body as Buffer);
-      }
-      const error = (body as { error: ErrorInfo }).error
-        ? ErrorInfo.fromValues((body as { error: ErrorInfo }).error)
-        : new ErrorInfo(
-            (headers['x-ably-errormessage'] as string) ||
-              'Error response received from server: ' + statusCode + ' body was: ' + Platform.Config.inspect(body),
-            Number(headers['x-ably-errorcode']),
-            statusCode
-          );
-      return { error, body, headers, unpacked: true, statusCode };
-    }
-    return { error: null, body, headers, unpacked: false, statusCode };
-  };
-};
-
 const Http: IPlatformHttpStatic = class {
   static methods = [HttpMethods.Get, HttpMethods.Delete, HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch];
   static methodsWithoutBody = [HttpMethods.Get, HttpMethods.Delete];
@@ -127,12 +95,12 @@ const Http: IPlatformHttpStatic = class {
 
     try {
       const res = await (got[method](doOptions) as CancelableRequest<Response>);
-      return handler(uri, params, this.client)(null, res, res.body);
+      return this._handler(null, res, res.body);
     } catch (err) {
       if (err instanceof got.HTTPError) {
-        return handler(uri, params, this.client)(null, err.response, err.response.body);
+        return this._handler(null, err.response, err.response.body);
       }
-      return handler(uri, params, this.client)(err as ErrnoException);
+      return this._handler(err as ErrnoException);
     }
   }
 
@@ -171,6 +139,43 @@ const Http: IPlatformHttpStatic = class {
       code === 'ECONNREFUSED' ||
       (statusCode >= 500 && statusCode <= 504)
     );
+  }
+
+  private _handler(err: ErrnoException | null, response?: Response, body?: unknown) {
+    if (err) {
+      return { error: err };
+    }
+
+    const statusCode = (response as Response).statusCode,
+      headers = (response as Response).headers;
+
+    if (statusCode >= 300) {
+      switch (headers['content-type']) {
+        case 'application/json':
+          body = JSON.parse(body as string);
+          break;
+
+        case 'application/x-msgpack':
+          if (!this.client?._MsgPack) {
+            return { error: createMissingModuleError('MsgPack') };
+          }
+          body = this.client._MsgPack.decode(body as Buffer);
+          break;
+      }
+
+      const error = (body as { error: ErrorInfo }).error
+        ? ErrorInfo.fromValues((body as { error: ErrorInfo }).error)
+        : new ErrorInfo(
+            (headers['x-ably-errormessage'] as string) ||
+              'Error response received from server: ' + statusCode + ' body was: ' + Platform.Config.inspect(body),
+            Number(headers['x-ably-errorcode']),
+            statusCode
+          );
+
+      return { error, body, headers, unpacked: true, statusCode };
+    }
+
+    return { error: null, body, headers, unpacked: false, statusCode };
   }
 };
 
