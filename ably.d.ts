@@ -1000,10 +1000,16 @@ declare namespace Types {
     modes?: ChannelModes;
   }
 
+  /**
+   * Describes the consumer group. Consumers in the same group will partition the channels of that group.
+   */
   interface ConsumerGroupOptions {
     name: string;
   }
 
+  /**
+   * Allows specifying properties of a {@link ChannelGroup}
+   */
   interface ChannelGroupOptions {
     consumerGroup?: ConsumerGroupOptions;
   }
@@ -2123,6 +2129,9 @@ declare namespace Types {
      * A {@link Types.Channels} object.
      */
     channels: Types.Channels<Types.RealtimeChannelPromise>;
+
+    channelGroups: Types.ChannelGroups;
+
     /**
      * A {@link Types.ConnectionPromise} object.
      */
@@ -3102,6 +3111,24 @@ declare namespace Types {
      * @param name - The channel name.
      */
     release(name: string): void;
+  }
+
+  /**
+   * Creates {@link ChannelGroup} objects which can be used to subscribe to 
+   * multiple channels at once based on a regex filter, and partition those
+   * channels over a set of consumers sharing the same consumer group name.
+   */
+  class ChannelGroups {
+    get(filter: string, options?: ChannelGroupOptions): Promise<ChannelGroup>;
+  }
+
+  /**
+   * A group of channels all matching a regex filter. Channels can be 
+   * subscribed to as a whole and the channel name and message will be
+   * passed to the subscribing callback.
+   */
+  class ChannelGroup {
+    subscribe(cb: (channel: string, msg: any) => void);
   }
 
   /**
