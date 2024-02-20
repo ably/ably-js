@@ -60,7 +60,7 @@ class BaseRealtime extends BaseClient {
   }
 
   get channelGroups() {
-    return this._channelGroups
+    return this._channelGroups;
   }
 
   connect(): void {
