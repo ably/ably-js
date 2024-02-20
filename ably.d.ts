@@ -327,14 +327,6 @@ export interface ChannelStatus {
   occupancy: ChannelOccupancy;
 }
 
-  interface ConsumerGroupOptions {
-    name: string;
-  }
-
-  interface ChannelGroupOptions {
-    consumerGroup?: ConsumerGroupOptions;
-  }
-
 /**
  * Contains the metrics of a {@link Channel} or {@link RealtimeChannel} object.
  */
@@ -850,6 +842,20 @@ export interface ChannelOptions {
    * An array of {@link ChannelMode} objects.
    */
   modes?: ChannelMode[];
+}
+
+/**
+ * Describes the consumer group. Consumers in the same group will partition the channels of that group.
+ */
+interface ConsumerGroupOptions {
+  name: string;
+}
+
+/**
+ * Allows specifying properties of a {@link ChannelGroup}
+ */
+interface ChannelGroupOptions {
+  consumerGroup?: ConsumerGroupOptions;
 }
 
 /**
