@@ -88,7 +88,7 @@ class RestChannel {
     Utils.mixin(headers, options.headers);
 
     if (idempotentRestPublishing && allEmptyIds(messages)) {
-      const msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
+      const msgIdBase = await Utils.randomString(MSG_ID_ENTROPY_BYTES);
       Utils.arrForEach(messages, function (message, index) {
         message.id = msgIdBase + ':' + index.toString();
       });
