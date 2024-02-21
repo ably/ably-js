@@ -227,20 +227,9 @@ export function forInOwnNonNullProperties(ob: Record<string, unknown>, fn: (prop
   }
 }
 
-export const arrFilter = (Array.prototype.filter as unknown)
-  ? function <T>(arr: Array<T>, fn: (value: T, index?: number, arr?: Array<T>) => boolean) {
-      return arr.filter(fn);
-    }
-  : function <T>(arr: Array<T>, fn: (value: T, index?: number, arr?: Array<T>) => boolean) {
-      const result = [],
-        len = arr.length;
-      for (let i = 0; i < len; i++) {
-        if (fn(arr[i])) {
-          result.push(arr[i]);
-        }
-      }
-      return result;
-    };
+export const arrFilter = function <T>(arr: Array<T>, fn: (value: T, index?: number, arr?: Array<T>) => boolean) {
+  return arr.filter(fn);
+};
 
 export const arrEvery = (Array.prototype.every as unknown)
   ? function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
