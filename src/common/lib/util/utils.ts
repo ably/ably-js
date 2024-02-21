@@ -227,16 +227,12 @@ export function forInOwnNonNullProperties(ob: Record<string, unknown>, fn: (prop
   }
 }
 
-export const arrForEach = (Array.prototype.forEach as unknown)
-  ? function <T = unknown>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => unknown) {
-      arr.forEach(fn);
-    }
-  : function <T = unknown>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => unknown) {
-      const len = arr.length;
-      for (let i = 0; i < len; i++) {
-        fn(arr[i], i, arr);
-      }
-    };
+export const arrForEach = function <T = unknown>(
+  arr: Array<T>,
+  fn: (value: T, index: number, arr: Array<T>) => unknown
+) {
+  arr.forEach(fn);
+};
 
 /* Useful when the function may mutate the array */
 export function safeArrForEach<T = unknown>(
