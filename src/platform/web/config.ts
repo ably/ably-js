@@ -4,8 +4,6 @@ import * as Utils from 'common/lib/util/utils';
 // Workaround for salesforce lightning locker compat
 const globalObject = Utils.getGlobalObject();
 
-declare var msCrypto: typeof crypto; // for IE11
-
 if (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
   console.log(
     "Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm"
@@ -78,7 +76,7 @@ const Config: IPlatformConfig = {
     return async function (arr: ArrayBufferView) {
       crypto.getRandomValues(arr);
     };
-  })(globalObject.crypto || msCrypto),
+  })(globalObject.crypto),
   isWebworker: isWebWorkerContext(),
 };
 
