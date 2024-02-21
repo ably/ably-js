@@ -227,14 +227,6 @@ export function forInOwnNonNullProperties(ob: Record<string, unknown>, fn: (prop
   }
 }
 
-/* Useful when the function may mutate the array */
-export function safeArrForEach<T = unknown>(
-  arr: Array<T>,
-  fn: (value: T, index: number, arr: Array<T>) => unknown
-): void {
-  return arr.slice().forEach(fn);
-}
-
 export const arrMap = (Array.prototype.map as unknown)
   ? function <T1, T2>(arr: Array<T1>, fn: (value: T1, index?: number, arr?: Array<T1>) => T2) {
       return arr.map(fn);

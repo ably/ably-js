@@ -929,9 +929,9 @@ class ConnectionManager extends EventEmitter {
       }
     }
 
-    /* Terminate any other pending transport(s), and
-     * abort any not-yet-pending transport attempts */
-    Utils.safeArrForEach(this.pendingTransports, (pendingTransport) => {
+    // terminate any other pending transport(s), and abort any not-yet-pending transport attempts
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.pendingTransports.slice().forEach((pendingTransport) => {
       if (pendingTransport === transport) {
         const msg =
           'Assumption violated: activating a transport that is still marked as a pending transport; transport = ' +
@@ -944,7 +944,8 @@ class ConnectionManager extends EventEmitter {
         pendingTransport.disconnect();
       }
     });
-    Utils.safeArrForEach(this.proposedTransports, (proposedTransport: Transport) => {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.proposedTransports.slice().forEach((proposedTransport: Transport) => {
       if (proposedTransport === transport) {
         Logger.logAction(
           Logger.LOG_ERROR,
@@ -1723,12 +1724,14 @@ class ConnectionManager extends EventEmitter {
     this.cancelSuspendTimer();
     this.startTransitionTimer(this.states.closing);
 
-    Utils.safeArrForEach(this.pendingTransports, function (transport) {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.pendingTransports.slice().forEach(function (transport) {
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
       if (transport) transport.close();
     });
 
-    Utils.safeArrForEach(this.proposedTransports, function (transport) {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.proposedTransports.slice().forEach(function (transport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.closeImpl()',
@@ -1864,7 +1867,8 @@ class ConnectionManager extends EventEmitter {
     /* This will prevent any connection procedure in an async part of one of its early stages from continuing */
     this.connectCounter++;
 
-    Utils.safeArrForEach(this.pendingTransports, function (transport) {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.pendingTransports.slice().forEach(function (transport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
@@ -1874,7 +1878,8 @@ class ConnectionManager extends EventEmitter {
     });
     this.pendingTransports = [];
 
-    Utils.safeArrForEach(this.proposedTransports, function (transport) {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.proposedTransports.slice().forEach(function (transport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
