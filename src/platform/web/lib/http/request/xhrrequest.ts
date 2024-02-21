@@ -39,10 +39,10 @@ function isEncodingChunked(xhr: XMLHttpRequest) {
 }
 
 function getHeadersAsObject(xhr: XMLHttpRequest) {
-  const headerPairs = Utils.trim(xhr.getAllResponseHeaders()).split('\r\n');
+  const headerPairs = xhr.getAllResponseHeaders().trim().split('\r\n');
   const headers: Record<string, string> = {};
   for (let i = 0; i < headerPairs.length; i++) {
-    const parts = headerPairs[i].split(':').map(Utils.trim);
+    const parts = headerPairs[i].split(':').map((x) => x.trim());
     headers[parts[0].toLowerCase()] = parts[1];
   }
   return headers;
