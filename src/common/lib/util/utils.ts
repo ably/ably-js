@@ -322,13 +322,9 @@ export function arrChooseN<T>(arr: Array<T>, n: number): Array<T> {
   return result;
 }
 
-export const trim = (String.prototype.trim as unknown)
-  ? function (str: string) {
-      return str.trim();
-    }
-  : function (str: string) {
-      return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
-    };
+export const trim = function (str: string) {
+  return str.trim();
+};
 
 /**
  * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
