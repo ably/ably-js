@@ -53,7 +53,7 @@ function validateChannelOptions(options?: API.ChannelOptions) {
       if (
         !currentMode ||
         typeof currentMode !== 'string' ||
-        !Utils.arrIn(channelModes, String.prototype.toUpperCase.call(currentMode))
+        !channelModes.includes(String.prototype.toUpperCase.call(currentMode))
       ) {
         return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
       }
@@ -696,7 +696,7 @@ class RealtimeChannel extends EventEmitter {
     this.clearStateTimer();
 
     // RTP5a1
-    if (Utils.arrIn(['detached', 'suspended', 'failed'], state)) {
+    if (['detached', 'suspended', 'failed'].includes(state)) {
       this.properties.channelSerial = null;
     }
 

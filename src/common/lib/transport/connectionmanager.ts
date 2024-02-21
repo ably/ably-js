@@ -590,7 +590,7 @@ class ConnectionManager extends EventEmitter {
         /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
         if (
           transport.shortName !== optimalTransport &&
-          Utils.arrIn(this.getUpgradePossibilities(), optimalTransport) &&
+          this.getUpgradePossibilities().includes(optimalTransport) &&
           this.activeProtocol
         ) {
           setTimeout(() => {
@@ -1558,7 +1558,7 @@ class ConnectionManager extends EventEmitter {
     const preference = this.getTransportPreference();
     let preferenceTimeoutExpired = false;
 
-    if (!Utils.arrIn(this.transports, preference)) {
+    if (!this.transports.includes(preference)) {
       this.unpersistTransportPreference();
       this.connectImpl(transportParams, connectCount);
     }
@@ -2025,7 +2025,7 @@ class ConnectionManager extends EventEmitter {
 
   private async processChannelMessage(message: ProtocolMessage, transport: Transport) {
     const onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
-      onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
+      onUpgradeTransport = this.pendingTransports.includes(transport) && this.state == this.states.synchronizing;
 
     /* As the lib now has a period where the upgrade transport is synced but
      * before it's become active (while waiting for the old one to become
@@ -2123,7 +2123,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   persistTransportPreference(transport: Transport): void {
-    if (Utils.arrIn(Defaults.upgradeTransports, transport.shortName)) {
+    if (Defaults.upgradeTransports.includes(transport.shortName)) {
       this.transportPreference = transport.shortName;
       if (haveWebStorage()) {
         Platform.WebStorage?.set?.(transportPreferenceName, transport.shortName);

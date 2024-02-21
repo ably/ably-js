@@ -174,10 +174,6 @@ export function arrSubtract<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   return result;
 }
 
-export function arrIn(arr: Array<unknown>, val: unknown): boolean {
-  return arr.indexOf(val) !== -1;
-}
-
 export function arrDeleteValue<T>(arr: Array<T>, val: T): boolean {
   const idx = arr.indexOf(val);
   const res = idx != -1;

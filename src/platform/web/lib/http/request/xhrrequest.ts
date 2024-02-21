@@ -10,7 +10,7 @@ import XHRStates from 'common/constants/XHRStates';
 import Platform from 'common/platform';
 
 function isAblyError(responseBody: unknown, headers: Record<string, string>): responseBody is { error?: ErrorInfo } {
-  return Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode');
+  return Utils.allToLowerCase(Utils.keysArray(headers)).includes('x-ably-errorcode');
 }
 
 function getAblyError(responseBody: unknown, headers: Record<string, string>) {
