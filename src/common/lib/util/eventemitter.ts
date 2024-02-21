@@ -33,7 +33,7 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
     }
 
     if (Array.isArray(listeners)) {
-      while ((index = Utils.arrIndexOf(listeners, listener)) !== -1) {
+      while ((index = listeners.indexOf(listener)) !== -1) {
         listeners.splice(index, 1);
       }
       /* If events object has an event name key with no listeners then

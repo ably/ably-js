@@ -151,7 +151,7 @@ export function arrIntersect<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   const result = [];
   for (let i = 0; i < arr1.length; i++) {
     const member = arr1[i];
-    if (arrIndexOf(arr2, member) != -1) result.push(member);
+    if (arr2.indexOf(member) != -1) result.push(member);
   }
   return result;
 }
@@ -169,21 +169,17 @@ export function arrSubtract<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   const result = [];
   for (let i = 0; i < arr1.length; i++) {
     const element = arr1[i];
-    if (arrIndexOf(arr2, element) == -1) result.push(element);
+    if (arr2.indexOf(element) == -1) result.push(element);
   }
   return result;
 }
 
-export const arrIndexOf = function (arr: Array<unknown>, elem: unknown, fromIndex?: number) {
-  return arr.indexOf(elem, fromIndex);
-};
-
 export function arrIn(arr: Array<unknown>, val: unknown): boolean {
-  return arrIndexOf(arr, val) !== -1;
+  return arr.indexOf(val) !== -1;
 }
 
 export function arrDeleteValue<T>(arr: Array<T>, val: T): boolean {
-  const idx = arrIndexOf(arr, val);
+  const idx = arr.indexOf(val);
   const res = idx != -1;
   if (res) arr.splice(idx, 1);
   return res;

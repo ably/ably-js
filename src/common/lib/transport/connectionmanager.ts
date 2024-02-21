@@ -44,8 +44,8 @@ function clearSessionRecoverData() {
 
 function betterTransportThan(a: Transport, b: Transport) {
   return (
-    Utils.arrIndexOf(Platform.Defaults.transportPreferenceOrder, a.shortName) >
-    Utils.arrIndexOf(Platform.Defaults.transportPreferenceOrder, b.shortName)
+    Platform.Defaults.transportPreferenceOrder.indexOf(a.shortName) >
+    Platform.Defaults.transportPreferenceOrder.indexOf(b.shortName)
   );
 }
 
@@ -1695,7 +1695,7 @@ class ConnectionManager extends EventEmitter {
      * transport in upgradeTransports (if it's in there - if not, currentSerial
      * will be -1, so return upgradeTransports.slice(0) == upgradeTransports */
     const current = (this.activeProtocol as Protocol).getTransport().shortName;
-    const currentSerial = Utils.arrIndexOf(this.upgradeTransports, current);
+    const currentSerial = this.upgradeTransports.indexOf(current);
     return this.upgradeTransports.slice(currentSerial + 1);
   }
 
@@ -2036,7 +2036,7 @@ class ConnectionManager extends EventEmitter {
       // Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
       // messages,  no new messages (as sync has been sent on new transport so new messages will
       // be resent there, or connection has been closed so don't want new messages)
-      if (Utils.arrIndexOf([actions.ACK, actions.NACK, actions.ERROR], message.action) > -1) {
+      if ([actions.ACK, actions.NACK, actions.ERROR].includes(message.action!)) {
         await this.realtime.channels.processChannelMessage(message);
       } else {
         Logger.logAction(

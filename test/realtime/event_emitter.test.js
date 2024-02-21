@@ -33,7 +33,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           expectedConnectionEvents = ['connecting', 'connected', 'closing', 'closed'],
           expectedChannelEvents = ['attaching', 'attached', 'detaching', 'detached'];
         realtime.connection.on(function () {
-          if ((index = utils.arrIndexOf(expectedConnectionEvents, this.event)) > -1) {
+          if ((index = expectedConnectionEvents.indexOf(this.event)) > -1) {
             delete expectedConnectionEvents[index];
             if (this.event == 'closed') {
               done();
@@ -45,7 +45,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         realtime.connection.on('connected', function () {
           var channel = realtime.channels.get('channel');
           channel.on(function () {
-            if ((index = utils.arrIndexOf(expectedChannelEvents, this.event)) > -1) {
+            if ((index = expectedChannelEvents.indexOf(this.event)) > -1) {
               delete expectedChannelEvents[index];
               switch (this.event) {
                 case 'detached':
