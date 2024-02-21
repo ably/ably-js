@@ -275,6 +275,7 @@ module.exports = function (grunt) {
 
         // Test that the code which exercises ably-js behaves as expected
         await execExternalPromises('npm run test');
+        await execExternalPromises('npm run test-ct');
 
         process.chdir(pwd);
       })()
