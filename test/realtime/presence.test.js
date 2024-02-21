@@ -18,7 +18,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   }
 
   function extractMember(presenceSet, clientId) {
-    return helper.arrFind(presenceSet, function (member) {
+    return presenceSet.find(function (member) {
       return member.clientId === clientId;
     });
   }

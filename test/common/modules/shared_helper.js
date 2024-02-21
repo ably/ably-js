@@ -193,21 +193,6 @@ define([
     return !!transport.toString().match(/wss?\:/);
   }
 
-  var arrFind = Array.prototype.find
-    ? function (arr, predicate) {
-        return arr.find(predicate);
-      }
-    : function (arr, predicate) {
-        var value;
-        for (var i = 0; i < arr.length; i++) {
-          value = arr[i];
-          if (predicate(value)) {
-            return value;
-          }
-        }
-        return undefined;
-      };
-
   function randomString() {
     return Math.random().toString().slice(2);
   }
@@ -265,7 +250,6 @@ define([
     isWebsocket: isWebsocket,
     unroutableHost: unroutableHost,
     unroutableAddress: unroutableAddress,
-    arrFind: arrFind,
     whenPromiseSettles: whenPromiseSettles,
     randomString: randomString,
     testMessageEquality: testMessageEquality,
