@@ -34,13 +34,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var activeChannel = realtime.channels.get('active');
           var dataChannel1 = realtime.channels.get('channel1');
           var dataChannel2 = realtime.channels.get('channel2');
-
-          activeChannel.attach(function (err) {
-            if (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-
+          try {
+            await activeChannel.attach();
             var events = 1;
 
             /* subscribe to channel group */
@@ -65,7 +60,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             /* publish active channels */
             activeChannel.publish('event0', testMsg);
             dataChannel1.publish('event0', 'test data 1');
-          });
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
         });
         monitorConnection(done, realtime);
       } catch (err) {
@@ -88,12 +86,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var dataChannel1 = realtime.channels.get('include:channel1');
           var streamChannel3 = realtime.channels.get('stream3');
 
-          activeChannel.attach(function (err) {
-            if (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-
+          try {
+            await activeChannel.attach();
             /* subscribe to channel group */
             channelGroup.subscribe((channel, msg) => {
               try {
@@ -111,7 +105,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             activeChannel.publish('event0', testMsg);
             streamChannel3.publish('event0', 'should not be subscribed to this message');
             dataChannel1.publish('event0', 'test data 1');
-          });
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
         });
         monitorConnection(done, realtime);
       } catch (err) {
@@ -136,12 +133,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var dataChannel4 = realtime.channels.get('group:channel4');
           var dataChannel5 = realtime.channels.get('group:channel5');
 
-          activeChannel.attach(function (err) {
-            if (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-
+          try {
+            await activeChannel.attach();
             var events = 1;
 
             /* subscribe to channel group */
@@ -174,7 +167,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             /* publish active channels */
             activeChannel.publish('event0', testMsg);
             dataChannel1.publish('event0', 'test data 1');
-          });
+          } catch (err) {
+            closeAndFinish(done, realtime, err);
+            return;
+          }
         });
         monitorConnection(done, realtime);
       } catch (err) {
@@ -196,24 +192,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           const channelGroup2 = await realtime2.channelGroups.get('part.*', { consumerGroup: { name: 'testgroup' } });
           const part1 = realtime2.channels.get('part1');
           const part2 = realtime2.channels.get('part:2');
-
-          // Wait for both consumers to appear in the group
-          await new Promise((resolve, reject) => {
-            const ch = realtime1.channels.get('testgroup');
-
-            ch.presence.subscribe(() => {
-              ch.presence.get({ waitForSync: true }, (err, result) => {
-                if (err) {
-                  reject(err);
-                  ch.presence.unsubscribe();
-                }
-                if (result.length == 2) {
-                  resolve();
-                  ch.presence.unsubscribe();
-                }
-              });
-            });
-          });
 
           channelGroup2.subscribe((channel, msg) => {
             try {
@@ -251,18 +229,36 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var testMsg = { active: ['part1', 'part:2'] };
           var activeChannel = realtime1.channels.get('active');
 
-          activeChannel.attach(function (err) {
-            if (err) {
-              closeAndFinish(done, [realtime1, realtime2], err);
-              return;
-            }
-
+          try {
+            await activeChannel.attach();
             /* publish active channels */
             activeChannel.publish('event0', testMsg);
+
+          // Wait for both consumers to appear in the group
+          await new Promise((resolve, reject) => {
+            const ch = realtime1.channels.get('testgroup');
+
+            ch.presence.subscribe(async () => {
+              try {
+                const result = await ch.presence.get({ waitForSync: true });
+                if (result.length == 2) {
+                  resolve();
+                  ch.presence.unsubscribe();
+                }
+              } catch (err) {
+                reject(err);
+                ch.presence.unsubscribe();
+              }
+            });
+          });
+
             // Publish a message to each of the partitions
             part1.publish('event0', 'partition 1 test data');
             part2.publish('event0', 'partition 2 test data');
-          });
+          } catch (err) {
+            closeAndFinish(done, [realtime1, realtime2], err);
+            return;
+          }
         });
         monitorConnection(done, realtime1);
       } catch (err) {

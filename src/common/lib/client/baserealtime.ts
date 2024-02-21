@@ -23,7 +23,7 @@ class BaseRealtime extends BaseClient {
   readonly _decodeVcdiff: VcdiffDecoder | null;
   // Extra transport implementations available to this client, in addition to those in Platform.Transports.bundledImplementations
   readonly _additionalTransportImplementations: TransportImplementations;
-  _channels: any;
+  _channels: Channels;
   connection: Connection;
   readonly _channelGroups;
 
@@ -56,7 +56,7 @@ class BaseRealtime extends BaseClient {
   }
 
   get channels() {
-    return this._channels;
+    return this._channels as any;
   }
 
   get channelGroups() {
@@ -79,7 +79,7 @@ class ChannelGroups {
 
   constructor(readonly channels: Channels) {}
 
-  async get(filter: string, options?: API.Types.ChannelGroupOptions): Promise<ChannelGroup> {
+  async get(filter: string, options?: API.ChannelGroupOptions): Promise<ChannelGroup> {
     let group = this.groups[filter];
 
     if (group) {
@@ -88,6 +88,7 @@ class ChannelGroups {
 
     group = this.groups[filter] = new ChannelGroup(this.channels, filter, options);
     await group.join();
+
 
     return group;
   }
@@ -115,31 +116,23 @@ class ConsumerGroup extends EventEmitter {
     this.myClientId = this.channels.realtime.options.clientId!;
     this.hashring = new HashRing(this.myClientId!);
 
-    await this.channel.presence.enter(null, (err) => {
-      if (err) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ConsumerGroup.join()',
-          'failed to enter presence set on consumer group channel:' + err
-        );
-      }
-    });
-
-    this.channel!.presence!.subscribe(() => {
-      this.computeMembership();
-    });
+    try {
+      await this.channel.presence.enter(null);
+      await this.channel!.presence!.subscribe(async () => {
+        await this.computeMembership();
+      });
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ConsumerGroup.join()',
+        'failed to enter presence set on consumer group channel:' + err
+      );
+    }
   }
 
-  computeMembership() {
-    this.channel!.presence.get({ waitForSync: true }, (err, result) => {
-      if (err) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ConsumerGroup.computeMembership()',
-          'failed to get presence set on consumer group channel:' + err
-        );
-        return;
-      }
+  async computeMembership() {
+    try {
+      const result = await this.channel!.presence.get({ waitForSync: true });
 
       const memberIds = result?.filter((member) => member.clientId).map((member) => member.clientId!) || [];
       const { add, remove } = diffSets(this.currentMembers, memberIds);
@@ -159,7 +152,14 @@ class ConsumerGroup extends EventEmitter {
       });
 
       this.emit('membership');
-    });
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ConsumerGroup.computeMembership()',
+        'failed to get presence set on consumer group channel:' + err
+      );
+      return;
+    }
   }
 
   assigned(channel: string): boolean {
@@ -180,7 +180,7 @@ class ChannelGroup {
   expression: RegExp;
   consumerGroup: ConsumerGroup;
 
-  constructor(readonly channels: Channels, filter: string, options?: API.Types.ChannelGroupOptions) {
+  constructor(readonly channels: Channels, filter: string, options?: API.ChannelGroupOptions) {
     this.currentChannels = [];
     this.subsciptions = new EventEmitter();
     this.active = channels.get('active', { params: { rewind: '1' } });
@@ -381,3 +381,4 @@ class Channels extends EventEmitter {
 }
 
 export default BaseRealtime;
+export type RealtimeChannelGroups = typeof ChannelGroups;

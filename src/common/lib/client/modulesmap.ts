@@ -11,6 +11,7 @@ import {
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
 import { VcdiffDecoder } from '../types/message';
+  import {RealtimeChannelGroups} from './baserealtime';
 
 export interface PresenceMessageModule {
   presenceMessageFromValues: typeof presenceMessageFromValues;
@@ -33,6 +34,7 @@ export interface ModulesMap {
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
   Vcdiff?: VcdiffDecoder;
+  ChannelGroups?: RealtimeChannelGroups
 }
 
 export const allCommonModules: ModulesMap = { Rest };
