@@ -12,6 +12,7 @@ import Auth from '../client/auth';
 import * as API from '../../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Platform from 'common/platform';
+import TransportName from '../../constants/TransportName';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
@@ -72,7 +73,7 @@ abstract class Transport extends EventEmitter {
     this.lastActivity = null;
   }
 
-  abstract shortName: string;
+  abstract shortName: TransportName;
   abstract send(message: ProtocolMessage): void;
 
   connect(): void {}
