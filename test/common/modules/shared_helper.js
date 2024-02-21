@@ -34,7 +34,7 @@ define([
   }
 
   function monitorConnection(done, realtime, states) {
-    utils.arrForEach(states || ['failed', 'suspended'], function (state) {
+    (states || ['failed', 'suspended']).forEach(function (state) {
       realtime.connection.on(state, function () {
         done(new Error('Connection monitoring: state changed to ' + state + ', aborting test'));
         realtime.close();
@@ -141,7 +141,7 @@ define([
   function testOnAllTransports(name, testFn, excludeUpgrade, skip) {
     var itFn = skip ? it.skip : it;
     let transports = availableTransports;
-    utils.arrForEach(transports, function (transport) {
+    transports.forEach(function (transport) {
       itFn(
         name + '_with_' + transport + '_binary_transport',
         testFn({ transports: [transport], useBinaryProtocol: true })

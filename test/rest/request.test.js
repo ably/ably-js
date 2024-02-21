@@ -167,7 +167,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    utils.arrForEach(['put', 'patch', 'delete'], function (method) {
+    ['put', 'patch', 'delete'].forEach(function (method) {
       it('check' + method, async function () {
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
         var res = await restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {});

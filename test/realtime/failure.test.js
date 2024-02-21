@@ -191,7 +191,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(value).to.be.below(max);
     }
 
-    utils.arrForEach(availableTransports, function (transport) {
+    availableTransports.forEach(function (transport) {
       it('disconnected_backoff_' + transport, function (done) {
         var disconnectedRetryTimeout = 150;
         var realtime = helper.AblyRealtime({
@@ -373,7 +373,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    utils.arrForEach(availableTransports, function (transport) {
+    availableTransports.forEach(function (transport) {
       it('channel_backoff_' + transport, function (done) {
         var channelRetryTimeout = 150;
         var realtime = helper.AblyRealtime({

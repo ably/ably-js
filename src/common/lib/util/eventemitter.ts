@@ -215,7 +215,7 @@ class EventEmitter {
       Array.prototype.push.apply(listeners, eventsListeners);
     }
 
-    Utils.arrForEach(listeners, function (listener) {
+    listeners.forEach(function (listener) {
       callListener(eventThis, listener, args);
     });
   }
@@ -260,7 +260,7 @@ class EventEmitter {
       const self = this;
       const listenerWrapper = function (this: any) {
         const innerArgs = Array.prototype.slice.call(arguments);
-        Utils.arrForEach(firstArg, function (eventName) {
+        firstArg.forEach(function (eventName) {
           self.off(eventName, listenerWrapper);
         });
         if (typeof secondArg !== 'function') {
@@ -268,7 +268,7 @@ class EventEmitter {
         }
         secondArg.apply(this, innerArgs);
       };
-      Utils.arrForEach(firstArg, function (eventName) {
+      firstArg.forEach(function (eventName) {
         self.on(eventName, listenerWrapper);
       });
     } else {

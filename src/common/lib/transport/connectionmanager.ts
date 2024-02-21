@@ -415,7 +415,7 @@ class ConnectionManager extends EventEmitter {
     if (initialiseWebSocketTransport) {
       initialiseWebSocketTransport(storage);
     }
-    Utils.arrForEach(Platform.Transports.order, function (transportName) {
+    Platform.Transports.order.forEach(function (transportName) {
       const initFn = implementations[transportName];
       if (initFn) {
         initFn(storage);
@@ -1711,7 +1711,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    Utils.arrForEach(upgradePossibilities, (upgradeTransport: TransportName) => {
+    upgradePossibilities.forEach((upgradeTransport: TransportName) => {
       /* Note: the transport may mutate the params, so give each transport a fresh one */
       const upgradeTransportParams = this.createTransportParams(transportParams.host, 'upgrade');
       this.tryATransport(upgradeTransportParams, upgradeTransport, noop);

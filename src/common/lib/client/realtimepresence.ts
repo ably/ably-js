@@ -445,7 +445,7 @@ class RealtimePresence extends EventEmitter {
 
   _synthesizeLeaves(items: PresenceMessage[]): void {
     const subscriptions = this.subscriptions;
-    Utils.arrForEach(items, function (item) {
+    items.forEach(function (item) {
       const presence = presenceMessageFromValues({
         action: 'leave',
         connectionId: item.connectionId,
