@@ -27,7 +27,6 @@ export interface ISpecificPlatformConfig {
   userAgent?: string | null;
   inherits?: typeof import('util').inherits;
   currentUrl?: string;
-  noUpgrade?: boolean | string;
   fetchSupported?: boolean;
   xhrSupported?: boolean;
   allowComet?: boolean;

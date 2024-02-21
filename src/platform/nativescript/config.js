@@ -20,7 +20,6 @@ if (global.android) {
 var Config = {
   agent: 'nativescript',
   logTimestamps: true,
-  noUpgrade: false,
   binaryType: 'arraybuffer',
   WebSocket: WebSocket,
   xhrSupported: XMLHttpRequest,

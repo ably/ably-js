@@ -36,7 +36,6 @@ const Config: IPlatformConfig = {
   logTimestamps: true,
   userAgent: userAgent,
   currentUrl: currentUrl,
-  noUpgrade: userAgent && !!userAgent.match(/MSIE\s8\.0/),
   binaryType: 'arraybuffer',
   WebSocket: globalObject.WebSocket,
   fetchSupported: !!globalObject.fetch,

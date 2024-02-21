@@ -5,7 +5,6 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
   return {
     agent: 'reactnative',
     logTimestamps: true,
-    noUpgrade: false,
     binaryType: 'arraybuffer',
     WebSocket: WebSocket,
     xhrSupported: true,
