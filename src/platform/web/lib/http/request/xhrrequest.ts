@@ -309,8 +309,6 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       if (xhr.status !== 0) {
         if (statusCode === undefined) {
           statusCode = xhr.status;
-          /* IE returns 1223 for 204: http://bugs.jquery.com/ticket/1450 */
-          if (statusCode === 1223) statusCode = 204;
           onResponse();
         }
         if (readyState == 3 && streaming) {
