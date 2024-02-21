@@ -1,6 +1,10 @@
 import { IPlatformConfig } from '../../common/types/IPlatformConfig';
 import BufferUtils from '../web/lib/util/bufferutils';
 
+type RNRandomBytes = {
+  randomBytes: (byteLength: number, cb: (err: Error | null, base64String: string | null) => void) => void;
+};
+
 export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
   return {
     agent: 'reactnative',
@@ -29,10 +33,10 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
     },
     TextEncoder: global.TextEncoder,
     TextDecoder: global.TextDecoder,
-    getRandomArrayBuffer: (function (RNRandomBytes) {
+    getRandomArrayBuffer: (function (RNRandomBytes: RNRandomBytes) {
       return async function (byteLength: number) {
         return new Promise((resolve, reject) => {
-          RNRandomBytes.randomBytes(byteLength, function (err: Error | null, base64String: string | null) {
+          RNRandomBytes.randomBytes(byteLength, (err, base64String) => {
             err ? reject(err) : resolve(bufferUtils.toArrayBuffer(bufferUtils.base64Decode(base64String!)));
           });
         });

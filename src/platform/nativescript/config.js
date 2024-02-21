@@ -50,6 +50,10 @@ var Config = {
       arr[i] = bytes[i];
     }
   },
+  getRandomArrayBuffer: async function (byteLength) {
+    var bytes = randomBytes(byteLength);
+    return bytes;
+  },
 };
 
 export default Config;

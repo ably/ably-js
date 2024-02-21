@@ -76,6 +76,11 @@ const Config: IPlatformConfig = {
       crypto.getRandomValues(arr);
     };
   })(globalObject.crypto),
+  getRandomArrayBuffer: async function (byteLength: number): Promise<ArrayBuffer> {
+    const byteArray = new Uint8Array(byteLength);
+    globalObject.crypto.getRandomValues(byteArray);
+    return byteArray.buffer;
+  },
   isWebworker: isWebWorkerContext(),
 };
 

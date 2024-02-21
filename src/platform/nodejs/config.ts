@@ -25,6 +25,9 @@ const Config: IPlatformConfig = {
       dataView.setUint8(i, bytes[i]);
     }
   },
+  getRandomArrayBuffer: async function (byteLength: number): Promise<Buffer> {
+    return util.promisify(crypto.randomBytes)(byteLength);
+  },
 };
 
 export default Config;

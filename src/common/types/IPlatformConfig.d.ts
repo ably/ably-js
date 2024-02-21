@@ -14,6 +14,7 @@ export interface ICommonPlatformConfig {
   nextTick: process.nextTick;
   inspect: (value: unknown) => string;
   stringByteSize: Buffer.byteLength;
+  getRandomArrayBuffer: (byteLength: number) => Promise<ArrayBuffer>;
 }
 
 /**
@@ -35,7 +36,6 @@ export interface ISpecificPlatformConfig {
   atob?: typeof atob | null;
   TextEncoder?: typeof TextEncoder;
   TextDecoder?: typeof TextDecoder;
-  getRandomArrayBuffer?: (byteLength: number) => Promise<ArrayBuffer>;
   isWebworker?: boolean;
 }
 
