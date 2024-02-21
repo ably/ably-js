@@ -5,9 +5,9 @@ import {
   ErrnoException,
   RequestBody,
   IPlatformHttpStatic,
-  RequestCallback,
-  RequestCallbackError,
+  RequestResultError,
   RequestParams,
+  RequestResult,
 } from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
 import got, { Response, Options, CancelableRequest, Agents } from 'got';
@@ -16,7 +16,7 @@ import https from 'https';
 import BaseClient from 'common/lib/client/baseclient';
 import { RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
-import { shallowEquals, throwMissingModuleError } from 'common/lib/util/utils';
+import { createMissingModuleError, shallowEquals } from 'common/lib/util/utils';
 
 /***************************************************
  *
@@ -34,11 +34,10 @@ import { shallowEquals, throwMissingModuleError } from 'common/lib/util/utils';
 
 const globalAgentPool: Array<{ options: RestAgentOptions; agents: Agents }> = [];
 
-const handler = function (uri: string, params: unknown, client: BaseClient | null, callback?: RequestCallback) {
+const handler = function (uri: string, params: unknown, client: BaseClient | null) {
   return function (err: ErrnoException | null, response?: Response, body?: unknown) {
     if (err) {
-      callback?.(err);
-      return;
+      return { error: err };
     }
     const statusCode = (response as Response).statusCode,
       headers = (response as Response).headers;
@@ -49,7 +48,7 @@ const handler = function (uri: string, params: unknown, client: BaseClient | nul
           break;
         case 'application/x-msgpack':
           if (!client?._MsgPack) {
-            throwMissingModuleError('MsgPack');
+            return { error: createMissingModuleError('MsgPack') };
           }
           body = client._MsgPack.decode(body as Buffer);
       }
@@ -61,10 +60,9 @@ const handler = function (uri: string, params: unknown, client: BaseClient | nul
             Number(headers['x-ably-errorcode']),
             statusCode
           );
-      callback?.(error, body, headers, true, statusCode);
-      return;
+      return { error, body, headers, unpacked: true, statusCode };
     }
-    callback?.(null, body, headers, false, statusCode);
+    return { error: null, body, headers, unpacked: false, statusCode };
   };
 };
 
@@ -81,14 +79,13 @@ const Http: IPlatformHttpStatic = class {
     this.client = client ?? null;
   }
 
-  doUri(
+  async doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
+    params: RequestParams
+  ): Promise<RequestResult> {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
@@ -128,45 +125,40 @@ const Http: IPlatformHttpStatic = class {
     // the same endpoint, inappropriately retrying 429s, etc
     doOptions.retry = { limit: 0 };
 
-    (got[method](doOptions) as CancelableRequest<Response>)
-      .then((res: Response) => {
-        handler(uri, params, this.client, callback)(null, res, res.body);
-      })
-      .catch((err: ErrnoException) => {
-        if (err instanceof got.HTTPError) {
-          handler(uri, params, this.client, callback)(null, err.response, err.response.body);
-          return;
-        }
-        handler(uri, params, this.client, callback)(err);
-      });
+    try {
+      const res = await (got[method](doOptions) as CancelableRequest<Response>);
+      return handler(uri, params, this.client)(null, res, res.body);
+    } catch (err) {
+      if (err instanceof got.HTTPError) {
+        return handler(uri, params, this.client)(null, err.response, err.response.body);
+      }
+      return handler(uri, params, this.client)(err as ErrnoException);
+    }
   }
 
-  checkConnectivity = (callback: (errorInfo: ErrorInfo | null, connected?: boolean) => void): void => {
+  checkConnectivity = async (): Promise<boolean> => {
     if (this.client?.options.disableConnectivityCheck) {
-      callback(null, true);
-      return;
+      return true;
     }
     const connectivityCheckUrl = this.client?.options.connectivityCheckUrl || Defaults.connectivityCheckUrl;
     const connectivityCheckParams = this.client?.options.connectivityCheckParams ?? null;
     const connectivityUrlIsDefault = !this.client?.options.connectivityCheckUrl;
 
-    this.doUri(
+    const { error, statusCode, body } = await this.doUri(
       HttpMethods.Get,
       connectivityCheckUrl,
       null,
       null,
-      connectivityCheckParams,
-      function (err, responseText, headers, unpacked, statusCode) {
-        if (!err && !connectivityUrlIsDefault) {
-          callback(null, isSuccessCode(statusCode as number));
-          return;
-        }
-        callback(null, !err && (responseText as Buffer | string)?.toString().trim() === 'yes');
-      }
+      connectivityCheckParams
     );
+
+    if (!error && !connectivityUrlIsDefault) {
+      return isSuccessCode(statusCode as number);
+    }
+    return !error && (body as Buffer | string)?.toString().trim() === 'yes';
   };
 
-  shouldFallback(err: RequestCallbackError) {
+  shouldFallback(err: RequestResultError) {
     const { code, statusCode } = err as ErrnoException;
     return (
       code === 'ENETUNREACH' ||

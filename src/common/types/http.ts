@@ -8,15 +8,20 @@ import Logger from 'common/lib/util/logger';
 import * as Utils from 'common/lib/util/utils';
 
 export type PathParameter = string | ((host: string) => string);
-export type RequestCallbackHeaders = Partial<Record<string, string | string[]>>;
-export type RequestCallbackError = ErrnoException | IPartialErrorInfo;
-export type RequestCallback = (
-  error?: RequestCallbackError | null,
-  body?: unknown,
-  headers?: RequestCallbackHeaders,
-  unpacked?: boolean,
-  statusCode?: number
-) => void;
+export type ResponseHeaders = Partial<Record<string, string | string[]>>;
+export type RequestResultError = ErrnoException | IPartialErrorInfo;
+
+/**
+ * The `body`, `headers`, `unpacked`, and `statusCode` properties of a `RequestResult` may be populated even if its `error` property is non-null.
+ */
+export type RequestResult = {
+  error: RequestResultError | null;
+  body?: unknown;
+  headers?: ResponseHeaders;
+  unpacked?: boolean;
+  statusCode?: number;
+};
+
 export type RequestParams = Record<string, string> | null;
 export type RequestBody =
   | Buffer // only on Node
@@ -34,20 +39,23 @@ export interface IPlatformHttp {
   supportsAuthHeaders: boolean;
   supportsLinkHeaders: boolean;
 
+  /**
+   * This method should not throw any errors; rather, it should communicate any error by populating the {@link RequestResult.error} property of the returned {@link RequestResult}.
+   */
   doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback?: RequestCallback
-  ): void;
-  checkConnectivity?: (callback: (err?: ErrorInfo | null, connected?: boolean) => void) => void;
+    params: RequestParams
+  ): Promise<RequestResult>;
+
+  checkConnectivity?: () => Promise<boolean>;
 
   /**
-   * @param error An error returned by {@link doUri}’s callback.
+   * @param error An error from the {@link RequestResult.error} property of a result returned by {@link doUri}.
    */
-  shouldFallback(error: RequestCallbackError): boolean;
+  shouldFallback(error: RequestResultError): boolean;
 }
 
 export function paramString(params: Record<string, any> | null) {
@@ -64,37 +72,29 @@ export function appendingParams(uri: string, params: Record<string, any> | null)
   return uri + (params ? '?' : '') + paramString(params);
 }
 
-function logResponseHandler(
-  callback: RequestCallback | undefined,
-  method: HttpMethods,
-  uri: string,
-  params: Record<string, string> | null
-): RequestCallback {
-  return (err, body, headers, unpacked, statusCode) => {
-    if (err) {
-      Logger.logActionNoStrip(
-        Logger.LOG_MICRO,
-        'Http.' + method + '()',
-        'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(err)
-      );
-    } else {
-      Logger.logActionNoStrip(
-        Logger.LOG_MICRO,
-        'Http.' + method + '()',
-        'Received; ' +
-          appendingParams(uri, params) +
-          '; Headers: ' +
-          paramString(headers as Record<string, any>) +
-          '; StatusCode: ' +
-          statusCode +
-          '; Body' +
-          (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
-      );
-    }
-    if (callback) {
-      callback(err, body, headers, unpacked, statusCode);
-    }
-  };
+function logResult(result: RequestResult, method: HttpMethods, uri: string, params: Record<string, string> | null) {
+  if (result.error) {
+    Logger.logActionNoStrip(
+      Logger.LOG_MICRO,
+      'Http.' + method + '()',
+      'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(result.error)
+    );
+  } else {
+    Logger.logActionNoStrip(
+      Logger.LOG_MICRO,
+      'Http.' + method + '()',
+      'Received; ' +
+        appendingParams(uri, params) +
+        '; Headers: ' +
+        paramString(result.headers as Record<string, any>) +
+        '; StatusCode: ' +
+        result.statusCode +
+        '; Body' +
+        (Platform.BufferUtils.isBuffer(result.body)
+          ? ' (Base64): ' + Platform.BufferUtils.base64Encode(result.body)
+          : ': ' + result.body)
+    );
+  }
 }
 
 function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, params: RequestParams) {
@@ -112,14 +112,13 @@ function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, 
 
 export class Http {
   private readonly platformHttp: IPlatformHttp;
-  checkConnectivity?: (callback: (err?: ErrorInfo | null, connected?: boolean) => void) => void;
+  checkConnectivity?: () => Promise<boolean>;
 
   constructor(private readonly client?: BaseClient) {
     this.platformHttp = new Platform.Http(client);
 
     this.checkConnectivity = this.platformHttp.checkConnectivity
-      ? (callback: (err?: ErrorInfo | null, connected?: boolean) => void) =>
-          this.platformHttp.checkConnectivity!(callback)
+      ? () => this.platformHttp.checkConnectivity!()
       : undefined;
   }
 
@@ -145,61 +144,59 @@ export class Http {
     return Defaults.getHosts(client.options);
   }
 
-  do(
+  /**
+   * This method will not throw any errors; rather, it will communicate any error by populating the {@link RequestResult.error} property of the returned {@link RequestResult}.
+   */
+  async do(
     method: HttpMethods,
     path: PathParameter,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback?: RequestCallback | undefined
-  ): void {
-    /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
-    const client = this.client;
-    if (!client) {
-      throw new Error('http.do called without client');
-    }
+    params: RequestParams
+  ): Promise<RequestResult> {
+    try {
+      /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
+      const client = this.client;
+      if (!client) {
+        return { error: new ErrorInfo('http.do called without client', 50000, 500) };
+      }
 
-    const uriFromHost =
-      typeof path === 'function'
-        ? path
-        : function (host: string) {
-            return client.baseUri(host) + path;
-          };
+      const uriFromHost =
+        typeof path === 'function'
+          ? path
+          : function (host: string) {
+              return client.baseUri(host) + path;
+            };
 
-    const currentFallback = client._currentFallback;
-    if (currentFallback) {
-      if (currentFallback.validUntil > Date.now()) {
-        /* Use stored fallback */
-        this.doUri(method, uriFromHost(currentFallback.host), headers, body, params, (err, ...args) => {
-          if (err && this.platformHttp.shouldFallback(err as ErrnoException)) {
+      const currentFallback = client._currentFallback;
+      if (currentFallback) {
+        if (currentFallback.validUntil > Date.now()) {
+          /* Use stored fallback */
+          const result = await this.doUri(method, uriFromHost(currentFallback.host), headers, body, params);
+          if (result.error && this.platformHttp.shouldFallback(result.error as ErrnoException)) {
             /* unstore the fallback and start from the top with the default sequence */
             client._currentFallback = null;
-            this.do(method, path, headers, body, params, callback);
-            return;
+            return this.do(method, path, headers, body, params);
           }
-          callback?.(err, ...args);
-        });
-        return;
-      } else {
-        /* Fallback expired; remove it and fallthrough to normal sequence */
-        client._currentFallback = null;
+          return result;
+        } else {
+          /* Fallback expired; remove it and fallthrough to normal sequence */
+          client._currentFallback = null;
+        }
       }
-    }
 
-    const hosts = this._getHosts(client);
+      const hosts = this._getHosts(client);
 
-    /* see if we have one or more than one host */
-    if (hosts.length === 1) {
-      this.doUri(method, uriFromHost(hosts[0]), headers, body, params, callback);
-      return;
-    }
+      /* see if we have one or more than one host */
+      if (hosts.length === 1) {
+        return this.doUri(method, uriFromHost(hosts[0]), headers, body, params);
+      }
 
-    const tryAHost = (candidateHosts: Array<string>, persistOnSuccess?: boolean) => {
-      const host = candidateHosts.shift();
-      this.doUri(method, uriFromHost(host as string), headers, body, params, (err, ...args) => {
-        if (err && this.platformHttp.shouldFallback(err as ErrnoException) && candidateHosts.length) {
-          tryAHost(candidateHosts, true);
-          return;
+      const tryAHost = async (candidateHosts: Array<string>, persistOnSuccess?: boolean): Promise<RequestResult> => {
+        const host = candidateHosts.shift();
+        const result = await this.doUri(method, uriFromHost(host as string), headers, body, params);
+        if (result.error && this.platformHttp.shouldFallback(result.error as ErrnoException) && candidateHosts.length) {
+          return tryAHost(candidateHosts, true);
         }
         if (persistOnSuccess) {
           /* RSC15f */
@@ -208,27 +205,39 @@ export class Http {
             validUntil: Date.now() + client.options.timeouts.fallbackRetryTimeout,
           };
         }
-        callback?.(err, ...args);
-      });
-    };
-    tryAHost(hosts);
+        return result;
+      };
+      return tryAHost(hosts);
+    } catch (err) {
+      // Handle any unexpected error, to ensure we always meet our contract of not throwing any errors
+      return { error: new ErrorInfo(`Unexpected error in Http.do: ${Utils.inspectError(err)}`, 500, 50000) };
+    }
   }
 
-  doUri(
+  /**
+   * This method will not throw any errors; rather, it will communicate any error by populating the {@link RequestResult.error} property of the returned {@link RequestResult}.
+   */
+  async doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback?: RequestCallback | undefined
-  ): void {
-    logRequest(method, uri, body, params);
+    params: RequestParams
+  ): Promise<RequestResult> {
+    try {
+      logRequest(method, uri, body, params);
 
-    if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      callback = logResponseHandler(callback, method, uri, params);
+      const result = await this.platformHttp.doUri(method, uri, headers, body, params);
+
+      if (Logger.shouldLog(Logger.LOG_MICRO)) {
+        logResult(result, method, uri, params);
+      }
+
+      return result;
+    } catch (err) {
+      // Handle any unexpected error, to ensure we always meet our contract of not throwing any errors
+      return { error: new ErrorInfo(`Unexpected error in Http.doUri: ${Utils.inspectError(err)}`, 500, 50000) };
     }
-
-    this.platformHttp.doUri(method, uri, headers, body, params, callback);
   }
 }
 

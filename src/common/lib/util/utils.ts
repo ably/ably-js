@@ -455,8 +455,9 @@ export function whenPromiseSettles<T, E = unknown>(
     .then((result) => {
       callback?.(null, result);
     })
-    .catch((err) => {
-      callback?.(err);
+    .catch((err: unknown) => {
+      // We make no guarantees about the type of the error that gets passed to the callback. Issue https://github.com/ably/ably-js/issues/1617 will think about how to correctly handle error types.
+      callback?.(err as E);
     });
 }
 
@@ -576,6 +577,10 @@ export function arrEquals(a: any[], b: any[]) {
   );
 }
 
+export function createMissingModuleError(moduleName: keyof ModulesMap): ErrorInfo {
+  return new ErrorInfo(`${moduleName} module not provided`, 40019, 400);
+}
+
 export function throwMissingModuleError(moduleName: keyof ModulesMap): never {
-  throw new ErrorInfo(`${moduleName} module not provided`, 40019, 400);
+  throw createMissingModuleError(moduleName);
 }

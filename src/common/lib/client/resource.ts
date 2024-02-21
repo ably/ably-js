@@ -6,17 +6,11 @@ import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
-import {
-  RequestBody,
-  RequestCallbackHeaders,
-  appendingParams as urlFromPathAndParams,
-  paramString,
-} from 'common/types/http';
-import { ErrnoException } from '../../types/http';
+import { RequestBody, ResponseHeaders, appendingParams as urlFromPathAndParams, paramString } from 'common/types/http';
 
 async function withAuthDetails<T>(
   client: BaseClient,
-  headers: RequestCallbackHeaders | undefined,
+  headers: ResponseHeaders | undefined,
   params: Record<string, any>,
   opCallback: Function
 ): Promise<ResourceResult<T>> {
@@ -103,7 +97,7 @@ function logResult<T>(result: ResourceResult<T>, method: HttpMethods, path: stri
 
 export interface ResourceResponse<T> {
   body?: T;
-  headers?: RequestCallbackHeaders;
+  headers?: ResponseHeaders;
   unpacked?: boolean;
   statusCode?: number;
 }
@@ -327,19 +321,7 @@ class Resource {
         );
       }
 
-      type HttpResult = {
-        error?: ErrnoException | IPartialErrorInfo | null;
-        body?: unknown;
-        headers?: RequestCallbackHeaders;
-        unpacked?: boolean;
-        statusCode?: number;
-      };
-
-      const httpResult = await new Promise<HttpResult>((resolve) => {
-        client.http.do(method, path, headers, body, params, function (error, body, headers, unpacked, statusCode) {
-          resolve({ error, body, headers, unpacked, statusCode });
-        });
-      });
+      const httpResult = await client.http.do(method, path, headers, body, params);
 
       if (httpResult.error && Auth.isTokenErr(httpResult.error as ErrorInfo)) {
         /* token has expired, so get a new one */

@@ -1,7 +1,7 @@
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestBody, RequestCallback, RequestCallbackHeaders, RequestParams } from 'common/types/http';
+import { RequestBody, RequestResultError, ResponseHeaders, RequestParams, RequestResult } from 'common/types/http';
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import * as Utils from 'common/lib/util/utils';
@@ -17,7 +17,7 @@ function getAblyError(responseBody: unknown, headers: Headers) {
 }
 
 function convertHeaders(headers: Headers) {
-  const result: RequestCallbackHeaders = {};
+  const result: ResponseHeaders = {};
 
   headers.forEach((value, key) => {
     result[key] = value;
@@ -26,27 +26,29 @@ function convertHeaders(headers: Headers) {
   return result;
 }
 
-export default function fetchRequest(
+export default async function fetchRequest(
   method: HttpMethods,
   client: BaseClient | null,
   uri: string,
   headers: Record<string, string> | null,
   params: RequestParams,
-  body: RequestBody | null,
-  callback: RequestCallback
-) {
+  body: RequestBody | null
+): Promise<RequestResult> {
   const fetchHeaders = new Headers(headers || {});
   const _method = method ? method.toUpperCase() : Utils.isEmptyArg(body) ? 'GET' : 'POST';
 
   const controller = new AbortController();
 
-  const timeout = setTimeout(
-    () => {
-      controller.abort();
-      callback(new PartialErrorInfo('Request timed out', null, 408));
-    },
-    client ? client.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
-  );
+  let timeout: ReturnType<typeof setTimeout>; // This way we don’t have to worry about the fact that the TypeScript compiler is — for reasons I haven’t looked into — picking up the signature of the Node version of setTimeout, which has a different return type to the web one
+  const timeoutPromise: Promise<RequestResult> = new Promise((resolve) => {
+    timeout = setTimeout(
+      () => {
+        controller.abort();
+        resolve({ error: new PartialErrorInfo('Request timed out', null, 408) });
+      },
+      client ? client.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
+    );
+  });
 
   const requestInit: RequestInit = {
     method: _method,
@@ -58,38 +60,43 @@ export default function fetchRequest(
     requestInit.credentials = fetchHeaders.has('authorization') ? 'include' : 'same-origin';
   }
 
-  Utils.getGlobalObject()
-    .fetch(uri + '?' + new URLSearchParams(params || {}), requestInit)
-    .then((res) => {
-      clearTimeout(timeout);
+  const resultPromise = (async (): Promise<RequestResult> => {
+    try {
+      const res = await Utils.getGlobalObject().fetch(uri + '?' + new URLSearchParams(params || {}), requestInit);
+
+      clearTimeout(timeout!);
+
       const contentType = res.headers.get('Content-Type');
-      let prom;
+      let body;
       if (contentType && contentType.indexOf('application/x-msgpack') > -1) {
-        prom = res.arrayBuffer();
+        body = await res.arrayBuffer();
       } else if (contentType && contentType.indexOf('application/json') > -1) {
-        prom = res.json();
+        body = await res.json();
       } else {
-        prom = res.text();
+        body = await res.text();
       }
-      prom.then((body) => {
-        const unpacked = !!contentType && contentType.indexOf('application/x-msgpack') === -1;
-        const headers = convertHeaders(res.headers);
-        if (!res.ok) {
-          const err =
-            getAblyError(body, res.headers) ||
-            new PartialErrorInfo(
-              'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
-              null,
-              res.status
-            );
-          callback(err, body, headers, unpacked, res.status);
-        } else {
-          callback(null, body, headers, unpacked, res.status);
-        }
-      });
-    })
-    .catch((err) => {
-      clearTimeout(timeout);
-      callback(err);
-    });
+
+      const unpacked = !!contentType && contentType.indexOf('application/x-msgpack') === -1;
+      const headers = convertHeaders(res.headers);
+
+      if (!res.ok) {
+        const error =
+          getAblyError(body, res.headers) ||
+          new PartialErrorInfo(
+            'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
+            null,
+            res.status
+          );
+
+        return { error, body, headers, unpacked, statusCode: res.status };
+      } else {
+        return { error: null, body, headers, unpacked, statusCode: res.status };
+      }
+    } catch (error) {
+      clearTimeout(timeout!);
+      return { error: error as RequestResultError };
+    }
+  })();
+
+  return Promise.race([timeoutPromise, resultPromise]);
 }

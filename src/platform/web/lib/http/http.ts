@@ -1,7 +1,7 @@
 import Platform from 'common/platform';
 import Defaults from 'common/lib/util/defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { RequestBody, RequestCallback, RequestCallbackError, RequestParams } from 'common/types/http';
+import { RequestBody, RequestResultError, RequestParams, RequestResult } from 'common/types/http';
 import HttpMethods from 'common/constants/HttpMethods';
 import BaseClient from 'common/lib/client/baseclient';
 import XHRStates from 'common/constants/XHRStates';
@@ -49,93 +49,100 @@ const Http = class {
 
     if (Platform.Config.xhrSupported && xhrRequestImplementation) {
       this.supportsAuthHeaders = true;
-      this.Request = function (
+      this.Request = async function (
         method: HttpMethods,
         uri: string,
         headers: Record<string, string> | null,
         params: RequestParams,
-        body: RequestBody | null,
-        callback: RequestCallback
+        body: RequestBody | null
       ) {
-        const req = xhrRequestImplementation.createRequest(
-          uri,
-          headers,
-          params,
-          body,
-          XHRStates.REQ_SEND,
-          (client && client.options.timeouts) ?? null,
-          method
-        );
-        req.once('complete', callback);
-        req.exec();
-        return req;
+        return new Promise((resolve) => {
+          const req = xhrRequestImplementation.createRequest(
+            uri,
+            headers,
+            params,
+            body,
+            XHRStates.REQ_SEND,
+            (client && client.options.timeouts) ?? null,
+            method
+          );
+          req.once(
+            'complete',
+            (
+              error: RequestResult['error'],
+              body: RequestResult['body'],
+              headers: RequestResult['headers'],
+              unpacked: RequestResult['unpacked'],
+              statusCode: RequestResult['statusCode']
+            ) => resolve({ error, body, headers, unpacked, statusCode })
+          );
+          req.exec();
+        });
       };
       if (client?.options.disableConnectivityCheck) {
-        this.checkConnectivity = function (callback: (err: null, connectivity: true) => void) {
-          callback(null, true);
+        this.checkConnectivity = async function () {
+          return true;
         };
       } else {
-        this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+        this.checkConnectivity = async function () {
           Logger.logAction(
             Logger.LOG_MICRO,
             '(XHRRequest)Http.checkConnectivity()',
             'Sending; ' + connectivityCheckUrl
           );
-          this.doUri(
+
+          const requestResult = await this.doUri(
             HttpMethods.Get,
             connectivityCheckUrl,
             null,
             null,
-            connectivityCheckParams,
-            function (err, responseText, headers, unpacked, statusCode) {
-              let result = false;
-              if (!connectivityUrlIsDefault) {
-                result = !err && isSuccessCode(statusCode as number);
-              } else {
-                result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-              }
-              Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
-              callback(null, result);
-            }
+            connectivityCheckParams
           );
+
+          let result = false;
+          if (!connectivityUrlIsDefault) {
+            result = !requestResult.error && isSuccessCode(requestResult.statusCode as number);
+          } else {
+            result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
+          }
+
+          Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+          return result;
         };
       }
     } else if (Platform.Config.fetchSupported && fetchRequestImplementation) {
       this.supportsAuthHeaders = true;
-      this.Request = (method, uri, headers, params, body, callback) => {
-        fetchRequestImplementation(method, client ?? null, uri, headers, params, body, callback);
+      this.Request = async (method, uri, headers, params, body) => {
+        return fetchRequestImplementation(method, client ?? null, uri, headers, params, body);
       };
-      this.checkConnectivity = function (callback: (err: ErrorInfo | null, connectivity: boolean) => void) {
+      this.checkConnectivity = async function () {
         Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
-        this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null, function (err, responseText) {
-          const result = !err && (responseText as string)?.replace(/\n/, '') == 'yes';
-          Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
-          callback(null, result);
-        });
+        const requestResult = await this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null);
+        const result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
+        Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
+        return result;
       };
     } else {
-      this.Request = (method, uri, headers, params, body, callback) => {
+      this.Request = async () => {
         const error = hasImplementation
           ? new PartialErrorInfo('no supported HTTP transports available', null, 400)
           : createMissingImplementationError();
-        callback(error, null);
+        return { error };
       };
     }
   }
 
-  doUri(
+  async doUri(
     method: HttpMethods,
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams,
-    callback: RequestCallback
-  ): void {
+    params: RequestParams
+  ): Promise<RequestResult> {
     if (!this.Request) {
-      callback(new PartialErrorInfo('Request invoked before assigned to', null, 500));
-      return;
+      return { error: new PartialErrorInfo('Request invoked before assigned to', null, 500) };
     }
-    this.Request(method, uri, headers, params, body, callback);
+    return this.Request(method, uri, headers, params, body);
   }
 
   private Request?: (
@@ -143,16 +150,15 @@ const Http = class {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    body: RequestBody | null,
-    callback: RequestCallback
-  ) => void;
+    body: RequestBody | null
+  ) => Promise<RequestResult>;
 
-  checkConnectivity?: (callback: (err: ErrorInfo | null, connectivity?: boolean) => void) => void = undefined;
+  checkConnectivity?: () => Promise<boolean> = undefined;
 
   supportsAuthHeaders = false;
   supportsLinkHeaders = false;
 
-  shouldFallback(errorInfo: RequestCallbackError) {
+  shouldFallback(errorInfo: RequestResultError) {
     const statusCode = errorInfo.statusCode as number;
     /* 400 + no code = a generic xhr onerror. Browser doesn't give us enough
      * detail to know whether it's fallback-fixable, but it may be (eg if a
