@@ -25,7 +25,7 @@ class BaseRealtime extends BaseClient {
   readonly _additionalTransportImplementations: TransportImplementations;
   _channels: Channels;
   connection: Connection;
-  readonly _channelGroups;
+  readonly _channelGroups: ChannelGroups | null;
 
   constructor(options: ClientOptions, modules: ModulesMap) {
     super(options, modules);
@@ -35,7 +35,7 @@ class BaseRealtime extends BaseClient {
     this._decodeVcdiff = (modules.Vcdiff ?? (Platform.Vcdiff.supported && Platform.Vcdiff.bundledDecode)) || null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
-    this._channelGroups = new ChannelGroups(this.channels);
+    this._channelGroups = modules.ChannelGroups ? new modules.ChannelGroups(this._channels) : null;
     if (options.autoConnect !== false) this.connect();
   }
 
@@ -88,7 +88,6 @@ class ChannelGroups {
 
     group = this.groups[filter] = new ChannelGroup(this.channels, filter, options);
     await group.join();
-
 
     return group;
   }
@@ -381,4 +380,4 @@ class Channels extends EventEmitter {
 }
 
 export default BaseRealtime;
-export type RealtimeChannelGroups = typeof ChannelGroups;
+export { ChannelGroups };

@@ -1,4 +1,4 @@
-import BaseRealtime from './baserealtime';
+import BaseRealtime, { ChannelGroups } from './baserealtime';
 import ClientOptions from '../../types/ClientOptions';
 import { allCommonModules } from './modulesmap';
 import * as Utils from '../util/utils';
@@ -38,6 +38,7 @@ export class DefaultRealtime extends BaseRealtime {
       },
       WebSocketTransport: initialiseWebSocketTransport,
       MessageInteractions: FilteredSubscriptions,
+      ChannelGroups: ChannelGroups,
     });
   }
 

@@ -2,11 +2,7 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
-  var displayError = helper.displayError;
-  var utils = helper.Utils;
-  let config = Ably.Realtime.Platform.Config;
   var closeAndFinish = helper.closeAndFinish;
-  var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
   var monitorConnection = helper.monitorConnection;
 
   describe('realtime/channelgroup', function () {
@@ -227,30 +223,31 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
 
           var testMsg = { active: ['part1', 'part:2'] };
-          var activeChannel = realtime1.channels.get('active');
+          var activeChannel = await realtime1.channels.get('active');
 
           try {
             await activeChannel.attach();
             /* publish active channels */
             activeChannel.publish('event0', testMsg);
 
-          // Wait for both consumers to appear in the group
-          await new Promise((resolve, reject) => {
-            const ch = realtime1.channels.get('testgroup');
-
-            ch.presence.subscribe(async () => {
-              try {
-                const result = await ch.presence.get({ waitForSync: true });
-                if (result.length == 2) {
-                  resolve();
+            // Wait for both consumers to appear in the group
+            await new Promise(async (resolve, reject) => {
+              const ch = await realtime1.channels.get('testgroup');
+              const interval = setInterval(async () => {
+                try {
+                  const result = await ch.presence.get({ waitForSync: true });
+                  if (result.length == 2) {
+                    resolve();
+                    ch.presence.unsubscribe();
+                    clearInterval(interval);
+                  }
+                } catch (err) {
+                  reject(err);
                   ch.presence.unsubscribe();
+                  clearInterval(interval);
                 }
-              } catch (err) {
-                reject(err);
-                ch.presence.unsubscribe();
-              }
+              }, 100);
             });
-          });
 
             // Publish a message to each of the partitions
             part1.publish('event0', 'partition 1 test data');
