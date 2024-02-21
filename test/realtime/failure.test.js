@@ -56,8 +56,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           };
         };
         async.parallel(
-          utils
-            .arrMap(availableTransports, function (transport) {
+          availableTransports
+            .map(function (transport) {
               return failure_test([transport]);
             })
             .concat(failure_test(null)), // to test not specifying a transport (so will use upgrade mechanism)
@@ -94,8 +94,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           };
         };
         async.parallel(
-          utils
-            .arrMap(availableTransports, function (transport) {
+          availableTransports
+            .map(function (transport) {
               return break_test([transport]);
             })
             .concat(break_test(null)), // to test not specifying a transport (so will use upgrade mechanism)
@@ -169,8 +169,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           };
         };
         async.parallel(
-          utils
-            .arrMap(availableTransports, function (transport) {
+          availableTransports
+            .map(function (transport) {
               return lifecycleTest([transport]);
             })
             .concat(lifecycleTest(null)), // to test not specifying a transport (so will use upgrade mechanism)
