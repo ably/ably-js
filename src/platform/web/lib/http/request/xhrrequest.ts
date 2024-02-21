@@ -19,26 +19,9 @@ function getAblyError(responseBody: unknown, headers: Record<string, string>) {
   }
 }
 
-declare const global: {
-  XDomainRequest: unknown;
-};
-
 const noop = function () {};
 let idCounter = 0;
 const pendingRequests: Record<string, XHRRequest> = {};
-
-const isIE = typeof global !== 'undefined' && global.XDomainRequest;
-
-function ieVersion() {
-  const match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
-  return match && Number(match[1]);
-}
-
-function needJsonEnvelope() {
-  /* IE 10 xhr bug: http://stackoverflow.com/a/16320339 */
-  let version;
-  return isIE && (version = ieVersion()) && version === 10;
-}
 
 function getHeader(xhr: XMLHttpRequest, header: string) {
   return xhr.getResponseHeader && xhr.getResponseHeader(header);
@@ -91,7 +74,6 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     super();
     params = params || {};
     params.rnd = Utils.cheapRandStr();
-    if (needJsonEnvelope() && !params.envelope) params.envelope = 'json';
     this.uri = uri + Utils.toQueryString(params);
     this.headers = headers || {};
     this.body = body;
