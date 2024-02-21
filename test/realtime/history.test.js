@@ -121,7 +121,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                           'Verify right number of messages returned when untilAttached is true'
                         );
                         expect(
-                          utils.arrEvery(messages, function (message) {
+                          messages.every(function (message) {
                             return message.name.substring(0, 10) == 'pre-attach';
                           }),
                           'Verify all returned messages were pre-attach ones'

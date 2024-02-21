@@ -22,7 +22,7 @@ import { RequestBody } from 'common/types/http';
 const MSG_ID_ENTROPY_BYTES = 9;
 
 function allEmptyIds(messages: Array<Message>) {
-  return Utils.arrEvery(messages, function (message: Message) {
+  return messages.every(function (message: Message) {
     return !message.id;
   });
 }

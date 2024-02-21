@@ -227,16 +227,12 @@ export function forInOwnNonNullProperties(ob: Record<string, unknown>, fn: (prop
   }
 }
 
-export const arrEvery = function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
-  return arr.every(fn);
-};
-
 export function allSame(arr: Array<Record<string, unknown>>, prop: string): boolean {
   if (arr.length === 0) {
     return true;
   }
   const first = arr[0][prop];
-  return arrEvery(arr, function (item) {
+  return arr.every(function (item) {
     return item[prop] === first;
   });
 }
@@ -461,7 +457,7 @@ export function toBase64(str: string) {
 export function arrEquals(a: any[], b: any[]) {
   return (
     a.length === b.length &&
-    arrEvery(a, function (val, i) {
+    a.every(function (val, i) {
       return val === b[i];
     })
   );

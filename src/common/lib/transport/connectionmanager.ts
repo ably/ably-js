@@ -75,7 +75,7 @@ function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number
     return false;
   }
   if (
-    !Utils.arrEvery(proposed, function (msg: Message) {
+    !proposed.every(function (msg: Message) {
       return !msg.id;
     })
   ) {
