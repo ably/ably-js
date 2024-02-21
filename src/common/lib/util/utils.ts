@@ -227,19 +227,9 @@ export function forInOwnNonNullProperties(ob: Record<string, unknown>, fn: (prop
   }
 }
 
-export const arrEvery = (Array.prototype.every as unknown)
-  ? function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
-      return arr.every(fn);
-    }
-  : function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
-      const len = arr.length;
-      for (let i = 0; i < len; i++) {
-        if (!fn(arr[i], i, arr)) {
-          return false;
-        }
-      }
-      return true;
-    };
+export const arrEvery = function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
+  return arr.every(fn);
+};
 
 export function allSame(arr: Array<Record<string, unknown>>, prop: string): boolean {
   if (arr.length === 0) {
