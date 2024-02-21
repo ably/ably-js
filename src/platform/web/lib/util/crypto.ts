@@ -81,7 +81,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
    * but supporting other keylengths. Other algorithms and chaining modes are
    * not supported directly, but supportable by extending/implementing the base
    * classes and interfaces here.
-   *-
+   *
    * Secure random data for creation of Initialization Vectors (IVs) and keys
    * is obtained from window.crypto.getRandomValues.
    *
