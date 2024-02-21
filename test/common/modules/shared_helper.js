@@ -50,7 +50,7 @@ define([
       return;
     }
     if (Object.prototype.toString.call(realtime) == '[object Array]') {
-      var realtimes = utils.arrFilter(realtime, function (rt) {
+      var realtimes = realtime.filter(function (rt) {
         return rt !== undefined;
       });
       closeAndFinishSeveral(done, realtimes, err);
@@ -208,20 +208,6 @@ define([
         return undefined;
       };
 
-  var arrFilter = Array.prototype.filter
-    ? function (arr, predicate) {
-        return arr.filter(predicate);
-      }
-    : function (arr, predicate) {
-        var res = [];
-        for (var i = 0; i < arr.length; i++) {
-          if (predicate(arr[i])) {
-            res.push(arr[i]);
-          }
-        }
-        return res;
-      };
-
   function randomString() {
     return Math.random().toString().slice(2);
   }
@@ -280,7 +266,6 @@ define([
     unroutableHost: unroutableHost,
     unroutableAddress: unroutableAddress,
     arrFind: arrFind,
-    arrFilter: arrFilter,
     whenPromiseSettles: whenPromiseSettles,
     randomString: randomString,
     testMessageEquality: testMessageEquality,
