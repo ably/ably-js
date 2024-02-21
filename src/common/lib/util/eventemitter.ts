@@ -32,7 +32,7 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
       listeners = listeners[eventFilter] as Record<string, unknown>;
     }
 
-    if (Utils.isArray(listeners)) {
+    if (Array.isArray(listeners)) {
       while ((index = Utils.arrIndexOf(listeners, listener)) !== -1) {
         listeners.splice(index, 1);
       }
@@ -44,7 +44,7 @@ function removeListener(targetListeners: any, listener: Function, eventFilter?: 
     } else if (Utils.isObject(listeners)) {
       /* events */
       for (eventName in listeners) {
-        if (Object.prototype.hasOwnProperty.call(listeners, eventName) && Utils.isArray(listeners[eventName])) {
+        if (Object.prototype.hasOwnProperty.call(listeners, eventName) && Array.isArray(listeners[eventName])) {
           removeListener([listeners], listener, eventName);
         }
       }
@@ -94,7 +94,7 @@ class EventEmitter {
       }
       if (Utils.isEmptyArg(event)) {
         this.any.push(listener);
-      } else if (Utils.isArray(event)) {
+      } else if (Array.isArray(event)) {
         event.forEach((eventName) => {
           this.on(eventName, listener);
         });
@@ -156,7 +156,7 @@ class EventEmitter {
       return;
     }
 
-    if (Utils.isArray(event)) {
+    if (Array.isArray(event)) {
       event.forEach((eventName) => {
         this.off(eventName, listener);
       });
@@ -256,7 +256,7 @@ class EventEmitter {
         throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
       }
       this.anyOnce.push(secondArg);
-    } else if (Utils.isArray(firstArg)) {
+    } else if (Array.isArray(firstArg)) {
       const self = this;
       const listenerWrapper = function (this: any) {
         const innerArgs = Array.prototype.slice.call(arguments);

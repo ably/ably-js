@@ -44,12 +44,6 @@ export function copy<T = Record<string, unknown>>(src: T | Record<string, unknow
 }
 
 /*
- * Determine whether or not a given object is
- * an array.
- */
-export const isArray = Array.isArray;
-
-/*
  * Ensures that an Array object is always returned
  * returning the original Array of obj is an Array
  * else wrapping the obj in a single element Array
@@ -58,7 +52,7 @@ export function ensureArray(obj: Record<string, unknown>): unknown[] {
   if (isEmptyArg(obj)) {
     return [];
   }
-  if (isArray(obj)) {
+  if (Array.isArray(obj)) {
     return obj;
   }
   return [obj];
@@ -154,7 +148,7 @@ export function containsValue(ob: Record<string, unknown>, val: unknown): boolea
 }
 
 export function intersect<K extends string, T>(arr: Array<K>, ob: K[] | Partial<Record<K, T>>): K[] {
-  return isArray(ob) ? arrIntersect(arr, ob) : arrIntersectOb(arr, ob);
+  return Array.isArray(ob) ? arrIntersect(arr, ob) : arrIntersectOb(arr, ob);
 }
 
 export function arrIntersect<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {

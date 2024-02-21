@@ -84,7 +84,7 @@ class DeviceDetails {
       body = Utils.decodeBody(body, MsgPack, format);
     }
 
-    if (Utils.isArray(body)) {
+    if (Array.isArray(body)) {
       return DeviceDetails.fromValuesArray(body);
     } else {
       return DeviceDetails.fromValues(body);

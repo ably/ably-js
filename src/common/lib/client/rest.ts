@@ -154,7 +154,7 @@ export class Rest {
   ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
     let requestBodyDTO: BatchPublishSpec[];
     let singleSpecMode: boolean;
-    if (Utils.isArray(specOrSpecs)) {
+    if (Array.isArray(specOrSpecs)) {
       requestBodyDTO = specOrSpecs;
       singleSpecMode = false;
     } else {

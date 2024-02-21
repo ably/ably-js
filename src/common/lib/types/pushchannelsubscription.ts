@@ -44,7 +44,7 @@ class PushChannelSubscription {
       body = Utils.decodeBody(body, MsgPack, format) as Record<string, unknown>;
     }
 
-    if (Utils.isArray(body)) {
+    if (Array.isArray(body)) {
       return PushChannelSubscription.fromValuesArray(body);
     } else {
       return PushChannelSubscription.fromValues(body);

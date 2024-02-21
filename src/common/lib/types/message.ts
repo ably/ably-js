@@ -123,7 +123,7 @@ export async function encode<T extends Message | PresenceMessage>(msg: T, option
     typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
 
   if (!nativeDataType) {
-    if (Utils.isObject(data) || Utils.isArray(data)) {
+    if (Utils.isObject(data) || Array.isArray(data)) {
       msg.data = JSON.stringify(data);
       msg.encoding = msg.encoding ? msg.encoding + '/json' : 'json';
     } else {

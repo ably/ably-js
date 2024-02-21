@@ -255,7 +255,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
        * is contains an error action (hence the nonsuccess statuscode), we can
        * consider the request to have succeeded, just pass it on to
        * onProtocolMessage to decide what to do */
-      if (successResponse || Utils.isArray(parsedResponse)) {
+      if (successResponse || Array.isArray(parsedResponse)) {
         this.complete(null, parsedResponse, headers, unpacked, statusCode);
         return;
       }

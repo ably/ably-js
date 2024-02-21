@@ -63,7 +63,7 @@ class RestChannel {
     } else if (Utils.isObject(first)) {
       messages = [messageFromValues(first)];
       params = args[1];
-    } else if (Utils.isArray(first)) {
+    } else if (Array.isArray(first)) {
       messages = messagesFromValuesArray(first);
       params = args[1];
     } else {

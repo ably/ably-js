@@ -315,8 +315,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * includesUnordered(x, y) -> string | true
      */
     function includesUnordered(x, y) {
-      if (Utils.isArray(x)) {
-        if (!Utils.isArray(y)) {
+      if (Array.isArray(x)) {
+        if (!Array.isArray(y)) {
           return 'not both arrays';
         }
 
@@ -351,7 +351,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         return true;
       } else if (x instanceof Object) {
-        if (!(x instanceof Object) || Utils.isArray(y)) {
+        if (!(x instanceof Object) || Array.isArray(y)) {
           return 'not both objects';
         }
 

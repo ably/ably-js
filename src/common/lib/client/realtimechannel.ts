@@ -45,7 +45,7 @@ function validateChannelOptions(options?: API.ChannelOptions) {
     return new ErrorInfo('options.params must be an object', 40000, 400);
   }
   if (options && 'modes' in options) {
-    if (!Utils.isArray(options.modes)) {
+    if (!Array.isArray(options.modes)) {
       return new ErrorInfo('options.modes must be an array', 40000, 400);
     }
     for (let i = 0; i < options.modes.length; i++) {
@@ -222,7 +222,7 @@ class RealtimeChannel extends EventEmitter {
     }
     if (argCount == 1) {
       if (Utils.isObject(messages)) messages = [messageFromValues(messages)];
-      else if (Utils.isArray(messages)) messages = messagesFromValuesArray(messages);
+      else if (Array.isArray(messages)) messages = messagesFromValuesArray(messages);
       else
         throw new ErrorInfo(
           'The single-argument form of publish() expects a message object or an array of message objects',
@@ -467,7 +467,7 @@ class RealtimeChannel extends EventEmitter {
     const msg = protocolMessageFromValues({
       action: actions.PRESENCE,
       channel: this.name,
-      presence: Utils.isArray(presence)
+      presence: Array.isArray(presence)
         ? this.client._RealtimePresence!.presenceMessagesFromValuesArray(presence)
         : [this.client._RealtimePresence!.presenceMessageFromValues(presence)],
     });
