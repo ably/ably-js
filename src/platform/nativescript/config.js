@@ -44,12 +44,6 @@ var Config = {
   },
   TextEncoder: global.TextEncoder,
   TextDecoder: global.TextDecoder,
-  getRandomValues: async function (arr) {
-    var bytes = randomBytes(arr.length);
-    for (var i = 0; i < arr.length; i++) {
-      arr[i] = bytes[i];
-    }
-  },
   getRandomArrayBuffer: async function (byteLength) {
     var bytes = randomBytes(byteLength);
     return bytes;

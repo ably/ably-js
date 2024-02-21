@@ -68,14 +68,6 @@ const Config: IPlatformConfig = {
   },
   TextEncoder: globalObject.TextEncoder,
   TextDecoder: globalObject.TextDecoder,
-  getRandomValues: (function (crypto) {
-    if (crypto === undefined) {
-      return undefined;
-    }
-    return async function (arr: ArrayBufferView) {
-      crypto.getRandomValues(arr);
-    };
-  })(globalObject.crypto),
   getRandomArrayBuffer: async function (byteLength: number): Promise<ArrayBuffer> {
     const byteArray = new Uint8Array(byteLength);
     globalObject.crypto.getRandomValues(byteArray);
