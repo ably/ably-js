@@ -22,9 +22,9 @@ export function mixin(
     if (!source) {
       break;
     }
-    const hasOwnProperty = Object.prototype.hasOwnProperty;
+
     for (const key in source) {
-      if (!hasOwnProperty || hasOwnProperty.call(source, key)) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
         target[key] = (source as Record<string, unknown>)[key];
       }
     }
