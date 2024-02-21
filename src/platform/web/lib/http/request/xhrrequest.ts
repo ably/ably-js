@@ -77,7 +77,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     this.uri = uri + Utils.toQueryString(params);
     this.headers = headers || {};
     this.body = body;
-    this.method = method ? method.toUpperCase() : Utils.isEmptyArg(body) ? 'GET' : 'POST';
+    this.method = method ? method.toUpperCase() : Utils.isNil(body) ? 'GET' : 'POST';
     this.requestMode = requestMode;
     this.timeouts = timeouts;
     this.timedOut = false;

@@ -49,7 +49,7 @@ export function copy<T = Record<string, unknown>>(src: T | Record<string, unknow
  * else wrapping the obj in a single element Array
  */
 export function ensureArray(obj: Record<string, unknown>): unknown[] {
-  if (isEmptyArg(obj)) {
+  if (isNil(obj)) {
     return [];
   }
   if (Array.isArray(obj)) {
@@ -72,16 +72,12 @@ export function isEmpty(ob: Record<string, unknown> | unknown[]): boolean {
   return true;
 }
 
-/*
- * Determine whether or not an argument to an overloaded function is
- * undefined (missing) or null.
- * This method is useful when constructing functions such as (WebIDL terminology):
- *   off([TreatUndefinedAs=Null] DOMString? event)
- * as you can then confirm the argument using:
- *   Utils.isEmptyArg(event)
+/**
+ * Checks if `value` is `null` or `undefined`.
+ *
+ * Source: https://github.com/lodash/lodash/blob/main/src/isNil.ts
  */
-
-export function isEmptyArg(arg: unknown): arg is null | undefined {
+export function isNil(arg: unknown): arg is null | undefined {
   return arg === null || arg === undefined;
 }
 

@@ -35,7 +35,7 @@ export default async function fetchRequest(
   body: RequestBody | null
 ): Promise<RequestResult> {
   const fetchHeaders = new Headers(headers || {});
-  const _method = method ? method.toUpperCase() : Utils.isEmptyArg(body) ? 'GET' : 'POST';
+  const _method = method ? method.toUpperCase() : Utils.isNil(body) ? 'GET' : 'POST';
 
   const controller = new AbortController();
 

@@ -92,7 +92,7 @@ class EventEmitter {
       if (typeof listener !== 'function') {
         throw new Error('EventListener.on(): Invalid arguments: ' + Platform.Config.inspect(args));
       }
-      if (Utils.isEmptyArg(event)) {
+      if (Utils.isNil(event)) {
         this.any.push(listener);
       } else if (Array.isArray(event)) {
         event.forEach((eventName) => {
@@ -126,7 +126,7 @@ class EventEmitter {
   off(event: string | string[] | null, listener?: Function | null): void;
 
   off(...args: unknown[]) {
-    if (args.length == 0 || (Utils.isEmptyArg(args[0]) && Utils.isEmptyArg(args[1]))) {
+    if (args.length == 0 || (Utils.isNil(args[0]) && Utils.isNil(args[1]))) {
       this.any = [];
       this.events = Object.create(null);
       this.anyOnce = [];
@@ -151,7 +151,7 @@ class EventEmitter {
       [event, listener] = [firstArg, secondArg];
     }
 
-    if (listener && Utils.isEmptyArg(event)) {
+    if (listener && Utils.isNil(event)) {
       removeListener([this.any, this.events, this.anyOnce, this.eventsOnce], listener);
       return;
     }
@@ -251,7 +251,7 @@ class EventEmitter {
     const [firstArg, secondArg] = args;
     if (args.length === 1 && typeof firstArg === 'function') {
       this.anyOnce.push(firstArg);
-    } else if (Utils.isEmptyArg(firstArg)) {
+    } else if (Utils.isNil(firstArg)) {
       if (typeof secondArg !== 'function') {
         throw new Error('EventEmitter.once(): Invalid arguments:' + Platform.Config.inspect(args));
       }
