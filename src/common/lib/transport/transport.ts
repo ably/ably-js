@@ -257,7 +257,7 @@ abstract class Transport extends EventEmitter {
     if (!this.maxIdleInterval) {
       return;
     }
-    this.lastActivity = this.connectionManager.lastActivity = Utils.now();
+    this.lastActivity = this.connectionManager.lastActivity = Date.now();
     this.setIdleTimer(this.maxIdleInterval + 100);
   }
 
@@ -274,7 +274,7 @@ abstract class Transport extends EventEmitter {
       throw new Error('Transport.onIdleTimerExpire(): lastActivity/maxIdleInterval not set');
     }
     this.idleTimer = null;
-    const sinceLast = Utils.now() - this.lastActivity;
+    const sinceLast = Date.now() - this.lastActivity;
     const timeRemaining = this.maxIdleInterval - sinceLast;
     if (timeRemaining <= 0) {
       const msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';

@@ -1,4 +1,3 @@
-import * as Utils from 'common/lib/util/utils';
 import IWebStorage from 'common/types/IWebStorage';
 
 const test = 'ablyjs-storage-test';
@@ -59,7 +58,7 @@ class Webstorage implements IWebStorage {
   private _set(name: string, value: string, ttl: number | undefined, session: any) {
     const wrappedValue: Record<string, any> = { value: value };
     if (ttl) {
-      wrappedValue.expires = Utils.now() + ttl;
+      wrappedValue.expires = Date.now() + ttl;
     }
     return this.storageInterface(session).setItem(name, JSON.stringify(wrappedValue));
   }
@@ -70,7 +69,7 @@ class Webstorage implements IWebStorage {
     const rawItem = this.storageInterface(session).getItem(name);
     if (!rawItem) return null;
     const wrappedValue = JSON.parse(rawItem);
-    if (wrappedValue.expires && wrappedValue.expires < Utils.now()) {
+    if (wrappedValue.expires && wrappedValue.expires < Date.now()) {
       this.storageInterface(session).removeItem(name);
       return null;
     }

@@ -830,7 +830,7 @@ class Auth {
   }
 
   getTimestampUsingOffset() {
-    return Utils.now() + (this.client.serverTimeOffset || 0);
+    return Date.now() + (this.client.serverTimeOffset || 0);
   }
 
   isTimeOffsetSet() {

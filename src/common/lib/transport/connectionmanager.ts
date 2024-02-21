@@ -1131,7 +1131,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    const sinceLast = Utils.now() - this.lastActivity;
+    const sinceLast = Date.now() - this.lastActivity;
     if (sinceLast > this.connectionStateTtl + (this.maxIdleInterval as number)) {
       Logger.logAction(
         Logger.LOG_MINOR,
@@ -1153,7 +1153,7 @@ class ConnectionManager extends EventEmitter {
       if (recoveryKey) {
         setSessionRecoverData({
           recoveryKey: recoveryKey,
-          disconnectedAt: Utils.now(),
+          disconnectedAt: Date.now(),
           location: globalObject.location,
           clientId: this.realtime.auth.clientId,
         });
@@ -1357,11 +1357,11 @@ class ConnectionManager extends EventEmitter {
     if (retryImmediately) {
       const autoReconnect = () => {
         if (this.state === this.states.disconnected) {
-          this.lastAutoReconnectAttempt = Utils.now();
+          this.lastAutoReconnectAttempt = Date.now();
           this.requestState({ state: 'connecting' });
         }
       };
-      const sinceLast = this.lastAutoReconnectAttempt && Utils.now() - this.lastAutoReconnectAttempt + 1;
+      const sinceLast = this.lastAutoReconnectAttempt && Date.now() - this.lastAutoReconnectAttempt + 1;
       if (sinceLast && sinceLast < 1000) {
         Logger.logAction(
           Logger.LOG_MICRO,
@@ -2058,14 +2058,14 @@ class ConnectionManager extends EventEmitter {
         callback(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
       };
 
-      const pingStart = Utils.now(),
+      const pingStart = Date.now(),
         id = Utils.cheapRandStr();
 
       const onHeartbeat = function (responseId: string) {
         if (responseId === id) {
           transport.off('heartbeat', onHeartbeat);
           clearTimeout(timer);
-          const responseTime = Utils.now() - pingStart;
+          const responseTime = Date.now() - pingStart;
           callback(null, responseTime);
         }
       };

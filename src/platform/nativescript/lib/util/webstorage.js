@@ -1,4 +1,3 @@
-import * as Utils from '../../../../common/lib/util/utils';
 import appSettings from '@nativescript/core/application-settings';
 
 var WebStorage = (function () {
@@ -7,7 +6,7 @@ var WebStorage = (function () {
   function set(name, value, ttl) {
     var wrappedValue = { value: value };
     if (ttl) {
-      wrappedValue.expires = Utils.now() + ttl;
+      wrappedValue.expires = Date.now() + ttl;
     }
     return appSettings.setString(name, JSON.stringify(wrappedValue));
   }
@@ -16,7 +15,7 @@ var WebStorage = (function () {
     var rawItem = appSettings.getString(name);
     if (!rawItem) return null;
     var wrappedValue = JSON.parse(rawItem);
-    if (wrappedValue.expires && wrappedValue.expires < Utils.now()) {
+    if (wrappedValue.expires && wrappedValue.expires < Date.now()) {
       appSettings.remove(name);
       return null;
     }

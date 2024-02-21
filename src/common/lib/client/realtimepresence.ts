@@ -452,7 +452,7 @@ class RealtimePresence extends EventEmitter {
         clientId: item.clientId,
         data: item.data,
         encoding: item.encoding,
-        timestamp: Utils.now(),
+        timestamp: Date.now(),
       });
       subscriptions.emit('leave', presence);
     });

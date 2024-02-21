@@ -357,8 +357,6 @@ export function parseQueryString(query: string): Record<string, string> {
   return result;
 }
 
-export const now = Date.now;
-
 export function isErrorInfoOrPartialErrorInfo(err: unknown): err is ErrorInfo | PartialErrorInfo {
   return typeof err == 'object' && err !== null && (err instanceof ErrorInfo || err instanceof PartialErrorInfo);
 }

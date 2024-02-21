@@ -1810,7 +1810,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 14,
                 id: 'messageid:0',
                 connectionId: 'connid',
-                timestamp: utils.now(),
+                timestamp: Date.now(),
                 presence: [
                   {
                     clientId: goneClientId,
@@ -1899,7 +1899,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 14,
                 id: 'messageid:0',
                 connectionId: 'connid',
-                timestamp: utils.now(),
+                timestamp: Date.now(),
                 presence: [
                   {
                     clientId: fakeClientId,
