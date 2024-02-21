@@ -1,4 +1,4 @@
-import { ErrorInfo } from '../../../../../ably.js';
+import { ErrorInfo } from 'ably';
 import { useState } from 'react';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
 import { useChannelStateListener } from './useChannelStateListener.js';

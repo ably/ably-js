@@ -1,4 +1,4 @@
-import * as Ably from '../../../../../ably.js';
+import * as Ably from 'ably';
 import { useEffect, useMemo, useRef } from 'react';
 import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';

@@ -1,4 +1,4 @@
-import * as Ably from '../../../../../ably.js';
+import * as Ably from 'ably';
 import { useEffect, useRef } from 'react';
 
 type EventListener<T> = (stateChange: T) => any;

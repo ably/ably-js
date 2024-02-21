@@ -1,4 +1,4 @@
-import * as Ably from '../../../../ably.js';
+import * as Ably from 'ably';
 
 export type ChannelNameAndOptions = {
   channelName: string;
