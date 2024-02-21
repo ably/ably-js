@@ -47,11 +47,7 @@ export function copy<T = Record<string, unknown>>(src: T | Record<string, unknow
  * Determine whether or not a given object is
  * an array.
  */
-export const isArray =
-  Array.isArray ||
-  function (value: unknown): value is Array<unknown> {
-    return Object.prototype.toString.call(value) == '[object Array]';
-  };
+export const isArray = Array.isArray;
 
 /*
  * Ensures that an Array object is always returned
