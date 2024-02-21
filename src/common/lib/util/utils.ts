@@ -7,11 +7,12 @@ function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
 }
 
-/*
+/**
  * Add a set of properties to a target object
- * target: the target object
- * props:  an object whose enumerable properties are
- *         added, by reference only
+ *
+ * @param target the target object
+ * @param args objects, which enumerable properties are added to target, by reference only
+ * @returns target object with added properties
  */
 export function mixin(
   target: Record<string, unknown>,
@@ -32,11 +33,11 @@ export function mixin(
   return target;
 }
 
-/*
- * Add a set of properties to a target object
- * target: the target object
- * props:  an object whose enumerable properties are
- *         added, by reference only
+/**
+ * Creates a copy of enumerable properties of the source object
+ *
+ * @param src object to copy
+ * @returns copy of src
  */
 export function copy<T = Record<string, unknown>>(src: T | Record<string, unknown> | null | undefined): T {
   return mixin({}, src as Record<string, unknown>) as T;
