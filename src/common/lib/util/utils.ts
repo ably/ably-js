@@ -78,7 +78,7 @@ export function isEmpty(ob: Record<string, unknown> | unknown[]): boolean {
  * Source: https://github.com/lodash/lodash/blob/main/src/isNil.ts
  */
 export function isNil(arg: unknown): arg is null | undefined {
-  return arg === null || arg === undefined;
+  return arg == null;
 }
 
 /*
