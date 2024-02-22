@@ -196,7 +196,9 @@ describe('useChannel with deriveOptions', () => {
   it('component can use "useChannel" with "deriveOptions" and renders nothing by default', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent channelName={Channels.tasks} deriveOptions={{ filter: '' }} />
+      <ChannelProvider channelName={Channels.tasks}>
+        <UseDerivedChannelComponent channelName={Channels.tasks} deriveOptions={{ filter: '' }} />
+      </ChannelProvider>
     );
     const messageUl = screen.getAllByRole('derived-channel-messages')[0];
 
@@ -206,10 +208,12 @@ describe('useChannel with deriveOptions', () => {
   it('component updates when new message arrives', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
-        channelName={Channels.tasks}
-        deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
-      />
+      <ChannelProvider channelName={Channels.tasks}>
+        <UseDerivedChannelComponent
+          channelName={Channels.tasks}
+          deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
+        />
+      </ChannelProvider>
     );
 
     act(() => {
@@ -226,10 +230,12 @@ describe('useChannel with deriveOptions', () => {
   it('component will not update if message filtered out', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
+      <ChannelProvider
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
-      />
+      >
+        <UseDerivedChannelComponent channelName={Channels.tasks} />
+      </ChannelProvider>
     );
 
     act(() => {
@@ -245,10 +251,12 @@ describe('useChannel with deriveOptions', () => {
   it('component will update with only those messages that qualify', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
+      <ChannelProvider
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
-      />
+      >
+        <UseDerivedChannelComponent channelName={Channels.tasks} />
+      </ChannelProvider>
     );
 
     act(() => {
@@ -372,10 +380,9 @@ describe('useChannel with deriveOptions', () => {
   it('wildcard filter', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
-        deriveOptions={{ filter: '*' }}
-        channelName={Channels.alerts}
-      ></UseDerivedChannelComponent>
+      <ChannelProvider channelName={Channels.alerts} deriveOptions={{ filter: '*' }}>
+        <UseDerivedChannelComponent channelName={Channels.alerts}></UseDerivedChannelComponent>
+      </ChannelProvider>
     );
 
     act(() => {
@@ -390,11 +397,9 @@ describe('useChannel with deriveOptions', () => {
   it('skip param', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
-        deriveOptions={{ filter: '*' }}
-        channelName={Channels.alerts}
-        skip
-      ></UseDerivedChannelComponent>
+      <ChannelProvider channelName={Channels.alerts} deriveOptions={{ filter: '*' }}>
+        <UseDerivedChannelComponent channelName={Channels.alerts} skip></UseDerivedChannelComponent>
+      </ChannelProvider>
     );
 
     act(() => {
@@ -542,20 +547,16 @@ interface UseDerivedChannelComponentProps {
   skip?: boolean;
 }
 
-const UseDerivedChannelComponent = ({ channelName, deriveOptions, skip = false }: UseDerivedChannelComponentProps) => {
+const UseDerivedChannelComponent = ({ channelName, skip = false }: UseDerivedChannelComponentProps) => {
   const [messages, setMessages] = useState<Ably.Message[]>([]);
 
-  useChannel({ channelName, deriveOptions, skip }, (message) => {
+  useChannel({ channelName, skip }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
 
   const messagePreviews = messages.map((msg, index) => <li key={index}>{msg.data.text}</li>);
 
-  return (
-    <ChannelProvider channelName={channelName}>
-      <ul role="derived-channel-messages">{messagePreviews}</ul>
-    </ChannelProvider>
-  );
+  return <ul role="derived-channel-messages">{messagePreviews}</ul>;
 };
 
 interface UseChannelStateErrorsComponentProps {

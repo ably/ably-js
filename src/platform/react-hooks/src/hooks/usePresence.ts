@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
-import { useChannelProviderCheck } from './useChannelProviderCheck.js';
+import { useChannelInstance } from './useChannelInstance.js';
 
 export interface PresenceResult<T> {
   presenceData: PresenceMessage<T>[];
@@ -28,11 +28,10 @@ export function usePresence<T = any>(
       : { channelName: channelNameOrNameAndOptions };
 
   const ably = useAbly(params.id);
-  useChannelProviderCheck(params);
+  const channel = useChannelInstance(params.id, params.channelName);
 
   const subscribeOnly = typeof channelNameOrNameAndOptions === 'string' ? false : params.subscribeOnly;
 
-  const channel = useMemo(() => ably.channels.get(params.channelName), [ably, params.channelName]);
   const skip = params.skip;
 
   const { connectionError, channelError } = useStateErrors(params);

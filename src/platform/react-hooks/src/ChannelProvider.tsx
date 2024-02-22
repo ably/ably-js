@@ -1,7 +1,6 @@
-import React, { useLayoutEffect, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import * as Ably from 'ably';
-import { getContext } from './AblyProvider.js';
-import * as Utils from './utils/utils.js';
+import { type AblyContextProps, getContext } from './AblyProvider.js';
 import { channelOptionsWithAgent } from './AblyReactHooks.js';
 
 interface ChannelProviderProps {
@@ -19,50 +18,30 @@ export const ChannelProvider = ({
   deriveOptions,
   children,
 }: ChannelProviderProps) => {
-  const { client, _channelToOptions } = React.useContext(getContext(id));
+  const context = getContext(id);
+  const { client, _channelNameToInstance } = React.useContext(context);
+
+  if (_channelNameToInstance[channelName]) {
+    throw new Error('You can not use more than one `ChannelProvider` with the same channel name');
+  }
 
   const channel = deriveOptions
     ? client.channels.getDerived(channelName, deriveOptions)
     : client.channels.get(channelName);
 
-  useLayoutEffect(() => {
-    if (_channelToOptions[channel.name]) {
-      throw new Error('You can not use more than one `ChannelProvider` with the same channel name');
-    }
-    channel.setOptions(channelOptionsWithAgent(options));
-    _channelToOptions[channel.name] = options ?? {};
-    return () => {
-      delete _channelToOptions[channel.name];
+  const value: AblyContextProps = useMemo(() => {
+    return {
+      client,
+      _channelNameToInstance: {
+        ..._channelNameToInstance,
+        [channelName]: channel,
+      },
     };
-  }, [channel, options, _channelToOptions]);
+  }, [client, channel, channelName, _channelNameToInstance]);
 
   useEffect(() => {
-    const handleChannelAttached = () => {
-      if (hasOptionsChanged(channel, options)) {
-        throw new Error('You can not use `RealtimeChannel.setOption()` along with `ChannelProvider`');
-      }
-    };
-    channel.on('attached', handleChannelAttached);
-    return () => {
-      channel.off('attached', handleChannelAttached);
-    };
+    channel.setOptions(channelOptionsWithAgent(options));
   }, [channel, options]);
 
-  return <React.Fragment>{children}</React.Fragment>;
-};
-
-const hasOptionsChanged = (channel: Ably.Types.RealtimeChannelPromise, options?: Ably.Types.ChannelOptions) => {
-  // Don't check against the `agent` param - it isn't returned in the ATTACHED message
-  const requestedParams = Utils.omitAgent(options?.params);
-  const existingParams = Utils.omitAgent(channel.params);
-
-  if (Object.keys(requestedParams).length !== Object.keys(existingParams).length) {
-    return true;
-  }
-
-  if (!Utils.shallowEquals(existingParams, requestedParams)) {
-    return true;
-  }
-
-  return !Utils.arrEquals(options?.modes ?? [], channel.modes ?? []);
+  return <context.Provider value={value}>{children}</context.Provider>;
 };
