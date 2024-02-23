@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/experimental-ct-react';
 
-import { App } from '../src/ReactApp';
+import { App } from '../../src/ReactApp';
 
 test.describe('NPM package', () => {
   for (const scenario of [{ name: 'react export' }]) {

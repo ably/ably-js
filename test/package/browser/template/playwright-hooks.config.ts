@@ -1,10 +1,13 @@
 import { defineConfig, devices } from '@playwright/experimental-ct-react';
 
 /**
- * See https://playwright.dev/docs/test-configuration.
+ * Playwright config for running ably-js react hooks NPM package tests.
+ * Based on https://playwright.dev/docs/test-components.
+ *
+ * See config options: https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './test-react',
+  testDir: './test/hooks',
   /* The base directory, relative to the config file, for snapshot files created with toMatchSnapshot and toHaveScreenshot. */
   snapshotDir: './__snapshots__',
   /* Maximum time one test can run for. */

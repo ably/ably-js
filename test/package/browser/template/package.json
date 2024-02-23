@@ -7,9 +7,10 @@
     "build": "esbuild --bundle src/index-default.ts --outdir=dist && esbuild --bundle src/index-modules.ts --outdir=dist",
     "typecheck": "tsc --project src -noEmit",
     "test-support:server": "ts-node server/server.ts",
-    "test": "playwright test",
-    "test:install-deps": "playwright install chromium",
-    "test-ct": "playwright test -c playwright-ct.config.ts"
+    "test": "npm run test:lib && npm run test:hooks",
+    "test:lib": "playwright test -c playwright-lib.config.js",
+    "test:hooks": "playwright test -c playwright-hooks.config.ts",
+    "test:install-deps": "playwright install chromium"
   },
   "author": "",
   "license": "ISC",
