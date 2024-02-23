@@ -30,17 +30,6 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
     }
   }
 
-  function createXHR() {
-    var result = new XMLHttpRequest();
-    if ('withCredentials' in result) return result;
-    if (typeof XDomainRequest !== 'undefined') {
-      var xdr = new XDomainRequest(); /* Use IE-specific "CORS" code with XDR */
-      xdr.isXDR = true;
-      return xdr;
-    }
-    return null;
-  }
-
   function toBase64(str) {
     var bufferUtils = ably.Realtime.Platform.BufferUtils;
     var buffer = bufferUtils.utf8Encode(str);
@@ -70,7 +59,7 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
       };
     } else if (isBrowser) {
       return function (options, callback) {
-        var xhr = createXHR();
+        var xhr = new XMLHttpRequest();
         var uri;
 
         uri = options.scheme + '://' + options.host + ':' + options.port + options.path;
