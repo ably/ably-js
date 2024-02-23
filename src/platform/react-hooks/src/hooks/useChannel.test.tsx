@@ -196,8 +196,8 @@ describe('useChannel with deriveOptions', () => {
   it('component can use "useChannel" with "deriveOptions" and renders nothing by default', async () => {
     renderInCtxProvider(
       ablyClient,
-      <ChannelProvider channelName={Channels.tasks}>
-        <UseDerivedChannelComponent channelName={Channels.tasks} deriveOptions={{ filter: '' }} />
+      <ChannelProvider channelName={Channels.tasks} deriveOptions={{ filter: '' }}>
+        <UseDerivedChannelComponent channelName={Channels.tasks} />
       </ChannelProvider>
     );
     const messageUl = screen.getAllByRole('derived-channel-messages')[0];
@@ -208,11 +208,11 @@ describe('useChannel with deriveOptions', () => {
   it('component updates when new message arrives', async () => {
     renderInCtxProvider(
       ablyClient,
-      <ChannelProvider channelName={Channels.tasks}>
-        <UseDerivedChannelComponent
-          channelName={Channels.tasks}
-          deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
-        />
+      <ChannelProvider
+        channelName={Channels.tasks}
+        deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
+      >
+        <UseDerivedChannelComponent channelName={Channels.tasks} />
       </ChannelProvider>
     );
 
@@ -292,16 +292,25 @@ describe('useChannel with deriveOptions', () => {
     render(
       <AblyProvider client={ablyClient as unknown as Ably.RealtimePromise} id={cliendId}>
         <AblyProvider client={anotherClient as unknown as Ably.RealtimePromise} id={anotherClientId}>
-          <ChannelProvider channelName={Channels.tasks} id={cliendId}>
-            <ChannelProvider channelName={Channels.alerts} id={anotherClientId}>
+          <ChannelProvider
+            id={cliendId}
+            channelName={Channels.tasks}
+            deriveOptions={{
+              filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`',
+            }}
+          >
+            <ChannelProvider
+              id={anotherClientId}
+              channelName={Channels.alerts}
+              deriveOptions={{
+                filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`',
+              }}
+            >
               <UseDerivedChannelComponentMultipleClients
                 clientId={cliendId}
                 channelName={Channels.tasks}
                 anotherClientId={anotherClientId}
                 anotherChannelName={Channels.alerts}
-                deriveOptions={{
-                  filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`',
-                }}
               />
             </ChannelProvider>
           </ChannelProvider>
@@ -420,11 +429,7 @@ describe('useChannel with deriveOptions', () => {
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
       >
-        <LatestMessageCallbackComponent
-          channelName={Channels.tasks}
-          deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
-          callback={() => callbackCount++}
-        />
+        <LatestMessageCallbackComponent channelName={Channels.tasks} callback={() => callbackCount++} />
       </ChannelProvider>
     );
 
@@ -470,13 +475,8 @@ describe('useChannel with deriveOptions', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <ChannelProvider channelName={Channels.alerts}>
-        <ChangingEventComponent
-          channelName={Channels.alerts}
-          deriveOptions={{ filter: '*' }}
-          eventName={eventName}
-          newEventName={newEventName}
-        />
+      <ChannelProvider channelName={Channels.alerts} deriveOptions={{ filter: '*' }}>
+        <ChangingEventComponent channelName={Channels.alerts} eventName={eventName} newEventName={newEventName} />
       </ChannelProvider>
     );
 
@@ -518,7 +518,6 @@ interface UseDerivedChannelComponentMultipleClientsProps {
   channelName: string;
   anotherClientId: string;
   anotherChannelName: string;
-  deriveOptions: Ably.DeriveOptions;
 }
 
 const UseDerivedChannelComponentMultipleClients = ({
@@ -526,13 +525,12 @@ const UseDerivedChannelComponentMultipleClients = ({
   clientId,
   anotherClientId,
   anotherChannelName,
-  deriveOptions,
 }: UseDerivedChannelComponentMultipleClientsProps) => {
   const [messages, setMessages] = useState<Ably.Message[]>([]);
-  useChannel({ id: clientId, channelName, deriveOptions }, (message) => {
+  useChannel({ id: clientId, channelName }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
-  useChannel({ id: anotherClientId, channelName: anotherChannelName, deriveOptions }, (message) => {
+  useChannel({ id: anotherClientId, channelName: anotherChannelName }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
 
@@ -543,7 +541,6 @@ const UseDerivedChannelComponentMultipleClients = ({
 
 interface UseDerivedChannelComponentProps {
   channelName: string;
-  deriveOptions: Ably.DeriveOptions;
   skip?: boolean;
 }
 
@@ -563,16 +560,14 @@ interface UseChannelStateErrorsComponentProps {
   onConnectionError?: (err: Ably.ErrorInfo) => unknown;
   onChannelError?: (err: Ably.ErrorInfo) => unknown;
   channelName?: string;
-  deriveOptions?: Ably.DeriveOptions;
 }
 
 const UseChannelStateErrorsComponent = ({
   onConnectionError,
   onChannelError,
   channelName = 'blah',
-  deriveOptions,
 }: UseChannelStateErrorsComponentProps) => {
-  const opts = { channelName, deriveOptions, onConnectionError, onChannelError };
+  const opts = { channelName, onConnectionError, onChannelError };
   const { connectionError, channelError } = useChannel(opts);
 
   return (
@@ -585,18 +580,13 @@ const UseChannelStateErrorsComponent = ({
 
 interface LatestMessageCallbackComponentProps {
   channelName: string;
-  deriveOptions?: Ably.DeriveOptions;
   callback: () => any;
 }
 
-const LatestMessageCallbackComponent = ({
-  channelName,
-  deriveOptions,
-  callback,
-}: LatestMessageCallbackComponentProps) => {
+const LatestMessageCallbackComponent = ({ channelName, callback }: LatestMessageCallbackComponentProps) => {
   const [count, setCount] = React.useState(0);
 
-  useChannel({ channelName, deriveOptions }, () => {
+  useChannel({ channelName }, () => {
     callback();
     setCount((count) => count + 1);
   });
@@ -607,7 +597,6 @@ const LatestMessageCallbackComponent = ({
 interface ChangingEventComponentProps {
   newEventName: string;
   channelName?: string;
-  deriveOptions?: Ably.DeriveOptions;
   eventName?: string;
 }
 
@@ -615,11 +604,10 @@ const ChangingEventComponent = ({
   channelName = 'blah',
   eventName = 'event1',
   newEventName,
-  deriveOptions,
 }: ChangingEventComponentProps) => {
   const [currentEventName, setCurrentEventName] = useState(eventName);
 
-  useChannel({ channelName, deriveOptions }, currentEventName, vi.fn());
+  useChannel({ channelName }, currentEventName, vi.fn());
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

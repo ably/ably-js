@@ -1,5 +1,5 @@
 import type * as Ably from 'ably';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';

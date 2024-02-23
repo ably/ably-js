@@ -6,8 +6,8 @@ import { channelOptionsWithAgent } from './AblyReactHooks.js';
 interface ChannelProviderProps {
   id?: string;
   channelName: string;
-  options?: Ably.Types.ChannelOptions;
-  deriveOptions?: Ably.Types.DeriveOptions;
+  options?: Ably.ChannelOptions;
+  deriveOptions?: Ably.DeriveOptions;
   children?: React.ReactNode | React.ReactNode[] | null;
 }
 

@@ -23,7 +23,7 @@ root.render(
     <AblyProvider client={client}>
       <AblyProvider id="rob" client={client}>
         <AblyProvider id="frontOffice" client={client}>
-          <ChannelProvider channelName="your-channel-name">
+          <ChannelProvider channelName="your-channel-name" options={{ modes: ['PRESENCE', 'PUBLISH', 'SUBSCRIBE'] }}>
             <ChannelProvider channelName="your-derived-channel-name">
               <ChannelProvider
                 id="rob"
