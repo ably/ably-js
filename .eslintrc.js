@@ -19,8 +19,6 @@ module.exports = {
     "plugin:security/recommended",
   ],
   rules: {
-    // comma-dangle used for browser compatibility for browsers that don't support trailing commas
-    "comma-dangle": ["error", "always-multiline"],
     "eol-last": "error",
     // security/detect-object-injection just gives a lot of false positives
     // see https://github.com/nodesecurity/eslint-plugin-security/issues/21
@@ -35,7 +33,6 @@ module.exports = {
     {
       files: ["**/*.{ts,tsx}"],
       rules: {
-        "comma-dangle": ["error", "only-multiline"],
         "@typescript-eslint/no-unused-vars": ["error", { "varsIgnorePattern": "^_" }],
         // TypeScript already enforces these rules better than any eslint setup can
         "no-undef": "off",
