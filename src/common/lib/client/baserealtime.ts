@@ -13,7 +13,7 @@ import { ModulesMap, RealtimePresenceModule } from './modulesmap';
 import { TransportNames } from 'common/constants/TransportName';
 import Platform, { TransportImplementations } from 'common/platform';
 import { VcdiffDecoder } from '../types/message';
-import HashRing from 'hashring';
+import ConsistentHash from 'consistent-hash';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
@@ -96,7 +96,7 @@ class ChannelGroups {
 class ConsumerGroup extends EventEmitter {
   private channel?: RealtimeChannel;
   private currentMembers: string[] = [];
-  private hashring?: HashRing;
+  private hashring?: ConsistentHash;
   private myClientId?: string;
 
   constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
@@ -113,7 +113,8 @@ class ConsumerGroup extends EventEmitter {
 
     this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
     this.myClientId = this.channels.realtime.options.clientId!;
-    this.hashring = new HashRing(this.myClientId!);
+    this.hashring = new ConsistentHash();
+    this.hashring.add(this.myClientId);
 
     try {
       await this.channel.presence.enter(null);
