@@ -17,6 +17,10 @@
     "./modules": {
       "types": "./modules.d.ts",
       "default": "./build/modules/index.js"
+    },
+    "./react": {
+      "require": "./react/cjs/index.js",
+      "import": "./react/mjs/index.js"
     }
   },
   "typings": "./ably.d.ts",
