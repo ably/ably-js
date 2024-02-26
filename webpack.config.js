@@ -27,7 +27,7 @@ const baseConfig = {
       { test: /\.ts$/, loader: 'ts-loader' },
     ],
   },
-  target: ['web', 'es5'],
+  target: ['web', 'es2017'],
   externals: {
     request: false,
     ws: false,
@@ -54,7 +54,7 @@ const nodeConfig = {
     ...baseConfig.output,
     filename: 'ably-node.js',
   },
-  target: ['node', 'es5'],
+  target: ['node', 'es2017'],
   externals: {
     got: true,
     ws: true,
