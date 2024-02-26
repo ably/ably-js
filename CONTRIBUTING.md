@@ -29,7 +29,7 @@
 
 ## Building the library
 
-To build the library, simply run `npm run build`. Building the library currently requires NodeJS <= v16.
+To build the library, simply run `npm run build`. Building the library currently requires NodeJS >= v16.
 
 Since webpack builds are slow, commands are also available to only build the output for specific platforms (eg `npm run build:node`), see [package.json](./package.json) for the full list of available commands
 
@@ -51,11 +51,11 @@ Or run just one test file
 
 Or run just one test
 
-    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here 
+    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here
 
 Or run test skipping the build
 
-    npm run test:node:skip-build -- --file=test/rest/status.test.js --grep=test_name_here 
+    npm run test:node:skip-build -- --file=test/rest/status.test.js --grep=test_name_here
 
 ### Debugging the mocha tests locally with a debugger
 
