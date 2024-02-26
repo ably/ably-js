@@ -6,6 +6,7 @@ import HttpMethods from '../../constants/HttpMethods';
 import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorinfo';
 import Rest from './rest';
 import { ErrnoException } from '../../types/http';
+import httpStatusCodes from '../../constants/HttpStatusCodes';
 
 function withAuthDetails(
   rest: Rest,
@@ -31,6 +32,11 @@ function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | nul
   return (err, body, outerHeaders, unpacked, outerStatusCode) => {
     if (err && !body) {
       callback(err);
+      return;
+    }
+
+    if (outerStatusCode === httpStatusCodes.NoContent) {
+      callback(err, [] as any, [] as any, true, outerStatusCode);
       return;
     }
 

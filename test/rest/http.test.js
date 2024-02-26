@@ -62,5 +62,26 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
       done();
     });
+
+    it('Should handle no content responses', function (done) {
+      //Intercept Http.do with test
+
+      function testRequestHandler(_, __, ___, ____, _____, ______, callback) {
+        callback(null, null, null, false, 204);
+      }
+
+      rest.http.do = testRequestHandler;
+
+      rest.request('GET', '/foo', {}, null, {}, (error, response) => {
+        try {
+          expect(error).to.be.null;
+          expect(response.statusCode).to.equal(204);
+          expect(response.items).to.be.empty;
+          done();
+        } catch (err) {
+          done(err);
+        }
+      });
+    });
   });
 });
