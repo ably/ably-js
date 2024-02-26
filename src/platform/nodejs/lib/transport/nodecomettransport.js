@@ -12,29 +12,24 @@ import url from 'url';
 import util from 'util';
 import { TransportNames } from '../../../../common/constants/TransportName';
 
-var NodeCometTransport = function (transportStorage) {
-  var noop = function () {};
-  var shortName = TransportNames.Comet;
+var noop = function () {};
+var shortName = TransportNames.Comet;
 
-  /*
-   * A transport to use with nodejs
-   * to simulate an XHR transport for test purposes
-   */
-  function NodeCometTransport(connectionManager, auth, params) {
-    CometTransport.call(this, connectionManager, auth, params);
-    this.httpAgent = null;
-    this.httpsAgent = null;
-    this.pendingRequests = 0;
-    this.shortName = shortName;
-  }
-  util.inherits(NodeCometTransport, CometTransport);
+/*
+ * A transport to use with nodejs
+ * to simulate an XHR transport for test purposes
+ */
+class NodeCometTransport extends CometTransport {
+  httpAgent = null;
+  httpsAgent = null;
+  pendingRequests = 0;
+  shortName = shortName;
 
-  NodeCometTransport.isAvailable = function () {
+  static isAvailable() {
     return true;
-  };
-  transportStorage.supportedTransports[shortName] = NodeCometTransport;
+  }
 
-  NodeCometTransport.prototype.toString = function () {
+  toString() {
     return (
       'NodeCometTransport; uri=' +
       this.baseUri +
@@ -45,58 +40,61 @@ var NodeCometTransport = function (transportStorage) {
       '; stream=' +
       this.stream
     );
-  };
+  }
 
-  NodeCometTransport.prototype.getAgent = function (tls) {
+  getAgent(tls) {
     var prop = tls ? 'httpsAgent' : 'httpAgent',
       agent = this[prop];
 
     if (!agent) agent = this[prop] = new (tls ? https : http).Agent({ keepAlive: true });
 
     return agent;
-  };
+  }
 
-  NodeCometTransport.prototype.dispose = function () {
+  dispose() {
     var self = this;
     this.onceNoPending(function () {
       if (self.httpAgent) self.httpAgent.destroy();
       if (self.httpsAgent) self.httpsAgent.destroy();
     });
     CometTransport.prototype.dispose.call(this);
-  };
+  }
 
   /* valid in non-streaming mode only, or data only contains last update */
-  NodeCometTransport.prototype.request = function (uri, params, body, requestMode, callback) {
+  request(uri, params, body, requestMode, callback) {
     var req = this.createRequest(uri, params, body, requestMode);
     req.once('complete', callback);
     req.exec();
     return req;
-  };
+  }
 
-  NodeCometTransport.prototype.createRequest = function (uri, headers, params, body, requestMode) {
+  createRequest(uri, headers, params, body, requestMode) {
     return new Request(uri, headers, params, body, requestMode, this.format, this.timeouts, this);
-  };
+  }
 
-  NodeCometTransport.prototype.addPending = function () {
+  addPending() {
     ++this.pendingRequests;
-  };
+  }
 
-  NodeCometTransport.prototype.removePending = function () {
+  removePending() {
     if (--this.pendingRequests <= 0) {
       this.emit('nopending');
     }
-  };
+  }
 
-  NodeCometTransport.prototype.onceNoPending = function (listener) {
+  onceNoPending(listener) {
     if (this.pendingRequests == 0) {
       listener();
       return;
     }
     this.once('nopending', listener);
-  };
+  }
+}
 
-  function Request(uri, headers, params, body, requestMode, format, timeouts, transport) {
-    EventEmitter.call(this);
+class Request extends EventEmitter {
+  constructor(uri, headers, params, body, requestMode, format, timeouts, transport) {
+    super();
+
     if (typeof uri == 'string') uri = url.parse(uri);
     var tls = uri.protocol == 'https:';
     this.client = tls ? https : http;
@@ -131,9 +129,8 @@ var NodeCometTransport = function (transportStorage) {
     });
     if (transport) requestOptions.agent = transport.getAgent(tls);
   }
-  Utils.inherits(Request, EventEmitter);
 
-  Request.prototype.exec = function () {
+  exec() {
     var timeout = this.requestMode == XHRStates.REQ_SEND ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
       self = this;
 
@@ -184,9 +181,9 @@ var NodeCometTransport = function (transportStorage) {
     if (this.transport) this.transport.addPending();
 
     req.end(this.body);
-  };
+  }
 
-  Request.prototype.readStream = function () {
+  readStream() {
     var res = this.res,
       self = this;
 
@@ -236,9 +233,9 @@ var NodeCometTransport = function (transportStorage) {
         self.complete();
       });
     });
-  };
+  }
 
-  Request.prototype.readFully = function () {
+  readFully() {
     var res = this.res,
       chunks = [],
       self = this;
@@ -281,9 +278,9 @@ var NodeCometTransport = function (transportStorage) {
         self.complete(err);
       });
     });
-  };
+  }
 
-  Request.prototype.complete = function (err, body) {
+  complete(err, body) {
     if (!this.requestComplete) {
       this.requestComplete = true;
       if (body) this.emit('data', body);
@@ -298,9 +295,9 @@ var NodeCometTransport = function (transportStorage) {
         this.transport.removePending();
       }
     }
-  };
+  }
 
-  Request.prototype.abort = function () {
+  abort() {
     Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', '');
     var timer = this.timer;
     if (timer) {
@@ -316,9 +313,13 @@ var NodeCometTransport = function (transportStorage) {
       this.req = null;
     }
     this.complete({ statusCode: 400, code: 80003, message: 'Cancelled' });
-  };
+  }
+}
+
+var initialiseNodeCometTransport = function (transportStorage) {
+  transportStorage.supportedTransports[shortName] = NodeCometTransport;
 
   return NodeCometTransport;
 };
 
-export default NodeCometTransport;
+export default initialiseNodeCometTransport;
