@@ -31,8 +31,8 @@
   "dependencies": {
     "@ably/msgpack-js": "^0.4.0",
     "@types/hashring": "^3.2.5",
+    "consistent-hash": "^1.2.2",
     "got": "^11.8.5",
-    "hashring": "^3.2.0",
     "ws": "^8.14.2"
   },
   "peerDependencies": {
