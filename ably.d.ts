@@ -1426,6 +1426,13 @@ export interface TokenRevocationFailureResult {
  */
 export type messageCallback<T> = (message: T) => void;
 /**
+ * A callback which returns a channel and message argument, used for {@link ChannelGroup} subscriptions.
+ *
+ * @param channel - The channel name on which the message was received.
+ * @param message - The message which triggered the callback.
+ */
+export type channelAndMessageCallback<T> = (channel: string, message: T) => void;
+/**
  * The callback used for the events emitted by {@link RealtimeChannel}.
  *
  * @param changeStateChange - The state change that occurred.
@@ -1958,6 +1965,18 @@ export declare interface Channel {
 }
 
 /**
+ * Enables messages to be subscribed to on a group of channels.
+ */
+export declare interface ChannelGroup {
+  /**
+   * Registers a listener for messages on this channel group. The caller supplies a listener function, which is called each time one or more messages arrives on the channels in the group.
+   *
+   * @param callback - An event listener function.
+   */
+  subscribe(callback: channelAndMessageCallback<InboundMessage>): void;
+}
+
+/**
  * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresence} object of a channel.
  */
 export declare interface RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
@@ -2187,6 +2206,20 @@ export declare interface Channels<T> {
    * @param name - The channel name.
    */
   release(name: string): void;
+}
+
+/**
+ * Creates and destroys {@link ChannelGroup} objects.
+ */
+export declare interface ChannelGroups {
+  /**
+   * Creates a new {@link ChannelGroup} object, with the specified {@link ChannelGroupOptions}, or returns the existing channel group object.
+   *
+   * @param filter - A regular expression defining the channel group. Only wildcards are supported.
+   * @param options - A {@link ChannelGroupOptions} object.
+   * @returns A {@link ChannelGroup} object.
+   */
+  get(filter: string, options?: ChannelGroupOptions): Promise<ChannelGroup>;
 }
 
 /**
@@ -2728,6 +2761,7 @@ export declare class Realtime implements RealtimeClient {
   connect(): void;
   auth: Auth;
   channels: Channels<RealtimeChannel>;
+  channelGroups: ChannelGroups;
   connection: Connection;
   request<T = any>(
     method: string,
