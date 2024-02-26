@@ -3,9 +3,11 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
   var closeAndFinish = helper.closeAndFinish;
+  var closeAndFinishAsync = helper.closeAndFinishAsync;
   var createPM = Ably.protocolMessageFromDeserialized;
   var displayError = helper.displayError;
   var monitorConnection = helper.monitorConnection;
+  var monitorConnectionAsync = helper.monitorConnectionAsync;
   var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/connection', function () {
@@ -315,6 +317,26 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         );
       });
       monitorConnection(done, realtime);
+    });
+
+    it('whenState', async () => {
+      const realtime = helper.AblyRealtime({ autoConnect: false });
+
+      await monitorConnectionAsync(async () => {
+        // RTN26a - when already in given state, returns null
+        const initializedStateChange = await realtime.connection.whenState('initialized');
+        expect(initializedStateChange).to.be.null;
+
+        // RTN26b — when not in given state, calls #once
+        const connectedStateChangePromise = realtime.connection.whenState('connected');
+        realtime.connection.connect();
+        const connectedStateChange = await connectedStateChangePromise;
+        expect(connectedStateChange).not.to.be.null;
+        expect(connectedStateChange.previous).to.equal('connecting');
+        expect(connectedStateChange.current).to.equal('connected');
+      }, realtime);
+
+      await closeAndFinishAsync(realtime);
     });
   });
 });

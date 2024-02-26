@@ -38,7 +38,7 @@ class Connection extends EventEmitter {
   }
 
   whenState = ((state: string) => {
-    return EventEmitter.prototype.whenState.call(this, state, this.state, new ConnectionStateChange(undefined, state));
+    return EventEmitter.prototype.whenState.call(this, state, this.state);
   }) as any;
 
   connect(): void {

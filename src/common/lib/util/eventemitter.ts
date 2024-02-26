@@ -286,19 +286,16 @@ class EventEmitter {
   }
 
   /**
-   * Private API
-   *
    * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
    * @param targetState the name of the state event to listen to
    * @param currentState the name of the current state of this object
-   * @param returnValue
    */
-  async whenState(targetState: string, currentState: string, returnValue?: unknown) {
+  async whenState(targetState: string, currentState: string) {
     if (typeof targetState !== 'string' || typeof currentState !== 'string') {
       throw new Error('whenState requires a valid state String argument');
     }
     if (targetState === currentState) {
-      return returnValue;
+      return null;
     } else {
       return this.once(targetState);
     }
