@@ -13,7 +13,7 @@ import { ModulesMap, RealtimePresenceModule } from './modulesmap';
 import { TransportNames } from 'common/constants/TransportName';
 import Platform, { TransportImplementations } from 'common/platform';
 import { VcdiffDecoder } from '../types/message';
-import HashRing from 'hashring';
+import HashRing from '../util/hashring';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
@@ -35,6 +35,7 @@ class BaseRealtime extends BaseClient {
     this._decodeVcdiff = (modules.Vcdiff ?? (Platform.Vcdiff.supported && Platform.Vcdiff.bundledDecode)) || null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
+    // TODO(mschristensen): avoid using the same channel pool as that exposed via this.channels()
     this._channelGroups = modules.ChannelGroups ? new modules.ChannelGroups(this._channels) : null;
     if (options.autoConnect !== false) this.connect();
   }
@@ -79,6 +80,7 @@ class ChannelGroups {
 
   constructor(readonly channels: Channels) {}
 
+  // TODO(mschristensen) make this non async
   async get(filter: string, options?: API.ChannelGroupOptions): Promise<ChannelGroup> {
     let group = this.groups[filter];
 
@@ -97,7 +99,7 @@ class ConsumerGroup extends EventEmitter {
   private channel?: RealtimeChannel;
   private currentMembers: string[] = [];
   private hashring?: HashRing;
-  private myClientId?: string;
+  private myClientId?: string; // TODO(mschristensen) make this required
 
   constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
     super();
@@ -111,9 +113,10 @@ class ConsumerGroup extends EventEmitter {
       return;
     }
 
-    this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
     this.myClientId = this.channels.realtime.options.clientId!;
-    this.hashring = new HashRing(this.myClientId!);
+    this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
+    this.hashring = new HashRing([this.myClientId]);
+    Logger.logAction(Logger.LOG_MAJOR, 'ConsumerGroup.join()', 'joining consumer group ' + this.consumerGroupName + ' as ' + this.myClientId);
 
     try {
       await this.channel.presence.enter(null);
@@ -174,23 +177,25 @@ class ConsumerGroup extends EventEmitter {
 class ChannelGroup {
   currentChannels: string[];
   active: RealtimeChannel;
-  subsciptions: EventEmitter;
+  subscriptions: EventEmitter;
   subscribedChannels: Record<string, RealtimeChannel> = {};
   expression: RegExp;
   consumerGroup: ConsumerGroup;
+  myClientId: string;
 
   constructor(readonly channels: Channels, filter: string, options?: API.ChannelGroupOptions) {
     this.currentChannels = [];
-    this.subsciptions = new EventEmitter();
+    this.subscriptions = new EventEmitter();
     this.active = channels.get('active', { params: { rewind: '1' } });
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
     this.consumerGroup.on('membership', () => this.updateActiveChannels(this.currentChannels));
     this.expression = new RegExp(filter);
+    this.myClientId = this.channels.realtime.options.clientId!;
   }
 
   async join() {
     await this.consumerGroup.join();
-    this.active.subscribe((msg: any) => this.updateActiveChannels(msg.data.active));
+    await this.active.subscribe((msg: any) => this.updateActiveChannels(msg.data.active));
   }
 
   private updateActiveChannels(activeChannels: string[]) {
@@ -201,21 +206,26 @@ class ChannelGroup {
     const { add, remove } = diffSets(this.currentChannels, matched);
     this.currentChannels = matched;
 
-    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'computed channel diffs ' + { add, remove });
+    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'computed channel diffs: add=' + add + ' remove=' + remove);
 
     this.removeSubscriptions(remove);
-    this.addSubscrptions(add);
+    this.addSubscriptions(add);
+    Logger.logAction(Logger.LOG_MAJOR, 'ChannelGroups.setActiveChannels', 'current channels ' + this.currentChannels);
   }
 
-  private addSubscrptions(channels: string[]) {
+  private addSubscriptions(channels: string[]) {
     channels.forEach((channel) => {
       if (this.subscribedChannels[channel]) {
         return;
       }
 
-      this.subscribedChannels[channel] = this.channels.get(channel, { params: { rewind: '5s' } });
-      this.subscribedChannels[channel].subscribe((msg: any) => {
-        this.subsciptions.emit('message', channel, msg);
+      this.subscribedChannels[channel] = this.channels.get(channel);
+      this.subscribedChannels[channel].setOptions({ params: { rewind: '5s' } }).then(() => {
+        this.subscribedChannels[channel].subscribe((msg: any) => {
+          this.subscriptions.emit('message', channel, msg);
+        });
+      }).catch((err) => {
+        Logger.logAction(Logger.LOG_ERROR, 'ChannelGroups.addSubscriptions()', 'failed to set rewind options on channel ' + channel + ': ' + err);
       });
     });
   }
@@ -232,7 +242,7 @@ class ChannelGroup {
   }
 
   subscribe(cb: (channel: string, msg: any) => void) {
-    this.subsciptions.on('message', cb);
+    this.subscriptions.on('message', cb);
   }
 }
 

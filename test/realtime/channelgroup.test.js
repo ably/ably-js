@@ -175,92 +175,122 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('partitions over consumer group', function (done) {
-      try {
-        /* set up realtime */
-        var realtime1 = helper.AblyRealtime();
-        var realtime2 = helper.AblyRealtime();
-        realtime2.options.clientId = 'xz';
-        realtime1.options.clientId = '93';
+      var realtime1 = helper.AblyRealtime(); // for publishing from tests
+      // for the consumers
+      var realtime2 = helper.AblyRealtime();
+      var realtime3 = helper.AblyRealtime();
+      realtime1.options.clientId = 'testclient';
+      realtime2.options.clientId = 'consumer1';
+      realtime3.options.clientId = 'consumer2';
 
-        /* connect and attach */
-        realtime1.connection.on('connected', async function () {
-          const channelGroup1 = await realtime1.channelGroups.get('part.*', { consumerGroup: { name: 'testgroup' } });
-          const channelGroup2 = await realtime2.channelGroups.get('part.*', { consumerGroup: { name: 'testgroup' } });
-          const part1 = realtime2.channels.get('part1');
-          const part2 = realtime2.channels.get('part:2');
+      // connect
+      Promise.all([
+        new Promise(resolve => realtime1.connection.on('connected', resolve)),
+        new Promise(resolve => realtime2.connection.on('connected', resolve)),
+        new Promise(resolve => realtime3.connection.on('connected', resolve)),
+      ]).then(async () => {
 
-          channelGroup2.subscribe((channel, msg) => {
-            try {
-              expect(channel).to.equal('part:2', 'Unexpected channel name in group participant realtime1');
-              expect(msg.data).to.equal(
-                'partition 2 test data',
-                'Unexpected message data in group participant realtime1'
-              );
-            } catch (err) {
-              closeAndFinish(done, [realtime1, realtime2], err);
-              return;
-            }
+        // create 2 consumers in one group
+        const consumers = [
+          await realtime2.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
+          await realtime3.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
+        ];
 
-            // Publish a final message to partition2, to end the test
-            part1.publish('done', 'partition 1 test data');
+        // create 5 channels
+        const channels = [];
+        const channelNames = Array.from({ length: 5 }, (_, i) => 'partition:' + i);
+        for (const name of channelNames) {
+          const channel = realtime1.channels.get(name);
+          await channel.attach();
+          channels.push(channel);
+        }
+
+        function assertResult(results) {
+          // expect each consumer to have received at least 1 message
+          for (const result of results) {
+            expect(result.length).to.be.greaterThan(0);
+          }
+          // sort first on channel, then on message name
+          const allResults = results.flat().sort((a, b) => {
+            if (a.channel < b.channel) return -1;
+            if (a.channel > b.channel) return 1;
+            if (a.name < b.name) return -1;
+            if (a.name > b.name) return 1;
+            return 0;
           });
+          // expect to have received 2 messages from each channel across all consumers
+          for (let i = 0; i < channels.length; i += 2) {
+            const baseIndex = i / 2;
+            const data = `test data ${baseIndex}`;
+            const channel = `partition:${baseIndex}`;
 
-          channelGroup1.subscribe((channel, msg) => {
-            try {
-              expect(channel).to.equal('part1', 'Unexpected channel name in group participant realtime2');
-              expect(msg.data).to.equal(
-                'partition 1 test data',
-                'Unexpected message data in group participant realtime2'
-              );
-            } catch (err) {
-              closeAndFinish(done, [realtime1, realtime2], err);
-              return;
-            }
+            const first = allResults[i];
+            const second = allResults[i + 1];
+        
+            expect(first.channel).to.equal(channel);
+            expect(second.channel).to.equal(channel);
+            expect(first.name).to.equal('event0');
+            expect(second.name).to.equal('event1');
+            expect(first.data).to.equal(data);
+            expect(second.data).to.equal(data);
+          }
+        }
 
-            if (msg.name === 'done') {
-              closeAndFinish(done, [realtime1, realtime2]);
+        // subscribe each consumer and collect results
+        const results = Array.from({ length: consumers.length }, () => []);
+        for (let i = 0; i < consumers.length; i++) {
+          consumers[i].subscribe((channel, msg) => {
+            results[i].push({ channel, name: msg.name, data: msg.data });
+            if (results.flat().length === 2 * channels.length) {
+              assertResult(results);
+              closeAndFinish(done, [realtime1, realtime2, realtime3]);
             }
           });
+        }
 
-          var testMsg = { active: ['part1', 'part:2'] };
-          var activeChannel = await realtime1.channels.get('active');
+        var testMsg = { active: channelNames };
+        var activeChannel = realtime1.channels.get('active');
 
-          try {
-            await activeChannel.attach();
-            /* publish active channels */
-            activeChannel.publish('event0', testMsg);
+        try {
+          // publish active channels
+          await activeChannel.attach();
+          activeChannel.publish('event0', testMsg);
 
-            // Wait for both consumers to appear in the group
-            await new Promise(async (resolve, reject) => {
-              const ch = await realtime1.channels.get('testgroup');
-              const interval = setInterval(async () => {
-                try {
-                  const result = await ch.presence.get({ waitForSync: true });
-                  if (result.length == 2) {
-                    resolve();
-                    ch.presence.unsubscribe();
-                    clearInterval(interval);
-                  }
-                } catch (err) {
-                  reject(err);
+          // wait for all consumers to appear in the group
+          await new Promise(async (resolve, reject) => {
+            const ch = realtime1.channels.get('testgroup');
+            const interval = setInterval(async () => {
+              try {
+                const result = await ch.presence.get({ waitForSync: true });
+                if (result.length === consumers.length) {
+                  resolve();
                   ch.presence.unsubscribe();
                   clearInterval(interval);
                 }
-              }, 100);
-            });
+              } catch (err) {
+                reject(err);
+                ch.presence.unsubscribe();
+                clearInterval(interval);
+              }
+            }, 100);
+          });
 
-            // Publish a message to each of the partitions
-            part1.publish('event0', 'partition 1 test data');
-            part2.publish('event0', 'partition 2 test data');
-          } catch (err) {
-            closeAndFinish(done, [realtime1, realtime2], err);
-            return;
+          // send 2 messages to each channel
+          for (let i = 0; i < channels.length; i++) {
+            channels[i].publish('event0', `test data ${i}`);
+            channels[i].publish('event1', `test data ${i}`);
           }
-        });
+        } catch (err) {
+          closeAndFinish(done, [realtime1, realtime2, realtime3], err);
+          return;
+        }
+
         monitorConnection(done, realtime1);
-      } catch (err) {
-        closeAndFinish(done, [realtime1, realtime2], err);
-      }
+        monitorConnection(done, realtime2);
+        monitorConnection(done, realtime3);
+      }).catch(err => {
+        closeAndFinish(done, [realtime1, realtime2, realtime3], err);
+      });
     });
-  });
+  })
 });
