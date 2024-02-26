@@ -14,11 +14,19 @@ This library currently targets the [Ably client library features spec](https://w
 
 This SDK supports the following platforms:
 
-**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, IE (only version 9 or newer), Safari on iOS and macOS, Opera, and Android browsers.
+**Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, Edge, Safari on iOS and macOS, Opera, and Android browsers. IE is not supported. See compatibility table below for more information on minimum supported versions for major browsers:
+
+| Browser       | Minimum supported version | Release date  |
+| ------------- |:-------------------------:| -------------:|
+| Chrome        | 58                        | Apr 19, 2017  |
+| Firefox       | 52                        | Mar 7, 2017   |
+| Edge          | 79                        | Dec 15, 2020  |
+| Safari        | 11                        | Sep 19, 2017  |
+| Opera         | 45                        | May 10, 2017  |
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
-**Node.js:** version 8.17 or newer. (1.1.x versions work on Node.js 4.5 or newer). We do not currently provide an ESM bundle, please [contact us](https://www.ably.com/contact) if you would would like to use ably-js in a NodeJS ESM project.
+**Node.js:** version 16.x or newer. (1.1.x versions work on Node.js 4.5 or newer, 1.2.x versions work on Node.js 8.17 or newer). We do not currently provide an ESM bundle, please [contact us](https://www.ably.com/contact) if you would would like to use ably-js in a NodeJS ESM project.
 
 **React (release candidate):** We offer a set of React Hooks which make it seamless to use ably-js in your React application. See the [React Hooks documentation](./docs/react.md) for more details.
 
@@ -30,7 +38,9 @@ This SDK supports the following platforms:
 
 **WebWorkers:** The browser bundle supports running in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) context. You can also use the [modular variant](#modular-tree-shakable-variant) of the library in Web Workers.
 
-We regression-test the library against a selection of those (which will change over time, but usually consists of the versions that are supported upstream, plus old versions of IE).
+We test the library against a selection of browsers using their latest versions. Please refer to [the test-browser GitHub workflow](./.github/workflows/test-browser.yml) for the set of browsers that currently undergo CI testing.
+
+We regression-test the library against a selection of Node.js version, which will change over time. We will always support and test against current LTS Node.js versions, and optionally some older versions that are supported upstream. We reserve the right to drop support for non-LTS versions in a non-major release. We will update the `engines` field in [package.json](./package.json) whenever we change the Node.js versions supported by the project. Please refer to [the test-node GitHub workflow](./.github/workflows/test-node.yml) for the set of versions that currently undergo CI testing.
 
 However, we aim to be compatible with a much wider set of platforms and browsers than we can possibly test on. That means we'll happily support (and investigate reported problems with) any reasonably-widely-used browser. So if you find any compatibility issues, please do [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.com) for advice.
 
