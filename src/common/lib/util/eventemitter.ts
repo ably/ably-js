@@ -291,27 +291,16 @@ class EventEmitter {
    * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
    * @param targetState the name of the state event to listen to
    * @param currentState the name of the current state of this object
-   * @param listener the listener to be called
-   * @param listenerArgs
+   * @param returnValue
    */
-  whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[]) {
-    const eventThis = { event: targetState };
-
+  async whenState(targetState: string, currentState: string, returnValue?: unknown) {
     if (typeof targetState !== 'string' || typeof currentState !== 'string') {
       throw new Error('whenState requires a valid state String argument');
     }
-    if (typeof listener !== 'function') {
-      return new Promise((resolve) => {
-        EventEmitter.prototype.whenState.apply(
-          this,
-          [targetState, currentState, resolve].concat(listenerArgs as any[]) as any,
-        );
-      });
-    }
     if (targetState === currentState) {
-      callListener(eventThis, listener, listenerArgs);
+      return returnValue;
     } else {
-      this.once(targetState, listener);
+      return this.once(targetState);
     }
   }
 }

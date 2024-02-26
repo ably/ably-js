@@ -875,8 +875,8 @@ class RealtimeChannel extends EventEmitter {
     return restMixin.history(this, params);
   } as any;
 
-  whenState = ((state: string, listener: ErrCallback) => {
-    return EventEmitter.prototype.whenState.call(this, state, this.state, listener);
+  whenState = ((state: string) => {
+    return EventEmitter.prototype.whenState.call(this, state, this.state);
   }) as any;
 
   /* @returns null (if can safely be released) | ErrorInfo (if cannot) */

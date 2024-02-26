@@ -56,7 +56,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       parallelPublishMessages(done, restChannel, preAttachMessages, function () {
         /* second, connect and attach to the channel */
         try {
-          realtime.connection.whenState('connected', function () {
+          whenPromiseSettles(realtime.connection.whenState('connected'), function () {
             var rtChannel = realtime.channels.get('persisted:history_until_attach');
             whenPromiseSettles(rtChannel.attach(), function (err) {
               if (err) {
