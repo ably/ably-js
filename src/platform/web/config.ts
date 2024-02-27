@@ -41,7 +41,6 @@ const Config: IPlatformConfig = {
   fetchSupported: !!globalObject.fetch,
   xhrSupported: globalObject.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
   allowComet: allowComet(),
-  streamingSupported: true,
   useProtocolHeartbeats: true,
   supportsBinary: !!globalObject.TextDecoder,
   /* Per Paddy (https://ably-real-time.slack.com/archives/CURL4U2FP/p1705674537763479) web intentionally prefers JSON to MessagePack:

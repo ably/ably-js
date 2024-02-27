@@ -25,10 +25,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
      */
     it('attachdetach0', function (done) {
       try {
-        /* Note: realtime now sends an ATTACHED post-upgrade, which can race with
-         * the DETACHED if the DETACH is only sent just after upgrade. Remove
-         * bestTransport with 1.1 spec which has IDs in ATTACHs */
-        var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+        var realtime = helper.AblyRealtime(),
           index,
           expectedConnectionEvents = ['connecting', 'connected', 'closing', 'closed'],
           expectedChannelEvents = ['attaching', 'attached', 'detaching', 'detached'];

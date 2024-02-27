@@ -29,7 +29,7 @@ class WebSocketTransport extends Transport {
     super(connectionManager, auth, params);
     /* If is a browser, can't detect pings, so request protocol heartbeats */
     params.heartbeats = Platform.Config.useProtocolHeartbeats;
-    this.wsHost = Defaults.getHost(params.options, params.host, true);
+    this.wsHost = params.host as string;
   }
 
   static isAvailable() {

@@ -13,7 +13,6 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
     WebSocket: WebSocket,
     xhrSupported: true,
     allowComet: true,
-    streamingSupported: true,
     useProtocolHeartbeats: true,
     supportsBinary: !!(typeof TextDecoder !== 'undefined' && TextDecoder),
     preferBinary: false, // Motivation as on web; see `preferBinary` comment there.

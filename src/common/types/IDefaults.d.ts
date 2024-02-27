@@ -3,9 +3,7 @@ import { RestAgentOptions } from './ClientOptions';
 
 export default interface IDefaults {
   connectivityCheckUrl: string;
+  wsConnectivityUrl: string;
   defaultTransports: TransportName[];
-  baseTransportOrder: TransportName[];
-  transportPreferenceOrder: TransportName[];
-  upgradeTransports: TransportName[];
   restAgentOptions?: RestAgentOptions;
 }

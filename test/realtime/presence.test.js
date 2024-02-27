@@ -1708,8 +1708,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* Enter ten clients while attaching, finish the attach, check they were all entered correctly */
     it('multiple_pending', function (done) {
-      /* single transport to avoid upgrade stalling due to the stubbed attachImpl */
-      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+      var realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('multiple_pending'),
         originalAttachImpl = channel.attachImpl;
 

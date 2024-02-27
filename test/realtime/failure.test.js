@@ -60,7 +60,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             .map(function (transport) {
               return failure_test([transport]);
             })
-            .concat(failure_test(null)), // to test not specifying a transport (so will use upgrade mechanism)
+            .concat(failure_test(null)), // to test not specifying a transport (so will use websocket/base mechanism)
           function (err, realtimes) {
             closeAndFinish(done, realtimes, err);
           },
@@ -98,7 +98,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             .map(function (transport) {
               return break_test([transport]);
             })
-            .concat(break_test(null)), // to test not specifying a transport (so will use upgrade mechanism)
+            .concat(break_test(null)), // to test not specifying a transport (so will use websocket/base mechanism)
           function (err, realtimes) {
             closeAndFinish(done, realtimes, err);
           },
@@ -127,7 +127,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                * the suspended timeout trips before three connection cycles */
               disconnectedRetryTimeout: 1000,
               realtimeRequestTimeout: 50,
-              preferenceConnectTimeout: 50,
+              webSocketConnectTimeout: 50,
               suspendedRetryTimeout: 1000,
               connectionStateTtl: 2900,
             });
@@ -173,7 +173,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             .map(function (transport) {
               return lifecycleTest([transport]);
             })
-            .concat(lifecycleTest(null)), // to test not specifying a transport (so will use upgrade mechanism)
+            .concat(lifecycleTest(null)), // to test not specifying a transport (so will use websocket/base mechanism)
           function (err) {
             if (err) {
               done(err);

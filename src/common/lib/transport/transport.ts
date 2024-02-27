@@ -64,7 +64,6 @@ abstract class Transport extends EventEmitter {
       params.heartbeats = true;
     }
     this.connectionManager = connectionManager;
-    connectionManager.registerProposedTransport(this);
     this.auth = auth;
     this.params = params;
     this.timeouts = params.options.timeouts;
@@ -296,7 +295,7 @@ abstract class Transport extends EventEmitter {
     auth: Auth,
     transportParams: TransportParams,
     callback: TryConnectCallback,
-  ): void {
+  ): Transport {
     const transport = new transportCtor(connectionManager, auth, transportParams);
 
     let transportAttemptTimer: NodeJS.Timeout | number;
@@ -324,6 +323,7 @@ abstract class Transport extends EventEmitter {
       callback(null, transport);
     });
     transport.connect();
+    return transport;
   }
 
   onAuthUpdated?: (tokenDetails: API.TokenDetails) => void;

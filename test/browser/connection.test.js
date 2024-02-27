@@ -369,50 +369,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         monitorConnection(done, realtime);
       });
 
-      it('use_persisted_transport0', function (done) {
-        var transportPreferenceName = 'ably-transport-preference';
-        window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: 'web_socket' }));
-
-        var realtime = helper.AblyRealtime();
-
-        realtime.connection.connectionManager.on(function (transport) {
-          if (this.event === 'transport.active') {
-            try {
-              expect(transport.shortName).to.equal('web_socket');
-            } catch (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            closeAndFinish(done, realtime);
-          }
-        });
-        monitorConnection(done, realtime);
-      });
-
-      it('use_persisted_transport1', function (done) {
-        window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: 'xhr_polling' }));
-
-        var realtime = helper.AblyRealtime();
-
-        realtime.connection.connectionManager.on(function (transport) {
-          if (this.event === 'transport.active') {
-            try {
-              expect(transport.shortName).to.equal('xhr_polling');
-            } catch (err) {
-              closeAndFinish(done, realtime, err);
-              return;
-            }
-            closeAndFinish(done, realtime);
-          }
-        });
-        monitorConnection(done, realtime);
-      });
-
       it('browser_transports', function (done) {
         var realtime = helper.AblyRealtime();
         try {
           expect(realtime.connection.connectionManager.baseTransport).to.equal('xhr_polling');
-          expect(realtime.connection.connectionManager.upgradeTransports).to.deep.equal(['web_socket']);
+          expect(realtime.connection.connectionManager.webSocketTransportAvailable).to.be.ok;
         } catch (err) {
           closeAndFinish(done, realtime, err);
           return;

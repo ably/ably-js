@@ -30,7 +30,6 @@ export interface ISpecificPlatformConfig {
   fetchSupported?: boolean;
   xhrSupported?: boolean;
   allowComet?: boolean;
-  streamingSupported?: boolean;
   ArrayBuffer?: typeof ArrayBuffer | false;
   atob?: typeof atob | null;
   TextEncoder?: typeof TextEncoder;

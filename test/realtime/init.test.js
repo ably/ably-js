@@ -31,7 +31,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           realtime.connection.on('connected', function () {
             /* check api version */
             var transport = realtime.connection.connectionManager.activeProtocol.transport;
-            var connectUri = helper.isWebsocket(transport) ? transport.uri : transport.recvRequest.uri;
+            var connectUri = helper.isWebsocket(transport) ? transport.uri : transport.recvRequest.recvUri;
             try {
               expect(connectUri.indexOf('v=3') > -1, 'Check uri includes v=3').to.be.ok;
             } catch (err) {
@@ -309,14 +309,14 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* Check base and upgrade transports (nodejs only; browser tests in their own section) */
+    /* Check base and websocket transports (nodejs only; browser tests in their own section) */
     if (!isBrowser) {
       it('node_transports', function (done) {
         var realtime;
         try {
           realtime = helper.AblyRealtime({ transports: helper.availableTransports });
           expect(realtime.connection.connectionManager.baseTransport).to.equal('comet');
-          expect(realtime.connection.connectionManager.upgradeTransports).to.deep.equal(['web_socket']);
+          expect(realtime.connection.connectionManager.webSocketTransportAvailable).to.be.ok;
           closeAndFinish(done, realtime);
         } catch (err) {
           closeAndFinish(done, realtime, err);
@@ -331,9 +331,9 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         var keyStr = helper.getTestApp().keys[0].keyStr;
         var realtime = helper.AblyRealtime({ key: keyStr, useTokenAuth: true });
         realtime.connection.connectionManager.once('transport.pending', function (state) {
-          var transport = realtime.connection.connectionManager.pendingTransports[0],
+          var transport = realtime.connection.connectionManager.pendingTransport,
             originalOnProtocolMessage = transport.onProtocolMessage;
-          realtime.connection.connectionManager.pendingTransports[0].onProtocolMessage = function (message) {
+          realtime.connection.connectionManager.pendingTransport.onProtocolMessage = function (message) {
             try {
               if (message.action === 4) {
                 expect(message.connectionDetails.connectionKey).to.be.ok;
@@ -371,13 +371,14 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var realtime = helper.AblyRealtime({
         httpMaxRetryCount: 3,
         fallbackHosts: ['a', 'b', 'c'],
+        transport: ['web_socket'],
       });
       realtime.connection.once('connected', function () {
         try {
           var hosts = new Ably.Rest._Http()._getHosts(realtime);
           /* restHost rather than realtimeHost as that's what connectionManager
            * knows about; converted to realtimeHost by the websocketTransport */
-          expect(hosts[0]).to.equal(realtime.options.restHost, 'Check connected realtime host is the first option');
+          expect(hosts[0]).to.equal(realtime.options.realtimeHost, 'Check connected realtime host is the first option');
           expect(hosts.length).to.equal(4, 'Check also have three fallbacks');
         } catch (err) {
           closeAndFinish(done, realtime, err);

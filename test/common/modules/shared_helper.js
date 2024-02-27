@@ -154,7 +154,7 @@ define([
   }
 
   /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
-  function testOnAllTransports(name, testFn, excludeUpgrade, skip) {
+  function testOnAllTransports(name, testFn, skip) {
     var itFn = skip ? it.skip : it;
     let transports = availableTransports;
     transports.forEach(function (transport) {
@@ -167,18 +167,16 @@ define([
         testFn({ transports: [transport], useBinaryProtocol: false }),
       );
     });
-    /* Plus one for no transport specified (ie use upgrade mechanism if
+    /* Plus one for no transport specified (ie use websocket/base mechanism if
      * present).  (we explicitly specify all transports since node only does
-     * nodecomet+upgrade if comet is explicitly requested
+     * websocket+nodecomet if comet is explicitly requested)
      * */
-    if (!excludeUpgrade) {
-      itFn(name + '_with_binary_transport', testFn({ transports, useBinaryProtocol: true }));
-      itFn(name + '_with_text_transport', testFn({ transports, useBinaryProtocol: false }));
-    }
+    itFn(name + '_with_binary_transport', testFn({ transports, useBinaryProtocol: true }));
+    itFn(name + '_with_text_transport', testFn({ transports, useBinaryProtocol: false }));
   }
 
-  testOnAllTransports.skip = function (name, testFn, excludeUpgrade) {
-    testOnAllTransports(name, testFn, excludeUpgrade, true);
+  testOnAllTransports.skip = function (name, testFn) {
+    testOnAllTransports(name, testFn, true);
   };
 
   function restTestOnJsonMsgpack(name, testFn, skip) {
