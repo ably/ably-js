@@ -1,9 +1,9 @@
 import React from 'react';
-import { getContext } from '../AblyProvider.js';
+import { AblyContext } from '../AblyProvider.js';
 import * as API from 'ably';
 
 export function useAbly(ablyId = 'default'): API.RealtimeClient {
-  const client = React.useContext(getContext(ablyId)).client;
+  const client = React.useContext(AblyContext)[ablyId].client;
 
   if (!client) {
     throw new Error(

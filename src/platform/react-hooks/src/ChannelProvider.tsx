@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import * as Ably from 'ably';
-import { type AblyContextProps, getContext } from './AblyProvider.js';
+import { type AblyContextType, AblyContext } from './AblyProvider.js';
 import { channelOptionsWithAgent } from './AblyReactHooks.js';
 
 interface ChannelProviderProps {
@@ -18,8 +18,8 @@ export const ChannelProvider = ({
   deriveOptions,
   children,
 }: ChannelProviderProps) => {
-  const context = getContext(ablyId);
-  const { client, _channelNameToChannelContext } = React.useContext(context);
+  const context = React.useContext(AblyContext);
+  const { client, _channelNameToChannelContext } = context[ablyId];
 
   if (_channelNameToChannelContext[channelName]) {
     throw new Error('You can not use more than one `ChannelProvider` with the same channel name');
@@ -28,22 +28,25 @@ export const ChannelProvider = ({
   const derived = Boolean(deriveOptions);
   const channel = derived ? client.channels.getDerived(channelName, deriveOptions) : client.channels.get(channelName);
 
-  const value: AblyContextProps = useMemo(() => {
+  const value: AblyContextType = useMemo(() => {
     return {
-      client,
-      _channelNameToChannelContext: {
-        ..._channelNameToChannelContext,
-        [channelName]: {
-          channel,
-          derived,
+      ...context,
+      [ablyId]: {
+        client,
+        _channelNameToChannelContext: {
+          ..._channelNameToChannelContext,
+          [channelName]: {
+            channel,
+            derived,
+          },
         },
       },
     };
-  }, [derived, client, channel, channelName, _channelNameToChannelContext]);
+  }, [derived, client, channel, channelName, _channelNameToChannelContext, ablyId, context]);
 
   useEffect(() => {
     channel.setOptions(channelOptionsWithAgent(options));
   }, [channel, options]);
 
-  return <context.Provider value={value}>{children}</context.Provider>;
+  return <AblyContext.Provider value={value}>{children}</AblyContext.Provider>;
 };
