@@ -863,6 +863,14 @@ interface ChannelGroupOptions {
    * Options for a consumer group used to partition the channels in the channel group across consumers in the consumer group.
    */
   consumerGroup?: ConsumerGroupOptions;
+  /**
+   * The name of the channel that receives the set of active channels in the group.
+   * For correct behaviour, this channel should have persist-last enabled.
+   * Note that this is a temporary option only required for the client-side simulation of channel groups.
+   *
+   * @defaultValue $ably:active
+   */
+  activeChannel?: string;
 }
 
 /**

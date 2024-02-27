@@ -24,7 +24,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
-          const channelGroup = realtime.channelGroups.get('.*');
+          const channelGroup = realtime.channelGroups.get('.*', { activeChannel: 'active' });
 
           var testMsg = { active: ['channel1', 'channel2', 'channel3'] };
           var activeChannel = realtime.channels.get('active');
@@ -75,7 +75,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
-          const channelGroup = realtime.channelGroups.get('include:.*');
+          const channelGroup = realtime.channelGroups.get('include:.*', { activeChannel: 'active' });
 
           var testMsg = { active: ['include:channel1', 'stream3'] };
           var activeChannel = realtime.channels.get('active');
@@ -120,7 +120,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
-          const channelGroup = realtime.channelGroups.get('group:.*');
+          const channelGroup = realtime.channelGroups.get('group:.*', { activeChannel: 'active' });
 
           var testMsg = { active: ['group:channel1', 'group:channel2', 'group:channel3'] };
           var activeChannel = realtime.channels.get('active');
@@ -192,8 +192,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         .then(async () => {
           // create 2 consumers in one group
           const consumers = [
-            realtime2.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
-            realtime3.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
+            realtime2.channelGroups.get('partition:.*', {
+              activeChannel: 'active',
+              consumerGroup: { name: 'testgroup' },
+            }),
+            realtime3.channelGroups.get('partition:.*', {
+              activeChannel: 'active',
+              consumerGroup: { name: 'testgroup' },
+            }),
           ];
 
           // create 5 channels
