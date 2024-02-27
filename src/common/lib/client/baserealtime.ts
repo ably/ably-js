@@ -93,7 +93,7 @@ class ChannelGroups {
 class ConsumerGroup extends EventEmitter {
   private channel?: RealtimeChannel;
   private currentMembers: string[] = [];
-  private hashring?: HashRing;
+  private hashring: HashRing;
   private consumerId: string;
 
   constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
@@ -102,6 +102,7 @@ class ConsumerGroup extends EventEmitter {
     // but for these purposes we can rely on the client ID provided by the user.
     // If the client ID is not set, then we generate a random one.
     this.consumerId = this.channels.realtime.options.clientId || this.randomConsumerId();
+    this.hashring = new HashRing([this.consumerId]);
   }
 
   private randomConsumerId() {
@@ -116,13 +117,11 @@ class ConsumerGroup extends EventEmitter {
       return;
     }
 
-    this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
-    this.hashring = new HashRing([this.consumerId]);
-    Logger.logAction(Logger.LOG_MAJOR, 'ConsumerGroup.join()', 'joining consumer group ' + this.consumerGroupName + ' as ' + this.consumerId);
-
     try {
+      Logger.logAction(Logger.LOG_MAJOR, 'ConsumerGroup.join()', 'joining consumer group ' + this.consumerGroupName + ' as ' + this.consumerId);
+      this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
       await this.channel.presence.enter(null);
-      await this.channel!.presence!.subscribe(async () => {
+      await this.channel.presence.subscribe(async () => {
         await this.computeMembership();
       });
     } catch (err) {
@@ -148,11 +147,11 @@ class ConsumerGroup extends EventEmitter {
       );
 
       add.forEach((member) => {
-        this.hashring!.add(member);
+        this.hashring.add(member);
       });
 
       remove.forEach((member) => {
-        this.hashring!.remove(member);
+        this.hashring.remove(member);
       });
 
       this.emit('membership');
@@ -172,7 +171,7 @@ class ConsumerGroup extends EventEmitter {
       // is considered assigned to this client
       return true;
     }
-    return this.consumerId === this.hashring!.get(channel);
+    return this.consumerId === this.hashring.get(channel);
   }
 }
 
