@@ -27,7 +27,6 @@ export interface ModularPlugins {
   RealtimePresence?: RealtimePresencePlugin;
   WebSocketTransport?: TransportCtor;
   XHRPolling?: TransportCtor;
-  XHRStreaming?: TransportCtor;
   XHRRequest?: typeof XHRRequest;
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;

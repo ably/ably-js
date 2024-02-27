@@ -141,11 +141,11 @@ export declare const RealtimePresence: unknown;
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest } });
  * ```
  *
- * Note that network conditions, such as firewalls or proxies, might prevent the client from establishing a WebSocket connection. For this reason, you may wish to provide the `BaseRealtime` instance with the ability to alternatively establish a connection using a transport that is less susceptible to these external conditions. You do this by passing one or more alternative transport plugins, namely {@link XHRStreaming} and/or {@link XHRPolling}, alongside `WebSocketTransport`:
+ * Note that network conditions, such as firewalls or proxies, might prevent the client from establishing a WebSocket connection. For this reason, you may wish to provide the `BaseRealtime` instance with the ability to alternatively establish a connection using long polling which is less susceptible to these external conditions. You do this by passing in the {@link XHRPolling} module, alongside `WebSocketTransport`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, XHRStreaming, FetchRequest } });
+ * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modules';
+ * const realtime = new BaseRealtime(options, { WebSocketTransport, XHRPolling, FetchRequest });
  * ```
  */
 export declare const WebSocketTransport: unknown;
@@ -153,7 +153,7 @@ export declare const WebSocketTransport: unknown;
 /**
  * Provides a {@link BaseRealtime} instance with the ability to establish a connection with the Ably realtime service using the browser’s [XMLHttpRequest API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
  *
- * `XHRPolling` uses HTTP long polling; that is, it will make a new HTTP request each time a message is received from Ably. This is less efficient than {@link XHRStreaming}, but is also more likely to succeed in the presence of certain network conditions such as firewalls or proxies.
+ * `XHRPolling` uses HTTP long polling; that is, it will make a new HTTP request each time a message is received from Ably.
  *
  * ```javascript
  * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
@@ -163,20 +163,6 @@ export declare const WebSocketTransport: unknown;
  * Provide this plugin if, for example, you wish the client to have an alternative mechanism for connecting to Ably if it’s unable to establish a WebSocket connection.
  */
 export declare const XHRPolling: unknown;
-
-/**
- * Provides a {@link BaseRealtime} instance with the ability to establish a connection with the Ably realtime service using the browser’s [XMLHttpRequest API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
- *
- * `XHRStreaming` uses HTTP streaming; that is, in contrast to {@link XHRPolling}, it does not need to make a new HTTP request each time a message is received from Ably. This is more efficient than `XHRPolling`, but is more likely to be blocked by certain network conditions such as firewalls or proxies.
- *
- * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
- * const realtime = new BaseRealtime({ ...options, plugins: { XHRStreaming, FetchRequest } });
- * ```
- *
- * Provide this plugin if, for example, you wish the client to have an alternative mechanism for connecting to Ably if it’s unable to establish a WebSocket connection.
- */
-export declare const XHRStreaming: unknown;
 
 /**
  * Provides a {@link BaseRest} or {@link BaseRealtime} instance with the ability to make HTTP requests using the browser’s [XMLHttpRequest API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest).
@@ -249,11 +235,6 @@ export interface ModularPlugins {
    * See {@link XHRPolling | documentation for the `XHRPolling` plugin}.
    */
   XHRPolling?: typeof XHRPolling;
-
-  /**
-   * See {@link XHRStreaming | documentation for the `XHRStreaming` plugin}.
-   */
-  XHRStreaming?: typeof XHRStreaming;
 
   /**
    * See {@link XHRRequest | documentation for the `XHRRequest` plugin}.
@@ -342,7 +323,7 @@ export declare class BaseRealtime implements RealtimeClient {
    * You must provide:
    *
    * - at least one HTTP request implementation; that is, one of {@link FetchRequest} or {@link XHRRequest} — for minimum bundle size, favour `FetchRequest`;
-   * - at least one realtime transport implementation; that is, one of {@link WebSocketTransport}, {@link XHRStreaming}, or {@link XHRPolling} — for minimum bundle size, favour `WebSocketTransport`.
+   * - at least one realtime transport implementation; that is, one of {@link WebSocketTransport} or {@link XHRPolling} — for minimum bundle size, favour `WebSocketTransport`.
    */
   constructor(options: ClientOptions<CorePlugins & ModularPlugins>);
 

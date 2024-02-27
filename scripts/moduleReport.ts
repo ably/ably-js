@@ -17,7 +17,6 @@ const pluginNames = [
   'MsgPack',
   'RealtimePresence',
   'XHRPolling',
-  'XHRStreaming',
   'WebSocketTransport',
   'XHRRequest',
   'FetchRequest',
@@ -233,7 +232,6 @@ async function checkBaseRealtimeFiles() {
   // The threshold is chosen pretty arbitrarily. There are some files (e.g. presencemessage.ts) whose bulk should not be included in the BaseRealtime bundle, but which make a small contribution to the bundle (probably because we make use of one exported constant or something; I haven’t looked into it).
   const allowedFiles = new Set([
     'src/common/constants/HttpStatusCodes.ts',
-    'src/common/constants/TransportName.ts',
     'src/common/constants/XHRStates.ts',
     'src/common/lib/client/auth.ts',
     'src/common/lib/client/baseclient.ts',

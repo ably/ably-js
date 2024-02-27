@@ -15,7 +15,6 @@ import {
   decodePresenceMessages,
   constructPresenceMessage,
   XHRPolling,
-  XHRStreaming,
   WebSocketTransport,
   FetchRequest,
   XHRRequest,
@@ -666,7 +665,6 @@ function registerAblyModularTests(helper) {
         for (const scenario of [
           { pluginsKey: 'WebSocketTransport', transportPlugin: WebSocketTransport, transportName: 'web_socket' },
           { pluginsKey: 'XHRPolling', transportPlugin: XHRPolling, transportName: 'xhr_polling' },
-          { pluginsKey: 'XHRStreaming', transportPlugin: XHRStreaming, transportName: 'xhr_streaming' },
         ]) {
           describe(`with the ${scenario.pluginsKey} plugin`, () => {
             it(`is able to use the ${scenario.transportName} transport`, async () => {

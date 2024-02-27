@@ -48,9 +48,6 @@ class BaseRealtime extends BaseClient {
     if (plugins?.WebSocketTransport) {
       transports[TransportNames.WebSocket] = plugins.WebSocketTransport;
     }
-    if (plugins?.XHRStreaming) {
-      transports[TransportNames.XhrStreaming] = plugins.XHRStreaming;
-    }
     if (plugins?.XHRPolling) {
       transports[TransportNames.XhrPolling] = plugins.XHRPolling;
     }

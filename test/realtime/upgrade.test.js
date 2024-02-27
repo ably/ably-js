@@ -660,7 +660,6 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
             },
             function (cb) {
               connectionManager.on('transport.pending', function (transport) {
-                if (!helper.isWebsocket(transport)) return; // in browser, might be xhr_streaming
                 connectionManager.off('transport.pending');
                 /* Abort comet transport nonfatally */
                 var baseTransport = connectionManager.activeProtocol.getTransport();

@@ -18,18 +18,16 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
-    /* Restrict to websocket or xhr streaming for the v= test as if stream=false the
-     * recvRequest may not be the connectRequest by the time we check it. All comet
-     * transports share the same connect uri generation code so should be adequately
-     * tested by testing xhr_streaming */
-    if (helper.bestTransport === 'web_socket' || helper.bestTransport === 'xhr_streaming') {
+    /* Restrict to websocket or xhr polling for the v= test as if stream=false the
+     * recvRequest may not be the connectRequest by the time we check it. */
+    if (helper.bestTransport === 'web_socket' || helper.bestTransport === 'xhr_polling') {
       /*
        * Base init case
        */
       it('initbase0', function (done) {
         var realtime;
         try {
-          realtime = helper.AblyRealtime({ transports: ['web_socket', 'xhr_streaming'] });
+          realtime = helper.AblyRealtime({ transports: ['web_socket', 'xhr_polling'] });
           realtime.connection.on('connected', function () {
             /* check api version */
             var transport = realtime.connection.connectionManager.activeProtocol.transport;

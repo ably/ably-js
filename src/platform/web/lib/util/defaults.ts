@@ -6,10 +6,10 @@ const Defaults: IDefaults = {
   /* Order matters here: the base transport is the leftmost one in the
    * intersection of baseTransportOrder and the transports clientOption that's
    * supported. */
-  defaultTransports: [TransportNames.XhrPolling, TransportNames.XhrStreaming, TransportNames.WebSocket],
-  baseTransportOrder: [TransportNames.XhrPolling, TransportNames.XhrStreaming, TransportNames.WebSocket],
-  transportPreferenceOrder: [TransportNames.XhrPolling, TransportNames.XhrStreaming, TransportNames.WebSocket],
-  upgradeTransports: [TransportNames.XhrStreaming, TransportNames.WebSocket],
+  defaultTransports: [TransportNames.XhrPolling, TransportNames.WebSocket],
+  baseTransportOrder: [TransportNames.XhrPolling, TransportNames.WebSocket],
+  transportPreferenceOrder: [TransportNames.XhrPolling, TransportNames.WebSocket],
+  upgradeTransports: [TransportNames.WebSocket],
 };
 
 export default Defaults;

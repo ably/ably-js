@@ -180,27 +180,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     }
 
-    var xhrStreamingTransport = 'xhr_streaming';
-    if (isTransportAvailable(xhrStreamingTransport)) {
-      it('xhrstreamingbase0', function (done) {
-        connectionWithTransport(done, xhrStreamingTransport);
-      });
-
-      /*
-       * Publish and subscribe, json transport
-       */
-      it('xhrstreamingpublish0', function (done) {
-        publishWithTransport(done, xhrStreamingTransport);
-      });
-
-      /*
-       * Check heartbeat
-       */
-      it('xhrstreamingheartbeat0', function (done) {
-        heartbeatWithTransport(done, xhrStreamingTransport);
-      });
-    }
-
     var xhrPollingTransport = 'xhr_polling';
     if (isTransportAvailable(xhrPollingTransport)) {
       it('xhrpollingbase0', function (done) {
