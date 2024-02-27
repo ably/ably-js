@@ -24,7 +24,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
-          const channelGroup = await realtime.channelGroups.get('.*');
+          const channelGroup = realtime.channelGroups.get('.*');
 
           var testMsg = { active: ['channel1', 'channel2', 'channel3'] };
           var activeChannel = realtime.channels.get('active');
@@ -35,7 +35,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             var events = 1;
 
             /* subscribe to channel group */
-            channelGroup.subscribe((channel, msg) => {
+            await channelGroup.subscribe((channel, msg) => {
               try {
                 expect(msg.data).to.equal('test data ' + events, 'Unexpected msg text received');
                 expect(channel).to.equal('channel' + events, 'Unexpected channel name');
@@ -75,7 +75,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
-          const channelGroup = await realtime.channelGroups.get('include:.*');
+          const channelGroup = realtime.channelGroups.get('include:.*');
 
           var testMsg = { active: ['include:channel1', 'stream3'] };
           var activeChannel = realtime.channels.get('active');
@@ -85,7 +85,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           try {
             await activeChannel.attach();
             /* subscribe to channel group */
-            channelGroup.subscribe((channel, msg) => {
+            await channelGroup.subscribe((channel, msg) => {
               try {
                 expect(msg.data).to.equal('test data 1', 'Unexpected msg text received');
                 expect(channel).to.equal('include:channel1', 'Unexpected channel name');
@@ -120,7 +120,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
-          const channelGroup = await realtime.channelGroups.get('group:.*');
+          const channelGroup = realtime.channelGroups.get('group:.*');
 
           var testMsg = { active: ['group:channel1', 'group:channel2', 'group:channel3'] };
           var activeChannel = realtime.channels.get('active');
@@ -134,7 +134,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             var events = 1;
 
             /* subscribe to channel group */
-            channelGroup.subscribe(async (channel, msg) => {
+            await channelGroup.subscribe(async (channel, msg) => {
               try {
                 expect(msg.data).to.equal('test data ' + events, 'Unexpected msg text received');
                 expect(channel).to.equal('group:channel' + events, 'Unexpected channel name');
@@ -151,8 +151,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               }
 
               if (events == 4) {
-                await dataChannel2.publish('event 0', 'should be ignored test dat');
-                await dataChannel5.publish('event0', 'test data 5');
+                dataChannel2.publish('event 0', 'should be ignored test dat');
+                dataChannel5.publish('event0', 'test data 5');
                 events++;
                 return;
               }
@@ -192,8 +192,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         // create 2 consumers in one group
         const consumers = [
-          await realtime2.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
-          await realtime3.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
+          realtime2.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
+          realtime3.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
         ];
 
         // create 5 channels
@@ -239,7 +239,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         // subscribe each consumer and collect results
         const results = Array.from({ length: consumers.length }, () => []);
         for (let i = 0; i < consumers.length; i++) {
-          consumers[i].subscribe((channel, msg) => {
+          await consumers[i].subscribe((channel, msg) => {
             results[i].push({ channel, name: msg.name, data: msg.data });
             if (results.flat().length === 2 * channels.length) {
               assertResult(results);

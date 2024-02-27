@@ -1973,7 +1973,7 @@ export declare interface ChannelGroup {
    *
    * @param callback - An event listener function.
    */
-  subscribe(callback: channelAndMessageCallback<InboundMessage>): void;
+  subscribe(callback: channelAndMessageCallback<InboundMessage>): Promise<void>;
 }
 
 /**
@@ -2219,7 +2219,7 @@ export declare interface ChannelGroups {
    * @param options - A {@link ChannelGroupOptions} object.
    * @returns A {@link ChannelGroup} object.
    */
-  get(filter: string, options?: ChannelGroupOptions): Promise<ChannelGroup>;
+  get(filter: string, options?: ChannelGroupOptions): ChannelGroup;
 }
 
 /**
