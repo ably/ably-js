@@ -6,7 +6,7 @@ const globalObject = Utils.getGlobalObject();
 
 if (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
   console.log(
-    "Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm"
+    "Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm",
   );
 }
 

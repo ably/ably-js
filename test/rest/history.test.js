@@ -49,7 +49,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
       expect(utils.keysArray(ids).length).to.equal(
         testMessages.length,
-        'Verify correct number of distinct message ids found'
+        'Verify correct number of distinct message ids found',
       );
     });
 
@@ -72,7 +72,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
       expect(utils.keysArray(ids).length).to.equal(
         testMessages.length,
-        'Verify correct number of distinct message ids found'
+        'Verify correct number of distinct message ids found',
       );
     });
 
@@ -110,7 +110,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       /* verify message ids are unique */
       expect(utils.keysArray(ids).length).to.equal(
         testMessages.length,
-        'Verify correct number of distinct message ids found'
+        'Verify correct number of distinct message ids found',
       );
     });
 
@@ -149,7 +149,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       /* verify message ids are unique */
       expect(utils.keysArray(ids).length).to.equal(
         testMessages.length,
-        'Verify correct number of distinct message ids found'
+        'Verify correct number of distinct message ids found',
       );
     });
 
@@ -221,7 +221,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       /* verify message ids are unique */
       expect(utils.keysArray(ids).length).to.equal(
         testMessages.length,
-        'Verify correct number of distinct message ids found'
+        'Verify correct number of distinct message ids found',
       );
     });
 

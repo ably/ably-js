@@ -20,7 +20,7 @@ const INACTIVE_CONNECTION_STATES: Ably.ConnectionState[] = ['suspended', 'closin
 export function usePresence<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,
   messageOrPresenceObject?: T,
-  onPresenceUpdated?: OnPresenceMessageReceived<T>
+  onPresenceUpdated?: OnPresenceMessageReceived<T>,
 ): PresenceResult<T> {
   const params =
     typeof channelNameOrNameAndOptions === 'object'
@@ -88,7 +88,7 @@ export function usePresence<T = any>(
         throw new Error('updateStatus can not be called while using the hook in subscribeOnly mode');
       }
     },
-    [subscribeOnly, channel]
+    [subscribeOnly, channel],
   );
 
   return { presenceData, updateStatus, connectionError, channelError };

@@ -10,7 +10,7 @@ function callListener(eventThis: { event: string }, listener: Function, args: un
     Logger.logAction(
       Logger.LOG_ERROR,
       'EventEmitter.emit()',
-      'Unexpected listener exception: ' + e + '; stack = ' + (e && (e as Error).stack)
+      'Unexpected listener exception: ' + e + '; stack = ' + (e && (e as Error).stack),
     );
   }
 }
@@ -304,7 +304,7 @@ class EventEmitter {
       return new Promise((resolve) => {
         EventEmitter.prototype.whenState.apply(
           this,
-          [targetState, currentState, resolve].concat(listenerArgs as any[]) as any
+          [targetState, currentState, resolve].concat(listenerArgs as any[]) as any,
         );
       });
     }

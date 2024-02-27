@@ -42,7 +42,7 @@ function normaliseContext(context: CipherOptions | EncodingDecodingContext | Cha
 
 function normalizeCipherOptions(
   Crypto: IUntypedCryptoStatic | null,
-  options: API.ChannelOptions | null
+  options: API.ChannelOptions | null,
 ): ChannelOptions {
   if (options && options.cipher) {
     if (!Crypto) Utils.throwMissingModuleError('Crypto');
@@ -75,7 +75,7 @@ function getMessageSize(msg: Message) {
 export async function fromEncoded(
   Crypto: IUntypedCryptoStatic | null,
   encoded: unknown,
-  inputOptions?: API.ChannelOptions
+  inputOptions?: API.ChannelOptions,
 ): Promise<Message> {
   const msg = fromValues(encoded);
   const options = normalizeCipherOptions(Crypto, inputOptions ?? null);
@@ -92,12 +92,12 @@ export async function fromEncoded(
 export async function fromEncodedArray(
   Crypto: IUntypedCryptoStatic | null,
   encodedArray: Array<unknown>,
-  options?: API.ChannelOptions
+  options?: API.ChannelOptions,
 ): Promise<Message[]> {
   return Promise.all(
     encodedArray.map(function (encoded) {
       return fromEncoded(Crypto, encoded, options);
-    })
+    }),
   );
 }
 
@@ -146,7 +146,7 @@ export const serialize = Utils.encodeBody;
 
 export async function decode(
   message: Message | PresenceMessage,
-  inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
+  inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions,
 ): Promise<void> {
   const context = normaliseContext(inputContext);
 
@@ -207,7 +207,7 @@ export async function decode(
               throw new ErrorInfo(
                 'Delta decoding not supported on this browser (need ArrayBuffer & Uint8Array)',
                 40020,
-                400
+                400,
               );
             }
             try {
@@ -235,7 +235,7 @@ export async function decode(
       throw new ErrorInfo(
         'Error processing the ' + xform + ' encoding, decoder returned ‘' + err.message + '’',
         err.code || 40013,
-        400
+        400,
       );
     } finally {
       message.encoding =
@@ -250,7 +250,7 @@ export async function fromResponseBody(
   body: Array<Message>,
   options: ChannelOptions | EncodingDecodingContext,
   MsgPack: MsgPack | null,
-  format?: Utils.Format
+  format?: Utils.Format,
 ): Promise<Message[]> {
   if (format) {
     body = Utils.decodeBody(body, MsgPack, format);

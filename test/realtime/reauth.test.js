@@ -83,7 +83,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           ],
           function (err) {
             callback(err, state);
-          }
+          },
         );
       };
     }
@@ -124,7 +124,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             'waitChannelState: expected state not reached within 5s. Expected ' +
               expected +
               ', currently ' +
-              channel.state
+              channel.state,
           );
         }, 5000);
         channel.once(function () {

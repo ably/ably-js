@@ -175,11 +175,11 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       var tokenDetails = await rest1.auth.requestToken({ clientId: 'bar' }, null);
       expect(tokenDetails.clientId).to.equal(
         'bar',
-        'Verify clientId passed in is used, not the one from defaultTokenParams'
+        'Verify clientId passed in is used, not the one from defaultTokenParams',
       );
       expect(tokenDetails.expires - tokenDetails.issued).to.equal(
         60 * 60 * 1000,
-        'Verify ttl from defaultTokenParams ignored completely, even though not overridden'
+        'Verify ttl from defaultTokenParams ignored completely, even though not overridden',
       );
     });
 
@@ -258,7 +258,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       var tokenRequest = await rest.auth.createTokenRequest({ capability: capability }, null);
       expect(JSON.parse(tokenRequest.capability)).to.deep.equal(
         capability,
-        'Verify createTokenRequest has JSON-stringified capability'
+        'Verify createTokenRequest has JSON-stringified capability',
       );
     });
 
@@ -373,7 +373,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       await Promise.all([channel.history(), channel.history()]);
       expect(authCallbackInvocations).to.equal(
         1,
-        'Check authCallback only invoked once -- was: ' + authCallbackInvocations
+        'Check authCallback only invoked once -- was: ' + authCallbackInvocations,
       );
     });
   });

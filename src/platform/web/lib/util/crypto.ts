@@ -34,7 +34,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
       throw new Error(
         'Unsupported key length ' +
           params.keyLength +
-          ' for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)'
+          ' for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)',
       );
     }
   }
@@ -126,7 +126,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
           'Crypto.getDefaultParams: a keyLength of ' +
             params.keyLength +
             ' was specified, but the key actually has length ' +
-            cipherParams.keyLength
+            cipherParams.keyLength,
         );
       }
 
@@ -174,11 +174,11 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
       if (!crypto.subtle) {
         if (isSecureContext) {
           throw new Error(
-            'Crypto operations are not possible since the browser’s SubtleCrypto class is unavailable (reason unknown).'
+            'Crypto operations are not possible since the browser’s SubtleCrypto class is unavailable (reason unknown).',
           );
         } else {
           throw new Error(
-            'Crypto operations are is not possible since the current environment is a non-secure context and hence the browser’s SubtleCrypto class is not available.'
+            'Crypto operations are is not possible since the current environment is a non-secure context and hence the browser’s SubtleCrypto class is not available.',
           );
         }
       }

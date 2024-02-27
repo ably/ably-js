@@ -155,7 +155,7 @@ function getRealtimeHost(options: ClientOptions, production: boolean, environmen
         options.restHost +
         '" but realtimeHost is not set, so setting realtimeHost to "' +
         options.restHost +
-        '" too. If this is not what you want, please set realtimeHost explicitly.'
+        '" too. If this is not what you want, please set realtimeHost explicitly.',
     );
     return options.restHost;
   }
@@ -193,7 +193,7 @@ export function normaliseOptions(options: InternalClientOptions, MsgPack: MsgPac
     Logger.logAction(
       Logger.LOG_ERROR,
       'Defaults.normaliseOptions',
-      'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter'
+      'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter',
     );
     options.recover = undefined;
   }
@@ -305,7 +305,7 @@ export function defaultGetHeaders(
   {
     format = defaultHeadersOptions.format,
     protocolVersion = defaultHeadersOptions.protocolVersion,
-  }: HeadersOptions = {}
+  }: HeadersOptions = {},
 ): Record<string, string> {
   const accept = contentTypes[format];
   return {
@@ -320,7 +320,7 @@ export function defaultPostHeaders(
   {
     format = defaultHeadersOptions.format,
     protocolVersion = defaultHeadersOptions.protocolVersion,
-  }: HeadersOptions = {}
+  }: HeadersOptions = {},
 ): Record<string, string> {
   let contentType;
   const accept = (contentType = contentTypes[format]);

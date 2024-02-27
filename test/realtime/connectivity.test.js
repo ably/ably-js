@@ -58,7 +58,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
               return;
             }
             done();
-          }
+          },
         );
       });
 
@@ -72,7 +72,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             } catch (err) {
               done(err);
             }
-          }
+          },
         );
       });
 
@@ -108,7 +108,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             } catch (err) {
               done(err);
             }
-          }
+          },
         );
       });
 
@@ -122,7 +122,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             } catch (err) {
               done(err);
             }
-          }
+          },
         );
       });
     });
@@ -140,7 +140,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           } catch (err) {
             done(err);
           }
-        }
+        },
       );
     });
   });

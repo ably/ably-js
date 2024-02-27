@@ -105,7 +105,7 @@ export function shallowClone(ob: Record<string, unknown>): Record<string, unknow
  */
 export function prototypicalClone(
   ob: Record<string, unknown>,
-  ownProperties: Record<string, unknown>
+  ownProperties: Record<string, unknown>,
 ): Record<string, unknown> {
   class F {}
   F.prototype = ob;
@@ -327,7 +327,7 @@ export function arrChooseN<T>(arr: Array<T>, n: number): Array<T> {
  */
 export function whenPromiseSettles<T, E = unknown>(
   promise: Promise<T>,
-  callback?: (err: E | null, result?: T) => void
+  callback?: (err: E | null, result?: T) => void,
 ) {
   promise
     .then((result) => {

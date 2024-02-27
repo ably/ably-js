@@ -10,13 +10,13 @@ export function useChannelStateListener(channelName: string, listener?: ChannelS
 export function useChannelStateListener(
   options: ChannelNameAndOptions | string,
   state?: Ably.ChannelState | Ably.ChannelState[],
-  listener?: ChannelStateListener
+  listener?: ChannelStateListener,
 );
 
 export function useChannelStateListener(
   channelNameOrNameAndId: ChannelNameAndOptions | string,
   stateOrListener?: Ably.ChannelState | Ably.ChannelState[] | ChannelStateListener,
-  listener?: (stateChange: Ably.ChannelStateChange) => any
+  listener?: (stateChange: Ably.ChannelStateChange) => any,
 ) {
   const channelHookOptions =
     typeof channelNameOrNameAndId === 'object' ? channelNameOrNameAndId : { channelName: channelNameOrNameAndId };

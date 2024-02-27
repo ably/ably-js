@@ -14,7 +14,7 @@ export class RestPresenceMixin {
 
   static async history(
     presence: RestPresence | RealtimePresence,
-    params: any
+    params: any,
   ): Promise<PaginatedResult<PresenceMessage>> {
     const client = presence.channel.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
@@ -27,13 +27,13 @@ export class RestPresenceMixin {
     return new PaginatedResource(client, this.basePath(presence) + '/history', headers, envelope, async function (
       body,
       headers,
-      unpacked
+      unpacked,
     ) {
       return await presenceMessageFromResponseBody(
         body as Record<string, unknown>[],
         options as CipherOptions,
         client._MsgPack,
-        unpacked ? undefined : format
+        unpacked ? undefined : format,
       );
     }).get(params);
   }

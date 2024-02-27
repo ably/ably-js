@@ -591,8 +591,8 @@ export interface AuthOptions {
      */
     callback: (
       error: ErrorInfo | string | null,
-      tokenRequestOrDetails: TokenDetails | TokenRequest | string | null
-    ) => void
+      tokenRequestOrDetails: TokenDetails | TokenRequest | string | null,
+    ) => void,
   ): void;
 
   /**
@@ -1454,7 +1454,7 @@ export type recoverConnectionCallback = (
      */
     clientId: string | null;
   },
-  callback: recoverConnectionCompletionCallback
+  callback: recoverConnectionCompletionCallback,
 ) => void;
 
 // Internal Interfaces
@@ -1568,7 +1568,7 @@ export declare interface RestClient {
     version: number,
     params?: any,
     body?: any[] | any,
-    headers?: any
+    headers?: any,
   ): Promise<HttpPaginatedResponse<T>>;
   /**
    * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link PaginatedResult} object, containing an array of {@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
@@ -1598,7 +1598,7 @@ export declare interface RestClient {
    * @returns A promise which, upon success, will be fulfilled with an array of {@link BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link BatchPublishSpec}. This array is in the same order as the provided {@link BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   batchPublish(
-    specs: BatchPublishSpec[]
+    specs: BatchPublishSpec[],
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   /**
    * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link PresenceAction}.
@@ -1659,7 +1659,7 @@ export declare interface RealtimeClient {
     version: number,
     params?: any,
     body?: any[] | any,
-    headers?: any
+    headers?: any,
   ): Promise<HttpPaginatedResponse<T>>;
   /**
    * Queries the REST `/stats` API and retrieves your application's usage statistics. Returns a {@link PaginatedResult} object, containing an array of {@link Stats} objects. See the [Stats docs](https://ably.com/docs/general/statistics).
@@ -1688,7 +1688,7 @@ export declare interface RealtimeClient {
    * @returns A promise which, upon success, will be fulfilled with an array of {@link BatchResult} objects containing information about the result of the batch publish for each requested channel for each provided {@link BatchPublishSpec}. This array is in the same order as the provided {@link BatchPublishSpec} array. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   batchPublish(
-    specs: BatchPublishSpec[]
+    specs: BatchPublishSpec[],
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   /**
    * Retrieves the presence state for one or more channels, up to a maximum of 100 channels. Presence state includes the `clientId` of members and their current {@link PresenceAction}.
@@ -1745,7 +1745,7 @@ export declare interface Auth {
    */
   revokeTokens(
     specifiers: TokenRevocationTargetSpecifier[],
-    options?: TokenRevocationOptions
+    options?: TokenRevocationOptions,
   ): Promise<BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>>;
 }
 
@@ -2662,13 +2662,13 @@ export declare class Rest implements RestClient {
     version: number,
     params?: any,
     body?: any[] | any,
-    headers?: any
+    headers?: any,
   ): Promise<HttpPaginatedResponse<T>>;
   stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
   time(): Promise<number>;
   batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
   batchPublish(
-    specs: BatchPublishSpec[]
+    specs: BatchPublishSpec[],
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
@@ -2717,13 +2717,13 @@ export declare class Realtime implements RealtimeClient {
     version: number,
     params?: any,
     body?: any[] | any,
-    headers?: any
+    headers?: any,
   ): Promise<HttpPaginatedResponse<T>>;
   stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
   time(): Promise<number>;
   batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
   batchPublish(
-    specs: BatchPublishSpec[]
+    specs: BatchPublishSpec[],
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;

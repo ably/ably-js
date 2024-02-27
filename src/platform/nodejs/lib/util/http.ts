@@ -52,7 +52,7 @@ const Http: IPlatformHttpStatic = class {
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams
+    params: RequestParams,
   ): Promise<RequestResult> {
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
@@ -117,7 +117,7 @@ const Http: IPlatformHttpStatic = class {
       connectivityCheckUrl,
       null,
       null,
-      connectivityCheckParams
+      connectivityCheckParams,
     );
 
     if (!error && !connectivityUrlIsDefault) {
@@ -169,7 +169,7 @@ const Http: IPlatformHttpStatic = class {
             (headers['x-ably-errormessage'] as string) ||
               'Error response received from server: ' + statusCode + ' body was: ' + Platform.Config.inspect(body),
             Number(headers['x-ably-errorcode']),
-            statusCode
+            statusCode,
           );
 
       return { error, body, headers, unpacked: true, statusCode };

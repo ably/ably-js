@@ -146,7 +146,7 @@ class Request extends EventEmitter {
         clearTimeout(timer);
         self.timer = null;
         self.complete(err);
-      })
+      }),
     );
 
     req.on('response', function (res) {
@@ -166,7 +166,7 @@ class Request extends EventEmitter {
         (self.onResError = function (err) {
           err = new PartialErrorInfo('Response error: ' + err.message, null, 400);
           self.complete(err);
-        })
+        }),
       );
 
       self.res = res;
@@ -224,7 +224,7 @@ class Request extends EventEmitter {
 
         /* the remaining new chunks are complete */
         newChunks.map(onChunk);
-      })
+      }),
     );
 
     res.on('end', function () {
@@ -272,7 +272,7 @@ class Request extends EventEmitter {
           err = new PartialErrorInfo(
             'Error response received from server: ' + statusCode + ', body was: ' + util.inspect(body),
             null,
-            statusCode
+            statusCode,
           );
         }
         self.complete(err);

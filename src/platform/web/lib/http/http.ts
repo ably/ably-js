@@ -16,7 +16,7 @@ function createMissingImplementationError() {
   return new ErrorInfo(
     'No HTTP request module provided. Provide at least one of the FetchRequest or XHRRequest modules.',
     400,
-    40000
+    40000,
   );
 }
 
@@ -54,7 +54,7 @@ const Http = class {
         uri: string,
         headers: Record<string, string> | null,
         params: RequestParams,
-        body: RequestBody | null
+        body: RequestBody | null,
       ) {
         return new Promise((resolve) => {
           const req = xhrRequestImplementation.createRequest(
@@ -64,7 +64,7 @@ const Http = class {
             body,
             XHRStates.REQ_SEND,
             (client && client.options.timeouts) ?? null,
-            method
+            method,
           );
           req.once(
             'complete',
@@ -73,8 +73,8 @@ const Http = class {
               body: RequestResult['body'],
               headers: RequestResult['headers'],
               unpacked: RequestResult['unpacked'],
-              statusCode: RequestResult['statusCode']
-            ) => resolve({ error, body, headers, unpacked, statusCode })
+              statusCode: RequestResult['statusCode'],
+            ) => resolve({ error, body, headers, unpacked, statusCode }),
           );
           req.exec();
         });
@@ -88,7 +88,7 @@ const Http = class {
           Logger.logAction(
             Logger.LOG_MICRO,
             '(XHRRequest)Http.checkConnectivity()',
-            'Sending; ' + connectivityCheckUrl
+            'Sending; ' + connectivityCheckUrl,
           );
 
           const requestResult = await this.doUri(
@@ -96,7 +96,7 @@ const Http = class {
             connectivityCheckUrl,
             null,
             null,
-            connectivityCheckParams
+            connectivityCheckParams,
           );
 
           let result = false;
@@ -137,7 +137,7 @@ const Http = class {
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams
+    params: RequestParams,
   ): Promise<RequestResult> {
     if (!this.Request) {
       return { error: new PartialErrorInfo('Request invoked before assigned to', null, 500) };
@@ -150,7 +150,7 @@ const Http = class {
     uri: string,
     headers: Record<string, string> | null,
     params: RequestParams,
-    body: RequestBody | null
+    body: RequestBody | null,
   ) => Promise<RequestResult>;
 
   checkConnectivity?: () => Promise<boolean> = undefined;

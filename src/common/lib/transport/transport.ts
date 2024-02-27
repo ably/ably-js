@@ -16,14 +16,14 @@ import TransportName from '../../constants/TransportName';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
-  transport?: Transport
+  transport?: Transport,
 ) => void;
 
 export type TransportCtor = new (
   connectionManager: ConnectionManager,
   auth: Auth,
   params: TransportParams,
-  forceJsonProtocol?: boolean
+  forceJsonProtocol?: boolean,
 ) => Transport;
 
 const closeMessage = protocolMessageFromValues({ action: actions.CLOSE });
@@ -126,7 +126,7 @@ abstract class Transport extends EventEmitter {
           ': ' +
           stringifyProtocolMessage(message, this.connectionManager.realtime._RealtimePresence) +
           '; connectionId = ' +
-          this.connectionManager.connectionId
+          this.connectionManager.connectionId,
       );
     }
     this.onActivity();
@@ -136,7 +136,7 @@ abstract class Transport extends EventEmitter {
         Logger.logActionNoStrip(
           Logger.LOG_MICRO,
           'Transport.onProtocolMessage()',
-          this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId
+          this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId,
         );
         this.emit('heartbeat', message.id);
         break;
@@ -168,7 +168,7 @@ abstract class Transport extends EventEmitter {
             Logger.logAction(
               Logger.LOG_ERROR,
               'Transport.onProtocolMessage()',
-              'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err)
+              'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err),
             );
           }
         });
@@ -181,7 +181,7 @@ abstract class Transport extends EventEmitter {
             this.connectionManager.connectionId +
             '; err = ' +
             Platform.Config.inspect(message.error) +
-            (message.channel ? ', channel: ' + message.channel : '')
+            (message.channel ? ', channel: ' + message.channel : ''),
         );
         if (message.channel === undefined) {
           this.onFatalError(message);
@@ -291,7 +291,7 @@ abstract class Transport extends EventEmitter {
     connectionManager: ConnectionManager,
     auth: Auth,
     transportParams: TransportParams,
-    callback: TryConnectCallback
+    callback: TryConnectCallback,
   ): void {
     const transport = new transportCtor(connectionManager, auth, transportParams);
 
@@ -308,7 +308,7 @@ abstract class Transport extends EventEmitter {
       transport.dispose();
       errorCb.call(
         { event: 'disconnected' },
-        new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500)
+        new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500),
       );
     }, realtimeRequestTimeout);
 

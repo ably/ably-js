@@ -82,7 +82,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                         var expectedLength = preAttachMessages.length + postAttachMessages.length;
                         expect(resultPage.items.length).to.equal(
                           expectedLength,
-                          'Verify all messages returned when no params'
+                          'Verify all messages returned when no params',
                         );
                         callback();
                       } catch (err) {
@@ -99,7 +99,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                         var expectedLength = preAttachMessages.length + postAttachMessages.length;
                         expect(resultPage.items.length).to.equal(
                           expectedLength,
-                          'Verify all messages returned when untilAttached is false'
+                          'Verify all messages returned when untilAttached is false',
                         );
                         callback();
                       } catch (err) {
@@ -118,13 +118,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                         var messages = resultPage.items;
                         expect(messages.length).to.equal(
                           preAttachMessages.length,
-                          'Verify right number of messages returned when untilAttached is true'
+                          'Verify right number of messages returned when untilAttached is true',
                         );
                         expect(
                           messages.every(function (message) {
                             return message.name.substring(0, 10) == 'pre-attach';
                           }),
-                          'Verify all returned messages were pre-attach ones'
+                          'Verify all returned messages were pre-attach ones',
                         ).to.be.ok;
                         callback();
                       } catch (err) {

@@ -168,8 +168,8 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
         // standalone functions don’t necessarily import the whole module.
         output.errors.push(
           new Error(
-            `Adding ${transitiveImports.join(' + ')} to ${functionName} unexpectedly increases the bundle size.`
-          )
+            `Adding ${transitiveImports.join(' + ')} to ${functionName} unexpectedly increases the bundle size.`,
+          ),
         );
       }
     }
@@ -190,9 +190,9 @@ async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Outpu
     output.errors.push(
       new Error(
         `Minimal raw useful Realtime bundle is ${formatBytes(
-          sizes.rawByteSize
-        )}, which is greater than allowed maximum of ${minimalUsefulRealtimeBundleSizeThresholdsKiB.raw} KiB.`
-      )
+          sizes.rawByteSize,
+        )}, which is greater than allowed maximum of ${minimalUsefulRealtimeBundleSizeThresholdsKiB.raw} KiB.`,
+      ),
     );
   }
 
@@ -200,9 +200,9 @@ async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Outpu
     output.errors.push(
       new Error(
         `Minimal gzipped useful Realtime bundle is ${formatBytes(
-          sizes.gzipEncodedByteSize
-        )}, which is greater than allowed maximum of ${minimalUsefulRealtimeBundleSizeThresholdsKiB.gzip} KiB.`
-      )
+          sizes.gzipEncodedByteSize,
+        )}, which is greater than allowed maximum of ${minimalUsefulRealtimeBundleSizeThresholdsKiB.gzip} KiB.`,
+      ),
     );
   }
 
@@ -274,8 +274,8 @@ async function checkBaseRealtimeFiles() {
     if (!allowedFiles.has(file[0])) {
       errors.push(
         new Error(
-          `Unexpected file ${file[0]}, contributes ${file[1].size}B to BaseRealtime, more than allowed ${thresholdBytes}B`
-        )
+          `Unexpected file ${file[0]}, contributes ${file[1].size}B to BaseRealtime, more than allowed ${thresholdBytes}B`,
+        ),
       );
     }
   }
@@ -288,8 +288,8 @@ async function checkBaseRealtimeFiles() {
       if (file.size < thresholdBytes) {
         errors.push(
           new Error(
-            `File ${allowedFile} contributes ${file.size}B, which is less than the expected minimum of ${thresholdBytes}B. Remove it from the \`allowedFiles\` list.`
-          )
+            `File ${allowedFile} contributes ${file.size}B, which is less than the expected minimum of ${thresholdBytes}B. Remove it from the \`allowedFiles\` list.`,
+          ),
         );
       }
     } else {

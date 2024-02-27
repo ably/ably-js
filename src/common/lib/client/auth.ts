@@ -146,7 +146,7 @@ class Auth {
         Logger.logAction(
           Logger.LOG_ERROR,
           'Auth()',
-          'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help'
+          'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help',
         );
       }
       this._saveTokenOptions(options.defaultTokenParams as API.TokenDetails, options);
@@ -251,7 +251,7 @@ class Auth {
 
   async authorize(
     tokenParams?: Record<string, any> | null,
-    authOptions?: AuthOptions | null
+    authOptions?: AuthOptions | null,
   ): Promise<API.TokenDetails> {
     /* RSA10a: authorize() call implies token auth. If a key is passed it, we
      * just check if it doesn't clash and assume we're generating a token from it */
@@ -271,7 +271,7 @@ class Auth {
         return new Promise((resolve, reject) => {
           (this.client as BaseRealtime).connection.connectionManager.onAuthUpdated(
             tokenDetails,
-            (err: unknown, tokenDetails?: API.TokenDetails) => (err ? reject(err) : resolve(tokenDetails!))
+            (err: unknown, tokenDetails?: API.TokenDetails) => (err ? reject(err) : resolve(tokenDetails!)),
           );
         });
       } else {
@@ -293,7 +293,7 @@ class Auth {
    * effect on the connection as #authorize does */
   async _forceNewToken(
     tokenParams: API.TokenParams | null,
-    authOptions: AuthOptions | null
+    authOptions: AuthOptions | null,
   ): Promise<API.TokenDetails> {
     /* get rid of current token even if still valid */
     this.tokenDetails = null;
@@ -397,8 +397,8 @@ class Auth {
         callback: (
           error: API.ErrorInfo | RequestResultError | string | null,
           tokenRequestOrDetails: API.TokenDetails | API.TokenRequest | string | null,
-          contentType?: string
-        ) => void
+          contentType?: string,
+        ) => void,
       ) => void,
       client = this.client;
 
@@ -410,7 +410,7 @@ class Auth {
       tokenRequestCallback = (params, cb) => {
         const authHeaders = Utils.mixin(
           { accept: 'application/json, text/plain' },
-          resolvedAuthOptions.authHeaders
+          resolvedAuthOptions.authHeaders,
         ) as Record<string, string>;
         const usePost = resolvedAuthOptions.authMethod && resolvedAuthOptions.authMethod.toLowerCase() === 'post';
         let providedQsParams;
@@ -423,7 +423,7 @@ class Auth {
             /* In case of conflict, authParams take precedence over qs params in the authUrl */
             resolvedAuthOptions.authParams = Utils.mixin(
               providedQsParams,
-              resolvedAuthOptions.authParams
+              resolvedAuthOptions.authParams,
             ) as typeof resolvedAuthOptions.authParams;
           }
         }
@@ -437,7 +437,7 @@ class Auth {
             Logger.logAction(
               Logger.LOG_MICRO,
               'Auth.requestToken().tokenRequestCallback',
-              'Received Error: ' + Utils.inspectError(result.error)
+              'Received Error: ' + Utils.inspectError(result.error),
             );
           } else {
             const contentTypeHeaderOrHeaders = result.headers!['content-type'] ?? null;
@@ -450,7 +450,7 @@ class Auth {
             Logger.logAction(
               Logger.LOG_MICRO,
               'Auth.requestToken().tokenRequestCallback',
-              'Received; content-type: ' + contentType + '; body: ' + Utils.inspectBody(body)
+              'Received; content-type: ' + contentType + '; body: ' + Utils.inspectBody(body),
             );
           }
           if (result.error) {
@@ -475,9 +475,9 @@ class Auth {
                   contentType +
                   ', should be either text/plain, application/jwt or application/json',
                 40170,
-                401
+                401,
               ),
-              null
+              null,
             );
             return;
           }
@@ -493,9 +493,9 @@ class Auth {
                 new ErrorInfo(
                   'Unexpected error processing authURL response; err = ' + (e as Error).message,
                   40170,
-                  401
+                  401,
                 ),
-                null
+                null,
               );
               return;
             }
@@ -510,7 +510,7 @@ class Auth {
             '; Params: ' +
             JSON.stringify(authParams) +
             '; method: ' +
-            (usePost ? 'POST' : 'GET')
+            (usePost ? 'POST' : 'GET'),
         );
         if (usePost) {
           /* send body form-encoded */
@@ -523,12 +523,12 @@ class Auth {
               resolvedAuthOptions.authUrl!,
               headers,
               body,
-              providedQsParams as Record<string, string>
+              providedQsParams as Record<string, string>,
             ),
             (err: any, result) =>
               err
                 ? authUrlRequestCallback(err) // doUri isn’t meant to throw an error, but handle any just in case
-                : authUrlRequestCallback(result!)
+                : authUrlRequestCallback(result!),
           );
         } else {
           Utils.whenPromiseSettles(
@@ -536,7 +536,7 @@ class Auth {
             (err: any, result) =>
               err
                 ? authUrlRequestCallback(err) // doUri isn’t meant to throw an error, but handle any just in case
-                : authUrlRequestCallback(result!)
+                : authUrlRequestCallback(result!),
           );
         }
       };
@@ -544,7 +544,7 @@ class Auth {
       Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
       tokenRequestCallback = (params, cb) => {
         Utils.whenPromiseSettles(this.createTokenRequest(params, resolvedAuthOptions), (err, result) =>
-          cb(err as string | ErrorInfo | null, result ?? null)
+          cb(err as string | ErrorInfo | null, result ?? null),
         );
       };
     } else {
@@ -553,7 +553,7 @@ class Auth {
       Logger.logAction(
         Logger.LOG_ERROR,
         'Auth()',
-        'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help'
+        'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help',
       );
       throw new ErrorInfo(msg, 40171, 403);
     }
@@ -561,12 +561,12 @@ class Auth {
     /* normalise token params */
     if ('capability' in (resolvedTokenParams as Record<string, any>))
       (resolvedTokenParams as Record<string, any>).capability = c14n(
-        (resolvedTokenParams as Record<string, any>).capability
+        (resolvedTokenParams as Record<string, any>).capability,
       );
 
     const tokenRequest = (
       signedTokenParams: Record<string, any>,
-      tokenCb: (err: RequestResultError | null, tokenResponse?: API.TokenDetails | string, unpacked?: boolean) => void
+      tokenCb: (err: RequestResultError | null, tokenResponse?: API.TokenDetails | string, unpacked?: boolean) => void,
     ) => {
       const keyName = signedTokenParams.keyName,
         path = '/keys/' + keyName + '/requestToken',
@@ -579,14 +579,14 @@ class Auth {
       Logger.logAction(
         Logger.LOG_MICRO,
         'Auth.requestToken().requestToken',
-        'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams)
+        'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams),
       );
       Utils.whenPromiseSettles(
         this.client.http.do(HttpMethods.Post, tokenUri, requestHeaders, JSON.stringify(signedTokenParams), null),
         (err: any, result) =>
           err
             ? tokenCb(err) // doUri isn’t meant to throw an error, but handle any just in case
-            : tokenCb(result!.error, result!.body as API.TokenDetails | string | undefined, result!.unpacked)
+            : tokenCb(result!.error, result!.body as API.TokenDetails | string | undefined, result!.unpacked),
       );
     };
 
@@ -608,7 +608,7 @@ class Auth {
           Logger.logAction(
             Logger.LOG_ERROR,
             'Auth.requestToken()',
-            'token request signing call returned error; err = ' + Utils.inspectError(err)
+            'token request signing call returned error; err = ' + Utils.inspectError(err),
           );
           reject(normaliseAuthcallbackError(err));
           return;
@@ -622,8 +622,8 @@ class Auth {
               new ErrorInfo(
                 'Token string exceeded max permitted length (was ' + tokenRequestOrDetails.length + ' bytes)',
                 40170,
-                401
-              )
+                401,
+              ),
             );
           } else if (tokenRequestOrDetails === 'undefined' || tokenRequestOrDetails === 'null') {
             /* common failure mode with poorly-implemented authCallbacks */
@@ -636,8 +636,8 @@ class Auth {
               new ErrorInfo(
                 "Token was double-encoded; make sure you're not JSON-encoding an already encoded token request or details",
                 40170,
-                401
-              )
+                401,
+              ),
             );
           } else {
             resolve({ token: tokenRequestOrDetails } as API.TokenDetails);
@@ -658,8 +658,8 @@ class Auth {
             new ErrorInfo(
               'Token request/details object exceeded max permitted stringified size (was ' + objectSize + ' bytes)',
               40170,
-              401
-            )
+              401,
+            ),
           );
           return;
         }
@@ -681,7 +681,7 @@ class Auth {
             Logger.logAction(
               Logger.LOG_ERROR,
               'Auth.requestToken()',
-              'token request API call returned error; err = ' + Utils.inspectError(err)
+              'token request API call returned error; err = ' + Utils.inspectError(err),
             );
             reject(normaliseAuthcallbackError(err));
             return;
@@ -890,7 +890,7 @@ class Auth {
         throw new ErrorInfo(
           'Mismatch between clientId in token (' + token.clientId + ') and current clientId (' + this.clientId + ')',
           40102,
-          403
+          403,
         );
       }
       /* RSA4b1 -- if we have a server time offset set already, we can
@@ -927,7 +927,7 @@ class Auth {
       Logger.logAction(
         Logger.LOG_MINOR,
         'Auth._ensureValidAuthCredentials()',
-        'Discarding token request response; overtaken by newer one'
+        'Discarding token request response; overtaken by newer one',
       );
       return promise;
     }
@@ -952,7 +952,7 @@ class Auth {
       throw new ErrorInfo(
         'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, instantiate the library with {defaultTokenParams: {clientId: "*"}}), or if calling authorize(), pass it in as a tokenParam: authorize({clientId: "*"}, authOptions)',
         40012,
-        400
+        400,
       );
     } else {
       const err = this._uncheckedSetClientId(clientId);
@@ -993,7 +993,7 @@ class Auth {
 
   revokeTokens(
     specifiers: TokenRevocationTargetSpecifier[],
-    options?: TokenRevocationOptions
+    options?: TokenRevocationOptions,
   ): Promise<TokenRevocationResult> {
     return this.client.rest.revokeTokens(specifiers, options);
   }

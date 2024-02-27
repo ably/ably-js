@@ -70,7 +70,7 @@ class RestChannel {
       throw new ErrorInfo(
         'The single-argument form of publish() expects a message object or an array of message objects',
         40013,
-        400
+        400,
       );
     }
 
@@ -107,7 +107,7 @@ class RestChannel {
           maxMessageSize +
           ' bytes)',
         40009,
-        400
+        400,
       );
     }
 
@@ -122,7 +122,7 @@ class RestChannel {
       headers,
       params,
       null,
-      true
+      true,
     );
   }
 

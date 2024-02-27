@@ -43,5 +43,5 @@ root.render(
         </AblyProvider>
       </AblyProvider>
     </AblyProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

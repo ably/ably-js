@@ -12,7 +12,7 @@ class ChannelStateChange {
     current: string,
     resumed?: boolean,
     hasBacklog?: boolean,
-    reason?: string | Error | ErrorInfo | null
+    reason?: string | Error | ErrorInfo | null,
   ) {
     this.previous = previous;
     this.current = current;

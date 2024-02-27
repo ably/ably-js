@@ -74,7 +74,7 @@ export class Rest {
       timeUri,
       headers,
       null,
-      params as RequestParams
+      params as RequestParams,
     );
 
     if (error) {
@@ -96,7 +96,7 @@ export class Rest {
     version: number,
     params: RequestParams,
     body: unknown,
-    customHeaders: Record<string, string>
+    customHeaders: Record<string, string>,
   ): Promise<HttpPaginatedResponse<unknown>> {
     const [encoder, decoder, format] = (() => {
       if (this.client.options.useBinaryProtocol) {
@@ -131,7 +131,7 @@ export class Rest {
       async function (resbody, headers, unpacked) {
         return Utils.ensureArray(unpacked ? resbody : decoder(resbody as string & Buffer));
       },
-      /* useHttpPaginatedResponse: */ true
+      /* useHttpPaginatedResponse: */ true,
     );
 
     if (!Platform.Http.methods.includes(_method)) {
@@ -150,7 +150,7 @@ export class Rest {
   }
 
   async batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
-    specOrSpecs: T
+    specOrSpecs: T,
   ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
     let requestBodyDTO: BatchPublishSpec[];
     let singleSpecMode: boolean;
@@ -200,7 +200,7 @@ export class Rest {
 
   async revokeTokens(
     specifiers: TokenRevocationTargetSpecifier[],
-    options?: TokenRevocationOptions
+    options?: TokenRevocationOptions,
   ): Promise<TokenRevocationResult> {
     if (useTokenAuth(this.client.options)) {
       throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
@@ -229,7 +229,7 @@ export class Rest {
       headers,
       {},
       null,
-      true
+      true,
     );
 
     return (

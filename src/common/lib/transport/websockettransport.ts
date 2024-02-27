@@ -94,11 +94,11 @@ class WebSocketTransport extends Transport {
           Logger.logAction(
             Logger.LOG_ERROR,
             'WebSocketTransport.connect()',
-            'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message)
+            'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message),
           );
           self.disconnect(e as Error);
         }
-      }
+      },
     );
   }
 
@@ -110,7 +110,7 @@ class WebSocketTransport extends Transport {
     }
     try {
       (wsConnection as NodeWebSocket).send(
-        serializeProtocolMessage(message, this.connectionManager.realtime._MsgPack, this.params.format)
+        serializeProtocolMessage(message, this.connectionManager.realtime._MsgPack, this.params.format),
       );
     } catch (e) {
       const msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
@@ -125,7 +125,7 @@ class WebSocketTransport extends Transport {
     Logger.logAction(
       Logger.LOG_MICRO,
       'WebSocketTransport.onWsData()',
-      'data received; length = ' + data.length + '; type = ' + typeof data
+      'data received; length = ' + data.length + '; type = ' + typeof data,
     );
     try {
       this.onProtocolMessage(
@@ -133,14 +133,14 @@ class WebSocketTransport extends Transport {
           data,
           this.connectionManager.realtime._MsgPack,
           this.connectionManager.realtime._RealtimePresence,
-          this.format
-        )
+          this.format,
+        ),
       );
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,
         'WebSocketTransport.onWsData()',
-        'Unexpected exception handing channel message: ' + (e as Error).stack
+        'Unexpected exception handing channel message: ' + (e as Error).stack,
       );
     }
   }

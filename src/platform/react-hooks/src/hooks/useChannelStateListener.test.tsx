@@ -13,7 +13,7 @@ function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | Re
   return render(
     <AblyProvider client={client as unknown as Ably.RealtimeClient}>
       <ChannelProvider channelName="blah">{children}</ChannelProvider>
-    </AblyProvider>
+    </AblyProvider>,
   );
 }
 
@@ -39,7 +39,7 @@ describe('useChannelStateListener', () => {
   it('can register a channel state listener for named state changes', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseChannelStateListenerComponentNamedEvents event={'failed'}></UseChannelStateListenerComponentNamedEvents>
+      <UseChannelStateListenerComponentNamedEvents event={'failed'}></UseChannelStateListenerComponentNamedEvents>,
     );
 
     act(() => {
@@ -60,7 +60,7 @@ describe('useChannelStateListener', () => {
       ablyClient,
       <UseChannelStateListenerComponentNamedEvents
         event={['failed', 'suspended']}
-      ></UseChannelStateListenerComponentNamedEvents>
+      ></UseChannelStateListenerComponentNamedEvents>,
     );
 
     act(() => {

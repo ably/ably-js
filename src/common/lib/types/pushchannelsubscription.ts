@@ -38,7 +38,7 @@ class PushChannelSubscription {
   static fromResponseBody(
     body: Array<Record<string, unknown>> | Record<string, unknown>,
     MsgPack: MsgPack | null,
-    format?: Utils.Format
+    format?: Utils.Format,
   ): PushChannelSubscription | PushChannelSubscription[] {
     if (format) {
       body = Utils.decodeBody(body, MsgPack, format) as Record<string, unknown>;

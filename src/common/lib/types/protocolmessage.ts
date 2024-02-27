@@ -70,7 +70,7 @@ export function deserialize(
   serialized: unknown,
   MsgPack: MsgPack | null,
   presenceMessageModule: PresenceMessageModule | null,
-  format?: Utils.Format
+  format?: Utils.Format,
 ): ProtocolMessage {
   const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, MsgPack, format);
   return fromDeserialized(deserialized, presenceMessageModule);
@@ -78,7 +78,7 @@ export function deserialize(
 
 export function fromDeserialized(
   deserialized: Record<string, unknown>,
-  presenceMessageModule: PresenceMessageModule | null
+  presenceMessageModule: PresenceMessageModule | null,
 ): ProtocolMessage {
   const error = deserialized.error;
   if (error) deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);

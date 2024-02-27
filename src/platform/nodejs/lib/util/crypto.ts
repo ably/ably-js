@@ -55,7 +55,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
       throw new Error(
         'Unsupported key length ' +
           params.keyLength +
-          ' for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)'
+          ' for aes-cbc encryption. Encryption key must be 128 or 256 bits (16 or 32 ASCII characters)',
       );
     }
   }
@@ -163,7 +163,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
           'Crypto.getDefaultParams: a keyLength of ' +
             params.keyLength +
             ' was specified, but the key actually has length ' +
-            cipherParams.keyLength
+            cipherParams.keyLength,
         );
       }
 
@@ -225,7 +225,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
       var plaintextLength = plaintextBuffer.length,
         paddedLength = getPaddedLength(plaintextLength);
       var cipherOut = this.encryptCipher.update(
-        Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
+        Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]]),
       );
       var ciphertext = Buffer.concat([iv, cipherOut]);
       return ciphertext;

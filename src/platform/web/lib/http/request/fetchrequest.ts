@@ -32,7 +32,7 @@ export default async function fetchRequest(
   uri: string,
   headers: Record<string, string> | null,
   params: RequestParams,
-  body: RequestBody | null
+  body: RequestBody | null,
 ): Promise<RequestResult> {
   const fetchHeaders = new Headers(headers || {});
   const _method = method ? method.toUpperCase() : Utils.isNil(body) ? 'GET' : 'POST';
@@ -46,7 +46,7 @@ export default async function fetchRequest(
         controller.abort();
         resolve({ error: new PartialErrorInfo('Request timed out', null, 408) });
       },
-      client ? client.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout
+      client ? client.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout,
     );
   });
 
@@ -85,7 +85,7 @@ export default async function fetchRequest(
           new PartialErrorInfo(
             'Error response received from server: ' + res.status + ' body was: ' + Platform.Config.inspect(body),
             null,
-            res.status
+            res.status,
           );
 
         return { error, body, headers, unpacked, statusCode: res.status };

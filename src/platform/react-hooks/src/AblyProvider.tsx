@@ -39,7 +39,7 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
       client,
       _channelNameToChannelContext: {},
     }),
-    [client]
+    [client],
   );
 
   if (!client) {

@@ -57,7 +57,7 @@ class EventEmitter {
       if (listenerArr) {
         this.listeners.set(
           eventOrListener as string,
-          listenerArr.filter((x) => x !== listener)
+          listenerArr.filter((x) => x !== listener),
         );
         return;
       }
@@ -147,7 +147,7 @@ export class ClientSingleChannelConnection extends EventEmitter {
 
   public async subscribe(
     eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
-    listener?: Ably.messageCallback<Ably.Message>
+    listener?: Ably.messageCallback<Ably.Message>,
   ) {
     this.channel.subscribe(this.client.clientId, eventOrCallback, listener);
   }
@@ -181,7 +181,7 @@ export class ClientSingleDerivedChannelConnection extends EventEmitter {
 
   public async subscribe(
     eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
-    listener?: Ably.messageCallback<Ably.Message>
+    listener?: Ably.messageCallback<Ably.Message>,
   ) {
     if (typeof eventOrCallback === 'function') eventOrCallback.deriveOptions = this.deriveOpts;
     if (typeof listener === 'function') listener.deriveOpts = this.deriveOpts;
@@ -282,7 +282,7 @@ export class Channel {
     name: string,
     messages: any,
     options?: Ably.PublishOptions,
-    callback?: Ably.errorCallback
+    callback?: Ably.errorCallback,
   ): void;
   public publish(clientId: string, ...rest: any[]) {
     const name = rest.length <= 2 ? '' : rest[0];
@@ -315,7 +315,7 @@ export class Channel {
   public async subscribe(
     clientId: string,
     eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
-    listener?: Ably.messageCallback<Ably.Message>
+    listener?: Ably.messageCallback<Ably.Message>,
   ) {
     if (!this.subscriptionsPerClient.has(clientId)) {
       this.subscriptionsPerClient.set(clientId, new Map<string, CallableFunction[]>());

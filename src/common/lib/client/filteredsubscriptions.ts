@@ -15,7 +15,7 @@ export class FilteredSubscriptions {
       // Check if any values are defined in the filter and if they match the value in the message object
       if (
         Object.entries(filter).find(([key, value]) =>
-          value !== undefined ? mapping[key as keyof API.MessageFilter] !== value : false
+          value !== undefined ? mapping[key as keyof API.MessageFilter] !== value : false,
         )
       ) {
         return;
@@ -31,7 +31,7 @@ export class FilteredSubscriptions {
     channel: RealtimeChannel,
     filter: API.MessageFilter,
     realListener: API.messageCallback<Message>,
-    filteredListener: API.messageCallback<Message>
+    filteredListener: API.messageCallback<Message>,
   ) {
     if (!channel.filteredSubscriptions) {
       channel.filteredSubscriptions = new Map<
@@ -49,7 +49,7 @@ export class FilteredSubscriptions {
     } else {
       channel.filteredSubscriptions.set(
         realListener,
-        new Map<API.MessageFilter, API.messageCallback<Message>[]>([[filter, [filteredListener]]])
+        new Map<API.MessageFilter, API.messageCallback<Message>[]>([[filter, [filteredListener]]]),
       );
     }
   }
@@ -57,7 +57,7 @@ export class FilteredSubscriptions {
   static getAndDeleteFilteredSubscriptions(
     channel: RealtimeChannel,
     filter: API.MessageFilter | undefined,
-    realListener: API.messageCallback<Message> | undefined
+    realListener: API.messageCallback<Message> | undefined,
   ): API.messageCallback<Message>[] {
     // No filtered subscriptions map means there has been no filtered subscriptions yet, so return nothing
     if (!channel.filteredSubscriptions) {
@@ -79,7 +79,7 @@ export class FilteredSubscriptions {
         })
         .reduce(
           (prev, cur) => (cur ? (prev as API.messageCallback<Message>[]).concat(...cur) : prev),
-          []
+          [],
         ) as API.messageCallback<Message>[];
     }
 

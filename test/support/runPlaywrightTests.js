@@ -72,8 +72,8 @@ const runTests = async (browserType) => {
     if (!playwrightBrowsers.includes(browserEnv)) {
       throw new Error(
         `PLAYWRIGHT_BROWSER environment variable must be one of: ${playwrightBrowsers.join(
-          ', '
-        )}. Currently: ${browserEnv}`
+          ', ',
+        )}. Currently: ${browserEnv}`,
       );
     }
 

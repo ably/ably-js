@@ -48,7 +48,7 @@ class PaginatedResource {
     headers: Record<string, string>,
     envelope: Utils.Format | undefined,
     bodyHandler: BodyHandler,
-    useHttpPaginatedResponse?: boolean
+    useHttpPaginatedResponse?: boolean,
   ) {
     this.client = client;
     this.path = path;
@@ -88,7 +88,7 @@ class PaginatedResource {
       Logger.logAction(
         Logger.LOG_ERROR,
         'PaginatedResource.handlePage()',
-        'Unexpected error getting resource: err = ' + Utils.inspectError(result.err)
+        'Unexpected error getting resource: err = ' + Utils.inspectError(result.err),
       );
       throw result.err;
     }
@@ -114,7 +114,7 @@ class PaginatedResource {
         result.headers || {},
         result.statusCode as number,
         relParams,
-        result.err
+        result.err,
       );
     } else {
       return new PaginatedResult(this, items, relParams);
@@ -186,7 +186,7 @@ export class HttpPaginatedResponse<T> extends PaginatedResult<T> {
     headers: ResponseHeaders,
     statusCode: number,
     relParams: any,
-    err: IPartialErrorInfo | null
+    err: IPartialErrorInfo | null,
   ) {
     super(resource, items, relParams);
     this.statusCode = statusCode;

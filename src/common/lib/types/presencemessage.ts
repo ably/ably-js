@@ -25,18 +25,18 @@ export async function fromEncoded(encoded: unknown, options?: API.ChannelOptions
 
 export async function fromEncodedArray(
   encodedArray: unknown[],
-  options?: API.ChannelOptions
+  options?: API.ChannelOptions,
 ): Promise<PresenceMessage[]> {
   return Promise.all(
     encodedArray.map(function (encoded) {
       return fromEncoded(encoded, options);
-    })
+    }),
   );
 }
 
 export function fromValues(
   values: PresenceMessage | Record<string, unknown>,
-  stringifyAction?: boolean
+  stringifyAction?: boolean,
 ): PresenceMessage {
   if (stringifyAction) {
     values.action = actions[values.action as number];
@@ -51,7 +51,7 @@ export async function fromResponseBody(
   body: Record<string, unknown>[],
   options: CipherOptions,
   MsgPack: MsgPack | null,
-  format?: Utils.Format
+  format?: Utils.Format,
 ): Promise<PresenceMessage[]> {
   const messages: PresenceMessage[] = [];
   if (format) {
