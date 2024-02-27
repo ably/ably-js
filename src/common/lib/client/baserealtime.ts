@@ -190,7 +190,7 @@ class ChannelGroup {
   constructor(readonly channels: Channels, filter: string, options?: API.ChannelGroupOptions) {
     this.currentChannels = [];
     this.subscriptions = new EventEmitter();
-    this.active = channels.get('active', { params: { rewind: '1' } });
+    this.active = channels.get(options?.activeChannel || '$ably:active', { params: { rewind: '1' } });
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
     this.consumerGroup.on('membership', () => this.updateActiveChannels(this.currentChannels));
     this.expression = new RegExp(filter); // eslint-disable-line security/detect-non-literal-regexp
