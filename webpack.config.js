@@ -124,8 +124,6 @@ const reactNativeConfig = {
  *
  *   1. This package is designed for Node only and hence requires polyfills of Node libraries (e.g. `stream`, `path`) — webpack takes care of this for us.
  *   2. The package is not compatible with RequireJS and hence we don’t have any easy way to directly load it in our tests — the webpack bundle exposes it as a global named MochaJUnitReporter.
- *
- * - Node: The library uses optional chaining syntax, which is not supported by Node 12.
  */
 function createMochaJUnitReporterConfigs() {
   const dir = path.join(__dirname, 'test', 'support', 'mocha_junit_reporter');
@@ -133,18 +131,6 @@ function createMochaJUnitReporterConfigs() {
   const baseConfig = {
     mode: 'development',
     entry: path.join(dir, 'index.js'),
-    module: {
-      rules: [
-        {
-          // The optional chaining syntax used by mocha-junit-reporter is not supported by Node 12 (see above). Hence, we transpile using Babel.
-          test: /\.js$/,
-          loader: 'babel-loader',
-          options: {
-            presets: [['@babel/preset-env']],
-          },
-        },
-      ],
-    },
     externals: {
       mocha: 'mocha.Mocha',
     },
