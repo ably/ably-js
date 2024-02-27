@@ -1991,6 +1991,13 @@ export declare interface ChannelGroup {
    * @param callback - An event listener function.
    */
   subscribe(callback: channelAndMessageCallback<InboundMessage>): Promise<void>;
+
+  /**
+   * Joins the consumer group if one was created for this channel group,
+   * and returns a promise that is resolved when the channel group is attached
+   * to the active channel.
+   */
+  join(): Promise<void>;
 }
 
 /**
