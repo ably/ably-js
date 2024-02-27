@@ -80,18 +80,13 @@ class ChannelGroups {
 
   constructor(readonly channels: Channels) {}
 
-  // TODO(mschristensen) make this non async
-  async get(filter: string, options?: API.ChannelGroupOptions): Promise<ChannelGroup> {
+  get(filter: string, options?: API.ChannelGroupOptions): ChannelGroup {
     let group = this.groups[filter];
-
     if (group) {
       return group;
     }
-
-    group = this.groups[filter] = new ChannelGroup(this.channels, filter, options);
-    await group.join();
-
-    return group;
+    this.groups[filter] = new ChannelGroup(this.channels, filter, options);
+    return this.groups[filter];
   }
 }
 
@@ -241,7 +236,8 @@ class ChannelGroup {
     });
   }
 
-  subscribe(cb: (channel: string, msg: any) => void) {
+  async subscribe(cb: (channel: string, msg: any) => void): Promise<void> {
+    await this.join();
     this.subscriptions.on('message', cb);
   }
 }
