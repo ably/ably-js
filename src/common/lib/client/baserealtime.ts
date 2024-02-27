@@ -123,11 +123,15 @@ class ConsumerGroup extends EventEmitter {
         'ConsumerGroup.join()',
         'joining consumer group ' + this.consumerGroupName + ' as ' + this.consumerId
       );
-      this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
-      await this.channel.presence.enter(null);
-      await this.channel.presence.subscribe(async () => {
+      if (this.channel) {
         await this.computeMembership();
-      });
+        return;
+      }
+      this.channel = this.channels.get(this.consumerGroupName);
+      await this.channel.attach();
+      await this.channel.presence.enter(null);
+      await this.computeMembership();
+      this.channel.presence.on(() => this.computeMembership());
     } catch (err) {
       Logger.logAction(
         Logger.LOG_ERROR,
@@ -138,8 +142,16 @@ class ConsumerGroup extends EventEmitter {
   }
 
   async computeMembership() {
+    if (!this.channel) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ConsumerGroup.computeMembership()',
+        'compute membership called with no channel initialised'
+      );
+      return;
+    }
     try {
-      const result = await this.channel!.presence.get({ waitForSync: true });
+      const result = await this.channel.presence.get({ waitForSync: true });
 
       const memberIds = result?.filter((member) => member.clientId).map((member) => member.clientId!) || [];
       const { add, remove } = diffSets(this.currentMembers, memberIds);
@@ -165,7 +177,6 @@ class ConsumerGroup extends EventEmitter {
         'ConsumerGroup.computeMembership()',
         'failed to get presence set on consumer group channel:' + err
       );
-      return;
     }
   }
 
