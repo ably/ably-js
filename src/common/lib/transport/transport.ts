@@ -12,7 +12,7 @@ import Auth from '../client/auth';
 import * as API from '../../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Platform from 'common/platform';
-import TransportName from '../../constants/TransportName';
+import TransportName from 'common/constants/TransportName';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
