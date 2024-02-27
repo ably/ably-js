@@ -6,7 +6,7 @@ export function useChannelInstance(id: string, channelName: string) {
 
   if (!channel) {
     throw new Error(
-      `Could not find a parent ChannelProvider in the component tree for name="${channelName}". Make sure your channel based hooks (usePresence, useChannel, useChannelStateListener) are called inside a <ChannelProvider> component`
+      `Could not find a parent ChannelProvider in the component tree for channelName="${channelName}". Make sure your channel based hooks (usePresence, useChannel, useChannelStateListener) are called inside a <ChannelProvider> component`
     );
   }
 
