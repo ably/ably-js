@@ -848,6 +848,10 @@ export interface ChannelOptions {
  * Describes the consumer group. Consumers in the same group will partition the channels of that group.
  */
 interface ConsumerGroupOptions {
+  /**
+   * The name of the consumer group.
+   * Channels will be partitioned across consumers in the same group identified by this name.
+   */
   name: string;
 }
 
@@ -855,6 +859,9 @@ interface ConsumerGroupOptions {
  * Allows specifying properties of a {@link ChannelGroup}
  */
 interface ChannelGroupOptions {
+  /**
+   * Options for a consumer group used to partition the channels in the channel group across consumers in the consumer group.
+   */
   consumerGroup?: ConsumerGroupOptions;
 }
 
@@ -1965,6 +1972,8 @@ export declare interface Channel {
 }
 
 /**
+ * This is a preview feature and may change in a future non-major release.
+ *
  * Enables messages to be subscribed to on a group of channels.
  */
 export declare interface ChannelGroup {
@@ -2186,7 +2195,8 @@ export declare interface Channels<T> {
    */
   get(name: string, channelOptions?: ChannelOptions): T;
   /**
-   * @experimental This is a preview feature and may change in a future non-major release.
+   * This is a preview feature and may change in a future non-major release.
+   *
    * This experimental method allows you to create custom realtime data feeds by selectively subscribing
    * to receive only part of the data from the channel.
    * See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
@@ -2209,6 +2219,8 @@ export declare interface Channels<T> {
 }
 
 /**
+ * This is a preview feature and may change in a future non-major release.
+ *
  * Creates and destroys {@link ChannelGroup} objects.
  */
 export declare interface ChannelGroups {
@@ -2761,6 +2773,9 @@ export declare class Realtime implements RealtimeClient {
   connect(): void;
   auth: Auth;
   channels: Channels<RealtimeChannel>;
+  /**
+   * This is a preview feature and may change in a future non-major release.
+   */
   channelGroups: ChannelGroups;
   connection: Connection;
   request<T = any>(
