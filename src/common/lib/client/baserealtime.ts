@@ -94,10 +94,18 @@ class ConsumerGroup extends EventEmitter {
   private channel?: RealtimeChannel;
   private currentMembers: string[] = [];
   private hashring?: HashRing;
-  private myClientId?: string; // TODO(mschristensen) make this required
+  private consumerId: string;
 
   constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
     super();
+    // The client ID can in fact be set on receipt of CONNECTED event from realtime,
+    // but for these purposes we can rely on the client ID provided by the user.
+    // If the client ID is not set, then we generate a random one.
+    this.consumerId = this.channels.realtime.options.clientId || this.randomConsumerId();
+  }
+
+  private randomConsumerId() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 
   async join() {
@@ -108,10 +116,9 @@ class ConsumerGroup extends EventEmitter {
       return;
     }
 
-    this.myClientId = this.channels.realtime.options.clientId!;
     this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
-    this.hashring = new HashRing([this.myClientId]);
-    Logger.logAction(Logger.LOG_MAJOR, 'ConsumerGroup.join()', 'joining consumer group ' + this.consumerGroupName + ' as ' + this.myClientId);
+    this.hashring = new HashRing([this.consumerId]);
+    Logger.logAction(Logger.LOG_MAJOR, 'ConsumerGroup.join()', 'joining consumer group ' + this.consumerGroupName + ' as ' + this.consumerId);
 
     try {
       await this.channel.presence.enter(null);
@@ -165,7 +172,7 @@ class ConsumerGroup extends EventEmitter {
       // is considered assigned to this client
       return true;
     }
-    return this.myClientId === this.hashring!.get(channel);
+    return this.consumerId === this.hashring!.get(channel);
   }
 }
 
@@ -176,7 +183,6 @@ class ChannelGroup {
   subscribedChannels: Record<string, RealtimeChannel> = {};
   expression: RegExp;
   consumerGroup: ConsumerGroup;
-  myClientId: string;
 
   constructor(readonly channels: Channels, filter: string, options?: API.ChannelGroupOptions) {
     this.currentChannels = [];
@@ -185,7 +191,6 @@ class ChannelGroup {
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
     this.consumerGroup.on('membership', () => this.updateActiveChannels(this.currentChannels));
     this.expression = new RegExp(filter);
-    this.myClientId = this.channels.realtime.options.clientId!;
   }
 
   async join() {
