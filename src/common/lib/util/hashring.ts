@@ -3,42 +3,42 @@
 // TODO(mschristensen): use consistent hashing instead of modulo-based hashing
 // to avoid re-assigning all keys when nodes are added or removed.
 export default class HashRing {
-	private nodes: string[] = [];
-	
-	constructor(nodes?: string[]) {
-		if (nodes) {
-			this.nodes = nodes;
-		}
-	}
+  private nodes: string[] = [];
 
-	add(node: string): void {
-		if (this.nodes.includes(node)) {
-			return;
-		}
-		this.nodes.push(node);
-		this.nodes.sort();
-	}
+  constructor(nodes?: string[]) {
+    if (nodes) {
+      this.nodes = nodes;
+    }
+  }
 
-	remove(node: string): void {
-		this.nodes = this.nodes.filter((n) => n !== node);
-	}
+  add(node: string): void {
+    if (this.nodes.includes(node)) {
+      return;
+    }
+    this.nodes.push(node);
+    this.nodes.sort();
+  }
 
-	get(key: string): string {
-		const hash = this.hash(key);
-		const index = hash % this.nodes.length;
-		return this.nodes[index];
-	}
+  remove(node: string): void {
+    this.nodes = this.nodes.filter((n) => n !== node);
+  }
 
-	hash(key: string): number {
-		let hash = 0;
-		for (let i = 0; i < key.length; i++) {
-			hash = (hash << 5) - hash + key.charCodeAt(i);
-			hash = hash >>> 0; // convert to 32 bit unsigned integer
-		}
-		return hash;
-	}
+  get(key: string): string {
+    const hash = this.hash(key);
+    const index = hash % this.nodes.length;
+    return this.nodes[index];
+  }
 
-	getNodes(): string[] {
-		return this.nodes;
-	}
+  hash(key: string): number {
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash << 5) - hash + key.charCodeAt(i);
+      hash = hash >>> 0; // convert to 32 bit unsigned integer
+    }
+    return hash;
+  }
+
+  getNodes(): string[] {
+    return this.nodes;
+  }
 }
