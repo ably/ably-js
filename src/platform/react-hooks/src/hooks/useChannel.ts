@@ -1,8 +1,9 @@
 import * as Ably from 'ably';
-import { useEffect, useMemo, useRef } from 'react';
-import { channelOptionsWithAgent, ChannelParameters } from '../AblyReactHooks.js';
+import { useEffect, useRef } from 'react';
+import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
+import { useChannelInstance } from './useChannelInstance.js';
 
 export type AblyMessageCallback = Ably.messageCallback<Ably.Message>;
 
@@ -36,37 +37,16 @@ export function useChannel(
       : { channelName: channelNameOrNameAndOptions };
 
   const ably = useAbly(channelHookOptions.id);
+  const { channelName, skip } = channelHookOptions;
 
-  const { channelName, options: channelOptions, deriveOptions, skip } = channelHookOptions;
+  const channel = useChannelInstance(channelHookOptions.id, channelName);
 
   const channelEvent = typeof eventOrCallback === 'string' ? eventOrCallback : null;
   const ablyMessageCallback = typeof eventOrCallback === 'string' ? callback : eventOrCallback;
 
-  const deriveOptionsRef = useRef(deriveOptions);
-  const channelOptionsRef = useRef(channelOptions);
   const ablyMessageCallbackRef = useRef(ablyMessageCallback);
 
-  const channel = useMemo(() => {
-    const derived = deriveOptionsRef.current;
-    const withAgent = channelOptionsWithAgent(channelOptionsRef.current);
-    const channel = derived
-      ? ably.channels.getDerived(channelName, derived, withAgent)
-      : ably.channels.get(channelName, withAgent);
-    return channel;
-  }, [ably, channelName]);
-
   const { connectionError, channelError } = useStateErrors(channelHookOptions);
-
-  useEffect(() => {
-    if (channelOptionsRef.current !== channelOptions && channelOptions) {
-      channel.setOptions(channelOptionsWithAgent(channelOptions));
-    }
-    channelOptionsRef.current = channelOptions;
-  }, [channel, channelOptions]);
-
-  useEffect(() => {
-    deriveOptionsRef.current = deriveOptions;
-  }, [deriveOptions]);
 
   useEffect(() => {
     ablyMessageCallbackRef.current = ablyMessageCallback;

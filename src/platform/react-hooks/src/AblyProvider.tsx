@@ -9,7 +9,12 @@ interface AblyProviderProps {
   id?: string;
 }
 
-type AblyContextType = React.Context<Ably.RealtimeClient>;
+export interface AblyContextProps {
+  client: Ably.RealtimeClient;
+  _channelNameToInstance: Record<string, Ably.RealtimeChannel>;
+}
+
+type AblyContextType = React.Context<AblyContextProps>;
 
 // An object is appended to `React.createContext` which stores all contexts
 // indexed by id, which is used by useAbly to find the correct context when an
@@ -24,16 +29,22 @@ export function getContext(ctxId = 'default'): AblyContextType {
 }
 
 export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderProps) => {
+  const value: AblyContextProps = useMemo(
+    () => ({
+      client,
+      _channelNameToInstance: {},
+    }),
+    [client]
+  );
+
   if (!client) {
     throw new Error('AblyProvider: the `client` prop is required');
   }
 
-  const realtime = useMemo(() => client, [client]);
-
   let context = getContext(id);
   if (!context) {
-    context = ctxMap[id] = React.createContext(realtime);
+    context = ctxMap[id] = React.createContext({ client, _channelNameToInstance: {} });
   }
 
-  return <context.Provider value={realtime}>{children}</context.Provider>;
+  return <context.Provider value={value}>{children}</context.Provider>;
 };

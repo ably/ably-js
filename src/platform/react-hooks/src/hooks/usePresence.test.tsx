@@ -5,12 +5,17 @@ import { usePresence } from './usePresence.js';
 import { render, screen, act, waitFor } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
 import { AblyProvider } from '../AblyProvider.js';
-
-function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Ably.RealtimeClient}>{children}</AblyProvider>);
-}
+import { ChannelProvider } from '../ChannelProvider.js';
 
 const testChannelName = 'testChannel';
+
+function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
+  return render(
+    <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+      <ChannelProvider channelName={testChannelName}>{children}</ChannelProvider>
+    </AblyProvider>
+  );
+}
 
 describe('usePresence', () => {
   let channels: FakeAblyChannels;
@@ -73,7 +78,12 @@ describe('usePresence', () => {
   });
 
   it('presence API works with type information provided', async () => {
-    renderInCtxProvider(ablyClient, <TypedUsePresenceComponent></TypedUsePresenceComponent>);
+    renderInCtxProvider(
+      ablyClient,
+      <ChannelProvider channelName="testChannelName">
+        <TypedUsePresenceComponent></TypedUsePresenceComponent>
+      </ChannelProvider>
+    );
 
     await act(async () => {
       await wait(2);
@@ -98,7 +108,9 @@ describe('usePresence', () => {
     renderInCtxProvider(
       ablyClient,
       <AblyProvider id="otherClient" client={otherClient as unknown as Ably.RealtimeClient}>
-        <UsePresenceComponentMultipleClients />
+        <ChannelProvider channelName={testChannelName} id="otherClient">
+          <UsePresenceComponentMultipleClients />
+        </ChannelProvider>
       </AblyProvider>
     );
 
@@ -119,7 +131,9 @@ describe('usePresence', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <UsePresenceStateErrorsComponent onChannelError={onChannelError}></UsePresenceStateErrorsComponent>
+      <ChannelProvider channelName="blah">
+        <UsePresenceStateErrorsComponent onChannelError={onChannelError}></UsePresenceStateErrorsComponent>
+      </ChannelProvider>
     );
 
     const channelErrorElem = screen.getByRole('channelError');
@@ -143,7 +157,9 @@ describe('usePresence', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <UsePresenceStateErrorsComponent onConnectionError={onConnectionError}></UsePresenceStateErrorsComponent>
+      <ChannelProvider channelName="blah">
+        <UsePresenceStateErrorsComponent onConnectionError={onConnectionError}></UsePresenceStateErrorsComponent>
+      </ChannelProvider>
     );
 
     const connectionErrorElem = screen.getByRole('connectionError');

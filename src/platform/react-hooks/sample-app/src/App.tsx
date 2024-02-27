@@ -22,7 +22,7 @@ function App() {
   useChannel(
     {
       channelName: 'your-derived-channel-name',
-      deriveOptions: { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' },
+      id: 'rob',
     },
     (message) => {
       updateDerivedChannelMessages((prev) => [...prev, message]);
@@ -32,14 +32,16 @@ function App() {
   useChannel(
     {
       channelName: 'your-derived-channel-name',
-      deriveOptions: { filter: 'headers.role == `"front-office"` || headers.company == `"domain"`' },
+      id: 'frontOffice',
     },
     (message) => {
       updateFrontOfficeOnlyMessages((prev) => [...prev, message]);
     }
   );
 
-  const { channel: anotherChannelPublisher } = useChannel({ channelName: 'your-derived-channel-name' });
+  const { channel: anotherChannelPublisher } = useChannel({
+    channelName: 'your-derived-channel-name',
+  });
 
   const { presenceData, updateStatus } = usePresence(
     { channelName: 'your-channel-name', skip },

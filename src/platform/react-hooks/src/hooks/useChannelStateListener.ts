@@ -1,8 +1,7 @@
-import { useEffect, useRef } from 'react';
 import * as Ably from 'ably';
-import { ChannelNameAndId, ChannelNameAndOptions, channelOptionsWithAgent } from '../AblyReactHooks.js';
-import { useAbly } from './useAbly.js';
+import { ChannelNameAndId, ChannelNameAndOptions } from '../AblyReactHooks.js';
 import { useEventListener } from './useEventListener.js';
+import { useChannelInstance } from './useChannelInstance.js';
 
 type ChannelStateListener = (stateChange: Ably.ChannelStateChange) => any;
 
@@ -23,26 +22,9 @@ export function useChannelStateListener(
     typeof channelNameOrNameAndId === 'object' ? channelNameOrNameAndId : { channelName: channelNameOrNameAndId };
   const id = (channelNameOrNameAndId as ChannelNameAndId)?.id;
 
-  const { channelName, options: channelOptions } = channelHookOptions;
+  const { channelName } = channelHookOptions;
 
-  const ably = useAbly(id);
-  const channel = ably.channels.get(channelName, channelOptionsWithAgent(channelOptions));
-
-  const channelOptionsRef = useRef(channelOptions);
-
-  useEffect(() => {
-    if (channelOptionsRef.current !== channelOptions && channelOptions) {
-      channel.setOptions(channelOptionsWithAgent(channelOptions));
-    }
-    channelOptionsRef.current = channelOptions;
-  }, [channel, channelOptions]);
-
-  useEffect(() => {
-    if (channelOptionsRef.current !== channelOptions && channelOptions) {
-      channel.setOptions(channelOptionsWithAgent(channelOptions));
-    }
-    channelOptionsRef.current = channelOptions;
-  }, [channel, channelOptions]);
+  const channel = useChannelInstance(id, channelName);
 
   const _listener = typeof listener === 'function' ? listener : (stateOrListener as ChannelStateListener);
 
