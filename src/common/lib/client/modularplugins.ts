@@ -2,7 +2,6 @@ import { Rest } from './rest';
 import { IUntypedCryptoStatic } from '../../types/ICryptoStatic';
 import { MsgPack } from 'common/types/msgpack';
 import RealtimePresence from './realtimepresence';
-import { TransportInitialiser } from '../transport/connectionmanager';
 import XHRRequest from 'platform/web/lib/http/request/xhrrequest';
 import fetchRequest from 'platform/web/lib/http/request/fetchrequest';
 import { FilteredSubscriptions } from './filteredsubscriptions';
@@ -10,6 +9,7 @@ import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
+import { TransportCtor } from '../transport/transport';
 
 export interface PresenceMessagePlugin {
   presenceMessageFromValues: typeof presenceMessageFromValues;
@@ -25,9 +25,9 @@ export interface ModularPlugins {
   Crypto?: IUntypedCryptoStatic;
   MsgPack?: MsgPack;
   RealtimePresence?: RealtimePresencePlugin;
-  WebSocketTransport?: TransportInitialiser;
-  XHRPolling?: TransportInitialiser;
-  XHRStreaming?: TransportInitialiser;
+  WebSocketTransport?: TransportCtor;
+  XHRPolling?: TransportCtor;
+  XHRStreaming?: TransportCtor;
   XHRRequest?: typeof XHRRequest;
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;

@@ -1,7 +1,7 @@
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import Platform from '../../../../common/platform';
 import XHRRequest from '../http/request/xhrrequest';
-import ConnectionManager, { TransportParams, TransportStorage } from 'common/lib/transport/connectionmanager';
+import ConnectionManager, { TransportParams } from 'common/lib/transport/connectionmanager';
 import Auth from 'common/lib/client/auth';
 import { RequestBody, RequestParams } from 'common/types/http';
 import { TransportNames } from 'common/constants/TransportName';
@@ -14,7 +14,7 @@ class XHRStreamingTransport extends CometTransport {
   }
 
   static isAvailable() {
-    return Platform.Config.xhrSupported && Platform.Config.streamingSupported && Platform.Config.allowComet;
+    return !!(Platform.Config.xhrSupported && Platform.Config.streamingSupported && Platform.Config.allowComet);
   }
 
   toString() {
@@ -32,10 +32,4 @@ class XHRStreamingTransport extends CometTransport {
   }
 }
 
-function initialiseTransport(transportStorage: TransportStorage): typeof XHRStreamingTransport {
-  if (XHRStreamingTransport.isAvailable()) transportStorage.supportedTransports[shortName] = XHRStreamingTransport;
-
-  return XHRStreamingTransport;
-}
-
-export default initialiseTransport;
+export default XHRStreamingTransport;

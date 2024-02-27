@@ -19,12 +19,16 @@ export type TryConnectCallback = (
   transport?: Transport,
 ) => void;
 
-export type TransportCtor = new (
-  connectionManager: ConnectionManager,
-  auth: Auth,
-  params: TransportParams,
-  forceJsonProtocol?: boolean,
-) => Transport;
+export interface TransportCtor {
+  new (
+    connectionManager: ConnectionManager,
+    auth: Auth,
+    params: TransportParams,
+    forceJsonProtocol?: boolean,
+  ): Transport;
+
+  isAvailable(): boolean;
+}
 
 const closeMessage = protocolMessageFromValues({ action: actions.CLOSE });
 const disconnectMessage = protocolMessageFromValues({ action: actions.DISCONNECT });
@@ -323,6 +327,10 @@ abstract class Transport extends EventEmitter {
   }
 
   onAuthUpdated?: (tokenDetails: API.TokenDetails) => void;
+
+  static isAvailable(): boolean {
+    throw new ErrorInfo('isAvailable not implemented for transport', 50000, 500);
+  }
 }
 
 export default Transport;

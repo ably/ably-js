@@ -1,7 +1,7 @@
 import Platform from '../../../../common/platform';
 import CometTransport from '../../../../common/lib/transport/comettransport';
 import XHRRequest from '../http/request/xhrrequest';
-import ConnectionManager, { TransportParams, TransportStorage } from 'common/lib/transport/connectionmanager';
+import ConnectionManager, { TransportParams } from 'common/lib/transport/connectionmanager';
 import Auth from 'common/lib/client/auth';
 import { RequestBody, RequestParams } from 'common/types/http';
 import { TransportNames } from 'common/constants/TransportName';
@@ -16,7 +16,7 @@ class XHRPollingTransport extends CometTransport {
   }
 
   static isAvailable() {
-    return Platform.Config.xhrSupported && Platform.Config.allowComet;
+    return !!(Platform.Config.xhrSupported && Platform.Config.allowComet);
   }
 
   toString() {
@@ -34,10 +34,4 @@ class XHRPollingTransport extends CometTransport {
   }
 }
 
-function initialiseTransport(transportStorage: TransportStorage): typeof XHRPollingTransport {
-  if (XHRPollingTransport.isAvailable()) transportStorage.supportedTransports[shortName] = XHRPollingTransport;
-
-  return XHRPollingTransport;
-}
-
-export default initialiseTransport;
+export default XHRPollingTransport;

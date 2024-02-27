@@ -9,7 +9,7 @@ import { DefaultMessage } from '../types/defaultmessage';
 import { MsgPack } from 'common/types/msgpack';
 import RealtimePresence from './realtimepresence';
 import { DefaultPresenceMessage } from '../types/defaultpresencemessage';
-import initialiseWebSocketTransport from '../transport/websockettransport';
+import WebSocketTransport from '../transport/websockettransport';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import {
   fromValues as presenceMessageFromValues,
@@ -39,7 +39,7 @@ export class DefaultRealtime extends BaseRealtime {
           presenceMessageFromValues,
           presenceMessagesFromValuesArray,
         },
-        WebSocketTransport: initialiseWebSocketTransport,
+        WebSocketTransport,
         MessageInteractions: FilteredSubscriptions,
       }),
     );

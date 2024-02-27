@@ -411,14 +411,10 @@ class ConnectionManager extends EventEmitter {
   private static initTransports(additionalImplementations: TransportImplementations, storage: TransportStorage) {
     const implementations = { ...Platform.Transports.bundledImplementations, ...additionalImplementations };
 
-    const initialiseWebSocketTransport = implementations[TransportNames.WebSocket];
-    if (initialiseWebSocketTransport) {
-      initialiseWebSocketTransport(storage);
-    }
-    Platform.Transports.order.forEach(function (transportName) {
-      const initFn = implementations[transportName];
-      if (initFn) {
-        initFn(storage);
+    [TransportNames.WebSocket, ...Platform.Transports.order].forEach((transportName) => {
+      const transport = implementations[transportName];
+      if (transport && transport.isAvailable()) {
+        storage.supportedTransports[transportName] = transport;
       }
     });
   }
@@ -2196,5 +2192,3 @@ export default ConnectionManager;
 export interface TransportStorage {
   supportedTransports: Partial<Record<TransportName, TransportCtor>>;
 }
-
-export type TransportInitialiser = (transportStorage: TransportStorage) => typeof Transport;
