@@ -185,112 +185,113 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       // connect
       Promise.all([
-        new Promise(resolve => realtime1.connection.on('connected', resolve)),
-        new Promise(resolve => realtime2.connection.on('connected', resolve)),
-        new Promise(resolve => realtime3.connection.on('connected', resolve)),
-      ]).then(async () => {
+        new Promise((resolve) => realtime1.connection.on('connected', resolve)),
+        new Promise((resolve) => realtime2.connection.on('connected', resolve)),
+        new Promise((resolve) => realtime3.connection.on('connected', resolve)),
+      ])
+        .then(async () => {
+          // create 2 consumers in one group
+          const consumers = [
+            realtime2.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
+            realtime3.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
+          ];
 
-        // create 2 consumers in one group
-        const consumers = [
-          realtime2.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
-          realtime3.channelGroups.get('partition:.*', { consumerGroup: { name: 'testgroup' } }),
-        ];
-
-        // create 5 channels
-        const channels = [];
-        const channelNames = Array.from({ length: 5 }, (_, i) => 'partition:' + i);
-        for (const name of channelNames) {
-          const channel = realtime1.channels.get(name);
-          await channel.attach();
-          channels.push(channel);
-        }
-
-        function assertResult(results) {
-          // expect each consumer to have received at least 1 message
-          for (const result of results) {
-            expect(result.length).to.be.greaterThan(0);
+          // create 5 channels
+          const channels = [];
+          const channelNames = Array.from({ length: 5 }, (_, i) => 'partition:' + i);
+          for (const name of channelNames) {
+            const channel = realtime1.channels.get(name);
+            await channel.attach();
+            channels.push(channel);
           }
-          // sort first on channel, then on message name
-          const allResults = results.flat().sort((a, b) => {
-            if (a.channel < b.channel) return -1;
-            if (a.channel > b.channel) return 1;
-            if (a.name < b.name) return -1;
-            if (a.name > b.name) return 1;
-            return 0;
-          });
-          // expect to have received 2 messages from each channel across all consumers
-          for (let i = 0; i < channels.length; i += 2) {
-            const baseIndex = i / 2;
-            const data = `test data ${baseIndex}`;
-            const channel = `partition:${baseIndex}`;
 
-            const first = allResults[i];
-            const second = allResults[i + 1];
-        
-            expect(first.channel).to.equal(channel);
-            expect(second.channel).to.equal(channel);
-            expect(first.name).to.equal('event0');
-            expect(second.name).to.equal('event1');
-            expect(first.data).to.equal(data);
-            expect(second.data).to.equal(data);
-          }
-        }
-
-        // subscribe each consumer and collect results
-        const results = Array.from({ length: consumers.length }, () => []);
-        for (let i = 0; i < consumers.length; i++) {
-          await consumers[i].subscribe((channel, msg) => {
-            results[i].push({ channel, name: msg.name, data: msg.data });
-            if (results.flat().length === 2 * channels.length) {
-              assertResult(results);
-              closeAndFinish(done, [realtime1, realtime2, realtime3]);
+          function assertResult(results) {
+            // expect each consumer to have received at least 1 message
+            for (const result of results) {
+              expect(result.length).to.be.greaterThan(0);
             }
-          });
-        }
+            // sort first on channel, then on message name
+            const allResults = results.flat().sort((a, b) => {
+              if (a.channel < b.channel) return -1;
+              if (a.channel > b.channel) return 1;
+              if (a.name < b.name) return -1;
+              if (a.name > b.name) return 1;
+              return 0;
+            });
+            // expect to have received 2 messages from each channel across all consumers
+            for (let i = 0; i < channels.length; i += 2) {
+              const baseIndex = i / 2;
+              const data = `test data ${baseIndex}`;
+              const channel = `partition:${baseIndex}`;
 
-        var testMsg = { active: channelNames };
-        var activeChannel = realtime1.channels.get('active');
+              const first = allResults[i];
+              const second = allResults[i + 1];
 
-        try {
-          // publish active channels
-          await activeChannel.attach();
-          activeChannel.publish('event0', testMsg);
+              expect(first.channel).to.equal(channel);
+              expect(second.channel).to.equal(channel);
+              expect(first.name).to.equal('event0');
+              expect(second.name).to.equal('event1');
+              expect(first.data).to.equal(data);
+              expect(second.data).to.equal(data);
+            }
+          }
 
-          // wait for all consumers to appear in the group
-          await new Promise(async (resolve, reject) => {
-            const ch = realtime1.channels.get('testgroup');
-            const interval = setInterval(async () => {
-              try {
-                const result = await ch.presence.get({ waitForSync: true });
-                if (result.length === consumers.length) {
-                  resolve();
+          // subscribe each consumer and collect results
+          const results = Array.from({ length: consumers.length }, () => []);
+          for (let i = 0; i < consumers.length; i++) {
+            await consumers[i].subscribe((channel, msg) => {
+              results[i].push({ channel, name: msg.name, data: msg.data });
+              if (results.flat().length === 2 * channels.length) {
+                assertResult(results);
+                closeAndFinish(done, [realtime1, realtime2, realtime3]);
+              }
+            });
+          }
+
+          var testMsg = { active: channelNames };
+          var activeChannel = realtime1.channels.get('active');
+
+          try {
+            // publish active channels
+            await activeChannel.attach();
+            activeChannel.publish('event0', testMsg);
+
+            // wait for all consumers to appear in the group
+            await new Promise(async (resolve, reject) => {
+              const ch = realtime1.channels.get('testgroup');
+              const interval = setInterval(async () => {
+                try {
+                  const result = await ch.presence.get({ waitForSync: true });
+                  if (result.length === consumers.length) {
+                    resolve();
+                    ch.presence.unsubscribe();
+                    clearInterval(interval);
+                  }
+                } catch (err) {
+                  reject(err);
                   ch.presence.unsubscribe();
                   clearInterval(interval);
                 }
-              } catch (err) {
-                reject(err);
-                ch.presence.unsubscribe();
-                clearInterval(interval);
-              }
-            }, 100);
-          });
+              }, 100);
+            });
 
-          // send 2 messages to each channel
-          for (let i = 0; i < channels.length; i++) {
-            channels[i].publish('event0', `test data ${i}`);
-            channels[i].publish('event1', `test data ${i}`);
+            // send 2 messages to each channel
+            for (let i = 0; i < channels.length; i++) {
+              channels[i].publish('event0', `test data ${i}`);
+              channels[i].publish('event1', `test data ${i}`);
+            }
+          } catch (err) {
+            closeAndFinish(done, [realtime1, realtime2, realtime3], err);
+            return;
           }
-        } catch (err) {
-          closeAndFinish(done, [realtime1, realtime2, realtime3], err);
-          return;
-        }
 
-        monitorConnection(done, realtime1);
-        monitorConnection(done, realtime2);
-        monitorConnection(done, realtime3);
-      }).catch(err => {
-        closeAndFinish(done, [realtime1, realtime2, realtime3], err);
-      });
+          monitorConnection(done, realtime1);
+          monitorConnection(done, realtime2);
+          monitorConnection(done, realtime3);
+        })
+        .catch((err) => {
+          closeAndFinish(done, [realtime1, realtime2, realtime3], err);
+        });
     });
-  })
+  });
 });

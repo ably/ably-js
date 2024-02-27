@@ -118,7 +118,11 @@ class ConsumerGroup extends EventEmitter {
     }
 
     try {
-      Logger.logAction(Logger.LOG_MAJOR, 'ConsumerGroup.join()', 'joining consumer group ' + this.consumerGroupName + ' as ' + this.consumerId);
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ConsumerGroup.join()',
+        'joining consumer group ' + this.consumerGroupName + ' as ' + this.consumerId
+      );
       this.channel = this.channels.get(this.consumerGroupName, { params: { rewind: '1' } });
       await this.channel.presence.enter(null);
       await this.channel.presence.subscribe(async () => {
@@ -189,7 +193,7 @@ class ChannelGroup {
     this.active = channels.get('active', { params: { rewind: '1' } });
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
     this.consumerGroup.on('membership', () => this.updateActiveChannels(this.currentChannels));
-    this.expression = new RegExp(filter);
+    this.expression = new RegExp(filter); // eslint-disable-line security/detect-non-literal-regexp
   }
 
   async join() {
@@ -205,7 +209,11 @@ class ChannelGroup {
     const { add, remove } = diffSets(this.currentChannels, matched);
     this.currentChannels = matched;
 
-    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'computed channel diffs: add=' + add + ' remove=' + remove);
+    Logger.logAction(
+      Logger.LOG_DEBUG,
+      'ChannelGroups.setActiveChannels',
+      'computed channel diffs: add=' + add + ' remove=' + remove
+    );
 
     this.removeSubscriptions(remove);
     this.addSubscriptions(add);
@@ -219,13 +227,20 @@ class ChannelGroup {
       }
 
       this.subscribedChannels[channel] = this.channels.get(channel);
-      this.subscribedChannels[channel].setOptions({ params: { rewind: '5s' } }).then(() => {
-        this.subscribedChannels[channel].subscribe((msg: any) => {
-          this.subscriptions.emit('message', channel, msg);
+      this.subscribedChannels[channel]
+        .setOptions({ params: { rewind: '5s' } })
+        .then(() => {
+          this.subscribedChannels[channel].subscribe((msg: any) => {
+            this.subscriptions.emit('message', channel, msg);
+          });
+        })
+        .catch((err) => {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'ChannelGroups.addSubscriptions()',
+            'failed to set rewind options on channel ' + channel + ': ' + err
+          );
         });
-      }).catch((err) => {
-        Logger.logAction(Logger.LOG_ERROR, 'ChannelGroups.addSubscriptions()', 'failed to set rewind options on channel ' + channel + ': ' + err);
-      });
     });
   }
 
