@@ -272,7 +272,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // subscribe each consumer and collect results
           const results = Array.from({ length: consumers.length }, () => []);
           for (let i = 0; i < consumers.length; i++) {
-            await consumers[i].join();
             await consumers[i].subscribe((channel, msg) => {
               results[i].push({ channel, name: msg.name, data: msg.data });
               if (results.flat().length === 2 * channels.length) {
@@ -347,7 +346,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           // subscribe the first consumer and collect results
           const results = Array.from({ length: consumers.length }, () => []);
-          await consumers[0].join();
           await consumers[0].subscribe((channel, msg) => {
             console.log(0, channel, msg.data);
             results[0].push({ channel, name: msg.name, data: msg.data });
@@ -377,7 +375,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
 
           // subscribe the second consumer and collect results
-          await consumers[1].join();
           await consumers[1].subscribe((channel, msg) => {
             console.log(1, channel, msg.data);
             results[1].push({ channel, name: msg.name, data: msg.data });
