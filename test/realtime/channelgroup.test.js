@@ -344,6 +344,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     it('partitions over consumer group', function (done) {
       const prefix = utils.cheapRandStr();
+      const activeChannelName = `${prefix}:active`;
+      const consumerGroupName = `${prefix}:testgroup`;
       let realtime1 = helper.AblyRealtime(); // for publishing from tests
       // for the consumers
       let realtime2 = helper.AblyRealtime();
@@ -362,12 +364,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // create 2 consumers in one group
           const consumers = [
             realtime2.channelGroups.get(`${prefix}:.*`, {
-              activeChannel: 'active',
-              consumerGroup: { name: 'testgroup' },
+              activeChannel: activeChannelName,
+              consumerGroup: { name: consumerGroupName },
             }),
             realtime3.channelGroups.get(`${prefix}:.*`, {
-              activeChannel: 'active',
-              consumerGroup: { name: 'testgroup' },
+              activeChannel: activeChannelName,
+              consumerGroup: { name: consumerGroupName },
             }),
           ];
 
@@ -393,14 +395,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
 
           let testMsg = { active: channelNames };
-          let activeChannel = realtime1.channels.get('active');
+          let activeChannel = realtime1.channels.get(activeChannelName);
 
           // publish active channels
           await activeChannel.attach();
           activeChannel.publish('event0', testMsg);
 
           // wait for all consumers to appear in the group
-          await waitForConsumers(realtime1.channels.get('testgroup'), consumers.length);
+          await waitForConsumers(realtime1.channels.get(consumerGroupName), consumers.length);
 
           // send 2 messages to each channel
           for (let i = 0; i < channels.length; i++) {
@@ -419,6 +421,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     it('dynamically rebalances the consumer group', function (done) {
       const prefix = utils.cheapRandStr();
+      const activeChannelName = `${prefix}:active`;
+      const consumerGroupName = `${prefix}:testgroup`;
       let realtime1 = helper.AblyRealtime(); // for publishing from tests
       // for the consumers
       let realtime2 = helper.AblyRealtime();
@@ -437,12 +441,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // create 2 consumers in one group
           const consumers = [
             realtime2.channelGroups.get(`${prefix}:.*`, {
-              activeChannel: 'active',
-              consumerGroup: { name: 'testgroup' },
+              activeChannel: activeChannelName,
+              consumerGroup: { name: consumerGroupName },
             }),
             realtime3.channelGroups.get(`${prefix}:.*`, {
-              activeChannel: 'active',
-              consumerGroup: { name: 'testgroup' },
+              activeChannel: activeChannelName,
+              consumerGroup: { name: consumerGroupName },
             }),
           ];
 
@@ -470,14 +474,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
 
           let testMsg = { active: channelNames };
-          let activeChannel = realtime1.channels.get('active');
+          let activeChannel = realtime1.channels.get(activeChannelName);
 
           // publish active channels
           await activeChannel.attach();
           activeChannel.publish('event0', testMsg);
 
           // wait for first consumer to appear in the group
-          await waitForConsumers(realtime1.channels.get('testgroup'), 1);
+          await waitForConsumers(realtime1.channels.get(consumerGroupName), 1);
 
           // send 2 messages to the first third of the channels
           for (let i = 0; i < Math.floor(channels.length / 3); i++) {
@@ -497,7 +501,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
 
           // wait for second consumer to appear in the group
-          await waitForConsumers(realtime1.channels.get('testgroup'), 2);
+          await waitForConsumers(realtime1.channels.get(consumerGroupName), 2);
 
           // send 2 messages to the second third of the channels
           for (let i = Math.floor(channels.length / 3); i < 2 * Math.floor(channels.length / 3); i++) {
@@ -508,8 +512,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // the first consumer leaves the group, remaining messages should be received by the second consumer
           await consumers[0].leave();
           hasLeft = true;
-          await waitForConsumers(realtime1.channels.get('testgroup'), 1);
-
+          await waitForConsumers(realtime1.channels.get(consumerGroupName), 1);
           // send 2 messages to the final third of the channels
           for (let i = 2 * Math.floor(channels.length / 3); i < channels.length; i++) {
             channels[i].publish('event0', `test data ${i}`);
