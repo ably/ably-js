@@ -18,14 +18,6 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       return false;
     }
 
-    // IE doesn't support creating your own events with new
-    try {
-      var testEvent = new Event('foo');
-    } catch (e) {
-      console.log('On IE; skipping connection.test.js');
-      return false;
-    }
-
     return true;
   }
 

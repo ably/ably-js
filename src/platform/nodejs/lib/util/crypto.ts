@@ -77,15 +77,6 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
   for (var i = 1; i <= 16; i++) pkcs5Padding.push(filledBuffer(i, i));
 
   /**
-   * Internal: convert a binary string to Buffer (for node 0.8.x)
-   * @param bufferOrString
-   * @returns {Buffer}
-   */
-  function toBuffer(bufferOrString: Buffer | string) {
-    return typeof bufferOrString == 'string' ? Buffer.from(bufferOrString, 'binary') : bufferOrString;
-  }
-
-  /**
    * A class encapsulating the client-specifiable parameters for
    * the cipher.
    *
@@ -236,19 +227,19 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
       var cipherOut = this.encryptCipher.update(
         Buffer.concat([plaintextBuffer, pkcs5Padding[paddedLength - plaintextLength]])
       );
-      var ciphertext = Buffer.concat([iv, toBuffer(cipherOut)]);
+      var ciphertext = Buffer.concat([iv, cipherOut]);
       return ciphertext;
     }
 
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
       var decryptCipher = crypto.createDecipheriv(this.algorithm, this.key, ciphertext.slice(0, DEFAULT_BLOCKLENGTH)),
-        plaintext = toBuffer(decryptCipher.update(ciphertext.slice(DEFAULT_BLOCKLENGTH))),
+        plaintext = decryptCipher.update(ciphertext.slice(DEFAULT_BLOCKLENGTH)),
         final = decryptCipher.final();
-      if (final && final.length) plaintext = Buffer.concat([plaintext, toBuffer(final)]);
+      if (final && final.length) plaintext = Buffer.concat([plaintext, final]);
       return plaintext;
     }
 
-    async getIv() {
+    async getIv(): Promise<Buffer> {
       if (this.iv) {
         var iv = this.iv;
         this.iv = null;
@@ -263,7 +254,7 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
         /* Since the iv for a new block is the ciphertext of the last, this
          * sets a new iv (= aes(randomBlock XOR lastCipherText)) as well as
          * returning it */
-        return toBuffer(this.encryptCipher.update(randomBlock));
+        return this.encryptCipher.update(randomBlock);
       }
     }
   }

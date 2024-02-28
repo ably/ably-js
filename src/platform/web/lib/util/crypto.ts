@@ -21,40 +21,6 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
   var DEFAULT_KEYLENGTH = 256; // bits
   var DEFAULT_MODE = 'cbc';
   var DEFAULT_BLOCKLENGTH = 16; // bytes
-  var DEFAULT_BLOCKLENGTH_WORDS = 4; // 32-bit words
-  var UINT32_SUP = 0x100000000;
-
-  /**
-   * Internal: generate an array of secure random data corresponding to the given length of bytes
-   * @param bytes
-   */
-  var generateRandom: (byteLength: number) => Promise<ArrayBuffer>;
-  if (config.getRandomArrayBuffer) {
-    generateRandom = config.getRandomArrayBuffer;
-  } else if (typeof Uint32Array !== 'undefined' && config.getRandomValues) {
-    generateRandom = async function (bytes) {
-      var blockRandomArray = new Uint32Array(DEFAULT_BLOCKLENGTH_WORDS);
-      var words = bytes / 4,
-        nativeArray = words == DEFAULT_BLOCKLENGTH_WORDS ? blockRandomArray : new Uint32Array(words);
-      await config.getRandomValues!(nativeArray);
-      return bufferUtils.toArrayBuffer(nativeArray);
-    };
-  } else {
-    generateRandom = async function (bytes) {
-      Logger.logAction(
-        Logger.LOG_MAJOR,
-        'Ably.Crypto.generateRandom()',
-        'Warning: the browser you are using does not support secure cryptographically secure randomness generation; falling back to insecure Math.random()'
-      );
-      var words = bytes / 4,
-        array = new Uint32Array(words);
-      for (var i = 0; i < words; i++) {
-        array[i] = Math.floor(Math.random() * UINT32_SUP);
-      }
-
-      return bufferUtils.toArrayBuffer(array);
-    };
-  }
 
   /**
    * Internal: checks that the cipherParams are a valid combination. Currently
@@ -115,12 +81,9 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
    * but supporting other keylengths. Other algorithms and chaining modes are
    * not supported directly, but supportable by extending/implementing the base
    * classes and interfaces here.
-   *-
+   *
    * Secure random data for creation of Initialization Vectors (IVs) and keys
-   * is obtained from window.crypto.getRandomValues if available, or from
-   * Math.random() if not. Clients who do not want to depend on Math.random()
-   * should polyfill window.crypto.getRandomValues with a library that seeds
-   * a PRNG with real entropy.
+   * is obtained from window.crypto.getRandomValues.
    *
    * Each message payload is encrypted with an IV in CBC mode, and the IV is
    * concatenated with the resulting raw ciphertext to construct the "ciphertext"
@@ -178,7 +141,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
      */
     static async generateRandomKey(keyLength?: number): Promise<API.CipherKey> {
       try {
-        return await generateRandom((keyLength || DEFAULT_KEYLENGTH) / 8);
+        return config.getRandomArrayBuffer((keyLength || DEFAULT_KEYLENGTH) / 8);
       } catch (err) {
         throw new ErrorInfo('Failed to generate random key: ' + (err as Error).message, 400, 50000, err as Error);
       }
@@ -271,7 +234,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
         return iv;
       }
 
-      const randomBlock = await generateRandom(DEFAULT_BLOCKLENGTH);
+      const randomBlock = await config.getRandomArrayBuffer(DEFAULT_BLOCKLENGTH);
       return bufferUtils.toArrayBuffer(randomBlock);
     }
   }

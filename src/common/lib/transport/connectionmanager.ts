@@ -44,8 +44,8 @@ function clearSessionRecoverData() {
 
 function betterTransportThan(a: Transport, b: Transport) {
   return (
-    Utils.arrIndexOf(Platform.Defaults.transportPreferenceOrder, a.shortName) >
-    Utils.arrIndexOf(Platform.Defaults.transportPreferenceOrder, b.shortName)
+    Platform.Defaults.transportPreferenceOrder.indexOf(a.shortName) >
+    Platform.Defaults.transportPreferenceOrder.indexOf(b.shortName)
   );
 }
 
@@ -75,7 +75,7 @@ function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number
     return false;
   }
   if (
-    !Utils.arrEvery(proposed, function (msg: Message) {
+    !proposed.every(function (msg: Message) {
       return !msg.id;
     })
   ) {
@@ -346,7 +346,6 @@ class ConnectionManager extends EventEmitter {
     if (addEventListener) {
       /* intercept close event in browser to persist connection id if requested */
       if (haveSessionStorage() && typeof options.recover === 'function') {
-        /* Usually can't use bind as not supported in IE8, but IE doesn't support sessionStorage, so... */
         addEventListener('beforeunload', this.persistConnection.bind(this));
       }
 
@@ -416,7 +415,7 @@ class ConnectionManager extends EventEmitter {
     if (initialiseWebSocketTransport) {
       initialiseWebSocketTransport(storage);
     }
-    Utils.arrForEach(Platform.Transports.order, function (transportName) {
+    Platform.Transports.order.forEach(function (transportName) {
       const initFn = implementations[transportName];
       if (initFn) {
         initFn(storage);
@@ -591,7 +590,7 @@ class ConnectionManager extends EventEmitter {
         /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
         if (
           transport.shortName !== optimalTransport &&
-          Utils.arrIn(this.getUpgradePossibilities(), optimalTransport) &&
+          this.getUpgradePossibilities().includes(optimalTransport) &&
           this.activeProtocol
         ) {
           setTimeout(() => {
@@ -930,9 +929,9 @@ class ConnectionManager extends EventEmitter {
       }
     }
 
-    /* Terminate any other pending transport(s), and
-     * abort any not-yet-pending transport attempts */
-    Utils.safeArrForEach(this.pendingTransports, (pendingTransport) => {
+    // terminate any other pending transport(s), and abort any not-yet-pending transport attempts
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.pendingTransports.slice().forEach((pendingTransport) => {
       if (pendingTransport === transport) {
         const msg =
           'Assumption violated: activating a transport that is still marked as a pending transport; transport = ' +
@@ -945,7 +944,8 @@ class ConnectionManager extends EventEmitter {
         pendingTransport.disconnect();
       }
     });
-    Utils.safeArrForEach(this.proposedTransports, (proposedTransport: Transport) => {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.proposedTransports.slice().forEach((proposedTransport: Transport) => {
       if (proposedTransport === transport) {
         Logger.logAction(
           Logger.LOG_ERROR,
@@ -1132,7 +1132,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    const sinceLast = Utils.now() - this.lastActivity;
+    const sinceLast = Date.now() - this.lastActivity;
     if (sinceLast > this.connectionStateTtl + (this.maxIdleInterval as number)) {
       Logger.logAction(
         Logger.LOG_MINOR,
@@ -1154,7 +1154,7 @@ class ConnectionManager extends EventEmitter {
       if (recoveryKey) {
         setSessionRecoverData({
           recoveryKey: recoveryKey,
-          disconnectedAt: Utils.now(),
+          disconnectedAt: Date.now(),
           location: globalObject.location,
           clientId: this.realtime.auth.clientId,
         });
@@ -1358,11 +1358,11 @@ class ConnectionManager extends EventEmitter {
     if (retryImmediately) {
       const autoReconnect = () => {
         if (this.state === this.states.disconnected) {
-          this.lastAutoReconnectAttempt = Utils.now();
+          this.lastAutoReconnectAttempt = Date.now();
           this.requestState({ state: 'connecting' });
         }
       };
-      const sinceLast = this.lastAutoReconnectAttempt && Utils.now() - this.lastAutoReconnectAttempt + 1;
+      const sinceLast = this.lastAutoReconnectAttempt && Date.now() - this.lastAutoReconnectAttempt + 1;
       if (sinceLast && sinceLast < 1000) {
         Logger.logAction(
           Logger.LOG_MICRO,
@@ -1559,7 +1559,7 @@ class ConnectionManager extends EventEmitter {
     const preference = this.getTransportPreference();
     let preferenceTimeoutExpired = false;
 
-    if (!Utils.arrIn(this.transports, preference)) {
+    if (!this.transports.includes(preference)) {
       this.unpersistTransportPreference();
       this.connectImpl(transportParams, connectCount);
     }
@@ -1696,7 +1696,7 @@ class ConnectionManager extends EventEmitter {
      * transport in upgradeTransports (if it's in there - if not, currentSerial
      * will be -1, so return upgradeTransports.slice(0) == upgradeTransports */
     const current = (this.activeProtocol as Protocol).getTransport().shortName;
-    const currentSerial = Utils.arrIndexOf(this.upgradeTransports, current);
+    const currentSerial = this.upgradeTransports.indexOf(current);
     return this.upgradeTransports.slice(currentSerial + 1);
   }
 
@@ -1712,7 +1712,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    Utils.arrForEach(upgradePossibilities, (upgradeTransport: TransportName) => {
+    upgradePossibilities.forEach((upgradeTransport: TransportName) => {
       /* Note: the transport may mutate the params, so give each transport a fresh one */
       const upgradeTransportParams = this.createTransportParams(transportParams.host, 'upgrade');
       this.tryATransport(upgradeTransportParams, upgradeTransport, noop);
@@ -1724,12 +1724,14 @@ class ConnectionManager extends EventEmitter {
     this.cancelSuspendTimer();
     this.startTransitionTimer(this.states.closing);
 
-    Utils.safeArrForEach(this.pendingTransports, function (transport) {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.pendingTransports.slice().forEach(function (transport) {
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
       if (transport) transport.close();
     });
 
-    Utils.safeArrForEach(this.proposedTransports, function (transport) {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.proposedTransports.slice().forEach(function (transport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.closeImpl()',
@@ -1865,7 +1867,8 @@ class ConnectionManager extends EventEmitter {
     /* This will prevent any connection procedure in an async part of one of its early stages from continuing */
     this.connectCounter++;
 
-    Utils.safeArrForEach(this.pendingTransports, function (transport) {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.pendingTransports.slice().forEach(function (transport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
@@ -1875,7 +1878,8 @@ class ConnectionManager extends EventEmitter {
     });
     this.pendingTransports = [];
 
-    Utils.safeArrForEach(this.proposedTransports, function (transport) {
+    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
+    this.proposedTransports.slice().forEach(function (transport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
@@ -2026,7 +2030,7 @@ class ConnectionManager extends EventEmitter {
 
   private async processChannelMessage(message: ProtocolMessage, transport: Transport) {
     const onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
-      onUpgradeTransport = Utils.arrIn(this.pendingTransports, transport) && this.state == this.states.synchronizing;
+      onUpgradeTransport = this.pendingTransports.includes(transport) && this.state == this.states.synchronizing;
 
     /* As the lib now has a period where the upgrade transport is synced but
      * before it's become active (while waiting for the old one to become
@@ -2037,7 +2041,7 @@ class ConnectionManager extends EventEmitter {
       // Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
       // messages,  no new messages (as sync has been sent on new transport so new messages will
       // be resent there, or connection has been closed so don't want new messages)
-      if (Utils.arrIndexOf([actions.ACK, actions.NACK, actions.ERROR], message.action) > -1) {
+      if ([actions.ACK, actions.NACK, actions.ERROR].includes(message.action!)) {
         await this.realtime.channels.processChannelMessage(message);
       } else {
         Logger.logAction(
@@ -2059,14 +2063,14 @@ class ConnectionManager extends EventEmitter {
         callback(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
       };
 
-      const pingStart = Utils.now(),
+      const pingStart = Date.now(),
         id = Utils.cheapRandStr();
 
       const onHeartbeat = function (responseId: string) {
         if (responseId === id) {
           transport.off('heartbeat', onHeartbeat);
           clearTimeout(timer);
-          const responseTime = Utils.now() - pingStart;
+          const responseTime = Date.now() - pingStart;
           callback(null, responseTime);
         }
       };
@@ -2124,7 +2128,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   persistTransportPreference(transport: Transport): void {
-    if (Utils.arrIn(Defaults.upgradeTransports, transport.shortName)) {
+    if (Defaults.upgradeTransports.includes(transport.shortName)) {
       this.transportPreference = transport.shortName;
       if (haveWebStorage()) {
         Platform.WebStorage?.set?.(transportPreferenceName, transport.shortName);

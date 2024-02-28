@@ -187,7 +187,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           return;
                         }
                         try {
-                          var msgs = helper.arrFilter(resultPage.items, function (m) {
+                          var msgs = resultPage.items.filter(function (m) {
                             return m.name === name;
                           });
                           expect(msgs.length).to.equal(

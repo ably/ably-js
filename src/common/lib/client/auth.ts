@@ -441,7 +441,7 @@ class Auth {
             );
           } else {
             const contentTypeHeaderOrHeaders = result.headers!['content-type'] ?? null;
-            if (Utils.isArray(contentTypeHeaderOrHeaders)) {
+            if (Array.isArray(contentTypeHeaderOrHeaders)) {
               // Combine multiple header values into a comma-separated list per https://datatracker.ietf.org/doc/html/rfc9110#section-5.2; see https://github.com/ably/ably-js/issues/1616 for doing this consistently across the codebase.
               contentType = contentTypeHeaderOrHeaders.join(', ');
             } else {
@@ -830,7 +830,7 @@ class Auth {
   }
 
   getTimestampUsingOffset() {
-    return Utils.now() + (this.client.serverTimeOffset || 0);
+    return Date.now() + (this.client.serverTimeOffset || 0);
   }
 
   isTimeOffsetSet() {

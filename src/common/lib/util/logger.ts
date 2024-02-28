@@ -45,27 +45,19 @@ const getDefaultLoggers = (): [Function, Function] => {
   let consoleLogger;
   let errorLogger;
 
-  /* Can't just check for console && console.log; fails in IE <=9 */
-  if (
-    (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') /* node */ ||
-    typeof globalObject?.console?.log?.apply === 'function' /* sensible browsers */
-  ) {
+  // we expect ably-js to be run in environments which have `console` object available with its `log` function
+  if (typeof globalObject?.console?.log === 'function') {
     consoleLogger = function (...args: unknown[]) {
       console.log.apply(console, args);
     };
+
     errorLogger = console.warn
       ? function (...args: unknown[]) {
           console.warn.apply(console, args);
         }
       : consoleLogger;
-  } else if (globalObject?.console.log as unknown) {
-    /* IE <= 9 with the console open -- console.log does not
-     * inherit from Function, so has no apply method */
-    consoleLogger = errorLogger = function () {
-      Function.prototype.apply.call(console.log, console, arguments);
-    };
   } else {
-    /* IE <= 9 when dev tools are closed - window.console not even defined */
+    // otherwise we should fallback to noop for log functions
     consoleLogger = errorLogger = function () {};
   }
 

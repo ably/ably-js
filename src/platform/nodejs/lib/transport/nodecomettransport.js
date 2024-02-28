@@ -265,7 +265,7 @@ var NodeCometTransport = function (transportStorage) {
          * is contains an error action (hence the nonsuccess statuscode), we can
          * consider the request to have succeeded, just pass it on to
          * onProtocolMessage to decide what to do */
-        if (statusCode < 400 || Utils.isArray(body)) {
+        if (statusCode < 400 || Array.isArray(body)) {
           self.complete(null, body);
           return;
         }

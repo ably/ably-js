@@ -154,7 +154,7 @@ class Channels extends EventEmitter {
 
     for (const channelId in this.all) {
       const channel = this.all[channelId];
-      if (Utils.arrIn(fromChannelStates, channel.state)) {
+      if (fromChannelStates.includes(channel.state)) {
         channel.notifyState(toChannelState, reason);
       }
     }

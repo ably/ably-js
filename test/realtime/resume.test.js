@@ -553,7 +553,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         connectionManager = connection.connectionManager;
 
       connection.once('connected', function () {
-        connectionManager.lastActivity = helper.Utils.now() - 10000000;
+        connectionManager.lastActivity = Date.now() - 10000000;
         /* noop-out onProtocolMessage so that a DISCONNECTED message doesn't
          * reset the last activity timer */
         connectionManager.activeProtocol.getTransport().onProtocolMessage = function () {};

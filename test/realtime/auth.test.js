@@ -885,7 +885,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
              * established, before realtime sends error response. So token error
              * goes through the same path as a connected transport, so goes to
              * disconnected first */
-            utils.arrForEach(['connected', 'suspended'], function (state) {
+            ['connected', 'suspended'].forEach(function (state) {
               realtime.connection.on(state, function () {
                 done(new Error('State changed to ' + state + ', should have gone to failed'));
                 realtime.close();

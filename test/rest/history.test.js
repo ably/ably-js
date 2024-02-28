@@ -44,7 +44,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
       /* verify message ids are unique */
       var ids = {};
-      utils.arrForEach(messages, function (msg) {
+      messages.forEach(function (msg) {
         ids[msg.id] = msg;
       });
       expect(utils.keysArray(ids).length).to.equal(
@@ -67,7 +67,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
       /* verify message ids are unique */
       var ids = {};
-      utils.arrForEach(messages, function (msg) {
+      messages.forEach(function (msg) {
         ids[msg.id] = msg;
       });
       expect(utils.keysArray(ids).length).to.equal(

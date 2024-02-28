@@ -572,7 +572,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       /* subscribe to event */
       recvchannel.subscribe('event0', function (msg) {
         try {
-          expect(-1).to.not.equal(utils.arrIndexOf(messagesSent, msg.data), 'Received unexpected message text');
+          expect(-1).to.not.equal(messagesSent.indexOf(msg.data), 'Received unexpected message text');
         } catch (err) {
           closeAndFinish(done, realtime, err);
           return;

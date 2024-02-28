@@ -86,7 +86,7 @@ export class Rest {
       throw new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500);
     }
     /* calculate time offset only once for this device by adding to the prototype */
-    this.client.serverTimeOffset = time - Utils.now();
+    this.client.serverTimeOffset = time - Date.now();
     return time;
   }
 
@@ -134,11 +134,11 @@ export class Rest {
       /* useHttpPaginatedResponse: */ true
     );
 
-    if (!Utils.arrIn(Platform.Http.methods, _method)) {
+    if (!Platform.Http.methods.includes(_method)) {
       throw new ErrorInfo('Unsupported method ' + _method, 40500, 405);
     }
 
-    if (Utils.arrIn(Platform.Http.methodsWithBody, _method)) {
+    if (Platform.Http.methodsWithBody.includes(_method)) {
       return paginatedResource[_method as HttpMethods.Post](params, body as RequestBody) as Promise<
         HttpPaginatedResponse<unknown>
       >;
@@ -154,7 +154,7 @@ export class Rest {
   ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
     let requestBodyDTO: BatchPublishSpec[];
     let singleSpecMode: boolean;
-    if (Utils.isArray(specOrSpecs)) {
+    if (Array.isArray(specOrSpecs)) {
       requestBodyDTO = specOrSpecs;
       singleSpecMode = false;
     } else {

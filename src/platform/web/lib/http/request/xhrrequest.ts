@@ -10,7 +10,7 @@ import XHRStates from 'common/constants/XHRStates';
 import Platform from 'common/platform';
 
 function isAblyError(responseBody: unknown, headers: Record<string, string>): responseBody is { error?: ErrorInfo } {
-  return Utils.arrIn(Utils.allToLowerCase(Utils.keysArray(headers)), 'x-ably-errorcode');
+  return Utils.allToLowerCase(Utils.keysArray(headers)).includes('x-ably-errorcode');
 }
 
 function getAblyError(responseBody: unknown, headers: Record<string, string>) {
@@ -19,26 +19,9 @@ function getAblyError(responseBody: unknown, headers: Record<string, string>) {
   }
 }
 
-declare const global: {
-  XDomainRequest: unknown;
-};
-
 const noop = function () {};
 let idCounter = 0;
 const pendingRequests: Record<string, XHRRequest> = {};
-
-const isIE = typeof global !== 'undefined' && global.XDomainRequest;
-
-function ieVersion() {
-  const match = navigator.userAgent.toString().match(/MSIE\s([\d.]+)/);
-  return match && Number(match[1]);
-}
-
-function needJsonEnvelope() {
-  /* IE 10 xhr bug: http://stackoverflow.com/a/16320339 */
-  let version;
-  return isIE && (version = ieVersion()) && version === 10;
-}
 
 function getHeader(xhr: XMLHttpRequest, header: string) {
   return xhr.getResponseHeader && xhr.getResponseHeader(header);
@@ -56,10 +39,10 @@ function isEncodingChunked(xhr: XMLHttpRequest) {
 }
 
 function getHeadersAsObject(xhr: XMLHttpRequest) {
-  const headerPairs = Utils.trim(xhr.getAllResponseHeaders()).split('\r\n');
+  const headerPairs = xhr.getAllResponseHeaders().trim().split('\r\n');
   const headers: Record<string, string> = {};
   for (let i = 0; i < headerPairs.length; i++) {
-    const parts = headerPairs[i].split(':').map(Utils.trim);
+    const parts = headerPairs[i].split(':').map((x) => x.trim());
     headers[parts[0].toLowerCase()] = parts[1];
   }
   return headers;
@@ -91,11 +74,10 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     super();
     params = params || {};
     params.rnd = Utils.cheapRandStr();
-    if (needJsonEnvelope() && !params.envelope) params.envelope = 'json';
     this.uri = uri + Utils.toQueryString(params);
     this.headers = headers || {};
     this.body = body;
-    this.method = method ? method.toUpperCase() : Utils.isEmptyArg(body) ? 'GET' : 'POST';
+    this.method = method ? method.toUpperCase() : Utils.isNil(body) ? 'GET' : 'POST';
     this.requestMode = requestMode;
     this.timeouts = timeouts;
     this.timedOut = false;
@@ -273,7 +255,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
        * is contains an error action (hence the nonsuccess statuscode), we can
        * consider the request to have succeeded, just pass it on to
        * onProtocolMessage to decide what to do */
-      if (successResponse || Utils.isArray(parsedResponse)) {
+      if (successResponse || Array.isArray(parsedResponse)) {
         this.complete(null, parsedResponse, headers, unpacked, statusCode);
         return;
       }
@@ -327,8 +309,6 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       if (xhr.status !== 0) {
         if (statusCode === undefined) {
           statusCode = xhr.status;
-          /* IE returns 1223 for 204: http://bugs.jquery.com/ticket/1450 */
-          if (statusCode === 1223) statusCode = 204;
           onResponse();
         }
         if (readyState == 3 && streaming) {

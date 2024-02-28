@@ -2,7 +2,6 @@
 
 define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var expect = chai.expect;
-  var utils = helper.Utils;
   var goodHost;
 
   describe('rest/fallbacks', function () {
@@ -43,7 +42,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         'Check validUntil is the same (implying currentFallback has not been re-set)'
       );
       /* set the validUntil to the past and check that the stored fallback is forgotten */
-      var now = utils.now();
+      var now = Date.now();
       rest._currentFallback.validUntil = now - 1000;
       var serverTime = await rest.time();
       expect(serverTime, 'Check serverTime returned').to.be.ok;

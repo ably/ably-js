@@ -12,6 +12,7 @@ import Auth from '../client/auth';
 import * as API from '../../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Platform from 'common/platform';
+import TransportName from '../../constants/TransportName';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
@@ -72,7 +73,7 @@ abstract class Transport extends EventEmitter {
     this.lastActivity = null;
   }
 
-  abstract shortName: string;
+  abstract shortName: TransportName;
   abstract send(message: ProtocolMessage): void;
 
   connect(): void {}
@@ -257,7 +258,7 @@ abstract class Transport extends EventEmitter {
     if (!this.maxIdleInterval) {
       return;
     }
-    this.lastActivity = this.connectionManager.lastActivity = Utils.now();
+    this.lastActivity = this.connectionManager.lastActivity = Date.now();
     this.setIdleTimer(this.maxIdleInterval + 100);
   }
 
@@ -274,7 +275,7 @@ abstract class Transport extends EventEmitter {
       throw new Error('Transport.onIdleTimerExpire(): lastActivity/maxIdleInterval not set');
     }
     this.idleTimer = null;
-    const sinceLast = Utils.now() - this.lastActivity;
+    const sinceLast = Date.now() - this.lastActivity;
     const timeRemaining = this.maxIdleInterval - sinceLast;
     if (timeRemaining <= 0) {
       const msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';

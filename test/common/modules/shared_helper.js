@@ -34,7 +34,7 @@ define([
   }
 
   function monitorConnection(done, realtime, states) {
-    utils.arrForEach(states || ['failed', 'suspended'], function (state) {
+    (states || ['failed', 'suspended']).forEach(function (state) {
       realtime.connection.on(state, function () {
         done(new Error('Connection monitoring: state changed to ' + state + ', aborting test'));
         realtime.close();
@@ -50,7 +50,7 @@ define([
       return;
     }
     if (Object.prototype.toString.call(realtime) == '[object Array]') {
-      var realtimes = utils.arrFilter(realtime, function (rt) {
+      var realtimes = realtime.filter(function (rt) {
         return rt !== undefined;
       });
       closeAndFinishSeveral(done, realtimes, err);
@@ -141,7 +141,7 @@ define([
   function testOnAllTransports(name, testFn, excludeUpgrade, skip) {
     var itFn = skip ? it.skip : it;
     let transports = availableTransports;
-    utils.arrForEach(transports, function (transport) {
+    transports.forEach(function (transport) {
       itFn(
         name + '_with_' + transport + '_binary_transport',
         testFn({ transports: [transport], useBinaryProtocol: true })
@@ -192,35 +192,6 @@ define([
   function isWebsocket(transport) {
     return !!transport.toString().match(/wss?\:/);
   }
-
-  var arrFind = Array.prototype.find
-    ? function (arr, predicate) {
-        return arr.find(predicate);
-      }
-    : function (arr, predicate) {
-        var value;
-        for (var i = 0; i < arr.length; i++) {
-          value = arr[i];
-          if (predicate(value)) {
-            return value;
-          }
-        }
-        return undefined;
-      };
-
-  var arrFilter = Array.prototype.filter
-    ? function (arr, predicate) {
-        return arr.filter(predicate);
-      }
-    : function (arr, predicate) {
-        var res = [];
-        for (var i = 0; i < arr.length; i++) {
-          if (predicate(arr[i])) {
-            res.push(arr[i]);
-          }
-        }
-        return res;
-      };
 
   function randomString() {
     return Math.random().toString().slice(2);
@@ -279,8 +250,6 @@ define([
     isWebsocket: isWebsocket,
     unroutableHost: unroutableHost,
     unroutableAddress: unroutableAddress,
-    arrFind: arrFind,
-    arrFilter: arrFilter,
     whenPromiseSettles: whenPromiseSettles,
     randomString: randomString,
     testMessageEquality: testMessageEquality,

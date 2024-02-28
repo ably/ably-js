@@ -12,7 +12,7 @@ define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably
 
     /* Use a default api key if no auth methods provided */
     if (
-      utils.arrEvery(authMethods, function (method) {
+      authMethods.every(function (method) {
         return !(method in clientOptions);
       })
     ) {

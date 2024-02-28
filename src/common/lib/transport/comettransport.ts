@@ -21,7 +21,7 @@ function shouldBeErrorAction(err: ErrorInfo) {
   const UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
   if (err.code) {
     if (Auth.isTokenErr(err)) return false;
-    if (Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
+    if (UNRESOLVABLE_ERROR_CODES.includes(err.code)) return true;
     return err.code >= 40000 && err.code < 50000;
   } else {
     /* Likely a network or transport error of some kind. Certainly not fatal to the connection */

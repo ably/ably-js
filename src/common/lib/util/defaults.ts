@@ -217,7 +217,7 @@ export function normaliseOptions(options: InternalClientOptions, MsgPack: MsgPac
   const restHost = options.restHost || (production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST);
   const realtimeHost = getRealtimeHost(options, production, environment);
 
-  Utils.arrForEach((options.fallbackHosts || []).concat(restHost, realtimeHost), checkHost);
+  (options.fallbackHosts || []).concat(restHost, realtimeHost).forEach(checkHost);
 
   options.port = options.port || Defaults.PORT;
   options.tlsPort = options.tlsPort || Defaults.TLS_PORT;

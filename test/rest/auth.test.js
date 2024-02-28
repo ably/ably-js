@@ -59,7 +59,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     });
 
     it('Token generation with invalid timestamp', async function () {
-      var badTime = utils.now() - 30 * 60 * 1000;
+      var badTime = Date.now() - 30 * 60 * 1000;
       try {
         var tokenDetails = await rest.auth.requestToken({ timestamp: badTime });
       } catch (err) {

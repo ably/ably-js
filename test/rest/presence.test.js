@@ -6,7 +6,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var expect = chai.expect;
   var Crypto = Ably.Realtime.Platform.Crypto;
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
-  var arrFind = helper.arrFind;
 
   function cipherParamsFromConfig(cipherConfig) {
     var cipherParams = new Crypto.CipherParams();
@@ -41,16 +40,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         if (presenceMessages.length != 6) {
           console.log('presenceMessages: ', JSON.stringify(presenceMessages));
         }
-        var encodedMessage = arrFind(presenceMessages, function (msg) {
+        var encodedMessage = presenceMessages.find(function (msg) {
           return msg.clientId == 'client_encoded';
         });
-        var decodedMessage = arrFind(presenceMessages, function (msg) {
+        var decodedMessage = presenceMessages.find(function (msg) {
           return msg.clientId == 'client_decoded';
         });
-        var boolMessage = arrFind(presenceMessages, function (msg) {
+        var boolMessage = presenceMessages.find(function (msg) {
           return msg.clientId == 'client_bool';
         });
-        var intMessage = arrFind(presenceMessages, function (msg) {
+        var intMessage = presenceMessages.find(function (msg) {
           return msg.clientId == 'client_int';
         });
         expect(encodedMessage.data).to.deep.equal(decodedMessage.data, 'Verify message decoding works correctly');
@@ -71,7 +70,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var channel = rest.channels.get('persisted:presence_fixtures');
       var resultPage = await channel.presence.get();
       var presenceMessages = resultPage.items;
-      var presenceBool = arrFind(presenceMessages, function (msg) {
+      var presenceBool = presenceMessages.find(function (msg) {
         return msg.clientId == 'client_bool';
       });
       expect(JSON.parse(JSON.stringify(presenceBool)).action).to.equal(1); // present

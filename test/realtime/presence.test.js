@@ -10,15 +10,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var whenPromiseSettles = helper.whenPromiseSettles;
 
   function extractClientIds(presenceSet) {
-    return utils
-      .arrMap(presenceSet, function (presmsg) {
+    return presenceSet
+      .map(function (presmsg) {
         return presmsg.clientId;
       })
       .sort();
   }
 
   function extractMember(presenceSet, clientId) {
-    return helper.arrFind(presenceSet, function (member) {
+    return presenceSet.find(function (member) {
       return member.clientId === clientId;
     });
   }
@@ -780,8 +780,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           var presenceMessages = resultPage.items;
           expect(presenceMessages.length).to.equal(2, 'Verify correct number of presence messages found');
-          var actions = utils
-            .arrMap(presenceMessages, function (msg) {
+          var actions = presenceMessages
+            .map(function (msg) {
               return msg.action;
             })
             .sort();
@@ -1372,8 +1372,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       function checkPresence(first, second, cb) {
         whenPromiseSettles(observerChannel.presence.get(), function (err, presenceMembers) {
-          var clientIds = utils
-            .arrMap(presenceMembers, function (msg) {
+          var clientIds = presenceMembers
+            .map(function (msg) {
               return msg.clientId;
             })
             .sort();
@@ -1810,7 +1810,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 14,
                 id: 'messageid:0',
                 connectionId: 'connid',
-                timestamp: utils.now(),
+                timestamp: Date.now(),
                 presence: [
                   {
                     clientId: goneClientId,
@@ -1899,7 +1899,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 14,
                 id: 'messageid:0',
                 connectionId: 'connid',
-                timestamp: utils.now(),
+                timestamp: Date.now(),
                 presence: [
                   {
                     clientId: fakeClientId,

@@ -3,10 +3,11 @@
 define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var expect = chai.expect;
   var utils = helper.Utils;
-  var preAttachMessages = utils.arrMap([1, 2, 3, 4, 5], function (i) {
+  var indexes = [1, 2, 3, 4, 5];
+  var preAttachMessages = indexes.map(function (i) {
     return { name: 'pre-attach-' + i, data: 'some data' };
   });
-  var postAttachMessages = utils.arrMap([1, 2, 3, 4, 5], function (i) {
+  var postAttachMessages = indexes.map(function (i) {
     return { name: 'post-attach-' + i, data: 'some data' };
   });
   var closeAndFinish = helper.closeAndFinish;
@@ -14,7 +15,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var whenPromiseSettles = helper.whenPromiseSettles;
 
   var parallelPublishMessages = function (done, channel, messages, callback) {
-    var publishTasks = utils.arrMap(messages, function (event) {
+    var publishTasks = messages.map(function (event) {
       return function (publishCb) {
         whenPromiseSettles(channel.publish(event.name, event.data), publishCb);
       };
@@ -120,7 +121,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                           'Verify right number of messages returned when untilAttached is true'
                         );
                         expect(
-                          utils.arrEvery(messages, function (message) {
+                          messages.every(function (message) {
                             return message.name.substring(0, 10) == 'pre-attach';
                           }),
                           'Verify all returned messages were pre-attach ones'

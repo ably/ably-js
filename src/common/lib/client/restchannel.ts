@@ -22,7 +22,7 @@ import { RequestBody } from 'common/types/http';
 const MSG_ID_ENTROPY_BYTES = 9;
 
 function allEmptyIds(messages: Array<Message>) {
-  return Utils.arrEvery(messages, function (message: Message) {
+  return messages.every(function (message: Message) {
     return !message.id;
   });
 }
@@ -63,7 +63,7 @@ class RestChannel {
     } else if (Utils.isObject(first)) {
       messages = [messageFromValues(first)];
       params = args[1];
-    } else if (Utils.isArray(first)) {
+    } else if (Array.isArray(first)) {
       messages = messagesFromValuesArray(first);
       params = args[1];
     } else {
@@ -88,8 +88,8 @@ class RestChannel {
     Utils.mixin(headers, options.headers);
 
     if (idempotentRestPublishing && allEmptyIds(messages)) {
-      const msgIdBase = Utils.randomString(MSG_ID_ENTROPY_BYTES);
-      Utils.arrForEach(messages, function (message, index) {
+      const msgIdBase = await Utils.randomString(MSG_ID_ENTROPY_BYTES);
+      messages.forEach(function (message, index) {
         message.id = msgIdBase + ':' + index.toString();
       });
     }

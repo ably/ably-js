@@ -45,7 +45,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       const res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
       expect(res.statusCode).to.equal(200, 'Check statusCode');
       expect(res.success).to.equal(true, 'Check success');
-      expect(utils.isArray(res.items), true, 'Check array returned').to.be.ok;
+      expect(Array.isArray(res.items), true, 'Check array returned').to.be.ok;
       expect(res.items.length).to.equal(1, 'Check array was of length 1');
     });
 
@@ -167,7 +167,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    utils.arrForEach(['put', 'patch', 'delete'], function (method) {
+    ['put', 'patch', 'delete'].forEach(function (method) {
       it('check' + method, async function () {
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
         var res = await restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {});
