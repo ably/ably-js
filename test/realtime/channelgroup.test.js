@@ -416,7 +416,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           await activeChannel.attach();
           activeChannel.publish('event0', testMsg);
 
-          // wait for all consumers to appear in the group
+          // wait for first consumer to appear in the group
           await waitForConsumers(realtime1.channels.get('testgroup'), 1);
 
           // send 2 messages to the first half of the channels
@@ -437,6 +437,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               closeAndFinish(done, [realtime1, realtime2, realtime3]);
             }
           });
+
+          // wait for second consumer to appear in the group
+          await waitForConsumers(realtime1.channels.get('testgroup'), 2);
 
           // send 2 messages to the second half of the channels
           for (let i = Math.floor(channels.length / 2); i < channels.length; i++) {
