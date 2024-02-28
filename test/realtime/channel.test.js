@@ -447,10 +447,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Attach then later call whenState which fires immediately
      */
-    it('channelattachOnceOrIfAfter', function (done) {
+    it('channelattachWhenState', function (done) {
       try {
         var realtime = helper.AblyRealtime(),
-          channel = realtime.channels.get('channelattachOnceOrIf'),
+          channel = realtime.channels.get('channelattachWhenState'),
           firedImmediately = false;
 
         whenPromiseSettles(channel.attach(), function (err) {
