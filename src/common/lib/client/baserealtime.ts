@@ -131,7 +131,7 @@ class ConsumerGroup extends EventEmitter {
       await this.channel.attach();
       await this.channel.presence.enter(null);
       await this.computeMembership();
-      this.channel.presence.on(() => this.computeMembership());
+      this.channel.presence.subscribe(() => this.computeMembership());
     } catch (err) {
       Logger.logAction(
         Logger.LOG_ERROR,
