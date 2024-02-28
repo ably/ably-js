@@ -94,7 +94,6 @@ class ConsumerGroup extends EventEmitter {
   consumerId: string;
 
   private channel?: RealtimeChannel;
-  private currentMembers: string[] = [];
   private hashring: HashRing;
   private computeMembershipListener: () => Promise<void>;
 
@@ -184,7 +183,7 @@ class ConsumerGroup extends EventEmitter {
       const result = await this.channel.presence.get({ waitForSync: true });
 
       const memberIds = result?.filter((member) => member.clientId).map((member) => member.clientId!) || [];
-      const { add, remove } = diffSets(this.currentMembers, memberIds);
+      const { add, remove } = diffSets(this.hashring.getNodes(), memberIds);
 
       Logger.logAction(
         Logger.LOG_DEBUG,
@@ -201,6 +200,11 @@ class ConsumerGroup extends EventEmitter {
       });
 
       this.emit('membership');
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ConsumerGroup.computeMembership()',
+        'membership computed, consumerId=' + this.consumerId + ' state=' + this.hashring.getNodes()
+      );
     } catch (err) {
       Logger.logAction(
         Logger.LOG_ERROR,
