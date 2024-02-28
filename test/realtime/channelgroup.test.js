@@ -458,7 +458,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // subscribe the first consumer and collect results
           const results = Array.from({ length: consumers.length }, () => []);
           await consumers[0].subscribe((channel, msg) => {
-            console.log(0, channel, msg.data);
             results[0].push({ channel, name: msg.name, data: msg.data });
             if (results.flat().length === 2 * channels.length) {
               // we allow duplicates as exactly-once delivery is not guaranteed in the client-side simulation
@@ -480,14 +479,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           // send 2 messages to the first half of the channels
           for (let i = 0; i < Math.floor(channels.length / 2); i++) {
-            console.log(i, 'publish');
             channels[i].publish('event0', `test data ${i}`);
             channels[i].publish('event1', `test data ${i}`);
           }
 
           // subscribe the second consumer and collect results
           await consumers[1].subscribe((channel, msg) => {
-            console.log(1, channel, msg.data);
             results[1].push({ channel, name: msg.name, data: msg.data });
             if (results.flat().length === 2 * channels.length) {
               // we allow duplicates as exactly-once delivery is not guaranteed in the client-side simulation
@@ -502,7 +499,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           // send 2 messages to the second half of the channels
           for (let i = Math.floor(channels.length / 2); i < channels.length; i++) {
-            console.log(i, 'publish');
             channels[i].publish('event0', `test data ${i}`);
             channels[i].publish('event1', `test data ${i}`);
           }
