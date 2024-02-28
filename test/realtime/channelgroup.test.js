@@ -307,6 +307,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     }
 
+    function uniqueResults(results) {
+      return utils.arrUniqueBy(results, (elem) => `${elem.channel}:${elem.name}`);
+    }
+
     function assertResults(results, numChannels, channelPrefix, allowDuplicates) {
       // expect each consumer to have received at least 1 message
       for (let i = 0; i < results.length; i++) {
@@ -322,7 +326,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
       // is duplicates allowed, make unique
       if (allowDuplicates) {
-        allResults = utils.arrUniqueBy(allResults, (elem) => `${elem.channel}:${elem.name}`);
+        allResults = uniqueResults(allResults);
       }
       // expect to have received 2 messages from each channel across all consumers
       for (let i = 0; i < numChannels; i += 2) {
@@ -465,7 +469,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           await consumers[0].subscribe((channel, msg) => {
             expect(hasLeft).to.be.false;
             results[0].push({ channel, name: msg.name, data: msg.data });
-            if (results.flat().length === 2 * channels.length) {
+            if (uniqueResults(results.flat()).length === 2 * channels.length) {
               // we allow duplicates as exactly-once delivery is not guaranteed in the client-side simulation
               // of channel/consumer groups due to the use of rewind on consumer group resizing
               assertResults(results, channels.length, prefix, true);
@@ -492,7 +496,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // subscribe the second consumer and collect results
           await consumers[1].subscribe((channel, msg) => {
             results[1].push({ channel, name: msg.name, data: msg.data });
-            if (results.flat().length === 2 * channels.length) {
+            if (uniqueResults(results.flat()).length === 2 * channels.length) {
               // we allow duplicates as exactly-once delivery is not guaranteed in the client-side simulation
               // of channel/consumer groups due to the use of rewind on consumer group resizing
               assertResults(results, channels.length, prefix, true);
