@@ -124,6 +124,65 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, realtime);
     });
 
+    it('leaves the channel group', function (done) {
+      const prefix = utils.cheapRandStr();
+      const activeChannelName = `${prefix}:active`;
+      // set up realtime
+      let realtime1 = helper.AblyRealtime();
+      let realtime2 = helper.AblyRealtime();
+      realtime1.options.clientId = 'client1';
+      realtime2.options.clientId = 'client2';
+
+      // connect and attach
+      Promise.all([
+        new Promise((resolve) => realtime1.connection.on('connected', resolve)),
+        new Promise((resolve) => realtime2.connection.on('connected', resolve)),
+      ])
+        .then(async () => {
+          try {
+            // TODO(mschristensen): use a single client and subscribe to the channel directly when the channel group no longer shares the channels object
+            const channelGroup1 = realtime1.channelGroups.get(`${prefix}.*`, { activeChannel: activeChannelName });
+            const channelGroup2 = realtime2.channelGroups.get(`${prefix}.*`, { activeChannel: activeChannelName });
+            const activeChannel = realtime1.channels.get(activeChannelName);
+            const channel = realtime1.channels.get(`${prefix}:channel1`);
+
+            // subscribe to channel group and assert results
+            let events = 0;
+            await channelGroup1.subscribe(() => {
+              expect(events).to.be.lessThan(3, 'Unexpected number of messages received');
+            });
+            await channelGroup2.subscribe(() => {
+              events++;
+              if (events < 3) {
+                return;
+              }
+              closeAndFinish(done, [realtime1, realtime2]);
+            });
+
+            // publish active channels
+            await activeChannel.attach();
+            activeChannel.publish('event0', {
+              active: [`${prefix}:channel1`],
+            });
+            // publish first message
+            channel.publish('event0', 'test data');
+            channel.publish('event1', 'test data');
+
+            // leave the first channel group and publish the last message to end the test
+            channelGroup1.leave();
+            channel.publish('event2', 'test data');
+          } catch (err) {
+            closeAndFinish(done, [realtime1, realtime2], err);
+            return;
+          }
+          monitorConnection(done, realtime1);
+          monitorConnection(done, realtime2);
+        })
+        .catch((err) => {
+          closeAndFinish(done, [realtime1, realtime2], err);
+        });
+    });
+
     it('ignores channels not matched on filter', function (done) {
       const prefix = utils.cheapRandStr();
       const activeChannelName = `${prefix}:active`;

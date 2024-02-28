@@ -96,6 +96,7 @@ class ConsumerGroup extends EventEmitter {
   private channel?: RealtimeChannel;
   private currentMembers: string[] = [];
   private hashring: HashRing;
+  private computeMembershipListener: () => Promise<void>;
 
   constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
     super();
@@ -104,6 +105,7 @@ class ConsumerGroup extends EventEmitter {
     // If the client ID is not set, then we generate a random one.
     this.consumerId = this.channels.realtime.options.clientId || this.randomConsumerId();
     this.hashring = new HashRing([this.consumerId]);
+    this.computeMembershipListener = this.computeMembership.bind(this); // we need the exact reference to unsubscribe
   }
 
   private randomConsumerId() {
@@ -132,12 +134,39 @@ class ConsumerGroup extends EventEmitter {
       await this.channel.attach();
       await this.channel.presence.enter(null);
       await this.computeMembership();
-      this.channel.presence.subscribe(() => this.computeMembership());
+      this.channel.presence.subscribe(this.computeMembershipListener);
     } catch (err) {
       Logger.logAction(
         Logger.LOG_ERROR,
         'ConsumerGroup.join()',
         'failed to enter presence set on consumer group channel:' + err
+      );
+    }
+  }
+
+  async leave() {
+    if (!this.consumerGroupName) {
+      return;
+    }
+    try {
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ConsumerGroup.leave()',
+        'leaving consumer group ' + this.consumerGroupName + ' as ' + this.consumerId
+      );
+      if (!this.channel) {
+        Logger.logAction(Logger.LOG_ERROR, 'ConsumerGroup.leave()', 'leave called with no channel initialised');
+        return;
+      }
+      this.channel.presence.unsubscribe(this.computeMembershipListener);
+      await this.channel.presence.leave(null);
+      await this.channel.detach();
+      this.channel = undefined;
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ConsumerGroup.leave()',
+        'failed to leave presence set on consumer group channel:' + err
       );
     }
   }
@@ -202,7 +231,7 @@ class ChannelGroup {
 
   constructor(readonly channels: Channels, filter: string, options?: API.ChannelGroupOptions) {
     this.subscriptions = new EventEmitter();
-    this.active = channels.get(options?.activeChannel || '$ably:active', { params: { rewind: '1' } });
+    this.active = channels.get(options?.activeChannel || '$ably:active');
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
     this.consumerGroup.on('membership', () => this.updateAssignedChannels());
     this.expression = new RegExp(filter); // eslint-disable-line security/detect-non-literal-regexp
@@ -210,10 +239,19 @@ class ChannelGroup {
 
   async join() {
     await this.consumerGroup.join();
+    await this.active.setOptions({ params: { rewind: '1' } });
     await this.active.subscribe((msg: any) => {
       this.activeChannels = msg.data.active;
       this.updateAssignedChannels();
     });
+  }
+
+  async leave() {
+    this.active.unsubscribe();
+    await this.active.detach();
+    await this.consumerGroup.leave();
+    this.assignedChannels = [];
+    this.removeSubscriptions(Object.keys(this.subscribedChannels));
   }
 
   private updateAssignedChannels() {
