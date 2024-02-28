@@ -18,27 +18,26 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('subscribes to active', function (done) {
+      const prefix = utils.cheapRandStr();
+      const activeChannelName = `${prefix}:active`;
       // set up realtime
       let realtime = helper.AblyRealtime();
       realtime.options.clientId = 'testclient';
 
-      /* connect and attach */
+      // connect and attach
       realtime.connection.on('connected', async function () {
         try {
-          const channelGroup = realtime.channelGroups.get('.*', { activeChannel: 'active' });
+          const channelGroup = realtime.channelGroups.get(`${prefix}.*`, { activeChannel: activeChannelName });
+          const activeChannel = realtime.channels.get(activeChannelName);
+          const dataChannel1 = realtime.channels.get(`${prefix}:channel1`);
+          const dataChannel2 = realtime.channels.get(`${prefix}:channel2`);
 
-          let testMsg = { active: ['channel1', 'channel2', 'channel3'] };
-          let activeChannel = realtime.channels.get('active');
-          let dataChannel1 = realtime.channels.get('channel1');
-          let dataChannel2 = realtime.channels.get('channel2');
-          await activeChannel.attach();
+          // subscribe to channel group and assert results
           let events = 1;
-
-          /* subscribe to channel group */
           await channelGroup.subscribe((channel, msg) => {
             try {
-              expect(msg.data).to.equal('test data ' + events, 'Unexpected msg text received');
-              expect(channel).to.equal('channel' + events, 'Unexpected channel name');
+              expect(msg.data).to.equal(`test data ${events}`, 'Unexpected msg text received');
+              expect(channel).to.equal(`${prefix}:channel${events}`, 'Unexpected channel name');
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -53,8 +52,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             closeAndFinish(done, realtime);
           });
 
-          /* publish active channels */
-          activeChannel.publish('event0', testMsg);
+          // publish active channels
+          await activeChannel.attach();
+          activeChannel.publish('event0', {
+            active: [`${prefix}:channel1`, `${prefix}:channel2`, `${prefix}:channel3`],
+          });
+          // publish first message
           dataChannel1.publish('event0', 'test data 1');
         } catch (err) {
           closeAndFinish(done, realtime, err);
@@ -65,26 +68,26 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('ignores channels not matched on filter', function (done) {
-      /* set up realtime */
+      const prefix = utils.cheapRandStr();
+      const activeChannelName = `${prefix}:active`;
+      // set up realtime
       let realtime = helper.AblyRealtime();
       realtime.options.clientId = 'testclient';
 
-      /* connect and attach */
+      // connect and attach
       realtime.connection.on('connected', async function () {
         try {
-          const channelGroup = realtime.channelGroups.get('include:.*', { activeChannel: 'active' });
+          const channelGroup = realtime.channelGroups.get(`${prefix}:include:.*`, { activeChannel: activeChannelName });
 
-          let testMsg = { active: ['include:channel1', 'stream3'] };
-          let activeChannel = realtime.channels.get('active');
-          let dataChannel1 = realtime.channels.get('include:channel1');
-          let streamChannel3 = realtime.channels.get('stream3');
+          const activeChannel = realtime.channels.get(activeChannelName);
+          const dataChannel1 = realtime.channels.get(`${prefix}:include:channel1`);
+          const streamChannel3 = realtime.channels.get(`${prefix}:stream3`);
 
-          await activeChannel.attach();
-          /* subscribe to channel group */
+          // subscribe to channel group and assert results
           await channelGroup.subscribe((channel, msg) => {
             try {
               expect(msg.data).to.equal('test data 1', 'Unexpected msg text received');
-              expect(channel).to.equal('include:channel1', 'Unexpected channel name');
+              expect(channel).to.equal(`${prefix}:include:channel1`, 'Unexpected channel name');
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -92,8 +95,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             closeAndFinish(done, realtime);
           });
 
-          /* publish active channels */
-          activeChannel.publish('event0', testMsg);
+          // publish active channels
+          await activeChannel.attach();
+          activeChannel.publish('event0', { active: [`${prefix}:include:channel1`, `${prefix}:stream3`] });
+
+          // publish messages
           streamChannel3.publish('event0', 'should not be subscribed to this message');
           dataChannel1.publish('event0', 'test data 1');
         } catch (err) {
@@ -105,37 +111,36 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('reacts to changing active channels', function (done) {
-      /* set up realtime */
+      const prefix = utils.cheapRandStr();
+      const activeChannelName = `${prefix}:active`;
+      // set up realtime
       let realtime = helper.AblyRealtime();
       realtime.options.clientId = 'testclient';
 
       /* connect and attach */
       realtime.connection.on('connected', async function () {
         try {
-          const channelGroup = realtime.channelGroups.get('group:.*', { activeChannel: 'active' });
+          const channelGroup = realtime.channelGroups.get(`${prefix}:group:.*`, { activeChannel: activeChannelName });
 
-          let testMsg = { active: ['group:channel1', 'group:channel2', 'group:channel3'] };
-          let activeChannel = realtime.channels.get('active');
-          let dataChannel1 = realtime.channels.get('group:channel1');
-          let dataChannel2 = realtime.channels.get('group:channel2');
-          let dataChannel4 = realtime.channels.get('group:channel4');
-          let dataChannel5 = realtime.channels.get('group:channel5');
+          const activeChannel = realtime.channels.get(activeChannelName);
+          const dataChannel1 = realtime.channels.get(`${prefix}:group:channel1`);
+          const dataChannel2 = realtime.channels.get(`${prefix}:group:channel2`);
+          const dataChannel4 = realtime.channels.get(`${prefix}:group:channel4`);
+          const dataChannel5 = realtime.channels.get(`${prefix}:group:channel5`);
 
-          await activeChannel.attach();
+          // subscribe to channel group and assert results
           let events = 1;
-
-          /* subscribe to channel group */
           await channelGroup.subscribe(async (channel, msg) => {
             try {
-              expect(msg.data).to.equal('test data ' + events, 'Unexpected msg text received');
-              expect(channel).to.equal('group:channel' + events, 'Unexpected channel name');
+              expect(msg.data).to.equal(`test data ${events}`, 'Unexpected msg text received');
+              expect(channel).to.equal(`${prefix}:group:channel${events}`, 'Unexpected channel name');
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
             }
 
             if (events == 1) {
-              activeChannel.publish('event0', { active: ['group:channel4', 'group:channel5'] });
+              activeChannel.publish('event0', { active: [`${prefix}:group:channel4`, `${prefix}:group:channel5`] });
               dataChannel4.publish('event0', 'test data 4');
               events = 4;
               return;
@@ -151,8 +156,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             closeAndFinish(done, realtime);
           });
 
-          /* publish active channels */
-          activeChannel.publish('event0', testMsg);
+          // publish active channels
+          await activeChannel.attach();
+          activeChannel.publish('event0', {
+            active: [`${prefix}:group:channel1`, `${prefix}:group:channel2`, `${prefix}:group:channel3`],
+          });
+          // publish first message
           dataChannel1.publish('event0', 'test data 1');
         } catch (err) {
           closeAndFinish(done, realtime, err);
@@ -195,7 +204,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         if (a.name > b.name) return 1;
         return 0;
       });
-      console.log(allResults);
       // is duplicates allowed, make unique
       if (allowDuplicates) {
         allResults = utils.arrUniqueBy(allResults, (elem) => `${elem.channel}:${elem.name}`);
