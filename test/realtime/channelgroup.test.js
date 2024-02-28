@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var expect = chai.expect;
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
+  var utils = helper.Utils;
 
   describe('realtime/channelgroup', function () {
     this.timeout(60 * 1000);
@@ -174,7 +175,64 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    // wait for n consumers to appear in the given channel's presence set
+    function waitForConsumers(channel, n) {
+      return new Promise(async (resolve, reject) => {
+        const interval = setInterval(async () => {
+          try {
+            const result = await channel.presence.get({ waitForSync: true });
+            if (result.length === n) {
+              resolve();
+              channel.presence.unsubscribe();
+              clearInterval(interval);
+            }
+          } catch (err) {
+            reject(err);
+            channel.presence.unsubscribe();
+            clearInterval(interval);
+          }
+        }, 100);
+      });
+    }
+
+    function assertResults(results, numChannels, channelPrefix, allowDuplicates) {
+      // expect each consumer to have received at least 1 message
+      for (let i = 0; i < results.length; i++) {
+        expect(results[i].length).to.be.greaterThan(0, `consumer ${i} received no messages`);
+      }
+      // sort first on channel, then on message name
+      let allResults = results.flat().sort((a, b) => {
+        if (a.channel < b.channel) return -1;
+        if (a.channel > b.channel) return 1;
+        if (a.name < b.name) return -1;
+        if (a.name > b.name) return 1;
+        return 0;
+      });
+      console.log(allResults);
+      // is duplicates allowed, make unique
+      if (allowDuplicates) {
+        allResults = utils.arrUniqueBy(allResults, elem => `${elem.channel}:${elem.name}`);
+      }
+      // expect to have received 2 messages from each channel across all consumers
+      for (let i = 0; i < numChannels; i += 2) {
+        const baseIndex = i / 2;
+        const data = `test data ${baseIndex}`;
+        const channel = `${channelPrefix}:${baseIndex}`;
+
+        const first = allResults[i];
+        const second = allResults[i + 1];
+
+        expect(first.channel).to.equal(channel);
+        expect(second.channel).to.equal(channel);
+        expect(first.name).to.equal('event0');
+        expect(second.name).to.equal('event1');
+        expect(first.data).to.equal(data);
+        expect(second.data).to.equal(data);
+      }
+    }
+
     it('partitions over consumer group', function (done) {
+      const prefix = utils.cheapRandStr();
       var realtime1 = helper.AblyRealtime(); // for publishing from tests
       // for the consumers
       var realtime2 = helper.AblyRealtime();
@@ -192,11 +250,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         .then(async () => {
           // create 2 consumers in one group
           const consumers = [
-            realtime2.channelGroups.get('partition:.*', {
+            realtime2.channelGroups.get(`${prefix}:.*`, {
               activeChannel: 'active',
               consumerGroup: { name: 'testgroup' },
             }),
-            realtime3.channelGroups.get('partition:.*', {
+            realtime3.channelGroups.get(`${prefix}:.*`, {
               activeChannel: 'active',
               consumerGroup: { name: 'testgroup' },
             }),
@@ -204,42 +262,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           // create 5 channels
           const channels = [];
-          const channelNames = Array.from({ length: 5 }, (_, i) => 'partition:' + i);
+          const channelNames = Array.from({ length: 5 }, (_, i) => `${prefix}:` + i);
           for (const name of channelNames) {
             const channel = realtime1.channels.get(name);
             await channel.attach();
             channels.push(channel);
-          }
-
-          function assertResult(results) {
-            // expect each consumer to have received at least 1 message
-            for (const result of results) {
-              expect(result.length).to.be.greaterThan(0);
-            }
-            // sort first on channel, then on message name
-            const allResults = results.flat().sort((a, b) => {
-              if (a.channel < b.channel) return -1;
-              if (a.channel > b.channel) return 1;
-              if (a.name < b.name) return -1;
-              if (a.name > b.name) return 1;
-              return 0;
-            });
-            // expect to have received 2 messages from each channel across all consumers
-            for (let i = 0; i < channels.length; i += 2) {
-              const baseIndex = i / 2;
-              const data = `test data ${baseIndex}`;
-              const channel = `partition:${baseIndex}`;
-
-              const first = allResults[i];
-              const second = allResults[i + 1];
-
-              expect(first.channel).to.equal(channel);
-              expect(second.channel).to.equal(channel);
-              expect(first.name).to.equal('event0');
-              expect(second.name).to.equal('event1');
-              expect(first.data).to.equal(data);
-              expect(second.data).to.equal(data);
-            }
           }
 
           // subscribe each consumer and collect results
@@ -249,7 +276,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             await consumers[i].subscribe((channel, msg) => {
               results[i].push({ channel, name: msg.name, data: msg.data });
               if (results.flat().length === 2 * channels.length) {
-                assertResult(results);
+                assertResults(results, channels.length, prefix, false);
                 closeAndFinish(done, [realtime1, realtime2, realtime3]);
               }
             });
@@ -258,38 +285,115 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var testMsg = { active: channelNames };
           var activeChannel = realtime1.channels.get('active');
 
-          try {
-            // publish active channels
-            await activeChannel.attach();
-            activeChannel.publish('event0', testMsg);
+          // publish active channels
+          await activeChannel.attach();
+          activeChannel.publish('event0', testMsg);
 
-            // wait for all consumers to appear in the group
-            await new Promise(async (resolve, reject) => {
-              const ch = realtime1.channels.get('testgroup');
-              const interval = setInterval(async () => {
-                try {
-                  const result = await ch.presence.get({ waitForSync: true });
-                  if (result.length === consumers.length) {
-                    resolve();
-                    ch.presence.unsubscribe();
-                    clearInterval(interval);
-                  }
-                } catch (err) {
-                  reject(err);
-                  ch.presence.unsubscribe();
-                  clearInterval(interval);
-                }
-              }, 100);
-            });
+          // wait for all consumers to appear in the group
+          await waitForConsumers(realtime1.channels.get('testgroup'), consumers.length);
 
-            // send 2 messages to each channel
-            for (let i = 0; i < channels.length; i++) {
-              channels[i].publish('event0', `test data ${i}`);
-              channels[i].publish('event1', `test data ${i}`);
+          // send 2 messages to each channel
+          for (let i = 0; i < channels.length; i++) {
+            channels[i].publish('event0', `test data ${i}`);
+            channels[i].publish('event1', `test data ${i}`);
+          }
+
+          monitorConnection(done, realtime1);
+          monitorConnection(done, realtime2);
+          monitorConnection(done, realtime3);
+        })
+        .catch((err) => {
+          closeAndFinish(done, [realtime1, realtime2, realtime3], err);
+        });
+    });
+
+    it('dynamically rebalances the consumer group', function (done) {
+      const prefix = utils.cheapRandStr();
+      var realtime1 = helper.AblyRealtime(); // for publishing from tests
+      // for the consumers
+      var realtime2 = helper.AblyRealtime();
+      var realtime3 = helper.AblyRealtime();
+      realtime1.options.clientId = 'testclient';
+      realtime2.options.clientId = 'consumer1';
+      realtime3.options.clientId = 'consumer2';
+
+      // connect
+      Promise.all([
+        new Promise((resolve) => realtime1.connection.on('connected', resolve)),
+        new Promise((resolve) => realtime2.connection.on('connected', resolve)),
+        new Promise((resolve) => realtime3.connection.on('connected', resolve)),
+      ])
+        .then(async () => {
+          // create 2 consumers in one group
+          const consumers = [
+            realtime2.channelGroups.get(`${prefix}:.*`, {
+              activeChannel: 'active',
+              consumerGroup: { name: 'testgroup' },
+            }),
+            realtime3.channelGroups.get(`${prefix}:.*`, {
+              activeChannel: 'active',
+              consumerGroup: { name: 'testgroup' },
+            }),
+          ];
+
+          // create 5 channels
+          const channels = [];
+          const channelNames = Array.from({ length: 5 }, (_, i) => `${prefix}:` + i);
+          for (const name of channelNames) {
+            const channel = realtime1.channels.get(name);
+            await channel.attach();
+            channels.push(channel);
+          }
+
+          // subscribe the first consumer and collect results
+          const results = Array.from({ length: consumers.length }, () => []);
+          await consumers[0].join();
+          await consumers[0].subscribe((channel, msg) => {
+            console.log(0, channel, msg.data);
+            results[0].push({ channel, name: msg.name, data: msg.data });
+            if (results.flat().length === 2 * channels.length) {
+              // we allow duplicates as exactly-once delivery is not guaranteed in the client-side simulation
+              // of channel/consumer groups due to the use of rewind on consumer group resizing
+              assertResults(results, channels.length, prefix, true);
+              closeAndFinish(done, [realtime1, realtime2, realtime3]);
             }
-          } catch (err) {
-            closeAndFinish(done, [realtime1, realtime2, realtime3], err);
-            return;
+          });
+
+          var testMsg = { active: channelNames };
+          var activeChannel = realtime1.channels.get('active');
+
+          // publish active channels
+          await activeChannel.attach();
+          activeChannel.publish('event0', testMsg);
+
+          // wait for all consumers to appear in the group
+          await waitForConsumers(realtime1.channels.get('testgroup'), 1);
+
+          // send 2 messages to the first half of the channels
+          for (let i = 0; i < Math.floor(channels.length / 2); i++) {
+            console.log(i, 'publish')
+            channels[i].publish('event0', `test data ${i}`);
+            channels[i].publish('event1', `test data ${i}`);
+          }
+
+          // subscribe the second consumer and collect results
+          await consumers[1].join();
+          await consumers[1].subscribe((channel, msg) => {
+            console.log(1, channel, msg.data);
+            results[1].push({ channel, name: msg.name, data: msg.data });
+            if (results.flat().length === 2 * channels.length) {
+              // we allow duplicates as exactly-once delivery is not guaranteed in the client-side simulation
+              // of channel/consumer groups due to the use of rewind on consumer group resizing
+              assertResults(results, channels.length, prefix, true);
+              closeAndFinish(done, [realtime1, realtime2, realtime3]);
+            }
+          });
+
+          // send 2 messages to the second half of the channels
+          for (let i = Math.floor(channels.length / 2); i < channels.length; i++) {
+            console.log(i, 'publish')
+            channels[i].publish('event0', `test data ${i}`);
+            channels[i].publish('event1', `test data ${i}`);
           }
 
           monitorConnection(done, realtime1);

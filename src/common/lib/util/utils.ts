@@ -202,6 +202,24 @@ export const arrIndexOf = (Array.prototype.indexOf as unknown)
       return -1;
     };
 
+export function arrIndexOfBy<T>(arr: Array<T>, iteratee: (value: T) => unknown, elem: unknown, fromIndex: number = 0): number {
+  const len = arr.length;
+  for (; fromIndex < len; fromIndex++) {
+    if (iteratee(arr[fromIndex]) === elem) {
+      return fromIndex;
+    }
+  }
+  return -1;
+}
+
+export function arrUnique<T>(arr: Array<T>): Array<T> {
+  return arrFilter(arr, (value, index) => arrIndexOf(arr, value) === index);
+}
+
+export function arrUniqueBy<T>(arr: Array<T>, iteratee: (value: T) => unknown): Array<T> {
+  return arrFilter(arr, (value, index) => arrIndexOfBy(arr, iteratee, iteratee(value)) === index);
+}
+
 export function arrIn(arr: Array<unknown>, val: unknown): boolean {
   return arrIndexOf(arr, val) !== -1;
 }
