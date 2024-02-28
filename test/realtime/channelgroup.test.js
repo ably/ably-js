@@ -446,9 +446,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             }),
           ];
 
-          // create 5 channels
+          // create 10 channels
           const channels = [];
-          const channelNames = Array.from({ length: 5 }, (_, i) => `${prefix}:` + i);
+          const channelNames = Array.from({ length: 10 }, (_, i) => `${prefix}:` + i);
           for (const name of channelNames) {
             const channel = realtime1.channels.get(name);
             await channel.attach();
@@ -457,7 +457,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           // subscribe the first consumer and collect results
           const results = Array.from({ length: consumers.length }, () => []);
+          let hasLeft = false;
           await consumers[0].subscribe((channel, msg) => {
+            expect(hasLeft).to.be.false;
             results[0].push({ channel, name: msg.name, data: msg.data });
             if (results.flat().length === 2 * channels.length) {
               // we allow duplicates as exactly-once delivery is not guaranteed in the client-side simulation
@@ -477,8 +479,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // wait for first consumer to appear in the group
           await waitForConsumers(realtime1.channels.get('testgroup'), 1);
 
-          // send 2 messages to the first half of the channels
-          for (let i = 0; i < Math.floor(channels.length / 2); i++) {
+          // send 2 messages to the first third of the channels
+          for (let i = 0; i < Math.floor(channels.length / 3); i++) {
             channels[i].publish('event0', `test data ${i}`);
             channels[i].publish('event1', `test data ${i}`);
           }
@@ -497,8 +499,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // wait for second consumer to appear in the group
           await waitForConsumers(realtime1.channels.get('testgroup'), 2);
 
-          // send 2 messages to the second half of the channels
-          for (let i = Math.floor(channels.length / 2); i < channels.length; i++) {
+          // send 2 messages to the second third of the channels
+          for (let i = Math.floor(channels.length / 3); i < 2 * Math.floor(channels.length / 3); i++) {
+            channels[i].publish('event0', `test data ${i}`);
+            channels[i].publish('event1', `test data ${i}`);
+          }
+
+          // the first consumer leaves the group, remaining messages should be received by the second consumer
+          await consumers[0].leave();
+          hasLeft = true;
+          await waitForConsumers(realtime1.channels.get('testgroup'), 1);
+
+          // send 2 messages to the final third of the channels
+          for (let i = 2 * Math.floor(channels.length / 3); i < channels.length; i++) {
             channels[i].publish('event0', `test data ${i}`);
             channels[i].publish('event1', `test data ${i}`);
           }
