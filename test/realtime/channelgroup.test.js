@@ -1,10 +1,10 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
-  var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
-  var utils = helper.Utils;
+  let expect = chai.expect;
+  let closeAndFinish = helper.closeAndFinish;
+  let monitorConnection = helper.monitorConnection;
+  let utils = helper.Utils;
 
   describe('realtime/channelgroup', function () {
     this.timeout(60 * 1000);
@@ -20,20 +20,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('subscribes to active', function (done) {
       try {
         /* set up realtime */
-        var realtime = helper.AblyRealtime();
+        let realtime = helper.AblyRealtime();
         realtime.options.clientId = 'testclient';
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
           const channelGroup = realtime.channelGroups.get('.*', { activeChannel: 'active' });
 
-          var testMsg = { active: ['channel1', 'channel2', 'channel3'] };
-          var activeChannel = realtime.channels.get('active');
-          var dataChannel1 = realtime.channels.get('channel1');
-          var dataChannel2 = realtime.channels.get('channel2');
+          let testMsg = { active: ['channel1', 'channel2', 'channel3'] };
+          let activeChannel = realtime.channels.get('active');
+          let dataChannel1 = realtime.channels.get('channel1');
+          let dataChannel2 = realtime.channels.get('channel2');
           try {
             await activeChannel.attach();
-            var events = 1;
+            let events = 1;
 
             /* subscribe to channel group */
             await channelGroup.subscribe((channel, msg) => {
@@ -71,17 +71,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('ignores channels not matched on filter', function (done) {
       try {
         /* set up realtime */
-        var realtime = helper.AblyRealtime();
+        let realtime = helper.AblyRealtime();
         realtime.options.clientId = 'testclient';
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
           const channelGroup = realtime.channelGroups.get('include:.*', { activeChannel: 'active' });
 
-          var testMsg = { active: ['include:channel1', 'stream3'] };
-          var activeChannel = realtime.channels.get('active');
-          var dataChannel1 = realtime.channels.get('include:channel1');
-          var streamChannel3 = realtime.channels.get('stream3');
+          let testMsg = { active: ['include:channel1', 'stream3'] };
+          let activeChannel = realtime.channels.get('active');
+          let dataChannel1 = realtime.channels.get('include:channel1');
+          let streamChannel3 = realtime.channels.get('stream3');
 
           try {
             await activeChannel.attach();
@@ -116,23 +116,23 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('reacts to changing active channels', function (done) {
       try {
         /* set up realtime */
-        var realtime = helper.AblyRealtime();
+        let realtime = helper.AblyRealtime();
         realtime.options.clientId = 'testclient';
 
         /* connect and attach */
         realtime.connection.on('connected', async function () {
           const channelGroup = realtime.channelGroups.get('group:.*', { activeChannel: 'active' });
 
-          var testMsg = { active: ['group:channel1', 'group:channel2', 'group:channel3'] };
-          var activeChannel = realtime.channels.get('active');
-          var dataChannel1 = realtime.channels.get('group:channel1');
-          var dataChannel2 = realtime.channels.get('group:channel2');
-          var dataChannel4 = realtime.channels.get('group:channel4');
-          var dataChannel5 = realtime.channels.get('group:channel5');
+          let testMsg = { active: ['group:channel1', 'group:channel2', 'group:channel3'] };
+          let activeChannel = realtime.channels.get('active');
+          let dataChannel1 = realtime.channels.get('group:channel1');
+          let dataChannel2 = realtime.channels.get('group:channel2');
+          let dataChannel4 = realtime.channels.get('group:channel4');
+          let dataChannel5 = realtime.channels.get('group:channel5');
 
           try {
             await activeChannel.attach();
-            var events = 1;
+            let events = 1;
 
             /* subscribe to channel group */
             await channelGroup.subscribe(async (channel, msg) => {
@@ -233,10 +233,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     it('partitions over consumer group', function (done) {
       const prefix = utils.cheapRandStr();
-      var realtime1 = helper.AblyRealtime(); // for publishing from tests
+      let realtime1 = helper.AblyRealtime(); // for publishing from tests
       // for the consumers
-      var realtime2 = helper.AblyRealtime();
-      var realtime3 = helper.AblyRealtime();
+      let realtime2 = helper.AblyRealtime();
+      let realtime3 = helper.AblyRealtime();
       realtime1.options.clientId = 'testclient';
       realtime2.options.clientId = 'consumer1';
       realtime3.options.clientId = 'consumer2';
@@ -281,8 +281,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           }
 
-          var testMsg = { active: channelNames };
-          var activeChannel = realtime1.channels.get('active');
+          let testMsg = { active: channelNames };
+          let activeChannel = realtime1.channels.get('active');
 
           // publish active channels
           await activeChannel.attach();
@@ -308,10 +308,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     it('dynamically rebalances the consumer group', function (done) {
       const prefix = utils.cheapRandStr();
-      var realtime1 = helper.AblyRealtime(); // for publishing from tests
+      let realtime1 = helper.AblyRealtime(); // for publishing from tests
       // for the consumers
-      var realtime2 = helper.AblyRealtime();
-      var realtime3 = helper.AblyRealtime();
+      let realtime2 = helper.AblyRealtime();
+      let realtime3 = helper.AblyRealtime();
       realtime1.options.clientId = 'testclient';
       realtime2.options.clientId = 'consumer1';
       realtime3.options.clientId = 'consumer2';
@@ -357,8 +357,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             }
           });
 
-          var testMsg = { active: channelNames };
-          var activeChannel = realtime1.channels.get('active');
+          let testMsg = { active: channelNames };
+          let activeChannel = realtime1.channels.get('active');
 
           // publish active channels
           await activeChannel.attach();
