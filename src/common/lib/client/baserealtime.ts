@@ -191,7 +191,8 @@ class ConsumerGroup extends EventEmitter {
 }
 
 class ChannelGroup {
-  currentChannels: string[];
+  activeChannels: string[] = [];
+  assignedChannels: string[] = [];
   active: RealtimeChannel;
   subscriptions: EventEmitter;
   subscribedChannels: Record<string, RealtimeChannel> = {};
@@ -199,36 +200,38 @@ class ChannelGroup {
   consumerGroup: ConsumerGroup;
 
   constructor(readonly channels: Channels, filter: string, options?: API.ChannelGroupOptions) {
-    this.currentChannels = [];
     this.subscriptions = new EventEmitter();
     this.active = channels.get(options?.activeChannel || '$ably:active', { params: { rewind: '1' } });
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
-    this.consumerGroup.on('membership', () => this.updateActiveChannels(this.currentChannels));
+    this.consumerGroup.on('membership', () => this.updateAssignedChannels());
     this.expression = new RegExp(filter); // eslint-disable-line security/detect-non-literal-regexp
   }
 
   async join() {
     await this.consumerGroup.join();
-    await this.active.subscribe((msg: any) => this.updateActiveChannels(msg.data.active));
+    await this.active.subscribe((msg: any) => {
+      this.activeChannels = msg.data.active;
+      this.updateAssignedChannels()
+    });
   }
 
-  private updateActiveChannels(activeChannels: string[]) {
-    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.setActiveChannels', 'received active channels ' + activeChannels);
-
-    const matched = activeChannels.filter((x) => this.expression.test(x)).filter((x) => this.consumerGroup.assigned(x));
-
-    const { add, remove } = diffSets(this.currentChannels, matched);
-    this.currentChannels = matched;
+  private updateAssignedChannels() {
+    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.updateAssignedChannels', 'activeChannels=' + this.activeChannels + ' assignedChannels=' + this.assignedChannels);
+    
+    const matched = this.activeChannels.filter((x) => this.expression.test(x)).filter((x) => this.consumerGroup.assigned(x));
+    
+    const { add, remove } = diffSets(this.assignedChannels, matched);
+    this.assignedChannels = matched;
 
     Logger.logAction(
-      Logger.LOG_DEBUG,
-      'ChannelGroups.setActiveChannels',
+      Logger.LOG_MAJOR,
+      'ChannelGroups.updateAssignedChannels',
       'computed channel diffs: add=' + add + ' remove=' + remove
     );
 
     this.removeSubscriptions(remove);
     this.addSubscriptions(add);
-    Logger.logAction(Logger.LOG_MAJOR, 'ChannelGroups.setActiveChannels', 'current channels ' + this.currentChannels);
+    Logger.logAction(Logger.LOG_MAJOR, 'ChannelGroups.updateAssignedChannels', 'assignedChannels ' + this.assignedChannels);
   }
 
   private addSubscriptions(channels: string[]) {
