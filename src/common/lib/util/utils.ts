@@ -189,7 +189,12 @@ export const arrIndexOf = (Array.prototype.indexOf as unknown)
       return -1;
     };
 
-export function arrIndexOfBy<T>(arr: Array<T>, iteratee: (value: T) => unknown, elem: unknown, fromIndex: number = 0): number {
+export function arrIndexOfBy<T>(
+  arr: Array<T>,
+  iteratee: (value: T) => unknown,
+  elem: unknown,
+  fromIndex: number = 0
+): number {
   const len = arr.length;
   for (; fromIndex < len; fromIndex++) {
     if (iteratee(arr[fromIndex]) === elem) {
