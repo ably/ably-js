@@ -91,10 +91,11 @@ class ChannelGroups {
 }
 
 class ConsumerGroup extends EventEmitter {
+  consumerId: string;
+  
   private channel?: RealtimeChannel;
   private currentMembers: string[] = [];
   private hashring: HashRing;
-  private consumerId: string;
 
   constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
     super();
@@ -159,7 +160,8 @@ class ConsumerGroup extends EventEmitter {
       Logger.logAction(
         Logger.LOG_DEBUG,
         'ConsumerGroup.computeMembership()',
-        'computed member diffs ' + { add, remove }
+        'computed member diffs add=' + add + ' remove=' + remove +
+        ' consumerId=' + this.consumerId,
       );
 
       add.forEach((member) => {
@@ -216,7 +218,13 @@ class ChannelGroup {
   }
 
   private updateAssignedChannels() {
-    Logger.logAction(Logger.LOG_DEBUG, 'ChannelGroups.updateAssignedChannels', 'activeChannels=' + this.activeChannels + ' assignedChannels=' + this.assignedChannels);
+    Logger.logAction(
+      Logger.LOG_DEBUG,
+      'ChannelGroups.updateAssignedChannels',
+      'activeChannels=' + this.activeChannels +
+      ' assignedChannels=' + this.assignedChannels +
+      ' consumerId=' + this.consumerGroup.consumerId,
+    );
     
     const matched = this.activeChannels.filter((x) => this.expression.test(x)).filter((x) => this.consumerGroup.assigned(x));
     
@@ -226,12 +234,18 @@ class ChannelGroup {
     Logger.logAction(
       Logger.LOG_MAJOR,
       'ChannelGroups.updateAssignedChannels',
-      'computed channel diffs: add=' + add + ' remove=' + remove
+      'computed channel diffs: add=' + add + ' remove=' + remove +
+      ' consumerId=' + this.consumerGroup.consumerId,
     );
 
     this.removeSubscriptions(remove);
     this.addSubscriptions(add);
-    Logger.logAction(Logger.LOG_MAJOR, 'ChannelGroups.updateAssignedChannels', 'assignedChannels ' + this.assignedChannels);
+    Logger.logAction(
+      Logger.LOG_MAJOR,
+      'ChannelGroups.updateAssignedChannels',
+      'assignedChannels=' + this.assignedChannels +
+      ' consumerId=' + this.consumerGroup.consumerId,
+    );
   }
 
   private addSubscriptions(channels: string[]) {
