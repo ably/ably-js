@@ -2005,6 +2005,13 @@ export declare interface ChannelGroup {
    * to the active channel.
    */
   join(): Promise<void>;
+
+  /**
+   * Leaves the consumer group if one was created for this channel group,
+   * and returns a promise that is resolved when the channel group is detached
+   * from the active channel.
+   */
+  leave(): Promise<void>;
 }
 
 /**
