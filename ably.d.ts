@@ -1993,6 +1993,13 @@ export declare interface ChannelGroup {
   subscribe(callback: channelAndMessageCallback<InboundMessage>): Promise<void>;
 
   /**
+   * Deregisters a listener for messages on this channel group.
+   *
+   * @param callback - An event listener function.
+   */
+  unsubscribe(callback: channelAndMessageCallback<InboundMessage>): void;
+
+  /**
    * Joins the consumer group if one was created for this channel group,
    * and returns a promise that is resolved when the channel group is attached
    * to the active channel.
