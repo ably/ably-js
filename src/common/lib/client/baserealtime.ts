@@ -78,7 +78,7 @@ class BaseRealtime extends BaseClient {
 class ChannelGroups {
   groups: Record<string, ChannelGroup> = {};
 
-  constructor(readonly channels: Channels) {}
+  constructor(readonly channels: Channels) { }
 
   get(filter: string, options?: API.ChannelGroupOptions): ChannelGroup {
     let group = this.groups[filter];
@@ -221,11 +221,11 @@ class ChannelGroup {
       Logger.LOG_DEBUG,
       'ChannelGroups.updateAssignedChannels',
       'activeChannels=' +
-        this.activeChannels +
-        ' assignedChannels=' +
-        this.assignedChannels +
-        ' consumerId=' +
-        this.consumerGroup.consumerId
+      this.activeChannels +
+      ' assignedChannels=' +
+      this.assignedChannels +
+      ' consumerId=' +
+      this.consumerGroup.consumerId
     );
 
     const matched = this.activeChannels
@@ -259,11 +259,9 @@ class ChannelGroup {
       this.subscribedChannels[channel] = this.channels.get(channel);
       this.subscribedChannels[channel]
         .setOptions({ params: { rewind: '5s' } })
-        .then(() => {
-          this.subscribedChannels[channel].subscribe((msg: any) => {
-            this.subscriptions.emit('message', channel, msg);
-          });
-        })
+        .then(() => this.subscribedChannels[channel].subscribe((msg: any) => {
+          this.subscriptions.emit('message', channel, msg);
+        }))
         .catch((err) => {
           Logger.logAction(
             Logger.LOG_ERROR,
@@ -281,6 +279,13 @@ class ChannelGroup {
       }
 
       this.subscribedChannels[channel].unsubscribe();
+      this.subscribedChannels[channel].detach().catch((err) => {
+        Logger.logAction(
+          Logger.LOG_ERROR,
+          'ChannelGroups.removeSubscriptions()',
+          'failed to detach from channel ' + channel + ': ' + err
+        );
+      });
       delete this.subscribedChannels[channel];
     });
   }
