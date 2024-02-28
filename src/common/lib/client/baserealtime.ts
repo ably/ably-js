@@ -92,7 +92,7 @@ class ChannelGroups {
 
 class ConsumerGroup extends EventEmitter {
   consumerId: string;
-  
+
   private channel?: RealtimeChannel;
   private currentMembers: string[] = [];
   private hashring: HashRing;
@@ -160,8 +160,7 @@ class ConsumerGroup extends EventEmitter {
       Logger.logAction(
         Logger.LOG_DEBUG,
         'ConsumerGroup.computeMembership()',
-        'computed member diffs add=' + add + ' remove=' + remove +
-        ' consumerId=' + this.consumerId,
+        'computed member diffs add=' + add + ' remove=' + remove + ' consumerId=' + this.consumerId
       );
 
       add.forEach((member) => {
@@ -213,7 +212,7 @@ class ChannelGroup {
     await this.consumerGroup.join();
     await this.active.subscribe((msg: any) => {
       this.activeChannels = msg.data.active;
-      this.updateAssignedChannels()
+      this.updateAssignedChannels();
     });
   }
 
@@ -221,21 +220,25 @@ class ChannelGroup {
     Logger.logAction(
       Logger.LOG_DEBUG,
       'ChannelGroups.updateAssignedChannels',
-      'activeChannels=' + this.activeChannels +
-      ' assignedChannels=' + this.assignedChannels +
-      ' consumerId=' + this.consumerGroup.consumerId,
+      'activeChannels=' +
+        this.activeChannels +
+        ' assignedChannels=' +
+        this.assignedChannels +
+        ' consumerId=' +
+        this.consumerGroup.consumerId
     );
-    
-    const matched = this.activeChannels.filter((x) => this.expression.test(x)).filter((x) => this.consumerGroup.assigned(x));
-    
+
+    const matched = this.activeChannels
+      .filter((x) => this.expression.test(x))
+      .filter((x) => this.consumerGroup.assigned(x));
+
     const { add, remove } = diffSets(this.assignedChannels, matched);
     this.assignedChannels = matched;
 
     Logger.logAction(
       Logger.LOG_MAJOR,
       'ChannelGroups.updateAssignedChannels',
-      'computed channel diffs: add=' + add + ' remove=' + remove +
-      ' consumerId=' + this.consumerGroup.consumerId,
+      'computed channel diffs: add=' + add + ' remove=' + remove + ' consumerId=' + this.consumerGroup.consumerId
     );
 
     this.removeSubscriptions(remove);
@@ -243,8 +246,7 @@ class ChannelGroup {
     Logger.logAction(
       Logger.LOG_MAJOR,
       'ChannelGroups.updateAssignedChannels',
-      'assignedChannels=' + this.assignedChannels +
-      ' consumerId=' + this.consumerGroup.consumerId,
+      'assignedChannels=' + this.assignedChannels + ' consumerId=' + this.consumerGroup.consumerId
     );
   }
 

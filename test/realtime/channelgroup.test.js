@@ -211,7 +211,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       console.log(allResults);
       // is duplicates allowed, make unique
       if (allowDuplicates) {
-        allResults = utils.arrUniqueBy(allResults, elem => `${elem.channel}:${elem.name}`);
+        allResults = utils.arrUniqueBy(allResults, (elem) => `${elem.channel}:${elem.name}`);
       }
       // expect to have received 2 messages from each channel across all consumers
       for (let i = 0; i < numChannels; i += 2) {
@@ -369,7 +369,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           // send 2 messages to the first half of the channels
           for (let i = 0; i < Math.floor(channels.length / 2); i++) {
-            console.log(i, 'publish')
+            console.log(i, 'publish');
             channels[i].publish('event0', `test data ${i}`);
             channels[i].publish('event1', `test data ${i}`);
           }
@@ -388,7 +388,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           // send 2 messages to the second half of the channels
           for (let i = Math.floor(channels.length / 2); i < channels.length; i++) {
-            console.log(i, 'publish')
+            console.log(i, 'publish');
             channels[i].publish('event0', `test data ${i}`);
             channels[i].publish('event1', `test data ${i}`);
           }
