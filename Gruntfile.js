@@ -8,6 +8,7 @@ var umdWrapper = require('esbuild-plugin-umd-wrapper');
 var banner = require('./src/fragments/license');
 var process = require('process');
 var stripLogsPlugin = require('./grunt/esbuild/strip-logs').default;
+var kexec = require('kexec');
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
@@ -108,6 +109,10 @@ module.exports = function (grunt) {
 
   grunt.registerTask('all', ['build', 'requirejs']);
 
+  grunt.registerTask('mocha:webserver', 'Run the Mocha web server', function () {
+    kexec('test/web_server');
+  });
+
   grunt.registerTask('build:browser', function () {
     var done = this.async();
 
@@ -151,15 +156,6 @@ module.exports = function (grunt) {
       done(true);
     });
   });
-
-  grunt.loadTasks('test/tasks');
-
-  grunt.registerTask('test', ['test:node']);
-  grunt.registerTask(
-    'test:node',
-    'Build the library and run the node test suite\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-    ['build:node', 'mocha'],
-  );
 
   grunt.registerTask('test:webserver', 'Launch the Mocha test web server on http://localhost:3000/', [
     'build:browser',

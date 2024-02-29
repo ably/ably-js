@@ -45,27 +45,27 @@ Run the Mocha test suite
 
     npm run test:node
 
-Or run just one test file
+You can pass any Mocha CLI arguments and flags to the test:node script after the `--` separator, for example running one test file:
 
-    npm run test:node -- --file=test/realtime/auth.test.js
+    npm run test:node -- test/realtime/auth.test.js
 
 Or run just one test
 
-    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here
+    npm run test:node -- --grep=test_name_here
 
 Or run test skipping the build
 
-    npm run test:node:skip-build -- --file=test/rest/status.test.js --grep=test_name_here
+    npm run test:node:skip-build -- test/rest/status.test.js --grep=test_name_here
 
 ### Debugging the mocha tests locally with a debugger
 
 Run the following command to launch tests with the debugger enabled. The tests will block until you attach a debugger.
 
-    node --inspect-brk=9229 node_modules/.bin/grunt test:node
+    node --inspect-brk=9229 node_modules/.bin/mocha
 
 Alternatively you can also run the tests for single file
 
-    node --inspect-brk=9229 node_modules/.bin/grunt test:node --test=test/realtime/auth.test.js
+    node --inspect-brk=9229 node_modules/.bin/mocha test/realtime/auth.test.js
 
 The included vscode launch config allows you to launch and attach the debugger in one step, simply open the test
 file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the
