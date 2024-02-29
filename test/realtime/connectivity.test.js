@@ -34,18 +34,19 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
+    function options(connectivityCheckUrl, disableConnectivityCheck) {
+      return {
+        connectivityCheckUrl,
+        disableConnectivityCheck,
+        autoConnect: false,
+      };
+    }
+
     describe('configured_connectivity_check_url', function () {
       var urlScheme = 'https://';
       var echoServer = 'echo.ably.io';
       var successUrl = echoServer + '/respondwith?status=200';
       var failUrl = echoServer + '/respondwith?status=500';
-
-      function options(connectivityCheckUrl) {
-        return {
-          connectivityCheckUrl: connectivityCheckUrl,
-          autoConnect: false,
-        };
-      }
 
       it('succeeds with scheme', function (done) {
         whenPromiseSettles(
@@ -129,10 +130,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     it('disable_connectivity_check', function (done) {
       whenPromiseSettles(
-        new helper.AblyRealtime({
-          connectivityCheckUrl: 'notarealhost',
-          disableConnectivityCheck: true,
-        }).http.checkConnectivity(),
+        new helper.AblyRealtime(options('notarealhost', true)).http.checkConnectivity(),
         function (err, res) {
           try {
             expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;

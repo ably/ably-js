@@ -1474,11 +1474,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       channel.state = 'suspended';
       whenPromiseSettles(channel.detach(), function () {
-        expect(channel.state).to.equal(
-          'detached',
-          'Check that detach on suspended channel results in detached channel',
-        );
-        done();
+        try {
+          expect(channel.state).to.equal(
+            'detached',
+            'Check that detach on suspended channel results in detached channel',
+          );
+
+          closeAndFinish(done, realtime);
+        } catch (err) {
+          closeAndFinish(done, realtime, err);
+        }
       });
     });
 
@@ -1492,10 +1497,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       whenPromiseSettles(channel.detach(), function (err) {
         if (!err) {
-          done(new Error('expected detach to return error response'));
+          closeAndFinish(done, realtime, new Error('expected detach to return error response'));
           return;
         }
-        done();
+        closeAndFinish(done, realtime);
       });
     });
 
