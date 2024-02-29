@@ -20,7 +20,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('subscribes to active', function (done) {
       const prefix = utils.cheapRandStr();
       const activeChannelName = `${prefix}:active`;
-      // set up realtime
       let realtime = helper.AblyRealtime({ clientId: 'testclient' });
 
       // connect and attach
@@ -69,7 +68,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('unsubscribes a listener', function (done) {
       const prefix = utils.cheapRandStr();
       const activeChannelName = `${prefix}:active`;
-      // set up realtime
       let realtime = helper.AblyRealtime({ clientId: 'testclient' });
 
       // connect and attach
@@ -123,36 +121,29 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('leaves the channel group', function (done) {
-      const prefix = utils.cheapRandStr();
-      const activeChannelName = `${prefix}:active`;
-      // set up realtime
-      let realtime1 = helper.AblyRealtime({ clientId: 'client1' });
-      let realtime2 = helper.AblyRealtime({ clientId: 'client2' });
+      try {
+        const prefix = utils.cheapRandStr();
+        const activeChannelName = `${prefix}:active`;
+        let realtime = helper.AblyRealtime({ clientId: 'testclient' });
 
-      // connect and attach
-      Promise.all([
-        new Promise((resolve) => realtime1.connection.on('connected', resolve)),
-        new Promise((resolve) => realtime2.connection.on('connected', resolve)),
-      ])
-        .then(async () => {
+        // connect and attach
+        realtime.connection.on('connected', async function () {
           try {
-            // TODO(mschristensen): use a single client and subscribe to the channel directly when the channel group no longer shares the channels object
-            const channelGroup1 = realtime1.channelGroups.get(`${prefix}.*`, { activeChannel: activeChannelName });
-            const channelGroup2 = realtime2.channelGroups.get(`${prefix}.*`, { activeChannel: activeChannelName });
-            const activeChannel = realtime1.channels.get(activeChannelName);
-            const channel = realtime1.channels.get(`${prefix}:channel1`);
+            const channelGroup = realtime.channelGroups.get(`${prefix}.*`, { activeChannel: activeChannelName });
+            const activeChannel = realtime.channels.get(activeChannelName);
+            const channel = realtime.channels.get(`${prefix}:channel1`);
 
             // subscribe to channel group and assert results
             let events = 0;
-            await channelGroup1.subscribe(() => {
+            await channelGroup.subscribe(() => {
               expect(events).to.be.lessThan(3, 'Unexpected number of messages received');
             });
-            await channelGroup2.subscribe(() => {
+            await channel.subscribe(() => {
               events++;
               if (events < 3) {
                 return;
               }
-              closeAndFinish(done, [realtime1, realtime2]);
+              closeAndFinish(done, realtime);
             });
 
             // publish active channels
@@ -165,24 +156,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             channel.publish('event1', 'test data');
 
             // leave the first channel group and publish the last message to end the test
-            channelGroup1.leave();
+            await channelGroup.leave();
             channel.publish('event2', 'test data');
           } catch (err) {
-            closeAndFinish(done, [realtime1, realtime2], err);
+            closeAndFinish(done, realtime, err);
             return;
           }
-          monitorConnection(done, realtime1);
-          monitorConnection(done, realtime2);
-        })
-        .catch((err) => {
-          closeAndFinish(done, [realtime1, realtime2], err);
+          monitorConnection(done, realtime);
         });
+      } catch (err) {
+        closeAndFinish(done, realtime, err);
+      }
     });
 
     it('ignores channels not matched on filter', function (done) {
       const prefix = utils.cheapRandStr();
       const activeChannelName = `${prefix}:active`;
-      // set up realtime
       let realtime = helper.AblyRealtime({ clientId: 'testclient' });
 
       // connect and attach
@@ -224,7 +213,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('reacts to changing active channels', function (done) {
       const prefix = utils.cheapRandStr();
       const activeChannelName = `${prefix}:active`;
-      // set up realtime
       let realtime = helper.AblyRealtime({ clientId: 'testclient' });
 
       /* connect and attach */
@@ -547,7 +535,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(msg.data).to.equal('test data', 'Unexpected msg text received');
             expect(channel).to.equal(`${prefix}:channel`, 'Unexpected channel name');
           });
-          
+
           // publish active channels
           const channelName = `${prefix}:channel`;
           let activeChannel = realtime1.channels.get(activeChannelName);
@@ -556,7 +544,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
           // wait for the consumer to appear in the group
           await waitForConsumers(realtime1.channels.get(consumerGroupName), 1);
-          
+
           // send a message to the channel
           // channel.publish('event0', 'test data');
           realtime1.channels.get(channelName).publish('event0', 'test data');
