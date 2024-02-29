@@ -237,6 +237,23 @@ define([
     expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
   }
 
+  let activeClients = [];
+
+  function AblyRealtime(options) {
+    const client = clientModule.AblyRealtime(options);
+    activeClients.push(client);
+    return client;
+  }
+
+  /* Slightly crude catch-all hook to close any dangling realtime clients left open
+   * after a test fails without calling closeAndFinish */
+  afterEach(function () {
+    activeClients.forEach((client) => {
+      client.close();
+    });
+    activeClients = [];
+  });
+
   afterEach(function () {
     if (this.currentTest.isFailed()) {
       const logs = globals.getLogs();
@@ -261,7 +278,7 @@ define([
 
     Ably: clientModule.Ably,
     AblyRest: clientModule.AblyRest,
-    AblyRealtime: clientModule.AblyRealtime,
+    AblyRealtime: AblyRealtime,
     ablyClientOptions: clientModule.ablyClientOptions,
     Utils: utils,
 
