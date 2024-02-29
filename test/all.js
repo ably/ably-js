@@ -24,5 +24,3 @@ function findAll(dir, pattern) {
 
 exports.rest = findAll('rest', /(\w+)\.test\.js/);
 exports.realtime = findAll('realtime', /(\w+)\.test\.js/);
-
-exports.tear_down = require('./support/tear_down');
