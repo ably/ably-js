@@ -35,8 +35,17 @@ class BaseRealtime extends BaseClient {
     this._decodeVcdiff = (modules.Vcdiff ?? (Platform.Vcdiff.supported && Platform.Vcdiff.bundledDecode)) || null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
-    // TODO(mschristensen): avoid using the same channel pool as that exposed via this.channels()
-    this._channelGroups = modules.ChannelGroups ? new modules.ChannelGroups(this._channels) : null;
+    // avoid using the same channel pool as that exposed via this.channels()
+    // to allow the channels to be used individually
+    if (modules.ChannelGroups) {
+      // disable channel groups on the new base realtime instance to avoid recursion
+      const newModules = Object.assign({}, modules);
+      delete newModules['ChannelGroups'];
+      const newRealtime = new BaseRealtime(options, newModules);
+      this._channelGroups = new modules.ChannelGroups(newRealtime.channels);
+    } else {
+      this._channelGroups = null;
+    }
     if (options.autoConnect !== false) this.connect();
   }
 
@@ -100,15 +109,16 @@ class ConsumerGroup extends EventEmitter {
   constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
     super();
     // The client ID can in fact be set on receipt of CONNECTED event from realtime,
-    // but for these purposes we can rely on the client ID provided by the user.
-    // If the client ID is not set, then we generate a random one.
-    this.consumerId = this.channels.realtime.options.clientId || this.randomConsumerId();
+    // but for these purposes we must rely on the client ID being explicitly provided
+    // by the user as we do not have a mechanism to listen for or handle changes.
+    // It must be provided when the consumer group is instantiated due to the use of a new
+    // base realtime client instance for the channel group.
+    if (!this.channels.realtime.options.clientId || this.channels.realtime.options.clientId === '*') {
+      throw new ErrorInfo('clientId must be explicitly specified to use consumer groups', 40000, 400);
+    }
+    this.consumerId = this.channels.realtime.options.clientId;
     this.hashring = new HashRing([this.consumerId]);
     this.computeMembershipListener = this.computeMembership.bind(this); // we need the exact reference to unsubscribe
-  }
-
-  private randomConsumerId() {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 
   async join() {
@@ -140,6 +150,7 @@ class ConsumerGroup extends EventEmitter {
         'ConsumerGroup.join()',
         'failed to enter presence set on consumer group channel; err = ' + Utils.inspectError(err) 
       );
+      throw err;
     }
   }
 
