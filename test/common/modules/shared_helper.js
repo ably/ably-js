@@ -7,9 +7,10 @@ define([
   'test/common/modules/testapp_module',
   'test/common/modules/client_module',
   'test/common/modules/testapp_manager',
+  'globals',
   'async',
   'chai',
-], function (testAppModule, clientModule, testAppManager, async, chai) {
+], function (testAppModule, clientModule, testAppManager, globals, async, chai) {
   var utils = clientModule.Ably.Realtime.Utils;
   var platform = clientModule.Ably.Realtime.Platform;
   var BufferUtils = platform.BufferUtils;
@@ -235,6 +236,22 @@ define([
     }
     expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
   }
+
+  afterEach(function () {
+    if (this.currentTest.isFailed()) {
+      const logs = globals.getLogs();
+      if (logs.length > 0) {
+        // empty console.logs are for vertical spacing
+        console.log();
+        console.log('Logs for failing test: \n');
+        logs.forEach(([timestamp, log]) => {
+          console.log(timestamp, log);
+        });
+        console.log();
+      }
+    }
+    globals.flushLogs();
+  });
 
   return (module.exports = {
     setupApp: testAppModule.setup,
