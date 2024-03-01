@@ -45,5 +45,5 @@ export * from './modules/http';
 export * from './modules/vcdiff';
 export { Rest } from '../../common/lib/client/rest';
 export { FilteredSubscriptions as MessageInteractions } from '../../common/lib/client/filteredsubscriptions';
-export { BaseRest, BaseRealtime, ErrorInfo };
 export { ChannelGroups } from '../../common/lib/client/baserealtime';
+export { BaseRest, BaseRealtime, ErrorInfo };
