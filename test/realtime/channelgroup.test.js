@@ -535,7 +535,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(msg.data).to.equal('test data', 'Unexpected msg text received');
             expect(channel).to.equal(`${prefix}:channel`, 'Unexpected channel name');
           });
-
           // publish active channels
           const channelName = `${prefix}:channel`;
           let activeChannel = realtime1.channels.get(activeChannelName);
