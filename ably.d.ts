@@ -871,6 +871,14 @@ interface ChannelGroupOptions {
    * @defaultValue $ably:active
    */
   activeChannel?: string;
+  /**
+   * The rewind interval to use when attaching to the matched channels in the group.
+   * This faciltates at-least-once delivery in the event of a consumer group scaling event.
+   * Note that this is a temporary option only required for the client-side simulation of channel groups.
+   * 
+   * @defaultValue 5s
+   */
+  rewind?: string;
 }
 
 /**
