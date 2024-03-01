@@ -875,10 +875,23 @@ interface ChannelGroupOptions {
    * The rewind interval to use when attaching to the matched channels in the group.
    * This faciltates at-least-once delivery in the event of a consumer group scaling event.
    * Note that this is a temporary option only required for the client-side simulation of channel groups.
-   * 
+   *
    * @defaultValue 5s
    */
   rewind?: string;
+
+  /**
+   * The time for which the client will remain subscribed to a given channel after the last message is received.
+   * In the client-side simulation of channel groups, subscribing to the channel has the effect of keeping
+   * the channel active for the duration of the subscription. This timeout is used to determine how long to remain
+   * subscribed to a channel while no messages are received on it. It is possible that a message is sent after the
+   * client unsubscribes and before the channel becomes inactive, which means the client may not re-subscribe to the
+   * channel and could miss a message.
+   * Note that this is a temporary option only required for the client-side simulation of channel groups.
+   *
+   * @defaultValue 60 * 60 * 1000 (1 hour)
+   */
+  subscriptionTimeout?: number;
 }
 
 /**

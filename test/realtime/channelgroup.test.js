@@ -579,5 +579,67 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           closeAndFinish(done, [realtime1, realtime2], err);
         });
     });
+
+    it('unsubscribes channels after timeout', function (done) {
+      const prefix = utils.cheapRandStr();
+      const activeChannelName = `${prefix}:active`;
+      const consumerGroupName = `${prefix}:testgroup`;
+      let realtime = helper.AblyRealtime({ clientId: 'testclient' });
+
+      realtime.connection.on('connected', async function () {
+        // create a group with a single consumer
+        const consumer = realtime.channelGroups.get(`${prefix}:.*`, {
+          activeChannel: activeChannelName,
+          consumerGroup: { name: consumerGroupName },
+          subscriptionTimeout: 1000,
+        });
+
+        let events = 0;
+        let received = [null, null];
+        let message1 = new Promise((resolve) => (received[0] = resolve));
+        await consumer.subscribe((channel, msg) => {
+          events++;
+          expect(events).to.equal(1, 'Unexpected number of messages received');
+          received[0]();
+          expect(msg.data).to.equal('test data', 'Unexpected msg text received');
+          expect(channel).to.equal(`${prefix}:channel`, 'Unexpected channel name');
+        });
+
+        // publish active channels
+        const channelName = `${prefix}:channel`;
+        let activeChannel = realtime.channels.get(activeChannelName);
+        await activeChannel.attach();
+        activeChannel.publish('event0', { active: [channelName] });
+
+        // wait for the consumer to appear in the group
+        await waitForNConsumersInPresenceSet(realtime.channels.get(consumerGroupName), 1);
+
+        // send a message to the channel
+        realtime.channels.get(channelName).publish('event0', 'test data');
+
+        // wait for the consumer to receive the message
+        await message1;
+
+        let message2 = new Promise((resolve) => (received[1] = resolve));
+        await realtime.channels.get(channelName).subscribe((msg) => {
+          events++;
+          expect(events).to.equal(2, 'Unexpected number of messages received');
+          received[1]();
+          expect(msg.data).to.equal('test data', 'Unexpected msg text received');
+        });
+
+        // wait for the consumer to unsubscribe from the channel after timeout
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // send a message to the channel; the channel group should not receive it
+        realtime.channels.get(channelName).publish('event0', 'test data');
+
+        // wait for the channel to receive the message
+        await message2;
+
+        closeAndFinish(done, realtime);
+      });
+      monitorConnection(done, realtime);
+    });
   });
 });
