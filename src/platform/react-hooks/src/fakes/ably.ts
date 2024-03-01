@@ -116,7 +116,7 @@ export class ClientChannelsCollection {
 
     const channel = this.channels.get(name);
     channelConnection = new ClientSingleDerivedChannelConnection(this.client, channel, options, name);
-    this._channelConnections.set(name, channelConnection);
+    this._channelConnections.set(`[derived]${name}`, channelConnection);
     return channelConnection;
   }
 }
@@ -194,6 +194,10 @@ export class ClientSingleDerivedChannelConnection extends EventEmitter {
 
   public async setOptions() {
     // do nothing
+  }
+
+  public async publish() {
+    throw Error('no publish for derived channel');
   }
 }
 

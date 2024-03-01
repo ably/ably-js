@@ -19,25 +19,27 @@ export const ChannelProvider = ({
   children,
 }: ChannelProviderProps) => {
   const context = getContext(id);
-  const { client, _channelNameToInstance } = React.useContext(context);
+  const { client, _channelNameToChannelContext } = React.useContext(context);
 
-  if (_channelNameToInstance[channelName]) {
+  if (_channelNameToChannelContext[channelName]) {
     throw new Error('You can not use more than one `ChannelProvider` with the same channel name');
   }
 
-  const channel = deriveOptions
-    ? client.channels.getDerived(channelName, deriveOptions)
-    : client.channels.get(channelName);
+  const derived = Boolean(deriveOptions);
+  const channel = derived ? client.channels.getDerived(channelName, deriveOptions) : client.channels.get(channelName);
 
   const value: AblyContextProps = useMemo(() => {
     return {
       client,
-      _channelNameToInstance: {
-        ..._channelNameToInstance,
-        [channelName]: channel,
+      _channelNameToChannelContext: {
+        ..._channelNameToChannelContext,
+        [channelName]: {
+          channel,
+          derived,
+        },
       },
     };
-  }, [client, channel, channelName, _channelNameToInstance]);
+  }, [derived, client, channel, channelName, _channelNameToChannelContext]);
 
   useEffect(() => {
     channel.setOptions(channelOptionsWithAgent(options));

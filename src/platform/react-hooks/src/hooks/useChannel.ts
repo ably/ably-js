@@ -1,5 +1,5 @@
 import * as Ably from 'ably';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
@@ -9,6 +9,7 @@ export type AblyMessageCallback = Ably.messageCallback<Ably.Message>;
 
 export interface ChannelResult {
   channel: Ably.RealtimeChannel;
+  publish: Ably.RealtimeChannel['publish'];
   ably: Ably.RealtimeClient;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
@@ -39,7 +40,14 @@ export function useChannel(
   const ably = useAbly(channelHookOptions.id);
   const { channelName, skip } = channelHookOptions;
 
-  const channel = useChannelInstance(channelHookOptions.id, channelName);
+  const { channel, derived } = useChannelInstance(channelHookOptions.id, channelName);
+
+  const publish: Ably.RealtimeChannel['publish'] = useMemo(() => {
+    if (!derived) return channel.publish.bind(channel);
+    const regularChannel = ably.channels.get(channelName);
+    // For derived channels we use transient publish (it won't attach to the channel)
+    return regularChannel.publish.bind(regularChannel);
+  }, [ably.channels, derived, channel, channelName]);
 
   const channelEvent = typeof eventOrCallback === 'string' ? eventOrCallback : null;
   const ablyMessageCallback = typeof eventOrCallback === 'string' ? callback : eventOrCallback;
@@ -74,7 +82,7 @@ export function useChannel(
     };
   }, [channelEvent, channel, skip]);
 
-  return { channel, ably, connectionError, channelError };
+  return { channel, publish, ably, connectionError, channelError };
 }
 
 async function handleChannelMount(channel: Ably.RealtimeChannel, ...subscribeArgs: SubscribeArgs) {

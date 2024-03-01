@@ -24,7 +24,7 @@ export function useChannelStateListener(
 
   const { channelName } = channelHookOptions;
 
-  const channel = useChannelInstance(id, channelName);
+  const { channel } = useChannelInstance(id, channelName);
 
   const _listener = typeof listener === 'function' ? listener : (stateOrListener as ChannelStateListener);
 
