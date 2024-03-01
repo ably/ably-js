@@ -247,7 +247,7 @@ class ChannelGroup {
   expression: RegExp;
   consumerGroup: ConsumerGroup;
 
-  constructor(readonly channels: Channels, filter: string, options?: API.ChannelGroupOptions) {
+  constructor(readonly channels: Channels, filter: string, readonly options?: API.ChannelGroupOptions) {
     this.subscriptions = new EventEmitter();
     this.active = channels.get(options?.activeChannel || '$ably:active');
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
@@ -314,7 +314,7 @@ class ChannelGroup {
 
       this.subscribedChannels[channel] = this.channels.get(channel);
       this.subscribedChannels[channel]
-        .setOptions({ params: { rewind: '5s' } })
+        .setOptions({ params: { rewind: this.options?.rewind || '5s' } })
         .then(() =>
           this.subscribedChannels[channel].subscribe((msg: any) => {
             this.subscriptions.emit('message', channel, msg);
