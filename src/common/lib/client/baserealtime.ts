@@ -138,7 +138,7 @@ class ConsumerGroup extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'ConsumerGroup.join()',
-        'failed to enter presence set on consumer group channel:' + err
+        'failed to enter presence set on consumer group channel; err = ' + Utils.inspectError(err) 
       );
     }
   }
@@ -165,7 +165,7 @@ class ConsumerGroup extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'ConsumerGroup.leave()',
-        'failed to leave presence set on consumer group channel:' + err
+        'failed to leave presence set on consumer group channel; err = ' + Utils.inspectError(err) 
       );
     }
   }
@@ -209,7 +209,7 @@ class ConsumerGroup extends EventEmitter {
       Logger.logAction(
         Logger.LOG_ERROR,
         'ConsumerGroup.computeMembership()',
-        'failed to get presence set on consumer group channel:' + err
+        'failed to get presence set on consumer group channel; err = ' + Utils.inspectError(err) 
       );
     }
   }
@@ -310,7 +310,7 @@ class ChannelGroup {
           Logger.logAction(
             Logger.LOG_ERROR,
             'ChannelGroups.addSubscriptions()',
-            'failed to set rewind options on channel ' + channel + ': ' + err
+            'failed to set rewind options on channel ' + channel + '; err = ' + Utils.inspectError(err) 
           );
         });
     });
@@ -327,7 +327,7 @@ class ChannelGroup {
         Logger.logAction(
           Logger.LOG_ERROR,
           'ChannelGroups.removeSubscriptions()',
-          'failed to detach from channel ' + channel + ': ' + err
+          'failed to detach from channel ' + channel + '; err = ' + Utils.inspectError(err) 
         );
       });
       delete this.subscribedChannels[channel];
