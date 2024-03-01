@@ -8,6 +8,7 @@ import IDefaults from '../../types/IDefaults';
 import { MsgPack } from 'common/types/msgpack';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import { ChannelOptions } from 'common/types/channel';
+import { ModularPlugins } from '../client/modularplugins';
 
 let agent = 'ably-js/' + version;
 
@@ -43,7 +44,7 @@ type CompleteDefaults = IDefaults & {
   getHosts(options: NormalisedClientOptions): string[];
   checkHost(host: string): void;
   getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
-  objectifyOptions(options: ClientOptions | string): ClientOptions;
+  objectifyOptions(options: ClientOptions | string, modularPluginsToInclude?: ModularPlugins): ClientOptions;
   normaliseOptions(options: InternalClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions;
   defaultGetHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
   defaultPostHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
@@ -181,11 +182,18 @@ export function getAgentString(options: ClientOptions): string {
   return agentStr;
 }
 
-export function objectifyOptions(options: ClientOptions | string): ClientOptions {
-  if (typeof options == 'string') {
-    return options.indexOf(':') == -1 ? { token: options } : { key: options };
+export function objectifyOptions(
+  options: ClientOptions | string,
+  modularPluginsToInclude?: ModularPlugins,
+): ClientOptions {
+  let optionsObj =
+    typeof options === 'string' ? (options.indexOf(':') == -1 ? { token: options } : { key: options }) : options;
+
+  if (modularPluginsToInclude) {
+    optionsObj = { ...optionsObj, plugins: { ...modularPluginsToInclude, ...optionsObj.plugins } };
   }
-  return options;
+
+  return optionsObj;
 }
 
 export function normaliseOptions(options: InternalClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions {
@@ -270,7 +278,7 @@ export function normaliseOptions(options: InternalClientOptions, MsgPack: MsgPac
 export function normaliseChannelOptions(Crypto: IUntypedCryptoStatic | null, options?: ChannelOptions) {
   const channelOptions = options || {};
   if (channelOptions.cipher) {
-    if (!Crypto) Utils.throwMissingModuleError('Crypto');
+    if (!Crypto) Utils.throwMissingPluginError('Crypto');
     const cipher = Crypto.getCipher(channelOptions.cipher);
     channelOptions.cipher = cipher.cipherParams;
     channelOptions.channelCipher = cipher.cipher;

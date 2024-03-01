@@ -101,7 +101,7 @@ export class Rest {
     const [encoder, decoder, format] = (() => {
       if (this.client.options.useBinaryProtocol) {
         if (!this.client._MsgPack) {
-          Utils.throwMissingModuleError('MsgPack');
+          Utils.throwMissingPluginError('MsgPack');
         }
         return [this.client._MsgPack.encode, this.client._MsgPack.decode, Utils.Format.msgpack];
       } else {

@@ -93,18 +93,20 @@ Aimed at those who are concerned about their app’s bundle size, the modular va
 The modular variant of the library provides:
 
 - a `BaseRealtime` class;
-- various modules that add functionality to a `BaseRealtime` instance, such as `Rest`, `RealtimePresence`, etc.
+- various plugins that add functionality to a `BaseRealtime` instance, such as `Rest`, `RealtimePresence`, etc.
 
-To use this variant of the library, import the `BaseRealtime` class from `ably/modules`, along with the modules that you wish to use. Then, pass these modules to the `BaseRealtime` constructor as shown in the example below:
+To use this variant of the library, import the `BaseRealtime` class from `ably/modules`, along with the plugins that you wish to use. Then, pass these plugins to the `BaseRealtime` constructor as shown in the example below:
 
 ```javascript
 import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from 'ably/modules';
 
-const options = { key: 'YOUR_ABLY_API_KEY' /* Replace with a real key from the Ably dashboard */ };
-const client = new BaseRealtime(options, {
-  WebSocketTransport,
-  FetchRequest,
-  RealtimePresence
+const client = new BaseRealtime({
+  key: 'YOUR_ABLY_API_KEY' /* Replace with a real key from the Ably dashboard */,
+  plugins: {
+    WebSocketTransport,
+    FetchRequest,
+    RealtimePresence,
+  },
 });
 ```
 

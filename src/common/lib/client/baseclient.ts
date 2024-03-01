@@ -9,10 +9,9 @@ import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOption
 import * as API from '../../../../ably';
 
 import Platform from '../../platform';
-import { ModulesMap } from './modulesmap';
 import { Rest } from './rest';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
-import { throwMissingModuleError } from '../util/utils';
+import { throwMissingPluginError } from '../util/utils';
 import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
@@ -43,28 +42,27 @@ class BaseClient {
   readonly _Crypto: IUntypedCryptoStatic | null;
   readonly _MsgPack: MsgPack | null;
   // Extra HTTP request implementations available to this client, in addition to those in web’s Http.bundledRequestImplementations
-  readonly _additionalHTTPRequestImplementations: HTTPRequestImplementations;
+  readonly _additionalHTTPRequestImplementations: HTTPRequestImplementations | null;
   private readonly __FilteredSubscriptions: typeof FilteredSubscriptions | null;
 
-  constructor(options: ClientOptions | string, modules: ModulesMap) {
-    this._additionalHTTPRequestImplementations = modules;
+  constructor(options: ClientOptions) {
+    this._additionalHTTPRequestImplementations = options.plugins ?? null;
 
     if (!options) {
       const msg = 'no options provided';
       Logger.logAction(Logger.LOG_ERROR, 'BaseClient()', msg);
       throw new Error(msg);
     }
-    const optionsObj = Defaults.objectifyOptions(options);
 
-    Logger.setLog(optionsObj.logLevel, optionsObj.logHandler);
+    Logger.setLog(options.logLevel, options.logHandler);
     Logger.logAction(
       Logger.LOG_MICRO,
       'BaseClient()',
       'initialized with clientOptions ' + Platform.Config.inspect(options),
     );
 
-    this._MsgPack = modules.MsgPack ?? null;
-    const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj, this._MsgPack));
+    this._MsgPack = options.plugins?.MsgPack ?? null;
+    const normalOptions = (this.options = Defaults.normaliseOptions(options, this._MsgPack));
 
     /* process options */
     if (normalOptions.key) {
@@ -97,21 +95,21 @@ class BaseClient {
     this.http = new Http(this);
     this.auth = new Auth(this, normalOptions);
 
-    this._rest = modules.Rest ? new modules.Rest(this) : null;
-    this._Crypto = modules.Crypto ?? null;
-    this.__FilteredSubscriptions = modules.MessageInteractions ?? null;
+    this._rest = options.plugins?.Rest ? new options.plugins.Rest(this) : null;
+    this._Crypto = options.plugins?.Crypto ?? null;
+    this.__FilteredSubscriptions = options.plugins?.MessageInteractions ?? null;
   }
 
   get rest(): Rest {
     if (!this._rest) {
-      throwMissingModuleError('Rest');
+      throwMissingPluginError('Rest');
     }
     return this._rest;
   }
 
   get _FilteredSubscriptions(): typeof FilteredSubscriptions {
     if (!this.__FilteredSubscriptions) {
-      throwMissingModuleError('MessageInteractions');
+      throwMissingPluginError('MessageInteractions');
     }
     return this.__FilteredSubscriptions;
   }

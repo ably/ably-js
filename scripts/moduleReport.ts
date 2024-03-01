@@ -10,7 +10,7 @@ const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 95, gzip: 29 };
 
 const baseClientNames = ['BaseRest', 'BaseRealtime'];
 
-// List of all modules accepted in ModulesMap
+// List of all modules accepted in ModularPlugins
 const moduleNames = [
   'Rest',
   'Crypto',
@@ -25,7 +25,7 @@ const moduleNames = [
 ];
 
 // List of all free-standing functions exported by the library along with the
-// ModulesMap entries that we expect them to transitively import
+// ModularPlugins entries that we expect them to transitively import
 const functions = [
   { name: 'generateRandomKey', transitiveImports: ['Crypto'] },
   { name: 'getDefaultCryptoParams', transitiveImports: ['Crypto'] },

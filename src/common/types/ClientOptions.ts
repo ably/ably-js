@@ -1,12 +1,13 @@
 import { Modify } from './utils';
 import * as API from '../../../ably';
+import { ModularPlugins } from 'common/lib/client/modularplugins';
 
 export type RestAgentOptions = {
   keepAlive: boolean;
   maxSockets: number;
 };
 
-export default interface ClientOptions extends API.ClientOptions {
+export default interface ClientOptions extends API.ClientOptions<API.CorePlugins & ModularPlugins> {
   restAgentOptions?: RestAgentOptions;
   pushFullWait?: boolean;
   agents?: Record<string, string | undefined>;

@@ -48,7 +48,7 @@ function normalizeCipherOptions(
   options: API.ChannelOptions | null,
 ): ChannelOptions {
   if (options && options.cipher) {
-    if (!Crypto) Utils.throwMissingModuleError('Crypto');
+    if (!Crypto) Utils.throwMissingPluginError('Crypto');
     const cipher = Crypto.getCipher(options.cipher);
     return {
       cipher: cipher.cipherParams,

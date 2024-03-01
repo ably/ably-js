@@ -1,11 +1,12 @@
 import { BaseRest } from './baserest';
 import ClientOptions from '../../types/ClientOptions';
-import { allCommonModules } from './modulesmap';
+import { allCommonModularPlugins } from './modularplugins';
 import Platform from 'common/platform';
 import { DefaultMessage } from '../types/defaultmessage';
 import { MsgPack } from 'common/types/msgpack';
 import { DefaultPresenceMessage } from '../types/defaultpresencemessage';
 import { Http } from 'common/types/http';
+import Defaults from '../util/defaults';
 
 /**
  `DefaultRest` is the class that the non tree-shakable version of the SDK exports as `Rest`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
@@ -17,11 +18,13 @@ export class DefaultRest extends BaseRest {
       throw new Error('Expected DefaultRest._MsgPack to have been set');
     }
 
-    super(options, {
-      ...allCommonModules,
-      Crypto: DefaultRest.Crypto ?? undefined,
-      MsgPack: DefaultRest._MsgPack ?? undefined,
-    });
+    super(
+      Defaults.objectifyOptions(options, {
+        ...allCommonModularPlugins,
+        Crypto: DefaultRest.Crypto ?? undefined,
+        MsgPack: DefaultRest._MsgPack ?? undefined,
+      }),
+    );
   }
 
   private static _Crypto: typeof Platform.Crypto = null;

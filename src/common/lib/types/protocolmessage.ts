@@ -1,6 +1,6 @@
 import { MsgPack } from 'common/types/msgpack';
 import * as API from '../../../../ably';
-import { PresenceMessageModule } from '../client/modulesmap';
+import { PresenceMessagePlugin } from '../client/modularplugins';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message, { fromValues as messageFromValues, fromValuesArray as messagesFromValuesArray } from './message';
@@ -69,27 +69,27 @@ export const serialize = Utils.encodeBody;
 export function deserialize(
   serialized: unknown,
   MsgPack: MsgPack | null,
-  presenceMessageModule: PresenceMessageModule | null,
+  presenceMessagePlugin: PresenceMessagePlugin | null,
   format?: Utils.Format,
 ): ProtocolMessage {
   const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, MsgPack, format);
-  return fromDeserialized(deserialized, presenceMessageModule);
+  return fromDeserialized(deserialized, presenceMessagePlugin);
 }
 
 export function fromDeserialized(
   deserialized: Record<string, unknown>,
-  presenceMessageModule: PresenceMessageModule | null,
+  presenceMessagePlugin: PresenceMessagePlugin | null,
 ): ProtocolMessage {
   const error = deserialized.error;
   if (error) deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
   const messages = deserialized.messages as Message[];
   if (messages) for (let i = 0; i < messages.length; i++) messages[i] = messageFromValues(messages[i]);
 
-  const presence = presenceMessageModule ? (deserialized.presence as PresenceMessage[]) : undefined;
-  if (presenceMessageModule) {
-    if (presence && presenceMessageModule)
+  const presence = presenceMessagePlugin ? (deserialized.presence as PresenceMessage[]) : undefined;
+  if (presenceMessagePlugin) {
+    if (presence && presenceMessagePlugin)
       for (let i = 0; i < presence.length; i++)
-        presence[i] = presenceMessageModule.presenceMessageFromValues(presence[i], true);
+        presence[i] = presenceMessagePlugin.presenceMessageFromValues(presence[i], true);
   }
   return Object.assign(new ProtocolMessage(), { ...deserialized, presence });
 }
@@ -105,7 +105,7 @@ export function fromValues(values: unknown): ProtocolMessage {
   return Object.assign(new ProtocolMessage(), values);
 }
 
-export function stringify(msg: any, presenceMessageModule: PresenceMessageModule | null): string {
+export function stringify(msg: any, presenceMessagePlugin: PresenceMessagePlugin | null): string {
   let result = '[ProtocolMessage';
   if (msg.action !== undefined) result += '; action=' + ActionName[msg.action] || msg.action;
 
@@ -117,8 +117,8 @@ export function stringify(msg: any, presenceMessageModule: PresenceMessageModule
   }
 
   if (msg.messages) result += '; messages=' + toStringArray(messagesFromValuesArray(msg.messages));
-  if (msg.presence && presenceMessageModule)
-    result += '; presence=' + toStringArray(presenceMessageModule.presenceMessagesFromValuesArray(msg.presence));
+  if (msg.presence && presenceMessagePlugin)
+    result += '; presence=' + toStringArray(presenceMessagePlugin.presenceMessagesFromValuesArray(msg.presence));
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
   if (msg.flags) result += '; flags=' + flagNames.filter(msg.hasFlag).join(',');

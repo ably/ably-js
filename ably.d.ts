@@ -370,7 +370,7 @@ export interface ChannelMetrics {
 /**
  * Passes additional client-specific properties to the REST constructor or the Realtime constructor.
  */
-export interface ClientOptions extends AuthOptions {
+export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   /**
    * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the {@link Connection.connect | `connect()`} method. The default is `true`.
    *
@@ -573,12 +573,17 @@ export interface ClientOptions extends AuthOptions {
   /**
    * A map between a plugin type and a plugin object.
    */
-  plugins?: {
-    /**
-     * A plugin capable of decoding `vcdiff`-encoded messages. For more information on how to configure a channel to use delta encoding, see the [documentation for the `@ably-forks/vcdiff-decoder` package](https://github.com/ably-forks/vcdiff-decoder#usage).
-     */
-    vcdiff?: any;
-  };
+  plugins?: Plugins;
+}
+
+/**
+ * Describes the {@link ClientOptions.plugins | plugins} accepted by all variants of the SDK.
+ */
+export interface CorePlugins {
+  /**
+   * A plugin capable of decoding `vcdiff`-encoded messages. For more information on how to configure a channel to use delta encoding, see the [documentation for the `@ably-forks/vcdiff-decoder` package](https://github.com/ably-forks/vcdiff-decoder#usage).
+   */
+  vcdiff?: any;
 }
 
 /**
