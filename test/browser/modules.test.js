@@ -20,10 +20,9 @@ import {
   FetchRequest,
   XHRRequest,
   MessageInteractions,
-  Vcdiff,
 } from '../../build/modules/index.js';
 
-function registerAblyModulesTests(helper, registerDeltaTests) {
+function registerAblyModulesTests(helper) {
   describe('browser/modules', function () {
     this.timeout(10 * 1000);
     const expect = chai.expect;
@@ -722,43 +721,14 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
         });
       });
     });
-
-    // Tests for the Vcdiff module
-    //
-    // Note: Unlike the other tests in this file, which only test how the
-    // absence or presence of a module affects the client, assuming that the
-    // underlying functionality is tested in detail in the test suite for the
-    // default variant of the library, the tests for the Vcdiff module actually
-    // test the library’s delta encoding functionality. This is because on web,
-    // delta encoding functionality is only available in the modular variant of
-    // the library.
-    (() => {
-      const config = {
-        createRealtimeWithDeltaPlugin: (options) => {
-          return new BaseRealtime(options, {
-            WebSocketTransport,
-            FetchRequest,
-            Vcdiff,
-          });
-        },
-        createRealtimeWithoutDeltaPlugin: (options) => {
-          return new BaseRealtime(options, {
-            WebSocketTransport,
-            FetchRequest,
-          });
-        },
-      };
-
-      registerDeltaTests('Vcdiff', config);
-    })();
   });
 }
 
 // This function is called by browser_setup.js once `require` is available
 window.registerAblyModulesTests = async () => {
   return new Promise((resolve) => {
-    require(['shared_helper', 'delta_tests'], (helper, registerDeltaTests) => {
-      registerAblyModulesTests(helper, registerDeltaTests);
+    require(['shared_helper'], (helper) => {
+      registerAblyModulesTests(helper);
       resolve();
     });
   });

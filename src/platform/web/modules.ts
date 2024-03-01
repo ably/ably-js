@@ -22,7 +22,6 @@ Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = ModulesTransports;
 Platform.WebStorage = WebStorage;
-Platform.Vcdiff = { supported: true, bundledDecode: null };
 
 Http.bundledRequestImplementations = modulesBundledRequestImplementations;
 
@@ -42,7 +41,6 @@ export * from './modules/msgpack';
 export * from './modules/realtimepresence';
 export * from './modules/transports';
 export * from './modules/http';
-export * from './modules/vcdiff';
 export { Rest } from '../../common/lib/client/rest';
 export { FilteredSubscriptions as MessageInteractions } from '../../common/lib/client/filteredsubscriptions';
 export { BaseRest, BaseRealtime, ErrorInfo };

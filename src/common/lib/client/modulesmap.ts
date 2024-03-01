@@ -10,7 +10,6 @@ import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
-import { VcdiffDecoder } from '../types/message';
 
 export interface PresenceMessageModule {
   presenceMessageFromValues: typeof presenceMessageFromValues;
@@ -32,7 +31,6 @@ export interface ModulesMap {
   XHRRequest?: typeof XHRRequest;
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
-  Vcdiff?: VcdiffDecoder;
 }
 
 export const allCommonModules: ModulesMap = { Rest };

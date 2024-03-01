@@ -212,39 +212,7 @@ channel.subscribe('myEvent', function (message) {
 
 Subscribing to a channel in delta mode enables [delta compression](https://www.ably.com/docs/realtime/channels/channel-parameters/deltas). This is a way for a client to subscribe to a channel so that message payloads sent contain only the difference (ie the delta) between the present message and the previous message on the channel.
 
-To subscribe to a channel in delta mode, you must:
-
-1. Create a client that supports deltas (this only applies when running in a browser);
-2. Configure the channel to operate in delta mode.
-
-#### Creating a client that supports deltas
-
-This section only applies when running in a browser. The Realtime client on all other platforms includes delta support.
-
-To use delta functionality in the browser, you must use the [modular variant of the library](#modular-tree-shakable-variant) and create a client that includes the `Vcdiff` module:
-
-  ```javascript
-  import { BaseRealtime, WebSocketTransport, FetchRequest, Vcdiff } from 'ably/modules';
-
-  const options = { key: 'YOUR_ABLY_KEY' };
-  const client = new BaseRealtime(options, {
-    WebSocketTransport,
-    FetchRequest,
-    Vcdiff
-  });
-  ```
-
-#### Configuring a channel to operate in delta mode
-
-To configure a channel to operate in delta mode, specify channel parameters of `{ delta: 'vcdiff' }` when fetching the channel:
-
-```javascript
-const channel = realtime.channels.get('your-ably-channel', {
-    params: {
-        delta: 'vcdiff'
-    }
-});
-```
+Configuring a channel for deltas is detailed in the [@ably-forks/vcdiff-decoder documentation](https://github.com/ably-forks/vcdiff-decoder#usage).
 
 Beyond specifying channel options, the rest is transparent and requires no further changes to your application. The `message.data` instances that are delivered to your listening function continue to contain the values that were originally published.
 
@@ -517,6 +485,13 @@ const nextPage = await statsPage.next();        // retrieves the next page as Pa
 ```javascript
 const time = await client.time(); // time is in ms since epoch
 ```
+
+## Delta Plugin
+
+From version 1.2 this client library supports subscription to a stream of Vcdiff formatted delta messages from the Ably service. For certain applications this can bring significant data efficiency savings.
+This is an optional feature so our
+
+See the [@ably-forks/vcdiff-decoder documentation](https://github.com/ably-forks/vcdiff-decoder#usage) for setup and usage examples.
 
 ## Support, feedback and troubleshooting
 

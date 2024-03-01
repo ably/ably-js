@@ -216,20 +216,6 @@ export declare const FetchRequest: unknown;
 export declare const MessageInteractions: unknown;
 
 /**
- * Provides a {@link BaseRealtime} instance with the ability to use [delta compression](https://www.ably.com/docs/realtime/channels/channel-parameters/deltas).
- *
- * To create a client that includes this module, include it in the `ModulesMap` that you pass to the {@link BaseRealtime.constructor}:
- *
- * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, Vcdiff } from 'ably/modules';
- * const realtime = new BaseRealtime(options, { WebSocketTransport, FetchRequest, Vcdiff });
- * ```
- *
- * For information on how to configure a channel to use delta encoding, see [the documentation in the `README`](https://github.com/ably/ably-js/blob/main/README.md#configuring-a-channel-to-operate-in-delta-mode).
- */
-export declare const Vcdiff: unknown;
-
-/**
  * Pass a `ModulesMap` to { @link BaseRest.constructor | the constructor of BaseRest } or {@link BaseRealtime.constructor | that of BaseRealtime} to specify which functionality should be made available to that client.
  */
 export interface ModulesMap {
@@ -282,11 +268,6 @@ export interface ModulesMap {
    * See {@link MessageInteractions | documentation for the `MessageInteractions` module}.
    */
   MessageInteractions?: typeof MessageInteractions;
-
-  /**
-   * See {@link Vcdiff | documentation for the `Vcdiff` module}.
-   */
-  Vcdiff?: typeof Vcdiff;
 }
 
 /**

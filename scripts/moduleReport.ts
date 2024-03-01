@@ -22,7 +22,6 @@ const moduleNames = [
   'XHRRequest',
   'FetchRequest',
   'MessageInteractions',
-  'Vcdiff',
 ];
 
 // List of all free-standing functions exported by the library along with the

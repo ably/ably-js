@@ -58,6 +58,9 @@ require([(baseUrl + '/test/common/globals/named_dependencies.js').replace('//', 
       'browser-base64': {
         exports: 'Base64',
       },
+      'vcdiff-decoder': {
+        exports: 'vcdiffDecoder',
+      },
     },
 
     // dynamically load all test files
