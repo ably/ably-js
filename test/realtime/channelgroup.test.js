@@ -270,7 +270,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     // wait for n consumers to appear in the given channel's presence set
-    function waitForConsumers(channel, n) {
+    function waitForNConsumersInPresenceSet(channel, n) {
       return new Promise(async (resolve, reject) => {
         const interval = setInterval(async () => {
           try {
@@ -384,7 +384,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           activeChannel.publish('event0', testMsg);
 
           // wait for all consumers to appear in the group
-          await waitForConsumers(realtime1.channels.get(consumerGroupName), consumers.length);
+          await waitForNConsumersInPresenceSet(realtime1.channels.get(consumerGroupName), consumers.length);
 
           // send 2 messages to each channel
           for (let i = 0; i < channels.length; i++) {
@@ -459,7 +459,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           activeChannel.publish('event0', testMsg);
 
           // wait for first consumer to appear in the group
-          await waitForConsumers(realtime1.channels.get(consumerGroupName), 1);
+          await waitForNConsumersInPresenceSet(realtime1.channels.get(consumerGroupName), 1);
 
           // send 2 messages to the first third of the channels
           for (let i = 0; i < Math.floor(channels.length / 3); i++) {
@@ -479,7 +479,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
 
           // wait for second consumer to appear in the group
-          await waitForConsumers(realtime1.channels.get(consumerGroupName), 2);
+          await waitForNConsumersInPresenceSet(realtime1.channels.get(consumerGroupName), 2);
 
           // send 2 messages to the second third of the channels
           for (let i = Math.floor(channels.length / 3); i < 2 * Math.floor(channels.length / 3); i++) {
@@ -490,7 +490,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           // the first consumer leaves the group, remaining messages should be received by the second consumer
           await consumers[0].leave();
           hasLeft = true;
-          await waitForConsumers(realtime1.channels.get(consumerGroupName), 1);
+          await waitForNConsumersInPresenceSet(realtime1.channels.get(consumerGroupName), 1);
           // send 2 messages to the final third of the channels
           for (let i = 2 * Math.floor(channels.length / 3); i < channels.length; i++) {
             channels[i].publish('event0', `test data ${i}`);
@@ -519,7 +519,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         new Promise((resolve) => realtime2.connection.on('connected', resolve)),
       ])
         .then(async () => {
-          // create 2 consumers in one group
+          // create a group with a single consumer
           const consumer = realtime2.channelGroups.get(`${prefix}:.*`, {
             activeChannel: activeChannelName,
             consumerGroup: { name: consumerGroupName },
@@ -543,7 +543,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           activeChannel.publish('event0', { active: [channelName] });
 
           // wait for the consumer to appear in the group
-          await waitForConsumers(realtime1.channels.get(consumerGroupName), 1);
+          await waitForNConsumersInPresenceSet(realtime1.channels.get(consumerGroupName), 1);
 
           // send a message to the channel
           // channel.publish('event0', 'test data');
