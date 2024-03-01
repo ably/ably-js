@@ -70,6 +70,9 @@ class BaseRealtime extends BaseClient {
   }
 
   get channelGroups() {
+    if (!this._channelGroups) {
+      Utils.throwMissingModuleError('ChannelGroups');
+    }
     return this._channelGroups;
   }
 
