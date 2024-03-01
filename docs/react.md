@@ -55,7 +55,7 @@ root.render(
 
 ### Define Ably channels
 
-Once you've done this, define Ably channels you want to use by utilizing the `ChannelProvider` component:
+Once you've set up `AblyProvider`, define Ably channels you want to use by utilizing the `ChannelProvider` component:
 
 ```jsx
 <ChannelProvider channelName="your-channel-name">
@@ -101,8 +101,9 @@ return (
 ```
 
 > [!NOTE]
-> Please note that attempts to publish to a derived channel (the one created or retrieved with a filter expression) will fail. In order to send messages to the channel called _"your-derived-channel-name"_ from the example above, you will need to create another channel instance without a filter expression.
-
+> Please note that attempts to publish to a derived channel (the one created or retrieved with a filter expression)
+> using channel instance will fail, since derived channels support only `subscribe` capability.
+> Use `publish` function returned by `useChannel` hook instead.
 
 ---
 
