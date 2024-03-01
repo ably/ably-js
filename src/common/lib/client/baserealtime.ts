@@ -23,14 +23,14 @@ class BaseRealtime extends BaseClient {
   _channels: any;
   connection: Connection;
 
-  constructor(options: ClientOptions, modules: ModulesMap) {
+  constructor(options: ClientOptions | string, modules: ModulesMap) {
     super(options, modules);
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromModules(modules);
     this._RealtimePresence = modules.RealtimePresence ?? null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
-    if (options.autoConnect !== false) this.connect();
+    if (this.options.autoConnect !== false) this.connect();
   }
 
   private static transportImplementationsFromModules(modules: ModulesMap) {
