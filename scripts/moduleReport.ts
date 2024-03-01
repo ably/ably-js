@@ -10,8 +10,8 @@ const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 95, gzip: 29 };
 
 const baseClientNames = ['BaseRest', 'BaseRealtime'];
 
-// List of all modules accepted in ModularPlugins
-const moduleNames = [
+// List of all plugins accepted in ModularPlugins
+const pluginNames = [
   'Rest',
   'Crypto',
   'MsgPack',
@@ -65,12 +65,12 @@ interface Output {
   errors: Error[];
 }
 
-// Uses esbuild to create a bundle containing the named exports from 'ably/modules'
+// Uses esbuild to create a bundle containing the named exports from 'ably/modular'
 function getBundleInfo(exports: string[]): BundleInfo {
   const outfile = exports.join('');
   const result = esbuild.buildSync({
     stdin: {
-      contents: `export { ${exports.join(', ')} } from './build/modules'`,
+      contents: `export { ${exports.join(', ')} } from './build/modular'`,
       resolveDir: '.',
     },
     metafile: true,
@@ -97,7 +97,7 @@ function getBundleInfo(exports: string[]): BundleInfo {
   };
 }
 
-// Gets the bundled size in bytes of an array of named exports from 'ably/modules'
+// Gets the bundled size in bytes of an array of named exports from 'ably/modular'
 async function getImportSizes(exports: string[]): Promise<ByteSizes> {
   const bundleInfo = getBundleInfo(exports);
 
@@ -125,7 +125,7 @@ async function calculateAndCheckExportSizes(): Promise<Output> {
     output.tableRows.push({ description: baseClient, sizes: baseClientSizes });
 
     // Then output the size of each export together with the base client
-    for (const exportName of [...moduleNames, ...functions.map((functionData) => functionData.name)]) {
+    for (const exportName of [...pluginNames, ...functions.map((functionData) => functionData.name)]) {
       const sizes = await getImportSizes([baseClient, exportName]);
       output.tableRows.push({ description: `${baseClient} + ${exportName}`, sizes });
 
@@ -150,7 +150,7 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
     const standaloneSizes = await getImportSizes([functionName]);
     output.tableRows.push({ description: functionName, sizes: standaloneSizes });
 
-    // Then output the size of the function together with the modules we expect
+    // Then output the size of the function together with the plugin we expect
     // it to transitively import
     if (transitiveImports.length > 0) {
       const withTransitiveImportsSizes = await getImportSizes([functionName, ...transitiveImports]);
@@ -160,11 +160,11 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
       });
 
       if (withTransitiveImportsSizes.rawByteSize > standaloneSizes.rawByteSize) {
-        // Emit an error if the bundle size is increased by adding the modules
+        // Emit an error if the bundle size is increased by adding the plugins
         // that we expect this function to have transitively imported anyway.
         // This seemed like a useful sense check, but it might need tweaking in
         // the future if we make future optimisations that mean that the
-        // standalone functions don’t necessarily import the whole module.
+        // standalone functions don’t necessarily import the whole plugin.
         output.errors.push(
           new Error(
             `Adding ${transitiveImports.join(' + ')} to ${functionName} unexpectedly increases the bundle size.`,
@@ -209,7 +209,7 @@ async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Outpu
 }
 
 async function calculateAllExportsBundleSize(): Promise<Output> {
-  const exports = [...baseClientNames, ...moduleNames, ...functions.map((val) => val.name)];
+  const exports = [...baseClientNames, ...pluginNames, ...functions.map((val) => val.name)];
   const sizes = await getImportSizes(exports);
 
   return { tableRows: [{ description: 'All exports', sizes }], errors: [] };
@@ -263,7 +263,7 @@ async function checkBaseRealtimeFiles() {
     'src/platform/web/lib/util/defaults.ts',
     'src/platform/web/lib/util/hmac-sha256.ts',
     'src/platform/web/lib/util/webstorage.ts',
-    'src/platform/web/modules.ts',
+    'src/platform/web/modular.ts',
   ]);
 
   const errors: Error[] = [];

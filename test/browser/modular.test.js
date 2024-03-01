@@ -20,10 +20,10 @@ import {
   FetchRequest,
   XHRRequest,
   MessageInteractions,
-} from '../../build/modules/index.js';
+} from '../../build/modular/index.js';
 
-function registerAblyModulesTests(helper) {
-  describe('browser/modules', function () {
+function registerAblyModularTests(helper) {
+  describe('browser/modular', function () {
     this.timeout(10 * 1000);
     const expect = chai.expect;
     const BufferUtils = BaseRest.Platform.BufferUtils;
@@ -782,10 +782,10 @@ function registerAblyModulesTests(helper) {
 }
 
 // This function is called by browser_setup.js once `require` is available
-window.registerAblyModulesTests = async () => {
+window.registerAblyModularTests = async () => {
   return new Promise((resolve) => {
     require(['shared_helper'], (helper) => {
-      registerAblyModulesTests(helper);
+      registerAblyModularTests(helper);
       resolve();
     });
   });

@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["ably.d.ts", "modules.d.ts"],
+  "entryPoints": ["ably.d.ts", "modular.d.ts"],
   "out": "typedoc/generated",
   "readme": "typedoc/landing-page.md",
   "treatWarningsAsErrors": true,

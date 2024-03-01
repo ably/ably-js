@@ -7,4 +7,4 @@ export const defaultBundledRequestImplementations: HTTPRequestImplementations = 
   FetchRequest: fetchRequest,
 };
 
-export const modulesBundledRequestImplementations: HTTPRequestImplementations = {};
+export const modularBundledRequestImplementations: HTTPRequestImplementations = {};

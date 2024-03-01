@@ -41,7 +41,7 @@ module.exports = {
       },
     },
     {
-      files: ['ably.d.ts', 'modules.d.ts'],
+      files: ['ably.d.ts', 'modular.d.ts'],
       extends: [
         'plugin:jsdoc/recommended',
       ],

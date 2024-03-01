@@ -1,4 +1,4 @@
-import { BaseRealtime, WebSocketTransport, FetchRequest, generateRandomKey } from 'ably/modules';
+import { BaseRealtime, WebSocketTransport, FetchRequest, generateRandomKey } from 'ably/modular';
 import { InboundMessage, RealtimeChannel } from 'ably';
 import { createSandboxAblyAPIKey } from './sandbox';
 

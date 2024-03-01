@@ -124,15 +124,15 @@ module.exports = function (grunt) {
       };
     }
 
-    function createModulesConfig() {
+    function createModularConfig() {
       return {
         // We need to create a new copy of the base config, because calling
         // esbuild.build() with the base config causes it to mutate the passed
         // config’s `banner.js` property to add some weird modules shim code,
         // which we don’t want here.
         ...createBaseConfig(),
-        entryPoints: ['src/platform/web/modules.ts'],
-        outfile: 'build/modules/index.js',
+        entryPoints: ['src/platform/web/modular.ts'],
+        outfile: 'build/modular/index.js',
         format: 'esm',
         plugins: [stripLogsPlugin],
       };
@@ -145,7 +145,7 @@ module.exports = function (grunt) {
         outfile: 'build/ably.min.js',
         minify: true,
       }),
-      esbuild.build(createModulesConfig()),
+      esbuild.build(createModularConfig()),
     ]).then(() => {
       console.log('esbuild succeeded');
       done(true);

@@ -14,9 +14,9 @@
       "react-native": "./build/ably-reactnative.js",
       "default": "./build/ably.js"
     },
-    "./modules": {
-      "types": "./modules.d.ts",
-      "default": "./build/modules/index.js"
+    "./modular": {
+      "types": "./modular.d.ts",
+      "default": "./build/modular/index.js"
     },
     "./react": {
       "require": "./react/cjs/index.js",
@@ -27,7 +27,7 @@
   "files": [
     "build/**",
     "ably.d.ts",
-    "modules.d.ts",
+    "modular.d.ts",
     "resources/**",
     "src/**",
     "react/**"
@@ -145,8 +145,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "prepare": "npm run build",
-    "format": "prettier --write --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modules.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/chrome-mv3.md grunt",
-    "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modules.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s grunt",
+    "format": "prettier --write --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modular.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/chrome-mv3.md grunt",
+    "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modular.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s grunt",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
     "docs": "typedoc"

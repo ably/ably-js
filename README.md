@@ -95,10 +95,10 @@ The modular variant of the library provides:
 - a `BaseRealtime` class;
 - various plugins that add functionality to a `BaseRealtime` instance, such as `Rest`, `RealtimePresence`, etc.
 
-To use this variant of the library, import the `BaseRealtime` class from `ably/modules`, along with the plugins that you wish to use. Then, pass these plugins to the `BaseRealtime` constructor as shown in the example below:
+To use this variant of the library, import the `BaseRealtime` class from `ably/modular`, along with the plugins that you wish to use. Then, pass these plugins to the `BaseRealtime` constructor as shown in the example below:
 
 ```javascript
-import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from 'ably/modules';
+import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from 'ably/modular';
 
 const client = new BaseRealtime({
   key: 'YOUR_ABLY_API_KEY' /* Replace with a real key from the Ably dashboard */,
@@ -124,7 +124,7 @@ In order to further reduce bundle size, the modular variant of the SDK performs 
 
 If you need more verbose logging, use the default variant of the SDK.
 
-For more information about the modular variant of the SDK, see the [generated documentation](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modules.html) (this link points to the documentation for the `main` branch).
+For more information about the modular variant of the SDK, see the [generated documentation](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html) (this link points to the documentation for the `main` branch).
 
 ### TypeScript
 

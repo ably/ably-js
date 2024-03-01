@@ -9,15 +9,15 @@
  *
  * | `static` version                           | Replacement in modular variant                                                     |
  * | ------------------------------------------ | ---------------------------------------------------------------------------------- |
- * | `Crypto.generateRandomKey()`               | [`generateRandomKey()`](../functions/modules.generateRandomKey.html)               |
- * | `Crypto.getDefaultParams()`                | [`getDefaultCryptoParams()`](../functions/modules.getDefaultCryptoParams.html)     |
- * | `MessageStatic.fromEncoded()`              | [`decodeMessage()`](../functions/modules.decodeMessage.html)                       |
- * | `MessageStatic.fromEncoded()`              | [`decodeEncryptedMessage()`](../functions/modules.decodeEncryptedMessage.html)     |
- * | `MessageStatic.fromEncodedArray()`         | [`decodeMessages()`](../functions/modules.decodeMessages.html)                     |
- * | `MessageStatic.fromEncodedArray()`         | [`decodeEncryptedMessages()`](../functions/modules.decodeEncryptedMessages.html)   |
- * | `PresenceMessageStatic.fromEncoded()`      | [`decodePresenceMessage()`](../functions/modules.decodePresenceMessage.html)       |
- * | `PresenceMessageStatic.fromEncodedArray()` | [`decodePresenceMessages()`](../functions/modules.decodePresenceMessages.html)     |
- * | `PresenceMessageStatic.fromValues()`       | [`constructPresenceMessage()`](../functions/modules.constructPresenceMessage.html) |
+ * | `Crypto.generateRandomKey()`               | [`generateRandomKey()`](../functions/modular.generateRandomKey.html)               |
+ * | `Crypto.getDefaultParams()`                | [`getDefaultCryptoParams()`](../functions/modular.getDefaultCryptoParams.html)     |
+ * | `MessageStatic.fromEncoded()`              | [`decodeMessage()`](../functions/modular.decodeMessage.html)                       |
+ * | `MessageStatic.fromEncoded()`              | [`decodeEncryptedMessage()`](../functions/modular.decodeEncryptedMessage.html)     |
+ * | `MessageStatic.fromEncodedArray()`         | [`decodeMessages()`](../functions/modular.decodeMessages.html)                     |
+ * | `MessageStatic.fromEncodedArray()`         | [`decodeEncryptedMessages()`](../functions/modular.decodeEncryptedMessages.html)   |
+ * | `PresenceMessageStatic.fromEncoded()`      | [`decodePresenceMessage()`](../functions/modular.decodePresenceMessage.html)       |
+ * | `PresenceMessageStatic.fromEncodedArray()` | [`decodePresenceMessages()`](../functions/modular.decodePresenceMessages.html)     |
+ * | `PresenceMessageStatic.fromValues()`       | [`constructPresenceMessage()`](../functions/modular.constructPresenceMessage.html) |
  *
  * @module
  */
@@ -68,7 +68,7 @@ export declare const constructPresenceMessage: PresenceMessageStatic['fromValues
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, Rest } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, Rest } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Rest } });
  * ```
  *
@@ -95,7 +95,7 @@ export declare const Rest: unknown;
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, Crypto } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, Crypto } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Crypto } });
  * ```
  *
@@ -109,7 +109,7 @@ export declare const Crypto: unknown;
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, MsgPack } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, MsgPack } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, MsgPack } });
  * ```
  *
@@ -123,7 +123,7 @@ export declare const MsgPack: unknown;
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, RealtimePresence } });
  * ```
  *
@@ -137,14 +137,14 @@ export declare const RealtimePresence: unknown;
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest } });
  * ```
  *
  * Note that network conditions, such as firewalls or proxies, might prevent the client from establishing a WebSocket connection. For this reason, you may wish to provide the `BaseRealtime` instance with the ability to alternatively establish a connection using a transport that is less susceptible to these external conditions. You do this by passing one or more alternative transport plugins, namely {@link XHRStreaming} and/or {@link XHRPolling}, alongside `WebSocketTransport`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, XHRStreaming, FetchRequest } });
  * ```
  */
@@ -156,7 +156,7 @@ export declare const WebSocketTransport: unknown;
  * `XHRPolling` uses HTTP long polling; that is, it will make a new HTTP request each time a message is received from Ably. This is less efficient than {@link XHRStreaming}, but is also more likely to succeed in the presence of certain network conditions such as firewalls or proxies.
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { XHRPolling, FetchRequest } });
  * ```
  *
@@ -170,7 +170,7 @@ export declare const XHRPolling: unknown;
  * `XHRStreaming` uses HTTP streaming; that is, in contrast to {@link XHRPolling}, it does not need to make a new HTTP request each time a message is received from Ably. This is more efficient than `XHRPolling`, but is more likely to be blocked by certain network conditions such as firewalls or proxies.
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { XHRStreaming, FetchRequest } });
  * ```
  *
@@ -184,7 +184,7 @@ export declare const XHRStreaming: unknown;
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, XHRRequest } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, XHRRequest } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, XHRRequest } });
  * ```
  */
@@ -196,7 +196,7 @@ export declare const XHRRequest: unknown;
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest } });
  * ```
  */
@@ -208,7 +208,7 @@ export declare const FetchRequest: unknown;
  * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest, MessageInteractions } from 'ably/modules';
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, MessageInteractions } from 'ably/modular';
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, MessageInteractions } });
  * ```
  *
