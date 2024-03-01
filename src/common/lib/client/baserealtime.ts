@@ -14,6 +14,7 @@ import { TransportNames } from 'common/constants/TransportName';
 import Platform, { TransportImplementations } from 'common/platform';
 import { VcdiffDecoder } from '../types/message';
 import HashRing from '../util/hashring';
+import ChannelStateChange from './channelstatechange';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
@@ -244,6 +245,7 @@ class ChannelGroup {
   active: RealtimeChannel;
   subscriptions: EventEmitter;
   subscribedChannels: Record<string, RealtimeChannel> = {};
+  channelTimers: Record<string, NodeJS.Timeout> = {};
   expression: RegExp;
   consumerGroup: ConsumerGroup;
 
@@ -306,27 +308,80 @@ class ChannelGroup {
     );
   }
 
+  private unsubscribeTimeout(channel: string) {
+    const timeout = this.options?.subscriptionTimeout || 60 * 60 * 1000;
+    Logger.logAction(
+      Logger.LOG_MAJOR,
+      'ChannelGroups.addSubscriptions()',
+      'subscription timeout started on channel ' + channel + ' timeout = ' + timeout
+    );
+    return setTimeout(() => {
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ChannelGroups.addSubscriptions()',
+        'subscription timeout expired on channel ' + channel
+      );
+      this.removeSubscriptions([channel]);
+    }, timeout);
+  }
+
+  private async subscribeChannel(channel: string) {
+    try {
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ChannelGroups.subscribeChannel()',
+        'setting up subscription to channel ' + channel
+      );
+      this.subscribedChannels[channel] = this.channels.get(channel);
+      this.subscribedChannels[channel].on(['detached', 'failed'], (event: ChannelStateChange) => {
+        Logger.logAction(
+          Logger.LOG_MAJOR,
+          'ChannelGroups.subscribeChannel()',
+          'clearing subscribe timeout; event = ' + event.current
+        );
+        clearTimeout(this.channelTimers[channel]);
+        delete this.channelTimers[channel];
+      });
+      this.channelTimers[channel] = this.unsubscribeTimeout(channel);
+      await this.subscribedChannels[channel].setOptions({ params: { rewind: this.options?.rewind || '5s' } });
+      await this.subscribedChannels[channel].attach();
+      await this.subscribedChannels[channel].subscribe((msg: any) => {
+        clearTimeout(this.channelTimers[channel]);
+        this.channelTimers[channel] = this.unsubscribeTimeout(channel);
+        this.subscriptions.emit('message', channel, msg);
+      });
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ChannelGroups.subscribeChannel()',
+        'setup channel subscription failed on channel ' + channel + '; err = ' + Utils.inspectError(err)
+      );
+    }
+  }
+
+  private async unsubscribeChannel(channel: string) {
+    try {
+      Logger.logAction(Logger.LOG_MAJOR, 'ChannelGroups.unsubscribeChannel()', 'unsubscribing from channel ' + channel);
+      clearTimeout(this.channelTimers[channel]);
+      delete this.channelTimers[channel];
+      this.subscribedChannels[channel].unsubscribe();
+      await this.subscribedChannels[channel].detach();
+      delete this.subscribedChannels[channel];
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ChannelGroups.unsubscribeChannel()',
+        'failed to unsubscribe from channel ' + channel + '; err = ' + Utils.inspectError(err)
+      );
+    }
+  }
+
   private addSubscriptions(channels: string[]) {
     channels.forEach((channel) => {
       if (this.subscribedChannels[channel]) {
         return;
       }
-
-      this.subscribedChannels[channel] = this.channels.get(channel);
-      this.subscribedChannels[channel]
-        .setOptions({ params: { rewind: this.options?.rewind || '5s' } })
-        .then(() =>
-          this.subscribedChannels[channel].subscribe((msg: any) => {
-            this.subscriptions.emit('message', channel, msg);
-          })
-        )
-        .catch((err) => {
-          Logger.logAction(
-            Logger.LOG_ERROR,
-            'ChannelGroups.addSubscriptions()',
-            'failed to set rewind options on channel ' + channel + '; err = ' + Utils.inspectError(err)
-          );
-        });
+      this.subscribeChannel(channel);
     });
   }
 
@@ -335,16 +390,7 @@ class ChannelGroup {
       if (!this.subscribedChannels[channel]) {
         return;
       }
-
-      this.subscribedChannels[channel].unsubscribe();
-      this.subscribedChannels[channel].detach().catch((err) => {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ChannelGroups.removeSubscriptions()',
-          'failed to detach from channel ' + channel + '; err = ' + Utils.inspectError(err)
-        );
-      });
-      delete this.subscribedChannels[channel];
+      this.unsubscribeChannel(channel);
     });
   }
 
