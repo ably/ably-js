@@ -1,5 +1,5 @@
 const Mocha = require('mocha');
-const MochaJUnitReporter = require('./mocha_junit_reporter/build/node');
+const MochaJUnitReporter = require('mocha-junit-reporter');
 const path = require('path');
 const jUnitDirectoryPath = require('./junit_directory_path');
 
