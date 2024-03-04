@@ -66,11 +66,11 @@ interface Output {
 }
 
 // Uses esbuild to create a bundle containing the named exports from 'ably/modules'
-function getBundleInfo(modules: string[]): BundleInfo {
-  const outfile = modules.join('');
+function getBundleInfo(exports: string[]): BundleInfo {
+  const outfile = exports.join('');
   const result = esbuild.buildSync({
     stdin: {
-      contents: `export { ${modules.join(', ')} } from './build/modules'`,
+      contents: `export { ${exports.join(', ')} } from './build/modules'`,
       resolveDir: '.',
     },
     metafile: true,
@@ -98,8 +98,8 @@ function getBundleInfo(modules: string[]): BundleInfo {
 }
 
 // Gets the bundled size in bytes of an array of named exports from 'ably/modules'
-async function getImportSizes(modules: string[]): Promise<ByteSizes> {
-  const bundleInfo = getBundleInfo(modules);
+async function getImportSizes(exports: string[]): Promise<ByteSizes> {
+  const bundleInfo = getBundleInfo(exports);
 
   return {
     rawByteSize: bundleInfo.byteSize,
@@ -115,7 +115,7 @@ async function runSourceMapExplorer(bundleInfo: BundleInfo) {
   });
 }
 
-async function calculateAndCheckModuleSizes(): Promise<Output> {
+async function calculateAndCheckExportSizes(): Promise<Output> {
   const output: Output = { tableRows: [], errors: [] };
 
   for (const baseClient of baseClientNames) {
@@ -130,8 +130,8 @@ async function calculateAndCheckModuleSizes(): Promise<Output> {
       output.tableRows.push({ description: `${baseClient} + ${exportName}`, sizes });
 
       if (!(baseClientSizes.rawByteSize < sizes.rawByteSize) && !(baseClient === 'BaseRest' && exportName === 'Rest')) {
-        // Emit an error if adding the module does not increase the bundle size
-        // (this means that the module is not being tree-shaken correctly).
+        // Emit an error if adding the export does not increase the bundle size
+        // (this means that the export is not being tree-shaken correctly).
         output.errors.push(new Error(`Adding ${exportName} to ${baseClient} does not increase the bundle size.`));
       }
     }
@@ -208,11 +208,11 @@ async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Outpu
   return output;
 }
 
-async function calculateAllModulesBundleSize(): Promise<Output> {
+async function calculateAllExportsBundleSize(): Promise<Output> {
   const exports = [...baseClientNames, ...moduleNames, ...functions.map((val) => val.name)];
   const sizes = await getImportSizes(exports);
 
-  return { tableRows: [{ description: 'All modules', sizes }], errors: [] };
+  return { tableRows: [{ description: 'All exports', sizes }], errors: [] };
 }
 
 // Performs a sense check that there are no unexpected files making a large contribution to the BaseRealtime bundle size.
@@ -303,8 +303,8 @@ async function checkBaseRealtimeFiles() {
   const output = (
     await Promise.all([
       calculateAndCheckMinimalUsefulRealtimeBundleSize(),
-      calculateAllModulesBundleSize(),
-      calculateAndCheckModuleSizes(),
+      calculateAllExportsBundleSize(),
+      calculateAndCheckExportSizes(),
       calculateAndCheckFunctionSizes(),
     ])
   ).reduce((accum, current) => ({
@@ -316,7 +316,7 @@ async function checkBaseRealtimeFiles() {
 
   const table = new Table({
     style: { head: ['green'] },
-    head: ['Modules', 'Size (raw, KiB)', 'Size (gzipped, KiB)'],
+    head: ['Exports', 'Size (raw, KiB)', 'Size (gzipped, KiB)'],
     rows: output.tableRows.map((row) => [
       row.description,
       formatBytes(row.sizes.rawByteSize),
