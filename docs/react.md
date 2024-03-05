@@ -8,7 +8,7 @@ Use Ably in your React application using idiomatic, easy to use, React Hooks!
 Using this module you can:
 
 - Interact with [Ably channels](https://ably.com/docs/channels) using a React Hook.
-- [Publish messages](https://ably.com/docs/channels#publish) via Ably using publish function the hooks provide
+- [Publish messages](https://ably.com/docs/channels#publish) via Ably using the publish function the hooks provide
 - Get notifications of user [presence on channels](https://ably.com/docs/presence-occupancy/presence)
 - Send presence updates
 
