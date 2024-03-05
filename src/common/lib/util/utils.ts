@@ -174,21 +174,6 @@ export function arrSubtract<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   return result;
 }
 
-export const arrIndexOf = (Array.prototype.indexOf as unknown)
-  ? function (arr: Array<unknown>, elem: unknown, fromIndex?: number) {
-      return arr.indexOf(elem, fromIndex);
-    }
-  : function (arr: Array<unknown>, elem: unknown, fromIndex?: number) {
-      fromIndex = fromIndex || 0;
-      const len = arr.length;
-      for (; fromIndex < len; fromIndex++) {
-        if (arr[fromIndex] === elem) {
-          return fromIndex;
-        }
-      }
-      return -1;
-    };
-
 export function arrIndexOfBy<T>(
   arr: Array<T>,
   iteratee: (value: T) => unknown,
@@ -205,7 +190,7 @@ export function arrIndexOfBy<T>(
 }
 
 export function arrUnique<T>(arr: Array<T>): Array<T> {
-  return arr.filter((value, index) => arrIndexOf(arr, value) === index);
+  return arr.filter((value, index) => arr.indexOf(value) === index);
 }
 
 export function arrUniqueBy<T>(arr: Array<T>, iteratee: (value: T) => unknown): Array<T> {
@@ -213,7 +198,7 @@ export function arrUniqueBy<T>(arr: Array<T>, iteratee: (value: T) => unknown): 
 }
 
 export function arrIn(arr: Array<unknown>, val: unknown): boolean {
-  return arrIndexOf(arr, val) !== -1;
+  return arr.indexOf(val) !== -1;
 }
 
 export function arrDeleteValue<T>(arr: Array<T>, val: T): boolean {
