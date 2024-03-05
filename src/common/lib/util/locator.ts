@@ -1,8 +1,8 @@
-// HashRing currently implements a modulo-based hash partitioning scheme.
+// Locator currently implements a modulo-based hash partitioning scheme.
 // It is used to distribute keys across a set of nodes.
 // TODO(mschristensen): use consistent hashing instead of modulo-based hashing
 // to avoid re-assigning all keys when nodes are added or removed.
-export default class HashRing {
+export default class Locator {
   private nodes: string[] = [];
 
   constructor(nodes?: string[]) {

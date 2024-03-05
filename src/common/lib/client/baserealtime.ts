@@ -13,7 +13,7 @@ import { ModulesMap, RealtimePresenceModule } from './modulesmap';
 import { TransportNames } from 'common/constants/TransportName';
 import Platform, { TransportImplementations } from 'common/platform';
 import { VcdiffDecoder } from '../types/message';
-import HashRing from '../util/hashring';
+import Locator from '../util/locator';
 import ChannelStateChange from './channelstatechange';
 
 /**
@@ -107,7 +107,7 @@ class ConsumerGroup extends EventEmitter {
   consumerId: string;
 
   private channel?: RealtimeChannel;
-  private hashring: HashRing;
+  private locator: Locator;
   private computeMembershipListener: () => Promise<void>;
 
   constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
@@ -121,7 +121,7 @@ class ConsumerGroup extends EventEmitter {
       throw new ErrorInfo('clientId must be explicitly specified to use consumer groups', 40000, 400);
     }
     this.consumerId = this.channels.realtime.options.clientId;
-    this.hashring = new HashRing([this.consumerId]);
+    this.locator = new Locator([this.consumerId]);
     this.computeMembershipListener = this.computeMembership.bind(this); // we need the exact reference to unsubscribe
   }
 
@@ -198,7 +198,7 @@ class ConsumerGroup extends EventEmitter {
       const result = await this.channel.presence.get({ waitForSync: true });
 
       const memberIds = result?.filter((member) => member.clientId).map((member) => member.clientId!) || [];
-      const { add, remove } = diffSets(this.hashring.getNodes(), memberIds);
+      const { add, remove } = diffSets(this.locator.getNodes(), memberIds);
 
       Logger.logAction(
         Logger.LOG_DEBUG,
@@ -207,18 +207,18 @@ class ConsumerGroup extends EventEmitter {
       );
 
       add.forEach((member) => {
-        this.hashring.add(member);
+        this.locator.add(member);
       });
 
       remove.forEach((member) => {
-        this.hashring.remove(member);
+        this.locator.remove(member);
       });
 
       this.emit('membership');
       Logger.logAction(
         Logger.LOG_MAJOR,
         'ConsumerGroup.computeMembership()',
-        'membership computed, consumerId=' + this.consumerId + ' state=' + this.hashring.getNodes()
+        'membership computed, consumerId=' + this.consumerId + ' state=' + this.locator.getNodes()
       );
     } catch (err) {
       Logger.logAction(
@@ -235,7 +235,7 @@ class ConsumerGroup extends EventEmitter {
       // is considered assigned to this client
       return true;
     }
-    return this.consumerId === this.hashring.get(channel);
+    return this.consumerId === this.locator.get(channel);
   }
 }
 
