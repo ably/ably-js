@@ -16,13 +16,13 @@ This SDK supports the following platforms:
 
 **Browsers:** All major desktop and mobile browsers, including (but not limited to) Chrome, Firefox, Edge, Safari on iOS and macOS, Opera, and Android browsers. IE is not supported. See compatibility table below for more information on minimum supported versions for major browsers:
 
-| Browser       | Minimum supported version | Release date  |
-| ------------- |:-------------------------:| -------------:|
-| Chrome        | 58                        | Apr 19, 2017  |
-| Firefox       | 52                        | Mar 7, 2017   |
-| Edge          | 79                        | Dec 15, 2020  |
-| Safari        | 11                        | Sep 19, 2017  |
-| Opera         | 45                        | May 10, 2017  |
+| Browser | Minimum supported version | Release date |
+| ------- | :-----------------------: | -----------: |
+| Chrome  |            58             | Apr 19, 2017 |
+| Firefox |            52             |  Mar 7, 2017 |
+| Edge    |            79             | Dec 15, 2020 |
+| Safari  |            11             | Sep 19, 2017 |
+| Opera   |            45             | May 10, 2017 |
 
 **Webpack:** see [using Webpack in browsers](#using-webpack), or [our guide for serverside Webpack](#serverside-usage-with-webpack)
 
@@ -365,6 +365,14 @@ function sendReaction(emoji) {
 ```
 
 See https://www.ably.com/docs/realtime/messages#message-interactions for more detail.
+
+### Fallback transport mechanisms
+
+Ably-js has fallback transport mechanisms to ensure its realtime capabilities can function in network conditions (such as firewalls or proxies) that might prevent the client from establishing a WebSocket connection.
+
+The default `Ably.Realtime` client includes these mechanisms by default. If you are using modular variant of the library, you may wish to provide the `BaseRealtime` instance with one or more alternative transport modules, namely `XHRStreaming` and/or `XHRPolling`, alongside `WebSocketTransport`, so your connection is less susceptible to these external conditions. For instructions on how to do this, refer to the [modular variant of the library](#modular-tree-shakable-variant) section.
+
+Each of these fallback transport mechanisms is supported and tested on all the browsers we test against, even when those browsers do not themselves require those fallbacks.
 
 ## Using the REST API
 
