@@ -8,7 +8,7 @@ Use Ably in your React application using idiomatic, easy to use, React Hooks!
 Using this module you can:
 
 - Interact with [Ably channels](https://ably.com/docs/channels) using a React Hook.
-- [Publish messages](https://ably.com/docs/channels#publish) via Ably using the channel instances the hooks provide
+- [Publish messages](https://ably.com/docs/channels#publish) via Ably using the publish function the hooks provide
 - Get notifications of user [presence on channels](https://ably.com/docs/presence-occupancy/presence)
 - Send presence updates
 
@@ -94,20 +94,27 @@ const messagePreviews = messages.map((msg, index) => <li key={index}>{msg.data.s
 `useChannel` supports all of the parameter combinations of a regular call to `channel.subscribe`, so you can filter the messages you subscribe to by providing a `message type` to the `useChannel` function:
 
 ```javascript
-const { channel } = useChannel("your-channel-name", "test-message", (message) => {
+useChannel("your-channel-name", "test-message", (message) => {
     console.log(message); // Only logs messages sent using the `test-message` message type
 });
 ```
 
-The `channel` instance returned by `useChannel` can be used to send messages to the channel. It's just a regular Ably JavaScript SDK `channel` instance.
+#### useChannel `publish` function
+
+The `publish` function returned by `useChannel` can be used to send messages to the channel.
 
 ```javascript
-channel.publish("test-message", { text: "message text" });
+const { publish } = useChannel("your-channel-name")
+publish("test-message", { text: "message text" });
 ```
 
-Because we're returning the channel instance, and Ably SDK instance from our `useChannel` hook, you can subsequently use these to perform any operations you like on the channel.
+#### useChannel `channel` instance
 
-For example, you could retrieve history like this:
+The `useChannel` hook returns an instance of the channel, which is part of the Ably JavaScript SDK. This allows you to access the standard Ably JavaScript SDK functionalities associated with channels.
+
+By providing both the channel instance and the Ably SDK instance through our useChannel hook, you gain the flexibility to execute various operations on the channel.
+
+For instance, you can easily fetch the history of the channel using the following method:
 
 ```javascript
 const { channel } = useChannel("your-channel-name", (message) => {
@@ -134,24 +141,12 @@ const { channel } = useChannel({ channelName: "your-channel-name", options: { pa
 
 ```javascript
 const deriveOptions = { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' }
-const { channel } = useChannel({ channelName: "your-derived-channel-name", options: { ... }, deriveOptions }, (message) => {
+const { publish } = useChannel({ channelName: "your-derived-channel-name", options: { ... }, deriveOptions }, (message) => {
     ...
 });
 ```
 
-Please note that attempts to publish to a derived channel (the one created or retrieved with a filter expression) will fail. In order to send messages to the channel called _"your-derived-channel-name"_ from the example above, you will need to create another channel instance without a filter expression.
-
-```javascript
-const channelName = "your-derived-channel-name";
-const options = { ... };
-const deriveOptions = { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' }
-const callback = (message) => { ... };
-
-const { channel: readOnlyChannelInstance } = useChannel({ channelName, options, deriveOptions }, callback);
-const { channel: readWriteChannelInstance } = useChannel({ channelName, options }, callback); // NB! No 'deriveOptions' passed here
-
-readWriteChannelInstance.publish("test-message", { text: "message text" });
-```
+Please note that attempts to publish to a derived channel (the one created or retrieved with a filter expression) using channel instance will fail, since derived channels support only `subscribe` capability. Use `publish` function returned by `useChannel` hook instead.
 
 ---
 

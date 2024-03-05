@@ -11,7 +11,12 @@ interface AblyProviderProps {
 
 export interface AblyContextProps {
   client: Ably.RealtimeClient;
-  _channelNameToInstance: Record<string, Ably.RealtimeChannel>;
+  _channelNameToChannelContext: Record<string, ChannelContextProps>;
+}
+
+export interface ChannelContextProps {
+  channel: Ably.RealtimeChannel;
+  derived?: boolean;
 }
 
 type AblyContextType = React.Context<AblyContextProps>;
@@ -32,7 +37,7 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
   const value: AblyContextProps = useMemo(
     () => ({
       client,
-      _channelNameToInstance: {},
+      _channelNameToChannelContext: {},
     }),
     [client]
   );
@@ -43,7 +48,7 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
 
   let context = getContext(id);
   if (!context) {
-    context = ctxMap[id] = React.createContext({ client, _channelNameToInstance: {} });
+    context = ctxMap[id] = React.createContext({ client, _channelNameToChannelContext: {} });
   }
 
   return <context.Provider value={value}>{children}</context.Provider>;

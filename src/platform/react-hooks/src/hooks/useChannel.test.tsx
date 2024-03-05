@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { it, beforeEach, describe, expect, vi } from 'vitest';
 import { useChannel } from './useChannel.js';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, renderHook, screen, waitFor } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
 import * as Ably from 'ably';
 import { act } from 'react-dom/test-utils';
@@ -203,6 +203,23 @@ describe('useChannel with deriveOptions', () => {
     const messageUl = screen.getAllByRole('derived-channel-messages')[0];
 
     expect(messageUl.childElementCount).toBe(0);
+  });
+
+  it('component can use "publish" for channel with "deriveOptions"', async () => {
+    const { result } = renderHook(() => useChannel('blah'), {
+      wrapper: ({ children }) => (
+        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <ChannelProvider channelName="blah" deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}>
+            {children}
+          </ChannelProvider>
+        </AblyProvider>
+      ),
+    });
+
+    const { channel, publish } = result.current;
+
+    await expect(channel.publish('test', 'test')).rejects.toThrow();
+    await publish('test', 'test');
   });
 
   it('component updates when new message arrives', async () => {

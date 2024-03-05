@@ -15,7 +15,7 @@ function App() {
   const [frontOficeOnlyMessages, updateFrontOfficeOnlyMessages] = useState<Ably.Message[]>([]);
 
   const [skip, setSkip] = useState(false);
-  const { channel, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
+  const { publish, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
 
@@ -39,7 +39,7 @@ function App() {
     }
   );
 
-  const { channel: anotherChannelPublisher } = useChannel({
+  const { publish: anotherChannelPublish } = useChannel({
     channelName: 'your-derived-channel-name',
   });
 
@@ -89,7 +89,7 @@ function App() {
       <div>
         <button
           onClick={() => {
-            channel.publish('test-message', {
+            publish('test-message', {
               text: 'message text',
             });
           }}
@@ -105,7 +105,7 @@ function App() {
         </button>
         <button
           onClick={() => {
-            anotherChannelPublisher.publish({
+            anotherChannelPublish({
               name: 'test-message',
               data: {
                 text: 'This is a message for Rob',
@@ -122,7 +122,7 @@ function App() {
         </button>
         <button
           onClick={() => {
-            anotherChannelPublisher.publish({
+            anotherChannelPublish({
               name: 'test-message',
               data: {
                 text: 'This is a company-wide message',
@@ -139,7 +139,7 @@ function App() {
         </button>
         <button
           onClick={() => {
-            anotherChannelPublisher.publish({
+            anotherChannelPublish({
               name: 'test-message',
               data: {
                 text: 'This is a message for front office employees only',

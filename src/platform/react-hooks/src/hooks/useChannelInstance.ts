@@ -1,14 +1,14 @@
 import React from 'react';
-import { getContext } from '../AblyProvider.js';
+import { ChannelContextProps, getContext } from '../AblyProvider.js';
 
-export function useChannelInstance(id: string, channelName: string) {
-  const channel = React.useContext(getContext(id))._channelNameToInstance[channelName];
+export function useChannelInstance(id: string, channelName: string): ChannelContextProps {
+  const channelContext = React.useContext(getContext(id))._channelNameToChannelContext[channelName];
 
-  if (!channel) {
+  if (!channelContext) {
     throw new Error(
       `Could not find a parent ChannelProvider in the component tree for channelName="${channelName}". Make sure your channel based hooks (usePresence, useChannel, useChannelStateListener) are called inside a <ChannelProvider> component`
     );
   }
 
-  return channel;
+  return channelContext;
 }
