@@ -44,6 +44,8 @@ We regression-test the library against a selection of Node.js versions, which wi
 
 However, we aim to be compatible with a much wider set of platforms and browsers than we can possibly test on. That means we'll happily support (and investigate reported problems with) any reasonably-widely-used browser. So if you find any compatibility issues, please do [raise an issue](https://github.com/ably/ably-js/issues) in this repository or [contact Ably customer support](https://support.ably.com) for advice.
 
+If you require support for older browsers and Node.js, you can use the security-maintained version 1 of the library. Install version 1 via [CDN link](https://cdn.ably.com/lib/ably.min-1.js), or from npm with `npm install ably@1 --save`. It supports IE versions 9 or newer, older versions of major browsers, and Node.js 8.17 or newer. Note that version 1 will only receive security updates and critical bug fixes, and won't include any new features.
+
 For complete API documentation, see the [Ably documentation](https://www.ably.com/docs).
 
 ## Installation
