@@ -9,44 +9,42 @@ import ProtocolMessage from '../types/protocolmessage';
 import { ChannelOptions } from '../../types/channel';
 import ClientOptions from '../../types/ClientOptions';
 import * as API from '../../../../ably';
-import { ModulesMap, RealtimePresenceModule } from './modulesmap';
+import { ModularPlugins, RealtimePresencePlugin } from './modularplugins';
 import { TransportNames } from 'common/constants/TransportName';
-import Platform, { TransportImplementations } from 'common/platform';
-import { VcdiffDecoder } from '../types/message';
+import { TransportImplementations } from 'common/platform';
+import Defaults from '../util/defaults';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
-  readonly _RealtimePresence: RealtimePresenceModule | null;
-  readonly _decodeVcdiff: VcdiffDecoder | null;
+  readonly _RealtimePresence: RealtimePresencePlugin | null;
   // Extra transport implementations available to this client, in addition to those in Platform.Transports.bundledImplementations
   readonly _additionalTransportImplementations: TransportImplementations;
   _channels: any;
   connection: Connection;
 
-  constructor(options: ClientOptions, modules: ModulesMap) {
-    super(options, modules);
+  constructor(options: ClientOptions | string) {
+    super(Defaults.objectifyOptions(options));
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
-    this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromModules(modules);
-    this._RealtimePresence = modules.RealtimePresence ?? null;
-    this._decodeVcdiff = (modules.Vcdiff ?? (Platform.Vcdiff.supported && Platform.Vcdiff.bundledDecode)) || null;
+    this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromPlugins(this.options.plugins);
+    this._RealtimePresence = this.options.plugins?.RealtimePresence ?? null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
-    if (options.autoConnect !== false) this.connect();
+    if (this.options.autoConnect !== false) this.connect();
   }
 
-  private static transportImplementationsFromModules(modules: ModulesMap) {
+  private static transportImplementationsFromPlugins(plugins?: ModularPlugins) {
     const transports: TransportImplementations = {};
 
-    if (modules.WebSocketTransport) {
-      transports[TransportNames.WebSocket] = modules.WebSocketTransport;
+    if (plugins?.WebSocketTransport) {
+      transports[TransportNames.WebSocket] = plugins.WebSocketTransport;
     }
-    if (modules.XHRStreaming) {
-      transports[TransportNames.XhrStreaming] = modules.XHRStreaming;
+    if (plugins?.XHRStreaming) {
+      transports[TransportNames.XhrStreaming] = plugins.XHRStreaming;
     }
-    if (modules.XHRPolling) {
-      transports[TransportNames.XhrPolling] = modules.XHRPolling;
+    if (plugins?.XHRPolling) {
+      transports[TransportNames.XhrPolling] = plugins.XHRPolling;
     }
 
     return transports;

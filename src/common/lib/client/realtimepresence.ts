@@ -269,7 +269,7 @@ class RealtimePresence extends EventEmitter {
 
   async history(params: RealtimeHistoryParams | null): Promise<PaginatedResult<PresenceMessage>> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
-    // We fetch this first so that any module-not-provided error takes priority over other errors
+    // We fetch this first so that any plugin-not-provided error takes priority over other errors
     const restMixin = this.channel.client.rest.presenceMixin;
 
     if (params && params.untilAttach) {

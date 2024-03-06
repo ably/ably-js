@@ -8,13 +8,13 @@ import XHRStates from 'common/constants/XHRStates';
 import Logger from 'common/lib/util/logger';
 import { StandardCallback } from 'common/types/utils';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
-import { ModulesMap } from 'common/lib/client/modulesmap';
+import { ModularPlugins } from 'common/lib/client/modularplugins';
 
-export type HTTPRequestImplementations = Pick<ModulesMap, 'XHRRequest' | 'FetchRequest'>;
+export type HTTPRequestImplementations = Pick<ModularPlugins, 'XHRRequest' | 'FetchRequest'>;
 
 function createMissingImplementationError() {
   return new ErrorInfo(
-    'No HTTP request module provided. Provide at least one of the FetchRequest or XHRRequest modules.',
+    'No HTTP request plugin provided. Provide at least one of the FetchRequest or XHRRequest plugins.',
     400,
     40000,
   );

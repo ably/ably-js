@@ -68,7 +68,7 @@ class RealtimeChannel extends EventEmitter {
   private _presence: RealtimePresence | null;
   get presence(): RealtimePresence {
     if (!this._presence) {
-      Utils.throwMissingModuleError('RealtimePresence');
+      Utils.throwMissingPluginError('RealtimePresence');
     }
     return this._presence;
   }
@@ -120,7 +120,7 @@ class RealtimeChannel extends EventEmitter {
     this._attachResume = false;
     this._decodingContext = {
       channelOptions: this.channelOptions,
-      decodeVcdiff: client._decodeVcdiff ?? undefined,
+      plugins: client.options.plugins || {},
       baseEncodedPreviousPayload: undefined,
     };
     this._lastPayload = {
@@ -854,7 +854,7 @@ class RealtimeChannel extends EventEmitter {
   ): Promise<PaginatedResult<Message>> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 
-    // We fetch this first so that any module-not-provided error takes priority over other errors
+    // We fetch this first so that any plugin-not-provided error takes priority over other errors
     const restMixin = this.client.rest.channelMixin;
 
     if (params && params.untilAttach) {

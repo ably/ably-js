@@ -4,7 +4,7 @@
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 /**
- * You are currently viewing the default variant of the Ably JavaScript Client Library SDK. View the modular variant {@link modules | here}.
+ * You are currently viewing the default variant of the Ably JavaScript Client Library SDK. View the modular variant {@link modular | here}.
  *
  * To get started with the Ably JavaScript Client Library SDK, follow the [Quickstart Guide](https://ably.com/docs/quick-start-guide) or view the introductions to the [realtime](https://ably.com/docs/realtime/usage) and [REST](https://ably.com/docs/rest/usage) interfaces.
  *
@@ -370,7 +370,7 @@ export interface ChannelMetrics {
 /**
  * Passes additional client-specific properties to the REST constructor or the Realtime constructor.
  */
-export interface ClientOptions extends AuthOptions {
+export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   /**
    * When `true`, the client connects to Ably as soon as it is instantiated. You can set this to `false` and explicitly connect to Ably using the {@link Connection.connect | `connect()`} method. The default is `true`.
    *
@@ -569,6 +569,21 @@ export interface ClientOptions extends AuthOptions {
    * @defaultValue 10s
    */
   realtimeRequestTimeout?: number;
+
+  /**
+   * A map between a plugin type and a plugin object.
+   */
+  plugins?: Plugins;
+}
+
+/**
+ * Describes the {@link ClientOptions.plugins | plugins} accepted by all variants of the SDK.
+ */
+export interface CorePlugins {
+  /**
+   * A plugin capable of decoding `vcdiff`-encoded messages. For more information on how to configure a channel to use delta encoding, see the [documentation for the `@ably-forks/vcdiff-decoder` package](https://github.com/ably-forks/vcdiff-decoder#usage).
+   */
+  vcdiff?: any;
 }
 
 /**

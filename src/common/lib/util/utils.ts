@@ -1,6 +1,6 @@
 import Platform from 'common/platform';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { ModulesMap } from '../client/modulesmap';
+import { ModularPlugins } from '../client/modularplugins';
 import { MsgPack } from 'common/types/msgpack';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
@@ -342,7 +342,7 @@ export function whenPromiseSettles<T, E = unknown>(
 export function decodeBody<T>(body: unknown, MsgPack: MsgPack | null, format?: Format | null): T {
   if (format == 'msgpack') {
     if (!MsgPack) {
-      throwMissingModuleError('MsgPack');
+      throwMissingPluginError('MsgPack');
     }
     return MsgPack.decode(body as Buffer);
   }
@@ -353,7 +353,7 @@ export function decodeBody<T>(body: unknown, MsgPack: MsgPack | null, format?: F
 export function encodeBody(body: unknown, MsgPack: MsgPack | null, format?: Format): string | Buffer {
   if (format == 'msgpack') {
     if (!MsgPack) {
-      throwMissingModuleError('MsgPack');
+      throwMissingPluginError('MsgPack');
     }
     return MsgPack.encode(body, true) as Buffer;
   }
@@ -455,10 +455,10 @@ export function arrEquals(a: any[], b: any[]) {
   );
 }
 
-export function createMissingModuleError(moduleName: keyof ModulesMap): ErrorInfo {
-  return new ErrorInfo(`${moduleName} module not provided`, 40019, 400);
+export function createMissingPluginError(pluginName: keyof ModularPlugins): ErrorInfo {
+  return new ErrorInfo(`${pluginName} plugin not provided`, 40019, 400);
 }
 
-export function throwMissingModuleError(moduleName: keyof ModulesMap): never {
-  throw createMissingModuleError(moduleName);
+export function throwMissingPluginError(pluginName: keyof ModularPlugins): never {
+  throw createMissingPluginError(pluginName);
 }

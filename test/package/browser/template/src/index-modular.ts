@@ -1,4 +1,4 @@
-import { BaseRealtime, WebSocketTransport, FetchRequest, generateRandomKey } from 'ably/modules';
+import { BaseRealtime, WebSocketTransport, FetchRequest, generateRandomKey } from 'ably/modular';
 import { InboundMessage, RealtimeChannel } from 'ably';
 import { createSandboxAblyAPIKey } from './sandbox';
 
@@ -18,7 +18,7 @@ async function checkStandaloneFunction() {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new BaseRealtime({ key, environment: 'sandbox' }, { WebSocketTransport, FetchRequest });
+  const realtime = new BaseRealtime({ key, environment: 'sandbox', plugins: { WebSocketTransport, FetchRequest } });
 
   const channel = realtime.channels.get('channel');
   await attachChannel(channel);

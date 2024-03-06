@@ -19,7 +19,7 @@ const defaultTransports: (typeof Platform)['Transports'] = {
 
 export default defaultTransports;
 
-export const ModulesTransports: (typeof Platform)['Transports'] = {
+export const ModularTransports: (typeof Platform)['Transports'] = {
   order,
   bundledImplementations: {},
 };

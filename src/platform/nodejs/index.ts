@@ -4,7 +4,6 @@ import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
 import ErrorInfo from '../../common/lib/types/errorinfo';
 import { fromDeserializedIncludingDependencies as protocolMessageFromDeserialized } from '../../common/lib/types/protocolmessage';
-import { decode as decodeVcdiff } from '@ably/vcdiff-decoder';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
@@ -27,7 +26,6 @@ Platform.Http = Http;
 Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = null;
-Platform.Vcdiff = { supported: true, bundledDecode: decodeVcdiff };
 
 for (const clientClass of [DefaultRest, DefaultRealtime]) {
   clientClass.Crypto = Crypto;

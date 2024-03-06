@@ -10,8 +10,8 @@ const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 95, gzip: 29 };
 
 const baseClientNames = ['BaseRest', 'BaseRealtime'];
 
-// List of all modules accepted in ModulesMap
-const moduleNames = [
+// List of all plugins accepted in ModularPlugins
+const pluginNames = [
   'Rest',
   'Crypto',
   'MsgPack',
@@ -22,11 +22,10 @@ const moduleNames = [
   'XHRRequest',
   'FetchRequest',
   'MessageInteractions',
-  'Vcdiff',
 ];
 
 // List of all free-standing functions exported by the library along with the
-// ModulesMap entries that we expect them to transitively import
+// ModularPlugins entries that we expect them to transitively import
 const functions = [
   { name: 'generateRandomKey', transitiveImports: ['Crypto'] },
   { name: 'getDefaultCryptoParams', transitiveImports: ['Crypto'] },
@@ -66,12 +65,12 @@ interface Output {
   errors: Error[];
 }
 
-// Uses esbuild to create a bundle containing the named exports from 'ably/modules'
-function getBundleInfo(modules: string[]): BundleInfo {
-  const outfile = modules.join('');
+// Uses esbuild to create a bundle containing the named exports from 'ably/modular'
+function getBundleInfo(exports: string[]): BundleInfo {
+  const outfile = exports.join('');
   const result = esbuild.buildSync({
     stdin: {
-      contents: `export { ${modules.join(', ')} } from './build/modules'`,
+      contents: `export { ${exports.join(', ')} } from './build/modular'`,
       resolveDir: '.',
     },
     metafile: true,
@@ -98,9 +97,9 @@ function getBundleInfo(modules: string[]): BundleInfo {
   };
 }
 
-// Gets the bundled size in bytes of an array of named exports from 'ably/modules'
-async function getImportSizes(modules: string[]): Promise<ByteSizes> {
-  const bundleInfo = getBundleInfo(modules);
+// Gets the bundled size in bytes of an array of named exports from 'ably/modular'
+async function getImportSizes(exports: string[]): Promise<ByteSizes> {
+  const bundleInfo = getBundleInfo(exports);
 
   return {
     rawByteSize: bundleInfo.byteSize,
@@ -116,7 +115,7 @@ async function runSourceMapExplorer(bundleInfo: BundleInfo) {
   });
 }
 
-async function calculateAndCheckModuleSizes(): Promise<Output> {
+async function calculateAndCheckExportSizes(): Promise<Output> {
   const output: Output = { tableRows: [], errors: [] };
 
   for (const baseClient of baseClientNames) {
@@ -126,13 +125,13 @@ async function calculateAndCheckModuleSizes(): Promise<Output> {
     output.tableRows.push({ description: baseClient, sizes: baseClientSizes });
 
     // Then output the size of each export together with the base client
-    for (const exportName of [...moduleNames, ...functions.map((functionData) => functionData.name)]) {
+    for (const exportName of [...pluginNames, ...functions.map((functionData) => functionData.name)]) {
       const sizes = await getImportSizes([baseClient, exportName]);
       output.tableRows.push({ description: `${baseClient} + ${exportName}`, sizes });
 
       if (!(baseClientSizes.rawByteSize < sizes.rawByteSize) && !(baseClient === 'BaseRest' && exportName === 'Rest')) {
-        // Emit an error if adding the module does not increase the bundle size
-        // (this means that the module is not being tree-shaken correctly).
+        // Emit an error if adding the export does not increase the bundle size
+        // (this means that the export is not being tree-shaken correctly).
         output.errors.push(new Error(`Adding ${exportName} to ${baseClient} does not increase the bundle size.`));
       }
     }
@@ -151,7 +150,7 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
     const standaloneSizes = await getImportSizes([functionName]);
     output.tableRows.push({ description: functionName, sizes: standaloneSizes });
 
-    // Then output the size of the function together with the modules we expect
+    // Then output the size of the function together with the plugin we expect
     // it to transitively import
     if (transitiveImports.length > 0) {
       const withTransitiveImportsSizes = await getImportSizes([functionName, ...transitiveImports]);
@@ -161,11 +160,11 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
       });
 
       if (withTransitiveImportsSizes.rawByteSize > standaloneSizes.rawByteSize) {
-        // Emit an error if the bundle size is increased by adding the modules
+        // Emit an error if the bundle size is increased by adding the plugins
         // that we expect this function to have transitively imported anyway.
         // This seemed like a useful sense check, but it might need tweaking in
         // the future if we make future optimisations that mean that the
-        // standalone functions don’t necessarily import the whole module.
+        // standalone functions don’t necessarily import the whole plugin.
         output.errors.push(
           new Error(
             `Adding ${transitiveImports.join(' + ')} to ${functionName} unexpectedly increases the bundle size.`,
@@ -209,11 +208,11 @@ async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Outpu
   return output;
 }
 
-async function calculateAllModulesBundleSize(): Promise<Output> {
-  const exports = [...baseClientNames, ...moduleNames, ...functions.map((val) => val.name)];
+async function calculateAllExportsBundleSize(): Promise<Output> {
+  const exports = [...baseClientNames, ...pluginNames, ...functions.map((val) => val.name)];
   const sizes = await getImportSizes(exports);
 
-  return { tableRows: [{ description: 'All modules', sizes }], errors: [] };
+  return { tableRows: [{ description: 'All exports', sizes }], errors: [] };
 }
 
 // Performs a sense check that there are no unexpected files making a large contribution to the BaseRealtime bundle size.
@@ -264,7 +263,7 @@ async function checkBaseRealtimeFiles() {
     'src/platform/web/lib/util/defaults.ts',
     'src/platform/web/lib/util/hmac-sha256.ts',
     'src/platform/web/lib/util/webstorage.ts',
-    'src/platform/web/modules.ts',
+    'src/platform/web/modular.ts',
   ]);
 
   const errors: Error[] = [];
@@ -304,8 +303,8 @@ async function checkBaseRealtimeFiles() {
   const output = (
     await Promise.all([
       calculateAndCheckMinimalUsefulRealtimeBundleSize(),
-      calculateAllModulesBundleSize(),
-      calculateAndCheckModuleSizes(),
+      calculateAllExportsBundleSize(),
+      calculateAndCheckExportSizes(),
       calculateAndCheckFunctionSizes(),
     ])
   ).reduce((accum, current) => ({
@@ -317,7 +316,7 @@ async function checkBaseRealtimeFiles() {
 
   const table = new Table({
     style: { head: ['green'] },
-    head: ['Modules', 'Size (raw, KiB)', 'Size (gzipped, KiB)'],
+    head: ['Exports', 'Size (raw, KiB)', 'Size (gzipped, KiB)'],
     rows: output.tableRows.map((row) => [
       row.description,
       formatBytes(row.sizes.rawByteSize),

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('NPM package', () => {
   for (const scenario of [
     { name: 'default export', path: '/index-default.html' },
-    { name: 'modular export', path: '/index-modules.html' },
+    { name: 'modular export', path: '/index-modular.html' },
   ]) {
     test.describe(scenario.name, () => {
       test('can be imported and provides access to Ably functionality', async ({ page }) => {

@@ -16,7 +16,7 @@ import https from 'https';
 import BaseClient from 'common/lib/client/baseclient';
 import { RestAgentOptions } from 'common/types/ClientOptions';
 import { isSuccessCode } from 'common/constants/HttpStatusCodes';
-import { createMissingModuleError, shallowEquals } from 'common/lib/util/utils';
+import { createMissingPluginError, shallowEquals } from 'common/lib/util/utils';
 
 /***************************************************
  *
@@ -157,7 +157,7 @@ const Http: IPlatformHttpStatic = class {
 
         case 'application/x-msgpack':
           if (!this.client?._MsgPack) {
-            return { error: createMissingModuleError('MsgPack') };
+            return { error: createMissingPluginError('MsgPack') };
           }
           body = this.client._MsgPack.decode(body as Buffer);
           break;

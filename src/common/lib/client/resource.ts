@@ -303,7 +303,7 @@ class Resource {
         if (headers['content-type']?.indexOf('msgpack') > 0) {
           try {
             if (!client._MsgPack) {
-              Utils.throwMissingModuleError('MsgPack');
+              Utils.throwMissingPluginError('MsgPack');
             }
             decodedBody = client._MsgPack.decode(body as Buffer);
           } catch (decodeErr) {

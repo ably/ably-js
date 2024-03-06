@@ -10,29 +10,27 @@ import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
-import { VcdiffDecoder } from '../types/message';
 
-export interface PresenceMessageModule {
+export interface PresenceMessagePlugin {
   presenceMessageFromValues: typeof presenceMessageFromValues;
   presenceMessagesFromValuesArray: typeof presenceMessagesFromValuesArray;
 }
 
-export type RealtimePresenceModule = PresenceMessageModule & {
+export type RealtimePresencePlugin = PresenceMessagePlugin & {
   RealtimePresence: typeof RealtimePresence;
 };
 
-export interface ModulesMap {
+export interface ModularPlugins {
   Rest?: typeof Rest;
   Crypto?: IUntypedCryptoStatic;
   MsgPack?: MsgPack;
-  RealtimePresence?: RealtimePresenceModule;
+  RealtimePresence?: RealtimePresencePlugin;
   WebSocketTransport?: TransportInitialiser;
   XHRPolling?: TransportInitialiser;
   XHRStreaming?: TransportInitialiser;
   XHRRequest?: typeof XHRRequest;
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
-  Vcdiff?: VcdiffDecoder;
 }
 
-export const allCommonModules: ModulesMap = { Rest };
+export const allCommonModularPlugins: ModularPlugins = { Rest };

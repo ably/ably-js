@@ -1,11 +1,11 @@
-import { RealtimePresenceModule } from 'common/lib/client/modulesmap';
+import { RealtimePresencePlugin } from 'common/lib/client/modularplugins';
 import { default as realtimePresenceClass } from '../../../common/lib/client/realtimepresence';
 import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../../../common/lib/types/presencemessage';
 
-const RealtimePresence: RealtimePresenceModule = {
+const RealtimePresence: RealtimePresencePlugin = {
   RealtimePresence: realtimePresenceClass,
   presenceMessageFromValues,
   presenceMessagesFromValuesArray,
