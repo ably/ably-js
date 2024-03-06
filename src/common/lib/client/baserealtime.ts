@@ -38,7 +38,8 @@ class BaseRealtime extends BaseClient {
     this._channels = new Channels(this);
     // avoid using the same channel pool as that exposed via this.channels()
     // to allow the channels to be used individually
-    if (modules.ChannelGroups) {
+    let f = false;
+    if (f && modules.ChannelGroups) {
       // disable channel groups on the new base realtime instance to avoid recursion
       const newModules = Object.assign({}, modules);
       delete newModules['ChannelGroups'];
