@@ -298,7 +298,7 @@ class EventEmitter {
     const eventThis = { event: targetState };
 
     if (typeof targetState !== 'string' || typeof currentState !== 'string') {
-      throw 'whenState requires a valid event String argument';
+      throw new Error('whenState requires a valid event String argument');
     }
     if (typeof listener !== 'function') {
       return new Promise((resolve) => {
