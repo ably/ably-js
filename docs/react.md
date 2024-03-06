@@ -53,7 +53,17 @@ root.render(
 )
 ```
 
-Once you've done this, you can use the `hooks` in your code. The simplest example is as follows:
+### Define Ably channels
+
+Once you've set up `AblyProvider`, define Ably channels you want to use by utilizing the `ChannelProvider` component:
+
+```jsx
+<ChannelProvider channelName="your-channel-name">
+  <Component />
+</ChannelProvider>
+```
+
+After setting up `ChannelProvider`, you can employ the provided `hooks` in your code. Here's a basic example:
 
 ```javascript
 const { channel } = useChannel("your-channel-name", (message) => {
@@ -63,7 +73,37 @@ const { channel } = useChannel("your-channel-name", (message) => {
 
 Every time a message is sent to `your-channel-name` it'll be logged to the console. You can do whatever you need to with those messages.
 
-Our react hooks are designed to run on the client-side, so if you are using server-side rendering, make sure that your components which use Ably react hooks are only rendered on the client side.
+> [!NOTE]
+> Our react hooks are designed to run on the client-side, so if you are using server-side rendering, make sure that your components which use Ably react hooks are only rendered on the client side.
+
+### Channel Options
+
+We support providing [ChannelOptions](https://ably.com/docs/api/realtime-sdk/types#channel-options) for the `ChannelProvider` component:
+
+This means you can use features like `rewind`:
+
+```jsx
+<ChannelProvider channelName="your-channel-name" options={{ params: { rewind: '1' } }}>
+  <Component />
+</ChannelProvider>
+```
+
+[Subscription filters](https://ably.com/docs/channels#filter-subscribe) are also supported:
+
+```jsx
+const deriveOptions = { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' }
+
+return (
+  <ChannelProvider channelName="your-derived-channel-name" options={{ ... }} deriveOptions={deriveOptions}>
+    <Component />
+  </ChannelProvider>
+)
+```
+
+> [!NOTE]
+> Please note that attempts to publish to a derived channel (the one created or retrieved with a filter expression)
+> using channel instance will fail, since derived channels support only `subscribe` capability.
+> Use `publish` function returned by `useChannel` hook instead.
 
 ---
 
@@ -126,27 +166,6 @@ const history = channel.history((err, result) => {
     console.log('Last message: ' + lastMessage.id + ' - ' + lastMessage.data);
 });
 ```
-
-We support providing [ChannelOptions](https://ably.com/docs/api/realtime-sdk/types#channel-options) to the `useChannel` hook:
-
-This means you can use features like `rewind`:
-
-```javascript
-const { channel } = useChannel({ channelName: "your-channel-name", options: { params: { rewind: '1' } } }, (message) => {
-    ...
-});
-```
-
-[Subscription filters](https://ably.com/docs/channels#filter-subscribe) are also supported:
-
-```javascript
-const deriveOptions = { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' }
-const { publish } = useChannel({ channelName: "your-derived-channel-name", options: { ... }, deriveOptions }, (message) => {
-    ...
-});
-```
-
-Please note that attempts to publish to a derived channel (the one created or retrieved with a filter expression) using channel instance will fail, since derived channels support only `subscribe` capability. Use `publish` function returned by `useChannel` hook instead.
 
 ---
 
