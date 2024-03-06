@@ -1,5 +1,5 @@
 import React from 'react';
-import { AblyContext, ChannelContextProps } from '../AblyProvider.js';
+import { AblyContext, ChannelContextProps } from '../AblyContext.js';
 
 export function useChannelInstance(ablyId = 'default', channelName: string): ChannelContextProps {
   const channelContext = React.useContext(AblyContext)[ablyId]._channelNameToChannelContext[channelName];

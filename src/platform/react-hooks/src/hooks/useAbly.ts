@@ -1,5 +1,5 @@
 import React from 'react';
-import { AblyContext } from '../AblyProvider.js';
+import { AblyContext } from '../AblyContext.js';
 import * as API from 'ably';
 
 export function useAbly(ablyId = 'default'): API.RealtimeClient {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import * as Ably from 'ably';
-import { type AblyContextType, AblyContext } from './AblyProvider.js';
+import { type AblyContextType, AblyContext } from './AblyContext.js';
 import { channelOptionsWithAgent } from './AblyReactHooks.js';
 
 interface ChannelProviderProps {
