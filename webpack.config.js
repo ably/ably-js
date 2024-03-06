@@ -61,6 +61,7 @@ const nodeConfig = {
   optimization: {
     minimize: false,
   },
+  devtool: 'source-map',
 };
 
 const nativeScriptConfig = {
