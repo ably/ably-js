@@ -12,7 +12,7 @@ async function withAuthDetails<T>(
   client: BaseClient,
   headers: ResponseHeaders | undefined,
   params: Record<string, any>,
-  opCallback: Function
+  opCallback: Function,
 ): Promise<ResourceResult<T>> {
   if (client.http.supportsAuthHeaders) {
     const authHeaders = await client.auth.getAuthHeaders();
@@ -26,7 +26,7 @@ async function withAuthDetails<T>(
 function unenvelope<T>(
   result: ResourceResult<T>,
   MsgPack: MsgPack | null,
-  format: Utils.Format | null
+  format: Utils.Format | null,
 ): ResourceResult<T> {
   if (result.err && !result.body) {
     return { err: result.err };
@@ -75,7 +75,7 @@ function logResult<T>(result: ResourceResult<T>, method: HttpMethods, path: stri
     Logger.logAction(
       Logger.LOG_MICRO,
       'Resource.' + method + '()',
-      'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(result.err)
+      'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(result.err),
     );
   } else {
     Logger.logAction(
@@ -90,7 +90,7 @@ function logResult<T>(result: ResourceResult<T>, method: HttpMethods, path: stri
         '; Body: ' +
         (Platform.BufferUtils.isBuffer(result.body)
           ? ' (Base64): ' + Platform.BufferUtils.base64Encode(result.body)
-          : ': ' + Platform.Config.inspect(result.body))
+          : ': ' + Platform.Config.inspect(result.body)),
     );
   }
 }
@@ -121,7 +121,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: true
+    throwError: true,
   ): Promise<ResourceResponse<T>>;
   static async get<T = unknown>(
     client: BaseClient,
@@ -129,7 +129,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: false
+    throwError: false,
   ): Promise<ResourceResult<T>>;
   static async get<T = unknown>(
     client: BaseClient,
@@ -137,7 +137,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: boolean
+    throwError: boolean,
   ): Promise<ResourceResponse<T> | ResourceResult<T>> {
     return Resource.do(HttpMethods.Get, client, path, null, headers, params, envelope, throwError ?? false);
   }
@@ -153,7 +153,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: true
+    throwError: true,
   ): Promise<ResourceResponse<T>>;
   static async delete<T = unknown>(
     client: BaseClient,
@@ -161,7 +161,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: false
+    throwError: false,
   ): Promise<ResourceResult<T>>;
   static async delete<T = unknown>(
     client: BaseClient,
@@ -169,7 +169,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: boolean
+    throwError: boolean,
   ): Promise<ResourceResponse<T> | ResourceResult<T>> {
     return Resource.do(HttpMethods.Delete, client, path, null, headers, params, envelope, throwError);
   }
@@ -186,7 +186,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: true
+    throwError: true,
   ): Promise<ResourceResponse<T>>;
   static async post<T = unknown>(
     client: BaseClient,
@@ -195,7 +195,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: false
+    throwError: false,
   ): Promise<ResourceResult<T>>;
   static async post<T = unknown>(
     client: BaseClient,
@@ -204,7 +204,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: boolean
+    throwError: boolean,
   ): Promise<ResourceResponse<T> | ResourceResult<T>> {
     return Resource.do(HttpMethods.Post, client, path, body, headers, params, envelope, throwError);
   }
@@ -221,7 +221,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: true
+    throwError: true,
   ): Promise<ResourceResponse<T>>;
   static async patch<T = unknown>(
     client: BaseClient,
@@ -230,7 +230,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: false
+    throwError: false,
   ): Promise<ResourceResult<T>>;
   static async patch<T = unknown>(
     client: BaseClient,
@@ -239,7 +239,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: boolean
+    throwError: boolean,
   ): Promise<ResourceResponse<T> | ResourceResult<T>> {
     return Resource.do(HttpMethods.Patch, client, path, body, headers, params, envelope, throwError);
   }
@@ -256,7 +256,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: true
+    throwError: true,
   ): Promise<ResourceResponse<T>>;
   static async put<T = unknown>(
     client: BaseClient,
@@ -265,7 +265,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: false
+    throwError: false,
   ): Promise<ResourceResult<T>>;
   static async put<T = unknown>(
     client: BaseClient,
@@ -274,7 +274,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: boolean
+    throwError: boolean,
   ): Promise<ResourceResponse<T> | ResourceResult<T>> {
     return Resource.do(HttpMethods.Put, client, path, body, headers, params, envelope, throwError);
   }
@@ -287,7 +287,7 @@ class Resource {
     headers: Record<string, string>,
     params: Record<string, any>,
     envelope: Utils.Format | null,
-    throwError: boolean
+    throwError: boolean,
   ): Promise<ResourceResponse<T> | ResourceResult<T>> {
     if (envelope) {
       (params = params || {})['envelope'] = envelope;
@@ -296,7 +296,7 @@ class Resource {
     async function doRequest(
       this: any,
       headers: Record<string, string>,
-      params: Record<string, any>
+      params: Record<string, any>,
     ): Promise<ResourceResult<T>> {
       if (Logger.shouldLog(Logger.LOG_MICRO)) {
         let decodedBody = body;
@@ -310,14 +310,14 @@ class Resource {
             Logger.logAction(
               Logger.LOG_MICRO,
               'Resource.' + method + '()',
-              'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr)
+              'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr),
             );
           }
         }
         Logger.logAction(
           Logger.LOG_MICRO,
           'Resource.' + method + '()',
-          'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody
+          'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody,
         );
       }
 

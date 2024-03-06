@@ -145,7 +145,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           resume_inactive(done, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
         };
       },
-      /* excludeUpgrade: */ true
+      /* excludeUpgrade: */ true,
     );
 
     /**
@@ -266,7 +266,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           resume_active(done, 'resume_active' + String(Math.random()), {}, realtimeOpts);
         };
       },
-      /* excludeUpgrade: */ true
+      /* excludeUpgrade: */ true,
     );
 
     /* RTN15c3
@@ -309,14 +309,14 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                   try {
                     expect(stateChange.reason && stateChange.reason.code).to.equal(
                       80018,
-                      'Unable to recover connection correctly set in the stateChange'
+                      'Unable to recover connection correctly set in the stateChange',
                     );
                     expect(attachedChannel.state).to.equal('attaching', 'Attached channel went into attaching');
                     expect(suspendedChannel.state).to.equal('attaching', 'Suspended channel went into attaching');
                     expect(connection.connectionManager.msgSerial).to.equal(0, 'Check msgSerial is reset to 0');
                     expect(
                       connection.connectionManager.connectionId !== 'ablyjs_tes',
-                      'Check connectionId is set by the new CONNECTED'
+                      'Check connectionId is set by the new CONNECTED',
                     ).to.be.ok;
                   } catch (err) {
                     cb(err);
@@ -328,11 +328,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             ],
             function (err) {
               closeAndFinish(done, realtime, err);
-            }
+            },
           );
         };
       },
-      true /* Use a fixed transport as attaches are resent when the transport changes */
+      true /* Use a fixed transport as attaches are resent when the transport changes */,
     );
 
     /* RTN15c5
@@ -381,11 +381,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             ],
             function (err) {
               closeAndFinish(done, realtime, err);
-            }
+            },
           );
         };
       },
-      true
+      true,
     );
 
     /* RTN15c4
@@ -433,11 +433,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             ],
             function (err) {
               closeAndFinish(done, realtime, err);
-            }
+            },
           );
         };
       },
-      true
+      true,
     );
 
     /* RTL2f
@@ -501,7 +501,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         ],
         function (err) {
           closeAndFinish(done, [realtime, realtimeTwo], err);
-        }
+        },
       );
     });
 
@@ -538,7 +538,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        }
+        },
       );
     });
 
@@ -585,7 +585,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             try {
               expect(
                 JSON.stringify(testMessage) === JSON.stringify(message.data),
-                'Check rewound message.data'
+                'Check rewound message.data',
               ).to.be.ok;
             } catch (err) {
               closeAndFinish(done, [sender_realtime, receiver_realtime], err);
@@ -608,7 +608,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               closeAndFinish(
                 done,
                 [sender_realtime, receiver_realtime, resumed_receiver_realtime],
-                new Error('Rewound message arrived on attach resume')
+                new Error('Rewound message arrived on attach resume'),
               );
             });
 
@@ -635,7 +635,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         {
           transports: [helper.bestTransport],
         },
-        true
+        true,
       );
 
       const channelNames = Array(5)
@@ -655,7 +655,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             const rx = rxRealtime.channels.get(name);
             sendAndAwait(null, tx, rx, cb);
           },
-          callback
+          callback,
         );
       }
 
@@ -665,7 +665,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           (_, cb) => {
             publishSubscribeWhileConnectedOnce(cb);
           },
-          callback
+          callback,
         );
       }
 
@@ -676,7 +676,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             const tx = txRest.channels.get(name);
             whenPromiseSettles(tx.publish('sentWhileDisconnected', null), cb);
           },
-          callback
+          callback,
         );
       }
 
@@ -686,7 +686,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           (_, cb) => {
             publishSubscribeWhileDisconnectedOnce(cb);
           },
-          callback
+          callback,
         );
       }
 
@@ -708,7 +708,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               }
             });
           },
-          callback
+          callback,
         );
       }
 

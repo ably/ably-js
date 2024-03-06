@@ -84,7 +84,7 @@ class CustomEventReporter extends Mocha.reporters.HTML {
           total: this.testResultStats.passes + this.testResultStats.failures,
           jUnitReport: this.jUnitReport,
         },
-      })
+      }),
     );
   }
 }

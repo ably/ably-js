@@ -326,13 +326,13 @@ export declare class BaseRest implements RestClient {
     version: number,
     params?: any,
     body?: any[] | any,
-    headers?: any
+    headers?: any,
   ): Promise<HttpPaginatedResponse<T>>;
   stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
   time(): Promise<number>;
   batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
   batchPublish(
-    specs: BatchPublishSpec[]
+    specs: BatchPublishSpec[],
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
@@ -380,13 +380,13 @@ export declare class BaseRealtime implements RealtimeClient {
     version: number,
     params?: any,
     body?: any[] | any,
-    headers?: any
+    headers?: any,
   ): Promise<HttpPaginatedResponse<T>>;
   stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
   time(): Promise<number>;
   batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
   batchPublish(
-    specs: BatchPublishSpec[]
+    specs: BatchPublishSpec[],
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;

@@ -19,18 +19,18 @@ type SubscribeArgs = [string, AblyMessageCallback] | [AblyMessageCallback];
 
 export function useChannel(
   channelNameOrNameAndOptions: ChannelParameters,
-  callbackOnMessage?: AblyMessageCallback
+  callbackOnMessage?: AblyMessageCallback,
 ): ChannelResult;
 export function useChannel(
   channelNameOrNameAndOptions: ChannelParameters,
   event: string,
-  callbackOnMessage?: AblyMessageCallback
+  callbackOnMessage?: AblyMessageCallback,
 ): ChannelResult;
 
 export function useChannel(
   channelNameOrNameAndOptions: ChannelParameters,
   eventOrCallback?: string | AblyMessageCallback,
-  callback?: AblyMessageCallback
+  callback?: AblyMessageCallback,
 ): ChannelResult {
   const channelHookOptions =
     typeof channelNameOrNameAndOptions === 'object'

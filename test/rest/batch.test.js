@@ -292,7 +292,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
               err ? reject(err) : resolve();
             }, realtime);
           });
-        })
+        }),
       );
     });
 

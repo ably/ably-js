@@ -13,7 +13,7 @@ function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | Re
   return render(
     <AblyProvider client={client as unknown as Ably.RealtimeClient}>
       <ChannelProvider channelName={testChannelName}>{children}</ChannelProvider>
-    </AblyProvider>
+    </AblyProvider>,
   );
 }
 
@@ -82,7 +82,7 @@ describe('usePresence', () => {
       ablyClient,
       <ChannelProvider channelName="testChannelName">
         <TypedUsePresenceComponent></TypedUsePresenceComponent>
-      </ChannelProvider>
+      </ChannelProvider>,
     );
 
     await act(async () => {
@@ -111,7 +111,7 @@ describe('usePresence', () => {
         <ChannelProvider channelName={testChannelName} id="otherClient">
           <UsePresenceComponentMultipleClients />
         </ChannelProvider>
-      </AblyProvider>
+      </AblyProvider>,
     );
 
     await act(async () => {
@@ -133,7 +133,7 @@ describe('usePresence', () => {
       ablyClient,
       <ChannelProvider channelName="blah">
         <UsePresenceStateErrorsComponent onChannelError={onChannelError}></UsePresenceStateErrorsComponent>
-      </ChannelProvider>
+      </ChannelProvider>,
     );
 
     const channelErrorElem = screen.getByRole('channelError');
@@ -159,7 +159,7 @@ describe('usePresence', () => {
       ablyClient,
       <ChannelProvider channelName="blah">
         <UsePresenceStateErrorsComponent onConnectionError={onConnectionError}></UsePresenceStateErrorsComponent>
-      </ChannelProvider>
+      </ChannelProvider>,
     );
 
     const connectionErrorElem = screen.getByRole('connectionError');

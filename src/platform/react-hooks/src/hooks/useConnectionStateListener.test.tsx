@@ -32,7 +32,9 @@ describe('useConnectionStateListener', () => {
   it('can register a connection state listener for named state changes', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseConnectionStateListenerComponentNamedEvents event={'failed'}></UseConnectionStateListenerComponentNamedEvents>
+      <UseConnectionStateListenerComponentNamedEvents
+        event={'failed'}
+      ></UseConnectionStateListenerComponentNamedEvents>,
     );
 
     act(() => {
@@ -53,7 +55,7 @@ describe('useConnectionStateListener', () => {
       ablyClient,
       <UseConnectionStateListenerComponentNamedEvents
         event={['failed', 'suspended']}
-      ></UseConnectionStateListenerComponentNamedEvents>
+      ></UseConnectionStateListenerComponentNamedEvents>,
     );
 
     act(() => {

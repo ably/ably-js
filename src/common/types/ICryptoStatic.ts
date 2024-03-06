@@ -10,7 +10,7 @@ export interface IGetCipherReturnValue<Cipher> {
 export default interface ICryptoStatic<IV, InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext>
   extends API.Crypto {
   getCipher(
-    params: IGetCipherParams<IV>
+    params: IGetCipherParams<IV>,
   ): IGetCipherReturnValue<ICipher<InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext>>;
 }
 

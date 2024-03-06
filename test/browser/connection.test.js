@@ -56,7 +56,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             try {
               expect(
                 disconnectedAt - connectedAt < 1500,
-                'Offline event caused connection to move to the disconnected state'
+                'Offline event caused connection to move to the disconnected state',
               ).to.be.ok;
             } catch (err) {
               closeAndFinish(done, realtime, err);
@@ -67,7 +67,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               try {
                 expect(
                   reconnectingAt - disconnectedAt < 1500,
-                  'Client automatically reattempts connection without waiting for disconnect timeout, even if the state is still offline'
+                  'Client automatically reattempts connection without waiting for disconnect timeout, even if the state is still offline',
                 ).to.be.ok;
               } catch (err) {
                 closeAndFinish(done, realtime, err);
@@ -103,7 +103,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           try {
             expect(
               connection.state == 'disconnected',
-              'Connection should still be disconnected before we trigger it to connect'
+              'Connection should still be disconnected before we trigger it to connect',
             ).to.be.ok;
           } catch (err) {
             closeAndFinish(done, realtime, err);
@@ -113,7 +113,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             try {
               expect(
                 new Date() - disconnectedAt < 1500,
-                'Online event should have caused the connection to enter the connecting state without waiting for disconnect timeout'
+                'Online event should have caused the connection to enter the connecting state without waiting for disconnect timeout',
               ).to.be.ok;
             } catch (err) {
               closeAndFinish(done, realtime, err);
@@ -151,7 +151,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           try {
             expect(
               connection.state == 'suspended',
-              'Connection should still be suspended before we trigger it to connect'
+              'Connection should still be suspended before we trigger it to connect',
             ).to.be.ok;
           } catch (err) {
             closeAndFinish(done, realtime, err);
@@ -161,7 +161,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             try {
               expect(
                 new Date() - suspendedAt < 1500,
-                'Online event should have caused the connection to enter the connecting state without waiting for suspended timeout'
+                'Online event should have caused the connection to enter the connecting state without waiting for suspended timeout',
               ).to.be.ok;
             } catch (err) {
               closeAndFinish(done, realtime, err);
@@ -226,7 +226,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           try {
             expect(realtime.connection.state).to.equal(
               'connected',
-              'check connection state initially unaffected by page refresh'
+              'check connection state initially unaffected by page refresh',
             );
             simulateDroppedConnection(realtime);
           } catch (err) {
@@ -239,7 +239,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             try {
               expect(
                 sameConnection(connectionKey, newRealtime.connection.key),
-                'Check new realtime recovered the connection from the cookie'
+                'Check new realtime recovered the connection from the cookie',
               ).to.be.ok;
             } catch (err) {
               closeAndFinish(done, [realtime, newRealtime], err);
@@ -267,7 +267,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           try {
             expect(realtime.connection.state).to.equal(
               'connected',
-              'check connection state initially unaffected by page refresh'
+              'check connection state initially unaffected by page refresh',
             );
             simulateDroppedConnection(realtime);
           } catch (err) {
@@ -280,7 +280,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             try {
               expect(
                 !sameConnection(connectionKey, newRealtime.connection.key),
-                'Check new realtime created a new connection'
+                'Check new realtime created a new connection',
               ).to.be.ok;
             } catch (err) {
               closeAndFinish(done, [realtime, newRealtime], err);
@@ -326,7 +326,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           try {
             expect(realtime.connection.state).to.equal(
               'connected',
-              'check connection state initially unaffected by page refresh'
+              'check connection state initially unaffected by page refresh',
             );
             simulateDroppedConnection(realtime);
           } catch (err) {
@@ -339,7 +339,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             try {
               expect(
                 sameConnection(connectionKey, newRealtime.connection.key),
-                'Check new realtime recovered the old'
+                'Check new realtime recovered the old',
               ).to.be.ok;
             } catch (err) {
               closeAndFinish(done, [realtime, newRealtime], err);
@@ -357,7 +357,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           if (this.event === 'transport.active' && transport.shortName === 'web_socket') {
             try {
               expect(window.localStorage.getItem(transportPreferenceName)).to.equal(
-                JSON.stringify({ value: 'web_socket' })
+                JSON.stringify({ value: 'web_socket' }),
               );
             } catch (err) {
               closeAndFinish(done, realtime, err);

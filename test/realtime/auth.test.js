@@ -463,11 +463,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             try {
               expect(stateChange.current).to.equal(
                 expectFailure ? 'failed' : 'disconnected',
-                'Check connection goes to the expected state'
+                'Check connection goes to the expected state',
               );
               expect(stateChange.reason.statusCode).to.equal(
                 expectFailure ? 403 : 401,
-                'Check correct cause error code'
+                'Check correct cause error code',
               );
             } catch (err) {
               done(err);
@@ -490,7 +490,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         authCallback: function (tokenParams, callback) {
           callback(new Error('An error from client code that the authCallback might return'));
         },
-      })
+      }),
     );
 
     it(
@@ -500,7 +500,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           /* (^._.^)ﾉ */
         },
         realtimeRequestTimeout: 100,
-      })
+      }),
     );
 
     it(
@@ -509,7 +509,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         authCallback: function (tokenParams, callback) {
           callback();
         },
-      })
+      }),
     );
 
     it(
@@ -518,7 +518,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         authCallback: function (tokenParams, callback) {
           callback(null, { horse: 'ebooks' });
         },
-      })
+      }),
     );
 
     it(
@@ -531,7 +531,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
           callback(null, token);
         },
-      })
+      }),
     );
 
     it(
@@ -540,7 +540,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         authCallback: function (tokenParams, callback) {
           callback(null, '');
         },
-      })
+      }),
     );
 
     it(
@@ -548,28 +548,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       authCallback_failures({
         authUrl: helper.unroutableAddress,
         realtimeRequestTimeout: 100,
-      })
+      }),
     );
 
     it(
       'authUrl_404',
       authCallback_failures({
         authUrl: 'http://example.com/404',
-      })
+      }),
     );
 
     it(
       'authUrl_wrong_content_type',
       authCallback_failures({
         authUrl: 'http://example.com/',
-      })
+      }),
     );
 
     it(
       'authUrl_401',
       authCallback_failures({
         authUrl: echoServer + '/respondwith?status=401',
-      })
+      }),
     );
 
     it(
@@ -577,7 +577,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       authCallback_failures({
         authUrl:
           echoServer + '/?type=json&body=' + encodeURIComponent(JSON.stringify(JSON.stringify({ keyName: 'foo.bar' }))),
-      })
+      }),
     );
 
     /* 403 should cause the connection to go to failed, unlike the others */
@@ -587,8 +587,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         {
           authUrl: echoServer + '/respondwith?status=403',
         },
-        true
-      )
+        true,
+      ),
     ); /* expectFailed: */
 
     /* 403 should cause connection to fail even with an external error response */
@@ -601,8 +601,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             '/?status=403&type=json&body=' +
             encodeURIComponent(JSON.stringify({ error: { some_custom: 'error' } })),
         },
-        true
-      )
+        true,
+      ),
     );
 
     it('authUrl_403_previously_active', function (done) {
@@ -629,14 +629,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 expect(realtime.connection.state).to.equal('failed', 'Check connection goes to the failed state');
                 expect(realtime.connection.errorReason && realtime.connection.errorReason.statusCode).to.equal(
                   403,
-                  'Check correct cause error code'
+                  'Check correct cause error code',
                 );
                 expect(realtime.connection.errorReason.code).to.equal(80019, 'Check correct connection error code');
                 closeAndFinish(done, realtime);
               } catch (err) {
                 closeAndFinish(done, realtime, err);
               }
-            }
+            },
           );
         });
       });
@@ -696,7 +696,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         expect(
           isNaN(parseInt(rest.serverTimeOffset)) && !rest.serverTimeOffset,
-          'Server time offset is empty and falsey until a time request has been made'
+          'Server time offset is empty and falsey until a time request has been made',
         ).to.be.ok;
       } catch (err) {
         done(err);
@@ -712,7 +712,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             }
             expect(
               !isNaN(parseInt(rest.serverTimeOffset)),
-              'Server time offset is configured when time is requested'
+              'Server time offset is configured when time is requested',
             ).to.be.ok;
             callback();
           });
@@ -852,7 +852,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               });
             });
-          }
+          },
         );
       };
     });
@@ -972,7 +972,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         realtime.auth.authorize(null, { token: '3' });
         expect(realtime.auth.authOptions.authUrl).to.equal(
           undefined,
-          'Check authorize completely replaces stored authOptions with passed in ones'
+          'Check authorize completely replaces stored authOptions with passed in ones',
         );
 
         closeAndFinish(done, realtime);
@@ -1304,7 +1304,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             try {
               expect(authCallbackCallCount).to.equal(
                 2,
-                'Check we did autoremove the expired token ourselves, so authCallback is called a second time'
+                'Check we did autoremove the expired token ourselves, so authCallback is called a second time',
               );
               closeAndFinish(done, realtime);
             } catch (err) {

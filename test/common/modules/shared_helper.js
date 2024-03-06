@@ -15,7 +15,7 @@ define([
   var BufferUtils = platform.BufferUtils;
   var expect = chai.expect;
   var availableTransports = utils.keysArray(
-      clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports)
+      clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
     ),
     bestTransport = availableTransports[0],
     /* IANA reserved; requests to it will hang forever */
@@ -133,7 +133,7 @@ define([
           }
           done(e);
         });
-      }
+      },
     );
   }
 
@@ -144,11 +144,11 @@ define([
     transports.forEach(function (transport) {
       itFn(
         name + '_with_' + transport + '_binary_transport',
-        testFn({ transports: [transport], useBinaryProtocol: true })
+        testFn({ transports: [transport], useBinaryProtocol: true }),
       );
       itFn(
         name + '_with_' + transport + '_text_transport',
-        testFn({ transports: [transport], useBinaryProtocol: false })
+        testFn({ transports: [transport], useBinaryProtocol: false }),
       );
     });
     /* Plus one for no transport specified (ie use upgrade mechanism if

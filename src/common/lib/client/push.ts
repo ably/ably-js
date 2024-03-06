@@ -70,13 +70,13 @@ class DeviceRegistrations {
       headers,
       params,
       null,
-      true
+      true,
     );
 
     return DeviceDetails.fromResponseBody(
       response.body as Record<string, unknown>,
       client._MsgPack,
-      response.unpacked ? undefined : format
+      response.unpacked ? undefined : format,
     ) as DeviceDetails;
   }
 
@@ -90,7 +90,7 @@ class DeviceRegistrations {
       throw new ErrorInfo(
         'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
         40000,
-        400
+        400,
       );
     }
 
@@ -102,13 +102,13 @@ class DeviceRegistrations {
       headers,
       {},
       null,
-      true
+      true,
     );
 
     return DeviceDetails.fromResponseBody(
       response.body as Record<string, unknown>,
       client._MsgPack,
-      response.unpacked ? undefined : format
+      response.unpacked ? undefined : format,
     ) as DeviceDetails;
   }
 
@@ -123,12 +123,12 @@ class DeviceRegistrations {
     return new PaginatedResource(client, '/push/deviceRegistrations', headers, envelope, async function (
       body,
       headers,
-      unpacked
+      unpacked,
     ) {
       return DeviceDetails.fromResponseBody(
         body as Record<string, unknown>[],
         client._MsgPack,
-        unpacked ? undefined : format
+        unpacked ? undefined : format,
       );
     }).get(params);
   }
@@ -144,7 +144,7 @@ class DeviceRegistrations {
       throw new ErrorInfo(
         'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
         40000,
-        400
+        400,
       );
     }
 
@@ -158,7 +158,7 @@ class DeviceRegistrations {
       headers,
       params,
       null,
-      true
+      true,
     );
   }
 
@@ -201,13 +201,13 @@ class ChannelSubscriptions {
       headers,
       params,
       null,
-      true
+      true,
     );
 
     return PushChannelSubscription.fromResponseBody(
       response.body as Record<string, any>,
       client._MsgPack,
-      response.unpacked ? undefined : format
+      response.unpacked ? undefined : format,
     ) as PushChannelSubscription;
   }
 
@@ -222,12 +222,12 @@ class ChannelSubscriptions {
     return new PaginatedResource(client, '/push/channelSubscriptions', headers, envelope, async function (
       body,
       headers,
-      unpacked
+      unpacked,
     ) {
       return PushChannelSubscription.fromResponseBody(
         body as Record<string, unknown>[],
         client._MsgPack,
-        unpacked ? undefined : format
+        unpacked ? undefined : format,
       );
     }).get(params);
   }

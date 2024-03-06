@@ -69,7 +69,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     body: RequestBody | null,
     requestMode: number,
     timeouts: Record<string, number>,
-    method?: HttpMethods
+    method?: HttpMethods,
   ) {
     super();
     params = params || {};
@@ -93,7 +93,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     body: RequestBody | null,
     requestMode: number,
     timeouts: Record<string, number> | null,
-    method?: HttpMethods
+    method?: HttpMethods,
   ): XHRRequest {
     /* XHR requests are used either with the context being a realtime
      * transport, or with timeouts passed in (for when used by a rest client),
@@ -106,7 +106,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       body,
       requestMode,
       _timeouts,
-      method
+      method,
     );
   }
 
@@ -115,7 +115,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     body?: unknown,
     headers?: Record<string, string> | null,
     unpacked?: boolean | null,
-    statusCode?: number
+    statusCode?: number,
   ): void {
     if (!this.requestComplete) {
       this.requestComplete = true;
@@ -173,7 +173,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       errorEvent: ProgressEvent<EventTarget>,
       message: string,
       code: number | null,
-      statusCode: number
+      statusCode: number,
     ) => {
       let errorMessage = message + ' (event type: ' + errorEvent.type + ')';
       if (this?.xhr?.statusText) errorMessage += ', current statusText is ' + this.xhr.statusText;
@@ -268,7 +268,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
             ' body was: ' +
             Platform.Config.inspect(parsedResponse),
           null,
-          statusCode
+          statusCode,
         );
       }
       this.complete(err, parsedResponse, headers, unpacked, statusCode);

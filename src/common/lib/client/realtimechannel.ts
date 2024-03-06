@@ -138,7 +138,7 @@ class RealtimeChannel extends EventEmitter {
       'Channel operation failed as channel state is ' + this.state,
       90001,
       400,
-      this.errorReason || undefined
+      this.errorReason || undefined,
     );
   }
 
@@ -182,7 +182,7 @@ class RealtimeChannel extends EventEmitter {
               default:
                 reject(stateChange.reason);
             }
-          }
+          },
         );
       });
     }
@@ -227,7 +227,7 @@ class RealtimeChannel extends EventEmitter {
         throw new ErrorInfo(
           'The single-argument form of publish() expects a message object or an array of message objects',
           40013,
-          400
+          400,
         );
     } else {
       messages = [messageFromValues({ name: args[0], data: args[1] })];
@@ -244,7 +244,7 @@ class RealtimeChannel extends EventEmitter {
           maxMessageSize +
           ' bytes)',
         40009,
-        400
+        400,
       );
     }
     return new Promise((resolve, reject) => {
@@ -294,7 +294,7 @@ class RealtimeChannel extends EventEmitter {
   _attach(
     forceReattach: boolean,
     attachReason: ErrorInfo | null,
-    callback?: StandardCallback<ChannelStateChange>
+    callback?: StandardCallback<ChannelStateChange>,
   ): void {
     if (!callback) {
       callback = function (err?: ErrorInfo | null) {
@@ -325,7 +325,7 @@ class RealtimeChannel extends EventEmitter {
           callback?.(
             stateChange.reason ||
               connectionManager.getError() ||
-              new ErrorInfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500)
+              new ErrorInfo('Unable to attach; reason unknown; state = ' + this.event, 90000, 500),
           );
           break;
         case 'detaching':
@@ -388,7 +388,7 @@ class RealtimeChannel extends EventEmitter {
                 reject(
                   stateChange.reason ||
                     connectionManager.getError() ||
-                    new ErrorInfo('Unable to detach; reason unknown; state = ' + this.event, 90000, 500)
+                    new ErrorInfo('Unable to detach; reason unknown; state = ' + this.event, 90000, 500),
                 );
                 break;
               case 'attaching':
@@ -582,7 +582,7 @@ class RealtimeChannel extends EventEmitter {
               this.name +
               '" state is not "attached" (state is "' +
               this.state +
-              '").'
+              '").',
           );
           return;
         }
@@ -657,7 +657,7 @@ class RealtimeChannel extends EventEmitter {
         Logger.logAction(
           Logger.LOG_ERROR,
           'RealtimeChannel.processMessage()',
-          'Fatal protocol error: unrecognised action (' + message.action + ')'
+          'Fatal protocol error: unrecognised action (' + message.action + ')',
         );
         this.connectionManager.abort(ConnectionErrors.unknownChannelErr());
     }
@@ -668,7 +668,7 @@ class RealtimeChannel extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MAJOR,
         'RealtimeChannel.processMessage()',
-        'Starting decode failure recovery process.'
+        'Starting decode failure recovery process.',
       );
       this._lastPayload.decodeFailureRecoveryInProgress = true;
       this._attach(true, reason, () => {
@@ -686,12 +686,12 @@ class RealtimeChannel extends EventEmitter {
     reason?: ErrorInfo | null,
     resumed?: boolean,
     hasPresence?: boolean,
-    hasBacklog?: boolean
+    hasBacklog?: boolean,
   ): void {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimeChannel.notifyState',
-      'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state
+      'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state,
     );
     this.clearStateTimer();
 
@@ -759,7 +759,7 @@ class RealtimeChannel extends EventEmitter {
       Logger.logAction(
         Logger.LOG_MINOR,
         'RealtimeChannel.checkPendingState',
-        'sendEvents is false; state is ' + this.connectionManager.state.state
+        'sendEvents is false; state is ' + this.connectionManager.state.state,
       );
       return;
     }
@@ -767,7 +767,7 @@ class RealtimeChannel extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MINOR,
       'RealtimeChannel.checkPendingState',
-      'name = ' + this.name + ', state = ' + this.state
+      'name = ' + this.name + ', state = ' + this.state,
     );
     /* Only start the state timer running when actually sending the event */
     switch (this.state) {
@@ -850,7 +850,7 @@ class RealtimeChannel extends EventEmitter {
 
   history = async function (
     this: RealtimeChannel,
-    params: RealtimeHistoryParams | null
+    params: RealtimeHistoryParams | null,
   ): Promise<PaginatedResult<Message>> {
     Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 
@@ -865,7 +865,7 @@ class RealtimeChannel extends EventEmitter {
         throw new ErrorInfo(
           'untilAttach was specified and channel is attached, but attachSerial is not defined',
           40000,
-          400
+          400,
         );
       }
       delete params.untilAttach;
@@ -889,7 +889,7 @@ class RealtimeChannel extends EventEmitter {
       'Can only release a channel in a state where there is no possibility of further updates from the server being received (initialized, detached, or failed); was ' +
         s,
       90001,
-      400
+      400,
     );
   }
 
@@ -897,7 +897,7 @@ class RealtimeChannel extends EventEmitter {
     Logger.logAction(
       Logger.LOG_MICRO,
       'RealtimeChannel.setChannelSerial()',
-      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.properties.channelSerial
+      'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.properties.channelSerial,
     );
 
     // RTP17h: Only update the channel serial if its present (it won't always

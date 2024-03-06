@@ -4,7 +4,6 @@ const { BannerPlugin, ProvidePlugin } = require('webpack');
 const banner = require('./src/fragments/license');
 // This is needed for baseUrl to resolve correctly from tsconfig
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
-const nodeExternals = require('webpack-node-externals');
 
 const baseConfig = {
   mode: 'production',
@@ -118,48 +117,21 @@ const reactNativeConfig = {
 };
 
 /**
- * We create a bundle that exposes the mocha-junit-reporter package. We do this for the following reasons:
- *
- * - Browser:
- *
- *   1. This package is designed for Node only and hence requires polyfills of Node libraries (e.g. `stream`, `path`) — webpack takes care of this for us.
- *   2. The package is not compatible with RequireJS and hence we don’t have any easy way to directly load it in our tests — the webpack bundle exposes it as a global named MochaJUnitReporter.
- *
- * - Node: The library uses optional chaining syntax, which is not supported by Node 12.
+ * We create a bundle that exposes the mocha-junit-reporter package to be able to use it in the browser. We need to do this for the following reasons:
+ * - This package is designed for Node only and hence requires polyfills of Node libraries (e.g. `stream`, `path`) — webpack takes care of this for us.
+ * - The package is not compatible with RequireJS and hence we don’t have any easy way to directly load it in our tests — the webpack bundle exposes it as a global named MochaJUnitReporter.
  */
-function createMochaJUnitReporterConfigs() {
+function createMochaJUnitReporterConfig() {
   const dir = path.join(__dirname, 'test', 'support', 'mocha_junit_reporter');
 
-  const baseConfig = {
+  return {
     mode: 'development',
     entry: path.join(dir, 'index.js'),
-    module: {
-      rules: [
-        {
-          // The optional chaining syntax used by mocha-junit-reporter is not supported by Node 12 (see above). Hence, we transpile using Babel.
-          test: /\.js$/,
-          loader: 'babel-loader',
-          options: {
-            presets: [['@babel/preset-env']],
-          },
-        },
-      ],
-    },
     externals: {
       mocha: 'mocha.Mocha',
     },
     output: {
       path: path.join(dir, 'build'),
-    },
-  };
-
-  const browserConfig = {
-    ...baseConfig,
-    externals: {
-      mocha: 'mocha.Mocha',
-    },
-    output: {
-      ...baseConfig.output,
       filename: 'browser.js',
       library: 'MochaJUnitReporter',
     },
@@ -181,31 +153,11 @@ function createMochaJUnitReporterConfigs() {
       ],
     },
   };
-
-  const nodeConfig = {
-    ...baseConfig,
-    target: 'node',
-    output: {
-      ...baseConfig.output,
-      filename: 'node.js',
-      libraryTarget: 'umd',
-    },
-    // Don’t bundle any packages except mocha-junit-reporter. Using the
-    // webpack-node-externals library which I saw mentioned on
-    // https://webpack.js.org/configuration/externals/#function; there may
-    // be a simpler way of doing this but seems OK.
-    externals: [nodeExternals({ allowlist: 'mocha-junit-reporter' })],
-  };
-
-  return {
-    mochaJUnitReporterBrowser: browserConfig,
-    mochaJUnitReporterNode: nodeConfig,
-  };
 }
 
 module.exports = {
   node: nodeConfig,
   nativeScript: nativeScriptConfig,
   reactNative: reactNativeConfig,
-  ...createMochaJUnitReporterConfigs(),
+  mochaJUnitReporterBrowser: createMochaJUnitReporterConfig(),
 };

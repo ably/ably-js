@@ -9,13 +9,13 @@ export function useConnectionStateListener(listener: ConnectionStateListener, id
 export function useConnectionStateListener(
   state: Ably.ConnectionState | Ably.ConnectionState[],
   listener: ConnectionStateListener,
-  id?: string
+  id?: string,
 );
 
 export function useConnectionStateListener(
   stateOrListener?: Ably.ConnectionState | Ably.ConnectionState[] | ConnectionStateListener,
   listenerOrId?: string | ConnectionStateListener,
-  id = 'default'
+  id = 'default',
 ) {
   const _id = typeof listenerOrId === 'string' ? listenerOrId : id;
   const ably = useAbly(_id);

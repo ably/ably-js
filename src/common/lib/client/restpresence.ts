@@ -33,9 +33,9 @@ class RestPresence {
           body as Record<string, unknown>[],
           options as CipherOptions,
           client._MsgPack,
-          unpacked ? undefined : format
+          unpacked ? undefined : format,
         );
-      }
+      },
     ).get(params);
   }
 

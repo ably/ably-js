@@ -36,7 +36,7 @@ export class DefaultMessage extends Message {
   // Used by tests
   static async decode(
     message: Message | PresenceMessage,
-    inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions
+    inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions,
   ): Promise<void> {
     return decode(message, inputContext);
   }

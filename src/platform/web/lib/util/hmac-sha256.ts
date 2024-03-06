@@ -180,8 +180,8 @@ function sha256(data: Uint8Array) {
     new uint32Array(
       STATE.map(function (val) {
         return convertEndian(val);
-      })
-    ).buffer
+      }),
+    ).buffer,
   );
 }
 

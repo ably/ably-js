@@ -21,7 +21,7 @@ export class RestChannelMixin {
 
   static history(
     channel: RestChannel | RealtimeChannel,
-    params: RestHistoryParams | null
+    params: RestHistoryParams | null,
   ): Promise<PaginatedResult<Message>> {
     const client = channel.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
@@ -34,7 +34,7 @@ export class RestChannelMixin {
     return new PaginatedResource(client, this.basePath(channel) + '/messages', headers, envelope, async function (
       body,
       headers,
-      unpacked
+      unpacked,
     ) {
       return await messageFromResponseBody(body as Message[], options, client._MsgPack, unpacked ? undefined : format);
     }).get(params as Record<string, unknown>);
@@ -50,7 +50,7 @@ export class RestChannelMixin {
       headers,
       {},
       format,
-      true
+      true,
     );
 
     return response.body!;

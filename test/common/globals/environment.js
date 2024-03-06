@@ -46,7 +46,7 @@ define(function (require) {
       var time = new Date();
       console.log(
         time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds() + '.' + time.getMilliseconds(),
-        msg
+        msg,
       );
     },
   });

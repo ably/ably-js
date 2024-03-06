@@ -60,7 +60,7 @@ class BaseClient {
     Logger.logAction(
       Logger.LOG_MICRO,
       'BaseClient()',
-      'initialized with clientOptions ' + Platform.Config.inspect(options)
+      'initialized with clientOptions ' + Platform.Config.inspect(options),
     );
 
     this._MsgPack = modules.MsgPack ?? null;
@@ -85,7 +85,7 @@ class BaseClient {
         throw new ErrorInfo(
           'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
           40012,
-          400
+          400,
         );
     }
 
@@ -142,13 +142,13 @@ class BaseClient {
     version: number,
     params: RequestParams,
     body: unknown,
-    customHeaders: Record<string, string>
+    customHeaders: Record<string, string>,
   ): Promise<HttpPaginatedResponse<unknown>> {
     return this.rest.request(method, path, version, params, body, customHeaders);
   }
 
   batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
-    specOrSpecs: T
+    specOrSpecs: T,
   ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
     return this.rest.batchPublish(specOrSpecs);
   }

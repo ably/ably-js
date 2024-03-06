@@ -5,7 +5,7 @@ type EventListener<T> = (stateChange: T) => any;
 
 export function useEventListener<
   S extends Ably.ConnectionState | Ably.ChannelState,
-  C extends Ably.ConnectionStateChange | Ably.ChannelStateChange
+  C extends Ably.ConnectionStateChange | Ably.ChannelStateChange,
 >(emitter: Ably.EventEmitter<EventListener<C>, C, S>, listener: EventListener<C>, event?: S | S[]) {
   const savedListener = useRef(listener);
 

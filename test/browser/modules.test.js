@@ -48,7 +48,7 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
         describe(clientClass.name, () => {
           it('throws an error due to the absence of an HTTP module', () => {
             expect(() => new clientClass(ablyClientOptions(), {})).to.throw(
-              'No HTTP request module provided. Provide at least one of the FetchRequest or XHRRequest modules.'
+              'No HTTP request module provided. Provide at least one of the FetchRequest or XHRRequest modules.',
             );
           });
         });
@@ -281,7 +281,7 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
           try {
             await decodeMessages(
               testData.items.map((item) => item.encrypted),
-              { cipher: { key, iv } }
+              { cipher: { key, iv } },
             );
           } catch (error) {
             thrownError = error;
@@ -307,7 +307,7 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
             decodeMessages(testData.items.map((item) => item.encoded)),
             decodeEncryptedMessages(
               testData.items.map((item) => item.encrypted),
-              { cipher: { key, iv } }
+              { cipher: { key, iv } },
             ),
           ]);
 
@@ -575,7 +575,7 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
         describe('without a transport module', () => {
           it('throws an error due to absence of a transport module', () => {
             expect(() => new BaseRealtime(ablyClientOptions(), { FetchRequest })).to.throw(
-              'no requested transports available'
+              'no requested transports available',
             );
           });
         });
@@ -592,7 +592,7 @@ function registerAblyModulesTests(helper, registerDeltaTests) {
                 {
                   FetchRequest,
                   [scenario.moduleMapKey]: scenario.transportModule,
-                }
+                },
               );
 
               let firstTransportCandidate;

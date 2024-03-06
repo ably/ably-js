@@ -11,7 +11,7 @@ export class DefaultPresenceMessage extends PresenceMessage {
 
   static async fromEncodedArray(
     encodedArray: Array<unknown>,
-    options?: API.ChannelOptions
+    options?: API.ChannelOptions,
   ): Promise<PresenceMessage[]> {
     return fromEncodedArray(encodedArray, options);
   }

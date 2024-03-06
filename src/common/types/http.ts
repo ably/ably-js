@@ -47,7 +47,7 @@ export interface IPlatformHttp {
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams
+    params: RequestParams,
   ): Promise<RequestResult>;
 
   checkConnectivity?: () => Promise<boolean>;
@@ -77,7 +77,7 @@ function logResult(result: RequestResult, method: HttpMethods, uri: string, para
     Logger.logActionNoStrip(
       Logger.LOG_MICRO,
       'Http.' + method + '()',
-      'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(result.error)
+      'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(result.error),
     );
   } else {
     Logger.logActionNoStrip(
@@ -92,7 +92,7 @@ function logResult(result: RequestResult, method: HttpMethods, uri: string, para
         '; Body' +
         (Platform.BufferUtils.isBuffer(result.body)
           ? ' (Base64): ' + Platform.BufferUtils.base64Encode(result.body)
-          : ': ' + result.body)
+          : ': ' + result.body),
     );
   }
 }
@@ -105,7 +105,7 @@ function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, 
       'Sending; ' +
         appendingParams(uri, params) +
         '; Body' +
-        (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body)
+        (Platform.BufferUtils.isBuffer(body) ? ' (Base64): ' + Platform.BufferUtils.base64Encode(body) : ': ' + body),
     );
   }
 }
@@ -152,7 +152,7 @@ export class Http {
     path: PathParameter,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams
+    params: RequestParams,
   ): Promise<RequestResult> {
     try {
       /* Unlike for doUri, the presence of `this.client` here is mandatory, as it's used to generate the hosts */
@@ -222,7 +222,7 @@ export class Http {
     uri: string,
     headers: Record<string, string> | null,
     body: RequestBody | null,
-    params: RequestParams
+    params: RequestParams,
   ): Promise<RequestResult> {
     try {
       logRequest(method, uri, body, params);

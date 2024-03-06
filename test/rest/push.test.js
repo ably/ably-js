@@ -375,7 +375,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var eq = includesUnordered(x, y);
       expect(eq).to.equal(
         true,
-        JSON.stringify(x, null, 2) + ' includesUnordered ' + JSON.stringify(y, null, 2) + ' (' + eq + ')'
+        JSON.stringify(x, null, 2) + ' includesUnordered ' + JSON.stringify(y, null, 2) + ' (' + eq + ')',
       );
     }
   });

@@ -63,7 +63,7 @@ async function run() {
       for (let version of versions) {
         const relativePath = path.relative(
           config.includeDirs.find((d) => file.startsWith(d)),
-          file
+          file,
         );
         const split = relativePath.split('.js');
         const newPath = `${split[0]}-${version}.js`;

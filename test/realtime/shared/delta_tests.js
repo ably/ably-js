@@ -68,8 +68,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               channel.on('attaching', function (stateChange) {
                 done(
                   new Error(
-                    'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason)
-                  )
+                    'Channel reattaching, presumably due to decode failure; reason =' +
+                      displayError(stateChange.reason),
+                  ),
                 );
               });
 
@@ -81,7 +82,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                   if (index === testData.length - 1) {
                     expect(testVcdiffDecoder.numberOfCalls).to.equal(
                       testData.length - 1,
-                      'Check number of delta messages'
+                      'Check number of delta messages',
                     );
                     closeAndFinish(done, realtime);
                   }
@@ -174,7 +175,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                       closeAndFinish(
                         done,
                         realtime,
-                        new Error('Check no further decode failures; reason =' + displayError(stateChange.reason))
+                        new Error('Check no further decode failures; reason =' + displayError(stateChange.reason)),
                       );
                     });
                   });
@@ -182,7 +183,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                   try {
                     expect(testVcdiffDecoder.numberOfCalls).to.equal(
                       testData.length - 2,
-                      'Check number of delta messages'
+                      'Check number of delta messages',
                     );
                   } catch (err) {
                     closeAndFinish(done, realtime, err);

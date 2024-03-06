@@ -26,7 +26,7 @@ function App() {
     },
     (message) => {
       updateDerivedChannelMessages((prev) => [...prev, message]);
-    }
+    },
   );
 
   useChannel(
@@ -36,7 +36,7 @@ function App() {
     },
     (message) => {
       updateFrontOfficeOnlyMessages((prev) => [...prev, message]);
-    }
+    },
   );
 
   const { publish: anotherChannelPublish } = useChannel({
@@ -48,7 +48,7 @@ function App() {
     { foo: 'bar' },
     (update) => {
       console.log(update);
-    }
+    },
   );
 
   const [, setConnectionState] = useState(ably.connection.state);

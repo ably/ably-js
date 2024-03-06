@@ -26,7 +26,7 @@ class XHRStreamingTransport extends CometTransport {
     headers: Record<string, string>,
     params: RequestParams,
     body: RequestBody | null,
-    requestMode: number
+    requestMode: number,
   ) {
     return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
   }

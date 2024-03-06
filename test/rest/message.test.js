@@ -51,7 +51,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
         expect(
           message.clientId == clientId,
-          'client ID is added by the client library as it is explicit in the publish'
+          'client ID is added by the client library as it is explicit in the publish',
         ).to.be.ok;
         return originalPublish.apply(channel, arguments);
       };
@@ -81,7 +81,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
         expect(
           message.clientId == invalidClientId,
-          'invalid client ID is added by the client library as it is explicit in the publish'
+          'invalid client ID is added by the client library as it is explicit in the publish',
         ).to.be.ok;
         return originalPublish.apply(channel, arguments);
       };
