@@ -1104,7 +1104,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return;
             }
             clientRealtime.close();
-            clientRealtime.connection.whenState('closed', function () {
+            whenPromiseSettles(clientRealtime.connection.whenState('closed'), function () {
               clientRealtime.connection.once('connected', function () {
                 //Should automatically reattach
                 whenPromiseSettles(clientChannel.presence.enter('second'), function (err) {
@@ -1774,7 +1774,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       async.series(
         [
           function (cb) {
-            continuousRealtime.connection.whenState('connected', function () {
+            whenPromiseSettles(continuousRealtime.connection.whenState('connected'), function () {
               cb();
             });
           },
@@ -1785,7 +1785,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             whenPromiseSettles(continuousChannel.presence.enter(), cb);
           },
           function (cb) {
-            realtime.connection.whenState('connected', function () {
+            whenPromiseSettles(realtime.connection.whenState('connected'), function () {
               cb();
             });
           },
@@ -1885,7 +1885,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       async.series(
         [
           function (cb) {
-            realtime.connection.whenState('connected', function () {
+            whenPromiseSettles(realtime.connection.whenState('connected'), function () {
               cb();
             });
           },
@@ -1982,7 +1982,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           async.series(
             [
               function (cb) {
-                rt.connection.whenState('connected', function () {
+                whenPromiseSettles(rt.connection.whenState('connected'), function () {
                   cb();
                 });
               },
@@ -2059,7 +2059,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            leavesRealtime.connection.whenState('closed', function () {
+            whenPromiseSettles(leavesRealtime.connection.whenState('closed'), function () {
               cb();
             });
             leavesRealtime.close();

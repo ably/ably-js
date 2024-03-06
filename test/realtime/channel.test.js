@@ -6,7 +6,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var expect = chai.expect;
   var displayError = helper.displayError;
   var closeAndFinish = helper.closeAndFinish;
+  var closeAndFinishAsync = helper.closeAndFinishAsync;
   var monitorConnection = helper.monitorConnection;
+  var monitorConnectionAsync = helper.monitorConnectionAsync;
   var createPM = Ably.protocolMessageFromDeserialized;
   var testOnAllTransports = helper.testOnAllTransports;
   var whenPromiseSettles = helper.whenPromiseSettles;
@@ -447,22 +449,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Attach then later call whenState which fires immediately
      */
-    it('channelattachOnceOrIfAfter', function (done) {
+    it('channelattachWhenState', function (done) {
       try {
         var realtime = helper.AblyRealtime(),
-          channel = realtime.channels.get('channelattachOnceOrIf'),
-          firedImmediately = false;
+          channel = realtime.channels.get('channelattachWhenState');
 
         whenPromiseSettles(channel.attach(), function (err) {
-          channel.whenState('attached', function () {
-            firedImmediately = true;
-          });
-          try {
-            expect(firedImmediately, 'whenState fired immediately as attached').to.be.ok;
-            closeAndFinish(done, realtime);
-          } catch (err) {
+          whenPromiseSettles(channel.whenState('attached'), function () {
             closeAndFinish(done, realtime, err);
-          }
+          });
         });
         monitorConnection(done, realtime);
       } catch (err) {
@@ -480,7 +475,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           firedImmediately = false;
 
         channel.attach();
-        channel.whenState('attached', function () {
+        whenPromiseSettles(channel.whenState('attached'), function () {
           firedImmediately = true;
           try {
             expect(channel.state).to.equal('attached', 'whenState fired when attached');
@@ -1651,7 +1646,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('channel-with-options', { modes: ['PRESENCE'] });
       channel.attach();
-      channel.whenState('attaching', function () {
+      whenPromiseSettles(channel.whenState('attaching'), function () {
         try {
           realtime.channels.get('channel-with-options', { modes: ['PRESENCE'] });
           closeAndFinish(done, realtime);
@@ -1659,6 +1654,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           closeAndFinish(done, realtime, err);
         }
       });
+    });
+
+    it('whenState', async () => {
+      const realtime = helper.AblyRealtime();
+
+      await monitorConnectionAsync(async () => {
+        const channel = realtime.channels.get('channel');
+
+        // RTL25a - when already in given state, returns null
+        const initializedStateChange = await channel.whenState('initialized');
+        expect(initializedStateChange).to.be.null;
+
+        // RTL25b — when not in given state, calls #once
+        const attachedStateChangePromise = channel.whenState('attached');
+        channel.attach();
+        const attachedStateChange = await attachedStateChangePromise;
+        expect(attachedStateChange).not.to.be.null;
+        expect(attachedStateChange.previous).to.equal('attaching');
+        expect(attachedStateChange.current).to.equal('attached');
+      }, realtime);
+
+      await closeAndFinishAsync(realtime);
     });
   });
 });

@@ -286,32 +286,18 @@ class EventEmitter {
   }
 
   /**
-   * Private API
-   *
    * Listen for a single occurrence of a state event and fire immediately if currentState matches targetState
    * @param targetState the name of the state event to listen to
    * @param currentState the name of the current state of this object
-   * @param listener the listener to be called
-   * @param listenerArgs
    */
-  whenState(targetState: string, currentState: string, listener: Function, ...listenerArgs: unknown[]) {
-    const eventThis = { event: targetState };
-
+  async whenState(targetState: string, currentState: string) {
     if (typeof targetState !== 'string' || typeof currentState !== 'string') {
-      throw 'whenState requires a valid event String argument';
-    }
-    if (typeof listener !== 'function') {
-      return new Promise((resolve) => {
-        EventEmitter.prototype.whenState.apply(
-          this,
-          [targetState, currentState, resolve].concat(listenerArgs as any[]) as any,
-        );
-      });
+      throw new Error('whenState requires a valid state String argument');
     }
     if (targetState === currentState) {
-      callListener(eventThis, listener, listenerArgs);
+      return null;
     } else {
-      this.once(targetState, listener);
+      return this.once(targetState);
     }
   }
 }

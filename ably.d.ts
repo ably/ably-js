@@ -2112,11 +2112,11 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   publish(message: Message): Promise<void>;
   /**
-   * Returns a promise which is resolved when the channel reaches the specified {@link ChannelState}. If the channel is already in the specified state, the promise is resolved immediately.
+   * If the channel is already in the given state, returns a promise which immediately resolves to `null`. Else, calls {@link EventEmitter.once | `once()`} to return a promise which resolves the next time the channel transitions to the given state.
    *
-   * @param targetState - The state which should be reached.
+   * @param targetState - The channel state to wait for.
    */
-  whenState(targetState: ChannelState): Promise<ChannelStateChange>;
+  whenState(targetState: ChannelState): Promise<ChannelStateChange | null>;
 }
 
 /**
@@ -2413,11 +2413,11 @@ export declare interface Connection
    */
   ping(): Promise<number>;
   /**
-   * Returns a promise which is resolved when the connection reaches the specified {@link ConnectionState}. If the connection is already in the specified state, the promise is resolved immediately.
+   * If the connection is already in the given state, returns a promise which immediately resolves to `null`. Else, calls {@link EventEmitter.once | `once()`} to return a promise which resolves the next time the connection transitions to the given state.
    *
-   * @param targetState - The state which should be reached.
+   * @param targetState - The connection state to wait for.
    */
-  whenState(targetState: ConnectionState): Promise<ConnectionStateChange>;
+  whenState(targetState: ConnectionState): Promise<ConnectionStateChange | null>;
 }
 
 /**

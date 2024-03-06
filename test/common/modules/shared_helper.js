@@ -42,6 +42,15 @@ define([
     });
   }
 
+  async function monitorConnectionAsync(action, realtime, states) {
+    const monitoringResultPromise = new Promise((resolve, reject) => {
+      monitorConnection((err) => (err ? reject(err) : resolve()), realtime, states);
+    });
+    const actionResultPromise = Promise.resolve(action());
+
+    return Promise.race([monitoringResultPromise, actionResultPromise]);
+  }
+
   function closeAndFinish(done, realtime, err) {
     if (typeof realtime === 'undefined') {
       // Likely called in a catch block for an exception
@@ -58,6 +67,12 @@ define([
     }
     callbackOnClose(realtime, function () {
       done(err);
+    });
+  }
+
+  async function closeAndFinishAsync(realtime, err) {
+    return new Promise((resolve, reject) => {
+      closeAndFinish((err) => (err ? reject(err) : resolve()), realtime, err);
     });
   }
 
@@ -238,7 +253,9 @@ define([
 
     displayError: displayError,
     monitorConnection: monitorConnection,
+    monitorConnectionAsync: monitorConnectionAsync,
     closeAndFinish: closeAndFinish,
+    closeAndFinishAsync: closeAndFinishAsync,
     simulateDroppedConnection: simulateDroppedConnection,
     becomeSuspended: becomeSuspended,
     testOnAllTransports: testOnAllTransports,
