@@ -1,6 +1,6 @@
 import * as Ably from 'ably';
 import React, { useMemo } from 'react';
-import { AblyContext, AblyContextType } from './AblyContext.js';
+import { AblyContext, AblyContextValue } from './AblyContext.js';
 
 interface AblyProviderProps {
   children?: React.ReactNode | React.ReactNode[] | null;
@@ -15,7 +15,7 @@ export const AblyProvider = ({ client, children, ablyId = 'default' }: AblyProvi
 
   const context = React.useContext(AblyContext);
 
-  const value: AblyContextType = useMemo(() => {
+  const value: AblyContextValue = useMemo(() => {
     return { ...context, [ablyId]: { client, _channelNameToChannelContext: {} } };
   }, [context, client, ablyId]);
 

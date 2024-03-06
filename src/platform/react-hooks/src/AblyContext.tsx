@@ -10,12 +10,12 @@ import React from 'react';
 // This is why a single Ably context is created and stored in the global state.
 const contextKey = Symbol.for('__ABLY_CONTEXT__');
 
-const globalObjectForContext: { [contextKey]?: React.Context<AblyContextType> } =
+const globalObjectForContext: { [contextKey]?: React.Context<AblyContextValue> } =
   typeof globalThis !== 'undefined' ? (globalThis as any) : {};
 
 // Ably context contains an object which stores all provider options indexed by provider id,
 // which is used to get options set by specific `AblyProvider` after calling `React.useContext`.
-export type AblyContextType = Record<string, AblyContextProviderProps>;
+export type AblyContextValue = Record<string, AblyContextProviderProps>;
 
 export interface AblyContextProviderProps {
   client: Ably.RealtimeClient;
@@ -27,10 +27,10 @@ export interface ChannelContextProps {
   derived?: boolean;
 }
 
-function getContext(): React.Context<AblyContextType> {
+function getContext(): React.Context<AblyContextValue> {
   let context = globalObjectForContext[contextKey];
   if (!context) {
-    context = globalObjectForContext[contextKey] = React.createContext<AblyContextType>({});
+    context = globalObjectForContext[contextKey] = React.createContext<AblyContextValue>({});
   }
 
   return context;

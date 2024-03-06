@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import * as Ably from 'ably';
-import { type AblyContextType, AblyContext } from './AblyContext.js';
+import { type AblyContextValue, AblyContext } from './AblyContext.js';
 import { channelOptionsWithAgent } from './AblyReactHooks.js';
 
 interface ChannelProviderProps {
@@ -28,7 +28,7 @@ export const ChannelProvider = ({
   const derived = Boolean(deriveOptions);
   const channel = derived ? client.channels.getDerived(channelName, deriveOptions) : client.channels.get(channelName);
 
-  const value: AblyContextType = useMemo(() => {
+  const value: AblyContextValue = useMemo(() => {
     return {
       ...context,
       [ablyId]: {
