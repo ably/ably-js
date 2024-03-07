@@ -28,8 +28,7 @@ The hooks provide a simplified syntax for interacting with Ably, and manage the 
   - [usePresence](#usepresence)
   - [usePresenceListener](#usepresencelistener)
 
-<!-- /code_chunk_output -->
----
+## <!-- /code_chunk_output -->
 
 ### Compatible React Versions
 
@@ -42,16 +41,16 @@ Start by connecting your app to Ably using the `AblyProvider` component. See the
 The `AblyProvider` should be high in your component tree, wrapping every component which needs to access Ably.
 
 ```jsx
-import { AblyProvider } from "ably/react";
-import * as Ably from "ably";
+import { AblyProvider } from 'ably/react';
+import * as Ably from 'ably';
 
-const client = new Ably.Realtime({ key: "your-ably-api-key", clientId: 'me' });
+const client = new Ably.Realtime({ key: 'your-ably-api-key', clientId: 'me' });
 
 root.render(
   <AblyProvider client={client}>
     <App />
-  </AblyProvider>
-)
+  </AblyProvider>,
+);
 ```
 
 ### Define Ably channels
@@ -67,8 +66,8 @@ Once you've set up `AblyProvider`, define Ably channels you want to use by utili
 After setting up `ChannelProvider`, you can employ the provided `hooks` in your code. Here's a basic example:
 
 ```javascript
-const { channel } = useChannel("your-channel-name", (message) => {
-    console.log(message);
+const { channel } = useChannel('your-channel-name', (message) => {
+  console.log(message);
 });
 ```
 
@@ -113,8 +112,8 @@ return (
 The useChannel hook lets you subscribe to an [Ably Channel](https://ably.com/docs/channels) and receive messages from it.
 
 ```javascript
-const { channel, ably } = useChannel("your-channel-name", (message) => {
-    console.log(message);
+const { channel, ably } = useChannel('your-channel-name', (message) => {
+  console.log(message);
 });
 ```
 
@@ -124,8 +123,8 @@ const { channel, ably } = useChannel("your-channel-name", (message) => {
 
 ```javascript
 const [messages, updateMessages] = useState([]);
-const { channel } = useChannel("your-channel-name", (message) => {
-    updateMessages((prev) => [...prev, message]);
+const { channel } = useChannel('your-channel-name', (message) => {
+  updateMessages((prev) => [...prev, message]);
 });
 
 // Convert the messages to list items to render in a react component
@@ -135,8 +134,8 @@ const messagePreviews = messages.map((msg, index) => <li key={index}>{msg.data.s
 `useChannel` supports all of the parameter combinations of a regular call to `channel.subscribe`, so you can filter the messages you subscribe to by providing a `message type` to the `useChannel` function:
 
 ```javascript
-useChannel("your-channel-name", "test-message", (message) => {
-    console.log(message); // Only logs messages sent using the `test-message` message type
+useChannel('your-channel-name', 'test-message', (message) => {
+  console.log(message); // Only logs messages sent using the `test-message` message type
 });
 ```
 
@@ -145,8 +144,8 @@ useChannel("your-channel-name", "test-message", (message) => {
 The `publish` function returned by `useChannel` can be used to send messages to the channel.
 
 ```javascript
-const { publish } = useChannel("your-channel-name")
-publish("test-message", { text: "message text" });
+const { publish } = useChannel('your-channel-name');
+publish('test-message', { text: 'message text' });
 ```
 
 #### useChannel `channel` instance
@@ -158,13 +157,13 @@ By providing both the channel instance and the Ably SDK instance through our use
 For instance, you can easily fetch the history of the channel using the following method:
 
 ```javascript
-const { channel } = useChannel("your-channel-name", (message) => {
-    console.log(message);
+const { channel } = useChannel('your-channel-name', (message) => {
+  console.log(message);
 });
 
 const history = channel.history((err, result) => {
-    var lastMessage = resultPage.items[0];
-    console.log('Last message: ' + lastMessage.id + ' - ' + lastMessage.data);
+  var lastMessage = resultPage.items[0];
+  console.log('Last message: ' + lastMessage.id + ' - ' + lastMessage.data);
 });
 ```
 
@@ -175,19 +174,19 @@ const history = channel.history((err, result) => {
 The usePresence hook [enters the presence set on a channel](https://ably.com/docs/presence-occupancy/presence) and enables you to send presence updates for current client. To find out more about Presence, see the [Presence documentation](https://ably.com/docs/presence-occupancy/presence).
 
 ```javascript
-const { updateStatus } = usePresence("your-channel-name");
+const { updateStatus } = usePresence('your-channel-name');
 
 // The `updateStatus` function can be used to update the presence data for the current client
-updateStatus("status");
+updateStatus('status');
 ```
 
 You can optionally provide a second parameter when you `usePresence` to set an initial `presence data`.
 
 ```javascript
-const { updateStatus } = usePresence("your-channel-name", "initial state");
+const { updateStatus } = usePresence('your-channel-name', 'initial state');
 
 // The `updateStatus` function can be used to update the presence data for the current client
-updateStatus("new status");
+updateStatus('new status');
 ```
 
 The new state will be sent to the channel, and all clients subscribed to the channel (including current, if you've subscribed to updates using [`usePresenceListener` hook](#usepresencelistener)) will be notified of the change immediately.
@@ -195,34 +194,36 @@ The new state will be sent to the channel, and all clients subscribed to the cha
 `usePresence` supports objects and numbers, as well as strings:
 
 ```javascript
-usePresence("your-channel-name", { foo: "bar" });
-usePresence("another-channel-name", 123);
-usePresence("third-channel-name", "initial status");
+usePresence('your-channel-name', { foo: 'bar' });
+usePresence('another-channel-name', 123);
+usePresence('third-channel-name', 'initial status');
 ```
 
 If you're using `TypeScript` there are type hints to make sure that value passed to `updateStatus` is of the same `type` as your initial constraint, or a provided generic type parameter:
 
 ```tsx
 const TypedUsePresenceComponent = () => {
-    // In this example MyPresenceType will be used for type checking updateStatus function.
-    // If omitted, the shape of the initial value will be used, and if that's omitted, `any` will be the default.
+  // In this example MyPresenceType will be used for type checking updateStatus function.
+  // If omitted, the shape of the initial value will be used, and if that's omitted, `any` will be the default.
 
-    const { updateStatus } = usePresence<MyPresenceType>("testChannelName", { foo: "bar" });
+  const { updateStatus } = usePresence<MyPresenceType>('testChannelName', { foo: 'bar' });
 
-    return (
-        <button
-            onClick={() => {
-                {/* you will have Intellisense for updateStatus function here */}
-                updateStatus({ foo: 'baz' });
-            }}
-        >
-            Update presence data
-        </button>
-    );
-}
+  return (
+    <button
+      onClick={() => {
+        {
+          /* you will have Intellisense for updateStatus function here */
+        }
+        updateStatus({ foo: 'baz' });
+      }}
+    >
+      Update presence data
+    </button>
+  );
+};
 
 interface MyPresenceType {
-    foo: string;
+  foo: string;
 }
 ```
 
@@ -232,13 +233,17 @@ interface MyPresenceType {
 
 The usePresenceListener hook [subscribes you to presence 'enter', 'update' and 'leave' events on a channel](https://ably.com/docs/presence-occupancy/presence?lang=javascript#subscribe) - this will allow you to get notified when a user joins or leaves the channel, or updates its presence data. To find out more about Presence, see the [Presence documentation](https://ably.com/docs/presence-occupancy/presence).
 
-**Please note** that fetching present members is executed as an effect, so it'll load in *after* your component renders for the first time.
+**Please note** that fetching present members is executed as an effect, so it'll load in _after_ your component renders for the first time.
 
 ```javascript
-const { presenceData } = usePresenceListener("your-channel-name");
+const { presenceData } = usePresenceListener('your-channel-name');
 
 // Convert presence data to the list of items to render
-const membersData = presenceData.map((msg, index) => <li key={index}>{msg.clientId}: {msg.data}</li>);
+const membersData = presenceData.map((msg, index) => (
+  <li key={index}>
+    {msg.clientId}: {msg.data}
+  </li>
+));
 ```
 
 The `usePresenceListener` hook returns an array of presence messages - each message is a regular Ably JavaScript SDK `PresenceMessage` instance.
@@ -246,8 +251,8 @@ The `usePresenceListener` hook returns an array of presence messages - each mess
 If you don't want to use the `presenceData` returned from `usePresenceListener`, you can configure a callback:
 
 ```javascript
-usePresenceListener("your-channel-name", (presenceUpdate) => {
-    console.log(presenceUpdate);
+usePresenceListener('your-channel-name', (presenceUpdate) => {
+  console.log(presenceUpdate);
 });
 ```
 
@@ -255,25 +260,25 @@ If you're using `TypeScript` there are type hints to make sure that presence dat
 
 ```tsx
 const TypedUsePresenceListenerComponent = () => {
-    // In this example MyPresenceType will be used for presenceData type hints.
-    // If that's omitted, `any` will be the default.
+  // In this example MyPresenceType will be used for presenceData type hints.
+  // If that's omitted, `any` will be the default.
 
-    const { presenceData } = usePresenceListener<MyPresenceType>("testChannelName");
+  const { presenceData } = usePresenceListener<MyPresenceType>('testChannelName');
 
-    const membersData = presenceData.map((presenceMsg, index) => {
-        return (
-            <li key={index}>
-                {/* you will have Intellisense for presenceMsg.data of type MyPresenceType here */}
-                {presenceMsg.clientId} - {presenceMsg.data.foo}
-            </li>
-        );
-    });
+  const membersData = presenceData.map((presenceMsg, index) => {
+    return (
+      <li key={index}>
+        {/* you will have Intellisense for presenceMsg.data of type MyPresenceType here */}
+        {presenceMsg.clientId} - {presenceMsg.data.foo}
+      </li>
+    );
+  });
 
-    return <ul>{membersData}</ul>;
-}
+  return <ul>{membersData}</ul>;
+};
 
 interface MyPresenceType {
-    foo: string;
+  foo: string;
 }
 ```
 
@@ -285,10 +290,10 @@ The `useConnectionStateListener` hook lets you attach a listener to be notified 
 
 ```javascript
 useConnectionStateListener((stateChange) => {
-  console.log(stateChange.current) // the new connection state
-  console.log(stateChange.previous) // the previous connection state
-  console.log(stateChange.reason) // if applicable, an error indicating the reason for the connection state change
-})
+  console.log(stateChange.current); // the new connection state
+  console.log(stateChange.previous); // the previous connection state
+  console.log(stateChange.reason); // if applicable, an error indicating the reason for the connection state change
+});
 ```
 
 You can also pass in a filter to only listen to a set of connection states:
@@ -304,10 +309,10 @@ The `useChannelStateListener` hook lets you attach a listener to be notified of 
 
 ```javascript
 useChannelStateListener((stateChange) => {
-  console.log(stateChange.current) // the new channel state
-  console.log(stateChange.previous) // the previous channel state
-  console.log(stateChange.reason) // if applicable, an error indicating the reason for the channel state change
-})
+  console.log(stateChange.current); // the new channel state
+  console.log(stateChange.previous); // the previous channel state
+  console.log(stateChange.reason); // if applicable, an error indicating the reason for the channel state change
+});
 ```
 
 You can also pass in a filter to only listen to a set of channel states:
@@ -341,18 +346,25 @@ if (connectionError) {
 } else if (channelError) {
   // TODO: handle channel errors
 } else {
-  return <AblyChannelComponent />
+  return <AblyChannelComponent />;
 }
 ```
 
 Alternatively, you can also pass callbacks to the hooks to be called when the client encounters an error:
 
 ```js
-useChannel({
-  channelName: 'my_channel',
-  onConnectionError: (err) => { /* handle connection error */ },
-  onChannelError: (err) => { /* handle channel error */ },
-}, messageHandler);
+useChannel(
+  {
+    channelName: 'my_channel',
+    onConnectionError: (err) => {
+      /* handle connection error */
+    },
+    onChannelError: (err) => {
+      /* handle channel error */
+    },
+  },
+  messageHandler,
+);
 ```
 
 ### Usage with multiple clients
@@ -365,8 +377,8 @@ root.render(
     <AblyProvider client={client2} ablyId={'providerTwo'}>
       <App />
     </AblyProvider>
-  </AblyProvider>
-)
+  </AblyProvider>,
+);
 ```
 
 This `ablyId` can then be passed in to each hook to specify which client to use.
@@ -376,14 +388,14 @@ const ablyId = 'providerOne';
 
 const client = useAbly(ablyId);
 
-useChannel({ channelName: "your-channel-name", ablyId }, (message) => {
-    console.log(message);
+useChannel({ channelName: 'your-channel-name', ablyId }, (message) => {
+  console.log(message);
 });
 
-usePresence({ channelName: "your-channel-name", ablyId }, "initial state");
+usePresence({ channelName: 'your-channel-name', ablyId }, 'initial state');
 
-usePresenceListener({ channelName: "your-channel-name", ablyId }, (presenceUpdate) => {
-    // ...
+usePresenceListener({ channelName: 'your-channel-name', ablyId }, (presenceUpdate) => {
+  // ...
 });
 ```
 
@@ -396,8 +408,8 @@ To address this, the `skip` parameter allows you to control the mounting behavio
 ```tsx
 const [skip, setSkip] = useState(true);
 
-const { channel, publish } = useChannel({ channelName: "your-channel-name", skip }, (message) => {
-    updateMessages((prev) => [...prev, message]);
+const { channel, publish } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
+  updateMessages((prev) => [...prev, message]);
 });
 ```
 
@@ -412,39 +424,39 @@ This parameter is useful in next situations:
 Consider a scenario where a component uses the `useChannel` hook, but the user's authentication status is determined asynchronously:
 
 ```tsx
-import React, { useEffect, useState } from "react";
-import { useChannel } from "ably/react";
-import * as Ably from "ably";
+import React, { useEffect, useState } from 'react';
+import { useChannel } from 'ably/react';
+import * as Ably from 'ably';
 
 const ChatComponent = () => {
-    const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
-    const [messages, updateMessages] = useState<Ably.Message[]>([]);
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
 
-    // Simulate asynchronous authentication
-    useEffect(() => {
-        async function authenticate() {
-            const isAuthenticated = await someAuthenticationFunction();
-            setIsUserAuthenticated(isAuthenticated);
-        }
-        authenticate();
-    }, []);
-
-    // useChannel with skip parameter
-    useChannel({ channelName: "your-channel-name", skip: !isUserAuthenticated }, (message) => {
-        updateMessages((prev) => [...prev, message]);
-    });
-
-    if (!isUserAuthenticated) {
-        return <p>Please log in to join the chat.</p>;
+  // Simulate asynchronous authentication
+  useEffect(() => {
+    async function authenticate() {
+      const isAuthenticated = await someAuthenticationFunction();
+      setIsUserAuthenticated(isAuthenticated);
     }
+    authenticate();
+  }, []);
 
-    return (
-        <div>
-            {messages.map((message, index) => (
-                <p key={index}>{message.data.text}</p>
-            ))}
-        </div>
-    );
+  // useChannel with skip parameter
+  useChannel({ channelName: 'your-channel-name', skip: !isUserAuthenticated }, (message) => {
+    updateMessages((prev) => [...prev, message]);
+  });
+
+  if (!isUserAuthenticated) {
+    return <p>Please log in to join the chat.</p>;
+  }
+
+  return (
+    <div>
+      {messages.map((message, index) => (
+        <p key={index}>{message.data.text}</p>
+      ))}
+    </div>
+  );
 };
 ```
 
@@ -453,31 +465,27 @@ const ChatComponent = () => {
 In an application with both free and premium features, you might want to conditionally use channels based on the user's subscription status:
 
 ```tsx
-import React from "react";
-import { useChannel } from "ably/react";
-import * as Ably from "ably";
+import React from 'react';
+import { useChannel } from 'ably/react';
+import * as Ably from 'ably';
 
 interface PremiumFeatureComponentProps {
-    isPremiumUser: boolean;
+  isPremiumUser: boolean;
 }
 
 const PremiumFeatureComponent = ({ isPremiumUser }: PremiumFeatureComponentProps) => {
-    const [messages, updateMessages] = useState<Ably.Message[]>([]);
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
 
-    // Skip attaching to the channel if the user is not a premium subscriber
-    useChannel({ channelName: "premium-feature-channel", skip: !isPremiumUser }, (message) => {
-        updateMessages((prev) => [...prev, message]);
-    });
+  // Skip attaching to the channel if the user is not a premium subscriber
+  useChannel({ channelName: 'premium-feature-channel', skip: !isPremiumUser }, (message) => {
+    updateMessages((prev) => [...prev, message]);
+  });
 
-    if (!isPremiumUser) {
-        return <p>This feature is available for premium users only.</p>;
-    }
+  if (!isPremiumUser) {
+    return <p>This feature is available for premium users only.</p>;
+  }
 
-    return (
-        <div>
-            {/* Render premium feature based on messages */}
-        </div>
-    );
+  return <div>{/* Render premium feature based on messages */}</div>;
 };
 ```
 
@@ -513,9 +521,9 @@ module.exports = {
   webpack: (config) => {
     config.externals.push({
       'utf-8-validate': 'commonjs utf-8-validate',
-      'bufferutil': 'commonjs bufferutil',
-    })
-    return config
+      bufferutil: 'commonjs bufferutil',
+    });
+    return config;
   },
-}
+};
 ```
