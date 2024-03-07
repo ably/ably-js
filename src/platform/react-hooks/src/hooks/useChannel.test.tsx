@@ -62,8 +62,8 @@ describe('useChannel', () => {
   it('useChannel works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
-      <AblyProvider client={otherClient as unknown as Ably.RealtimeClient} id="otherClient">
-        <ChannelProvider channelName="bleh" id="otherClient">
+      <AblyProvider client={otherClient as unknown as Ably.RealtimeClient} ablyId="otherClient">
+        <ChannelProvider channelName="bleh" ablyId="otherClient">
           <UseChannelComponentMultipleClients />
         </ChannelProvider>
       </AblyProvider>,
@@ -307,17 +307,17 @@ describe('useChannel with deriveOptions', () => {
     const anotherClientId = 'anotherClient';
 
     render(
-      <AblyProvider client={ablyClient as unknown as Ably.RealtimePromise} id={cliendId}>
-        <AblyProvider client={anotherClient as unknown as Ably.RealtimePromise} id={anotherClientId}>
+      <AblyProvider client={ablyClient as unknown as Ably.RealtimePromise} ablyId={cliendId}>
+        <AblyProvider client={anotherClient as unknown as Ably.RealtimePromise} ablyId={anotherClientId}>
           <ChannelProvider
-            id={cliendId}
+            ablyId={cliendId}
             channelName={Channels.tasks}
             deriveOptions={{
               filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`',
             }}
           >
             <ChannelProvider
-              id={anotherClientId}
+              ablyId={anotherClientId}
               channelName={Channels.alerts}
               deriveOptions={{
                 filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`',
@@ -510,7 +510,7 @@ const UseChannelComponentMultipleClients = () => {
   useChannel({ channelName: 'blah' }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
-  useChannel({ channelName: 'bleh', id: 'otherClient' }, (message) => {
+  useChannel({ channelName: 'bleh', ablyId: 'otherClient' }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
 
@@ -544,10 +544,10 @@ const UseDerivedChannelComponentMultipleClients = ({
   anotherChannelName,
 }: UseDerivedChannelComponentMultipleClientsProps) => {
   const [messages, setMessages] = useState<Ably.Message[]>([]);
-  useChannel({ id: clientId, channelName }, (message) => {
+  useChannel({ ablyId: clientId, channelName }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
-  useChannel({ id: anotherClientId, channelName: anotherChannelName }, (message) => {
+  useChannel({ ablyId: anotherClientId, channelName: anotherChannelName }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
 

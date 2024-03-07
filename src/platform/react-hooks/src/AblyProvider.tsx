@@ -6,7 +6,7 @@ const canUseSymbol = typeof Symbol === 'function' && typeof Symbol.for === 'func
 interface AblyProviderProps {
   children?: React.ReactNode | React.ReactNode[] | null;
   client?: Ably.RealtimeClient;
-  id?: string;
+  ablyId?: string;
 }
 
 export interface AblyContextProps {
@@ -33,7 +33,7 @@ export function getContext(ctxId = 'default'): AblyContextType {
   return ctxMap[ctxId];
 }
 
-export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderProps) => {
+export const AblyProvider = ({ client, children, ablyId = 'default' }: AblyProviderProps) => {
   const value: AblyContextProps = useMemo(
     () => ({
       client,
@@ -46,9 +46,9 @@ export const AblyProvider = ({ client, children, id = 'default' }: AblyProviderP
     throw new Error('AblyProvider: the `client` prop is required');
   }
 
-  let context = getContext(id);
+  let context = getContext(ablyId);
   if (!context) {
-    context = ctxMap[id] = React.createContext({ client, _channelNameToChannelContext: {} });
+    context = ctxMap[ablyId] = React.createContext({ client, _channelNameToChannelContext: {} });
   }
 
   return <context.Provider value={value}>{children}</context.Provider>;

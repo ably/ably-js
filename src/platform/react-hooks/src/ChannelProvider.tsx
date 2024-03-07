@@ -4,7 +4,7 @@ import { type AblyContextProps, getContext } from './AblyProvider.js';
 import { channelOptionsWithAgent } from './AblyReactHooks.js';
 
 interface ChannelProviderProps {
-  id?: string;
+  ablyId?: string;
   channelName: string;
   options?: Ably.ChannelOptions;
   deriveOptions?: Ably.DeriveOptions;
@@ -12,13 +12,13 @@ interface ChannelProviderProps {
 }
 
 export const ChannelProvider = ({
-  id = 'default',
+  ablyId = 'default',
   channelName,
   options,
   deriveOptions,
   children,
 }: ChannelProviderProps) => {
-  const context = getContext(id);
+  const context = getContext(ablyId);
   const { client, _channelNameToChannelContext } = React.useContext(context);
 
   if (_channelNameToChannelContext[channelName]) {

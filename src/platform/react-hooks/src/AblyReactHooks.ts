@@ -2,7 +2,7 @@ import * as Ably from 'ably';
 
 export type ChannelNameAndOptions = {
   channelName: string;
-  id?: string;
+  ablyId?: string;
   subscribeOnly?: boolean;
   skip?: boolean;
 
@@ -10,9 +10,9 @@ export type ChannelNameAndOptions = {
   onChannelError?: (error: Ably.ErrorInfo) => unknown;
 };
 
-export type ChannelNameAndId = {
+export type ChannelNameAndAblyId = {
   channelName: string;
-  id?: string;
+  ablyId?: string;
 };
 export type ChannelParameters = string | ChannelNameAndOptions;
 

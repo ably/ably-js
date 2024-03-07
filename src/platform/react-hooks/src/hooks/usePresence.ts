@@ -27,8 +27,8 @@ export function usePresence<T = any>(
       ? channelNameOrNameAndOptions
       : { channelName: channelNameOrNameAndOptions };
 
-  const ably = useAbly(params.id);
-  const { channel } = useChannelInstance(params.id, params.channelName);
+  const ably = useAbly(params.ablyId);
+  const { channel } = useChannelInstance(params.ablyId, params.channelName);
 
   const subscribeOnly = typeof channelNameOrNameAndOptions === 'string' ? false : params.subscribeOnly;
 

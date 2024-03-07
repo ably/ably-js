@@ -107,8 +107,8 @@ describe('usePresence', () => {
   it('usePresence works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
-      <AblyProvider id="otherClient" client={otherClient as unknown as Ably.RealtimeClient}>
-        <ChannelProvider channelName={testChannelName} id="otherClient">
+      <AblyProvider ablyId="otherClient" client={otherClient as unknown as Ably.RealtimeClient}>
+        <ChannelProvider channelName={testChannelName} ablyId="otherClient">
           <UsePresenceComponentMultipleClients />
         </ChannelProvider>
       </AblyProvider>,
@@ -233,7 +233,7 @@ const UsePresenceComponent = ({ skip }: { skip?: boolean }) => {
 
 const UsePresenceComponentMultipleClients = () => {
   const { presenceData: val1, updateStatus: update1 } = usePresence({ channelName: testChannelName }, 'foo');
-  const { updateStatus: update2 } = usePresence({ channelName: testChannelName, id: 'otherClient' }, 'bar');
+  const { updateStatus: update2 } = usePresence({ channelName: testChannelName, ablyId: 'otherClient' }, 'bar');
 
   const presentUsers = val1.map((presence, index) => {
     return (

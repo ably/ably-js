@@ -37,10 +37,10 @@ export function useChannel(
       ? channelNameOrNameAndOptions
       : { channelName: channelNameOrNameAndOptions };
 
-  const ably = useAbly(channelHookOptions.id);
+  const ably = useAbly(channelHookOptions.ablyId);
   const { channelName, skip } = channelHookOptions;
 
-  const { channel, derived } = useChannelInstance(channelHookOptions.id, channelName);
+  const { channel, derived } = useChannelInstance(channelHookOptions.ablyId, channelName);
 
   const publish: Ably.RealtimeChannel['publish'] = useMemo(() => {
     if (!derived) return channel.publish.bind(channel);

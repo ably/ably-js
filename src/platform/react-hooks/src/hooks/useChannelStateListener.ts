@@ -1,5 +1,5 @@
 import * as Ably from 'ably';
-import { ChannelNameAndId, ChannelNameAndOptions } from '../AblyReactHooks.js';
+import { ChannelNameAndAblyId, ChannelNameAndOptions } from '../AblyReactHooks.js';
 import { useEventListener } from './useEventListener.js';
 import { useChannelInstance } from './useChannelInstance.js';
 
@@ -14,17 +14,17 @@ export function useChannelStateListener(
 );
 
 export function useChannelStateListener(
-  channelNameOrNameAndId: ChannelNameAndOptions | string,
+  channelNameOrNameAndAblyId: ChannelNameAndOptions | string,
   stateOrListener?: Ably.ChannelState | Ably.ChannelState[] | ChannelStateListener,
   listener?: (stateChange: Ably.ChannelStateChange) => any,
 ) {
   const channelHookOptions =
-    typeof channelNameOrNameAndId === 'object' ? channelNameOrNameAndId : { channelName: channelNameOrNameAndId };
-  const id = (channelNameOrNameAndId as ChannelNameAndId)?.id;
+    typeof channelNameOrNameAndAblyId === 'object' ? channelNameOrNameAndAblyId : { channelName: channelNameOrNameAndAblyId };
+  const ablyId = (channelNameOrNameAndAblyId as ChannelNameAndAblyId)?.ablyId;
 
   const { channelName } = channelHookOptions;
 
-  const { channel } = useChannelInstance(id, channelName);
+  const { channel } = useChannelInstance(ablyId, channelName);
 
   const _listener = typeof listener === 'function' ? listener : (stateOrListener as ChannelStateListener);
 
