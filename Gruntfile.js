@@ -8,7 +8,7 @@ var umdWrapper = require('esbuild-plugin-umd-wrapper');
 var banner = require('./src/fragments/license');
 var process = require('process');
 var stripLogsPlugin = require('./grunt/esbuild/strip-logs').default;
-var kexec = require('kexec');
+var MochaServer = require('./test/web_server');
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-webpack');
@@ -85,7 +85,18 @@ module.exports = function (grunt) {
   grunt.registerTask('all', ['build', 'requirejs']);
 
   grunt.registerTask('mocha:webserver', 'Run the Mocha web server', function () {
-    kexec('test/web_server');
+    const done = this.async();
+    const server = new MochaServer();
+    server.listen();
+
+    process.on('SIGTERM', () => {
+      server.close();
+      done();
+    });
+    process.on('SIGINT', () => {
+      server.close();
+      done();
+    });
   });
 
   grunt.registerTask('build:browser', function () {
