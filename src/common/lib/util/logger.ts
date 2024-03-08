@@ -109,12 +109,26 @@ class Logger {
   };
 
   static deprecatedWithMsg = (funcName: string, msg: string) => {
-    if (Logger.shouldLog(LogLevels.Error)) {
-      Logger.logErrorHandler(
-        "Ably: Deprecation warning - '" + funcName + "' is deprecated and will be removed in a future version. " + msg
-      );
-    }
+    Logger.deprecationWarning(`'${funcName}' is deprecated and will be removed in a future version. ${msg}`);
   };
+
+  static renamedClientOption(oldName: string, newName: string) {
+    Logger.deprecationWarning(
+      `The \`${oldName}\` client option has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`
+    );
+  }
+
+  static renamedMethod(className: string, oldName: string, newName: string) {
+    Logger.deprecationWarning(
+      `\`${className}\`’s \`${oldName}\` method has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`
+    );
+  }
+
+  static deprecationWarning(message: string) {
+    if (Logger.shouldLog(LogLevels.Error)) {
+      Logger.logErrorHandler(`Ably: Deprecation warning - ${message}`);
+    }
+  }
 
   /* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */

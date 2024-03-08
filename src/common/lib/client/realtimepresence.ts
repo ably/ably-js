@@ -508,13 +508,13 @@ class RealtimePresence extends Presence {
 
   /* Deprecated */
   on(...args: unknown[]): void {
-    Logger.deprecated('presence.on', 'presence.subscribe');
+    Logger.renamedMethod('RealtimePresence', 'on', 'subscribe');
     this.subscribe(...args);
   }
 
   /* Deprecated */
   off(...args: unknown[]): void {
-    Logger.deprecated('presence.off', 'presence.unsubscribe');
+    Logger.renamedMethod('RealtimePresence', 'off', 'unsubscribe');
     this.unsubscribe(...args);
   }
 

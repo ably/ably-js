@@ -184,15 +184,15 @@ export function objectifyOptions(options: ClientOptions | string): ClientOptions
 export function normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions {
   /* Deprecated options */
   if (options.host) {
-    Logger.deprecated('host', 'restHost');
+    Logger.renamedClientOption('host', 'restHost');
     options.restHost = options.host;
   }
   if (options.wsHost) {
-    Logger.deprecated('wsHost', 'realtimeHost');
+    Logger.renamedClientOption('wsHost', 'realtimeHost');
     options.realtimeHost = options.wsHost;
   }
   if (options.queueEvents) {
-    Logger.deprecated('queueEvents', 'queueMessages');
+    Logger.renamedClientOption('queueEvents', 'queueMessages');
     options.queueMessages = options.queueEvents;
   }
   if (options.headers) {
@@ -255,7 +255,9 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
   }
 
   if (options.transports && Utils.arrIn(options.transports, 'xhr')) {
-    Logger.deprecated('transports: ["xhr"]', 'transports: ["xhr_streaming"]');
+    Logger.deprecationWarning(
+      'The "xhr" transport has been renamed to "xhr_streaming". Please update your client options code to use `transports: ["xhr_streaming"]` instead. The ability to use `transports: ["xhr"]` will be removed in a future version.'
+    );
     Utils.arrDeleteValue(options.transports, 'xhr');
     options.transports.push('xhr_streaming');
   }
