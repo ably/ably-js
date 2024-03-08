@@ -29,6 +29,7 @@ window.__testFiles__.files = {
   'test/support/test_helper.js': true,
   'test/realtime/auth.test.js': true,
   'test/realtime/channel.test.js': true,
+  'test/realtime/channelgroup.test.js': true,
   'test/realtime/connection.test.js': true,
   'test/realtime/connectivity.test.js': true,
   'test/realtime/crypto.test.js': true,
