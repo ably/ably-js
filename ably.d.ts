@@ -587,6 +587,13 @@ declare namespace Types {
        */
       vcdiff?: any;
     };
+
+    /**
+     * The maximum message size is an attribute of an Ably account which represents the largest permitted payload size of a single message or set of messages published in a single operation. Publish requests whose payload exceeds this limit are rejected by the server. `maxMessageSize` enables the client to enforce, or further restrict, the maximum size of a single message or set of messages published via REST. The default value is `65536` (64 KiB). In the case of a realtime connection, the server may indicate the associated maximum message size on connection establishment; this value takes precedence over the client's default `maxMessageSize`.
+     *
+     * @defaultValue 65536
+     */
+    maxMessageSize?: number;
   }
 
   /**

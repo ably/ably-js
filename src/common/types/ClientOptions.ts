@@ -20,7 +20,6 @@ export type DeprecatedClientOptions = Modify<
     queueEvents?: boolean;
     promises?: boolean;
     headers?: Record<string, string>;
-    maxMessageSize?: number;
   }
 >;
 
