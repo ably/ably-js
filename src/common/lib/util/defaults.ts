@@ -195,6 +195,12 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     Logger.deprecated('queueEvents', 'queueMessages');
     options.queueMessages = options.queueEvents;
   }
+  if (options.headers) {
+    Logger.deprecatedWithMsg(
+      'the `headers` client option',
+      '' /* there is no replacement; see DeprecatedClientOptions.headers */
+    );
+  }
 
   if (options.fallbackHostsUseDefault) {
     /* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */

@@ -19,6 +19,9 @@ export type DeprecatedClientOptions = Modify<
     wsHost?: string;
     queueEvents?: boolean;
     promises?: boolean;
+    /**
+     * This option dates back to the initial commit of the repo but was never in the specification and sounds like nobody is depending on it; Paddy said we can remove in v2 (see https://ably-real-time.slack.com/archives/CURL4U2FP/p1709909310332169?thread_ts=1709908997.753599&cid=CURL4U2FP)
+     */
     headers?: Record<string, string>;
     maxMessageSize?: number;
   }
