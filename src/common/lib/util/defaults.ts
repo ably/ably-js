@@ -3,7 +3,7 @@ import * as Utils from './utils';
 import Logger from './logger';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { version } from '../../../../package.json';
-import ClientOptions, { InternalClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
+import ClientOptions, { NormalisedClientOptions } from 'common/types/ClientOptions';
 import IDefaults from '../../types/IDefaults';
 import { MsgPack } from 'common/types/msgpack';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
@@ -45,7 +45,7 @@ type CompleteDefaults = IDefaults & {
   checkHost(host: string): void;
   getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
   objectifyOptions(options: ClientOptions | string, modularPluginsToInclude?: ModularPlugins): ClientOptions;
-  normaliseOptions(options: InternalClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions;
+  normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions;
   defaultGetHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
   defaultPostHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
 };
@@ -196,7 +196,7 @@ export function objectifyOptions(
   return optionsObj;
 }
 
-export function normaliseOptions(options: InternalClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions {
+export function normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions {
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
     Logger.logAction(
       Logger.LOG_ERROR,
@@ -267,7 +267,7 @@ export function normaliseOptions(options: InternalClientOptions, MsgPack: MsgPac
     ...options,
     realtimeHost,
     restHost,
-    maxMessageSize: options.internal?.maxMessageSize || Defaults.maxMessageSize,
+    maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
     timeouts,
     connectivityCheckParams,
     connectivityCheckUrl,
