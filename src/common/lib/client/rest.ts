@@ -53,7 +53,11 @@ class Rest {
 
     if (optionsObj.log) {
       Logger.setLog(optionsObj.log.level, optionsObj.log.handler);
+      Logger.deprecated('the `log` client option', 'the `logLevel` and `logHandler` client options');
+    } else {
+      Logger.setLog(optionsObj.logLevel, optionsObj.logHandler);
     }
+
     Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Platform.Config.inspect(options));
 
     const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));

@@ -41,15 +41,13 @@ define(function (require) {
     port: port,
     tlsPort: tlsPort,
     tls: tls,
-    log: {
-      level: logLevel,
-      handler: function (msg) {
-        var time = new Date();
-        console.log(
-          time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds() + '.' + time.getMilliseconds(),
-          msg
-        );
-      },
+    logLevel: logLevel,
+    logHandler: function (msg) {
+      var time = new Date();
+      console.log(
+        time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds() + '.' + time.getMilliseconds(),
+        msg
+      );
     },
   });
 });
