@@ -261,7 +261,7 @@ export interface ModularPlugins {
   RealtimePresence?: typeof RealtimePresence;
 
   /**
-   * See {@link ChannelGroups | documentation for the `ChannelGroups` module}.
+   * See {@link ChannelGroups | documentation for the `ChannelGroups` plugin}.
    */
   ChannelGroups?: typeof ChannelGroups;
 
