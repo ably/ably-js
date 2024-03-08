@@ -3,7 +3,6 @@ import * as Ably from 'ably';
 export type ChannelNameAndOptions = {
   channelName: string;
   ablyId?: string;
-  subscribeOnly?: boolean;
   skip?: boolean;
 
   onConnectionError?: (error: Ably.ErrorInfo) => unknown;

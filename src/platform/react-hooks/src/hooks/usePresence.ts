@@ -1,77 +1,45 @@
 import type * as Ably from 'ably';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
-import { useStateErrors } from './useStateErrors.js';
 import { useChannelInstance } from './useChannelInstance.js';
+import { useStateErrors } from './useStateErrors.js';
 
-interface PresenceMessage<T = any> extends Ably.PresenceMessage {
-  data: T;
-}
-
-export interface PresenceResult<T> {
-  presenceData: PresenceMessage<T>[];
+export interface PresenceEnterResult<T> {
   updateStatus: (messageOrPresenceObject: T) => void;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
 }
-
-export type OnPresenceMessageReceived<T> = (presenceData: PresenceMessage<T>) => void;
-export type UseStatePresenceUpdate = (presenceData: Ably.PresenceMessage[]) => void;
 
 const INACTIVE_CONNECTION_STATES: Ably.ConnectionState[] = ['suspended', 'closing', 'closed', 'failed'];
 
 export function usePresence<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,
   messageOrPresenceObject?: T,
-  onPresenceUpdated?: OnPresenceMessageReceived<T>,
-): PresenceResult<T> {
+): PresenceEnterResult<T> {
   const params =
     typeof channelNameOrNameAndOptions === 'object'
       ? channelNameOrNameAndOptions
       : { channelName: channelNameOrNameAndOptions };
+  const skip = params.skip;
 
   const ably = useAbly(params.ablyId);
   const { channel } = useChannelInstance(params.ablyId, params.channelName);
-
-  const subscribeOnly = typeof channelNameOrNameAndOptions === 'string' ? false : params.subscribeOnly;
-
-  const skip = params.skip;
-
   const { connectionError, channelError } = useStateErrors(params);
 
-  const [presenceData, updatePresenceData] = useState<Array<PresenceMessage<T>>>([]);
-
-  const updatePresence = async (message?: Ably.PresenceMessage) => {
-    const snapshot = await channel.presence.get();
-    updatePresenceData(snapshot);
-
-    onPresenceUpdated?.call(this, message);
-  };
-
   const onMount = async () => {
-    channel.presence.subscribe(['enter', 'leave', 'update'], updatePresence);
-
-    if (!subscribeOnly) {
-      await channel.presence.enter(messageOrPresenceObject);
-    }
-
-    const snapshot = await channel.presence.get();
-    updatePresenceData(snapshot);
+    await channel.presence.enter(messageOrPresenceObject);
   };
 
   const onUnmount = () => {
     // if connection is in one of inactive states, leave call will produce exception
     if (channel.state === 'attached' && !INACTIVE_CONNECTION_STATES.includes(ably.connection.state)) {
-      if (!subscribeOnly) {
-        channel.presence.leave();
-      }
+      channel.presence.leave();
     }
-    channel.presence.unsubscribe(['enter', 'leave', 'update'], updatePresence);
   };
 
   const useEffectHook = () => {
-    !skip && onMount();
+    if (!skip) onMount();
     return () => {
       onUnmount();
     };
@@ -82,14 +50,10 @@ export function usePresence<T = any>(
 
   const updateStatus = useCallback(
     (messageOrPresenceObject: T) => {
-      if (!subscribeOnly) {
-        channel.presence.update(messageOrPresenceObject);
-      } else {
-        throw new Error('updateStatus can not be called while using the hook in subscribeOnly mode');
-      }
+      channel.presence.update(messageOrPresenceObject);
     },
-    [subscribeOnly, channel],
+    [channel],
   );
 
-  return { presenceData, updateStatus, connectionError, channelError };
+  return { updateStatus, connectionError, channelError };
 }

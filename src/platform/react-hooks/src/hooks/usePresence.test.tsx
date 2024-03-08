@@ -28,83 +28,80 @@ describe('usePresence', () => {
     otherClient = new FakeAblySdk().connectTo(channels);
   });
 
-  it('presence data is not visible on first render as it runs in an effect', async () => {
+  it('presence is entered after effect runs', async () => {
+    const enterListener = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.subscribe(['enter'], enterListener);
+
     renderInCtxProvider(ablyClient, <UsePresenceComponent></UsePresenceComponent>);
 
-    const values = screen.getByRole('presence').innerHTML;
-    expect(values).toBe('');
-
-    await act(async () => {
-      await wait(2);
-      // To let react run its updates so we don't see warnings in the test output
+    await waitFor(() => {
+      expect(enterListener).toHaveBeenCalledWith(expect.objectContaining({ data: 'bar' }));
     });
-  });
-
-  it('presence data available after effect runs', async () => {
-    renderInCtxProvider(ablyClient, <UsePresenceComponent></UsePresenceComponent>);
-
-    await act(async () => {
-      await wait(2);
-    });
-
-    const values = screen.getByRole('presence').innerHTML;
-    expect(values).toContain(`"bar"`);
   });
 
   it('presence data updates when update function is triggered', async () => {
+    const updateListener = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.subscribe(['update'], updateListener);
+
     renderInCtxProvider(ablyClient, <UsePresenceComponent></UsePresenceComponent>);
 
     await act(async () => {
       const button = screen.getByText(/Update/i);
       button.click();
+      await wait(2);
     });
 
-    const values = screen.getByRole('presence').innerHTML;
-    expect(values).toContain(`"baz"`);
-  });
-
-  it('presence data respects updates made by other clients', async () => {
-    renderInCtxProvider(ablyClient, <UsePresenceComponent></UsePresenceComponent>);
-
-    await act(async () => {
-      otherClient.channels.get(testChannelName).presence.enter('boop');
+    await waitFor(() => {
+      expect(updateListener).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz' }));
     });
-
-    const presenceElement = screen.getByRole('presence');
-    const values = presenceElement.innerHTML;
-    expect(presenceElement.children.length).toBe(2);
-    expect(values).toContain(`"bar"`);
-    expect(values).toContain(`"boop"`);
   });
 
   it('presence API works with type information provided', async () => {
-    renderInCtxProvider(
-      ablyClient,
-      <ChannelProvider channelName="testChannelName">
-        <TypedUsePresenceComponent></TypedUsePresenceComponent>
-      </ChannelProvider>,
-    );
+    const enterListener = vi.fn();
+    const updateListener = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.subscribe('enter', enterListener);
+    ablyClient.channels.get(testChannelName).presence.subscribe('update', updateListener);
+
+    renderInCtxProvider(ablyClient, <TypedUsePresenceComponent></TypedUsePresenceComponent>);
+
+    // Wait for `usePresence` to be rendered and entered presence
+    await waitFor(() => {
+      expect(enterListener).toHaveBeenCalledWith(expect.objectContaining({ data: { foo: 'bar' } }));
+    });
 
     await act(async () => {
+      const button = screen.getByText(/Update/i);
+      button.click();
       await wait(2);
     });
 
-    const values = screen.getByRole('presence').innerHTML;
-    expect(values).toContain(`"data":{"foo":"bar"}`);
+    // Wait for presence data be updated
+    await waitFor(() => {
+      expect(updateListener).toHaveBeenCalledWith(expect.objectContaining({ data: { foo: 'baz' } }));
+    });
   });
 
-  it('skip param', async () => {
+  it('`skip` param prevents mounting and entering presence', async () => {
+    const enterListener = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.subscribe('enter', enterListener);
+
     renderInCtxProvider(ablyClient, <UsePresenceComponent skip={true}></UsePresenceComponent>);
 
+    // wait for component to be rendered
     await act(async () => {
       await wait(2);
     });
 
-    const values = screen.getByRole('presence').innerHTML;
-    expect(values).to.not.contain(`"bar"`);
+    // expect presence not to be entered
+    await waitFor(() => {
+      expect(enterListener).not.toHaveBeenCalled();
+    });
   });
 
   it('usePresence works with multiple clients', async () => {
+    const updateListener = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.subscribe('update', updateListener);
+
     renderInCtxProvider(
       ablyClient,
       <AblyProvider ablyId="otherClient" client={otherClient as unknown as Ably.RealtimeClient}>
@@ -120,9 +117,10 @@ describe('usePresence', () => {
       await wait(2);
     });
 
-    const values = screen.getByRole('presence').innerHTML;
-    expect(values).toContain(`"data":"baz1"`);
-    expect(values).toContain(`"data":"baz2"`);
+    await waitFor(() => {
+      expect(updateListener).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz1' }));
+      expect(updateListener).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz2' }));
+    });
   });
 
   it('handles channel errors', async () => {
@@ -207,15 +205,7 @@ describe('usePresence', () => {
 });
 
 const UsePresenceComponent = ({ skip }: { skip?: boolean }) => {
-  const { presenceData, updateStatus } = usePresence({ channelName: testChannelName, skip }, 'bar');
-
-  const presentUsers = presenceData.map((presence, index) => {
-    return (
-      <li key={index}>
-        {presence.clientId} - {JSON.stringify(presence)}
-      </li>
-    );
-  });
+  const { updateStatus } = usePresence({ channelName: testChannelName, skip }, 'bar');
 
   return (
     <>
@@ -226,22 +216,13 @@ const UsePresenceComponent = ({ skip }: { skip?: boolean }) => {
       >
         Update
       </button>
-      <ul role="presence">{presentUsers}</ul>
     </>
   );
 };
 
 const UsePresenceComponentMultipleClients = () => {
-  const { presenceData: val1, updateStatus: update1 } = usePresence({ channelName: testChannelName }, 'foo');
+  const { updateStatus: update1 } = usePresence({ channelName: testChannelName }, 'foo');
   const { updateStatus: update2 } = usePresence({ channelName: testChannelName, ablyId: 'otherClient' }, 'bar');
-
-  const presentUsers = val1.map((presence, index) => {
-    return (
-      <li key={index}>
-        {presence.clientId} - {JSON.stringify(presence)}
-      </li>
-    );
-  });
 
   return (
     <>
@@ -253,7 +234,6 @@ const UsePresenceComponentMultipleClients = () => {
       >
         Update
       </button>
-      <ul role="presence">{presentUsers}</ul>
     </>
   );
 };
@@ -286,11 +266,19 @@ interface MyPresenceType {
 }
 
 const TypedUsePresenceComponent = () => {
-  const { presenceData } = usePresence<MyPresenceType>('testChannelName', {
-    foo: 'bar',
-  });
+  const { updateStatus } = usePresence<MyPresenceType>(testChannelName, { foo: 'bar' });
 
-  return <div role="presence">{JSON.stringify(presenceData)}</div>;
+  return (
+    <div role="presence">
+      <button
+        onClick={() => {
+          updateStatus({ foo: 'baz' });
+        }}
+      >
+        Update
+      </button>
+    </div>
+  );
 };
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
