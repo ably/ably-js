@@ -10,10 +10,7 @@ export type ChannelNameAndOptions = {
   onChannelError?: (error: Ably.ErrorInfo) => unknown;
 };
 
-export type ChannelNameAndAblyId = {
-  channelName: string;
-  ablyId?: string;
-};
+export type ChannelNameAndAblyId = Pick<ChannelNameAndOptions, 'channelName' | 'ablyId'>;
 export type ChannelParameters = string | ChannelNameAndOptions;
 
 export const version = '1.2.49';
