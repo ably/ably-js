@@ -10,7 +10,7 @@ Using this module you can:
 - Interact with [Ably channels](https://ably.com/docs/channels) using a React Hook.
 - [Publish messages](https://ably.com/docs/channels#publish) via Ably using the publish function the hooks provide
 - Get notifications of user [presence on channels](https://ably.com/docs/presence-occupancy/presence)
-- Send presence updates
+- Enter presence and send presence updates
 
 The hooks provide a simplified syntax for interacting with Ably, and manage the lifecycle of the Ably SDK instances for you taking care to subscribe and unsubscribe to channels and events when your react components re-render.
 
@@ -26,6 +26,7 @@ The hooks provide a simplified syntax for interacting with Ably, and manage the 
 - [Usage](#usage)
   - [useChannel](#usechannel)
   - [usePresence](#usepresence)
+  - [usePresenceListener](#usepresencelistener)
 
 <!-- /code_chunk_output -->
 ---
@@ -36,7 +37,7 @@ The hooks are compatible with all versions of React above 16.8.0
 
 ## Usage
 
-Start by connecting your app to Ably using the `AblyProvider` component. See the [`ClientOptions` documentation](https://ably.com/docs/api/realtime-sdk/types?lang=javascript) for information about what options are available when creating an Ably client. If you want to use the `usePresence` hook, you'll need to explicitly provide a `clientId`.
+Start by connecting your app to Ably using the `AblyProvider` component. See the [`ClientOptions` documentation](https://ably.com/docs/api/realtime-sdk/types?lang=javascript) for information about what options are available when creating an Ably client. If you want to use the `usePresence` or `usePresenceListener` hooks, you'll need to explicitly provide a `clientId`.
 
 The `AblyProvider` should be high in your component tree, wrapping every component which needs to access Ably.
 
@@ -171,57 +172,52 @@ const history = channel.history((err, result) => {
 
 ### usePresence
 
-The usePresence hook lets you [subscribe to presence events on a channel](https://ably.com/docs/presence-occupancy/presence?lang=javascript#subscribe) - this will allow you to get notified when a user joins or leaves the channel. To find out more about Presence, see the [presence documentation](https://ably.com/docs/presence-occupancy/presence).
-
-**Please note** that fetching present members is executed as an effect, so it'll load in *after* your component renders for the first time.
+The usePresence hook [enters the presence set on a channel](https://ably.com/docs/presence-occupancy/presence) and enables you to send presence updates for current client. To find out more about Presence, see the [Presence documentation](https://ably.com/docs/presence-occupancy/presence).
 
 ```javascript
-const { presenceData, updateStatus } = usePresence("your-channel-name");
+const { updateStatus } = usePresence("your-channel-name");
 
-// Convert presence data to list items to render
-const peers = presenceData.map((msg, index) => <li key={index}>{msg.clientId}: {msg.data}</li>);
+// The `updateStatus` function can be used to update the presence data for the current client
+updateStatus("status");
 ```
 
-`usePresence` returns an array of presence messages - again each message is a regular Ably JavaScript SDK `presenceMessage` instance.
-
-You can optionally provide a string when you `usePresence` to set an initial `presence data` string.
+You can optionally provide a second parameter when you `usePresence` to set an initial `presence data`.
 
 ```javascript
-const { presenceData, updateStatus } = usePresence("your-channel-name", "initial state");
+const { updateStatus } = usePresence("your-channel-name", "initial state");
 
 // The `updateStatus` function can be used to update the presence data for the current client
 updateStatus("new status");
 ```
 
-The new state will be sent to the channel, and any other clients subscribed to the channel will be notified of the change immediately.
+The new state will be sent to the channel, and all clients subscribed to the channel (including current, if you've subscribed to updates using [`usePresenceListener` hook](#usepresencelistener)) will be notified of the change immediately.
 
-If you don't want to use the `presenceData` returned from usePresence, you can configure a callback
-
-```javascript
-const { updateStatus } = usePresence("your-channel-name", "initial state", (presenceUpdate) => {
-    console.log(presenceUpdate);
-});
-```
-
-usePresence supports objects, as well as strings
+`usePresence` supports objects and numbers, as well as strings:
 
 ```javascript
 usePresence("your-channel-name", { foo: "bar" });
+usePresence("another-channel-name", 123);
+usePresence("third-channel-name", "initial status");
 ```
 
-and if you're using `TypeScript` there are type hints to make sure that updates are of the same `type` as your initial constraint, or a provided generic type parameter:
+If you're using `TypeScript` there are type hints to make sure that value passed to `updateStatus` is of the same `type` as your initial constraint, or a provided generic type parameter:
 
 ```tsx
 const TypedUsePresenceComponent = () => {
-    // In this example MyPresenceType will be checked - if omitted, the shape of the initial
-    // value will be used ...and if that's omitted, `any` will be the default.
+    // In this example MyPresenceType will be used for type checking updateStatus function.
+    // If omitted, the shape of the initial value will be used, and if that's omitted, `any` will be the default.
 
-    const { val } = usePresence<MyPresenceType>("testChannelName", { foo: "bar" });
+    const { updateStatus } = usePresence<MyPresenceType>("testChannelName", { foo: "bar" });
 
     return (
-        <div role='presence'>
-            {JSON.stringify(val)}
-        </div>
+        <button
+            onClick={() => {
+                {/* you will have Intellisense for updateStatus function here */}
+                updateStatus({ foo: 'baz' });
+            }}
+        >
+            Update presence data
+        </button>
     );
 }
 
@@ -230,7 +226,58 @@ interface MyPresenceType {
 }
 ```
 
-`PresenceData` is a good way to store synchronised, per-client metadata, so types here are especially valuable.
+---
+
+### usePresenceListener
+
+The usePresenceListener hook [subscribes you to presence 'enter', 'update' and 'leave' events on a channel](https://ably.com/docs/presence-occupancy/presence?lang=javascript#subscribe) - this will allow you to get notified when a user joins or leaves the channel, or updates its presence data. To find out more about Presence, see the [Presence documentation](https://ably.com/docs/presence-occupancy/presence).
+
+**Please note** that fetching present members is executed as an effect, so it'll load in *after* your component renders for the first time.
+
+```javascript
+const { presenceData } = usePresenceListener("your-channel-name");
+
+// Convert presence data to the list of items to render
+const membersData = presenceData.map((msg, index) => <li key={index}>{msg.clientId}: {msg.data}</li>);
+```
+
+The `usePresenceListener` hook returns an array of presence messages - each message is a regular Ably JavaScript SDK `PresenceMessage` instance.
+
+If you don't want to use the `presenceData` returned from `usePresenceListener`, you can configure a callback:
+
+```javascript
+usePresenceListener("your-channel-name", (presenceUpdate) => {
+    console.log(presenceUpdate);
+});
+```
+
+If you're using `TypeScript` there are type hints to make sure that presence data received are of the same `type` as a provided generic type parameter:
+
+```tsx
+const TypedUsePresenceListenerComponent = () => {
+    // In this example MyPresenceType will be used for presenceData type hints.
+    // If that's omitted, `any` will be the default.
+
+    const { presenceData } = usePresenceListener<MyPresenceType>("testChannelName");
+
+    const membersData = presenceData.map((presenceMsg, index) => {
+        return (
+            <li key={index}>
+                {/* you will have Intellisense for presenceMsg.data of type MyPresenceType here */}
+                {presenceMsg.clientId} - {presenceMsg.data.foo}
+            </li>
+        );
+    });
+
+    return <ul>{membersData}</ul>;
+}
+
+interface MyPresenceType {
+    foo: string;
+}
+```
+
+`presenceData` is a good way to store synchronised, per-client metadata, so types here are especially valuable.
 
 ### useConnectionStateListener
 
@@ -284,7 +331,7 @@ client.authorize();
 
 When using the Ably react hooks, your Ably client may encounter a variety of errors, for example if it doesn't have permissions to attach to a channel it may encounter a channel error, or if it loses connection from the Ably network it may encounter a connection error.
 
-To allow you to handle these errors, the `useChannel` and `usePresence` hooks return connection and channel errors so that you can react to them in your components:
+To allow you to handle these errors, the `useChannel`, `usePresence` and `usePresenceListener` hooks return connection and channel errors so that you can react to them in your components:
 
 ```jsx
 const { connectionError, channelError } = useChannel('my_channel', messageHandler);
@@ -333,9 +380,11 @@ useChannel({ channelName: "your-channel-name", ablyId }, (message) => {
     console.log(message);
 });
 
-usePresence({ channelName: "your-channel-name", ablyId }, (presenceUpdate) => {
-    ...
-})
+usePresence({ channelName: "your-channel-name", ablyId }, "initial state");
+
+usePresenceListener({ channelName: "your-channel-name", ablyId }, (presenceUpdate) => {
+    // ...
+});
 ```
 
 ## NextJS warnings
