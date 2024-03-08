@@ -46,9 +46,7 @@ export function usePresence<T = any>(
   };
 
   const onMount = async () => {
-    channel.presence.subscribe('enter', updatePresence);
-    channel.presence.subscribe('leave', updatePresence);
-    channel.presence.subscribe('update', updatePresence);
+    channel.presence.subscribe(['enter', 'leave', 'update'], updatePresence);
 
     if (!subscribeOnly) {
       await channel.presence.enter(messageOrPresenceObject);
@@ -65,9 +63,7 @@ export function usePresence<T = any>(
         channel.presence.leave();
       }
     }
-    channel.presence.unsubscribe('enter', updatePresence);
-    channel.presence.unsubscribe('leave', updatePresence);
-    channel.presence.unsubscribe('update', updatePresence);
+    channel.presence.unsubscribe(['enter', 'leave', 'update'], updatePresence);
   };
 
   const useEffectHook = () => {

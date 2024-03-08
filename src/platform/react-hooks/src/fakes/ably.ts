@@ -219,8 +219,8 @@ export class ClientPresenceConnection {
     this.presence.update(this.client.clientId, message);
   }
 
-  public subscribe(key: string, callback: CallableFunction) {
-    this.presence.subscribe(this.client.clientId, key, callback);
+  public subscribe(key: string | string[], callback: CallableFunction) {
+    (Array.isArray(key) ? key : [key]).forEach((x) => this.presence.subscribe(this.client.clientId, x, callback));
   }
 
   public leave(data?: any) {
@@ -233,8 +233,8 @@ export class ClientPresenceConnection {
     this.presence.enter(this.client.clientId, message);
   }
 
-  public unsubscribe(key: string, listener?: any) {
-    this.presence.unsubscribe(this.client.clientId, key, listener);
+  public unsubscribe(key: string | string[], listener?: any) {
+    (Array.isArray(key) ? key : [key]).forEach((x) => this.presence.unsubscribe(this.client.clientId, x, listener));
   }
 
   private toPressenceMessage(data: any) {
@@ -404,8 +404,8 @@ export class ChannelPresence {
   }
 
   private triggerSubs(subType: string, data: any) {
-    for (const [, subscriptions] of this.subscriptionsPerClient.entries()) {
-      const subs = subscriptions.get(subType);
+    for (const subscriptions of this.subscriptionsPerClient.values()) {
+      const subs = subscriptions.get(subType) ?? [];
       for (const callback of subs) {
         callback(data);
       }
