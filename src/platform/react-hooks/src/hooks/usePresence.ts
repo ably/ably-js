@@ -5,6 +5,10 @@ import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
 import { useChannelInstance } from './useChannelInstance.js';
 
+interface PresenceMessage<T = any> extends Ably.PresenceMessage {
+  data: T;
+}
+
 export interface PresenceResult<T> {
   presenceData: PresenceMessage<T>[];
   updateStatus: (messageOrPresenceObject: T) => void;
@@ -88,14 +92,4 @@ export function usePresence<T = any>(
   );
 
   return { presenceData, updateStatus, connectionError, channelError };
-}
-
-interface PresenceMessage<T = any> {
-  action: Ably.PresenceAction;
-  clientId: string;
-  connectionId: string;
-  data: T;
-  encoding: string;
-  id: string;
-  timestamp: number;
 }
