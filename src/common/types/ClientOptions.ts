@@ -13,20 +13,8 @@ export default interface ClientOptions extends API.ClientOptions<API.CorePlugins
   agents?: Record<string, string | undefined>;
 }
 
-/**
- * Properties which internal and test code wish to be able to pass to the public constructor of `Rest` and `Realtime` in order to modify the behaviour of those classes.
- */
-export type InternalClientOptions = Modify<
-  ClientOptions,
-  {
-    internal?: {
-      maxMessageSize?: number;
-    };
-  }
->;
-
 export type NormalisedClientOptions = Modify<
-  InternalClientOptions,
+  ClientOptions,
   {
     realtimeHost: string;
     restHost: string;
