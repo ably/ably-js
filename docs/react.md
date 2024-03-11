@@ -310,30 +310,30 @@ useChannel({
 
 ### Usage with multiple clients
 
-If you need to use multiple Ably clients on the same page, the easiest way to do so is to keep your clients in separate `AblyProvider` components. However, if you need to nest `AblyProvider`s, you can pass a string id for each client as a prop to the provider.
+If you need to use multiple Ably clients on the same page, the easiest way to do so is to keep your clients in separate `AblyProvider` components. However, if you need to nest `AblyProvider`s, you can pass a string `ablyId` for each client as a prop to the provider.
 
 ```jsx
 root.render(
-  <AblyProvider client={client1} id={'providerOne'}>
-    <AblyProvider client={client2} id={'providerTwo'}>
+  <AblyProvider client={client1} ablyId={'providerOne'}>
+    <AblyProvider client={client2} ablyId={'providerTwo'}>
       <App />
     </AblyProvider>
   </AblyProvider>
 )
 ```
 
-This `id` can then be passed in to each hook to specify which client to use.
+This `ablyId` can then be passed in to each hook to specify which client to use.
 
 ```javascript
-const ablyContextId = 'providerOne';
+const ablyId = 'providerOne';
 
-const client = useAbly(ablyContextId);
+const client = useAbly(ablyId);
 
-useChannel({ channelName: "your-channel-name", id: ablyContextId }, (message) => {
+useChannel({ channelName: "your-channel-name", ablyId }, (message) => {
     console.log(message);
 });
 
-usePresence({ channelName: "your-channel-name", id: ablyContextId }, (presenceUpdate) => {
+usePresence({ channelName: "your-channel-name", ablyId }, (presenceUpdate) => {
     ...
 })
 ```
