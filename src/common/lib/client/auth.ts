@@ -286,10 +286,9 @@ class Auth {
     }
 
     if (_authOptions && 'force' in _authOptions) {
-      Logger.logAction(
-        Logger.LOG_ERROR,
-        'Auth.authorize',
-        'Deprecation warning: specifying {force: true} in authOptions is no longer necessary, authorize() now always gets a new token. Please remove this, as in version 1.0 and later, having a non-null authOptions will overwrite stored library authOptions, which may not be what you want'
+      Logger.deprecated(
+        'The `force` auth option',
+        'If you’re using this option to force `authorize()` to fetch a new token even if the current token has not expired, this is no longer necessary, as `authorize()` now always fetches a new token. Update your code to no longer pass the `force` auth option. Note that, in general, passing an auth options argument to `authorize()` will overwrite the library’s stored auth options, which may not be what you want. The library currently contains a special case behavior where passing an auth options object which only contains `{ force: true }` will _not_ overwrite the stored options. This special case behavior will be removed alongside support for the `force` option, so if you’re currently passing `authorize()` an auth options object which only contains `{ force: true }`, you should stop passing it an auth options object entirely.'
       );
       /* Emulate the old behaviour: if 'force' was the only member of authOptions,
        * set it to null so it doesn't overwrite stored. TODO: remove in version 1.0 */

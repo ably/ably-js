@@ -129,7 +129,10 @@ var Crypto = (function () {
     var key;
     /* Backward compatibility */
     if (typeof params === 'function' || typeof params === 'string') {
-      Logger.deprecated('Crypto.getDefaultParams(key, callback)', 'Crypto.getDefaultParams({key: key})');
+      Logger.deprecated(
+        'The ability to pass the encryption key as the first argument of `Crypto.getDefaultParams()`',
+        'Please update your code so that it instead passes an object whose `key` property contains the key. That is, replace `Crypto.getDefaultParams(key)` with `Crypto.getDefaultParams({ key })`.'
+      );
       if (typeof params === 'function') {
         Crypto.generateRandomKey(function (key) {
           params(null, Crypto.getDefaultParams({ key: key }));

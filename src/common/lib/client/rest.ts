@@ -53,7 +53,10 @@ class Rest {
 
     if (optionsObj.log) {
       Logger.setLog(optionsObj.log.level, optionsObj.log.handler);
-      Logger.deprecated('the `log` client option', 'the `logLevel` and `logHandler` client options');
+      Logger.deprecated(
+        'The `log` client option',
+        'Equivalent functionality is provided by the `logLevel` and `logHandler` client options. Update your client options code of the form `{ log: { level: logLevel, handler: logHandler } }` to instead be `{ logLevel, logHandler }`.'
+      );
     } else {
       Logger.setLog(optionsObj.logLevel, optionsObj.logHandler);
     }

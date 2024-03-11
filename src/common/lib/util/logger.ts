@@ -104,12 +104,8 @@ class Logger {
     }
   };
 
-  static deprecated = function (original: string, replacement: string) {
-    Logger.deprecatedWithMsg(original, "Please use '" + replacement + "' instead.");
-  };
-
-  static deprecatedWithMsg = (funcName: string, msg: string) => {
-    Logger.deprecationWarning(`'${funcName}' is deprecated and will be removed in a future version. ${msg}`);
+  static deprecated = (description: string, msg: string) => {
+    Logger.deprecationWarning(`${description} is deprecated and will be removed in a future version. ${msg}`);
   };
 
   static renamedClientOption(oldName: string, newName: string) {

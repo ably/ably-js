@@ -316,7 +316,10 @@ class RealtimeChannel extends Channel {
       };
     }
     if (_flags) {
-      Logger.deprecated('channel.attach() with flags', 'channel.setOptions() with channelOptions.params');
+      Logger.deprecated(
+        'The ability to pass an array of channel mode flags as the first argument of `RealtimeChannel.attach()`',
+        'To set channel mode flags, populate the `modes` property of the channel options object that you pass to `Channels.get()` or `RealtimeChannel.setOptions()`.'
+      );
       /* If flags requested, always do a re-attach. TODO only do this if
        * current mode differs from requested mode */
       this._requestedFlags = _flags as API.Types.ChannelMode[];
