@@ -1,5 +1,6 @@
 const config = {
   require: ['source-map-support/register', 'test/support/modules_helper.js', 'test/support/test_helper.js'],
+  file: ['test/support/root_hooks.js'],
   reporter: 'test/support/mocha_reporter.js',
 };
 

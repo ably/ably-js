@@ -247,14 +247,14 @@ define([
 
   /* Slightly crude catch-all hook to close any dangling realtime clients left open
    * after a test fails without calling closeAndFinish */
-  afterEach(function () {
+  function closeActiveClients() {
     activeClients.forEach((client) => {
       client.close();
     });
     activeClients = [];
-  });
+  }
 
-  afterEach(function () {
+  function logTestResults() {
     if (this.currentTest.isFailed()) {
       const logs = globals.getLogs();
       if (logs.length > 0) {
@@ -267,8 +267,7 @@ define([
         console.log();
       }
     }
-    globals.flushLogs();
-  });
+  }
 
   return (module.exports = {
     setupApp: testAppModule.setup,
@@ -304,5 +303,7 @@ define([
     whenPromiseSettles: whenPromiseSettles,
     randomString: randomString,
     testMessageEquality: testMessageEquality,
+    closeActiveClients,
+    logTestResults,
   });
 });
