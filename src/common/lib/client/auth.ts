@@ -328,7 +328,7 @@ class Auth {
   }
 
   authorise(tokenParams: API.Types.TokenParams | null, authOptions: API.Types.AuthOptions, callback: Function): void {
-    Logger.deprecated('Auth.authorise', 'Auth.authorize');
+    Logger.renamedMethod('Auth', 'authorise', 'authorize');
     this.authorize(tokenParams, authOptions, callback);
   }
 
