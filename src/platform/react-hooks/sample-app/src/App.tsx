@@ -22,7 +22,7 @@ function App() {
   useChannel(
     {
       channelName: 'your-derived-channel-name',
-      id: 'rob',
+      ablyId: 'rob',
     },
     (message) => {
       updateDerivedChannelMessages((prev) => [...prev, message]);
@@ -32,7 +32,7 @@ function App() {
   useChannel(
     {
       channelName: 'your-derived-channel-name',
-      id: 'frontOffice',
+      ablyId: 'frontOffice',
     },
     (message) => {
       updateFrontOfficeOnlyMessages((prev) => [...prev, message]);

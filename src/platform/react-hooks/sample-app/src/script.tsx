@@ -21,17 +21,17 @@ const root = createRoot(container);
 root.render(
   <React.StrictMode>
     <AblyProvider client={client}>
-      <AblyProvider id="rob" client={client}>
-        <AblyProvider id="frontOffice" client={client}>
+      <AblyProvider ablyId="rob" client={client}>
+        <AblyProvider ablyId="frontOffice" client={client}>
           <ChannelProvider channelName="your-channel-name" options={{ modes: ['PRESENCE', 'PUBLISH', 'SUBSCRIBE'] }}>
             <ChannelProvider channelName="your-derived-channel-name">
               <ChannelProvider
-                id="rob"
+                ablyId="rob"
                 channelName="your-derived-channel-name"
                 deriveOptions={{ filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' }}
               >
                 <ChannelProvider
-                  id="frontOffice"
+                  ablyId="frontOffice"
                   channelName="your-derived-channel-name"
                   deriveOptions={{ filter: 'headers.role == `"front-office"` || headers.company == `"domain"`' }}
                 >
