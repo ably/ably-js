@@ -1,5 +1,5 @@
 import type * as Ably from 'ably';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useChannelInstance } from './useChannelInstance.js';
 import { useStateErrors } from './useStateErrors.js';
@@ -30,32 +30,39 @@ export function usePresenceListener<T = any>(
   const { connectionError, channelError } = useStateErrors(params);
   const [presenceData, updatePresenceData] = useState<Array<PresenceMessage<T>>>([]);
 
-  const updatePresence = async (message?: Ably.PresenceMessage) => {
-    const snapshot = await channel.presence.get();
-    updatePresenceData(snapshot);
+  const onPresenceMessageReceivedRef = useRef(onPresenceMessageReceived);
+  useEffect(() => {
+    onPresenceMessageReceivedRef.current = onPresenceMessageReceived;
+  }, [onPresenceMessageReceived]);
 
-    onPresenceMessageReceived?.call(this, message);
-  };
+  const updatePresence = useCallback(
+    async (message?: Ably.PresenceMessage) => {
+      const snapshot = await channel.presence.get();
+      updatePresenceData(snapshot);
 
-  const onMount = async () => {
+      onPresenceMessageReceivedRef.current?.(message);
+    },
+    [channel.presence],
+  );
+
+  const onMount = useCallback(async () => {
     channel.presence.subscribe(['enter', 'leave', 'update'], updatePresence);
     const snapshot = await channel.presence.get();
     updatePresenceData(snapshot);
-  };
+  }, [channel.presence, updatePresence]);
 
-  const onUnmount = () => {
+  const onUnmount = useCallback(async () => {
     channel.presence.unsubscribe(['enter', 'leave', 'update'], updatePresence);
-  };
+  }, [channel.presence, updatePresence]);
 
-  const useEffectHook = () => {
-    if (!skip) onMount();
+  useEffect(() => {
+    if (skip) return;
+
+    onMount();
     return () => {
       onUnmount();
     };
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(useEffectHook, [skip]);
+  }, [skip, onMount, onUnmount]);
 
   return { presenceData, connectionError, channelError };
 }
