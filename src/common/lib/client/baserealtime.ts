@@ -189,7 +189,11 @@ class ConsumerGroup extends EventEmitter {
     try {
       const result = await this.channel.presence.get({ waitForSync: true });
 
-      const memberIds = result?.filter((member) => member.clientId).map((member) => member.clientId!) || [];
+      let memberIds = result?.filter((member) => member.clientId).map((member) => member.clientId!) || [];
+      // each member will be entered into the presence set once per connection,
+      // so we need to deduplicate the members by client ID
+      memberIds = memberIds.filter((id, index) => memberIds.indexOf(id) === index);
+
       const { add, remove } = diffSets(this.locator.getNodes(), memberIds);
 
       Logger.logAction(
