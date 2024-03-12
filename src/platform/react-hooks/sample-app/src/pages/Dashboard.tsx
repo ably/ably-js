@@ -1,0 +1,190 @@
+import * as Ably from 'ably';
+import React, { useState } from 'react';
+import { useChannel, usePresence, useConnectionStateListener, useChannelStateListener } from '../../../src/index.js';
+import MessagePreview from '../components/MessagePreview.js';
+import ConnectionState from '../components/ConnectionState.js';
+
+export default function Dashboard() {
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
+  const [derivedChannelMessages, updateDerivedChannelMessages] = useState<Ably.Message[]>([]);
+  const [frontOficeOnlyMessages, updateFrontOfficeOnlyMessages] = useState<Ably.Message[]>([]);
+
+  const [skip, setSkip] = useState(false);
+  const { channel, publish, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
+    updateMessages((prev) => [...prev, message]);
+  });
+
+  useChannel(
+    {
+      channelName: 'your-derived-channel-name',
+      ablyId: 'rob',
+    },
+    (message) => {
+      updateDerivedChannelMessages((prev) => [...prev, message]);
+    },
+  );
+
+  useChannel(
+    {
+      channelName: 'your-derived-channel-name',
+      ablyId: 'frontOffice',
+    },
+    (message) => {
+      updateFrontOfficeOnlyMessages((prev) => [...prev, message]);
+    },
+  );
+
+  const { publish: anotherChannelPublish } = useChannel({
+    channelName: 'your-derived-channel-name',
+  });
+
+  const { presenceData, updateStatus } = usePresence(
+    { channelName: 'your-channel-name', skip },
+    { foo: 'bar' },
+    (update) => {
+      console.log(update);
+    },
+  );
+
+  const [, setConnectionState] = useState(ably.connection.state);
+
+  useConnectionStateListener((stateChange) => {
+    setConnectionState(stateChange.current);
+  });
+
+  const [ablyErr, setAblyErr] = useState('');
+  const [channelState, setChannelState] = useState(channel.state);
+  const [previousChannelState, setPreviousChannelState] = useState<undefined | Ably.ChannelState>();
+  const [channelStateReason, setChannelStateReason] = useState<undefined | Ably.ErrorInfo>();
+
+  useChannelStateListener('your-channel-name', (stateChange) => {
+    setAblyErr(JSON.stringify(stateChange.reason));
+    setChannelState(stateChange.current);
+    setPreviousChannelState(stateChange.previous);
+    setChannelStateReason(stateChange.reason ?? undefined);
+  });
+
+  const messagePreviews = messages.map((message, idx) => <MessagePreview key={idx} message={message} />);
+  const derivedChannelMessagePreviews = derivedChannelMessages.map((message, idx) => (
+    <MessagePreview key={idx} message={message} />
+  ));
+  const frontOfficeMessagePreviews = frontOficeOnlyMessages.map((message, idx) => (
+    <MessagePreview key={idx} message={message} />
+  ));
+
+  const presentClients = presenceData.map((msg, index) => (
+    <li key={index}>
+      {msg.clientId}: {JSON.stringify(msg.data)}
+    </li>
+  ));
+
+  return (
+    <div className="App">
+      <header className="App-header">Ably React Hooks Demo</header>
+      <div>
+        <button
+          onClick={() => {
+            publish('test-message', {
+              text: 'message text',
+            });
+          }}
+        >
+          Send Message
+        </button>
+        <button
+          onClick={() => {
+            updateStatus({ foo: 'baz' });
+          }}
+        >
+          Update status to hello
+        </button>
+        <button
+          onClick={() => {
+            anotherChannelPublish({
+              name: 'test-message',
+              data: {
+                text: 'This is a message for Rob',
+              },
+              extras: {
+                headers: {
+                  email: 'rob.pike@domain.com',
+                },
+              },
+            });
+          }}
+        >
+          Send Message to Rob Only
+        </button>
+        <button
+          onClick={() => {
+            anotherChannelPublish({
+              name: 'test-message',
+              data: {
+                text: 'This is a company-wide message',
+              },
+              extras: {
+                headers: {
+                  company: 'domain',
+                },
+              },
+            });
+          }}
+        >
+          Send Company-wide message
+        </button>
+        <button
+          onClick={() => {
+            anotherChannelPublish({
+              name: 'test-message',
+              data: {
+                text: 'This is a message for front office employees only',
+              },
+              extras: {
+                headers: {
+                  role: 'front-office',
+                },
+              },
+            });
+          }}
+        >
+          Send message to Front Office
+        </button>
+      </div>
+
+      <div style={{ position: 'fixed', width: '250px' }}>
+        <ConnectionState />
+      </div>
+      <div style={{ marginLeft: '250px' }}>
+        <h2>Skip</h2>
+        <button onClick={() => setSkip(!skip)}>Toggle skip param</button>
+        <h2>Channel detach</h2>
+        <button onClick={() => channel.detach()}>Detach</button>
+        <button onClick={() => ably.close()}>Close</button>
+
+        <h2>Channel State</h2>
+        <h3>Current</h3>
+        <div>{channelState}</div>
+        <h3>Previous</h3>
+        <div>{previousChannelState}</div>
+        <h3>Reason</h3>
+        <div>{JSON.stringify(channelStateReason)}</div>
+
+        <h2>Ably error</h2>
+        <h3>Reason</h3>
+        <div>{ablyErr}</div>
+
+        <h2>Messages</h2>
+        {<ul>{messagePreviews}</ul>}
+
+        <h2>Derived Channel Messages</h2>
+        <ul>{derivedChannelMessagePreviews}</ul>
+
+        <h2>Front Office Messages</h2>
+        <ul>{frontOfficeMessagePreviews}</ul>
+
+        <h2>Present Clients</h2>
+        <ul>{presentClients}</ul>
+      </div>
+    </div>
+  );
+}

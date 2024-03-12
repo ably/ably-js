@@ -5,3 +5,8 @@
 .App p {
   margin: 0.4rem;
 }
+
+.App nav ul li {
+  display: inline;
+  padding: 1rem;
+}
