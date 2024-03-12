@@ -1,7 +1,7 @@
 import React from 'react';
 import type * as Ably from 'ably';
 import { it, beforeEach, describe, expect, vi } from 'vitest';
-import { usePresenceListener } from './usePresenceListener.js';
+import { OnPresenceMessageReceived, usePresenceListener } from './usePresenceListener.js';
 import { render, screen, act, waitFor } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
 import { AblyProvider } from '../AblyProvider.js';
@@ -10,11 +10,22 @@ import { ChannelProvider } from '../ChannelProvider.js';
 const testChannelName = 'testChannel';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(
+  const renderResult = render(
     <AblyProvider client={client as unknown as Ably.RealtimeClient}>
       <ChannelProvider channelName={testChannelName}>{children}</ChannelProvider>
     </AblyProvider>,
   );
+
+  const originalRerender = renderResult.rerender;
+  renderResult.rerender = (children: React.ReactNode | React.ReactNode[]) => {
+    return originalRerender(
+      <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+        <ChannelProvider channelName={testChannelName}>{children}</ChannelProvider>
+      </AblyProvider>,
+    );
+  };
+
+  return renderResult;
 }
 
 describe('usePresenceListener', () => {
@@ -143,6 +154,67 @@ describe('usePresenceListener', () => {
     expect(values2).toContain(`"data":"baz2"`);
   });
 
+  it('calls onPresenceMessageReceived callback on new messages', async () => {
+    const onPresenceMessageReceived = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.enter('bar');
+
+    renderInCtxProvider(
+      ablyClient,
+      <UsePresenceListenerComponent
+        onPresenceMessageReceived={onPresenceMessageReceived}
+      ></UsePresenceListenerComponent>,
+    );
+
+    await act(async () => {
+      await wait(2);
+    });
+
+    // should not have been called for already existing presence state
+    expect(onPresenceMessageReceived).toHaveBeenCalledTimes(0);
+
+    await act(async () => {
+      ablyClient.channels.get(testChannelName).presence.update('baz');
+    });
+
+    expect(onPresenceMessageReceived).toHaveBeenCalledTimes(1);
+    expect(onPresenceMessageReceived).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz' }));
+  });
+
+  it('reacts to onPresenceMessageReceived callback changes', async () => {
+    let onPresenceMessageReceived = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.enter('foo');
+
+    const { rerender } = renderInCtxProvider(
+      ablyClient,
+      <UsePresenceListenerComponent
+        onPresenceMessageReceived={onPresenceMessageReceived}
+      ></UsePresenceListenerComponent>,
+    );
+
+    await act(async () => {
+      ablyClient.channels.get(testChannelName).presence.update('bar');
+    });
+
+    expect(onPresenceMessageReceived).toHaveBeenCalledTimes(1);
+    expect(onPresenceMessageReceived).toHaveBeenCalledWith(expect.objectContaining({ data: 'bar' }));
+
+    // change callback function and rerender
+    onPresenceMessageReceived = vi.fn();
+    rerender(
+      <UsePresenceListenerComponent
+        onPresenceMessageReceived={onPresenceMessageReceived}
+      ></UsePresenceListenerComponent>,
+    );
+
+    await act(async () => {
+      ablyClient.channels.get(testChannelName).presence.update('baz');
+    });
+
+    // new callback should be called once
+    expect(onPresenceMessageReceived).toHaveBeenCalledTimes(1);
+    expect(onPresenceMessageReceived).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz' }));
+  });
+
   it('handles channel errors', async () => {
     const onChannelError = vi.fn();
     const reason = { message: 'foo' };
@@ -234,8 +306,14 @@ describe('usePresenceListener', () => {
   });
 });
 
-const UsePresenceListenerComponent = ({ skip }: { skip?: boolean }) => {
-  const { presenceData } = usePresenceListener({ channelName: testChannelName, skip });
+const UsePresenceListenerComponent = ({
+  skip,
+  onPresenceMessageReceived,
+}: {
+  skip?: boolean;
+  onPresenceMessageReceived?: OnPresenceMessageReceived<any>;
+}) => {
+  const { presenceData } = usePresenceListener({ channelName: testChannelName, skip }, onPresenceMessageReceived);
 
   const presentUsers = presenceData.map((presence, index) => {
     return (
