@@ -30,6 +30,9 @@ export default function Layout() {
           <li>
             <Link to="/UsePresenceSwitchable">UsePresenceSwitchable</Link>
           </li>
+          <li>
+            <Link to="/UsePresenceUseChannelOptions">UsePresence + UseChanne + Options</Link>
+          </li>
         </ul>
       </nav>
 

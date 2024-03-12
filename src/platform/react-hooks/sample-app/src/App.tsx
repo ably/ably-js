@@ -10,6 +10,7 @@ import UsePresenceOnlyEnter from './pages/UsePresenceOnlyEnter.js';
 import UsePresenceOnlySubscribe from './pages/UsePresenceOnlySubscribe.js';
 import Dashboard from './pages/dashboard.js';
 import UsePresenceSwitchable from './pages/UsePresenceSwitchable.js';
+import UsePresenceUseChannelOptions from './pages/UsePresenceUseChannelOptions.js';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="UsePresenceOnlyEnter" element={<UsePresenceOnlyEnter />} />
           <Route path="UsePresenceOnlySubscribe" element={<UsePresenceOnlySubscribe />} />
           <Route path="UsePresenceSwitchable" element={<UsePresenceSwitchable />} />
+          <Route path="UsePresenceUseChannelOptions" element={<UsePresenceUseChannelOptions />} />
           <Route path="*" element={<Dashboard />} />
         </Route>
       </Routes>
