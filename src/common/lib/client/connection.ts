@@ -59,7 +59,9 @@ class Connection extends EventEmitter {
   }
 
   get recoveryKey(): string | null {
-    Logger.deprecated('Connection.recoveryKey attribute', 'Connection.createRecoveryKey() method');
+    Logger.deprecationWarning(
+      'The `Connection.recoveryKey` attribute has been replaced by the `Connection.createRecoveryKey()` method. Replace your usage of `recoveryKey` with the return value of `createRecoveryKey()`. `recoveryKey` will be removed in a future version.',
+    );
     return this.createRecoveryKey();
   }
 
