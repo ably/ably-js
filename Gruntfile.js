@@ -112,10 +112,14 @@ module.exports = function (grunt) {
       esbuild.build(esbuildConfig.webConfig),
       esbuild.build(esbuildConfig.minifiedWebConfig),
       esbuild.build(esbuildConfig.modularConfig),
-    ]).then(() => {
-      console.log('esbuild succeeded');
-      done(true);
-    });
+    ])
+      .then(() => {
+        console.log('esbuild succeeded');
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
   });
 
   grunt.registerTask('test:webserver', 'Launch the Mocha test web server on http://localhost:3000/', [
