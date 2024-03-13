@@ -44,26 +44,6 @@ function platformPath(platform, ...dir) {
   return path.resolve(__dirname, 'src', 'platform', platform, ...dir);
 }
 
-const nodeConfig = {
-  ...baseConfig,
-  entry: {
-    index: platformPath('nodejs'),
-  },
-  output: {
-    ...baseConfig.output,
-    filename: 'ably-node.js',
-  },
-  target: ['node', 'es2017'],
-  externals: {
-    got: true,
-    ws: true,
-  },
-  optimization: {
-    minimize: false,
-  },
-  devtool: 'source-map',
-};
-
 const nativeScriptConfig = {
   ...baseConfig,
   output: {
@@ -157,7 +137,6 @@ function createMochaJUnitReporterConfig() {
 }
 
 module.exports = {
-  node: nodeConfig,
   nativeScript: nativeScriptConfig,
   reactNative: reactNativeConfig,
   mochaJUnitReporterBrowser: createMochaJUnitReporterConfig(),

@@ -4,11 +4,9 @@ var fs = require('fs');
 var path = require('path');
 var webpackConfig = require('./webpack.config');
 var esbuild = require('esbuild');
-var umdWrapper = require('esbuild-plugin-umd-wrapper');
-var banner = require('./src/fragments/license');
 var process = require('process');
-var stripLogsPlugin = require('./grunt/esbuild/strip-logs').default;
 var MochaServer = require('./test/web_server');
+var esbuildConfig = require('./grunt/esbuild/build');
 
 module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-webpack');
@@ -49,7 +47,6 @@ module.exports = function (grunt) {
     dirs: dirs,
     webpack: {
       all: Object.values(webpackConfig),
-      node: [webpackConfig.node],
       browser: [webpackConfig.browser, webpackConfig.browserMin, webpackConfig.mochaJUnitReporterBrowser],
     },
   };
@@ -76,11 +73,7 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all', 'build:browser']);
-
-  grunt.registerTask('build:node', ['checkGitSubmodules', 'webpack:node']);
-
-  grunt.registerTask('build:browser', ['checkGitSubmodules', 'webpack:browser']);
+  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all', 'build:browser', 'build:node']);
 
   grunt.registerTask('all', ['build', 'requirejs']);
 
@@ -99,44 +92,26 @@ module.exports = function (grunt) {
     });
   });
 
+  grunt.registerTask('build:node', function () {
+    const done = this.async();
+
+    esbuild
+      .build(esbuildConfig.nodeConfig)
+      .then(() => {
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
+
   grunt.registerTask('build:browser', function () {
     var done = this.async();
 
-    function createBaseConfig() {
-      return {
-        entryPoints: ['src/platform/web/index.ts'],
-        outfile: 'build/ably.js',
-        bundle: true,
-        sourcemap: true,
-        format: 'umd',
-        banner: { js: '/*' + banner + '*/' },
-        plugins: [umdWrapper.default({ libraryName: 'Ably', amdNamedModule: false })],
-        target: 'es2017',
-      };
-    }
-
-    function createModularConfig() {
-      return {
-        // We need to create a new copy of the base config, because calling
-        // esbuild.build() with the base config causes it to mutate the passed
-        // config’s `banner.js` property to add some weird modules shim code,
-        // which we don’t want here.
-        ...createBaseConfig(),
-        entryPoints: ['src/platform/web/modular.ts'],
-        outfile: 'build/modular/index.mjs',
-        format: 'esm',
-        plugins: [stripLogsPlugin],
-      };
-    }
-
     Promise.all([
-      esbuild.build(createBaseConfig()),
-      esbuild.build({
-        ...createBaseConfig(),
-        outfile: 'build/ably.min.js',
-        minify: true,
-      }),
-      esbuild.build(createModularConfig()),
+      esbuild.build(esbuildConfig.webConfig),
+      esbuild.build(esbuildConfig.minifiedWebConfig),
+      esbuild.build(esbuildConfig.modularConfig),
     ]).then(() => {
       console.log('esbuild succeeded');
       done(true);
