@@ -196,7 +196,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     options.queueMessages = options.queueEvents;
   }
   if (options.headers) {
-    Logger.deprecatedWithMsg(
+    Logger.deprecated(
       'the `headers` client option',
       '' /* there is no replacement; see DeprecatedClientOptions.headers */
     );
@@ -219,12 +219,15 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 
     /* emit an appropriate deprecation warning */
     if (options.environment) {
-      Logger.deprecatedWithMsg(
-        'fallbackHostsUseDefault',
-        'There is no longer a need to set this when the environment option is also set since the library will now generate the correct fallback hosts using the environment option.'
+      Logger.deprecated(
+        'The `fallbackHostsUseDefault` client option',
+        'If you’re using this client option to force the library to make use of fallback hosts even though you’ve set the `environment` client option, then this is no longer necessary: remove your usage of the `fallbackHostsUseDefault` client option and the library will then automatically choose the correct fallback hosts to use for the specified environment.'
       );
     } else {
-      Logger.deprecated('fallbackHostsUseDefault', 'fallbackHosts: Ably.Defaults.FALLBACK_HOSTS');
+      Logger.deprecated(
+        'The `fallbackHostsUseDefault` client option',
+        'If you’re using this client option to force the library to make use of fallback hosts even though you’re not using the primary Ably environment, then stop using `fallbackHostsUseDefault`, and update your code to either pass the `environment` client option (in which case the library will automatically choose the correct fallback hosts to use for the specified environment), or to pass the `fallbackHosts` client option to specify a custom list of fallback hosts to use (for example, if you’re using a custom CNAME, in which case Ably will have provided you with an explicit list of fallback hosts).'
+      );
     }
 
     /* use the default fallback hosts as requested */
@@ -233,7 +236,10 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 
   /* options.recover as a boolean is deprecated, and therefore is not part of the public typing */
   if ((options.recover as any) === true) {
-    Logger.deprecated('{recover: true}', '{recover: function(lastConnectionDetails, cb) { cb(true); }}');
+    Logger.deprecated(
+      'The ability to use a boolean value for the `recover` client option',
+      'If you wish for the connection to always be recovered, replace `{ recover: true }` with a function that always passes `true` to its callback: `{ recover: function(lastConnectionDetails, cb) { cb(true); } }`'
+    );
     options.recover = function (lastConnectionDetails: unknown, cb: (shouldRecover: boolean) => void) {
       cb(true);
     };
