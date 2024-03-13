@@ -4,6 +4,7 @@ import Resource from './resource';
 import { IPartialErrorInfo } from '../types/errorinfo';
 import { PaginatedResultCallback } from '../../types/utils';
 import Rest from './rest';
+import HttpStatusCodes from '../../constants/HttpStatusCodes';
 
 export type BodyHandler = (body: unknown, headers: Record<string, string>, unpacked?: boolean) => any;
 
@@ -151,7 +152,7 @@ class PaginatedResource {
     }
     let items, linkHeader, relParams;
     try {
-      items = this.bodyHandler(body, headers || {}, unpacked);
+      items = statusCode == HttpStatusCodes.NoContent ? [] : this.bodyHandler(body, headers || {}, unpacked);
     } catch (e) {
       /* If we got an error, the failure to parse the body is almost certainly
        * due to that, so callback with that in preference over the parse error */
