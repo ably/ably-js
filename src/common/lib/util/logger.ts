@@ -108,20 +108,27 @@ class Logger {
     }
   }
 
-  static deprecated = function (original: string, replacement: string) {
-    Logger.deprecatedWithMsg(original, "Please use '" + replacement + "' instead.");
+  static deprecated = (description: string, msg: string) => {
+    Logger.deprecationWarning(`${description} is deprecated and will be removed in a future version. ${msg}`);
   };
 
-  static deprecatedWithMsg = (funcName: string, msg: string) => {
+  static renamedClientOption(oldName: string, newName: string) {
+    Logger.deprecationWarning(
+      `The \`${oldName}\` client option has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`,
+    );
+  }
+
+  static renamedMethod(className: string, oldName: string, newName: string) {
+    Logger.deprecationWarning(
+      `\`${className}\`’s \`${oldName}\` method has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`,
+    );
+  }
+
+  static deprecationWarning(message: string) {
     if (Logger.shouldLog(LogLevels.Error)) {
-      Logger.logErrorHandler(
-        "Ably: Deprecation warning - '" +
-          funcName +
-          "' is deprecated and will be removed from a future version. " +
-          msg,
-      );
+      Logger.logErrorHandler(`Ably: Deprecation warning - ${message}`);
     }
-  };
+  }
 
   /* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */
