@@ -67,7 +67,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       //Intercept Http.do with test
 
       function testRequestHandler(_, __, ___, ____, _____, ______, callback) {
-        callback(null, null, null, false, 204);
+        callback(null, null, { 'X-Ably-Foo': 'headerValue' }, false, 204);
       }
 
       rest.http.do = testRequestHandler;
@@ -77,6 +77,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           expect(error).to.be.null;
           expect(response.statusCode).to.equal(204);
           expect(response.items).to.be.empty;
+          expect(response.headers).to.deep.equal({ 'X-Ably-Foo': 'headerValue' });
           done();
         } catch (err) {
           done(err);

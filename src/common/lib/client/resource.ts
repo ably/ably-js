@@ -36,7 +36,7 @@ function unenvelope<T>(callback: ResourceCallback<T>, format: Utils.Format | nul
     }
 
     if (outerStatusCode === httpStatusCodes.NoContent) {
-      callback(err, [] as any, [] as any, true, outerStatusCode);
+      callback(err, [] as any, outerHeaders, true, outerStatusCode);
       return;
     }
 
