@@ -387,6 +387,100 @@ usePresenceListener({ channelName: "your-channel-name", ablyId }, (presenceUpdat
 });
 ```
 
+### Skip attaching to a channel using `skip` parameter
+
+By default, `usePresenceEnter` and `usePresenceListener` automatically attach to a channel upon component mount, and `useChannel` does so if a callback for receiving messages is provided. This means that these hooks will attempt to establish a connection to the Ably server using the credentials currently set in the corresponding `Ably.RealtimeClient` from `AblyProvider`. However, there may be scenarios where your user authentication is asynchronous or when certain parts of your application are conditionally accessible (e.g., premium features). In these instances, you might not have a valid auth token yet, and an attempt to attach to a channel would result in an error.
+
+To address this, the `skip` parameter allows you to control the mounting behavior of the `useChannel`, `usePresenceEnter`, and `usePresenceListener` hooks, specifically determining whether they should attach to a channel upon the component's mount.
+
+```tsx
+const [skip, setSkip] = useState(true);
+
+const { channel, publish } = useChannel({ channelName: "your-channel-name", skip }, (message) => {
+    updateMessages((prev) => [...prev, message]);
+});
+```
+
+By setting the `skip` parameter, you can prevent the hooks from attempting to attach to a channel, thereby avoiding errors and avoiding unnecessary messages being send (which reduces your messages consumption in your Ably app).
+
+The `skip` parameter accepts a boolean value. When set to `true`, it instructs the hooks not to attach to the channel upon the component's mount. This behavior is dynamically responsive; meaning that, once the conditions change (e.g., the user gets authenticated), updating the `skip` parameter to `false` will trigger the hooks to attach to the channel.
+
+This parameter is useful in next situations:
+
+**Asynchronous Authentication**: Users are not immediately authorized upon loading the component, and acquiring a valid auth token is asynchronous.
+
+Consider a scenario where a component uses the `useChannel` hook, but the user's authentication status is determined asynchronously:
+
+```tsx
+import React, { useEffect, useState } from "react";
+import { useChannel } from "ably/react";
+import * as Ably from "ably";
+
+const ChatComponent = () => {
+    const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
+    const [messages, updateMessages] = useState<Ably.Message[]>([]);
+
+    // Simulate asynchronous authentication
+    useEffect(() => {
+        async function authenticate() {
+            const isAuthenticated = await someAuthenticationFunction();
+            setIsUserAuthenticated(isAuthenticated);
+        }
+        authenticate();
+    }, []);
+
+    // useChannel with skip parameter
+    useChannel({ channelName: "your-channel-name", skip: !isUserAuthenticated }, (message) => {
+        updateMessages((prev) => [...prev, message]);
+    });
+
+    if (!isUserAuthenticated) {
+        return <p>Please log in to join the chat.</p>;
+    }
+
+    return (
+        <div>
+            {messages.map((message, index) => (
+                <p key={index}>{message.data.text}</p>
+            ))}
+        </div>
+    );
+};
+```
+
+**Conditional Feature Access**: Certain features or parts of your application are behind a paywall or require specific user privileges that not all users possess.
+
+In an application with both free and premium features, you might want to conditionally use channels based on the user's subscription status:
+
+```tsx
+import React from "react";
+import { useChannel } from "ably/react";
+import * as Ably from "ably";
+
+interface PremiumFeatureComponentProps {
+    isPremiumUser: boolean;
+}
+
+const PremiumFeatureComponent = ({ isPremiumUser }: PremiumFeatureComponentProps) => {
+    const [messages, updateMessages] = useState<Ably.Message[]>([]);
+
+    // Skip attaching to the channel if the user is not a premium subscriber
+    useChannel({ channelName: "premium-feature-channel", skip: !isPremiumUser }, (message) => {
+        updateMessages((prev) => [...prev, message]);
+    });
+
+    if (!isPremiumUser) {
+        return <p>This feature is available for premium users only.</p>;
+    }
+
+    return (
+        <div>
+            {/* Render premium feature based on messages */}
+        </div>
+    );
+};
+```
+
 ## NextJS warnings
 
 Currently, when using our react library with NextJS you may encounter some warnings which arise due to some static checks against subdependencies of the library.
