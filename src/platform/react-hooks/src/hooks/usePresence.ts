@@ -1,105 +1,69 @@
 import type * as Ably from 'ably';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
-import { useStateErrors } from './useStateErrors.js';
 import { useChannelInstance } from './useChannelInstance.js';
+import { useStateErrors } from './useStateErrors.js';
 
-export interface PresenceResult<T> {
-  presenceData: PresenceMessage<T>[];
+export interface PresenceEnterResult<T> {
   updateStatus: (messageOrPresenceObject: T) => void;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
 }
-
-export type OnPresenceMessageReceived<T> = (presenceData: PresenceMessage<T>) => void;
-export type UseStatePresenceUpdate = (presenceData: Ably.PresenceMessage[]) => void;
 
 const INACTIVE_CONNECTION_STATES: Ably.ConnectionState[] = ['suspended', 'closing', 'closed', 'failed'];
 
 export function usePresence<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,
   messageOrPresenceObject?: T,
-  onPresenceUpdated?: OnPresenceMessageReceived<T>,
-): PresenceResult<T> {
+): PresenceEnterResult<T> {
   const params =
     typeof channelNameOrNameAndOptions === 'object'
       ? channelNameOrNameAndOptions
       : { channelName: channelNameOrNameAndOptions };
+  const skip = params.skip;
 
   const ably = useAbly(params.ablyId);
   const { channel } = useChannelInstance(params.ablyId, params.channelName);
-
-  const subscribeOnly = typeof channelNameOrNameAndOptions === 'string' ? false : params.subscribeOnly;
-
-  const skip = params.skip;
-
   const { connectionError, channelError } = useStateErrors(params);
+  // we can't simply add messageOrPresenceObject to dependency list in our useCallback/useEffect hooks,
+  // since it will most likely cause an infinite loop of updates in cases when user calls this hook
+  // with an object literal instead of a state or memoized object.
+  // to prevent this from happening we store messageOrPresenceObject in a ref, and use that instead.
+  // note that it still prevents us from automatically re-entering presence with new messageOrPresenceObject if it changes.
+  // one of the options to fix this, is to use deep equals to check if the object has actually changed. see https://github.com/ably/ably-js/issues/1688.
+  const messageOrPresenceObjectRef = useRef(messageOrPresenceObject);
 
-  const [presenceData, updatePresenceData] = useState<Array<PresenceMessage<T>>>([]);
+  useEffect(() => {
+    messageOrPresenceObjectRef.current = messageOrPresenceObject;
+  }, [messageOrPresenceObject]);
 
-  const updatePresence = async (message?: Ably.PresenceMessage) => {
-    const snapshot = await channel.presence.get();
-    updatePresenceData(snapshot);
+  const onMount = useCallback(async () => {
+    await channel.presence.enter(messageOrPresenceObjectRef.current);
+  }, [channel.presence]);
 
-    onPresenceUpdated?.call(this, message);
-  };
-
-  const onMount = async () => {
-    channel.presence.subscribe('enter', updatePresence);
-    channel.presence.subscribe('leave', updatePresence);
-    channel.presence.subscribe('update', updatePresence);
-
-    if (!subscribeOnly) {
-      await channel.presence.enter(messageOrPresenceObject);
-    }
-
-    const snapshot = await channel.presence.get();
-    updatePresenceData(snapshot);
-  };
-
-  const onUnmount = () => {
+  const onUnmount = useCallback(() => {
     // if connection is in one of inactive states, leave call will produce exception
     if (channel.state === 'attached' && !INACTIVE_CONNECTION_STATES.includes(ably.connection.state)) {
-      if (!subscribeOnly) {
-        channel.presence.leave();
-      }
+      channel.presence.leave();
     }
-    channel.presence.unsubscribe('enter', updatePresence);
-    channel.presence.unsubscribe('leave', updatePresence);
-    channel.presence.unsubscribe('update', updatePresence);
-  };
+  }, [channel, ably.connection.state]);
 
-  const useEffectHook = () => {
-    !skip && onMount();
+  useEffect(() => {
+    if (skip) return;
+
+    onMount();
     return () => {
       onUnmount();
     };
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(useEffectHook, [skip]);
+  }, [skip, onMount, onUnmount]);
 
   const updateStatus = useCallback(
     (messageOrPresenceObject: T) => {
-      if (!subscribeOnly) {
-        channel.presence.update(messageOrPresenceObject);
-      } else {
-        throw new Error('updateStatus can not be called while using the hook in subscribeOnly mode');
-      }
+      channel.presence.update(messageOrPresenceObject);
     },
-    [subscribeOnly, channel],
+    [channel],
   );
 
-  return { presenceData, updateStatus, connectionError, channelError };
-}
-
-interface PresenceMessage<T = any> {
-  action: Ably.PresenceAction;
-  clientId: string;
-  connectionId: string;
-  data: T;
-  encoding: string;
-  id: string;
-  timestamp: number;
+  return { updateStatus, connectionError, channelError };
 }

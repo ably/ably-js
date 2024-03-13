@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
   useChannel,
   usePresence,
+  usePresenceListener,
   useConnectionStateListener,
   useChannelStateListener,
   useAbly,
@@ -15,7 +16,7 @@ function App() {
   const [frontOficeOnlyMessages, updateFrontOfficeOnlyMessages] = useState<Ably.Message[]>([]);
 
   const [skip, setSkip] = useState(false);
-  const { publish, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
+  const { channel, publish, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
 
@@ -43,13 +44,10 @@ function App() {
     channelName: 'your-derived-channel-name',
   });
 
-  const { presenceData, updateStatus } = usePresence(
-    { channelName: 'your-channel-name', skip },
-    { foo: 'bar' },
-    (update) => {
-      console.log(update);
-    },
-  );
+  const { updateStatus } = usePresence({ channelName: 'your-channel-name', skip }, { foo: 'bar' });
+  const { presenceData } = usePresenceListener({ channelName: 'your-channel-name', skip }, (update) => {
+    console.log(update);
+  });
 
   const [, setConnectionState] = useState(ably.connection.state);
 
@@ -79,7 +77,8 @@ function App() {
 
   const presentClients = presenceData.map((msg, index) => (
     <li key={index}>
-      {msg.clientId}: {JSON.stringify(msg.data)}
+      {/* PresenceMessage type is not correctly resolved and is missing 'clientId' property due to fail to load 'ably' type declarations in this test file */}
+      {(msg as any).clientId}: {JSON.stringify(msg.data)}
     </li>
   ));
 
@@ -101,7 +100,7 @@ function App() {
             updateStatus({ foo: 'baz' });
           }}
         >
-          Update status to hello
+          Update presence status to baz
         </button>
         <button
           onClick={() => {
