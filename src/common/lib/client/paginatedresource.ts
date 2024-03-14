@@ -4,6 +4,7 @@ import Resource, { ResourceResult } from './resource';
 import { IPartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { RequestBody, ResponseHeaders } from 'common/types/http';
+import HttpStatusCodes from '../../constants/HttpStatusCodes';
 
 export type BodyHandler = (body: unknown, headers: ResponseHeaders, unpacked?: boolean) => Promise<any>;
 
@@ -96,7 +97,10 @@ class PaginatedResource {
     let items, linkHeader, relParams;
 
     try {
-      items = await this.bodyHandler(result.body, result.headers || {}, result.unpacked);
+      items =
+        result.statusCode == HttpStatusCodes.NoContent
+          ? []
+          : await this.bodyHandler(result.body, result.headers || {}, result.unpacked);
     } catch (e) {
       /* If we got an error, the failure to parse the body is almost certainly
        * due to that, so throw that in preference over the parse error */
