@@ -3340,9 +3340,9 @@ declare namespace Types {
      * Returns a {@link CipherParams} object, using the default values for any fields not supplied by the {@link CipherParamOptions} object.
      *
      * @param params - A {@link CipherParamOptions} object.
-     * @param callback - A function which, upon success, will be called with a {@link CipherParams} object, using the default values for any fields not supplied. Upon failure, the function will be called with information about the error.
+     * @returns A {@link CipherParams} object, using the default values for any fields not supplied.
      */
-    getDefaultParams(params: CipherParamOptions, callback: Types.StandardCallback<CipherParams>): void;
+    getDefaultParams(params: CipherParamOptions): CipherParams;
   }
 
   /**
