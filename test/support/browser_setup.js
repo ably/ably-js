@@ -1,6 +1,7 @@
 'use strict';
 
 var allTestFiles = [],
+  TEST_HOOKS_REGEXP = /root_hooks\.js$/i,
   TEST_REGEXP = /\.test\.js$/i,
   //	TEST_REGEXP = /simple\.test\.js$/i,
   TEAR_DOWN_REGEXP = /tear_down\.js$/i;
@@ -16,6 +17,14 @@ var forEachKey = function (object, fn) {
     }
   }
 };
+
+// Add the root mocha hooks
+forEachKey(window.__testFiles__.files, function (file) {
+  if (TEST_HOOKS_REGEXP.test(file)) {
+    // Normalize paths to RequireJS module names.
+    allTestFiles.push(pathToModule(file));
+  }
+});
 
 // Match all test files
 forEachKey(window.__testFiles__.files, function (file) {

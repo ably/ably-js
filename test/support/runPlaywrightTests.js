@@ -1,16 +1,16 @@
 const playwright = require('playwright');
 const path = require('path');
-const mochaWebServerProcess = require('child_process').fork(path.resolve(__dirname, '..', 'web_server'), {
-  env: { PLAYWRIGHT_TEST: 1 },
-});
+const MochaServer = require('../web_server');
 const fs = require('fs');
 const jUnitDirectoryPath = require('./junit_directory_path');
 
 const port = process.env.PORT || 3000;
 const host = 'localhost';
 const playwrightBrowsers = ['chromium', 'firefox', 'webkit'];
+const mochaServer = new MochaServer(/* playwrightTest: */ true);
 
 const runTests = async (browserType) => {
+  mochaServer.listen();
   const browser = await browserType.launch();
   const page = await browser.newPage();
   await page.goto(`http://${host}:${port}`);
@@ -85,7 +85,7 @@ const runTests = async (browserType) => {
     caughtError = error;
   }
 
-  mochaWebServerProcess.kill();
+  mochaServer.close();
 
   // now when mocha web server is terminated, if there was an error, we can log it and exit with a failure code
   if (caughtError) {

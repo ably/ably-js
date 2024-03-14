@@ -7,9 +7,10 @@ define([
   'test/common/modules/testapp_module',
   'test/common/modules/client_module',
   'test/common/modules/testapp_manager',
+  'globals',
   'async',
   'chai',
-], function (testAppModule, clientModule, testAppManager, async, chai) {
+], function (testAppModule, clientModule, testAppManager, globals, async, chai) {
   var utils = clientModule.Ably.Realtime.Utils;
   var platform = clientModule.Ably.Realtime.Platform;
   var BufferUtils = platform.BufferUtils;
@@ -236,6 +237,38 @@ define([
     expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
   }
 
+  let activeClients = [];
+
+  function AblyRealtime(options) {
+    const client = clientModule.AblyRealtime(options);
+    activeClients.push(client);
+    return client;
+  }
+
+  /* Slightly crude catch-all hook to close any dangling realtime clients left open
+   * after a test fails without calling closeAndFinish */
+  function closeActiveClients() {
+    activeClients.forEach((client) => {
+      client.close();
+    });
+    activeClients = [];
+  }
+
+  function logTestResults() {
+    if (this.currentTest.isFailed()) {
+      const logs = globals.getLogs();
+      if (logs.length > 0) {
+        // empty console.logs are for vertical spacing
+        console.log();
+        console.log('Logs for failing test: \n');
+        logs.forEach(([timestamp, log]) => {
+          console.log(timestamp, log);
+        });
+        console.log();
+      }
+    }
+  }
+
   return (module.exports = {
     setupApp: testAppModule.setup,
     tearDownApp: testAppModule.tearDown,
@@ -244,7 +277,7 @@ define([
 
     Ably: clientModule.Ably,
     AblyRest: clientModule.AblyRest,
-    AblyRealtime: clientModule.AblyRealtime,
+    AblyRealtime: AblyRealtime,
     ablyClientOptions: clientModule.ablyClientOptions,
     Utils: utils,
 
@@ -270,5 +303,7 @@ define([
     whenPromiseSettles: whenPromiseSettles,
     randomString: randomString,
     testMessageEquality: testMessageEquality,
+    closeActiveClients,
+    logTestResults,
   });
 });

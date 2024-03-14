@@ -1968,9 +1968,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * and only members that changed between ATTACHED states should result in
      * presence events */
     it('suspended_preserves_presence', function (done) {
-      var mainRealtime = helper.AblyRealtime({ clientId: 'main', logLevel: 4 }),
-        continuousRealtime = helper.AblyRealtime({ clientId: 'continuous', logLevel: 4 }),
-        leavesRealtime = helper.AblyRealtime({ clientId: 'leaves', logLevel: 4 }),
+      var mainRealtime = helper.AblyRealtime({ clientId: 'main' }),
+        continuousRealtime = helper.AblyRealtime({ clientId: 'continuous' }),
+        leavesRealtime = helper.AblyRealtime({ clientId: 'leaves' }),
         channelName = 'suspended_preserves_presence',
         mainChannel = mainRealtime.channels.get(channelName);
 
