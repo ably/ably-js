@@ -7,6 +7,7 @@ import ErrorInfo, { IPartialErrorInfo, PartialErrorInfo } from '../types/errorin
 import BaseClient from './baseclient';
 import { MsgPack } from 'common/types/msgpack';
 import { RequestBody, ResponseHeaders, appendingParams as urlFromPathAndParams, paramString } from 'common/types/http';
+import httpStatusCodes from '../../constants/HttpStatusCodes';
 
 async function withAuthDetails<T>(
   client: BaseClient,
@@ -30,6 +31,10 @@ function unenvelope<T>(
 ): ResourceResult<T> {
   if (result.err && !result.body) {
     return { err: result.err };
+  }
+
+  if (result.statusCode === httpStatusCodes.NoContent) {
+    return { ...result, body: [] as any, unpacked: true };
   }
 
   let body = result.body;

@@ -60,5 +60,21 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       await channel.publish('test', 'Testing http headers');
       await channel.presence.get();
     });
+
+    it('Should handle no content responses', async function () {
+      //Intercept Http.do with test
+
+      async function testRequestHandler() {
+        return { error: null, body: null, headers: { 'X-Ably-Foo': 'headerValue' }, unpacked: false, statusCode: 204 };
+      }
+
+      rest.http.do = testRequestHandler;
+
+      const response = await rest.request('GET', '/foo', {}, null, {});
+
+      expect(response.statusCode).to.equal(204);
+      expect(response.items).to.be.empty;
+      expect(response.headers).to.deep.equal({ 'X-Ably-Foo': 'headerValue' });
+    });
   });
 });
