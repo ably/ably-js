@@ -161,14 +161,25 @@ var CryptoFactory = function (config, bufferUtils) {
     /* Backward compatibility */
     if (typeof params === 'function' || typeof params === 'string') {
       Logger.deprecated(
-        'The ability to pass the encryption key as the first argument of `Crypto.getDefaultParams()`',
-        'Please update your code so that it instead passes an object whose `key` property contains the key. That is, replace `Crypto.getDefaultParams(key)` with `Crypto.getDefaultParams({ key })`.'
+        'The ability to pass a callback to `Crypto.getDefaultParams()`',
+        'This method now directly returns its result, instead of returning it asynchronously via a callback. Please update your code so that it uses the return value of this method instead of passing a callback.'
       );
+
       if (typeof params === 'function') {
+        // Called with (callback)
+        Logger.deprecated(
+          'The ability to call `Crypto.getDefaultParams()` without specifying an encryption key',
+          'Please update your code so that it instead passes an object whose `key` property contains an encryption key. That is, replace `Crypto.getDefaultParams()` with `Crypto.getDefaultParams({ key })`, where `key` is an encryption key that you have generated (for example from the `Crypto.generateRandomKey()` method).'
+        );
         Crypto.generateRandomKey(function (key) {
           params(null, Crypto.getDefaultParams({ key: key }));
         });
       } else if (typeof arguments[1] === 'function') {
+        // Called with (key, callback)
+        Logger.deprecated(
+          'The ability to pass the encryption key as the first argument of `Crypto.getDefaultParams()`',
+          'Please update your code so that it instead passes an object whose `key` property contains the key. That is, replace `Crypto.getDefaultParams(key)` with `Crypto.getDefaultParams({ key })`.'
+        );
         arguments[1](null, Crypto.getDefaultParams({ key: params }));
       } else {
         throw new Error('Invalid arguments for Crypto.getDefaultParams');
