@@ -1158,7 +1158,7 @@ declare namespace Types {
      *
      * @deprecated This property is deprecated and will be removed in a future version. Use the {@link ClientOptions.logLevel} client option instead.
      */
-    level?: number;
+    level?: 0 | 1 | 2 | 3 | 4;
 
     /**
      * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
