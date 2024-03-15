@@ -123,7 +123,7 @@ module.exports = function (grunt) {
         // which we don’t want here.
         ...createBaseConfig(),
         entryPoints: ['src/platform/web/modular.ts'],
-        outfile: 'build/modular/index.js',
+        outfile: 'build/modular/index.mjs',
         format: 'esm',
         plugins: [stripLogsPlugin],
       };
