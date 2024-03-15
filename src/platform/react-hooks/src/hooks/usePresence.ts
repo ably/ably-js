@@ -5,7 +5,7 @@ import { useAbly } from './useAbly.js';
 import { useChannelInstance } from './useChannelInstance.js';
 import { useStateErrors } from './useStateErrors.js';
 
-export interface PresenceEnterResult<T> {
+export interface PresenceResult<T> {
   updateStatus: (messageOrPresenceObject: T) => void;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
@@ -16,7 +16,7 @@ const INACTIVE_CONNECTION_STATES: Ably.ConnectionState[] = ['suspended', 'closin
 export function usePresence<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,
   messageOrPresenceObject?: T,
-): PresenceEnterResult<T> {
+): PresenceResult<T> {
   const params =
     typeof channelNameOrNameAndOptions === 'object'
       ? channelNameOrNameAndOptions
