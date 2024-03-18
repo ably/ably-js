@@ -44,7 +44,12 @@ type CompleteDefaults = IDefaults & {
   getHosts(options: NormalisedClientOptions): string[];
   checkHost(host: string): void;
   getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
-  objectifyOptions(options: ClientOptions | string, modularPluginsToInclude?: ModularPlugins): ClientOptions;
+  objectifyOptions(
+    options: undefined | ClientOptions | string,
+    allowKeyOrToken: boolean,
+    sourceForErrorMessage: string,
+    modularPluginsToInclude?: ModularPlugins,
+  ): ClientOptions;
   normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions;
   defaultGetHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
   defaultPostHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
@@ -183,11 +188,42 @@ export function getAgentString(options: ClientOptions): string {
 }
 
 export function objectifyOptions(
-  options: ClientOptions | string,
+  options: undefined | ClientOptions | string,
+  allowKeyOrToken: boolean,
+  sourceForErrorMessage: string,
   modularPluginsToInclude?: ModularPlugins,
 ): ClientOptions {
-  let optionsObj =
-    typeof options === 'string' ? (options.indexOf(':') == -1 ? { token: options } : { key: options }) : options;
+  if (options === undefined) {
+    const msg = allowKeyOrToken
+      ? `${sourceForErrorMessage} must be initialized with either a client options object, an Ably API key, or an Ably Token`
+      : `${sourceForErrorMessage} must be initialized with a client options object`;
+    Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+    throw new Error(msg);
+  }
+
+  let optionsObj: ClientOptions;
+
+  if (typeof options === 'string') {
+    if (options.indexOf(':') == -1) {
+      if (!allowKeyOrToken) {
+        const msg = `${sourceForErrorMessage} cannot be initialized with just an Ably Token; you must provide a client options object with a \`plugins\` property. (Set this Ably Token as the object’s \`token\` property.)`;
+        Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+        throw new Error(msg);
+      }
+
+      optionsObj = { token: options };
+    } else {
+      if (!allowKeyOrToken) {
+        const msg = `${sourceForErrorMessage} cannot be initialized with just an Ably API key; you must provide a client options object with a \`plugins\` property. (Set this Ably API key as the object’s \`key\` property.)`;
+        Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+        throw new Error(msg);
+      }
+
+      optionsObj = { key: options };
+    }
+  } else {
+    optionsObj = options;
+  }
 
   if (modularPluginsToInclude) {
     optionsObj = { ...optionsObj, plugins: { ...modularPluginsToInclude, ...optionsObj.plugins } };

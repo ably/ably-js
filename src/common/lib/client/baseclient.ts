@@ -48,12 +48,6 @@ class BaseClient {
   constructor(options: ClientOptions) {
     this._additionalHTTPRequestImplementations = options.plugins ?? null;
 
-    if (!options) {
-      const msg = 'no options provided';
-      Logger.logAction(Logger.LOG_ERROR, 'BaseClient()', msg);
-      throw new Error(msg);
-    }
-
     Logger.setLog(options.logLevel, options.logHandler);
     Logger.logAction(
       Logger.LOG_MICRO,

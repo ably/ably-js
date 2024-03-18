@@ -8,6 +8,12 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(typeof Ably.Rest).to.equal('function');
     });
 
+    it('constructor without any arguments', function () {
+      expect(() => new Ably.Rest()).to.throw(
+        'must be initialized with either a client options object, an Ably API key, or an Ably Token',
+      );
+    });
+
     it('Crypto', function () {
       expect(typeof Ably.Rest.Crypto).to.equal('function');
       expect(typeof Ably.Rest.Crypto.getDefaultParams).to.equal('function');

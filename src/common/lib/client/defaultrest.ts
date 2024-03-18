@@ -12,14 +12,15 @@ import Defaults from '../util/defaults';
  `DefaultRest` is the class that the non tree-shakable version of the SDK exports as `Rest`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
  */
 export class DefaultRest extends BaseRest {
-  constructor(options: ClientOptions | string) {
+  // The public typings declare that this requires an argument to be passed, but since we want to emit a good error message in the case where a non-TypeScript user does not pass an argument, tell the compiler that this is possible so that it forces us to handle it.
+  constructor(options?: ClientOptions | string) {
     const MsgPack = DefaultRest._MsgPack;
     if (!MsgPack) {
       throw new Error('Expected DefaultRest._MsgPack to have been set');
     }
 
     super(
-      Defaults.objectifyOptions(options, {
+      Defaults.objectifyOptions(options, true, 'Rest', {
         ...allCommonModularPlugins,
         Crypto: DefaultRest.Crypto ?? undefined,
         MsgPack: DefaultRest._MsgPack ?? undefined,
