@@ -46,7 +46,7 @@ function registerAblyModularTests(helper) {
       for (const clientClass of [BaseRest, BaseRealtime]) {
         describe(clientClass.name, () => {
           it('throws an error due to the absence of an HTTP plugin', () => {
-            expect(() => new clientClass(ablyClientOptions(), {})).to.throw(
+            expect(() => new clientClass(ablyClientOptions())).to.throw(
               'No HTTP request plugin provided. Provide at least one of the FetchRequest or XHRRequest plugins.',
             );
           });
