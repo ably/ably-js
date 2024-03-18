@@ -20,7 +20,7 @@ import {
   FetchRequest,
   XHRRequest,
   MessageInteractions,
-} from '../../build/modular/index.js';
+} from '../../build/modular/index.mjs';
 
 function registerAblyModularTests(helper) {
   describe('browser/modular', function () {

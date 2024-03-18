@@ -16,7 +16,7 @@
     },
     "./modular": {
       "types": "./modular.d.ts",
-      "default": "./build/modular/index.js"
+      "import": "./build/modular/index.mjs"
     },
     "./react": {
       "require": "./react/cjs/index.js",

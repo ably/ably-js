@@ -70,7 +70,7 @@ function getBundleInfo(exports: string[]): BundleInfo {
   const outfile = exports.join('');
   const result = esbuild.buildSync({
     stdin: {
-      contents: `export { ${exports.join(', ')} } from './build/modular'`,
+      contents: `export { ${exports.join(', ')} } from './build/modular/index.mjs'`,
       resolveDir: '.',
     },
     metafile: true,
