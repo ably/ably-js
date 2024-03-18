@@ -174,6 +174,29 @@ export function arrSubtract<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   return result;
 }
 
+export function arrIndexOfBy<T>(
+  arr: Array<T>,
+  iteratee: (value: T) => unknown,
+  elem: unknown,
+  fromIndex: number = 0,
+): number {
+  const len = arr.length;
+  for (; fromIndex < len; fromIndex++) {
+    if (iteratee(arr[fromIndex]) === elem) {
+      return fromIndex;
+    }
+  }
+  return -1;
+}
+
+export function arrUnique<T>(arr: Array<T>): Array<T> {
+  return arr.filter((value, index) => arr.indexOf(value) === index);
+}
+
+export function arrUniqueBy<T>(arr: Array<T>, iteratee: (value: T) => unknown): Array<T> {
+  return arr.filter((value, index) => arrIndexOfBy(arr, iteratee, iteratee(value)) === index);
+}
+
 export function arrDeleteValue<T>(arr: Array<T>, val: T): boolean {
   const idx = arr.indexOf(val);
   const res = idx != -1;

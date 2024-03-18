@@ -43,4 +43,5 @@ export * from './modular/transports';
 export * from './modular/http';
 export { Rest } from '../../common/lib/client/rest';
 export { FilteredSubscriptions as MessageInteractions } from '../../common/lib/client/filteredsubscriptions';
+export { ChannelGroups } from '../../common/lib/client/baserealtime';
 export { BaseRest, BaseRealtime, ErrorInfo };

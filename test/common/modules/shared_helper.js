@@ -45,6 +45,20 @@ define([
 
   async function monitorConnectionAsync(action, realtime, states) {
     const monitoringResultPromise = new Promise((resolve, reject) => {
+      if (Object.prototype.toString.call(realtime) == '[object Array]') {
+        realtime = realtime.filter(function (rt) {
+          return rt !== undefined;
+        });
+        Promise.race(
+          realtime.map(
+            (rt) =>
+              new Promise((resolve, reject) => monitorConnection((err) => (err ? reject(err) : resolve()), rt, states)),
+          ),
+        )
+          .then(resolve)
+          .catch(reject);
+        return;
+      }
       monitorConnection((err) => (err ? reject(err) : resolve()), realtime, states);
     });
     const actionResultPromise = Promise.resolve(action());

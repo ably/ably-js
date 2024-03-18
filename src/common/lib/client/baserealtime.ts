@@ -13,6 +13,8 @@ import { ModularPlugins, RealtimePresencePlugin } from './modularplugins';
 import { TransportNames } from 'common/constants/TransportName';
 import { TransportImplementations } from 'common/platform';
 import Defaults from '../util/defaults';
+import Locator from '../util/locator';
+import ChannelStateChange from './channelstatechange';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
@@ -21,8 +23,9 @@ class BaseRealtime extends BaseClient {
   readonly _RealtimePresence: RealtimePresencePlugin | null;
   // Extra transport implementations available to this client, in addition to those in Platform.Transports.bundledImplementations
   readonly _additionalTransportImplementations: TransportImplementations;
-  _channels: any;
+  _channels: Channels;
   connection: Connection;
+  readonly _channelGroups: ChannelGroups | null;
 
   constructor(options: ClientOptions | string) {
     super(Defaults.objectifyOptions(options));
@@ -31,6 +34,11 @@ class BaseRealtime extends BaseClient {
     this._RealtimePresence = this.options.plugins?.RealtimePresence ?? null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
+    if (this.options.plugins?.ChannelGroups) {
+      this._channelGroups = new this.options.plugins.ChannelGroups(this._channels);
+    } else {
+      this._channelGroups = null;
+    }
     if (this.options.autoConnect !== false) this.connect();
   }
 
@@ -51,7 +59,14 @@ class BaseRealtime extends BaseClient {
   }
 
   get channels() {
-    return this._channels;
+    return this._channels as any;
+  }
+
+  get channelGroups() {
+    if (!this._channelGroups) {
+      Utils.throwMissingPluginError('ChannelGroups');
+    }
+    return this._channelGroups;
   }
 
   connect(): void {
@@ -63,6 +78,341 @@ class BaseRealtime extends BaseClient {
     Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
     this.connection.close();
   }
+}
+
+class ChannelGroups {
+  groups: Record<string, ChannelGroup> = {};
+
+  constructor(readonly channels: Channels) {}
+
+  get(filter: string, options?: API.ChannelGroupOptions): ChannelGroup {
+    let group = this.groups[filter];
+    if (group) {
+      return group;
+    }
+    this.groups[filter] = new ChannelGroup(this.channels, filter, options);
+    return this.groups[filter];
+  }
+}
+
+class ConsumerGroup extends EventEmitter {
+  consumerId: string;
+
+  private channel?: RealtimeChannel;
+  private locator: Locator;
+  private computeMembershipListener: () => Promise<void>;
+
+  constructor(readonly channels: Channels, readonly consumerGroupName?: string) {
+    super();
+    // The client ID can in fact be set on receipt of CONNECTED event from realtime,
+    // but for these purposes we must rely on the client ID being explicitly provided
+    // by the user as we do not have a mechanism to listen for or handle changes.
+    // It must be provided when the consumer group is instantiated due to the use of a new
+    // base realtime client instance for the channel group.
+    if (!this.channels.realtime.options.clientId || this.channels.realtime.options.clientId === '*') {
+      throw new ErrorInfo('clientId must be explicitly specified to use consumer groups', 40000, 400);
+    }
+    this.consumerId = this.channels.realtime.options.clientId;
+    this.locator = new Locator([this.consumerId]);
+    this.computeMembershipListener = this.computeMembership.bind(this); // we need the exact reference to unsubscribe
+  }
+
+  async join() {
+    if (!this.consumerGroupName) {
+      // If no name is specified, then don't enforce the consumer group
+      // this is the equivalent of a no-op group where every channel
+      // is considered to be assigned to this client.
+      return;
+    }
+
+    try {
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ConsumerGroup.join()',
+        'joining consumer group ' + this.consumerGroupName + ' as ' + this.consumerId,
+      );
+      if (this.channel) {
+        await this.computeMembership();
+        return;
+      }
+      this.channel = this.channels.get(this.consumerGroupName);
+      await this.channel.attach();
+      await this.channel.presence.enter(null);
+      await this.computeMembership();
+      this.channel.presence.subscribe(this.computeMembershipListener);
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ConsumerGroup.join()',
+        'failed to enter presence set on consumer group channel; err = ' + Utils.inspectError(err),
+      );
+      throw err;
+    }
+  }
+
+  async leave() {
+    if (!this.consumerGroupName) {
+      return;
+    }
+    try {
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ConsumerGroup.leave()',
+        'leaving consumer group ' + this.consumerGroupName + ' as ' + this.consumerId,
+      );
+      if (!this.channel) {
+        Logger.logAction(Logger.LOG_ERROR, 'ConsumerGroup.leave()', 'leave called with no channel initialised');
+        return;
+      }
+      this.channel.presence.unsubscribe(this.computeMembershipListener);
+      await this.channel.presence.leave(null);
+      await this.channel.detach();
+      this.channel = undefined;
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ConsumerGroup.leave()',
+        'failed to leave presence set on consumer group channel; err = ' + Utils.inspectError(err),
+      );
+    }
+  }
+
+  async computeMembership() {
+    if (!this.channel) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ConsumerGroup.computeMembership()',
+        'compute membership called with no channel initialised',
+      );
+      return;
+    }
+    try {
+      const result = await this.channel.presence.get({ waitForSync: true });
+
+      let memberIds = result?.filter((member) => member.clientId).map((member) => member.clientId!) || [];
+      // each member will be entered into the presence set once per connection,
+      // so we need to deduplicate the members by client ID
+      memberIds = memberIds.filter((id, index) => memberIds.indexOf(id) === index);
+
+      const { add, remove } = diffSets(this.locator.getNodes(), memberIds);
+
+      Logger.logAction(
+        Logger.LOG_DEBUG,
+        'ConsumerGroup.computeMembership()',
+        'computed member diffs add=' + add + ' remove=' + remove + ' consumerId=' + this.consumerId,
+      );
+
+      add.forEach((member) => {
+        this.locator.add(member);
+      });
+
+      remove.forEach((member) => {
+        this.locator.remove(member);
+      });
+
+      this.emit('membership');
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ConsumerGroup.computeMembership()',
+        'membership computed, consumerId=' + this.consumerId + ' state=' + this.locator.getNodes(),
+      );
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ConsumerGroup.computeMembership()',
+        'failed to get presence set on consumer group channel; err = ' + Utils.inspectError(err),
+      );
+    }
+  }
+
+  assigned(channel: string): boolean {
+    if (!this.consumerGroupName) {
+      // Consumer group is not enabled, every channel
+      // is considered assigned to this client
+      return true;
+    }
+    return this.consumerId === this.locator.get(channel);
+  }
+}
+
+class ChannelGroup {
+  activeChannels: string[] = [];
+  assignedChannels: string[] = [];
+  active: RealtimeChannel;
+  subscriptions: EventEmitter;
+  subscribedChannels: Record<string, RealtimeChannel> = {};
+  channelTimers: Record<string, NodeJS.Timeout> = {};
+  expression: RegExp;
+  consumerGroup: ConsumerGroup;
+
+  constructor(readonly channels: Channels, readonly filter: string, readonly options?: API.ChannelGroupOptions) {
+    this.subscriptions = new EventEmitter();
+    this.active = channels.get(this.safeChannelName(options?.activeChannel || '$ably:active'));
+    this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
+    this.consumerGroup.on('membership', () => this.updateAssignedChannels());
+    this.expression = new RegExp(filter); // eslint-disable-line security/detect-non-literal-regexp
+  }
+
+  // Add dummy options to the channel name so that it is treated as an independent channel
+  // in the channel pool. This avoids any conflicts with external, independent use of individual
+  // channels that happen to also be included in a channel group.
+  private safeChannelName(name: string) {
+    // base64 encode to ensure only allowed characters are used in the qualifier
+    return `[?x-ably-channelgroup=${Utils.toBase64(this.filter)}]${name}`;
+  }
+
+  async join() {
+    await this.consumerGroup.join();
+    await this.active.setOptions({ params: { rewind: '1' } });
+    await this.active.subscribe((msg: any) => {
+      this.activeChannels = msg.data.active;
+      this.updateAssignedChannels();
+    });
+  }
+
+  async leave() {
+    this.active.unsubscribe();
+    await this.active.detach();
+    await this.consumerGroup.leave();
+    this.assignedChannels = [];
+    this.removeSubscriptions(Object.keys(this.subscribedChannels));
+  }
+
+  private updateAssignedChannels() {
+    Logger.logAction(
+      Logger.LOG_DEBUG,
+      'ChannelGroups.updateAssignedChannels',
+      'activeChannels=' +
+        this.activeChannels +
+        ' assignedChannels=' +
+        this.assignedChannels +
+        ' consumerId=' +
+        this.consumerGroup.consumerId,
+    );
+
+    const matched = this.activeChannels
+      .filter((x) => this.expression.test(x))
+      .filter((x) => this.consumerGroup.assigned(x));
+
+    const { add, remove } = diffSets(this.assignedChannels, matched);
+    this.assignedChannels = matched;
+
+    Logger.logAction(
+      Logger.LOG_MAJOR,
+      'ChannelGroups.updateAssignedChannels',
+      'computed channel diffs: add=' + add + ' remove=' + remove + ' consumerId=' + this.consumerGroup.consumerId,
+    );
+
+    this.removeSubscriptions(remove);
+    this.addSubscriptions(add);
+    Logger.logAction(
+      Logger.LOG_MAJOR,
+      'ChannelGroups.updateAssignedChannels',
+      'assignedChannels=' + this.assignedChannels + ' consumerId=' + this.consumerGroup.consumerId,
+    );
+  }
+
+  private unsubscribeTimeout(channel: string) {
+    const timeout = this.options?.subscriptionTimeout || 60 * 60 * 1000;
+    Logger.logAction(
+      Logger.LOG_MAJOR,
+      'ChannelGroups.addSubscriptions()',
+      'subscription timeout started on channel ' + channel + ' timeout = ' + timeout,
+    );
+    return setTimeout(() => {
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ChannelGroups.addSubscriptions()',
+        'subscription timeout expired on channel ' + channel,
+      );
+      this.removeSubscriptions([channel]);
+    }, timeout);
+  }
+
+  private async subscribeChannel(channel: string) {
+    try {
+      Logger.logAction(
+        Logger.LOG_MAJOR,
+        'ChannelGroups.subscribeChannel()',
+        'setting up subscription to channel ' + channel,
+      );
+      this.subscribedChannels[channel] = this.channels.get(this.safeChannelName(channel));
+      this.subscribedChannels[channel].on(['detached', 'failed'], (event: ChannelStateChange) => {
+        Logger.logAction(
+          Logger.LOG_MAJOR,
+          'ChannelGroups.subscribeChannel()',
+          'clearing subscribe timeout; event = ' + event.current,
+        );
+        clearTimeout(this.channelTimers[channel]);
+        delete this.channelTimers[channel];
+      });
+      this.channelTimers[channel] = this.unsubscribeTimeout(channel);
+      await this.subscribedChannels[channel].setOptions({ params: { rewind: this.options?.rewind || '5s' } });
+      await this.subscribedChannels[channel].attach();
+      await this.subscribedChannels[channel].subscribe((msg: any) => {
+        clearTimeout(this.channelTimers[channel]);
+        this.channelTimers[channel] = this.unsubscribeTimeout(channel);
+        this.subscriptions.emit('message', channel, msg);
+      });
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ChannelGroups.subscribeChannel()',
+        'setup channel subscription failed on channel ' + channel + '; err = ' + Utils.inspectError(err),
+      );
+    }
+  }
+
+  private async unsubscribeChannel(channel: string) {
+    try {
+      Logger.logAction(Logger.LOG_MAJOR, 'ChannelGroups.unsubscribeChannel()', 'unsubscribing from channel ' + channel);
+      clearTimeout(this.channelTimers[channel]);
+      delete this.channelTimers[channel];
+      this.subscribedChannels[channel].unsubscribe();
+      await this.subscribedChannels[channel].detach();
+      delete this.subscribedChannels[channel];
+    } catch (err) {
+      Logger.logAction(
+        Logger.LOG_ERROR,
+        'ChannelGroups.unsubscribeChannel()',
+        'failed to unsubscribe from channel ' + channel + '; err = ' + Utils.inspectError(err),
+      );
+    }
+  }
+
+  private addSubscriptions(channels: string[]) {
+    channels.forEach((channel) => {
+      if (this.subscribedChannels[channel]) {
+        return;
+      }
+      this.subscribeChannel(channel);
+    });
+  }
+
+  private removeSubscriptions(channels: string[]) {
+    channels.forEach((channel) => {
+      if (!this.subscribedChannels[channel]) {
+        return;
+      }
+      this.unsubscribeChannel(channel);
+    });
+  }
+
+  async subscribe(cb: (channel: string, msg: any) => void): Promise<void> {
+    await this.join();
+    this.subscriptions.on('message', cb);
+  }
+
+  unsubscribe(cb: (channel: string, msg: any) => void): void {
+    this.subscriptions.off('message', cb);
+  }
+}
+
+function diffSets(current: string[], updated: string[]): { add: string[]; remove: string[] } {
+  const remove = current.filter((x) => !updated.includes(x));
+  const add = updated.filter((x) => !current.includes(x));
+
+  return { add, remove };
 }
 
 class Channels extends EventEmitter {
@@ -202,3 +552,4 @@ class Channels extends EventEmitter {
 }
 
 export default BaseRealtime;
+export { ChannelGroups };
