@@ -753,9 +753,7 @@ class RealtimeChannel extends EventEmitter {
   checkPendingState(): void {
     /* if can't send events, do nothing */
     const cmState = this.connectionManager.state;
-    /* Allow attach messages to queue up when synchronizing, since this will be
-     * the state we'll be in when upgrade transport.active triggers a checkpendingstate */
-    if (!(cmState.sendEvents || cmState.forceQueueEvents)) {
+    if (!cmState.sendEvents) {
       Logger.logAction(
         Logger.LOG_MINOR,
         'RealtimeChannel.checkPendingState',

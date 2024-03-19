@@ -9,7 +9,7 @@ import ProtocolMessage, {
 } from '../types/protocolmessage';
 import ErrorInfo from '../types/errorinfo';
 import NodeWebSocket from 'ws';
-import ConnectionManager, { TransportParams, TransportStorage } from './connectionmanager';
+import ConnectionManager, { TransportParams } from './connectionmanager';
 import Auth from '../client/auth';
 import { TransportNames } from 'common/constants/TransportName';
 
@@ -29,7 +29,7 @@ class WebSocketTransport extends Transport {
     super(connectionManager, auth, params);
     /* If is a browser, can't detect pings, so request protocol heartbeats */
     params.heartbeats = Platform.Config.useProtocolHeartbeats;
-    this.wsHost = Defaults.getHost(params.options, params.host, true);
+    this.wsHost = params.host as string;
   }
 
   static isAvailable() {
@@ -209,10 +209,4 @@ class WebSocketTransport extends Transport {
   }
 }
 
-function initialiseTransport(transportStorage: TransportStorage): typeof WebSocketTransport {
-  if (WebSocketTransport.isAvailable()) transportStorage.supportedTransports[shortName] = WebSocketTransport;
-
-  return WebSocketTransport;
-}
-
-export default initialiseTransport;
+export default WebSocketTransport;

@@ -165,7 +165,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Check that a message published on one transport that has not yet been
      * acked will be republished with the same msgSerial on a new transport (eg
-     * after a resume or an upgrade), before any new messages are send (and
+     * after a resume), before any new messages are send (and
      * without being merged with new messages)
      */
     it('connectionQueuing', function (done) {

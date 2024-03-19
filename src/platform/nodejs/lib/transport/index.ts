@@ -1,11 +1,12 @@
 import { TransportNames } from 'common/constants/TransportName';
-import initialiseNodeCometTransport from './nodecomettransport';
-import { default as initialiseWebSocketTransport } from '../../../../common/lib/transport/websockettransport';
+import NodeCometTransport from './nodecomettransport';
+import { default as WebSocketTransport } from '../../../../common/lib/transport/websockettransport';
+import { TransportCtor } from 'common/lib/transport/transport';
 
 export default {
   order: [TransportNames.Comet],
   bundledImplementations: {
-    [TransportNames.WebSocket]: initialiseWebSocketTransport,
-    [TransportNames.Comet]: initialiseNodeCometTransport,
+    [TransportNames.WebSocket]: WebSocketTransport as TransportCtor,
+    [TransportNames.Comet]: NodeCometTransport as unknown as TransportCtor,
   },
 };

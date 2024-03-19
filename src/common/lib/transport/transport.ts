@@ -12,19 +12,23 @@ import Auth from '../client/auth';
 import * as API from '../../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Platform from 'common/platform';
-import TransportName from '../../constants/TransportName';
+import TransportName from 'common/constants/TransportName';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
   transport?: Transport,
 ) => void;
 
-export type TransportCtor = new (
-  connectionManager: ConnectionManager,
-  auth: Auth,
-  params: TransportParams,
-  forceJsonProtocol?: boolean,
-) => Transport;
+export interface TransportCtor {
+  new (
+    connectionManager: ConnectionManager,
+    auth: Auth,
+    params: TransportParams,
+    forceJsonProtocol?: boolean,
+  ): Transport;
+
+  isAvailable(): boolean;
+}
 
 const closeMessage = protocolMessageFromValues({ action: actions.CLOSE });
 const disconnectMessage = protocolMessageFromValues({ action: actions.DISCONNECT });
@@ -60,7 +64,6 @@ abstract class Transport extends EventEmitter {
       params.heartbeats = true;
     }
     this.connectionManager = connectionManager;
-    connectionManager.registerProposedTransport(this);
     this.auth = auth;
     this.params = params;
     this.timeouts = params.options.timeouts;
@@ -292,7 +295,7 @@ abstract class Transport extends EventEmitter {
     auth: Auth,
     transportParams: TransportParams,
     callback: TryConnectCallback,
-  ): void {
+  ): Transport {
     const transport = new transportCtor(connectionManager, auth, transportParams);
 
     let transportAttemptTimer: NodeJS.Timeout | number;
@@ -320,9 +323,14 @@ abstract class Transport extends EventEmitter {
       callback(null, transport);
     });
     transport.connect();
+    return transport;
   }
 
   onAuthUpdated?: (tokenDetails: API.TokenDetails) => void;
+
+  static isAvailable(): boolean {
+    throw new ErrorInfo('isAvailable not implemented for transport', 50000, 500);
+  }
 }
 
 export default Transport;

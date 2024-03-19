@@ -282,9 +282,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       },
       true,
     );
-    /* NB upgrade is excluded because realtime now sends an ATTACHED
-     * post-upgrade, which can race with the DETACHED if the DETACH is only sent
-     * just after upgrade. Re-include it with 1.1 spec which has IDs in ATTACHs */
 
     /*
      * Attach with an empty channel and expect a channel error
@@ -685,10 +682,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 },
                 function (cb) {
                   var channelUpdated = false;
-                  // attached or update: in case this is happening in parallel with
-                  // a transport upgrade, we might flip to attaching, meaning it'll come
-                  // through as attached not update
-                  channel._allChannelChanges.on(['attached', 'update'], function () {
+                  channel._allChannelChanges.on(['update'], function () {
                     channelUpdated = true;
                   });
 

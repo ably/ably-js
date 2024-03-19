@@ -113,7 +113,7 @@ const client = new BaseRealtime({
 You must provide:
 
 - at least one HTTP request implementation; that is, one of `FetchRequest` or `XHRRequest`;
-- at least one realtime transport implementation; that is, one of `WebSocketTransport`, `XHRStreaming`, or `XHRPolling`.
+- at least one realtime transport implementation; that is, one of `WebSocketTransport` or `XHRPolling`.
 
 `BaseRealtime` offers the same API as the `Realtime` class described in the rest of this `README`. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
 

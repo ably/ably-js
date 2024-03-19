@@ -297,7 +297,7 @@ export type HTTPMethod = HTTPMethods.GET | HTTPMethods.POST;
 /**
  * A type which specifies the valid transport names. [See here](https://faqs.ably.com/which-transports-are-supported) for more information.
  */
-export type Transport = 'web_socket' | 'xhr_streaming' | 'xhr_polling' | 'comet';
+export type Transport = 'web_socket' | 'xhr_polling' | 'comet';
 
 /**
  * Contains the details of a {@link Channel} or {@link RealtimeChannel} object such as its ID and {@link ChannelStatus}.

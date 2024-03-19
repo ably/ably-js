@@ -138,15 +138,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     }
 
-    testOnAllTransports(
-      'resume_inactive',
-      function (realtimeOpts) {
-        return function (done) {
-          resume_inactive(done, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
-        };
-      },
-      /* excludeUpgrade: */ true,
-    );
+    testOnAllTransports('resume_inactive', function (realtimeOpts) {
+      return function (done) {
+        resume_inactive(done, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
+      };
+    });
 
     /**
      * Simple resume case
@@ -259,15 +255,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     }
 
-    testOnAllTransports(
-      'resume_active',
-      function (realtimeOpts) {
-        return function (done) {
-          resume_active(done, 'resume_active' + String(Math.random()), {}, realtimeOpts);
-        };
-      },
-      /* excludeUpgrade: */ true,
-    );
+    testOnAllTransports('resume_active', function (realtimeOpts) {
+      return function (done) {
+        resume_active(done, 'resume_active' + String(Math.random()), {}, realtimeOpts);
+      };
+    });
 
     /* RTN15c3
      * Resume with loss of continuity
@@ -547,8 +539,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * connection was > connectionStateTtl ago
      */
     it('no_resume_last_activity', function (done) {
-      /* Specify a best transport so that upgrade activity doesn't reset the last activity timer */
-      var realtime = helper.AblyRealtime({ transports: [bestTransport] }),
+      var realtime = helper.AblyRealtime(),
         connection = realtime.connection,
         connectionManager = connection.connectionManager;
 

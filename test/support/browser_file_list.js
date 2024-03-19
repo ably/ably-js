@@ -43,7 +43,7 @@ window.__testFiles__.files = {
   'test/realtime/reauth.test.js': true,
   'test/realtime/resume.test.js': true,
   'test/realtime/sync.test.js': true,
-  'test/realtime/upgrade.test.js': true,
+  'test/realtime/transports.test.js': true,
   'test/rest/auth.test.js': true,
   'test/rest/bufferutils.test.js': true,
   'test/rest/capability.test.js': true,

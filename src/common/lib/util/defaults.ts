@@ -28,8 +28,8 @@ type CompleteDefaults = IDefaults & {
     connectionStateTtl: number;
     realtimeRequestTimeout: number;
     recvTimeout: number;
-    preferenceConnectTimeout: number;
-    parallelUpgradeDelay: number;
+    webSocketConnectTimeout: number;
+    webSocketSlowTimeout: number;
   };
   httpMaxRetryCount: number;
   maxMessageSize: number;
@@ -41,7 +41,7 @@ type CompleteDefaults = IDefaults & {
   getHttpScheme(options: ClientOptions): string;
   environmentFallbackHosts(environment: string): string[];
   getFallbackHosts(options: NormalisedClientOptions): string[];
-  getHosts(options: NormalisedClientOptions): string[];
+  getHosts(options: NormalisedClientOptions, ws?: boolean): string[];
   checkHost(host: string): void;
   getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
   objectifyOptions(
@@ -80,8 +80,8 @@ const Defaults = {
     connectionStateTtl: 120000,
     realtimeRequestTimeout: 10000,
     recvTimeout: 90000,
-    preferenceConnectTimeout: 6000,
-    parallelUpgradeDelay: 6000,
+    webSocketConnectTimeout: 10000,
+    webSocketSlowTimeout: 4000,
   },
   httpMaxRetryCount: 3,
   maxMessageSize: 65536,
@@ -136,8 +136,9 @@ export function getFallbackHosts(options: NormalisedClientOptions): string[] {
   return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
 }
 
-export function getHosts(options: NormalisedClientOptions): string[] {
-  return [options.restHost].concat(getFallbackHosts(options));
+export function getHosts(options: NormalisedClientOptions, ws?: boolean): string[] {
+  const hosts = [options.restHost].concat(getFallbackHosts(options));
+  return ws ? hosts.map((host) => getHost(options, host, true)) : hosts;
 }
 
 function checkHost(host: string): void {

@@ -20,10 +20,13 @@ var shortName = TransportNames.Comet;
  * to simulate an XHR transport for test purposes
  */
 class NodeCometTransport extends CometTransport {
-  httpAgent = null;
-  httpsAgent = null;
-  pendingRequests = 0;
-  shortName = shortName;
+  constructor(connectionManager, auth, params) {
+    super(connectionManager, auth, params);
+    this.httpAgent = null;
+    this.httpsAgent = null;
+    this.pendingRequests = 0;
+    this.shortName = shortName;
+  }
 
   static isAvailable() {
     return true;
@@ -316,10 +319,4 @@ class Request extends EventEmitter {
   }
 }
 
-var initialiseNodeCometTransport = function (transportStorage) {
-  transportStorage.supportedTransports[shortName] = NodeCometTransport;
-
-  return NodeCometTransport;
-};
-
-export default initialiseNodeCometTransport;
+export default NodeCometTransport;

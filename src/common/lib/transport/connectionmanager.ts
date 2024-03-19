@@ -42,13 +42,6 @@ function clearSessionRecoverData() {
   return haveSessionStorage() && Platform.WebStorage?.removeSession?.(sessionRecoveryName);
 }
 
-function betterTransportThan(a: Transport, b: Transport) {
-  return (
-    Platform.Defaults.transportPreferenceOrder.indexOf(a.shortName) >
-    Platform.Defaults.transportPreferenceOrder.indexOf(b.shortName)
-  );
-}
-
 function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number) {
   let action;
   if (dest.channel !== src.channel) {
@@ -122,9 +115,6 @@ export class TransportParams {
     const params = authParams ? Utils.copy(authParams) : {};
     const options = this.options;
     switch (this.mode) {
-      case 'upgrade':
-        params.upgrade = this.connectionKey as string;
-        break;
       case 'resume':
         params.resume = this.connectionKey as string;
         break;
@@ -184,7 +174,6 @@ type ConnectionState = {
   sendEvents?: boolean;
   failState?: string;
   retryDelay?: number;
-  forceQueueEvents?: boolean;
   retryImmediately?: boolean;
   error?: IPartialErrorInfo;
 };
@@ -204,18 +193,18 @@ class ConnectionManager extends EventEmitter {
   connectionStateTtl: number;
   maxIdleInterval: number | null;
   transports: TransportName[];
-  baseTransport: TransportName;
-  upgradeTransports: TransportName[];
+  baseTransport?: TransportName;
+  webSocketTransportAvailable?: true;
   transportPreference: string | null;
   httpHosts: string[];
+  wsHosts: string[];
   activeProtocol: null | Protocol;
-  proposedTransports: Transport[];
-  pendingTransports: Transport[];
+  pendingTransport?: Transport;
+  proposedTransport?: Transport;
   host: string | null;
   lastAutoReconnectAttempt: number | null;
   lastActivity: number | null;
   forceFallbackHost: boolean;
-  connectCounter: number;
   transitionTimer?: number | NodeJS.Timeout | null;
   suspendTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
@@ -226,6 +215,11 @@ class ConnectionManager extends EventEmitter {
     // The messages remaining to be processed (excluding any message currently being processed)
     queue: { message: ProtocolMessage; transport: Transport }[];
   } = { isProcessing: false, queue: [] };
+  webSocketSlowTimer: NodeJS.Timeout | null;
+  wsCheckResult: boolean | null;
+  webSocketGiveUpTimer: NodeJS.Timeout | null;
+  abandonedWebSocket: boolean;
+  connectCounter: number;
 
   constructor(realtime: BaseRealtime, options: NormalisedClientOptions) {
     super();
@@ -233,10 +227,10 @@ class ConnectionManager extends EventEmitter {
     this.initTransports();
     this.options = options;
     const timeouts = options.timeouts;
-    /* connectingTimeout: leave preferenceConnectTimeout (~6s) to try the
-     * preference transport, then realtimeRequestTimeout (~10s) to establish
+    /* connectingTimeout: leave webSocketConnectTimeout (~6s) to try the
+     * websocket transport, then realtimeRequestTimeout (~10s) to establish
      * the base transport in case that fails */
-    const connectingTimeout = timeouts.preferenceConnectTimeout + timeouts.realtimeRequestTimeout;
+    const connectingTimeout = timeouts.webSocketConnectTimeout + timeouts.realtimeRequestTimeout;
     this.states = {
       initialized: {
         state: 'initialized',
@@ -258,14 +252,6 @@ class ConnectionManager extends EventEmitter {
         terminal: false,
         queueEvents: false,
         sendEvents: true,
-        failState: 'disconnected',
-      },
-      synchronizing: {
-        state: 'connected',
-        terminal: false,
-        queueEvents: true,
-        sendEvents: false,
-        forceQueueEvents: true,
         failState: 'disconnected',
       },
       disconnected: {
@@ -307,21 +293,29 @@ class ConnectionManager extends EventEmitter {
     this.maxIdleInterval = null;
 
     this.transports = Utils.intersect(options.transports || Defaults.defaultTransports, this.supportedTransports);
-    /* baseTransports selects the leftmost transport in the Defaults.baseTransportOrder list
-     * that's both requested and supported. */
-    this.baseTransport = Utils.intersect(Defaults.baseTransportOrder, this.transports)[0];
-    this.upgradeTransports = Utils.intersect(this.transports, Defaults.upgradeTransports);
     this.transportPreference = null;
 
+    if (this.transports.includes(TransportNames.WebSocket)) {
+      this.webSocketTransportAvailable = true;
+    }
+    if (this.transports.includes(TransportNames.XhrPolling)) {
+      this.baseTransport = TransportNames.XhrPolling;
+    } else if (this.transports.includes(TransportNames.Comet)) {
+      this.baseTransport = TransportNames.Comet;
+    }
+
     this.httpHosts = Defaults.getHosts(options);
+    this.wsHosts = Defaults.getHosts(options, true);
     this.activeProtocol = null;
-    this.proposedTransports = [];
-    this.pendingTransports = [];
     this.host = null;
     this.lastAutoReconnectAttempt = null;
     this.lastActivity = null;
     this.forceFallbackHost = false;
     this.connectCounter = 0;
+    this.wsCheckResult = null;
+    this.webSocketSlowTimer = null;
+    this.webSocketGiveUpTimer = null;
+    this.abandonedWebSocket = false;
 
     Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
     Logger.logAction(
@@ -371,10 +365,7 @@ class ConnectionManager extends EventEmitter {
           this.requestState({ state: 'connecting' });
         } else if (this.state == this.states.connecting) {
           // RTN20c: if 'online' event recieved while CONNECTING, abandon connection attempt and retry
-          this.pendingTransports.forEach(function (transport) {
-            // Detach transport listeners to avoid connection state side effects from calling dispose
-            transport.off();
-          });
+          this.pendingTransport?.off();
           this.disconnectAllTransports();
 
           this.startConnect();
@@ -411,14 +402,10 @@ class ConnectionManager extends EventEmitter {
   private static initTransports(additionalImplementations: TransportImplementations, storage: TransportStorage) {
     const implementations = { ...Platform.Transports.bundledImplementations, ...additionalImplementations };
 
-    const initialiseWebSocketTransport = implementations[TransportNames.WebSocket];
-    if (initialiseWebSocketTransport) {
-      initialiseWebSocketTransport(storage);
-    }
-    Platform.Transports.order.forEach(function (transportName) {
-      const initFn = implementations[transportName];
-      if (initFn) {
-        initFn(storage);
+    [TransportNames.WebSocket, ...Platform.Transports.order].forEach((transportName) => {
+      const transport = implementations[transportName];
+      if (transport && transport.isAvailable()) {
+        storage.supportedTransports[transportName] = transport;
       }
     });
   }
@@ -496,7 +483,7 @@ class ConnectionManager extends EventEmitter {
   tryATransport(transportParams: TransportParams, candidate: TransportName, callback: Function): void {
     Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
-    Transport.tryConnect(
+    this.proposedTransport = Transport.tryConnect(
       this.supportedTransports[candidate]!,
       this,
       this.realtime.auth,
@@ -581,33 +568,13 @@ class ConnectionManager extends EventEmitter {
       'transport = ' + transport + '; mode = ' + mode,
     );
 
-    Utils.arrDeleteValue(this.proposedTransports, transport);
-    this.pendingTransports.push(transport);
-    const optimalTransport =
-      Platform.Defaults.transportPreferenceOrder[Platform.Defaults.transportPreferenceOrder.length - 1];
-    transport.once('connected', (error: ErrorInfo, connectionId: string, connectionDetails: Record<string, any>) => {
-      if (mode == 'upgrade' && this.activeProtocol) {
-        /*  if ws and xhrs are connecting in parallel, delay xhrs activation to let ws go ahead */
-        if (
-          transport.shortName !== optimalTransport &&
-          this.getUpgradePossibilities().includes(optimalTransport) &&
-          this.activeProtocol
-        ) {
-          setTimeout(() => {
-            this.scheduleTransportActivation(error, transport, connectionId, connectionDetails);
-          }, this.options.timeouts.parallelUpgradeDelay);
-        } else {
-          this.scheduleTransportActivation(error, transport, connectionId, connectionDetails);
-        }
-      } else {
-        this.activateTransport(error, transport, connectionId, connectionDetails);
+    this.pendingTransport = transport;
 
-        /* allow connectImpl to start the upgrade process if needed, but allow
-         * other event handlers, including activating the transport, to run first */
-        Platform.Config.nextTick(() => {
-          this.connectImpl(transportParams);
-        });
-      }
+    this.cancelWebSocketSlowTimer();
+    this.cancelWebSocketGiveUpTimer();
+
+    transport.once('connected', (error: ErrorInfo, connectionId: string, connectionDetails: Record<string, any>) => {
+      this.activateTransport(error, transport, connectionId, connectionDetails);
 
       if (mode === 'recover' && this.options.recover) {
         /* After a successful recovery, we unpersist, as a recovery key cannot
@@ -623,166 +590,6 @@ class ConnectionManager extends EventEmitter {
     });
 
     this.emit('transport.pending', transport);
-  }
-
-  /**
-   * Called when an upgrade transport is connected,
-   * to schedule the activation of that transport.
-   * @param error
-   * @param transport
-   * @param connectionId
-   * @param connectionDetails
-   */
-  scheduleTransportActivation(
-    error: ErrorInfo,
-    transport: Transport,
-    connectionId: string,
-    connectionDetails: Record<string, any>,
-  ): void {
-    const currentTransport = this.activeProtocol && this.activeProtocol.getTransport(),
-      abandon = () => {
-        transport.disconnect();
-        Utils.arrDeleteValue(this.pendingTransports, transport);
-      };
-
-    if (this.state !== this.states.connected && this.state !== this.states.connecting) {
-      /* This is most likely to happen for the delayed XHRs, when XHRs and ws are scheduled in parallel*/
-      Logger.logAction(
-        Logger.LOG_MINOR,
-        'ConnectionManager.scheduleTransportActivation()',
-        'Current connection state (' +
-          this.state.state +
-          (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') +
-          ') is not valid to upgrade in; abandoning upgrade to ' +
-          transport.shortName,
-      );
-      abandon();
-      return;
-    }
-
-    if (currentTransport && !betterTransportThan(transport, currentTransport)) {
-      Logger.logAction(
-        Logger.LOG_MINOR,
-        'ConnectionManager.scheduleTransportActivation()',
-        'Proposed transport ' +
-          transport.shortName +
-          ' is no better than current active transport ' +
-          currentTransport.shortName +
-          ' - abandoning upgrade',
-      );
-      abandon();
-      return;
-    }
-
-    Logger.logAction(
-      Logger.LOG_MINOR,
-      'ConnectionManager.scheduleTransportActivation()',
-      'Scheduling transport upgrade; transport = ' + transport,
-    );
-
-    let oldProtocol: Protocol | null = null;
-
-    if (!transport.isConnected) {
-      /* This is only possible if the xhr streaming transport was disconnected during the parallelUpgradeDelay */
-      Logger.logAction(
-        Logger.LOG_MINOR,
-        'ConnectionManager.scheduleTransportActivation()',
-        'Proposed transport ' + transport.shortName + 'is no longer connected; abandoning upgrade',
-      );
-      abandon();
-      return;
-    }
-
-    if (this.state === this.states.connected) {
-      Logger.logAction(
-        Logger.LOG_MICRO,
-        'ConnectionManager.scheduleTransportActivation()',
-        'Currently connected, so temporarily pausing events until the upgrade is complete',
-      );
-      this.state = this.states.synchronizing;
-      oldProtocol = this.activeProtocol;
-    } else if (this.state !== this.states.connecting) {
-      /* Note: upgrading from the connecting state is valid if the old active
-       * transport was deactivated after the upgrade transport first connected;
-       * see logic in deactivateTransport */
-      Logger.logAction(
-        Logger.LOG_MINOR,
-        'ConnectionManager.scheduleTransportActivation()',
-        'Current connection state (' +
-          this.state.state +
-          (this.state === this.states.synchronizing ? ', but with an upgrade already in progress' : '') +
-          ') is not valid to upgrade in; abandoning upgrade to ' +
-          transport.shortName,
-      );
-      abandon();
-      return;
-    }
-
-    Logger.logAction(
-      Logger.LOG_MINOR,
-      'ConnectionManager.scheduleTransportActivation()',
-      'Syncing transport; transport = ' + transport,
-    );
-
-    const finishUpgrade = () => {
-      Logger.logAction(
-        Logger.LOG_MINOR,
-        'ConnectionManager.scheduleTransportActivation()',
-        'Activating transport; transport = ' + transport,
-      );
-
-      // Send ACTIVATE to tell the server to make this transport the
-      // active transport, which suspends channels until we re-attach.
-      transport.send(
-        protocolMessageFromValues({
-          action: actions.ACTIVATE,
-        }),
-      );
-
-      this.activateTransport(error, transport, connectionId, connectionDetails);
-      /* Restore pre-sync state. If state has changed in the meantime,
-       * don't touch it -- since the websocket transport waits a tick before
-       * disposing itself, it's possible for it to have happily synced
-       * without err while, unknown to it, the connection has closed in the
-       * meantime and the ws transport is scheduled for death */
-      if (this.state === this.states.synchronizing) {
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'ConnectionManager.scheduleTransportActivation()',
-          'Pre-upgrade protocol idle, sending queued messages on upgraded transport; transport = ' + transport,
-        );
-        this.state = this.states.connected;
-      } else {
-        Logger.logAction(
-          Logger.LOG_MINOR,
-          'ConnectionManager.scheduleTransportActivation()',
-          'Pre-upgrade protocol idle, but state is now ' + this.state.state + ', so leaving unchanged',
-        );
-      }
-      if (this.state.sendEvents) {
-        this.sendQueuedMessages();
-      }
-    };
-
-    /* Wait until sync is done and old transport is idle before activating new transport. This
-     * guarantees that messages arrive at realtime in the same order they are sent.
-     *
-     * If a message times out on the old transport, since it's still the active transport the
-     * message will be requeued. deactivateTransport will see the pending transport and notify
-     * the `connecting` state without starting a new connection, so the new transport can take
-     * over once deactivateTransport clears the old protocol's queue.
-     *
-     * If there is no old protocol, that meant that we weren't in the connected state at the
-     * beginning of the sync - likely the base transport died just before the sync. So can just
-     * finish the upgrade. If we're actually in closing/failed rather than connecting, that's
-     * fine, activatetransport will deal with that. */
-    if (oldProtocol) {
-      /* Most of the time this will be already true: the new-transport sync will have given
-       * enough time for in-flight messages on the old transport to complete. */
-      oldProtocol.onceIdle(finishUpgrade);
-    } else {
-      finishUpgrade();
-    }
   }
 
   /**
@@ -839,8 +646,7 @@ class ConnectionManager extends EventEmitter {
       return false;
     }
 
-    /* remove this transport from pending transports */
-    Utils.arrDeleteValue(this.pendingTransports, transport);
+    delete this.pendingTransport;
 
     /* if the transport is not connected then don't activate it */
     if (!transport.isConnected) {
@@ -883,10 +689,7 @@ class ConnectionManager extends EventEmitter {
      * error). */
     if (existingState.state === this.states.connected.state) {
       if (error) {
-        /* if upgrading without error, leave any existing errorReason alone */
         this.errorReason = this.realtime.connection.errorReason = error;
-        /* Only bother emitting an upgrade if there's an error; otherwise it's
-         * just a transport upgrade, so auth details won't have changed */
         this.emit('update', new ConnectionStateChange(connectedState, connectedState, null, error));
       }
     } else {
@@ -929,38 +732,6 @@ class ConnectionManager extends EventEmitter {
       }
     }
 
-    // terminate any other pending transport(s), and abort any not-yet-pending transport attempts
-    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
-    this.pendingTransports.slice().forEach((pendingTransport) => {
-      if (pendingTransport === transport) {
-        const msg =
-          'Assumption violated: activating a transport that is still marked as a pending transport; transport = ' +
-          transport.shortName +
-          '; stack = ' +
-          new Error().stack;
-        Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
-        Utils.arrDeleteValue(this.pendingTransports, transport);
-      } else {
-        pendingTransport.disconnect();
-      }
-    });
-    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
-    this.proposedTransports.slice().forEach((proposedTransport: Transport) => {
-      if (proposedTransport === transport) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'ConnectionManager.activateTransport()',
-          'Assumption violated: activating a transport that is still marked as a proposed transport; transport = ' +
-            transport.shortName +
-            '; stack = ' +
-            new Error().stack,
-        );
-        Utils.arrDeleteValue(this.proposedTransports, transport);
-      } else {
-        proposedTransport.dispose();
-      }
-    });
-
     return true;
   }
 
@@ -972,8 +743,7 @@ class ConnectionManager extends EventEmitter {
   deactivateTransport(transport: Transport, state: string, error: ErrorInfo): void {
     const currentProtocol = this.activeProtocol,
       wasActive = currentProtocol && currentProtocol.getTransport() === transport,
-      wasPending = Utils.arrDeleteValue(this.pendingTransports, transport),
-      wasProposed = Utils.arrDeleteValue(this.proposedTransports, transport),
+      wasPending = transport === this.pendingTransport,
       noTransportsScheduledForActivation = this.noTransportsScheduledForActivation();
 
     Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
@@ -982,7 +752,7 @@ class ConnectionManager extends EventEmitter {
       'ConnectionManager.deactivateTransport()',
       'state = ' +
         state +
-        (wasActive ? '; was active' : wasPending ? '; was pending' : wasProposed ? '; was proposed' : '') +
+        (wasActive ? '; was active' : wasPending ? '; was pending' : '') +
         (noTransportsScheduledForActivation ? '' : '; another transport is scheduled for activation'),
     );
     if (error && error.message)
@@ -997,13 +767,8 @@ class ConnectionManager extends EventEmitter {
           ' pending messages',
       );
       this.queuePendingMessages((currentProtocol as Protocol).getPendingMessages());
-      /* Clear any messages we requeue to allow the protocol to become idle.
-       * In case of an upgrade, this will trigger an immediate activation of
-       * the upgrade transport, so delay a tick so this transport can finish
-       * deactivating */
-      Platform.Config.nextTick(function () {
-        (currentProtocol as Protocol).clearPendingMessages();
-      });
+      /* Clear any messages we requeue to allow the protocol to become idle.*/
+      (currentProtocol as Protocol).clearPendingMessages();
       this.activeProtocol = this.host = null;
     }
 
@@ -1022,7 +787,7 @@ class ConnectionManager extends EventEmitter {
       (wasActive && noTransportsScheduledForActivation) ||
       (wasActive && state === 'failed') ||
       state === 'closed' ||
-      (currentProtocol === null && wasPending && this.pendingTransports.length === 0)
+      (currentProtocol === null && wasPending)
     ) {
       /* If we're disconnected with a 5xx we need to try fallback hosts
        * (RTN14d), but (a) due to how the upgrade sequence works, the
@@ -1047,37 +812,13 @@ class ConnectionManager extends EventEmitter {
       this.notifyState({ state: newConnectionState, error: error });
       return;
     }
-
-    if (wasActive && state === 'disconnected' && this.state !== this.states.synchronizing) {
-      /* If we were active but there is another transport scheduled for
-       * activation, go into to the connecting state until that transport
-       * activates and sets us back to connected. (manually starting the
-       * transition timers in case that never happens). (If we were in the
-       * synchronizing state, then that's fine, the old transport just got its
-       * disconnected before the new one got the sync -- ignore it and keep
-       * waiting for the sync. If it fails we have a separate sync timer that
-       * will expire). */
-      Logger.logAction(
-        Logger.LOG_MICRO,
-        'ConnectionManager.deactivateTransport()',
-        'wasActive but another transport is connected and scheduled for activation, so going into the connecting state until it activates',
-      );
-      this.startSuspendTimer();
-      this.startTransitionTimer(this.states.connecting);
-      this.notifyState({ state: 'connecting', error: error });
-    }
   }
 
   /* Helper that returns true if there are no transports which are pending,
    * have been connected, and are just waiting for onceNoPending to fire before
    * being activated */
   noTransportsScheduledForActivation(): boolean {
-    return (
-      Utils.isEmpty(this.pendingTransports) ||
-      this.pendingTransports.every(function (transport) {
-        return !transport.isConnected;
-      })
-    );
+    return !this.pendingTransport || !this.pendingTransport.isConnected;
   }
 
   setConnection(connectionId: string, connectionDetails: Record<string, any>, hasConnectionError?: boolean): void {
@@ -1297,6 +1038,92 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
+  startWebSocketSlowTimer() {
+    this.webSocketSlowTimer = setTimeout(() => {
+      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager WebSocket slow timer', 'checking connectivity');
+      if (this.wsCheckResult === null) {
+        this.checkWsConnectivity()
+          .then(() => {
+            Logger.logAction(
+              Logger.LOG_MINOR,
+              'ConnectionManager WebSocket slow timer',
+              'ws connectivity check succeeded',
+            );
+            this.wsCheckResult = true;
+          })
+          .catch(() => {
+            Logger.logAction(
+              Logger.LOG_MAJOR,
+              'ConnectionManager WebSocket slow timer',
+              'ws connectivity check failed',
+            );
+            this.wsCheckResult = false;
+          });
+      }
+      if (this.realtime.http.checkConnectivity) {
+        Utils.whenPromiseSettles(this.realtime.http.checkConnectivity(), (err, connectivity) => {
+          if (err || !connectivity) {
+            Logger.logAction(
+              Logger.LOG_MAJOR,
+              'ConnectionManager WebSocket slow timer',
+              'http connectivity check failed',
+            );
+            this.cancelWebSocketGiveUpTimer();
+            this.notifyState({
+              state: 'disconnected',
+              error: new ErrorInfo("new ErrorInfo('Unable to connect (network unreachable)'", 80003, 404),
+            });
+          } else {
+            Logger.logAction(
+              Logger.LOG_MINOR,
+              'ConnectionManager WebSocket slow timer',
+              'http connectivity check succeeded',
+            );
+          }
+        });
+      }
+    }, this.options.timeouts.webSocketSlowTimeout);
+  }
+
+  cancelWebSocketSlowTimer() {
+    if (this.webSocketSlowTimer) {
+      clearTimeout(this.webSocketSlowTimer);
+      this.webSocketSlowTimer = null;
+    }
+  }
+
+  startWebSocketGiveUpTimer(transportParams: TransportParams) {
+    this.webSocketGiveUpTimer = setTimeout(() => {
+      if (!this.wsCheckResult) {
+        Logger.logAction(
+          Logger.LOG_MINOR,
+          'ConnectionManager WebSocket give up timer',
+          'websocket connection took more than 10s; ' + (this.baseTransport ? 'trying base transport' : ''),
+        );
+        if (this.baseTransport) {
+          this.abandonedWebSocket = true;
+          this.proposedTransport?.dispose();
+          this.pendingTransport?.dispose();
+          this.connectBase(transportParams, ++this.connectCounter);
+        } else {
+          // if we don't have a base transport to fallback to, just let the websocket connection attempt time out
+          Logger.logAction(
+            Logger.LOG_MAJOR,
+            'ConnectionManager WebSocket give up timer',
+            'websocket connectivity appears to be unavailable but no other transports to try',
+          );
+        }
+      }
+    }, this.options.timeouts.webSocketConnectTimeout);
+  }
+
+  cancelWebSocketGiveUpTimer() {
+    if (this.webSocketGiveUpTimer) {
+      clearTimeout(this.webSocketGiveUpTimer);
+      this.webSocketGiveUpTimer = null;
+    }
+  }
+
   notifyState(indicated: ConnectionState): void {
     const state = indicated.state;
 
@@ -1311,7 +1138,6 @@ class ConnectionManager extends EventEmitter {
     const retryImmediately =
       state === 'disconnected' &&
       (this.state === this.states.connected ||
-        this.state === this.states.synchronizing ||
         indicated.retryImmediately ||
         (this.state === this.states.connecting &&
           indicated.error &&
@@ -1330,6 +1156,8 @@ class ConnectionManager extends EventEmitter {
      * state), as these are superseded by this notification */
     this.cancelTransitionTimer();
     this.cancelRetryTimer();
+    this.cancelWebSocketSlowTimer();
+    this.cancelWebSocketGiveUpTimer();
     this.checkSuspendTimer(indicated.state);
 
     if (state === 'suspended' || state === 'connected') {
@@ -1419,6 +1247,8 @@ class ConnectionManager extends EventEmitter {
     if (state == this.state.state) return; /* silently do nothing */
 
     /* kill running timers, as this request supersedes them */
+    this.cancelWebSocketSlowTimer();
+    this.cancelWebSocketGiveUpTimer();
     this.cancelTransitionTimer();
     this.cancelRetryTimer();
     /* for suspend timer check rather than cancel -- eg requesting a connecting
@@ -1511,129 +1341,131 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  /**
-   * There are three stages in connecting:
-   * - preference: if there is a cached transport preference, we try to connect
-   *   on that. If that fails or times out we abort the attempt, remove the
-   *   preference and fall back to base. If it succeeds, we try upgrading it if
-   *   needed (will only be in the case where the preference is xhrs and the
-   *   browser supports ws).
-   * - base: we try to connect with the best transport that we think will
-   *   never fail for this platform. If it doesn't work, we try fallback hosts.
-   * - upgrade: given a connected transport, we see if there are any better
-   *   ones, and if so, try to upgrade to them.
+  /*
+   * there are, at most, two transports available with which a connection may
+   * be attempted: web_socket and/or a base transport (xhr_polling in browsers,
+   * comet in nodejs). web_socket is always preferred, and the base transport is
+   * only used in case web_socket connectivity appears to be unavailable.
    *
-   * connectImpl works out what stage you're at (which is purely a function of
-   * the current connection state and whether there are any stored preferences),
-   * and dispatches accordingly. After a transport has been set pending,
-   * tryATransport calls connectImpl to see if there's another stage to be done.
-   * */
-  connectImpl(transportParams: TransportParams, connectCount?: number): void {
+   * connectImpl begins the transport selection process by checking which transports
+   * are available, and if there is a cached preference. It then defers to the
+   * transport-specific connect methods: connectWs and connectBase.
+   *
+   * It is also responsible for invalidating the cache in the case that a base
+   * transport preference is stored but web socket connectivity is now available.
+   *
+   * handling of the case where we need to failover from web_socket to the base
+   * transport is implemented in the connectWs method.
+   */
+  connectImpl(transportParams: TransportParams, connectCount: number): void {
     const state = this.state.state;
-
-    if (state !== this.states.connecting.state && state !== this.states.connected.state) {
+    if (state !== this.states.connecting.state) {
       /* Only keep trying as long as in the 'connecting' state (or 'connected'
        * for upgrading). Any operation can put us into 'disconnected' to cancel
        * connection attempts and wait before retrying, or 'failed' to fail. */
       Logger.logAction(
         Logger.LOG_MINOR,
         'ConnectionManager.connectImpl()',
-        'Must be in connecting state to connect (or connected to upgrade), but was ' + state,
+        'Must be in connecting state to connect, but was ' + state,
       );
-    } else if (this.pendingTransports.length) {
-      Logger.logAction(
-        Logger.LOG_MINOR,
-        'ConnectionManager.connectImpl()',
-        'Transports ' + this.pendingTransports[0].toString() + ' currently pending; taking no action',
-      );
-    } else if (state == this.states.connected.state) {
-      this.upgradeIfNeeded(transportParams);
-    } else if (this.transports.length > 1 && this.getTransportPreference()) {
-      this.connectPreference(transportParams, connectCount);
-    } else {
+      return;
+    }
+
+    const transportPreference = this.getTransportPreference();
+
+    // If transport preference is for a non-ws transport but websocket is now available, unpersist the preference for next time
+    if (transportPreference && transportPreference === this.baseTransport && this.webSocketTransportAvailable) {
+      this.checkWsConnectivity()
+        .then(() => {
+          this.wsCheckResult = true;
+          this.abandonedWebSocket = false;
+          this.unpersistTransportPreference();
+          if (this.state === this.states.connecting) {
+            Logger.logAction(
+              Logger.LOG_MINOR,
+              'ConnectionManager.connectImpl():',
+              'web socket connectivity available, cancelling connection attempt with ' + this.baseTransport,
+            );
+            this.disconnectAllTransports();
+            this.connectWs(transportParams, ++this.connectCounter);
+          }
+        })
+        .catch(noop);
+    }
+
+    if (
+      (transportPreference && transportPreference === this.baseTransport) ||
+      (this.baseTransport && !this.webSocketTransportAvailable)
+    ) {
       this.connectBase(transportParams, connectCount);
+    } else {
+      this.connectWs(transportParams, connectCount);
     }
   }
 
-  connectPreference(transportParams: TransportParams, connectCount?: number): void {
-    const preference = this.getTransportPreference();
-    let preferenceTimeoutExpired = false;
+  /*
+   * connectWs starts two timers to monitor the success of a web_socket connection attempt:
+   * - webSocketSlowTimer: if this timer fires before the connection succeeds,
+   *   cm will simultaneously check websocket and http/xhr connectivity. if the http
+   *   connectivity check fails, we give up the connection sequence entirely and
+   *   transition to disconnected. if the websocket connectivity check fails then
+   *   we assume no ws connectivity and failover to base transport. in the case that
+   *   the checks succeed, we continue with websocket and wait for it to try fallback hosts
+   *   and, if unsuccessful, ultimately transition to disconnected.
+   * - webSocketGiveUpTimer: if this timer fires, and the preceding websocket
+   *   connectivity check is still pending then we assume that there is an issue
+   *   with the transport and fallback to base transport.
+   */
+  connectWs(transportParams: TransportParams, connectCount: number) {
+    Logger.logAction(Logger.LOG_DEBUG, 'ConnectionManager.connectWs()');
+    this.startWebSocketSlowTimer();
+    this.startWebSocketGiveUpTimer(transportParams);
 
-    if (!this.transports.includes(preference)) {
-      this.unpersistTransportPreference();
-      this.connectImpl(transportParams, connectCount);
-    }
-
-    Logger.logAction(
-      Logger.LOG_MINOR,
-      'ConnectionManager.connectPreference()',
-      'Trying to connect with stored transport preference ' + preference,
-    );
-
-    const preferenceTimeout = setTimeout(() => {
-      preferenceTimeoutExpired = true;
-      if (!(this.state.state === this.states.connected.state)) {
-        Logger.logAction(
-          Logger.LOG_MINOR,
-          'ConnectionManager.connectPreference()',
-          'Shortcircuit connection attempt with ' + preference + ' failed; clearing preference and trying from scratch',
-        );
-        /* Abort all connection attempts. (This also disconnects the active
-         * protocol, but none exists if we're not in the connected state) */
-        this.disconnectAllTransports();
-        /* Be quite agressive about clearing the stored preference if ever it doesn't work */
-        this.unpersistTransportPreference();
-      }
-      this.connectImpl(transportParams, connectCount);
-    }, this.options.timeouts.preferenceConnectTimeout);
-
-    /* For connectPreference, just use the main host. If host fallback is needed, do it in connectBase.
-     * The wstransport it will substitute the httphost for an appropriate wshost */
-    transportParams.host = this.httpHosts[0];
-    this.tryATransport(transportParams, preference, (fatal: boolean, transport: Transport) => {
-      clearTimeout(preferenceTimeout);
-      if (preferenceTimeoutExpired && transport) {
-        /* Viable, but too late - connectImpl() will already be trying
-         * connectBase, and we weren't in upgrade mode. Just remove the
-         * onconnected listener and get rid of it */
-        transport.off();
-        transport.disconnect();
-        Utils.arrDeleteValue(this.pendingTransports, transport);
-      } else if (!transport && !fatal) {
-        /* Preference failed in a transport-specific way. Try more */
-        this.unpersistTransportPreference();
-        this.connectImpl(transportParams, connectCount);
-      }
-      /* If suceeded, or failed fatally, nothing to do */
+    this.tryTransportWithFallbacks('web_socket', transportParams, true, connectCount, () => {
+      return this.wsCheckResult !== false && !this.abandonedWebSocket;
     });
   }
 
-  /**
-   * Try to establish a transport on the base transport (the best transport
-   * such that if it doesn't work, nothing will work) as determined through
-   * static feature detection, checking for network connectivity and trying
-   * fallback hosts if applicable.
-   * @param transportParams
-   */
-  connectBase(transportParams: TransportParams, connectCount?: number): void {
+  connectBase(transportParams: TransportParams, connectCount: number) {
+    Logger.logAction(Logger.LOG_DEBUG, 'ConnectionManager.connectBase()');
+    if (this.baseTransport) {
+      this.tryTransportWithFallbacks(this.baseTransport, transportParams, false, connectCount, () => true);
+    } else {
+      this.notifyState({
+        state: 'disconnected',
+        error: new ErrorInfo('No transports left to try', 80000, 404),
+      });
+    }
+  }
+
+  tryTransportWithFallbacks(
+    transportName: TransportName,
+    transportParams: TransportParams,
+    ws: boolean,
+    connectCount: number,
+    shouldContinue: () => boolean,
+  ): void {
+    Logger.logAction(Logger.LOG_DEBUG, 'ConnectionManager.tryTransportWithFallbacks()', transportName);
     const giveUp = (err: IPartialErrorInfo) => {
       this.notifyState({ state: this.states.connecting.failState as string, error: err });
     };
-    const candidateHosts = this.httpHosts.slice();
+
+    const candidateHosts = ws ? this.wsHosts.slice() : this.httpHosts.slice();
+
     const hostAttemptCb = (fatal: boolean, transport: Transport) => {
       if (connectCount !== this.connectCounter) {
+        return;
+      }
+      if (!shouldContinue()) {
+        if (transport) {
+          transport.dispose();
+        }
         return;
       }
       if (!transport && !fatal) {
         tryFallbackHosts();
       }
     };
-
-    Logger.logAction(
-      Logger.LOG_MINOR,
-      'ConnectionManager.connectBase()',
-      'Trying to connect with base transport ' + this.baseTransport,
-    );
 
     /* first try to establish a connection with the priority host with http transport */
     const host = candidateHosts.shift();
@@ -1663,6 +1495,9 @@ class ConnectionManager extends EventEmitter {
           if (connectCount !== this.connectCounter) {
             return;
           }
+          if (!shouldContinue()) {
+            return;
+          }
           /* we know err won't happen but handle it here anyway */
           if (err) {
             giveUp(err);
@@ -1677,7 +1512,7 @@ class ConnectionManager extends EventEmitter {
            * its dns. Try the fallback hosts. We could try them simultaneously but
            * that would potentially cause a huge spike in load on the load balancer */
           transportParams.host = Utils.arrPopRandomElement(candidateHosts);
-          this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
+          this.tryATransport(transportParams, transportName, hostAttemptCb);
         },
       );
     };
@@ -1688,35 +1523,7 @@ class ConnectionManager extends EventEmitter {
       return;
     }
 
-    this.tryATransport(transportParams, this.baseTransport, hostAttemptCb);
-  }
-
-  getUpgradePossibilities(): TransportName[] {
-    /* returns the subset of upgradeTransports to the right of the current
-     * transport in upgradeTransports (if it's in there - if not, currentSerial
-     * will be -1, so return upgradeTransports.slice(0) == upgradeTransports */
-    const current = (this.activeProtocol as Protocol).getTransport().shortName;
-    const currentSerial = this.upgradeTransports.indexOf(current);
-    return this.upgradeTransports.slice(currentSerial + 1);
-  }
-
-  upgradeIfNeeded(transportParams: Record<string, any>): void {
-    const upgradePossibilities = this.getUpgradePossibilities();
-    Logger.logAction(
-      Logger.LOG_MINOR,
-      'ConnectionManager.upgradeIfNeeded()',
-      'upgrade possibilities: ' + Platform.Config.inspect(upgradePossibilities),
-    );
-
-    if (!upgradePossibilities.length) {
-      return;
-    }
-
-    upgradePossibilities.forEach((upgradeTransport: TransportName) => {
-      /* Note: the transport may mutate the params, so give each transport a fresh one */
-      const upgradeTransportParams = this.createTransportParams(transportParams.host, 'upgrade');
-      this.tryATransport(upgradeTransportParams, upgradeTransport, noop);
-    });
+    this.tryATransport(transportParams, transportName, hostAttemptCb);
   }
 
   closeImpl(): void {
@@ -1724,21 +1531,14 @@ class ConnectionManager extends EventEmitter {
     this.cancelSuspendTimer();
     this.startTransitionTimer(this.states.closing);
 
-    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
-    this.pendingTransports.slice().forEach(function (transport) {
-      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.closeImpl()', 'Closing pending transport: ' + transport);
-      if (transport) transport.close();
-    });
-
-    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
-    this.proposedTransports.slice().forEach(function (transport) {
+    if (this.pendingTransport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.closeImpl()',
-        'Disposing of proposed transport: ' + transport,
+        'Closing pending transport: ' + this.pendingTransport,
       );
-      if (transport) transport.dispose();
-    });
+      this.pendingTransport.close();
+    }
 
     if (this.activeProtocol) {
       Logger.logAction(
@@ -1762,23 +1562,6 @@ class ConnectionManager extends EventEmitter {
           'ConnectionManager.onAuthUpdated()',
           'Sending AUTH message on active transport',
         );
-        /* If there are any proposed/pending transports (eg an upgrade that
-         * isn't yet scheduled for activation) that hasn't yet started syncing,
-         * just to get rid of them & restart the upgrade with the new token, to
-         * avoid a race condition. (If it has started syncing, the AUTH will be
-         * queued until the upgrade is complete, so everything's fine) */
-        if (
-          (this.pendingTransports.length || this.proposedTransports.length) &&
-          this.state !== this.states.synchronizing
-        ) {
-          this.disconnectAllTransports(/* exceptActive: */ true);
-          const transportParams = (this.activeProtocol as Protocol).getTransport().params;
-          Platform.Config.nextTick(() => {
-            if (this.state.state === 'connected') {
-              this.upgradeIfNeeded(transportParams);
-            }
-          });
-        }
 
         /* Do any transport-specific new-token action */
         const activeTransport = this.activeProtocol?.getTransport();
@@ -1857,39 +1640,33 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  disconnectAllTransports(exceptActive?: boolean): void {
-    Logger.logAction(
-      Logger.LOG_MINOR,
-      'ConnectionManager.disconnectAllTransports()',
-      'Disconnecting all transports' + (exceptActive ? ' except the active transport' : ''),
-    );
+  disconnectAllTransports(): void {
+    Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports');
 
     /* This will prevent any connection procedure in an async part of one of its early stages from continuing */
     this.connectCounter++;
 
-    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
-    this.pendingTransports.slice().forEach(function (transport) {
+    if (this.pendingTransport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
-        'Disconnecting pending transport: ' + transport,
+        'Disconnecting pending transport: ' + this.pendingTransport,
       );
-      if (transport) transport.disconnect();
-    });
-    this.pendingTransports = [];
+      this.pendingTransport.disconnect();
+    }
+    delete this.pendingTransport;
 
-    // need to use .slice() here, since we intend to mutate the array during .forEach() iteration
-    this.proposedTransports.slice().forEach(function (transport) {
+    if (this.proposedTransport) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
-        'Disposing of proposed transport: ' + transport,
+        'Disconnecting proposed transport: ' + this.pendingTransport,
       );
-      if (transport) transport.dispose();
-    });
-    this.proposedTransports = [];
+      this.proposedTransport.disconnect();
+    }
+    delete this.pendingTransport;
 
-    if (this.activeProtocol && !exceptActive) {
+    if (this.activeProtocol) {
       Logger.logAction(
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
@@ -1914,7 +1691,7 @@ class ConnectionManager extends EventEmitter {
       this.sendImpl(new PendingMessage(msg, callback));
       return;
     }
-    const shouldQueue = (queueEvent && state.queueEvents) || state.forceQueueEvents;
+    const shouldQueue = queueEvent && state.queueEvents;
     if (!shouldQueue) {
       const err = 'rejecting event, queueEvent was ' + queueEvent + ', state was ' + state.state;
       Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
@@ -2013,7 +1790,7 @@ class ConnectionManager extends EventEmitter {
       this.pendingChannelMessagesState.isProcessing = true;
 
       const pendingChannelMessage = this.pendingChannelMessagesState.queue.shift()!;
-      this.processChannelMessage(pendingChannelMessage.message, pendingChannelMessage.transport)
+      this.processChannelMessage(pendingChannelMessage.message)
         .catch((err) => {
           Logger.logAction(
             Logger.LOG_ERROR,
@@ -2028,29 +1805,8 @@ class ConnectionManager extends EventEmitter {
     }
   }
 
-  private async processChannelMessage(message: ProtocolMessage, transport: Transport) {
-    const onActiveTransport = this.activeProtocol && transport === this.activeProtocol.getTransport(),
-      onUpgradeTransport = this.pendingTransports.includes(transport) && this.state == this.states.synchronizing;
-
-    /* As the lib now has a period where the upgrade transport is synced but
-     * before it's become active (while waiting for the old one to become
-     * idle), message can validly arrive on it even though it isn't active */
-    if (onActiveTransport || onUpgradeTransport) {
-      await this.realtime.channels.processChannelMessage(message);
-    } else {
-      // Message came in on a defunct transport. Allow only acks, nacks, & errors for outstanding
-      // messages,  no new messages (as sync has been sent on new transport so new messages will
-      // be resent there, or connection has been closed so don't want new messages)
-      if ([actions.ACK, actions.NACK, actions.ERROR].includes(message.action!)) {
-        await this.realtime.channels.processChannelMessage(message);
-      } else {
-        Logger.logAction(
-          Logger.LOG_MICRO,
-          'ConnectionManager.onChannelMessage()',
-          'received message ' + JSON.stringify(message) + 'on defunct transport; discarding',
-        );
-      }
-    }
+  private async processChannelMessage(message: ProtocolMessage) {
+    await this.realtime.channels.processChannelMessage(message);
   }
 
   ping(transport: Transport | null, callback: Function): void {
@@ -2119,20 +1875,14 @@ class ConnectionManager extends EventEmitter {
     (this.activeProtocol as Protocol).getTransport().fail(error);
   }
 
-  registerProposedTransport(transport: Transport): void {
-    this.proposedTransports.push(transport);
-  }
-
   getTransportPreference(): TransportName {
     return this.transportPreference || (haveWebStorage() && Platform.WebStorage?.get?.(transportPreferenceName));
   }
 
   persistTransportPreference(transport: Transport): void {
-    if (Defaults.upgradeTransports.includes(transport.shortName)) {
-      this.transportPreference = transport.shortName;
-      if (haveWebStorage()) {
-        Platform.WebStorage?.set?.(transportPreferenceName, transport.shortName);
-      }
+    this.transportPreference = transport.shortName;
+    if (haveWebStorage()) {
+      Platform.WebStorage?.set?.(transportPreferenceName, transport.shortName);
     }
   }
 
@@ -2189,6 +1939,27 @@ class ConnectionManager extends EventEmitter {
     this.maxIdleInterval = connectionDetails.maxIdleInterval;
     this.emit('connectiondetails', connectionDetails);
   }
+
+  checkWsConnectivity() {
+    const ws = new Platform.Config.WebSocket(Defaults.wsConnectivityUrl);
+    return new Promise<void>((resolve, reject) => {
+      let finished = false;
+      ws.onopen = () => {
+        if (!finished) {
+          finished = true;
+          resolve();
+          ws.close();
+        }
+      };
+
+      ws.onclose = ws.onerror = () => {
+        if (!finished) {
+          finished = true;
+          reject();
+        }
+      };
+    });
+  }
 }
 
 export default ConnectionManager;
@@ -2196,5 +1967,3 @@ export default ConnectionManager;
 export interface TransportStorage {
   supportedTransports: Partial<Record<TransportName, TransportCtor>>;
 }
-
-export type TransportInitialiser = (transportStorage: TransportStorage) => typeof Transport;

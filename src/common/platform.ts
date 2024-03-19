@@ -1,6 +1,5 @@
 import { IPlatformConfig } from './types/IPlatformConfig';
 import { IPlatformHttpStatic } from './types/http';
-import { TransportInitialiser } from './lib/transport/connectionmanager';
 import IDefaults from './types/IDefaults';
 import IWebStorage from './types/IWebStorage';
 import IBufferUtils from './types/IBufferUtils';
@@ -8,12 +7,13 @@ import * as WebBufferUtils from '../platform/web/lib/util/bufferutils';
 import * as NodeBufferUtils from '../platform/nodejs/lib/util/bufferutils';
 import { IUntypedCryptoStatic } from '../common/types/ICryptoStatic';
 import TransportName from './constants/TransportName';
+import { TransportCtor } from './lib/transport/transport';
 
 export type Bufferlike = WebBufferUtils.Bufferlike | NodeBufferUtils.Bufferlike;
 type BufferUtilsOutput = WebBufferUtils.Output | NodeBufferUtils.Output;
 type ToBufferOutput = WebBufferUtils.ToBufferOutput | NodeBufferUtils.ToBufferOutput;
 
-export type TransportImplementations = Partial<Record<TransportName, TransportInitialiser>>;
+export type TransportImplementations = Partial<Record<TransportName, TransportCtor>>;
 
 export default class Platform {
   static Config: IPlatformConfig;
