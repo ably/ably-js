@@ -42,6 +42,40 @@ function registerAblyModularTests(helper) {
       helper.setupApp(done);
     });
 
+    describe('attempting to initialize with no client options', () => {
+      for (const clientClass of [BaseRest, BaseRealtime]) {
+        describe(clientClass.name, () => {
+          it('throws an error', () => {
+            expect(() => new clientClass()).to.throw('must be initialized with a client options object');
+          });
+        });
+      }
+    });
+
+    describe('attempting to initialize with just an API key', () => {
+      for (const clientClass of [BaseRest, BaseRealtime]) {
+        describe(clientClass.name, () => {
+          it('throws an error', () => {
+            expect(() => new clientClass('foo:bar')).to.throw(
+              'cannot be initialized with just an Ably API key; you must provide a client options object with a `plugins` property',
+            );
+          });
+        });
+      }
+    });
+
+    describe('attempting to initialize with just a token', () => {
+      for (const clientClass of [BaseRest, BaseRealtime]) {
+        describe(clientClass.name, () => {
+          it('throws an error', () => {
+            expect(() => new clientClass('foo')).to.throw(
+              'cannot be initialized with just an Ably Token; you must provide a client options object with a `plugins` property',
+            );
+          });
+        });
+      }
+    });
+
     describe('without any plugins', () => {
       for (const clientClass of [BaseRest, BaseRealtime]) {
         describe(clientClass.name, () => {

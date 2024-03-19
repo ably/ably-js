@@ -24,8 +24,16 @@ class BaseRealtime extends BaseClient {
   _channels: any;
   connection: Connection;
 
-  constructor(options: ClientOptions | string) {
-    super(Defaults.objectifyOptions(options));
+  /*
+   * The public typings declare that this only accepts an object, but since we want to emit a good error message in the case where a non-TypeScript user does one of these things:
+   *
+   * 1. passes a string (which is quite likely if they’re e.g. migrating from the default variant to the modular variant)
+   * 2. passes no argument at all
+   *
+   * tell the compiler that these cases are possible so that it forces us to handle them.
+   */
+  constructor(options?: ClientOptions | string) {
+    super(Defaults.objectifyOptions(options, false, 'BaseRealtime'));
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
     this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromPlugins(this.options.plugins);
     this._RealtimePresence = this.options.plugins?.RealtimePresence ?? null;
