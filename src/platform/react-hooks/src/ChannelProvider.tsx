@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useLayoutEffect, useMemo } from 'react';
 import * as Ably from 'ably';
 import { type AblyContextValue, AblyContext } from './AblyContext.js';
 import { channelOptionsWithAgent } from './AblyReactHooks.js';
@@ -44,7 +44,7 @@ export const ChannelProvider = ({
     };
   }, [derived, client, channel, channelName, _channelNameToChannelContext, ablyId, context]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     channel.setOptions(channelOptionsWithAgent(options));
   }, [channel, options]);
 
