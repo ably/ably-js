@@ -41,7 +41,7 @@ if (Platform.Config.agent) {
   Platform.Defaults.agent += ' ' + Platform.Config.agent;
 }
 
-export default {
+module.exports = {
   ErrorInfo,
   Rest: DefaultRest,
   Realtime: DefaultRealtime,
