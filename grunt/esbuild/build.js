@@ -43,15 +43,6 @@ const nodeConfig = {
   platform: 'node',
   entryPoints: ['src/platform/nodejs/index.ts'],
   outfile: 'build/ably-node.js',
-  /*
-   * in order to support both named, and default exports in commonjs, esbuild
-   * will export named exports by name on module.exports and default exports on
-   * module.exports.default. Since we export everything on the default export
-   * object anyway, we can just ignore named exports and only export the default.
-   * Without this footer, you would need to require('ably').default.Realtime to
-   * access client constructors.
-   */
-  footer: { js: 'module.exports = module.exports.default;' },
 };
 
 module.exports = {
