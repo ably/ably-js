@@ -2686,7 +2686,7 @@ export declare class Rest implements RestClient {
     body?: any[] | any,
     headers?: any,
   ): Promise<HttpPaginatedResponse<T>>;
-  stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
+  stats(params?: StatsParams): Promise<PaginatedResult<Stats>>;
   time(): Promise<number>;
   batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
   batchPublish(
@@ -2741,7 +2741,7 @@ export declare class Realtime implements RealtimeClient {
     body?: any[] | any,
     headers?: any,
   ): Promise<HttpPaginatedResponse<T>>;
-  stats(params?: StatsParams | any): Promise<PaginatedResult<Stats>>;
+  stats(params?: StatsParams): Promise<PaginatedResult<Stats>>;
   time(): Promise<number>;
   batchPublish(spec: BatchPublishSpec): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>>;
   batchPublish(
