@@ -18,7 +18,7 @@ export type ChannelNameAndId = {
 };
 export type ChannelParameters = string | ChannelNameAndOptions;
 
-export const version = '1.2.49';
+export const version = '1.2.50';
 
 export function channelOptionsWithAgent(options?: Types.ChannelOptions) {
   return {
