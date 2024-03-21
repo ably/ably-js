@@ -2175,13 +2175,13 @@ export declare interface Channels<T> {
    */
   get(name: string, channelOptions?: ChannelOptions): T;
   /**
+   * Creates a new {@link Channel} or {@link RealtimeChannel} object, with the specified channel {@link DeriveOptions}
+   * and {@link ChannelOptions}, or returns the existing channel object.
+   *
    * @experimental This is a preview feature and may change in a future non-major release.
    * This experimental method allows you to create custom realtime data feeds by selectively subscribing
    * to receive only part of the data from the channel.
    * See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
-   *
-   * Creates a new {@link Channel} or {@link RealtimeChannel} object, with the specified channel {@link DeriveOptions}
-   * and {@link ChannelOptions}, or returns the existing channel object.
    *
    * @param name - The channel name.
    * @param deriveOptions - A {@link DeriveOptions} object.
