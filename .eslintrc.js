@@ -45,6 +45,9 @@ module.exports = {
       extends: [
         'plugin:jsdoc/recommended',
       ],
+      rules: {
+        "jsdoc/check-tag-names": ["warn", { "definedTags": ["experimental"] }],
+      },
     },
   ],
   ignorePatterns: [
