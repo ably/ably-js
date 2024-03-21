@@ -88,6 +88,15 @@ The Types namespace has been removed. All types it contained are now exported at
 
 [Full Changelog](https://github.com/ably/ably-js/compare/1.2.50...2.0.0)
 
+## [1.2.50](https://github.com/ably/ably-js/tree/1.2.50) (2024-03-21)
+
+- Add new logging API to `ClientOptions` and add a deprecation warning for the old one [\#1671](https://github.com/ably/ably-js/pull/1671)
+- Add `ClientOptions.maxMessageSize` to the public API [\#1678](https://github.com/ably/ably-js/pull/1678)
+- Add a deprecation warning for the `headers` client option [\#1681](https://github.com/ably/ably-js/pull/1681)
+- Improve deprecation log messages [\#1683](https://github.com/ably/ably-js/pull/1683), [\#1685](https://github.com/ably/ably-js/pull/1685)
+- Handle 204 status code in `PaginatedResource` [\#1631](https://github.com/ably/ably-js/pull/1631)
+- Fix typing and deprecation warning for `Crypto.getDefaultParams()` [\#1693](https://github.com/ably/ably-js/pull/1693)
+
 ## [1.2.49](https://github.com/ably/ably-js/tree/1.2.49) (2024-02-07)
 
 - \[React-Hooks\] `usePresence` unsubscribes all listeners on unmount and run `Presence.leave` even if connection has been terminated [\#1610](https://github.com/ably/ably-js/issues/1610)
