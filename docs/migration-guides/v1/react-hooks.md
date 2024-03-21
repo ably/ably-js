@@ -1,6 +1,6 @@
 # React hooks upgrade / migration guide
 
-## Version 2.x to 3.x
+## `@ably-labs/react-hooks` to `ably 1.x`
 
 ### Hooks now return object
 
