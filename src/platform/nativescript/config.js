@@ -1,5 +1,4 @@
 /* eslint-disable no-undef */
-import msgpack from '../web/lib/util/msgpack';
 require('nativescript-websockets');
 
 var randomBytes;
@@ -21,16 +20,11 @@ if (global.android) {
 var Config = {
   agent: 'nativescript',
   logTimestamps: true,
-  noUpgrade: false,
   binaryType: 'arraybuffer',
   WebSocket: WebSocket,
   xhrSupported: XMLHttpRequest,
   allowComet: true,
-  jsonpSupported: false,
-  streamingSupported: false,
   useProtocolHeartbeats: true,
-  createHmac: null,
-  msgpack: msgpack,
   supportsBinary: typeof TextDecoder !== 'undefined' && TextDecoder,
   preferBinary: false, // Motivation as on web; see `preferBinary` comment there.
   ArrayBuffer: ArrayBuffer,
@@ -49,15 +43,9 @@ var Config = {
   },
   TextEncoder: global.TextEncoder,
   TextDecoder: global.TextDecoder,
-  Promise: global.Promise,
-  getRandomValues: function (arr, callback) {
-    var bytes = randomBytes(arr.length);
-    for (var i = 0; i < arr.length; i++) {
-      arr[i] = bytes[i];
-    }
-    if (callback) {
-      callback(null);
-    }
+  getRandomArrayBuffer: async function (byteLength) {
+    var bytes = randomBytes(byteLength);
+    return bytes;
   },
 };
 

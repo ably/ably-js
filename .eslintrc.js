@@ -19,19 +19,20 @@ module.exports = {
     "plugin:security/recommended",
   ],
   rules: {
-    // comma-dangle used for browser compatibility for browsers that don't support trailing commas
-    "comma-dangle": ["error", "always-multiline"],
     "eol-last": "error",
     // security/detect-object-injection just gives a lot of false positives
     // see https://github.com/nodesecurity/eslint-plugin-security/issues/21
     "security/detect-object-injection": "off",
     "@typescript-eslint/no-var-requires": "error",
+    // Use typescript-eslint’s version of the no-redeclare rule, which isn’t triggered by overload signatures.
+    // TODO remove this once we start using the full @typescript-eslint/recommended ruleset in #958
+    'no-redeclare': 'off',
+    '@typescript-eslint/no-redeclare': 'error',
   },
   overrides: [
     {
       files: ["**/*.{ts,tsx}"],
       rules: {
-        "comma-dangle": ["error", "only-multiline"],
         "@typescript-eslint/no-unused-vars": ["error", { "varsIgnorePattern": "^_" }],
         // TypeScript already enforces these rules better than any eslint setup can
         "no-undef": "off",
@@ -40,7 +41,7 @@ module.exports = {
       },
     },
     {
-      files: 'ably.d.ts',
+      files: ['ably.d.ts', 'modular.d.ts'],
       extends: [
         'plugin:jsdoc/recommended',
       ],
@@ -54,9 +55,10 @@ module.exports = {
     "test",
     "tools",
     "scripts",
-    "docs",
+    "typedoc/generated",
     "react",
     "Gruntfile.js",
+    "grunt",
   ],
   settings: {
     jsdoc: {

@@ -75,545 +75,325 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
+    it('contains expected fields', async () => {
+      // To provoke a non-undefined `inProgress` in the response, we publish a message and fetch stats for the current hour. (I wasn’t able to provoke a non-undefined `inProgress` using stats API fixtures.)
+      const now = new Date(await rest.time());
+      // If the hour is about to turn, wait for it to turn (with a 5-second extra wait to hopefully account for clock differences between Ably servers).
+      if (now.getUTCMinutes() === 59 && now.getUTCSeconds() > 45) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (5 + (60 - now.getUTCSeconds()))));
+      }
+      await rest.channels.get('channel').publish('message', 'data');
+      // ably.com documentation says "The most recent statistics are delayed by up to six seconds."
+      await new Promise((resolve) => setTimeout(resolve, 6000 + 4000 /* a bit of extra tolerance */));
+
+      const stats = (await rest.stats({ end: Date.now(), unit: 'hour' })).items[0];
+
+      expect(stats.entries).to.be.a('object');
+      expect(stats.schema).to.be.a('string');
+      expect(stats.appId).to.be.a('string');
+      expect(stats.inProgress).to.be.a('string');
+      expect(stats.unit).to.be.a('string');
+      expect(stats.intervalId).to.be.a('string');
+    });
+
     /**
      * Using an interval ID string format, check minute-level inbound and outbound stats match fixture data (forwards)
      * @spec : (RSC6b4)
      */
-    it('appstats_minute0', function (done) {
-      rest.stats(
-        {
-          start: lastYear + '-02-03:15:03',
-          end: lastYear + '-02-03:15:05',
-          direction: 'forwards',
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            var stats = page.items;
-            expect(stats.length).to.equal(3, 'Verify 3 stat records found');
+    it('appstats_minute0', async function () {
+      var page = await rest.stats({
+        start: lastYear + '-02-03:15:03',
+        end: lastYear + '-02-03:15:05',
+        direction: 'forwards',
+      });
+      var stats = page.items;
+      expect(stats.length).to.equal(3, 'Verify 3 stat records found');
 
-            var totalInbound = 0,
-              totalOutbound = 0;
-            for (var i = 0; i < stats.length; i++) {
-              totalInbound += stats[i].inbound.all.messages.count;
-              totalOutbound += stats[i].outbound.all.messages.count;
-            }
+      var totalInbound = 0,
+        totalOutbound = 0;
+      for (var i = 0; i < stats.length; i++) {
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
+      }
 
-            expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
-            expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
+      expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
     });
 
     /**
      * Using milliseconds since epoch, check minute-level inbound and outbound stats match fixture data (forwards)
      * @spec : (RSC6b4)
      */
-    it('appstats_minute1', function (done) {
-      rest.stats(
-        {
-          start: firstIntervalEpoch,
-          end: secondIntervalEpoch,
-          direction: 'forwards',
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            var stats = page.items;
-            expect(stats.length).to.equal(3, 'Verify 3 stat records found');
+    it('appstats_minute1', async function () {
+      var page = await rest.stats({
+        start: firstIntervalEpoch,
+        end: secondIntervalEpoch,
+        direction: 'forwards',
+      });
+      var stats = page.items;
+      expect(stats.length).to.equal(3, 'Verify 3 stat records found');
 
-            var totalInbound = 0,
-              totalOutbound = 0;
-            for (var i = 0; i < stats.length; i++) {
-              totalInbound += stats[i].inbound.all.messages.count;
-              totalOutbound += stats[i].outbound.all.messages.count;
-            }
+      var totalInbound = 0,
+        totalOutbound = 0;
+      for (var i = 0; i < stats.length; i++) {
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
+      }
 
-            expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
-            expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
+      expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
     });
 
     /**
      * Check hour-level inbound and outbound stats match fixture data (forwards)
      * @spec : (RSC6b4)
      */
-    it('appstats_hour0', function (done) {
-      rest.stats(
-        {
-          start: lastYear + '-02-03:15',
-          end: lastYear + '-02-03:18',
-          direction: 'forwards',
-          by: 'hour',
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            var stats = page.items;
-            expect(stats.length).to.equal(1, 'Verify 1 stat record found');
+    it('appstats_hour0', async function () {
+      var page = await rest.stats({
+        start: lastYear + '-02-03:15',
+        end: lastYear + '-02-03:18',
+        direction: 'forwards',
+        by: 'hour',
+      });
+      var stats = page.items;
+      expect(stats.length).to.equal(1, 'Verify 1 stat record found');
 
-            var totalInbound = 0,
-              totalOutbound = 0;
-            for (var i = 0; i < stats.length; i++) {
-              totalInbound += stats[i].inbound.all.messages.count;
-              totalOutbound += stats[i].outbound.all.messages.count;
-            }
+      var totalInbound = 0,
+        totalOutbound = 0;
+      for (var i = 0; i < stats.length; i++) {
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
+      }
 
-            expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
-            expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
+      expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
     });
 
     /**
      * Check day-level stats exist (forwards)
      * @spec : (RSC6b4)
      */
-    it.skip('appstats_day0', function (done) {
-      rest.stats(
-        {
-          end: lastYear + '-02-03',
-          direction: 'forwards',
-          by: 'day',
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            var stats = page.items;
-            expect(stats.length == 1, 'Verify 1 stat records found').to.be.ok;
+    it.skip('appstats_day0', async function () {
+      var page = await rest.stats({
+        end: lastYear + '-02-03',
+        direction: 'forwards',
+        by: 'day',
+      });
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify 1 stat records found').to.be.ok;
 
-            var totalInbound = 0,
-              totalOutbound = 0;
-            for (var i = 0; i < stats.length; i++) {
-              totalInbound += stats[i].inbound.all.messages.count;
-              totalOutbound += stats[i].outbound.all.messages.count;
-            }
+      var totalInbound = 0,
+        totalOutbound = 0;
+      for (var i = 0; i < stats.length; i++) {
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
+      }
 
-            expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
-            expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
+      expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
     });
 
     /**
      * Check month-level stats exist (forwards)
      * @spec : (RSC6b4)
      */
-    it.skip('appstats_month0', function (done) {
-      rest.stats(
-        {
-          end: lastYear + '-02',
-          direction: 'forwards',
-          by: 'month',
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            var stats = page.items;
-            expect(stats.length == 1, 'Verify 1 stat records found').to.be.ok;
+    it.skip('appstats_month0', async function () {
+      var page = await rest.stats({
+        end: lastYear + '-02',
+        direction: 'forwards',
+        by: 'month',
+      });
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify 1 stat records found').to.be.ok;
 
-            var totalInbound = 0,
-              totalOutbound = 0;
-            for (var i = 0; i < stats.length; i++) {
-              totalInbound += stats[i].inbound.all.messages.count;
-              totalOutbound += stats[i].outbound.all.messages.count;
-            }
+      var totalInbound = 0,
+        totalOutbound = 0;
+      for (var i = 0; i < stats.length; i++) {
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
+      }
 
-            expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
-            expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      expect(totalInbound).to.equal(50 + 60 + 70, 'Verify all inbound messages found');
+      expect(totalOutbound).to.equal(20 + 10 + 40, 'Verify all outbound messages found');
     });
 
     /**
      * Check limit query param (backwards)
      * @spec : (RSC6b3)
      */
-    it('appstats_limit_backwards', function (done) {
-      rest.stats(
-        {
-          end: lastYear + '-02-03:15:04',
-          direction: 'backwards',
-          limit: 1,
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            var stats = page.items;
-            expect(stats.length == 1, 'Verify 1 stat records found').to.be.ok;
+    it('appstats_limit_backwards', async function () {
+      var page = await rest.stats({
+        end: lastYear + '-02-03:15:04',
+        direction: 'backwards',
+        limit: 1,
+      });
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify 1 stat records found').to.be.ok;
 
-            var totalInbound = 0,
-              totalOutbound = 0;
-            for (var i = 0; i < stats.length; i++) {
-              totalInbound += stats[i].inbound.all.messages.count;
-              totalOutbound += stats[i].outbound.all.messages.count;
-            }
+      var totalInbound = 0,
+        totalOutbound = 0;
+      for (var i = 0; i < stats.length; i++) {
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
+      }
 
-            expect(totalInbound).to.equal(60, 'Verify all inbound messages found');
-            expect(totalOutbound).to.equal(10, 'Verify all outbound messages found');
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      expect(totalInbound).to.equal(60, 'Verify all inbound messages found');
+      expect(totalOutbound).to.equal(10, 'Verify all outbound messages found');
     });
 
     /**
      * Check limit query param (forwards)
      * @spec : (RSC6b3)
      */
-    it('appstats_limit_forwards', function (done) {
-      rest.stats(
-        {
-          end: lastYear + '-02-03:15:04',
-          direction: 'forwards',
-          limit: 1,
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
-          try {
-            var stats = page.items;
-            expect(stats.length == 1, 'Verify 1 stat records found').to.be.ok;
+    it('appstats_limit_forwards', async function () {
+      var page = await rest.stats({
+        end: lastYear + '-02-03:15:04',
+        direction: 'forwards',
+        limit: 1,
+      });
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify 1 stat records found').to.be.ok;
 
-            var totalInbound = 0,
-              totalOutbound = 0;
-            for (var i = 0; i < stats.length; i++) {
-              totalInbound += stats[i].inbound.all.messages.count;
-              totalOutbound += stats[i].outbound.all.messages.count;
-            }
+      var totalInbound = 0,
+        totalOutbound = 0;
+      for (var i = 0; i < stats.length; i++) {
+        totalInbound += stats[i].entries['messages.inbound.all.messages.count'];
+        totalOutbound += stats[i].entries['messages.outbound.all.messages.count'];
+      }
 
-            expect(totalInbound).to.equal(50, 'Verify all inbound messages found');
-            expect(totalOutbound).to.equal(20, 'Verify all outbound messages found');
-            done();
-          } catch (err) {
-            done(err);
-          }
-        }
-      );
+      expect(totalInbound).to.equal(50, 'Verify all inbound messages found');
+      expect(totalOutbound).to.equal(20, 'Verify all outbound messages found');
     });
 
     /**
      * Check query pagination (backwards)
      * @spec : (RSC6b2)
      */
-    it('appstats_pagination_backwards', function (done) {
-      rest.stats(
-        {
-          end: lastYear + '-02-03:15:05',
-          direction: 'backwards',
-          limit: 1,
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
+    it('appstats_pagination_backwards', async function () {
+      var page = await rest.stats({
+        end: lastYear + '-02-03:15:05',
+        direction: 'backwards',
+        limit: 1,
+      });
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(7000, 'Verify all published message data found');
 
-          var stats = page.items;
-          expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-          var totalData = 0;
-          for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-          expect(totalData).to.equal(7000, 'Verify all published message data found');
+      /* get next page */
+      expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
+      var page = await page.next();
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(6000, 'Verify all published message data found');
 
-          /* get next page */
-          expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
-          page.next(function (err, page) {
-            if (err) {
-              done(err);
-              return;
-            }
-            try {
-              var stats = page.items;
-              expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-              var totalData = 0;
-              for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-              expect(totalData).to.equal(6000, 'Verify all published message data found');
+      /* get next page */
+      expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
+      var page = await page.next();
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(5000, 'Verify all published message data found');
 
-              /* get next page */
-              expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
-            } catch (err) {
-              done(err);
-              return;
-            }
-            page.next(function (err, page) {
-              if (err) {
-                done(err);
-                return;
-              }
-              try {
-                var stats = page.items;
-                expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-                var totalData = 0;
-                for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-                expect(totalData).to.equal(5000, 'Verify all published message data found');
+      /* verify no further pages */
+      expect(page.isLast(), 'Verify last page').to.be.ok;
 
-                /* verify no further pages */
-                expect(page.isLast(), 'Verify last page').to.be.ok;
-              } catch (err) {
-                done(err);
-                return;
-              }
-
-              page.first(function (err, page) {
-                if (err) {
-                  done(err);
-                  return;
-                }
-                try {
-                  var totalData = 0;
-                  var stats = page.items;
-                  for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-                  expect(totalData).to.equal(7000, 'Verify all published message data found');
-
-                  /* that's it */
-                  done();
-                } catch (err) {
-                  done(err);
-                  return;
-                }
-              });
-            });
-          });
-        }
-      );
+      var page = await page.first();
+      var totalData = 0;
+      var stats = page.items;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(7000, 'Verify all published message data found');
     });
 
     /**
      * Check query pagination (forwards)
      * @spec : (RSC6b2)
      */
-    it('appstats_pagination_forwards', function (done) {
-      rest.stats(
-        {
-          end: lastYear + '-02-03:15:05',
-          direction: 'forwards',
-          limit: 1,
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
+    it('appstats_pagination_forwards', async function () {
+      var page = await rest.stats({
+        end: lastYear + '-02-03:15:05',
+        direction: 'forwards',
+        limit: 1,
+      });
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(5000, 'Verify all published message data found');
 
-          try {
-            var stats = page.items;
-            expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-            var totalData = 0;
-            for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-            expect(totalData).to.equal(5000, 'Verify all published message data found');
+      /* get next page */
+      expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
+      var page = await page.next();
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(6000, 'Verify all published message data found');
 
-            /* get next page */
-            expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
-          } catch (err) {
-            done(err);
-            return;
-          }
-          page.next(function (err, page) {
-            if (err) {
-              done(err);
-              return;
-            }
-            try {
-              var stats = page.items;
-              expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-              var totalData = 0;
-              for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-              expect(totalData).to.equal(6000, 'Verify all published message data found');
+      /* get next page */
+      expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
+      var page = await page.next();
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(7000, 'Verify all published message data found');
 
-              /* get next page */
-              expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
-            } catch (err) {
-              done(err);
-              return;
-            }
-            page.next(function (err, page) {
-              if (err) {
-                done(err);
-                return;
-              }
-              try {
-                var stats = page.items;
-                expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-                var totalData = 0;
-                for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-                expect(totalData).to.equal(7000, 'Verify all published message data found');
+      /* verify no further pages */
+      expect(page.isLast(), 'Verify last page').to.be.ok;
 
-                /* verify no further pages */
-                expect(page.isLast(), 'Verify last page').to.be.ok;
-              } catch (err) {
-                done(err);
-                return;
-              }
-
-              page.first(function (err, page) {
-                if (err) {
-                  done(err);
-                  return;
-                }
-                try {
-                  var totalData = 0;
-                  var stats = page.items;
-                  for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-                  expect(totalData).to.equal(5000, 'Verify all published message data found');
-
-                  /* that's it */
-                  done();
-                } catch (err) {
-                  done(err);
-                }
-              });
-            });
-          });
-        }
-      );
+      var page = await page.first();
+      var totalData = 0;
+      var stats = page.items;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(5000, 'Verify all published message data found');
     });
 
     /**
      * Check query pagination omitted (defaults to backwards)
      * @spec : (RSC6b2)
      */
-    it('appstats_pagination_omitted', function (done) {
-      rest.stats(
-        {
-          end: lastYear + '-02-03:15:05',
-          limit: 1,
-        },
-        function (err, page) {
-          if (err) {
-            done(err);
-            return;
-          }
-
-          try {
-            var stats = page.items;
-            expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-            var totalData = 0;
-            for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-            expect(totalData).to.equal(7000, 'Verify all published message data found');
-
-            /* get next page */
-            expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
-          } catch (err) {
-            done(err);
-            return;
-          }
-          page.next(function (err, page) {
-            if (err) {
-              done(err);
-              return;
-            }
-            try {
-              var stats = page.items;
-              expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-              var totalData = 0;
-              for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-              expect(totalData).to.equal(6000, 'Verify all published message data found');
-
-              /* get next page */
-              expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
-            } catch (err) {
-              done(err);
-              return;
-            }
-            page.next(function (err, page) {
-              if (err) {
-                done(err);
-                return;
-              }
-              try {
-                var stats = page.items;
-                expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
-                var totalData = 0;
-                for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-                expect(totalData).to.equal(5000, 'Verify all published message data found');
-
-                /* verify no further pages */
-                expect(page.isLast(), 'Verify last page').to.be.ok;
-              } catch (err) {
-                done(err);
-                return;
-              }
-
-              page.first(function (err, page) {
-                if (err) {
-                  done(err);
-                  return;
-                }
-                try {
-                  var totalData = 0;
-                  var stats = page.items;
-                  for (var i = 0; i < stats.length; i++) totalData += stats[i].inbound.all.messages.data;
-                  expect(totalData).to.equal(7000, 'Verify all published message data found');
-
-                  /* that's it */
-                  done();
-                } catch (err) {
-                  done(err);
-                }
-              });
-            });
-          });
-        }
-      );
-    });
-
-    if (typeof Promise !== 'undefined') {
-      it('stats_promise', function (done) {
-        var client = helper.AblyRest({ promises: true });
-
-        client
-          .stats()
-          .then(function () {
-            console.log('here');
-            done();
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
+    it('appstats_pagination_omitted', async function () {
+      var page = await rest.stats({
+        end: lastYear + '-02-03:15:05',
+        limit: 1,
       });
-    }
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(7000, 'Verify all published message data found');
+
+      /* get next page */
+      expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
+      var page = await page.next();
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(6000, 'Verify all published message data found');
+
+      /* get next page */
+      expect(page.hasNext(), 'Verify next page rel link present').to.be.ok;
+      var page = await page.next();
+      var stats = page.items;
+      expect(stats.length == 1, 'Verify exactly one stats record found').to.be.ok;
+      var totalData = 0;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(5000, 'Verify all published message data found');
+
+      /* verify no further pages */
+      expect(page.isLast(), 'Verify last page').to.be.ok;
+
+      var page = await page.first();
+      var totalData = 0;
+      var stats = page.items;
+      for (var i = 0; i < stats.length; i++) totalData += stats[i].entries['messages.inbound.all.messages.data'];
+      expect(totalData).to.equal(7000, 'Verify all published message data found');
+    });
   });
 });

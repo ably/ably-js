@@ -3,13 +3,13 @@ import { it, beforeEach, describe, expect } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import { FakeAblySdk } from '../fakes/ably.js';
-import { Types } from 'ably';
+import * as Ably from 'ably';
 import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Types.RealtimePromise}>{children}</AblyProvider>);
+  return render(<AblyProvider client={client as unknown as Ably.RealtimeClient}>{children}</AblyProvider>);
 }
 
 describe('useConnectionStateListener', () => {
@@ -32,7 +32,9 @@ describe('useConnectionStateListener', () => {
   it('can register a connection state listener for named state changes', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseConnectionStateListenerComponentNamedEvents event={'failed'}></UseConnectionStateListenerComponentNamedEvents>
+      <UseConnectionStateListenerComponentNamedEvents
+        event={'failed'}
+      ></UseConnectionStateListenerComponentNamedEvents>,
     );
 
     act(() => {
@@ -53,7 +55,7 @@ describe('useConnectionStateListener', () => {
       ablyClient,
       <UseConnectionStateListenerComponentNamedEvents
         event={['failed', 'suspended']}
-      ></UseConnectionStateListenerComponentNamedEvents>
+      ></UseConnectionStateListenerComponentNamedEvents>,
     );
 
     act(() => {
@@ -71,7 +73,7 @@ describe('useConnectionStateListener', () => {
 });
 
 const UseConnectionStateListenerComponent = () => {
-  const [connectionState, setConnectionState] = useState<Types.ConnectionState>('initialized');
+  const [connectionState, setConnectionState] = useState<Ably.ConnectionState>('initialized');
 
   useConnectionStateListener((stateChange) => {
     setConnectionState(stateChange.current);
@@ -81,13 +83,13 @@ const UseConnectionStateListenerComponent = () => {
 };
 
 interface UseConnectionStateListenerComponentNamedEventsProps {
-  event: Types.ConnectionState | Types.ConnectionState[];
+  event: Ably.ConnectionState | Ably.ConnectionState[];
 }
 
 const UseConnectionStateListenerComponentNamedEvents = ({
   event,
 }: UseConnectionStateListenerComponentNamedEventsProps) => {
-  const [channelState, setChannelState] = useState<Types.ConnectionState>('initialized');
+  const [channelState, setChannelState] = useState<Ably.ConnectionState>('initialized');
 
   useConnectionStateListener(event, (stateChange) => {
     setChannelState(stateChange.current);

@@ -1,24 +1,21 @@
-import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import ConnectionManager from '../transport/connectionmanager';
 import Logger from '../util/logger';
 import ConnectionStateChange from './connectionstatechange';
 import ErrorInfo from '../types/errorinfo';
 import { NormalisedClientOptions } from '../../types/ClientOptions';
-import Realtime from './realtime';
+import BaseRealtime from './baserealtime';
 import Platform from 'common/platform';
 
-function noop() {}
-
 class Connection extends EventEmitter {
-  ably: Realtime;
+  ably: BaseRealtime;
   connectionManager: ConnectionManager;
   state: string;
   key?: string;
   id?: string;
   errorReason: ErrorInfo | null;
 
-  constructor(ably: Realtime, options: NormalisedClientOptions) {
+  constructor(ably: BaseRealtime, options: NormalisedClientOptions) {
     super();
     this.ably = ably;
     this.connectionManager = new ConnectionManager(ably, options);
@@ -40,14 +37,8 @@ class Connection extends EventEmitter {
     });
   }
 
-  whenState = ((state: string, listener: Function) => {
-    return EventEmitter.prototype.whenState.call(
-      this,
-      state,
-      this.state,
-      listener,
-      new ConnectionStateChange(undefined, state)
-    );
+  whenState = ((state: string) => {
+    return EventEmitter.prototype.whenState.call(this, state, this.state);
   }) as any;
 
   connect(): void {
@@ -55,15 +46,11 @@ class Connection extends EventEmitter {
     this.connectionManager.requestState({ state: 'connecting' });
   }
 
-  ping(callback: Function): Promise<void> | void {
+  async ping(): Promise<number> {
     Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
-    if (!callback) {
-      if (this.ably.options.promises) {
-        return Utils.promisify(this, 'ping', arguments);
-      }
-      callback = noop;
-    }
-    this.connectionManager.ping(null, callback);
+    return new Promise((resolve, reject) => {
+      this.connectionManager.ping(null, (err: unknown, result: number) => (err ? reject(err) : resolve(result)));
+    });
   }
 
   close(): void {
@@ -72,6 +59,9 @@ class Connection extends EventEmitter {
   }
 
   get recoveryKey(): string | null {
+    Logger.deprecationWarning(
+      'The `Connection.recoveryKey` attribute has been replaced by the `Connection.createRecoveryKey()` method. Replace your usage of `recoveryKey` with the return value of `createRecoveryKey()`. `recoveryKey` will be removed in a future version.',
+    );
     return this.createRecoveryKey();
   }
 

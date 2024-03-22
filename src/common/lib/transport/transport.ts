@@ -1,4 +1,8 @@
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, {
+  actions,
+  fromValues as protocolMessageFromValues,
+  stringify as stringifyProtocolMessage,
+} from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
@@ -8,22 +12,26 @@ import Auth from '../client/auth';
 import * as API from '../../../../ably';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Platform from 'common/platform';
+import TransportName from 'common/constants/TransportName';
 
 export type TryConnectCallback = (
   wrappedErr: { error: ErrorInfo; event: string } | null,
-  transport?: Transport
+  transport?: Transport,
 ) => void;
 
-export type TransportCtor = new (
-  connectionManager: ConnectionManager,
-  auth: Auth,
-  params: TransportParams,
-  forceJsonProtocol?: boolean
-) => Transport;
+export interface TransportCtor {
+  new (
+    connectionManager: ConnectionManager,
+    auth: Auth,
+    params: TransportParams,
+    forceJsonProtocol?: boolean,
+  ): Transport;
 
-const actions = ProtocolMessage.Action;
-const closeMessage = ProtocolMessage.fromValues({ action: actions.CLOSE });
-const disconnectMessage = ProtocolMessage.fromValues({ action: actions.DISCONNECT });
+  isAvailable(): boolean;
+}
+
+const closeMessage = protocolMessageFromValues({ action: actions.CLOSE });
+const disconnectMessage = protocolMessageFromValues({ action: actions.DISCONNECT });
 
 /*
  * Transport instances inherit from EventEmitter and emit the following events:
@@ -56,7 +64,6 @@ abstract class Transport extends EventEmitter {
       params.heartbeats = true;
     }
     this.connectionManager = connectionManager;
-    connectionManager.registerProposedTransport(this);
     this.auth = auth;
     this.params = params;
     this.timeouts = params.options.timeouts;
@@ -69,7 +76,7 @@ abstract class Transport extends EventEmitter {
     this.lastActivity = null;
   }
 
-  abstract shortName: string;
+  abstract shortName: TransportName;
   abstract send(message: ProtocolMessage): void;
 
   connect(): void {}
@@ -114,25 +121,25 @@ abstract class Transport extends EventEmitter {
 
   onProtocolMessage(message: ProtocolMessage): void {
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Transport.onProtocolMessage()',
         'received on ' +
           this.shortName +
           ': ' +
-          ProtocolMessage.stringify(message) +
+          stringifyProtocolMessage(message, this.connectionManager.realtime._RealtimePresence) +
           '; connectionId = ' +
-          this.connectionManager.connectionId
+          this.connectionManager.connectionId,
       );
     }
     this.onActivity();
 
     switch (message.action) {
       case actions.HEARTBEAT:
-        Logger.logAction(
+        Logger.logActionNoStrip(
           Logger.LOG_MICRO,
           'Transport.onProtocolMessage()',
-          this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId
+          this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId,
         );
         this.emit('heartbeat', message.id);
         break;
@@ -159,12 +166,12 @@ abstract class Transport extends EventEmitter {
         // Ignored.
         break;
       case actions.AUTH:
-        this.auth.authorize(function (err: ErrorInfo) {
+        Utils.whenPromiseSettles(this.auth.authorize(), function (err: ErrorInfo | null) {
           if (err) {
             Logger.logAction(
               Logger.LOG_ERROR,
               'Transport.onProtocolMessage()',
-              'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err)
+              'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err),
             );
           }
         });
@@ -177,7 +184,7 @@ abstract class Transport extends EventEmitter {
             this.connectionManager.connectionId +
             '; err = ' +
             Platform.Config.inspect(message.error) +
-            (message.channel ? ', channel: ' + message.channel : '')
+            (message.channel ? ', channel: ' + message.channel : ''),
         );
         if (message.channel === undefined) {
           this.onFatalError(message);
@@ -239,9 +246,9 @@ abstract class Transport extends EventEmitter {
   }
 
   ping(id: string): void {
-    const msg: Record<string, number | string> = { action: ProtocolMessage.Action.HEARTBEAT };
+    const msg: Record<string, number | string> = { action: actions.HEARTBEAT };
     if (id) msg.id = id;
-    this.send(ProtocolMessage.fromValues(msg));
+    this.send(protocolMessageFromValues(msg));
   }
 
   dispose(): void {
@@ -254,7 +261,7 @@ abstract class Transport extends EventEmitter {
     if (!this.maxIdleInterval) {
       return;
     }
-    this.lastActivity = this.connectionManager.lastActivity = Utils.now();
+    this.lastActivity = this.connectionManager.lastActivity = Date.now();
     this.setIdleTimer(this.maxIdleInterval + 100);
   }
 
@@ -271,7 +278,7 @@ abstract class Transport extends EventEmitter {
       throw new Error('Transport.onIdleTimerExpire(): lastActivity/maxIdleInterval not set');
     }
     this.idleTimer = null;
-    const sinceLast = Utils.now() - this.lastActivity;
+    const sinceLast = Date.now() - this.lastActivity;
     const timeRemaining = this.maxIdleInterval - sinceLast;
     if (timeRemaining <= 0) {
       const msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
@@ -287,8 +294,8 @@ abstract class Transport extends EventEmitter {
     connectionManager: ConnectionManager,
     auth: Auth,
     transportParams: TransportParams,
-    callback: TryConnectCallback
-  ): void {
+    callback: TryConnectCallback,
+  ): Transport {
     const transport = new transportCtor(connectionManager, auth, transportParams);
 
     let transportAttemptTimer: NodeJS.Timeout | number;
@@ -304,7 +311,7 @@ abstract class Transport extends EventEmitter {
       transport.dispose();
       errorCb.call(
         { event: 'disconnected' },
-        new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500)
+        new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500),
       );
     }, realtimeRequestTimeout);
 
@@ -316,9 +323,14 @@ abstract class Transport extends EventEmitter {
       callback(null, transport);
     });
     transport.connect();
+    return transport;
   }
 
-  onAuthUpdated?: (tokenDetails: API.Types.TokenDetails) => void;
+  onAuthUpdated?: (tokenDetails: API.TokenDetails) => void;
+
+  static isAvailable(): boolean {
+    throw new ErrorInfo('isAvailable not implemented for transport', 50000, 500);
+  }
 }
 
 export default Transport;

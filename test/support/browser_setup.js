@@ -1,6 +1,7 @@
 'use strict';
 
 var allTestFiles = [],
+  TEST_HOOKS_REGEXP = /root_hooks\.js$/i,
   TEST_REGEXP = /\.test\.js$/i,
   //	TEST_REGEXP = /simple\.test\.js$/i,
   TEAR_DOWN_REGEXP = /tear_down\.js$/i;
@@ -16,6 +17,14 @@ var forEachKey = function (object, fn) {
     }
   }
 };
+
+// Add the root mocha hooks
+forEachKey(window.__testFiles__.files, function (file) {
+  if (TEST_HOOKS_REGEXP.test(file)) {
+    // Normalize paths to RequireJS module names.
+    allTestFiles.push(pathToModule(file));
+  }
+});
 
 // Match all test files
 forEachKey(window.__testFiles__.files, function (file) {
@@ -55,9 +64,6 @@ require([(baseUrl + '/test/common/globals/named_dependencies.js').replace('//', 
       ably: {
         exports: 'Ably',
       },
-      'ably.noencryption': {
-        exports: 'Ably',
-      },
       'browser-base64': {
         exports: 'Base64',
       },
@@ -69,7 +75,15 @@ require([(baseUrl + '/test/common/globals/named_dependencies.js').replace('//', 
     // dynamically load all test files
     deps: allTestFiles,
 
-    // we have to kickoff mocha
-    callback: () => mocha.run(),
+    callback: () => {
+      // (For some reason things don’t work if you return a Promise from this callback, hence the nested async function)
+      (async () => {
+        // Let modular.test.js register its tests before we run the test suite
+        await registerAblyModularTests();
+
+        // we have to kickoff mocha
+        mocha.run();
+      })();
+    },
   });
 });

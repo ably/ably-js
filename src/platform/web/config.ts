@@ -1,15 +1,12 @@
-import msgpack from './lib/util/msgpack';
-import { IPlatformConfig, TypedArray } from '../../common/types/IPlatformConfig';
+import { IPlatformConfig } from '../../common/types/IPlatformConfig';
 import * as Utils from 'common/lib/util/utils';
 
 // Workaround for salesforce lightning locker compat
 const globalObject = Utils.getGlobalObject();
 
-declare var msCrypto: typeof crypto; // for IE11
-
 if (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
   console.log(
-    "Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm"
+    "Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm",
   );
 }
 
@@ -21,6 +18,16 @@ function allowComet() {
   return !globalObject.WebSocket || !loc || !loc.origin || loc.origin.indexOf('http') > -1;
 }
 
+// from: https://stackoverflow.com/a/18002694
+export function isWebWorkerContext(): boolean {
+  // run this in global scope of window or worker. since window.self = window, we're ok
+  if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 const userAgent = globalObject.navigator && globalObject.navigator.userAgent.toString();
 const currentUrl = globalObject.location && globalObject.location.href;
 
@@ -29,17 +36,12 @@ const Config: IPlatformConfig = {
   logTimestamps: true,
   userAgent: userAgent,
   currentUrl: currentUrl,
-  noUpgrade: userAgent && !!userAgent.match(/MSIE\s8\.0/),
   binaryType: 'arraybuffer',
   WebSocket: globalObject.WebSocket,
   fetchSupported: !!globalObject.fetch,
   xhrSupported: globalObject.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest(),
-  jsonpSupported: typeof document !== 'undefined',
   allowComet: allowComet(),
-  streamingSupported: true,
   useProtocolHeartbeats: true,
-  createHmac: null,
-  msgpack: msgpack,
   supportsBinary: !!globalObject.TextDecoder,
   /* Per Paddy (https://ably-real-time.slack.com/archives/CURL4U2FP/p1705674537763479) web intentionally prefers JSON to MessagePack:
    *
@@ -65,18 +67,12 @@ const Config: IPlatformConfig = {
   },
   TextEncoder: globalObject.TextEncoder,
   TextDecoder: globalObject.TextDecoder,
-  Promise: globalObject.Promise,
-  getRandomValues: (function (crypto) {
-    if (crypto === undefined) {
-      return undefined;
-    }
-    return function (arr: TypedArray, callback?: (error: Error | null) => void) {
-      crypto.getRandomValues(arr);
-      if (callback) {
-        callback(null);
-      }
-    };
-  })(globalObject.crypto || msCrypto),
+  getRandomArrayBuffer: async function (byteLength: number): Promise<ArrayBuffer> {
+    const byteArray = new Uint8Array(byteLength);
+    globalObject.crypto.getRandomValues(byteArray);
+    return byteArray.buffer;
+  },
+  isWebworker: isWebWorkerContext(),
 };
 
 export default Config;

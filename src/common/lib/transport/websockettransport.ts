@@ -3,13 +3,17 @@ import * as Utils from '../util/utils';
 import Transport from './transport';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, {
+  serialize as serializeProtocolMessage,
+  deserialize as deserializeProtocolMessage,
+} from '../types/protocolmessage';
 import ErrorInfo from '../types/errorinfo';
 import NodeWebSocket from 'ws';
 import ConnectionManager, { TransportParams } from './connectionmanager';
 import Auth from '../client/auth';
+import { TransportNames } from 'common/constants/TransportName';
 
-const shortName = 'web_socket';
+const shortName = TransportNames.WebSocket;
 
 function isNodeWebSocket(ws: WebSocket | NodeWebSocket): ws is NodeWebSocket {
   return !!(ws as NodeWebSocket).on;
@@ -25,7 +29,7 @@ class WebSocketTransport extends Transport {
     super(connectionManager, auth, params);
     /* If is a browser, can't detect pings, so request protocol heartbeats */
     params.heartbeats = Platform.Config.useProtocolHeartbeats;
-    this.wsHost = Defaults.getHost(params.options, params.host, true);
+    this.wsHost = params.host as string;
   }
 
   static isAvailable() {
@@ -50,49 +54,52 @@ class WebSocketTransport extends Transport {
     const wsScheme = options.tls ? 'wss://' : 'ws://';
     const wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
     Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
-    this.auth.getAuthParams(function (err: ErrorInfo, authParams: Record<string, string>) {
-      if (self.isDisposed) {
-        return;
-      }
-      let paramStr = '';
-      for (const param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
-      Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
-      if (err) {
-        self.disconnect(err);
-        return;
-      }
-      const connectParams = params.getConnectParams(authParams);
-      try {
-        const wsConnection = (self.wsConnection = self.createWebSocket(wsUri, connectParams));
-        wsConnection.binaryType = Platform.Config.binaryType;
-        wsConnection.onopen = function () {
-          self.onWsOpen();
-        };
-        wsConnection.onclose = function (ev: CloseEvent) {
-          self.onWsClose(ev);
-        };
-        wsConnection.onmessage = function (ev: MessageEvent) {
-          self.onWsData(ev.data);
-        };
-        wsConnection.onerror = function (ev: Event) {
-          self.onWsError(ev as ErrorEvent);
-        };
-        if (isNodeWebSocket(wsConnection)) {
-          /* node; browsers currently don't have a general eventemitter and can't detect
-           * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
-          wsConnection.on('ping', function () {
-            self.onActivity();
-          });
+    Utils.whenPromiseSettles(
+      this.auth.getAuthParams(),
+      function (err: ErrorInfo | null, authParams?: Record<string, string>) {
+        if (self.isDisposed) {
+          return;
         }
-      } catch (e) {
-        Logger.logAction(
-          Logger.LOG_ERROR,
-          'WebSocketTransport.connect()',
-          'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message)
-        );
-        self.disconnect(e as Error);
-      }
-    });
+        let paramStr = '';
+        for (const param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
+        Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
+        if (err) {
+          self.disconnect(err);
+          return;
+        }
+        const connectParams = params.getConnectParams(authParams!);
+        try {
+          const wsConnection = (self.wsConnection = self.createWebSocket(wsUri, connectParams));
+          wsConnection.binaryType = Platform.Config.binaryType;
+          wsConnection.onopen = function () {
+            self.onWsOpen();
+          };
+          wsConnection.onclose = function (ev: CloseEvent) {
+            self.onWsClose(ev);
+          };
+          wsConnection.onmessage = function (ev: MessageEvent) {
+            self.onWsData(ev.data);
+          };
+          wsConnection.onerror = function (ev: Event) {
+            self.onWsError(ev as ErrorEvent);
+          };
+          if (isNodeWebSocket(wsConnection)) {
+            /* node; browsers currently don't have a general eventemitter and can't detect
+             * pings. Also, no need to reply with a pong explicitly, ws lib handles that */
+            wsConnection.on('ping', function () {
+              self.onActivity();
+            });
+          }
+        } catch (e) {
+          Logger.logAction(
+            Logger.LOG_ERROR,
+            'WebSocketTransport.connect()',
+            'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message),
+          );
+          self.disconnect(e as Error);
+        }
+      },
+    );
   }
 
   send(message: ProtocolMessage) {
@@ -102,7 +109,9 @@ class WebSocketTransport extends Transport {
       return;
     }
     try {
-      wsConnection.send(ProtocolMessage.serialize(message, this.params.format));
+      (wsConnection as NodeWebSocket).send(
+        serializeProtocolMessage(message, this.connectionManager.realtime._MsgPack, this.params.format),
+      );
     } catch (e) {
       const msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
       Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
@@ -116,15 +125,22 @@ class WebSocketTransport extends Transport {
     Logger.logAction(
       Logger.LOG_MICRO,
       'WebSocketTransport.onWsData()',
-      'data received; length = ' + data.length + '; type = ' + typeof data
+      'data received; length = ' + data.length + '; type = ' + typeof data,
     );
     try {
-      this.onProtocolMessage(ProtocolMessage.deserialize(data, this.format));
+      this.onProtocolMessage(
+        deserializeProtocolMessage(
+          data,
+          this.connectionManager.realtime._MsgPack,
+          this.connectionManager.realtime._RealtimePresence,
+          this.format,
+        ),
+      );
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,
         'WebSocketTransport.onWsData()',
-        'Unexpected exception handing channel message: ' + (e as Error).stack
+        'Unexpected exception handing channel message: ' + (e as Error).stack,
       );
     }
   }
@@ -193,10 +209,4 @@ class WebSocketTransport extends Transport {
   }
 }
 
-function initialiseTransport(connectionManager: any): typeof WebSocketTransport {
-  if (WebSocketTransport.isAvailable()) connectionManager.supportedTransports[shortName] = WebSocketTransport;
-
-  return WebSocketTransport;
-}
-
-export default initialiseTransport;
+export default WebSocketTransport;

@@ -9,4 +9,8 @@ define(['shared_helper'], function (helper) {
       done();
     });
   });
+
+  afterEach(helper.closeActiveClients);
+  afterEach(helper.logTestResults);
+  beforeEach(helper.clearTransportPreference);
 });

@@ -1,12 +1,11 @@
-import { TypedArray } from 'common/types/IPlatformConfig';
 import IBufferUtils from 'common/types/IBufferUtils';
+import crypto from 'crypto';
 
-export type Bufferlike = Buffer | ArrayBuffer | TypedArray;
+export type Bufferlike = Buffer | ArrayBuffer | ArrayBufferView;
 export type Output = Buffer;
 export type ToBufferOutput = Buffer;
-export type ComparableBuffer = Buffer;
 
-class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer> {
+class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   base64CharSet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet: string = '0123456789abcdef';
 
@@ -18,10 +17,9 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     return this.toBuffer(buffer).toString('base64');
   }
 
-  bufferCompare(buffer1: ComparableBuffer, buffer2: ComparableBuffer): number {
-    if (!buffer1) return -1;
-    if (!buffer2) return 1;
-    return buffer1.compare(buffer2);
+  areBuffersEqual(buffer1: Bufferlike, buffer2: Bufferlike): boolean {
+    if (!buffer1 || !buffer2) return false;
+    return this.toBuffer(buffer1).compare(this.toBuffer(buffer2)) == 0;
   }
 
   byteLength(buffer: Bufferlike): number {
@@ -36,14 +34,10 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     return this.toBuffer(buffer).toString('hex');
   }
 
-  isArrayBuffer(ob: unknown): ob is ArrayBuffer {
-    return ob !== null && ob !== undefined && (ob as ArrayBuffer).constructor === ArrayBuffer;
-  }
-
   /* In node, BufferUtils methods that return binary objects return a Buffer
    * for historical reasons; the browser equivalents return ArrayBuffers */
   isBuffer(buffer: unknown): buffer is Bufferlike {
-    return Buffer.isBuffer(buffer) || this.isArrayBuffer(buffer) || ArrayBuffer.isView(buffer);
+    return Buffer.isBuffer(buffer) || buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer);
   }
 
   toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
@@ -55,11 +49,14 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
     if (Buffer.isBuffer(buffer)) {
       return buffer;
     }
-    return Buffer.from(buffer);
+    if (buffer instanceof ArrayBuffer) {
+      return Buffer.from(buffer);
+    }
+    return Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   }
 
-  typedArrayToBuffer(typedArray: TypedArray): Buffer {
-    return this.toBuffer(typedArray.buffer);
+  arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView): Buffer {
+    return this.toBuffer(arrayBufferView.buffer);
   }
 
   utf8Decode(buffer: Bufferlike): string {
@@ -71,6 +68,16 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput, Co
 
   utf8Encode(string: string): Output {
     return Buffer.from(string, 'utf8');
+  }
+
+  hmacSha256(message: Bufferlike, key: Bufferlike): Output {
+    const messageBuffer = this.toBuffer(message);
+    const keyBuffer = this.toBuffer(key);
+
+    const hmac = crypto.createHmac('SHA256', keyBuffer);
+    hmac.update(messageBuffer);
+
+    return hmac.digest();
   }
 }
 

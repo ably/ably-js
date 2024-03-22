@@ -21,52 +21,18 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
-    restTestOnJsonMsgpack('status0', function (done, rest) {
+    restTestOnJsonMsgpack('status0', async function (rest) {
       var channel = rest.channels.get('status0');
-      channel.status(function (err, channelDetails) {
-        try {
-          expect(channelDetails.channelId).to.equal('status0');
-          expect(channelDetails.status.isActive).to.be.a('boolean');
-          var metrics = channelDetails.status.occupancy.metrics;
-          expect(metrics.connections).to.be.a('number');
-          expect(metrics.presenceConnections).to.be.a('number');
-          expect(metrics.presenceMembers).to.be.a('number');
-          expect(metrics.presenceSubscribers).to.be.a('number');
-          expect(metrics.publishers).to.be.a('number');
-          expect(metrics.subscribers).to.be.a('number');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var channelDetails = await channel.status();
+      expect(channelDetails.channelId).to.equal('status0');
+      expect(channelDetails.status.isActive).to.be.a('boolean');
+      var metrics = channelDetails.status.occupancy.metrics;
+      expect(metrics.connections).to.be.a('number');
+      expect(metrics.presenceConnections).to.be.a('number');
+      expect(metrics.presenceMembers).to.be.a('number');
+      expect(metrics.presenceSubscribers).to.be.a('number');
+      expect(metrics.publishers).to.be.a('number');
+      expect(metrics.subscribers).to.be.a('number');
     });
-
-    if (typeof Promise !== 'undefined') {
-      it('statusPromise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
-        var channel = rest.channels.get('statusPromise');
-        channel
-          .status()
-          .then(function (channelDetails) {
-            try {
-              expect(channelDetails.channelId).to.equal('statusPromise');
-              expect(channelDetails.status.isActive).to.be.a('boolean');
-              var metrics = channelDetails.status.occupancy.metrics;
-              expect(metrics.connections).to.be.a('number');
-              expect(metrics.presenceConnections).to.be.a('number');
-              expect(metrics.presenceMembers).to.be.a('number');
-              expect(metrics.presenceSubscribers).to.be.a('number');
-              expect(metrics.publishers).to.be.a('number');
-              expect(metrics.subscribers).to.be.a('number');
-              done();
-            } catch (err) {
-              done(err);
-            }
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
   });
 });

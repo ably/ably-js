@@ -3,8 +3,12 @@ import * as Utils from './utils';
 import Logger from './logger';
 import ErrorInfo from 'common/lib/types/errorinfo';
 import { version } from '../../../../package.json';
-import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from 'common/types/ClientOptions';
+import ClientOptions, { NormalisedClientOptions } from 'common/types/ClientOptions';
 import IDefaults from '../../types/IDefaults';
+import { MsgPack } from 'common/types/msgpack';
+import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
+import { ChannelOptions } from 'common/types/channel';
+import { ModularPlugins } from '../client/modularplugins';
 
 let agent = 'ably-js/' + version;
 
@@ -24,8 +28,8 @@ type CompleteDefaults = IDefaults & {
     connectionStateTtl: number;
     realtimeRequestTimeout: number;
     recvTimeout: number;
-    preferenceConnectTimeout: number;
-    parallelUpgradeDelay: number;
+    webSocketConnectTimeout: number;
+    webSocketSlowTimeout: number;
   };
   httpMaxRetryCount: number;
   maxMessageSize: number;
@@ -37,11 +41,18 @@ type CompleteDefaults = IDefaults & {
   getHttpScheme(options: ClientOptions): string;
   environmentFallbackHosts(environment: string): string[];
   getFallbackHosts(options: NormalisedClientOptions): string[];
-  getHosts(options: NormalisedClientOptions): string[];
+  getHosts(options: NormalisedClientOptions, ws?: boolean): string[];
   checkHost(host: string): void;
   getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
-  objectifyOptions(options: ClientOptions | string): ClientOptions;
-  normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions;
+  objectifyOptions(
+    options: undefined | ClientOptions | string,
+    allowKeyOrToken: boolean,
+    sourceForErrorMessage: string,
+    modularPluginsToInclude?: ModularPlugins,
+  ): ClientOptions;
+  normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions;
+  defaultGetHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
+  defaultPostHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
 };
 
 const Defaults = {
@@ -69,14 +80,14 @@ const Defaults = {
     connectionStateTtl: 120000,
     realtimeRequestTimeout: 10000,
     recvTimeout: 90000,
-    preferenceConnectTimeout: 6000,
-    parallelUpgradeDelay: 6000,
+    webSocketConnectTimeout: 10000,
+    webSocketSlowTimeout: 4000,
   },
   httpMaxRetryCount: 3,
   maxMessageSize: 65536,
 
   version,
-  protocolVersion: 2,
+  protocolVersion: 3,
   agent,
   getHost,
   getPort,
@@ -87,6 +98,8 @@ const Defaults = {
   checkHost,
   objectifyOptions,
   normaliseOptions,
+  defaultGetHeaders,
+  defaultPostHeaders,
 };
 
 export function getHost(options: ClientOptions, host?: string | null, ws?: boolean): string {
@@ -123,8 +136,9 @@ export function getFallbackHosts(options: NormalisedClientOptions): string[] {
   return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
 }
 
-export function getHosts(options: NormalisedClientOptions): string[] {
-  return [options.restHost].concat(getFallbackHosts(options));
+export function getHosts(options: NormalisedClientOptions, ws?: boolean): string[] {
+  const hosts = [options.restHost].concat(getFallbackHosts(options));
+  return ws ? hosts.map((host) => getHost(options, host, true)) : hosts;
 }
 
 function checkHost(host: string): void {
@@ -148,7 +162,7 @@ function getRealtimeHost(options: ClientOptions, production: boolean, environmen
         options.restHost +
         '" but realtimeHost is not set, so setting realtimeHost to "' +
         options.restHost +
-        '" too. If this is not what you want, please set realtimeHost explicitly.'
+        '" too. If this is not what you want, please set realtimeHost explicitly.',
     );
     return options.restHost;
   }
@@ -174,82 +188,57 @@ export function getAgentString(options: ClientOptions): string {
   return agentStr;
 }
 
-export function objectifyOptions(options: ClientOptions | string): ClientOptions {
-  if (typeof options == 'string') {
-    return options.indexOf(':') == -1 ? { token: options } : { key: options };
+export function objectifyOptions(
+  options: undefined | ClientOptions | string,
+  allowKeyOrToken: boolean,
+  sourceForErrorMessage: string,
+  modularPluginsToInclude?: ModularPlugins,
+): ClientOptions {
+  if (options === undefined) {
+    const msg = allowKeyOrToken
+      ? `${sourceForErrorMessage} must be initialized with either a client options object, an Ably API key, or an Ably Token`
+      : `${sourceForErrorMessage} must be initialized with a client options object`;
+    Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+    throw new Error(msg);
   }
-  return options;
+
+  let optionsObj: ClientOptions;
+
+  if (typeof options === 'string') {
+    if (options.indexOf(':') == -1) {
+      if (!allowKeyOrToken) {
+        const msg = `${sourceForErrorMessage} cannot be initialized with just an Ably Token; you must provide a client options object with a \`plugins\` property. (Set this Ably Token as the object’s \`token\` property.)`;
+        Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+        throw new Error(msg);
+      }
+
+      optionsObj = { token: options };
+    } else {
+      if (!allowKeyOrToken) {
+        const msg = `${sourceForErrorMessage} cannot be initialized with just an Ably API key; you must provide a client options object with a \`plugins\` property. (Set this Ably API key as the object’s \`key\` property.)`;
+        Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+        throw new Error(msg);
+      }
+
+      optionsObj = { key: options };
+    }
+  } else {
+    optionsObj = options;
+  }
+
+  if (modularPluginsToInclude) {
+    optionsObj = { ...optionsObj, plugins: { ...modularPluginsToInclude, ...optionsObj.plugins } };
+  }
+
+  return optionsObj;
 }
 
-export function normaliseOptions(options: DeprecatedClientOptions): NormalisedClientOptions {
-  /* Deprecated options */
-  if (options.host) {
-    Logger.renamedClientOption('host', 'restHost');
-    options.restHost = options.host;
-  }
-  if (options.wsHost) {
-    Logger.renamedClientOption('wsHost', 'realtimeHost');
-    options.realtimeHost = options.wsHost;
-  }
-  if (options.queueEvents) {
-    Logger.renamedClientOption('queueEvents', 'queueMessages');
-    options.queueMessages = options.queueEvents;
-  }
-  if (options.headers) {
-    Logger.deprecated(
-      'the `headers` client option',
-      '' /* there is no replacement; see DeprecatedClientOptions.headers */
-    );
-  }
-
-  if (options.fallbackHostsUseDefault) {
-    /* fallbackHostsUseDefault and fallbackHosts are mutually exclusive as per TO3k7 */
-    if (options.fallbackHosts) {
-      const msg = 'fallbackHosts and fallbackHostsUseDefault cannot both be set';
-      Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
-      throw new ErrorInfo(msg, 40000, 400);
-    }
-
-    /* default fallbacks can't be used with custom ports */
-    if (options.port || options.tlsPort) {
-      const msg = 'fallbackHostsUseDefault cannot be set when port or tlsPort are set';
-      Logger.logAction(Logger.LOG_ERROR, 'Defaults.normaliseOptions', msg);
-      throw new ErrorInfo(msg, 40000, 400);
-    }
-
-    /* emit an appropriate deprecation warning */
-    if (options.environment) {
-      Logger.deprecated(
-        'The `fallbackHostsUseDefault` client option',
-        'If you’re using this client option to force the library to make use of fallback hosts even though you’ve set the `environment` client option, then this is no longer necessary: remove your usage of the `fallbackHostsUseDefault` client option and the library will then automatically choose the correct fallback hosts to use for the specified environment.'
-      );
-    } else {
-      Logger.deprecated(
-        'The `fallbackHostsUseDefault` client option',
-        'If you’re using this client option to force the library to make use of fallback hosts even though you’re not using the primary Ably environment, then stop using `fallbackHostsUseDefault`, and update your code to either pass the `environment` client option (in which case the library will automatically choose the correct fallback hosts to use for the specified environment), or to pass the `fallbackHosts` client option to specify a custom list of fallback hosts to use (for example, if you’re using a custom CNAME, in which case Ably will have provided you with an explicit list of fallback hosts).'
-      );
-    }
-
-    /* use the default fallback hosts as requested */
-    options.fallbackHosts = Defaults.FALLBACK_HOSTS;
-  }
-
-  /* options.recover as a boolean is deprecated, and therefore is not part of the public typing */
-  if ((options.recover as any) === true) {
-    Logger.deprecated(
-      'The ability to use a boolean value for the `recover` client option',
-      'If you wish for the connection to always be recovered, replace `{ recover: true }` with a function that always passes `true` to its callback: `{ recover: function(lastConnectionDetails, cb) { cb(true); } }`'
-    );
-    options.recover = function (lastConnectionDetails: unknown, cb: (shouldRecover: boolean) => void) {
-      cb(true);
-    };
-  }
-
+export function normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions {
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
     Logger.logAction(
       Logger.LOG_ERROR,
       'Defaults.normaliseOptions',
-      'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter'
+      'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter',
     );
     options.recover = undefined;
   }
@@ -258,14 +247,6 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
     /* Have closeOnUnload default to true unless we have any indication that
      * the user may want to recover the connection */
     options.closeOnUnload = !options.recover;
-  }
-
-  if (options.transports && Utils.arrIn(options.transports, 'xhr')) {
-    Logger.deprecationWarning(
-      'The "xhr" transport has been renamed to "xhr_streaming". Please update your client options code to use `transports: ["xhr_streaming"]` instead. The ability to use `transports: ["xhr"]` will be removed in a future version.'
-    );
-    Utils.arrDeleteValue(options.transports, 'xhr');
-    options.transports.push('xhr_streaming');
   }
 
   if (!('queueMessages' in options)) options.queueMessages = true;
@@ -281,7 +262,7 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
   const restHost = options.restHost || (production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST);
   const realtimeHost = getRealtimeHost(options, production, environment);
 
-  Utils.arrForEach((options.fallbackHosts || []).concat(restHost, realtimeHost), checkHost);
+  (options.fallbackHosts || []).concat(restHost, realtimeHost).forEach(checkHost);
 
   options.port = options.port || Defaults.PORT;
   options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
@@ -289,28 +270,23 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 
   const timeouts = getTimeouts(options);
 
-  if ('useBinaryProtocol' in options) {
-    options.useBinaryProtocol = Platform.Config.supportsBinary && options.useBinaryProtocol;
+  if (MsgPack) {
+    if ('useBinaryProtocol' in options) {
+      options.useBinaryProtocol = Platform.Config.supportsBinary && options.useBinaryProtocol;
+    } else {
+      options.useBinaryProtocol = Platform.Config.preferBinary;
+    }
   } else {
-    options.useBinaryProtocol = Platform.Config.preferBinary;
+    options.useBinaryProtocol = false;
   }
 
+  const headers: Record<string, string> = {};
   if (options.clientId) {
-    const headers = (options.headers = options.headers || {});
     headers['X-Ably-ClientId'] = Platform.BufferUtils.base64Encode(Platform.BufferUtils.utf8Encode(options.clientId));
   }
 
   if (!('idempotentRestPublishing' in options)) {
     options.idempotentRestPublishing = true;
-  }
-
-  if (options.promises && !Platform.Config.Promise) {
-    Logger.logAction(
-      Logger.LOG_ERROR,
-      'Defaults.normaliseOptions',
-      '{promises: true} was specified, but no Promise constructor found; disabling promises'
-    );
-    options.promises = false;
   }
 
   let connectivityCheckParams = null;
@@ -326,16 +302,79 @@ export function normaliseOptions(options: DeprecatedClientOptions): NormalisedCl
 
   return {
     ...options,
-    useBinaryProtocol:
-      'useBinaryProtocol' in options
-        ? Platform.Config.supportsBinary && options.useBinaryProtocol
-        : Platform.Config.preferBinary,
     realtimeHost,
     restHost,
     maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
     timeouts,
     connectivityCheckParams,
     connectivityCheckUrl,
+    headers,
+  };
+}
+
+export function normaliseChannelOptions(Crypto: IUntypedCryptoStatic | null, options?: ChannelOptions) {
+  const channelOptions = options || {};
+  if (channelOptions.cipher) {
+    if (!Crypto) Utils.throwMissingPluginError('Crypto');
+    const cipher = Crypto.getCipher(channelOptions.cipher);
+    channelOptions.cipher = cipher.cipherParams;
+    channelOptions.channelCipher = cipher.cipher;
+  } else if ('cipher' in channelOptions) {
+    /* Don't deactivate an existing cipher unless options
+     * has a 'cipher' key that's falsey */
+    channelOptions.cipher = undefined;
+    channelOptions.channelCipher = null;
+  }
+  return channelOptions;
+}
+
+const contentTypes = {
+  json: 'application/json',
+  xml: 'application/xml',
+  html: 'text/html',
+  msgpack: 'application/x-msgpack',
+};
+
+export interface HeadersOptions {
+  format?: Utils.Format;
+  protocolVersion?: number;
+}
+
+const defaultHeadersOptions: Required<HeadersOptions> = {
+  format: Utils.Format.json,
+  protocolVersion: Defaults.protocolVersion,
+};
+
+export function defaultGetHeaders(
+  options: NormalisedClientOptions,
+  {
+    format = defaultHeadersOptions.format,
+    protocolVersion = defaultHeadersOptions.protocolVersion,
+  }: HeadersOptions = {},
+): Record<string, string> {
+  const accept = contentTypes[format];
+  return {
+    accept: accept,
+    'X-Ably-Version': protocolVersion.toString(),
+    'Ably-Agent': getAgentString(options),
+  };
+}
+
+export function defaultPostHeaders(
+  options: NormalisedClientOptions,
+  {
+    format = defaultHeadersOptions.format,
+    protocolVersion = defaultHeadersOptions.protocolVersion,
+  }: HeadersOptions = {},
+): Record<string, string> {
+  let contentType;
+  const accept = (contentType = contentTypes[format]);
+
+  return {
+    accept: accept,
+    'content-type': contentType,
+    'X-Ably-Version': protocolVersion.toString(),
+    'Ably-Agent': getAgentString(options),
   };
 }
 

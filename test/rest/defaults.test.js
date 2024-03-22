@@ -55,28 +55,7 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false)).to.deep.equal('sandbox-rest.ably.io');
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true)).to.deep.equal(
-        'sandbox-realtime.ably.io'
-      );
-
-      expect(Defaults.getPort(normalisedOptions)).to.equal(443);
-    });
-
-    /* will emit a deprecation warning */
-    it('Init with given environment and default fallbacks', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ environment: 'sandbox', fallbackHostsUseDefault: true });
-
-      expect(normalisedOptions.restHost).to.equal('sandbox-rest.ably.io');
-      expect(normalisedOptions.realtimeHost).to.equal('sandbox-realtime.ably.io');
-      expect(normalisedOptions.port).to.equal(80);
-      expect(normalisedOptions.tlsPort).to.equal(443);
-      expect(normalisedOptions.fallbackHosts.sort()).to.deep.equal(Defaults.FALLBACK_HOSTS.sort());
-      expect(normalisedOptions.tls).to.equal(true);
-
-      expect(Defaults.getHosts(normalisedOptions).length).to.deep.equal(4);
-      expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
-      expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false)).to.deep.equal('sandbox-rest.ably.io');
-      expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true)).to.deep.equal(
-        'sandbox-realtime.ably.io'
+        'sandbox-realtime.ably.io',
       );
 
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
@@ -134,52 +113,6 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
     });
 
-    /* init with given restHost and realtimeHost, using the default fallback hosts */
-    it('Init with given restHost and realtimeHost, using the default fallback hosts', function () {
-      var normalisedOptions = Defaults.normaliseOptions({
-        restHost: 'test.org',
-        realtimeHost: 'ws.test.org',
-        fallbackHostsUseDefault: true,
-      });
-
-      expect(normalisedOptions.restHost).to.equal('test.org');
-      expect(normalisedOptions.realtimeHost).to.equal('ws.test.org');
-      expect(normalisedOptions.fallbackHosts.sort()).to.deep.equal(Defaults.FALLBACK_HOSTS.sort());
-    });
-
-    it('Throws an error when initiated with fallbackHosts and fallbackHostsUseDefault', function () {
-      expect(function () {
-        Defaults.normaliseOptions({ fallbackHosts: ['a.example.com', 'b.example.com'], fallbackHostsUseDefault: true });
-      }, "Check fallbackHosts and fallbackHostsUseDefault can't both be set").to.throw();
-    });
-
-    it('Throws an error with initiated with fallbackHostsUseDefault and port or tlsPort set', function () {
-      expect(function () {
-        Defaults.normaliseOptions({ fallbackHostsUseDefault: true, port: 8080 });
-      }, "Check fallbackHostsUseDefault and port can't both be set").to.throw;
-      expect(function () {
-        Defaults.normaliseOptions({ fallbackHostsUseDefault: true, tlsPort: 8081 });
-      }, "Check fallbackHostsUseDefault and tlsPort can't both be set").to.throw;
-    });
-
-    /* will emit a warning */
-    it('Init with deprecated host and wsHost options', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ host: 'test.org', wsHost: 'ws.test.org' });
-
-      expect(normalisedOptions.restHost).to.equal('test.org');
-      expect(normalisedOptions.realtimeHost).to.equal('ws.test.org');
-      expect(normalisedOptions.port).to.equal(80);
-      expect(normalisedOptions.tlsPort).to.equal(443);
-      expect(normalisedOptions.fallbackHosts).to.equal(undefined);
-      expect(normalisedOptions.tls).to.equal(true);
-
-      expect(Defaults.getHosts(normalisedOptions)).to.deep.equal([normalisedOptions.restHost]);
-      expect(Defaults.getHost(normalisedOptions, 'test.org', false)).to.deep.equal('test.org');
-      expect(Defaults.getHost(normalisedOptions, 'test.org', true)).to.deep.equal('ws.test.org');
-
-      expect(Defaults.getPort(normalisedOptions)).to.equal(443);
-    });
-
     it('Init with no endpoint-related options and given default environment', function () {
       Defaults.ENVIRONMENT = 'sandbox';
       var normalisedOptions = Defaults.normaliseOptions({});
@@ -195,11 +128,33 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false)).to.deep.equal('sandbox-rest.ably.io');
       expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true)).to.deep.equal(
-        'sandbox-realtime.ably.io'
+        'sandbox-realtime.ably.io',
       );
 
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
       Defaults.ENVIRONMENT = '';
+    });
+
+    // TODO once https://github.com/ably/ably-js/issues/1424 is fixed, this should also test the case where the useBinaryProtocol option is not specified
+    describe('normaliseOptions with useBinaryProtocol == true', () => {
+      if (Ably.Realtime.Platform.Config.supportsBinary) {
+        describe('given MsgPack implementation', () => {
+          it('maintains useBinaryProtocol as true', () => {
+            const StubMsgPack = {};
+            var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, StubMsgPack);
+
+            expect(normalisedOptions.useBinaryProtocol).to.be.true;
+          });
+        });
+      }
+
+      describe('given no MsgPack implementation', () => {
+        it('changes useBinaryProtocol to false', () => {
+          var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, null);
+
+          expect(normalisedOptions.useBinaryProtocol).to.be.false;
+        });
+      });
     });
 
     it('closeOnUnload', function () {

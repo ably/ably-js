@@ -6,9 +6,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var expect = chai.expect;
   var displayError = helper.displayError;
   var closeAndFinish = helper.closeAndFinish;
+  var closeAndFinishAsync = helper.closeAndFinishAsync;
   var monitorConnection = helper.monitorConnection;
-  var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
+  var monitorConnectionAsync = helper.monitorConnectionAsync;
+  var createPM = Ably.protocolMessageFromDeserialized;
   var testOnAllTransports = helper.testOnAllTransports;
+  var whenPromiseSettles = helper.whenPromiseSettles;
   var randomString = helper.randomString;
 
   function checkCanSubscribe(channel, testChannel) {
@@ -24,7 +27,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         callback();
       });
 
-      testChannel.publish(eventName, null, function (err) {
+      whenPromiseSettles(testChannel.publish(eventName, null), function (err) {
         if (received) return;
         if (err) callback(err);
         timeout = setTimeout(function () {
@@ -48,7 +51,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         callback('checkCantSubscribe: unexpectedly received message');
       });
 
-      testChannel.publish(eventName, null, function (err) {
+      whenPromiseSettles(testChannel.publish(eventName, null), function (err) {
         if (received) return;
         if (err) callback(err);
         timeout = setTimeout(function () {
@@ -61,13 +64,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
   function checkCanPublish(channel) {
     return function (callback) {
-      channel.publish(null, null, callback);
+      whenPromiseSettles(channel.publish(null, null), callback);
     };
   }
 
   function checkCantPublish(channel) {
     return function (callback) {
-      channel.publish(null, null, function (err) {
+      whenPromiseSettles(channel.publish(null, null), function (err) {
         if (err && err.code === 40160) {
           callback();
         } else {
@@ -80,7 +83,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   function checkCanEnterPresence(channel) {
     return function (callback) {
       var clientId = randomString();
-      channel.presence.enterClient(clientId, null, function (err) {
+      whenPromiseSettles(channel.presence.enterClient(clientId, null), function (err) {
         channel.presence.leaveClient(clientId);
         callback(err);
       });
@@ -89,7 +92,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
   function checkCantEnterPresence(channel) {
     return function (callback) {
-      channel.presence.enterClient(randomString(), null, function (err) {
+      whenPromiseSettles(channel.presence.enterClient(randomString(), null), function (err) {
         if (err && err.code === 40160) {
           callback();
         } else {
@@ -113,7 +116,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         callback();
       });
 
-      testChannel.presence.enterClient(clientId, null, function (err) {
+      whenPromiseSettles(testChannel.presence.enterClient(clientId, null), function (err) {
         if (received) return;
         if (err) callback(err);
         timeout = setTimeout(function () {
@@ -139,7 +142,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         callback('checkCantPresenceSubscribe: unexpectedly received message');
       });
 
-      testChannel.presence.enterClient(clientId, null, function (err) {
+      whenPromiseSettles(testChannel.presence.enterClient(clientId, null), function (err) {
         if (received) return;
         if (err) callback(err);
         timeout = setTimeout(function () {
@@ -208,7 +211,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.on('connected', function () {
             var channel0 = realtime.channels.get('channelattach0');
-            channel0.attach(function (err) {
+            whenPromiseSettles(channel0.attach(), function (err) {
               if (err) {
                 closeAndFinish(done, realtime, err);
               }
@@ -230,7 +233,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         try {
           var realtime = helper.AblyRealtime(realtimeOpts);
           var channel2 = realtime.channels.get('channelattach2');
-          channel2.attach(function (err) {
+          whenPromiseSettles(channel2.attach(), function (err) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -255,11 +258,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             var realtime = helper.AblyRealtime(realtimeOpts);
             realtime.connection.on('connected', function () {
               var channel0 = realtime.channels.get('channelattach3');
-              channel0.attach(function (err) {
+              whenPromiseSettles(channel0.attach(), function (err) {
                 if (err) {
                   closeAndFinish(done, realtime, err);
                 }
-                channel0.detach(function (err) {
+                whenPromiseSettles(channel0.detach(), function (err) {
                   if (err) {
                     closeAndFinish(done, realtime, err);
                   }
@@ -277,11 +280,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
         };
       },
-      true
+      true,
     );
-    /* NB upgrade is excluded because realtime now sends an ATTACHED
-     * post-upgrade, which can race with the DETACHED if the DETACH is only sent
-     * just after upgrade. Re-include it with 1.1 spec which has IDs in ATTACHs */
 
     /*
      * Attach with an empty channel and expect a channel error
@@ -293,7 +293,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             var channel0 = realtime.channels.get('');
-            channel0.attach(function (err) {
+            whenPromiseSettles(channel0.attach(), function (err) {
               if (err) {
                 setTimeout(function () {
                   try {
@@ -325,7 +325,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             var channel = realtime.channels.get(':hell');
-            channel.attach(function (err) {
+            whenPromiseSettles(channel.attach(), function (err) {
               if (err) {
                 try {
                   expect(channel.errorReason.code).to.equal(40010, 'Attach error was set as the channel errorReason');
@@ -362,7 +362,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         try {
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
-            realtime.channels.get('publish_no_attach').publish(function (err) {
+            whenPromiseSettles(realtime.channels.get('publish_no_attach').publish(), function (err) {
               if (err) {
                 closeAndFinish(done, realtime, new Error('Unexpected attach failure: ' + helper.displayError(err)));
                 return;
@@ -385,7 +385,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         try {
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
-            realtime.channels.get(':hell').publish(function (err) {
+            whenPromiseSettles(realtime.channels.get(':hell').publish(), function (err) {
               if (err) {
                 try {
                   expect(err.code).to.equal(40010, 'correct error code');
@@ -414,10 +414,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         try {
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
-            realtime.channels.get(':hell').attach(function (err) {
+            whenPromiseSettles(realtime.channels.get(':hell').attach(), function (err) {
               if (err) {
                 /* attempt second attach */
-                realtime.channels.get(':hell').attach(function (err) {
+                whenPromiseSettles(realtime.channels.get(':hell').attach(), function (err) {
                   if (err) {
                     setTimeout(function () {
                       try {
@@ -446,22 +446,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Attach then later call whenState which fires immediately
      */
-    it('channelattachOnceOrIfAfter', function (done) {
+    it('channelattachWhenState', function (done) {
       try {
         var realtime = helper.AblyRealtime(),
-          channel = realtime.channels.get('channelattachOnceOrIf'),
-          firedImmediately = false;
+          channel = realtime.channels.get('channelattachWhenState');
 
-        channel.attach(function (err) {
-          channel.whenState('attached', function () {
-            firedImmediately = true;
-          });
-          try {
-            expect(firedImmediately, 'whenState fired immediately as attached').to.be.ok;
-            closeAndFinish(done, realtime);
-          } catch (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
+          whenPromiseSettles(channel.whenState('attached'), function () {
             closeAndFinish(done, realtime, err);
-          }
+          });
         });
         monitorConnection(done, realtime);
       } catch (err) {
@@ -479,7 +472,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           firedImmediately = false;
 
         channel.attach();
-        channel.whenState('attached', function () {
+        whenPromiseSettles(channel.whenState('attached'), function () {
           firedImmediately = true;
           try {
             expect(channel.state).to.equal('attached', 'whenState fired when attached');
@@ -509,7 +502,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               params: params,
             };
             var channel = realtime.channels.get(testName, channelOptions);
-            channel.attach(function (err) {
+            whenPromiseSettles(channel.attach(), function (err) {
               if (err) {
                 closeAndFinish(done, realtime, err);
                 return;
@@ -536,7 +529,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  }
+                  },
                 );
               });
             });
@@ -563,7 +556,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             };
             var channel = realtime.channels.get(testName);
             channel.setOptions(channelOptions);
-            channel.attach(function (err) {
+            whenPromiseSettles(channel.attach(), function (err) {
               if (err) {
                 closeAndFinish(done, realtime, err);
                 return;
@@ -585,7 +578,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  }
+                  },
                 );
               });
             });
@@ -639,7 +632,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var channel = realtime.channels.get(testName, {
             params: params,
           });
-          channel.attach(function (err) {
+          whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -685,58 +678,32 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             async.series(
               [
                 function (cb) {
-                  var setOptionsReturned = false;
-                  channel.setOptions(
-                    {
-                      params: params,
-                      modes: modes,
-                    },
-                    function () {
-                      expect(
-                        !setOptionsReturned,
-                        'setOptions failed to call back immediately, when no reattach is required'
-                      ).to.be.ok;
-                      cb();
-                    }
-                  );
-                  setOptionsReturned = true;
-                },
-                function (cb) {
-                  channel.attach(cb);
+                  whenPromiseSettles(channel.attach(), cb);
                 },
                 function (cb) {
                   var channelUpdated = false;
-                  // attached or update: in case this is happening in parallel with
-                  // a transport upgrade, we might flip to attaching, meaning it'll come
-                  // through as attached not update
-                  channel._allChannelChanges.on(['attached', 'update'], function () {
+                  channel._allChannelChanges.on(['update'], function () {
                     channelUpdated = true;
                   });
 
-                  var setOptionsReturned = false;
-                  channel.setOptions(
-                    {
+                  whenPromiseSettles(
+                    channel.setOptions({
                       params: {
                         modes: 'publish',
                       },
-                    },
+                    }),
                     function () {
                       /* Wait a tick so we don' depend on whether the update event runs the
                        * channelUpdated listener or the setOptions listener first */
                       Ably.Realtime.Platform.Config.nextTick(function () {
                         expect(
-                          setOptionsReturned,
-                          'setOptions should return immediately and call back after the reattach'
-                        ).to.be.ok;
-                        expect(
                           channelUpdated,
-                          'Check channel went to the server to update the channel params'
+                          'Check channel went to the server to update the channel params',
                         ).to.be.ok;
                         cb();
                       });
-                    }
+                    },
                   );
-                  setOptionsReturned = true;
                 },
                 function (cb) {
                   var channelUpdated = false;
@@ -744,39 +711,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     channelUpdated = true;
                   });
 
-                  var setOptionsReturned = false;
-                  channel.setOptions(
-                    {
+                  whenPromiseSettles(
+                    channel.setOptions({
                       modes: ['subscribe'],
-                    },
+                    }),
                     function () {
                       Ably.Realtime.Platform.Config.nextTick(function () {
-                        expect(
-                          setOptionsReturned,
-                          'setOptions should return immediately and call back after the reattach'
-                        ).to.be.ok;
                         expect(channelUpdated, 'Check channel went to the server to update the channel mode').to.be.ok;
                         cb();
                       });
-                    }
+                    },
                   );
-                  setOptionsReturned = true;
-                },
-                function (cb) {
-                  var setOptionsReturned = false;
-                  channel.setOptions({}, function () {
-                    expect(
-                      !setOptionsReturned,
-                      'setOptions failed to call back immediately, when no reattach is required'
-                    ).to.be.ok;
-                    cb();
-                  });
-                  setOptionsReturned = true;
                 },
               ],
               function (err) {
                 closeAndFinish(done, realtime, err);
-              }
+              },
             );
           });
           monitorConnection(done, realtime);
@@ -802,7 +752,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               modes: ['publish', 'presence_subscribe'],
             };
             var channel = realtime.channels.get(testName, channelOptions);
-            channel.attach(function (err) {
+            whenPromiseSettles(channel.attach(), function (err) {
               if (err) {
                 closeAndFinish(done, realtime, err);
                 return;
@@ -829,7 +779,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  }
+                  },
                 );
               });
             });
@@ -852,7 +802,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               modes: modes,
             };
             var channel = realtime.channels.get(testName, channelOptions);
-            channel.attach(function (err) {
+            whenPromiseSettles(channel.attach(), function (err) {
               if (err) {
                 closeAndFinish(done, realtime, err);
                 return;
@@ -878,7 +828,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  }
+                  },
                 );
               });
             });
@@ -902,7 +852,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               params: { delta: 'vcdiff' },
             };
             var channel = realtime.channels.get(testName, channelOptions);
-            channel.attach(function (err) {
+            whenPromiseSettles(channel.attach(), function (err) {
               if (err) {
                 closeAndFinish(done, realtime, err);
                 return;
@@ -929,7 +879,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (err) {
                     testRealtime.close();
                     closeAndFinish(done, realtime, err);
-                  }
+                  },
                 );
               });
             });
@@ -951,7 +901,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           async.series(
             [
               function (cb) {
-                channel.attach(function (err) {
+                whenPromiseSettles(channel.attach(), function (err) {
                   cb(err);
                 });
               },
@@ -959,12 +909,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 var channelOptions = {
                   modes: 'subscribe',
                 };
-                channel.setOptions(channelOptions, function (err) {
+                whenPromiseSettles(channel.setOptions(channelOptions), function (err) {
                   expect(err.code).to.equal(40000, 'Check channelOptions validation error code');
                   expect(err.statusCode).to.equal(400, 'Check channelOptions validation error statusCode');
                   expect(channel.modes).to.deep.equal(
                     defaultChannelModes.split(','),
-                    'Check channel options modes result'
+                    'Check channel options modes result',
                   );
                   cb();
                 });
@@ -973,12 +923,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 var channelOptions = {
                   modes: [1, 'subscribe'],
                 };
-                channel.setOptions(channelOptions, function (err) {
+                whenPromiseSettles(channel.setOptions(channelOptions), function (err) {
                   expect(err.code).to.equal(40000, 'Check channelOptions validation error code');
                   expect(err.statusCode).to.equal(400, 'Check channelOptions validation error statusCode');
                   expect(channel.modes).to.deep.equal(
                     defaultChannelModes.split(','),
-                    'Check channel options modes result'
+                    'Check channel options modes result',
                   );
                   cb();
                 });
@@ -987,7 +937,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 var channelOptions = {
                   params: 'test',
                 };
-                channel.setOptions(channelOptions, function (err) {
+                whenPromiseSettles(channel.setOptions(channelOptions), function (err) {
                   expect(err.code).to.equal(40000, 'Check channelOptions validation error code');
                   expect(err.statusCode).to.equal(400, 'Check channelOptions validation error statusCode');
                   expect(channel.params).to.deep.equal({}, 'Check channel options params');
@@ -999,7 +949,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 var channelOptions = {
                   params: { nonexistent: 'foo' },
                 };
-                channel.setOptions(channelOptions, function () {
+                whenPromiseSettles(channel.setOptions(channelOptions), function () {
                   expect(channel.params).to.deep.equal({}, 'Check channel params');
                   cb();
                 });
@@ -1008,13 +958,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 var channelOptions = {
                   modes: undefined,
                 };
-                channel.setOptions(channelOptions, function (err) {
+                whenPromiseSettles(channel.setOptions(channelOptions), function (err) {
                   expect(err.code).to.equal(40000, 'Check channelOptions validation error code');
                   expect(err.statusCode).to.equal(400, 'Check channelOptions validation error statusCode');
                   expect(channel.params).to.deep.equal({}, 'Check channel options params result');
                   expect(channel.modes).to.deep.equal(
                     defaultChannelModes.split(','),
-                    'Check channel options modes result'
+                    'Check channel options modes result',
                   );
                   cb();
                 });
@@ -1023,13 +973,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 var channelOptions = {
                   modes: ['susribe'],
                 };
-                channel.setOptions(channelOptions, function (err) {
+                whenPromiseSettles(channel.setOptions(channelOptions), function (err) {
                   expect(err.code).to.equal(40000, 'Check channelOptions validation error code');
                   expect(err.statusCode).to.equal(400, 'Check channelOptions validation error statusCode');
                   expect(channel.params).to.deep.equal({}, 'Check channel options params result');
                   expect(channel.modes).to.deep.equal(
                     defaultChannelModes.split(','),
-                    'Check channel options modes result'
+                    'Check channel options modes result',
                   );
                   cb();
                 });
@@ -1037,7 +987,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             ],
             function (err) {
               closeAndFinish(done, realtime, err);
-            }
+            },
           );
         });
         monitorConnection(done, realtime);
@@ -1054,7 +1004,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var realtime = helper.AblyRealtime({ useBinaryProtocol: true });
         realtime.connection.on('connected', function () {
           var channel6 = realtime.channels.get('channelsubscribe0');
-          channel6.attach(function (err) {
+          whenPromiseSettles(channel6.attach(), function (err) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -1094,21 +1044,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           channelByEvent.unsubscribe('event', listenerByEvent);
           channelByListener.unsubscribe(listenerNoEvent);
           channelAll.unsubscribe();
-          channelByEvent.publish('event', 'data', function (err) {
+          whenPromiseSettles(channelByEvent.publish('event', 'data'), function (err) {
             try {
               expect(!err, 'Error publishing single event: ' + err).to.be.ok;
             } catch (err) {
               closeAndFinish(done, realtime, err);
               return;
             }
-            channelByListener.publish(null, 'data', function (err) {
+            whenPromiseSettles(channelByListener.publish(null, 'data'), function (err) {
               try {
                 expect(!err, 'Error publishing any event: ' + err).to.be.ok;
               } catch (err) {
                 closeAndFinish(done, realtime, err);
                 return;
               }
-              channelAll.publish(null, 'data', function (err) {
+              whenPromiseSettles(channelAll.publish(null, 'data'), function (err) {
                 try {
                   expect(!err, 'Error publishing any event: ' + err).to.be.ok;
                   expect(messagesReceived).to.equal(3, 'Only three messages should be received by the listeners');
@@ -1139,13 +1089,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         realtime.connection.on('connected', function () {
           channelByEvent = realtime.channels.get('channelsubscribe1-event');
-          channelByEvent.subscribe('event', listenerByEvent, function () {
+          whenPromiseSettles(channelByEvent.subscribe('event', listenerByEvent), function () {
             channelByEvent.publish('event', 'data');
             channelByListener = realtime.channels.get('channelsubscribe1-listener');
-            channelByListener.subscribe(null, listenerNoEvent, function () {
+            whenPromiseSettles(channelByListener.subscribe(null, listenerNoEvent), function () {
               channelByListener.publish(null, 'data');
               channelAll = realtime.channels.get('channelsubscribe1-all');
-              channelAll.subscribe(listenerAllEvents, function () {
+              whenPromiseSettles(channelAll.subscribe(listenerAllEvents), function () {
                 channelAll.publish(null, 'data');
               });
             });
@@ -1174,7 +1124,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            channel.attach(cb);
+            whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             /* Sabotage the reattach attempt, then simulate a server-sent detach */
@@ -1191,7 +1141,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 13,
                 channel: channelName,
                 error: { statusCode: 500, code: 50000, message: 'generic serverside failure' },
-              })
+              }),
             );
           },
           function (cb) {
@@ -1204,7 +1154,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        }
+        },
       );
     });
 
@@ -1233,11 +1183,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 13,
                 channel: channelName,
                 error: { statusCode: 500, code: 50000, message: 'generic serverside failure' },
-              })
+              }),
             );
           });
         };
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           try {
             expect(err.code).to.equal(50000, 'check error is propogated to the attach callback');
             expect(channel.state).to.equal('suspended', 'check channel goes into suspended');
@@ -1258,7 +1208,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = realtime.channels.get(channelName);
 
       realtime.connection.once('connected', function () {
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -1278,7 +1228,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               action: 9,
               channel: channelName,
               error: { statusCode: 500, code: 50000, message: 'generic serverside failure' },
-            })
+            }),
           );
         });
       });
@@ -1302,7 +1252,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            channel.attach(cb);
+            whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             channel.once(function (stateChange) {
@@ -1320,13 +1270,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 action: 11,
                 channel: channelName,
                 error: { statusCode: 500, code: 50000, message: 'generic serverside failure' },
-              })
+              }),
             );
           },
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        }
+        },
       );
     });
 
@@ -1338,7 +1288,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = realtime.channels.get('publish_no_queueing');
 
       /* try a publish while not yet connected */
-      channel.publish('foo', 'bar', function (err) {
+      whenPromiseSettles(channel.publish('foo', 'bar'), function (err) {
         try {
           expect(err, 'Check publish while disconnected/connecting is rejected').to.be.ok;
           closeAndFinish(done, realtime);
@@ -1372,7 +1322,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            channel.attach(function (err) {
+            whenPromiseSettles(channel.attach(), function (err) {
               expect(err, 'Channel attach timed out as expected').to.be.ok;
               expect(err && err.code).to.equal(90007, 'Attach timeout err passed to attach callback');
               expect(channel.state).to.equal('suspended', 'Check channel state goes to suspended');
@@ -1391,7 +1341,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        }
+        },
       );
     });
 
@@ -1417,7 +1367,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            channel.attach(cb);
+            whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             /* Have the connection go into the suspended state, and check that the
@@ -1454,7 +1404,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             channel.once(function (stateChange) {
               expect(stateChange.current).to.equal(
                 'suspended',
-                'Check that the channel goes back into suspended after attach fails'
+                'Check that the channel goes back into suspended after attach fails',
               );
               expect(stateChange.reason && stateChange.reason.code).to.equal(90007, 'Check correct error code');
               cb();
@@ -1463,7 +1413,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        }
+        },
       );
     });
 
@@ -1481,7 +1431,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            channel.attach(cb);
+            whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             /* Sabotage the detach attempt, detach, then simulate a server-sent attached while
@@ -1506,7 +1456,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, realtime, err);
-        }
+        },
       );
     });
 
@@ -1517,12 +1467,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var channel = realtime.channels.get(channelName);
 
       channel.state = 'suspended';
-      channel.detach(function () {
-        expect(channel.state).to.equal(
-          'detached',
-          'Check that detach on suspended channel results in detached channel'
-        );
-        done();
+      whenPromiseSettles(channel.detach(), function () {
+        try {
+          expect(channel.state).to.equal(
+            'detached',
+            'Check that detach on suspended channel results in detached channel',
+          );
+
+          closeAndFinish(done, realtime);
+        } catch (err) {
+          closeAndFinish(done, realtime, err);
+        }
       });
     });
 
@@ -1534,12 +1489,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       channel.state = 'failed';
 
-      channel.detach(function (err) {
+      whenPromiseSettles(channel.detach(), function (err) {
         if (!err) {
-          done(new Error('expected detach to return error response'));
+          closeAndFinish(done, realtime, new Error('expected detach to return error response'));
           return;
         }
-        done();
+        closeAndFinish(done, realtime);
       });
     });
 
@@ -1553,7 +1508,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var subscriber = function (message) {
         expect(message.data).to.equal('message');
         channel.unsubscribe(subscriber);
-        channel.detach(function (err) {
+        whenPromiseSettles(channel.detach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -1574,7 +1529,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime = helper.AblyRealtime();
       var channelName = 'attach_returns_state_chnage';
       var channel = realtime.channels.get(channelName);
-      channel.attach(function (err, stateChange) {
+      whenPromiseSettles(channel.attach(), function (err, stateChange) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -1589,7 +1544,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
 
         // for an already-attached channel, null is returned
-        channel.attach(function (err, stateChange) {
+        whenPromiseSettles(channel.attach(), function (err, stateChange) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -1610,9 +1565,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime = helper.AblyRealtime();
       var channelName = 'subscribe_returns_state_chnage';
       var channel = realtime.channels.get(channelName);
-      channel.subscribe(
-        function () {}, // message listener
-        // attach callback
+      whenPromiseSettles(
+        channel.subscribe(
+          function () {}, // message listener
+        ),
         function (err, stateChange) {
           if (err) {
             closeAndFinish(done, realtime, err);
@@ -1627,7 +1583,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             return;
           }
           closeAndFinish(done, realtime);
-        }
+        },
       );
     });
 
@@ -1638,7 +1594,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var channel = realtime.channels.get(channelName, channelOpts);
 
       // attach with rewind but no channel history - hasBacklog should be false
-      channel.attach(function (err, stateChange) {
+      whenPromiseSettles(channel.attach(), function (err, stateChange) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -1663,12 +1619,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var restChannel = rest.channels.get(channelName);
 
       // attach with rewind after publishing - hasBacklog should be true
-      restChannel.publish('foo', 'bar', function (err) {
+      whenPromiseSettles(restChannel.publish('foo', 'bar'), function (err) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
         }
-        rtChannel.attach(function (err, stateChange) {
+        whenPromiseSettles(rtChannel.attach(), function (err, stateChange) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -1689,7 +1645,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('channel-with-options', { modes: ['PRESENCE'] });
       channel.attach();
-      channel.whenState('attaching', function () {
+      whenPromiseSettles(channel.whenState('attaching'), function () {
         try {
           realtime.channels.get('channel-with-options', { modes: ['PRESENCE'] });
           closeAndFinish(done, realtime);
@@ -1697,6 +1653,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           closeAndFinish(done, realtime, err);
         }
       });
+    });
+
+    it('whenState', async () => {
+      const realtime = helper.AblyRealtime();
+
+      await monitorConnectionAsync(async () => {
+        const channel = realtime.channels.get('channel');
+
+        // RTL25a - when already in given state, returns null
+        const initializedStateChange = await channel.whenState('initialized');
+        expect(initializedStateChange).to.be.null;
+
+        // RTL25b — when not in given state, calls #once
+        const attachedStateChangePromise = channel.whenState('attached');
+        channel.attach();
+        const attachedStateChange = await attachedStateChangePromise;
+        expect(attachedStateChange).not.to.be.null;
+        expect(attachedStateChange.previous).to.equal('attaching');
+        expect(attachedStateChange.current).to.equal('attached');
+      }, realtime);
+
+      await closeAndFinishAsync(realtime);
     });
   });
 });

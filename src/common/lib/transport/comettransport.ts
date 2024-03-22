@@ -1,5 +1,9 @@
 import * as Utils from '../util/utils';
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, {
+  actions,
+  fromValues as protocolMessageFromValues,
+  fromDeserialized as protocolMessageFromDeserialized,
+} from '../types/protocolmessage';
 import Transport from './transport';
 import Logger from '../util/logger';
 import Defaults from '../util/defaults';
@@ -17,7 +21,7 @@ function shouldBeErrorAction(err: ErrorInfo) {
   const UNRESOLVABLE_ERROR_CODES = [80015, 80017, 80030];
   if (err.code) {
     if (Auth.isTokenErr(err)) return false;
-    if (Utils.arrIn(UNRESOLVABLE_ERROR_CODES, err.code)) return true;
+    if (UNRESOLVABLE_ERROR_CODES.includes(err.code)) return true;
     return err.code >= 40000 && err.code < 50000;
   } else {
     /* Likely a network or transport error of some kind. Certainly not fatal to the connection */
@@ -29,9 +33,9 @@ function protocolMessageFromRawError(err: ErrorInfo) {
   /* err will be either a legacy (non-protocolmessage) comet error response
    * (which will have an err.code), or a xhr/network error (which won't). */
   if (shouldBeErrorAction(err)) {
-    return [ProtocolMessage.fromValues({ action: ProtocolMessage.Action.ERROR, error: err })];
+    return [protocolMessageFromValues({ action: actions.ERROR, error: err })];
   } else {
-    return [ProtocolMessage.fromValues({ action: ProtocolMessage.Action.DISCONNECTED, error: err })];
+    return [protocolMessageFromValues({ action: actions.DISCONNECTED, error: err })];
   }
 }
 
@@ -65,7 +69,7 @@ abstract class CometTransport extends Transport {
     headers: Record<string, string> | null,
     params?: Record<string, unknown> | null,
     body?: unknown,
-    requestMode?: number
+    requestMode?: number,
   ): IXHRRequest;
 
   connect(): void {
@@ -80,7 +84,7 @@ abstract class CometTransport extends Transport {
     this.baseUri = cometScheme + host + ':' + port + '/comet/';
     const connectUri = this.baseUri + 'connect';
     Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
-    this.auth.getAuthParams((err: Error, authParams: Record<string, any>) => {
+    Utils.whenPromiseSettles(this.auth.getAuthParams(), (err: Error | null, authParams?: Record<string, any>) => {
       if (err) {
         this.disconnect(err);
         return;
@@ -89,12 +93,12 @@ abstract class CometTransport extends Transport {
         return;
       }
       this.authParams = authParams;
-      const connectParams = this.params.getConnectParams(authParams);
+      const connectParams = this.params.getConnectParams(authParams!);
       if ('stream' in connectParams) this.stream = connectParams.stream;
       Logger.logAction(
         Logger.LOG_MINOR,
         'CometTransport.connect()',
-        'connectParams:' + Utils.toQueryString(connectParams)
+        'connectParams:' + Utils.toQueryString(connectParams),
       );
 
       /* this will be the 'recvRequest' so this connection can stream messages */
@@ -104,7 +108,7 @@ abstract class CometTransport extends Transport {
         null,
         connectParams,
         null,
-        this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV
+        this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV,
       ));
 
       connectRequest.on('data', (data: any) => {
@@ -172,7 +176,7 @@ abstract class CometTransport extends Transport {
           Logger.logAction(
             Logger.LOG_ERROR,
             'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'),
-            'request returned err = ' + Utils.inspectError(err)
+            'request returned err = ' + Utils.inspectError(err),
           );
           this.finish('disconnected', err);
         }
@@ -250,7 +254,7 @@ abstract class CometTransport extends Transport {
       null,
       this.authParams,
       this.encodeRequest(items),
-      XHRStates.REQ_SEND
+      XHRStates.REQ_SEND,
     ));
 
     sendRequest.on('complete', (err: ErrorInfo, data: string) => {
@@ -258,7 +262,7 @@ abstract class CometTransport extends Transport {
         Logger.logAction(
           Logger.LOG_ERROR,
           'CometTransport.sendItems()',
-          'on complete: err = ' + Utils.inspectError(err)
+          'on complete: err = ' + Utils.inspectError(err),
         );
       this.sendRequest = null;
 
@@ -309,7 +313,7 @@ abstract class CometTransport extends Transport {
       null,
       this.authParams,
       null,
-      this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV_POLL
+      this.stream ? XHRStates.REQ_RECV_STREAM : XHRStates.REQ_RECV_POLL,
     ));
 
     recvRequest.on('data', (data: string) => {
@@ -344,12 +348,15 @@ abstract class CometTransport extends Transport {
     try {
       const items = this.decodeResponse(responseData);
       if (items && items.length)
-        for (let i = 0; i < items.length; i++) this.onProtocolMessage(ProtocolMessage.fromDeserialized(items[i]));
+        for (let i = 0; i < items.length; i++)
+          this.onProtocolMessage(
+            protocolMessageFromDeserialized(items[i], this.connectionManager.realtime._RealtimePresence),
+          );
     } catch (e) {
       Logger.logAction(
         Logger.LOG_ERROR,
         'CometTransport.onData()',
-        'Unexpected exception handing channel event: ' + (e as Error).stack
+        'Unexpected exception handing channel event: ' + (e as Error).stack,
       );
     }
   }
@@ -363,13 +370,19 @@ abstract class CometTransport extends Transport {
     return responseData;
   }
 
-  /* For comet, we could do the auth update by aborting the current recv and
-   * starting a new one with the new token, that'd be sufficient for realtime.
-   * Problem is JSONP - you can't cancel truly abort a recv once started. So
-   * we need to send an AUTH for jsonp. In which case it's simpler to keep all
-   * comet transports the same and do it for all of them. So we send the AUTH
-   * instead, and don't need to abort the recv */
-  onAuthUpdated = (tokenDetails: API.Types.TokenDetails): void => {
+  /* Historical comment, back from when we supported JSONP:
+   *
+   * > For comet, we could do the auth update by aborting the current recv and
+   * > starting a new one with the new token, that'd be sufficient for realtime.
+   * > Problem is JSONP - you can't cancel truly abort a recv once started. So
+   * > we need to send an AUTH for jsonp. In which case it's simpler to keep all
+   * > comet transports the same and do it for all of them. So we send the AUTH
+   * > instead, and don't need to abort the recv
+   *
+   * Now that we’ve dropped JSONP support, we may be able to revisit the above;
+   * see https://github.com/ably/ably-js/issues/1214.
+   */
+  onAuthUpdated = (tokenDetails: API.TokenDetails): void => {
     this.authParams = { access_token: tokenDetails.token };
   };
 }

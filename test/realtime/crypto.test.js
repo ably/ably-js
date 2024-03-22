@@ -11,40 +11,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var msgpack = typeof window == 'object' ? Ably.msgpack : require('@ably/msgpack-js');
   var testOnAllTransports = helper.testOnAllTransports;
   var closeAndFinish = helper.closeAndFinish;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   function attachChannels(channels, callback) {
     async.map(
       channels,
       function (channel, cb) {
-        channel.attach(cb);
+        whenPromiseSettles(channel.attach(), cb);
       },
-      callback
+      callback,
     );
   }
 
   function testMessageEquality(done, one, two) {
     try {
-      // treat `null` same as `undefined` (using ==, rather than ===)
-      expect(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').").to
-        .be.ok;
-
-      if (typeof one.data === 'string' && typeof two.data === 'string') {
-        expect(one.data === two.data, 'String data contents mismatch.').to.be.ok;
-        return;
-      }
-
-      if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
-        expect(BufferUtils.bufferCompare(one.data, two.data) === 0, 'Buffer data contents mismatch.').to.be.ok;
-        return;
-      }
-
-      var json1 = JSON.stringify(one.data);
-      var json2 = JSON.stringify(two.data);
-      if (null === json1 || undefined === json1 || null === json2 || undefined === json2) {
-        expect(false, 'JSON stringify failed.').to.be.ok;
-        return;
-      }
-      expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
+      helper.testMessageEquality(one, two);
     } catch (err) {
       done(err);
     }
@@ -56,7 +37,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return;
     }
 
-    loadTestData(testResourcesPath + filename, function (err, testData) {
+    loadTestData(testResourcesPath + filename, async function (err, testData) {
       if (err) {
         done(new Error('Unable to get test assets; err = ' + displayError(err)));
         return;
@@ -71,11 +52,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var item = testData.items[i];
 
           /* read messages from test data and decode (ie remove any base64 encoding). */
-          var createTestMessage = function () {
-            return Message.fromEncoded(item.encoded);
+          var createTestMessage = async function () {
+            return await Message.fromEncoded(item.encoded);
           };
 
-          var encryptedMessage = Message.fromEncoded(item.encrypted);
+          var encryptedMessage = await Message.fromEncoded(item.encrypted);
 
           var runTest = function (testMessage) {
             /* reset channel cipher, to ensure it uses the given iv */
@@ -84,13 +65,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           };
 
           // Run the test with the message’s data as-is.
-          runTest(createTestMessage());
+          runTest(await createTestMessage());
 
           if (testPlaintextVariants) {
-            var testMessage = createTestMessage();
+            var testMessage = await createTestMessage();
             if (BufferUtils.isBuffer(testMessage.data) && !(testMessage.data instanceof ArrayBuffer)) {
               // Now, check that we can also handle an ArrayBuffer plaintext.
-              var testMessageWithArrayBufferData = createTestMessage();
+              var testMessageWithArrayBufferData = await createTestMessage();
               testMessageWithArrayBufferData.data = BufferUtils.toArrayBuffer(testMessageWithArrayBufferData.data);
               runTest(testMessageWithArrayBufferData);
             }
@@ -118,14 +99,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* generateRandomKey with an explicit keyLength */
     it('generateRandomKey0', function (done) {
-      Crypto.generateRandomKey(64, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
           done(err);
           return;
         }
         try {
-          /* .length for a nodejs buffer, .sigbytes for a browser CryptoJS WordArray */
-          expect(key.length || key.sigBytes).to.equal(8, 'generated key is the correct length');
+          /* .length for a nodejs buffer, .byteLength for a browser ArrayBuffer */
+          expect(key.length || key.byteLength).to.equal(8, 'generated key is the correct length');
           done();
         } catch (err) {
           done(err);
@@ -135,13 +116,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* generateRandomKey with no keyLength should generate 256-bit keys */
     it('generateRandomKey1', function (done) {
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
           return;
         }
         try {
-          expect(key.length || key.sigBytes).to.equal(32, 'generated key is the default length');
+          expect(key.length || key.byteLength).to.equal(32, 'generated key is the default length');
           done();
         } catch (err) {
           done(err);
@@ -149,8 +130,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    it('getDefaultParams_wordArray_key', function (done) {
-      Crypto.generateRandomKey(function (err, key) {
+    it('getDefaultParams_withResultOfGenerateRandomKey', function (done) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
         }
@@ -167,14 +148,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_ArrayBuffer_key', function (done) {
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
         }
         var arrayBufferKey = Ably.Realtime.Platform.BufferUtils.toArrayBuffer(key);
         var params = Crypto.getDefaultParams({ key: arrayBufferKey });
         try {
-          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
+          expect(BufferUtils.areBuffersEqual(params.key, key)).to.equal(true);
           done();
         } catch (err) {
           done(err);
@@ -183,7 +164,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_base64_key', function (done) {
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
           return;
@@ -191,7 +172,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var b64key = Ably.Realtime.Platform.BufferUtils.base64Encode(key);
         var params = Crypto.getDefaultParams({ key: b64key });
         try {
-          expect(BufferUtils.bufferCompare(params.key, key)).to.equal(0);
+          expect(BufferUtils.areBuffersEqual(params.key, key)).to.equal(true);
           done();
         } catch (err) {
           done(err);
@@ -200,7 +181,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_check_keylength', function (done) {
-      Crypto.generateRandomKey(64, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
           done(err);
           return;
@@ -215,7 +196,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('getDefaultParams_preserves_custom_algorithms', function (done) {
-      Crypto.generateRandomKey(64, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
           done(err);
           return;
@@ -242,11 +223,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-          Message.encode(testMessage, channelOpts, function () {
+          whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
             /* compare */
             testMessageEquality(done, testMessage, encryptedMessage);
           });
-        }
+        },
       );
     });
 
@@ -259,11 +240,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
-          Message.encode(testMessage, channelOpts, function () {
+          whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
             /* compare */
             testMessageEquality(done, testMessage, encryptedMessage);
           });
-        }
+        },
       );
     });
 
@@ -274,12 +255,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'decrypt_message_128',
         2,
         false,
-        function (channelOpts, testMessage, encryptedMessage) {
+        async function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-          Message.decode(encryptedMessage, channelOpts);
+          await Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, testMessage, encryptedMessage);
-        }
+        },
       );
     });
 
@@ -290,12 +271,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         'decrypt_message_256',
         2,
         false,
-        function (channelOpts, testMessage, encryptedMessage) {
+        async function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
-          Message.decode(encryptedMessage, channelOpts);
+          await Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, testMessage, encryptedMessage);
-        }
+        },
       );
     });
 
@@ -305,7 +286,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      loadTestData(testResourcesPath + 'crypto-data-256.json', function (err, testData) {
+      loadTestData(testResourcesPath + 'crypto-data-256.json', async function (err, testData) {
         if (err) {
           done(err);
           return;
@@ -315,8 +296,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         for (var i = 0; i < testData.items.length; i++) {
           var item = testData.items[i];
-          var testMessage = Message.fromEncoded(item.encoded);
-          var decryptedMessage = Message.fromEncoded(item.encrypted, { cipher: { key: key, iv: iv } });
+          var testMessage = await Message.fromEncoded(item.encoded);
+          var decryptedMessage = await Message.fromEncoded(item.encrypted, { cipher: { key: key, iv: iv } });
           testMessageEquality(done, testMessage, decryptedMessage);
         }
         done();
@@ -333,19 +314,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           2,
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-            Message.encode(testMessage, channelOpts, function () {
+            whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               var messageFromMsgpack = Message.fromValues(
-                msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage))
+                msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
               );
 
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
-                 * CryptoJS (a wordArray) into the msgpack binary type */
-                expect(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
-                  0,
-                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare'
+                 * the platform's ICipher implementation into the msgpack binary type */
+                expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
+                  true,
+                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual',
                 );
 
                 /* Can't compare msgpackFromEncoded with fixture data because can't
@@ -355,7 +336,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 done(err);
               }
             });
-          }
+          },
         );
       });
 
@@ -367,19 +348,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           2,
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-            Message.encode(testMessage, channelOpts, function () {
+            whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               var messageFromMsgpack = Message.fromValues(
-                msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage))
+                msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
               );
 
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
-                 * CryptoJS (a wordArray) into the msgpack binary type */
-                expect(BufferUtils.bufferCompare(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
-                  0,
-                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using bufferCompare'
+                 * the platform's ICipher implementation into the msgpack binary type */
+                expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
+                  true,
+                  'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual',
                 );
 
                 /* Can't compare msgpackFromEncoded with fixture data because can't
@@ -389,7 +370,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 done(err);
               }
             });
-          }
+          },
         );
       });
     }
@@ -400,7 +381,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return;
       }
 
-      Crypto.generateRandomKey(keyLength, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(keyLength), function (err, key) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -412,7 +393,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           channel = realtime.channels.get('single_send', { cipher: { key: key } }),
           messageText = 'Test message for single_send -	' + JSON.stringify(realtimeOpts);
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -463,7 +444,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = realtime.channels.get(channelName),
         messageText = 'Test message (' + channelName + ')';
 
-      Crypto.generateRandomKey(128, function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(128), function (err, key) {
         channel.setOptions({ cipher: { key: key } });
         try {
           expect(channel.channelOptions.cipher.algorithm).to.equal('aes');
@@ -487,12 +468,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         function recvAll(recvCb) {
           var received = 0;
           channel.subscribe('event0', function (msg) {
-            expect(msg.data == messageText).to.be.ok;
+            try {
+              expect(msg.data == messageText).to.be.ok;
+            } catch (error) {
+              recvCb(error);
+            }
             if (++received == iterations) recvCb(null);
           });
         }
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
@@ -520,6 +505,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       _multiple_send(done, true, 20, 100);
     });
 
+    it('multiple_send_binary_10_10', function (done) {
+      _multiple_send(done, false, 10, 10);
+    });
+
+    it('multiple_send_text_10_10', function (done) {
+      _multiple_send(done, true, 10, 10);
+    });
+
     function _single_send_separate_realtimes(done, txOpts, rxOpts) {
       if (!Crypto) {
         done(new Error('Encryption not supported'));
@@ -533,7 +526,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         txChannel = txRealtime.channels.get(channelName),
         rxChannel = rxRealtime.channels.get(channelName);
 
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           closeAndFinish(done, realtime, err);
           return;
@@ -573,7 +566,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               });
               txChannel.publish('event0', messageText);
             });
-          }
+          },
         );
       });
     }
@@ -607,15 +600,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channelName = 'publish_immediately',
         messageText = 'Test message';
 
-      Crypto.generateRandomKey(function (err, key) {
+      whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           closeAndFinish(done, [txRealtime, rxRealtime], err);
           return;
         }
         var rxChannel = rxRealtime.channels.get(channelName, { cipher: { key: key } });
-        rxChannel.subscribe(
-          'event0',
-          function (msg) {
+        whenPromiseSettles(
+          rxChannel.subscribe('event0', function (msg) {
             try {
               expect(msg.data == messageText).to.be.ok;
             } catch (err) {
@@ -623,11 +615,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return;
             }
             closeAndFinish(done, [txRealtime, rxRealtime]);
-          },
+          }),
           function () {
             var txChannel = txRealtime.channels.get(channelName, { cipher: { key: key } });
             txChannel.publish('event0', messageText);
-          }
+          },
         );
       });
     });
@@ -653,8 +645,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       async.parallel(
         [
-          Crypto.generateRandomKey,
-          Crypto.generateRandomKey,
+          function (cb) {
+            whenPromiseSettles(Crypto.generateRandomKey(), cb);
+          },
+          function (cb) {
+            whenPromiseSettles(Crypto.generateRandomKey(), cb);
+          },
           function (cb) {
             attachChannels([txChannel, rxChannel], cb);
           },
@@ -689,9 +685,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 closeAndFinish(done, [txRealtime, rxRealtime]);
               });
               txChannel.publish('event0', messageText);
-            }
+            },
           );
-        }
+        },
       );
     });
 
@@ -718,7 +714,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           closeAndFinish(done, [txRealtime, rxRealtime], err);
           return;
         }
-        Crypto.generateRandomKey(function (err, rxKey) {
+        whenPromiseSettles(Crypto.generateRandomKey(), function (err, rxKey) {
           if (err) {
             closeAndFinish(done, [txRealtime, rxRealtime], err);
             return;
@@ -761,7 +757,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           closeAndFinish(done, [txRealtime, rxRealtime], err);
           return;
         }
-        Crypto.generateRandomKey(function (err, txKey) {
+        whenPromiseSettles(Crypto.generateRandomKey(), function (err, txKey) {
           if (err) {
             closeAndFinish(done, [txRealtime, rxRealtime], err);
             return;
@@ -806,7 +802,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         attachChannels([txChannel, rxChannel], cb);
       };
       var setInitialOptions = function (cb) {
-        Crypto.generateRandomKey(function (err, key) {
+        whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
           if (err) {
             closeAndFinish(done, [txRealtime, rxRealtime], err);
             return;
@@ -823,7 +819,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 innercb();
               },
             ],
-            cb
+            cb,
           );
         });
       };
@@ -839,7 +835,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
 
       var createSecondKey = function (cb) {
-        Crypto.generateRandomKey(function (err, key) {
+        whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
           if (err) {
             closeAndFinish(done, [txRealtime, rxRealtime], err);
             return;
@@ -856,7 +852,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 innercb();
               },
             ],
-            cb
+            cb,
           );
         });
       };
@@ -898,7 +894,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           closeAndFinish(done, [txRealtime, rxRealtime], err);
-        }
+        },
       );
     });
   });

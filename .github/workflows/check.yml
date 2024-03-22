@@ -14,16 +14,18 @@ jobs:
         run: >
           git config --global url."https://github.com/".insteadOf
           ssh://git@github.com/
-      - name: Use Node.js 14.x
+      - name: Use Node.js 20.x
         uses: actions/setup-node@v1
         with:
-          node-version: 14.x
+          node-version: 20.x
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
-      - run: npm run check-closure-compiler
-      - run: npx tsc --noEmit ably.d.ts build/ably-webworker.min.d.ts
+      - run: npx tsc --noEmit ably.d.ts modular.d.ts
       # for some reason, this doesn't work in CI using `npx attw --pack .`
       - run: npm pack
-      - run: npx attw ably-$(node -e "console.log(require('./package.json').version)").tgz --summary
+      - run: npx attw ably-$(node -e "console.log(require('./package.json').version)").tgz --summary --exclude-entrypoints 'ably/modular'
+      # see https://github.com/ably/ably-js/issues/1546 for why we ignore 'false-cjs' currently.
+      # should remove when switched to auto-generated type declaration files for modular variant of the library.
+      - run: npx attw ably-$(node -e "console.log(require('./package.json').version)").tgz --summary --entrypoints 'ably/modular' --ignore-rules false-cjs
       - run: npm audit --production

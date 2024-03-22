@@ -1,351 +1,272 @@
 import * as Utils from '../util/utils';
 import DeviceDetails from '../types/devicedetails';
 import Resource from './resource';
-import PaginatedResource from './paginatedresource';
+import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import ErrorInfo from '../types/errorinfo';
 import PushChannelSubscription from '../types/pushchannelsubscription';
-import { ErrCallback, PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import Rest from './rest';
-
-const noop = function () {};
+import BaseClient from './baseclient';
+import Defaults from '../util/defaults';
 
 class Push {
-  rest: Rest;
+  client: BaseClient;
   admin: Admin;
 
-  constructor(rest: Rest) {
-    this.rest = rest;
-    this.admin = new Admin(rest);
+  constructor(client: BaseClient) {
+    this.client = client;
+    this.admin = new Admin(client);
   }
 }
 
 class Admin {
-  rest: Rest;
+  client: BaseClient;
   deviceRegistrations: DeviceRegistrations;
   channelSubscriptions: ChannelSubscriptions;
 
-  constructor(rest: Rest) {
-    this.rest = rest;
-    this.deviceRegistrations = new DeviceRegistrations(rest);
-    this.channelSubscriptions = new ChannelSubscriptions(rest);
+  constructor(client: BaseClient) {
+    this.client = client;
+    this.deviceRegistrations = new DeviceRegistrations(client);
+    this.channelSubscriptions = new ChannelSubscriptions(client);
   }
 
-  publish(recipient: any, payload: any, callback: ErrCallback) {
-    const rest = this.rest;
-    const format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(rest.options, format),
+  async publish(recipient: any, payload: any): Promise<void> {
+    const client = this.client;
+    const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(client.options, { format }),
       params = {};
     const body = Utils.mixin({ recipient: recipient }, payload);
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'publish', arguments);
-      }
-      callback = noop;
-    }
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
-
-    const requestBody = Utils.encodeBody(body, format);
-    Resource.post(rest, '/push/publish', requestBody, headers, params, null, (err) => callback(err));
+    const requestBody = Utils.encodeBody(body, client._MsgPack, format);
+    await Resource.post(client, '/push/publish', requestBody, headers, params, null, true);
   }
 }
 
 class DeviceRegistrations {
-  rest: Rest;
+  client: BaseClient;
 
-  constructor(rest: Rest) {
-    this.rest = rest;
+  constructor(client: BaseClient) {
+    this.client = client;
   }
 
-  save(device: any, callback: StandardCallback<DeviceDetails>) {
-    const rest = this.rest;
+  async save(device: any): Promise<DeviceDetails> {
+    const client = this.client;
     const body = DeviceDetails.fromValues(device);
-    const format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(rest.options, format),
+    const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(client.options, { format }),
       params = {};
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'save', arguments);
-      }
-      callback = noop;
-    }
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
-
-    const requestBody = Utils.encodeBody(body, format);
-    Resource.put(
-      rest,
+    const requestBody = Utils.encodeBody(body, client._MsgPack, format);
+    const response = await Resource.put(
+      client,
       '/push/deviceRegistrations/' + encodeURIComponent(device.id),
       requestBody,
       headers,
       params,
       null,
-      (err, body, headers, unpacked) => {
-        callback(
-          err,
-          !err
-            ? (DeviceDetails.fromResponseBody(
-                body as Record<string, unknown>,
-                unpacked ? undefined : format
-              ) as DeviceDetails)
-            : undefined
-        );
-      }
+      true,
     );
+
+    return DeviceDetails.fromResponseBody(
+      response.body as Record<string, unknown>,
+      client._MsgPack,
+      response.unpacked ? undefined : format,
+    ) as DeviceDetails;
   }
 
-  get(deviceIdOrDetails: any, callback: StandardCallback<DeviceDetails>) {
-    const rest = this.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultGetHeaders(rest.options, format),
+  async get(deviceIdOrDetails: any): Promise<DeviceDetails> {
+    const client = this.client,
+      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultGetHeaders(client.options, { format }),
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'get', arguments);
-      }
-      callback = noop;
-    }
-
     if (typeof deviceId !== 'string' || !deviceId.length) {
-      callback(
-        new ErrorInfo(
-          'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
-          40000,
-          400
-        )
+      throw new ErrorInfo(
+        'First argument to DeviceRegistrations#get must be a deviceId string or DeviceDetails',
+        40000,
+        400,
       );
-      return;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, client.options.headers);
 
-    Resource.get(
-      rest,
+    const response = await Resource.get(
+      client,
       '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
       headers,
       {},
       null,
-      function (err, body, headers, unpacked) {
-        callback(
-          err,
-          !err
-            ? (DeviceDetails.fromResponseBody(
-                body as Record<string, unknown>,
-                unpacked ? undefined : format
-              ) as DeviceDetails)
-            : undefined
-        );
-      }
+      true,
     );
+
+    return DeviceDetails.fromResponseBody(
+      response.body as Record<string, unknown>,
+      client._MsgPack,
+      response.unpacked ? undefined : format,
+    ) as DeviceDetails;
   }
 
-  list(params: any, callback: PaginatedResultCallback<unknown>) {
-    const rest = this.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(rest.options, format);
+  async list(params: any): Promise<PaginatedResult<unknown>> {
+    const client = this.client,
+      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      envelope = this.client.http.supportsLinkHeaders ? undefined : format,
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'list', arguments);
-      }
-      callback = noop;
-    }
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
-
-    new PaginatedResource(rest, '/push/deviceRegistrations', headers, envelope, function (
-      body: any,
-      headers: Record<string, string>,
-      unpacked?: boolean
+    return new PaginatedResource(client, '/push/deviceRegistrations', headers, envelope, async function (
+      body,
+      headers,
+      unpacked,
     ) {
-      return DeviceDetails.fromResponseBody(body, unpacked ? undefined : format);
-    }).get(params, callback);
+      return DeviceDetails.fromResponseBody(
+        body as Record<string, unknown>[],
+        client._MsgPack,
+        unpacked ? undefined : format,
+      );
+    }).get(params);
   }
 
-  remove(deviceIdOrDetails: any, callback: ErrCallback) {
-    const rest = this.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultGetHeaders(rest.options, format),
+  async remove(deviceIdOrDetails: any): Promise<void> {
+    const client = this.client,
+      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultGetHeaders(client.options, { format }),
       params = {},
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'remove', arguments);
-      }
-      callback = noop;
-    }
-
     if (typeof deviceId !== 'string' || !deviceId.length) {
-      callback(
-        new ErrorInfo(
-          'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
-          40000,
-          400
-        )
+      throw new ErrorInfo(
+        'First argument to DeviceRegistrations#remove must be a deviceId string or DeviceDetails',
+        40000,
+        400,
       );
-      return;
     }
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
+    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    Resource['delete'](
-      rest,
+    await Resource['delete'](
+      client,
       '/push/deviceRegistrations/' + encodeURIComponent(deviceId),
       headers,
       params,
       null,
-      (err) => callback(err)
+      true,
     );
   }
 
-  removeWhere(params: any, callback: ErrCallback) {
-    const rest = this.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultGetHeaders(rest.options, format);
+  async removeWhere(params: any): Promise<void> {
+    const client = this.client,
+      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'removeWhere', arguments);
-      }
-      callback = noop;
-    }
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
-
-    Resource['delete'](rest, '/push/deviceRegistrations', headers, params, null, (err) => callback(err));
+    await Resource['delete'](client, '/push/deviceRegistrations', headers, params, null, true);
   }
 }
 
 class ChannelSubscriptions {
-  rest: Rest;
+  client: BaseClient;
 
-  constructor(rest: Rest) {
-    this.rest = rest;
+  constructor(client: BaseClient) {
+    this.client = client;
   }
 
-  save(subscription: Record<string, unknown>, callback: PaginatedResultCallback<unknown>) {
-    const rest = this.rest;
+  async save(subscription: Record<string, unknown>): Promise<PushChannelSubscription> {
+    const client = this.client;
     const body = PushChannelSubscription.fromValues(subscription);
-    const format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(rest.options, format),
+    const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(client.options, { format }),
       params = {};
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'save', arguments);
-      }
-      callback = noop;
-    }
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
-
-    const requestBody = Utils.encodeBody(body, format);
-    Resource.post(
-      rest,
+    const requestBody = Utils.encodeBody(body, client._MsgPack, format);
+    const response = await Resource.post(
+      client,
       '/push/channelSubscriptions',
       requestBody,
       headers,
       params,
       null,
-      function (err, body, headers, unpacked) {
-        callback(
-          err,
-          !err && PushChannelSubscription.fromResponseBody(body as Record<string, any>, unpacked ? undefined : format)
-        );
-      }
+      true,
     );
+
+    return PushChannelSubscription.fromResponseBody(
+      response.body as Record<string, any>,
+      client._MsgPack,
+      response.unpacked ? undefined : format,
+    ) as PushChannelSubscription;
   }
 
-  list(params: any, callback: PaginatedResultCallback<unknown>) {
-    const rest = this.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(rest.options, format);
+  async list(params: any): Promise<PaginatedResult<unknown>> {
+    const client = this.client,
+      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      envelope = this.client.http.supportsLinkHeaders ? undefined : format,
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'list', arguments);
-      }
-      callback = noop;
-    }
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
-
-    new PaginatedResource(rest, '/push/channelSubscriptions', headers, envelope, function (
-      body: any,
-      headers: Record<string, string>,
-      unpacked?: boolean
+    return new PaginatedResource(client, '/push/channelSubscriptions', headers, envelope, async function (
+      body,
+      headers,
+      unpacked,
     ) {
-      return PushChannelSubscription.fromResponseBody(body, unpacked ? undefined : format);
-    }).get(params, callback);
+      return PushChannelSubscription.fromResponseBody(
+        body as Record<string, unknown>[],
+        client._MsgPack,
+        unpacked ? undefined : format,
+      );
+    }).get(params);
   }
 
-  removeWhere(params: any, callback: PaginatedResultCallback<unknown>) {
-    const rest = this.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultGetHeaders(rest.options, format);
+  async removeWhere(params: any): Promise<void> {
+    const client = this.client,
+      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'removeWhere', arguments);
-      }
-      callback = noop;
-    }
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
-
-    Resource['delete'](rest, '/push/channelSubscriptions', headers, params, null, (err) => callback(err));
+    await Resource['delete'](client, '/push/channelSubscriptions', headers, params, null, true);
   }
 
   /* ChannelSubscriptions have no unique id; removing one is equivalent to removeWhere by its properties */
   remove = ChannelSubscriptions.prototype.removeWhere;
 
-  listChannels(params: any, callback: PaginatedResultCallback<unknown>) {
-    const rest = this.rest,
-      format = rest.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.rest.http.supportsLinkHeaders ? undefined : format,
-      headers = Utils.defaultGetHeaders(rest.options, format);
+  async listChannels(params: any): Promise<PaginatedResult<unknown>> {
+    const client = this.client,
+      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      envelope = this.client.http.supportsLinkHeaders ? undefined : format,
+      headers = Defaults.defaultGetHeaders(client.options, { format });
 
-    if (typeof callback !== 'function') {
-      if (this.rest.options.promises) {
-        return Utils.promisify(this, 'listChannels', arguments);
-      }
-      callback = noop;
-    }
+    Utils.mixin(headers, client.options.headers);
 
-    if (rest.options.headers) Utils.mixin(headers, rest.options.headers);
+    if (client.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
 
-    if (rest.options.pushFullWait) Utils.mixin(params, { fullWait: 'true' });
-
-    new PaginatedResource(rest, '/push/channels', headers, envelope, function (
-      body: unknown,
-      headers: Record<string, string>,
-      unpacked?: boolean
-    ) {
-      const parsedBody = (!unpacked && format ? Utils.decodeBody(body, format) : body) as Array<string>;
+    return new PaginatedResource(client, '/push/channels', headers, envelope, async function (body, headers, unpacked) {
+      const parsedBody = (
+        !unpacked && format ? Utils.decodeBody(body, client._MsgPack, format) : body
+      ) as Array<string>;
 
       for (let i = 0; i < parsedBody.length; i++) {
         parsedBody[i] = String(parsedBody[i]);
       }
       return parsedBody;
-    }).get(params, callback);
+    }).get(params);
   }
 }
 

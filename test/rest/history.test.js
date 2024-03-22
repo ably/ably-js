@@ -15,6 +15,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     { name: 'event5', data: { one: 1, two: 2, three: 3 } },
     { name: 'event6', data: { foo: 'bar' } },
   ];
+  var reversedMessages = testMessages.map((_, i) => testMessages[testMessages.length - 1 - i]);
 
   describe('rest/history', function () {
     this.timeout(60 * 1000);
@@ -26,478 +27,223 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     });
 
-    restTestOnJsonMsgpack('history_simple', function (done, rest, channelName) {
+    restTestOnJsonMsgpack('history_simple', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
+      await Promise.all([
+        new Promise((resolve) => setTimeout(resolve, 1000)),
+        ...testMessages.map((event) => testchannel.publish(event.name, event.data)),
+      ]);
 
-      var publishTasks = utils.arrMap(testMessages, function (event) {
-        return function (publishCb) {
-          testchannel.publish(event.name, event.data, publishCb);
-        };
+      /* so now the messages are there; try querying the timeline */
+      var resultPage = await testchannel.history();
+      /* verify all messages are received */
+      var messages = resultPage.items;
+      expect(messages.length).to.equal(testMessages.length, 'Verify correct number of messages found');
+
+      /* verify message ids are unique */
+      var ids = {};
+      messages.forEach(function (msg) {
+        ids[msg.id] = msg;
       });
-
-      publishTasks.push(function (waitCb) {
-        setTimeout(function () {
-          waitCb(null);
-        }, 1000);
-      });
-      try {
-        async.parallel(publishTasks, function (err) {
-          if (err) {
-            done(err);
-            return;
-          }
-
-          /* so now the messages are there; try querying the timeline */
-          testchannel.history(function (err, resultPage) {
-            if (err) {
-              done(err);
-              return;
-            }
-            /* verify all messages are received */
-            var messages = resultPage.items;
-            expect(messages.length).to.equal(testMessages.length, 'Verify correct number of messages found');
-
-            /* verify message ids are unique */
-            var ids = {};
-            utils.arrForEach(messages, function (msg) {
-              ids[msg.id] = msg;
-            });
-            expect(utils.keysArray(ids).length).to.equal(
-              testMessages.length,
-              'Verify correct number of distinct message ids found'
-            );
-            done();
-          });
-        });
-      } catch (err) {
-        done(err);
-      }
+      expect(utils.keysArray(ids).length).to.equal(
+        testMessages.length,
+        'Verify correct number of distinct message ids found',
+      );
     });
 
-    restTestOnJsonMsgpack('history_multiple', function (done, rest, channelName) {
+    restTestOnJsonMsgpack('history_multiple', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
-      var publishTasks = [
-        function (publishCb) {
-          testchannel.publish(testMessages, publishCb);
-        },
-      ];
+      await Promise.all([new Promise((resolve) => setTimeout(resolve, 1000)), testchannel.publish(testMessages)]);
 
-      publishTasks.push(function (waitCb) {
-        setTimeout(function () {
-          waitCb(null);
-        }, 1000);
+      /* so now the messages are there; try querying the timeline */
+      var resultPage = await testchannel.history();
+      /* verify all messages are received */
+      var messages = resultPage.items;
+      expect(messages.length).to.equal(testMessages.length, 'Verify correct number of messages found');
+
+      /* verify message ids are unique */
+      var ids = {};
+      messages.forEach(function (msg) {
+        ids[msg.id] = msg;
       });
-      try {
-        async.parallel(publishTasks, function (err) {
-          if (err) {
-            done(err);
-            return;
-          }
-
-          /* so now the messages are there; try querying the timeline */
-          testchannel.history(function (err, resultPage) {
-            if (err) {
-              done(err);
-              return;
-            }
-            /* verify all messages are received */
-            var messages = resultPage.items;
-            expect(messages.length).to.equal(testMessages.length, 'Verify correct number of messages found');
-
-            /* verify message ids are unique */
-            var ids = {};
-            utils.arrForEach(messages, function (msg) {
-              ids[msg.id] = msg;
-            });
-            expect(utils.keysArray(ids).length).to.equal(
-              testMessages.length,
-              'Verify correct number of distinct message ids found'
-            );
-            done();
-          });
-        });
-      } catch (err) {
-        done(err);
-      }
+      expect(utils.keysArray(ids).length).to.equal(
+        testMessages.length,
+        'Verify correct number of distinct message ids found',
+      );
     });
 
-    restTestOnJsonMsgpack('history_simple_paginated_b', function (done, rest, channelName) {
+    restTestOnJsonMsgpack('history_simple_paginated_b', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
-      var publishTasks = utils.arrMap(testMessages, function (event) {
-        return function (publishCb) {
-          testchannel.publish(event.name, event.data, publishCb);
-        };
-      });
-
-      publishTasks.push(function (waitCb) {
-        setTimeout(function () {
-          waitCb(null);
-        }, 1000);
-      });
-      try {
-        async.series(publishTasks, function (err) {
-          if (err) {
-            done(err);
-            return;
-          }
-
-          /* so now the messages are there; try querying the timeline to get messages one at a time */
-          var ids = {},
-            totalMessagesExpected = testMessages.length,
-            nextPage = function (cb) {
-              testchannel.history({ limit: 1, direction: 'backwards' }, cb);
-            };
-
-          testMessages.reverse();
-          async.mapSeries(
-            testMessages,
-            function (expectedMessage, cb) {
-              nextPage(function (err, resultPage) {
-                if (err) {
-                  cb(err);
-                  return;
-                }
-                /* verify expected number of messages in this page */
-                expect(resultPage.items.length).to.equal(1, 'Verify a single message received');
-                var resultMessage = resultPage.items[0];
-                ids[resultMessage.id] = resultMessage;
-
-                /* verify expected message */
-                expect(expectedMessage.name).to.equal(resultMessage.name, 'Verify expected name value present');
-                expect(expectedMessage.data).to.deep.equal(resultMessage.data, 'Verify expected data value present');
-
-                if (--totalMessagesExpected > 0) {
-                  expect(resultPage.hasNext(), 'Verify next link is present').to.be.ok;
-                  expect(!resultPage.isLast(), 'Verify not last page').to.be.ok;
-                  nextPage = resultPage.next;
-                }
-                cb();
-              });
-            },
-            function (err) {
-              if (err) {
-                done(err);
-                return;
-              }
-              /* verify message ids are unique */
-              expect(utils.keysArray(ids).length).to.equal(
-                testMessages.length,
-                'Verify correct number of distinct message ids found'
-              );
-              done();
-            }
-          );
-        });
-      } catch (err) {
-        done(err);
+      for (var message of testMessages) {
+        await testchannel.publish(message.name, message.data);
       }
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      /* so now the messages are there; try querying the timeline to get messages one at a time */
+      var ids = {},
+        totalMessagesExpected = testMessages.length;
+
+      var resultPage = await testchannel.history({ limit: 1, direction: 'backwards' });
+      for (var expectedMessage of reversedMessages) {
+        /* verify expected number of messages in this page */
+        expect(resultPage.items.length).to.equal(1, 'Verify a single message received');
+        var resultMessage = resultPage.items[0];
+        ids[resultMessage.id] = resultMessage;
+
+        /* verify expected message */
+        expect(expectedMessage.name).to.equal(resultMessage.name, 'Verify expected name value present');
+        expect(expectedMessage.data).to.deep.equal(resultMessage.data, 'Verify expected data value present');
+
+        if (--totalMessagesExpected > 0) {
+          expect(resultPage.hasNext(), 'Verify next link is present').to.be.ok;
+          expect(!resultPage.isLast(), 'Verify not last page').to.be.ok;
+          resultPage = await resultPage.next();
+        }
+      }
+      /* verify message ids are unique */
+      expect(utils.keysArray(ids).length).to.equal(
+        testMessages.length,
+        'Verify correct number of distinct message ids found',
+      );
     });
 
-    it('history_simple_paginated_f', function (done) {
+    it('history_simple_paginated_f', async function () {
       var testchannel = rest.channels.get('persisted:history_simple_paginated_f');
 
       /* first, send a number of events to this channel */
-      var publishTasks = utils.arrMap(testMessages, function (event) {
-        return function (publishCb) {
-          testchannel.publish(event.name, event.data, publishCb);
-        };
-      });
-
-      publishTasks.push(function (waitCb) {
-        setTimeout(function () {
-          waitCb(null);
-        }, 1000);
-      });
-      try {
-        async.series(publishTasks, function (err) {
-          if (err) {
-            done(err);
-            return;
-          }
-
-          /* so now the messages are there; try querying the timeline to get messages one at a time */
-          var ids = {},
-            totalMessagesExpected = testMessages.length,
-            nextPage = function (cb) {
-              testchannel.history({ limit: 1, direction: 'forwards' }, cb);
-            };
-
-          async.mapSeries(
-            testMessages,
-            function (expectedMessage, cb) {
-              nextPage(function (err, resultPage) {
-                if (err) {
-                  cb(err);
-                  return;
-                }
-                /* verify expected number of messages in this page */
-                expect(resultPage.items.length).to.equal(1, 'Verify a single message received');
-                var resultMessage = resultPage.items[0];
-                ids[resultMessage.id] = resultMessage;
-
-                /* verify expected message */
-                expect(expectedMessage.name).to.equal(resultMessage.name, 'Verify expected name value present');
-                expect(expectedMessage.data).to.deep.equal(resultMessage.data, 'Verify expected data value present');
-
-                if (--totalMessagesExpected > 0) {
-                  expect(resultPage.hasNext(), 'Verify next link is present').to.be.ok;
-                  nextPage = resultPage.next;
-                }
-                cb();
-              });
-            },
-            function (err) {
-              if (err) {
-                done(err);
-                return;
-              }
-              /* verify message ids are unique */
-              expect(utils.keysArray(ids).length).to.equal(
-                testMessages.length,
-                'Verify correct number of distinct message ids found'
-              );
-              done();
-            }
-          );
-        });
-      } catch (err) {
-        done(err);
+      for (var message of testMessages) {
+        await testchannel.publish(message.name, message.data);
       }
+
+      await new Promise(function (resolve) {
+        setTimeout(resolve, 1000);
+      });
+
+      var ids = {},
+        totalMessagesExpected = testMessages.length;
+
+      var resultPage = await testchannel.history({ limit: 1, direction: 'forwards' });
+      for (var expectedMessage of testMessages) {
+        /* verify expected number of messages in this page */
+        expect(resultPage.items.length).to.equal(1, 'Verify a single message received');
+        var resultMessage = resultPage.items[0];
+        ids[resultMessage.id] = resultMessage;
+
+        /* verify expected message */
+        expect(expectedMessage.name).to.equal(resultMessage.name, 'Verify expected name value present');
+        expect(expectedMessage.data).to.deep.equal(resultMessage.data, 'Verify expected data value present');
+
+        if (--totalMessagesExpected > 0) {
+          expect(resultPage.hasNext(), 'Verify next link is present').to.be.ok;
+          resultPage = await resultPage.next();
+        }
+      }
+
+      /* verify message ids are unique */
+      expect(utils.keysArray(ids).length).to.equal(
+        testMessages.length,
+        'Verify correct number of distinct message ids found',
+      );
     });
 
-    it('history_multiple_paginated_b', function (done) {
+    it('history_multiple_paginated_b', async function () {
       var testchannel = rest.channels.get('persisted:history_multiple_paginated_b');
 
       /* first, send a number of events to this channel */
-      var publishTasks = [
-        function (publishCb) {
-          testchannel.publish(testMessages, publishCb);
-        },
-      ];
+      for (var message of testMessages) {
+        await testchannel.publish(message.name, message.data);
+      }
 
-      publishTasks.push(function (waitCb) {
-        setTimeout(function () {
-          waitCb(null);
-        }, 1000);
+      await new Promise(function (resolve) {
+        setTimeout(resolve, 1000);
       });
-      try {
-        async.series(publishTasks, function (err) {
-          if (err) {
-            done(err);
-            return;
-          }
 
-          /* so now the messages are there; try querying the timeline to get messages one at a time */
-          var ids = {},
-            totalMessagesExpected = testMessages.length,
-            nextPage = function (cb) {
-              testchannel.history({ limit: 1, direction: 'backwards' }, cb);
-            };
+      /* so now the messages are there; try querying the timeline to get messages one at a time */
+      var ids = {},
+        totalMessagesExpected = testMessages.length;
 
-          testMessages.reverse();
-          async.mapSeries(
-            testMessages,
-            function (expectedMessage, cb) {
-              nextPage(function (err, resultPage) {
-                if (err) {
-                  cb(err);
-                  return;
-                }
-                /* verify expected number of messages in this page */
-                expect(resultPage.items.length).to.equal(1, 'Verify a single message received');
-                var resultMessage = resultPage.items[0];
-                ids[resultMessage.id] = resultMessage;
+      var resultPage = await testchannel.history({ limit: 1, direction: 'backwards' });
+      for (var expectedMessage of reversedMessages) {
+        /* verify expected number of messages in this page */
+        expect(resultPage.items.length).to.equal(1, 'Verify a single message received');
+        var resultMessage = resultPage.items[0];
+        ids[resultMessage.id] = resultMessage;
 
-                /* verify expected message */
-                expect(expectedMessage.name).to.equal(resultMessage.name, 'Verify expected name value present');
-                expect(expectedMessage.data).to.deep.equal(resultMessage.data, 'Verify expected data value present');
+        /* verify expected message */
+        expect(expectedMessage.name).to.equal(resultMessage.name, 'Verify expected name value present');
+        expect(expectedMessage.data).to.deep.equal(resultMessage.data, 'Verify expected data value present');
 
-                if (--totalMessagesExpected > 0) {
-                  expect(resultPage.hasNext(), 'Verify next link is present').to.be.ok;
-                  nextPage = resultPage.next;
-                }
-                cb();
-              });
-            },
-            function (err) {
-              if (err) {
-                done(err);
-                return;
-              }
-              /* verify message ids are unique */
-              expect(utils.keysArray(ids).length).to.equal(
-                testMessages.length,
-                'Verify correct number of distinct message ids found'
-              );
-              done();
-            }
-          );
-        });
-      } catch (err) {
-        done(err);
+        if (--totalMessagesExpected > 0) {
+          expect(resultPage.hasNext(), 'Verify next link is present').to.be.ok;
+          resultPage = await resultPage.next();
+        }
       }
     });
 
-    it('history_multiple_paginated_f', function (done) {
+    it('history_multiple_paginated_f', async function () {
       var testchannel = rest.channels.get('persisted:history_multiple_paginated_f');
 
       /* first, send a number of events to this channel */
-      var publishTasks = [
-        function (publishCb) {
-          testchannel.publish(testMessages, publishCb);
-        },
-      ];
+      await testchannel.publish(testMessages);
 
-      publishTasks.push(function (waitCb) {
-        setTimeout(function () {
-          waitCb(null);
-        }, 1000);
+      await new Promise(function (resolve) {
+        setTimeout(resolve, 1000);
       });
-      try {
-        async.series(publishTasks, function (err) {
-          if (err) {
-            done(err);
-            return;
-          }
 
-          /* so now the messages are there; try querying the timeline to get messages one at a time */
-          var ids = {},
-            totalMessagesExpected = testMessages.length,
-            nextPage = function (cb) {
-              testchannel.history({ limit: 1, direction: 'forwards' }, cb);
-            };
+      /* so now the messages are there; try querying the timeline to get messages one at a time */
+      var ids = {},
+        totalMessagesExpected = testMessages.length;
 
-          async.mapSeries(
-            testMessages,
-            function (expectedMessage, cb) {
-              nextPage(function (err, resultPage) {
-                if (err) {
-                  cb(err);
-                  return;
-                }
-                /* verify expected number of messages in this page */
-                expect(resultPage.items.length).to.equal(1, 'Verify a single message received');
-                var resultMessage = resultPage.items[0];
-                ids[resultMessage.id] = resultMessage;
+      var resultPage = await testchannel.history({ limit: 1, direction: 'forwards' });
+      for (var expectedMessage of testMessages) {
+        /* verify expected number of messages in this page */
+        expect(resultPage.items.length).to.equal(1, 'Verify a single message received');
+        var resultMessage = resultPage.items[0];
+        ids[resultMessage.id] = resultMessage;
 
-                /* verify expected message */
-                expect(expectedMessage.name).to.equal(resultMessage.name, 'Verify expected name value present');
-                expect(expectedMessage.data).to.deep.equal(resultMessage.data, 'Verify expected data value present');
+        /* verify expected message */
+        expect(expectedMessage.name).to.equal(resultMessage.name, 'Verify expected name value present');
+        expect(expectedMessage.data).to.deep.equal(resultMessage.data, 'Verify expected data value present');
 
-                if (--totalMessagesExpected > 0) {
-                  expect(resultPage.hasNext(), 'Verify next link is present').to.be.ok;
-                  nextPage = resultPage.next;
-                }
-                cb();
-              });
-            },
-            function (err) {
-              if (err) {
-                done(err);
-                return;
-              }
-              /* verify message ids are unique */
-              expect(utils.keysArray(ids).length).to.equal(
-                testMessages.length,
-                'Verify correct number of distinct message ids found'
-              );
-              done();
-            }
-          );
-        });
-      } catch (err) {
-        done(err);
+        if (--totalMessagesExpected > 0) {
+          expect(resultPage.hasNext(), 'Verify next link is present').to.be.ok;
+          var resultPage = await resultPage.next();
+        }
       }
+
+      /* verify message ids are unique */
+      expect(utils.keysArray(ids).length).to.equal(
+        testMessages.length,
+        'Verify correct number of distinct message ids found',
+      );
     });
 
-    restTestOnJsonMsgpack('history_encoding_errors', function (done, rest, channelName) {
+    restTestOnJsonMsgpack('history_encoding_errors', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
       var badMessage = { name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{"foo":"bar"}' };
-      try {
-        testchannel.publish(badMessage, function (err) {
-          if (err) {
-            done(err);
-            return;
-          }
-          setTimeout(function () {
-            testchannel.history(function (err, resultPage) {
-              if (err) {
-                done(err);
-                return;
-              }
-              /* verify all messages are received */
-              var message = resultPage.items[0];
-              expect(message.data).to.equal(badMessage.data, 'Verify data preserved');
-              expect(message.encoding).to.equal(badMessage.encoding, 'Verify encoding preserved');
-              done();
-            });
-          }, 1000);
-        });
-      } catch (err) {
-        done(err);
-      }
+      testchannel.publish(badMessage);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      var resultPage = await testchannel.history();
+      /* verify all messages are received */
+      var message = resultPage.items[0];
+      expect(message.data).to.equal(badMessage.data, 'Verify data preserved');
+      expect(message.encoding).to.equal(badMessage.encoding, 'Verify encoding preserved');
     });
 
-    restTestOnJsonMsgpack('history_no_next_page', function (done, rest, channelName) {
+    restTestOnJsonMsgpack('history_no_next_page', async function (rest, channelName) {
       const channel = rest.channels.get(channelName);
 
-      channel.history(function (err, firstPage) {
-        if (err) {
-          done(err);
-          return;
-        }
-        firstPage.next(function (err, secondPage) {
-          if (err) {
-            done(err);
-            return;
-          }
+      const firstPage = await channel.history();
+      const secondPage = await firstPage.next();
 
-          expect(secondPage).to.equal(null);
-          done();
-        });
-      });
+      expect(secondPage).to.equal(null);
     });
-
-    if (typeof Promise !== 'undefined') {
-      it('historyPromise', function (done) {
-        var rest = helper.AblyRest({ promises: true });
-        var testchannel = rest.channels.get('persisted:history_promise');
-
-        testchannel
-          .publish('one', null)
-          .then(function () {
-            return testchannel.publish('two', null);
-          })
-          .then(function () {
-            return testchannel.history({ limit: 1, direction: 'forwards' });
-          })
-          .then(function (resultPage) {
-            expect(resultPage.items.length).to.equal(1);
-            expect(resultPage.items[0].name).to.equal('one');
-            return resultPage.first();
-          })
-          .then(function (resultPage) {
-            expect(resultPage.items[0].name).to.equal('one');
-            return resultPage.current();
-          })
-          .then(function (resultPage) {
-            expect(resultPage.items[0].name).to.equal('one');
-            return resultPage.next();
-          })
-          .then(function (resultPage) {
-            expect(resultPage.items[0].name).to.equal('two');
-            done();
-          })
-          ['catch'](function (err) {
-            done(err);
-          });
-      });
-    }
   });
 });

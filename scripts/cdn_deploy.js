@@ -21,7 +21,7 @@ async function run() {
     // Comma separated directories (relative to `path`) to exclude from upload
     excludeDirs: 'node_modules,.git',
     // Regex to match files against for upload
-    fileRegex: '^ably(\\.noencryption)?(\\.min)?\\.js$',
+    fileRegex: '^ably?(\\.min)?\\.js$',
     ...argv,
   };
 
@@ -63,7 +63,7 @@ async function run() {
       for (let version of versions) {
         const relativePath = path.relative(
           config.includeDirs.find((d) => file.startsWith(d)),
-          file
+          file,
         );
         const split = relativePath.split('.js');
         const newPath = `${split[0]}-${version}.js`;

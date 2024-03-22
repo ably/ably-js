@@ -6,6 +6,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var rest;
   var mixin = helper.Utils.mixin;
   var displayError = helper.displayError;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/reauth', function () {
     this.timeout(60 * 1000);
@@ -25,7 +26,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
     function getToken(tokenParams) {
       return function (state, callback) {
-        rest.auth.requestToken(tokenParams, null, function (err, token) {
+        whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, token) {
           callback(err, mixin(state, { token: token }));
         });
       };
@@ -72,7 +73,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         async.parallel(
           [
             function (cb) {
-              state.realtime.auth.authorize(null, { token: state.token }, cb);
+              whenPromiseSettles(state.realtime.auth.authorize(null, { token: state.token }), cb);
             },
             function (cb) {
               state.realtime.connection.on('update', function (stateChange) {
@@ -82,7 +83,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           ],
           function (err) {
             callback(err, state);
-          }
+          },
         );
       };
     }
@@ -90,7 +91,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function attach(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           callback(err, state);
         });
       };
@@ -123,7 +124,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             'waitChannelState: expected state not reached within 5s. Expected ' +
               expected +
               ', currently ' +
-              channel.state
+              channel.state,
           );
         }, 5000);
         channel.once(function () {
@@ -146,7 +147,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCantAttach(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err && err.code === 40160) {
             callback(null, state);
           } else {
@@ -159,7 +160,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCanPublish(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        channel.publish(null, null, function (err) {
+        whenPromiseSettles(channel.publish(null, null), function (err) {
           callback(err, state);
         });
       };
@@ -168,7 +169,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCantPublish(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        channel.publish(null, null, function (err) {
+        whenPromiseSettles(channel.publish(null, null), function (err) {
           if (err && err.code === 40160) {
             callback(null, state);
           } else {

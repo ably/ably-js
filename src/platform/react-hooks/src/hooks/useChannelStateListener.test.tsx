@@ -4,12 +4,17 @@ import { useChannelStateListener } from './useChannelStateListener.js';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
-import { Types } from 'ably';
+import * as Ably from 'ably';
 import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
+import { ChannelProvider } from '../ChannelProvider.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Types.RealtimePromise}>{children}</AblyProvider>);
+  return render(
+    <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+      <ChannelProvider channelName="blah">{children}</ChannelProvider>
+    </AblyProvider>,
+  );
 }
 
 describe('useChannelStateListener', () => {
@@ -34,7 +39,7 @@ describe('useChannelStateListener', () => {
   it('can register a channel state listener for named state changes', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseChannelStateListenerComponentNamedEvents event={'failed'}></UseChannelStateListenerComponentNamedEvents>
+      <UseChannelStateListenerComponentNamedEvents event={'failed'}></UseChannelStateListenerComponentNamedEvents>,
     );
 
     act(() => {
@@ -55,7 +60,7 @@ describe('useChannelStateListener', () => {
       ablyClient,
       <UseChannelStateListenerComponentNamedEvents
         event={['failed', 'suspended']}
-      ></UseChannelStateListenerComponentNamedEvents>
+      ></UseChannelStateListenerComponentNamedEvents>,
     );
 
     act(() => {
@@ -73,7 +78,7 @@ describe('useChannelStateListener', () => {
 });
 
 const UseChannelStateListenerComponent = () => {
-  const [channelState, setChannelState] = useState<Types.ChannelState>('initialized');
+  const [channelState, setChannelState] = useState<Ably.ChannelState>('initialized');
 
   useChannelStateListener('blah', (stateChange) => {
     setChannelState(stateChange.current);
@@ -83,11 +88,11 @@ const UseChannelStateListenerComponent = () => {
 };
 
 interface UseChannelStateListenerComponentNamedEventsProps {
-  event: Types.ChannelState | Types.ChannelState[];
+  event: Ably.ChannelState | Ably.ChannelState[];
 }
 
 const UseChannelStateListenerComponentNamedEvents = ({ event }: UseChannelStateListenerComponentNamedEventsProps) => {
-  const [channelState, setChannelState] = useState<Types.ChannelState>('initialized');
+  const [channelState, setChannelState] = useState<Ably.ChannelState>('initialized');
 
   useChannelStateListener('blah', event, (stateChange) => {
     setChannelState(stateChange.current);

@@ -1,3 +1,4 @@
+import { MsgPack } from 'common/types/msgpack';
 import * as Utils from '../util/utils';
 
 type PushChannelSubscriptionObject = {
@@ -36,13 +37,14 @@ class PushChannelSubscription {
 
   static fromResponseBody(
     body: Array<Record<string, unknown>> | Record<string, unknown>,
-    format?: Utils.Format
+    MsgPack: MsgPack | null,
+    format?: Utils.Format,
   ): PushChannelSubscription | PushChannelSubscription[] {
     if (format) {
-      body = Utils.decodeBody(body, format) as Record<string, unknown>;
+      body = Utils.decodeBody(body, MsgPack, format) as Record<string, unknown>;
     }
 
-    if (Utils.isArray(body)) {
+    if (Array.isArray(body)) {
       return PushChannelSubscription.fromValuesArray(body);
     } else {
       return PushChannelSubscription.fromValues(body);

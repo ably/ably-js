@@ -1,4 +1,4 @@
-import ProtocolMessage from '../types/protocolmessage';
+import ProtocolMessage, { actions, stringify as stringifyProtocolMessage } from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
@@ -6,8 +6,6 @@ import MessageQueue from './messagequeue';
 import ErrorInfo from '../types/errorinfo';
 import Transport from './transport';
 import { ErrCallback } from '../../types/utils';
-
-const actions = ProtocolMessage.Action;
 
 export class PendingMessage {
   message: ProtocolMessage;
@@ -51,7 +49,7 @@ class Protocol extends EventEmitter {
     Logger.logAction(
       Logger.LOG_ERROR,
       'Protocol.onNack()',
-      'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err)
+      'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err),
     );
     if (!err) {
       err = new ErrorInfo('Unable to send message; channel not responding', 50001, 500);
@@ -73,10 +71,11 @@ class Protocol extends EventEmitter {
       this.messageQueue.push(pendingMessage);
     }
     if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      Logger.logAction(
+      Logger.logActionNoStrip(
         Logger.LOG_MICRO,
         'Protocol.send()',
-        'sending msg; ' + ProtocolMessage.stringify(pendingMessage.message)
+        'sending msg; ' +
+          stringifyProtocolMessage(pendingMessage.message, this.transport.connectionManager.realtime._RealtimePresence),
       );
     }
     pendingMessage.sendAttempted = true;

@@ -2,6 +2,7 @@
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
   var expect = chai.expect;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('browser/simple', function () {
     this.timeout(60 * 1000);
@@ -16,7 +17,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     function isTransportAvailable(transport) {
-      return transport in Ably.Realtime.ConnectionManager.supportedTransports;
+      return transport in Ably.Realtime.ConnectionManager.supportedTransports(Ably.Realtime._transports);
     }
 
     function realtimeConnection(transports) {
@@ -71,7 +72,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         ably.connection.on('connected', function () {
           connectionTimeout.stop();
           heartbeatTimeout = failWithin(25, done, ably, 'wait for heartbeat');
-          ably.connection.ping(function (err) {
+          whenPromiseSettles(ably.connection.ping(), function (err) {
             heartbeatTimeout.stop();
             done(err);
             ably.close();
@@ -115,7 +116,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         receiveMessagesTimeout = failWithin(15, done, ably, 'wait for published messages to be received');
 
         timer = setInterval(function () {
-          channel.publish('event0', 'Hello world at: ' + new Date(), function (err) {
+          whenPromiseSettles(channel.publish('event0', 'Hello world at: ' + new Date()), function (err) {
             sentCbCount++;
             checkFinish();
           });
@@ -179,27 +180,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     }
 
-    var xhrStreamingTransport = 'xhr_streaming';
-    if (isTransportAvailable(xhrStreamingTransport)) {
-      it('xhrstreamingbase0', function (done) {
-        connectionWithTransport(done, xhrStreamingTransport);
-      });
-
-      /*
-       * Publish and subscribe, json transport
-       */
-      it('xhrstreamingpublish0', function (done) {
-        publishWithTransport(done, xhrStreamingTransport);
-      });
-
-      /*
-       * Check heartbeat
-       */
-      it('xhrstreamingheartbeat0', function (done) {
-        heartbeatWithTransport(done, xhrStreamingTransport);
-      });
-    }
-
     var xhrPollingTransport = 'xhr_polling';
     if (isTransportAvailable(xhrPollingTransport)) {
       it('xhrpollingbase0', function (done) {
@@ -218,27 +198,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
        */
       it('xhrpollingheartbeat0', function (done) {
         heartbeatWithTransport(done, xhrPollingTransport);
-      });
-    }
-
-    var jsonpTransport = 'jsonp';
-    if (isTransportAvailable(jsonpTransport)) {
-      it('jsonpbase0', function (done) {
-        connectionWithTransport(done, jsonpTransport);
-      });
-
-      /*
-       * Publish and subscribe, json transport
-       */
-      it('jsonppublish0', function (done) {
-        publishWithTransport(done, jsonpTransport);
-      });
-
-      /*
-       * Check heartbeat
-       */
-      it('jsonpheartbeat0', function (done) {
-        heartbeatWithTransport(done, jsonpTransport);
       });
     }
 

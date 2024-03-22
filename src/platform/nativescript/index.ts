@@ -1,14 +1,15 @@
 // Common
-import Rest from '../../common/lib/client/rest';
-import Realtime from '../../common/lib/client/realtime';
+import { DefaultRest } from '../../common/lib/client/defaultrest';
+import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
 import ErrorInfo from '../../common/lib/types/errorinfo';
+import { fromDeserializedIncludingDependencies as protocolMessageFromDeserialized } from '../../common/lib/types/protocolmessage';
 
 // Platform Specific
 import BufferUtils from '../web/lib/util/bufferutils';
 // @ts-ignore
-import CryptoFactory from '../web/lib/util/crypto';
-import Http from '../web/lib/util/http';
+import { createCryptoClass } from '../web/lib/util/crypto';
+import Http from '../web/lib/http/http';
 // @ts-ignore
 import Config from './config';
 // @ts-ignore
@@ -19,8 +20,9 @@ import { getDefaults } from '../../common/lib/util/defaults';
 import WebStorage from './lib/util/webstorage';
 import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
+import { defaultBundledRequestImplementations } from '../web/lib/http/request';
 
-const Crypto = CryptoFactory(Config, BufferUtils);
+const Crypto = createCryptoClass(Config, BufferUtils);
 
 Platform.Crypto = Crypto;
 Platform.BufferUtils = BufferUtils;
@@ -29,8 +31,12 @@ Platform.Config = Config;
 Platform.Transports = Transports;
 Platform.WebStorage = WebStorage;
 
-Rest.Crypto = Crypto;
-Realtime.Crypto = Crypto;
+for (const clientClass of [DefaultRest, DefaultRealtime]) {
+  clientClass.Crypto = Crypto;
+  clientClass._MsgPack = msgpack;
+}
+
+Http.bundledRequestImplementations = defaultBundledRequestImplementations;
 
 Logger.initLogHandlers();
 
@@ -43,7 +49,8 @@ if (Platform.Config.agent) {
 
 export default {
   ErrorInfo,
-  Rest,
-  Realtime,
+  Rest: DefaultRest,
+  Realtime: DefaultRealtime,
   msgpack,
+  protocolMessageFromDeserialized,
 };

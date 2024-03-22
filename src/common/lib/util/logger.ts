@@ -8,7 +8,7 @@ type LoggerFunction = (...args: string[]) => void;
 
 // Workaround for salesforce lightning locker compatibility
 // This is a shorthand version of Utils.getGlobalObject (which we can't use here without creating a circular import)
-let globalObject = global || (typeof window !== 'undefined' ? window : self);
+let globalObject = typeof global !== 'undefined' ? global : typeof window !== 'undefined' ? window : self;
 
 enum LogLevels {
   None = 0,
@@ -35,7 +35,7 @@ function getHandler(logger: Function): Function {
             '.' +
             pad(time.getMilliseconds(), 1) +
             ' ' +
-            msg
+            msg,
         );
       }
     : logger;
@@ -45,27 +45,19 @@ const getDefaultLoggers = (): [Function, Function] => {
   let consoleLogger;
   let errorLogger;
 
-  /* Can't just check for console && console.log; fails in IE <=9 */
-  if (
-    (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') /* node */ ||
-    typeof globalObject?.console?.log?.apply === 'function' /* sensible browsers */
-  ) {
+  // we expect ably-js to be run in environments which have `console` object available with its `log` function
+  if (typeof globalObject?.console?.log === 'function') {
     consoleLogger = function (...args: unknown[]) {
       console.log.apply(console, args);
     };
+
     errorLogger = console.warn
       ? function (...args: unknown[]) {
           console.warn.apply(console, args);
         }
       : consoleLogger;
-  } else if (globalObject?.console.log as unknown) {
-    /* IE <= 9 with the console open -- console.log does not
-     * inherit from Function, so has no apply method */
-    consoleLogger = errorLogger = function () {
-      Function.prototype.apply.call(console.log, console, arguments);
-    };
   } else {
-    /* IE <= 9 when dev tools are closed - window.console not even defined */
+    // otherwise we should fallback to noop for log functions
     consoleLogger = errorLogger = function () {};
   }
 
@@ -98,11 +90,23 @@ class Logger {
   }
 
   /* public static functions */
+  /**
+   * In the modular variant of the SDK, the `stripLogs` esbuild plugin strips out all calls to this method (when invoked as `Logger.logAction(...)`) except when called with level `Logger.LOG_ERROR`. If you wish for a log statement to never be stripped, use the {@link logActionNoStrip} method instead.
+   *
+   * The aforementioned plugin expects `level` to be an expression of the form `Logger.LOG_*`; that is, you can’t dynamically specify the log level.
+   */
   static logAction = (level: LogLevels, action: string, message?: string) => {
+    this.logActionNoStrip(level, action, message);
+  };
+
+  /**
+   * Calls to this method are never stripped by the `stripLogs` esbuild plugin. Use it for log statements that you wish to always be included in the modular variant of the SDK.
+   */
+  static logActionNoStrip(level: LogLevels, action: string, message?: string) {
     if (Logger.shouldLog(level)) {
       (level === LogLevels.Error ? Logger.logErrorHandler : Logger.logHandler)('Ably: ' + action + ': ' + message);
     }
-  };
+  }
 
   static deprecated = (description: string, msg: string) => {
     Logger.deprecationWarning(`${description} is deprecated and will be removed in a future version. ${msg}`);
@@ -110,13 +114,13 @@ class Logger {
 
   static renamedClientOption(oldName: string, newName: string) {
     Logger.deprecationWarning(
-      `The \`${oldName}\` client option has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`
+      `The \`${oldName}\` client option has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`,
     );
   }
 
   static renamedMethod(className: string, oldName: string, newName: string) {
     Logger.deprecationWarning(
-      `\`${className}\`’s \`${oldName}\` method has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`
+      `\`${className}\`’s \`${oldName}\` method has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`,
     );
   }
 

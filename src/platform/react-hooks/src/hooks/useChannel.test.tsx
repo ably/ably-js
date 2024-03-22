@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { it, beforeEach, describe, expect, vi } from 'vitest';
 import { useChannel } from './useChannel.js';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, renderHook, screen, waitFor } from '@testing-library/react';
 import { FakeAblySdk, FakeAblyChannels } from '../fakes/ably.js';
-import { Types } from '../../../../../ably.js';
+import * as Ably from 'ably';
 import { act } from 'react-dom/test-utils';
 import { AblyProvider } from '../AblyProvider.js';
+import { ChannelProvider } from '../ChannelProvider.js';
 
 function renderInCtxProvider(client: FakeAblySdk, children: React.ReactNode | React.ReactNode[]) {
-  return render(<AblyProvider client={client as unknown as Types.RealtimePromise}>{children}</AblyProvider>);
+  return render(
+    <AblyProvider client={client as unknown as Ably.RealtimeClient}>
+      <ChannelProvider channelName="blah">{children}</ChannelProvider>
+    </AblyProvider>,
+  );
 }
 
 describe('useChannel', () => {
@@ -57,9 +62,11 @@ describe('useChannel', () => {
   it('useChannel works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
-      <AblyProvider client={otherClient as unknown as Types.RealtimePromise} id="otherClient">
-        <UseChannelComponentMultipleClients />
-      </AblyProvider>
+      <AblyProvider client={otherClient as unknown as Ably.RealtimeClient} ablyId="otherClient">
+        <ChannelProvider channelName="bleh" ablyId="otherClient">
+          <UseChannelComponentMultipleClients />
+        </ChannelProvider>
+      </AblyProvider>,
     );
 
     await act(async () => {
@@ -78,7 +85,7 @@ describe('useChannel', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <UseChannelStateErrorsComponent onChannelError={onChannelError}></UseChannelStateErrorsComponent>
+      <UseChannelStateErrorsComponent onChannelError={onChannelError}></UseChannelStateErrorsComponent>,
     );
 
     const channelErrorElem = screen.getByRole('channelError');
@@ -102,7 +109,7 @@ describe('useChannel', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <UseChannelStateErrorsComponent onConnectionError={onConnectionError}></UseChannelStateErrorsComponent>
+      <UseChannelStateErrorsComponent onConnectionError={onConnectionError}></UseChannelStateErrorsComponent>,
     );
 
     const connectionErrorElem = screen.getByRole('connectionError');
@@ -136,7 +143,7 @@ describe('useChannel', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <LatestMessageCallbackComponent channelName="blah" callback={() => callbackCount++} />
+      <LatestMessageCallbackComponent channelName="blah" callback={() => callbackCount++} />,
     );
 
     await act(async () => {
@@ -189,20 +196,41 @@ describe('useChannel with deriveOptions', () => {
   it('component can use "useChannel" with "deriveOptions" and renders nothing by default', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent channelName={Channels.tasks} deriveOptions={{ filter: '' }} />
+      <ChannelProvider channelName={Channels.tasks} deriveOptions={{ filter: '' }}>
+        <UseDerivedChannelComponent channelName={Channels.tasks} />
+      </ChannelProvider>,
     );
     const messageUl = screen.getAllByRole('derived-channel-messages')[0];
 
     expect(messageUl.childElementCount).toBe(0);
   });
 
+  it('component can use "publish" for channel with "deriveOptions"', async () => {
+    const { result } = renderHook(() => useChannel('blah'), {
+      wrapper: ({ children }) => (
+        <AblyProvider client={ablyClient as unknown as Ably.RealtimeClient}>
+          <ChannelProvider channelName="blah" deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}>
+            {children}
+          </ChannelProvider>
+        </AblyProvider>
+      ),
+    });
+
+    const { channel, publish } = result.current;
+
+    await expect(channel.publish('test', 'test')).rejects.toThrow();
+    await publish('test', 'test');
+  });
+
   it('component updates when new message arrives', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
+      <ChannelProvider
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
-      />
+      >
+        <UseDerivedChannelComponent channelName={Channels.tasks} />
+      </ChannelProvider>,
     );
 
     act(() => {
@@ -219,10 +247,12 @@ describe('useChannel with deriveOptions', () => {
   it('component will not update if message filtered out', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
+      <ChannelProvider
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"`' }}
-      />
+      >
+        <UseDerivedChannelComponent channelName={Channels.tasks} />
+      </ChannelProvider>,
     );
 
     act(() => {
@@ -238,10 +268,12 @@ describe('useChannel with deriveOptions', () => {
   it('component will update with only those messages that qualify', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
+      <ChannelProvider
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
-      />
+      >
+        <UseDerivedChannelComponent channelName={Channels.tasks} />
+      </ChannelProvider>,
     );
 
     act(() => {
@@ -275,19 +307,32 @@ describe('useChannel with deriveOptions', () => {
     const anotherClientId = 'anotherClient';
 
     render(
-      <AblyProvider client={ablyClient as unknown as Types.RealtimePromise} id={cliendId}>
-        <AblyProvider client={anotherClient as unknown as Types.RealtimePromise} id={anotherClientId}>
-          <UseDerivedChannelComponentMultipleClients
-            clientId={cliendId}
+      <AblyProvider client={ablyClient as unknown as Ably.RealtimePromise} ablyId={cliendId}>
+        <AblyProvider client={anotherClient as unknown as Ably.RealtimePromise} ablyId={anotherClientId}>
+          <ChannelProvider
+            ablyId={cliendId}
             channelName={Channels.tasks}
-            anotherClientId={anotherClientId}
-            anotherChannelName={Channels.alerts}
             deriveOptions={{
               filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`',
             }}
-          />
+          >
+            <ChannelProvider
+              ablyId={anotherClientId}
+              channelName={Channels.alerts}
+              deriveOptions={{
+                filter: 'headers.user == `"robert.griesemer@domain.io"` || headers.company == `"domain"`',
+              }}
+            >
+              <UseDerivedChannelComponentMultipleClients
+                clientId={cliendId}
+                channelName={Channels.tasks}
+                anotherClientId={anotherClientId}
+                anotherChannelName={Channels.alerts}
+              />
+            </ChannelProvider>
+          </ChannelProvider>
         </AblyProvider>
-      </AblyProvider>
+      </AblyProvider>,
     );
 
     act(() => {
@@ -314,10 +359,12 @@ describe('useChannel with deriveOptions', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <UseChannelStateErrorsComponent
-        channelName={Channels.alerts}
-        onChannelError={onChannelError}
-      ></UseChannelStateErrorsComponent>
+      <ChannelProvider channelName={Channels.alerts}>
+        <UseChannelStateErrorsComponent
+          channelName={Channels.alerts}
+          onChannelError={onChannelError}
+        ></UseChannelStateErrorsComponent>
+      </ChannelProvider>,
     );
 
     const channelErrorElem = screen.getByRole('channelError');
@@ -337,10 +384,12 @@ describe('useChannel with deriveOptions', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <UseChannelStateErrorsComponent
-        channelName={Channels.alerts}
-        onConnectionError={onConnectionError}
-      ></UseChannelStateErrorsComponent>
+      <ChannelProvider channelName={Channels.alerts}>
+        <UseChannelStateErrorsComponent
+          channelName={Channels.alerts}
+          onConnectionError={onConnectionError}
+        ></UseChannelStateErrorsComponent>
+      </ChannelProvider>,
     );
 
     const channelErrorElem = screen.getByRole('connectionError');
@@ -357,10 +406,9 @@ describe('useChannel with deriveOptions', () => {
   it('wildcard filter', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
-        deriveOptions={{ filter: '*' }}
-        channelName={Channels.alerts}
-      ></UseDerivedChannelComponent>
+      <ChannelProvider channelName={Channels.alerts} deriveOptions={{ filter: '*' }}>
+        <UseDerivedChannelComponent channelName={Channels.alerts}></UseDerivedChannelComponent>
+      </ChannelProvider>,
     );
 
     act(() => {
@@ -375,11 +423,9 @@ describe('useChannel with deriveOptions', () => {
   it('skip param', async () => {
     renderInCtxProvider(
       ablyClient,
-      <UseDerivedChannelComponent
-        deriveOptions={{ filter: '*' }}
-        channelName={Channels.alerts}
-        skip
-      ></UseDerivedChannelComponent>
+      <ChannelProvider channelName={Channels.alerts} deriveOptions={{ filter: '*' }}>
+        <UseDerivedChannelComponent channelName={Channels.alerts} skip></UseDerivedChannelComponent>
+      </ChannelProvider>,
     );
 
     act(() => {
@@ -396,11 +442,12 @@ describe('useChannel with deriveOptions', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <LatestMessageCallbackComponent
+      <ChannelProvider
         channelName={Channels.tasks}
         deriveOptions={{ filter: 'headers.user == `"robert.pike@domain.io"` || headers.company == `"domain"`' }}
-        callback={() => callbackCount++}
-      />
+      >
+        <LatestMessageCallbackComponent channelName={Channels.tasks} callback={() => callbackCount++} />
+      </ChannelProvider>,
     );
 
     act(() => {
@@ -445,12 +492,9 @@ describe('useChannel with deriveOptions', () => {
 
     renderInCtxProvider(
       ablyClient,
-      <ChangingEventComponent
-        channelName={Channels.alerts}
-        deriveOptions={{ filter: '*' }}
-        eventName={eventName}
-        newEventName={newEventName}
-      />
+      <ChannelProvider channelName={Channels.alerts} deriveOptions={{ filter: '*' }}>
+        <ChangingEventComponent channelName={Channels.alerts} eventName={eventName} newEventName={newEventName} />
+      </ChannelProvider>,
     );
 
     await waitFor(() => expect(channel.subscribe).toHaveBeenCalledWith(eventName, expect.any(Function)));
@@ -462,11 +506,11 @@ describe('useChannel with deriveOptions', () => {
 });
 
 const UseChannelComponentMultipleClients = () => {
-  const [messages, updateMessages] = useState<Types.Message[]>([]);
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
   useChannel({ channelName: 'blah' }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
-  useChannel({ channelName: 'bleh', id: 'otherClient' }, (message) => {
+  useChannel({ channelName: 'bleh', ablyId: 'otherClient' }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
 
@@ -476,7 +520,7 @@ const UseChannelComponentMultipleClients = () => {
 };
 
 const UseChannelComponent = ({ skip }: { skip?: boolean }) => {
-  const [messages, updateMessages] = useState<Types.Message[]>([]);
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
   useChannel({ channelName: 'blah', skip }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
@@ -491,7 +535,6 @@ interface UseDerivedChannelComponentMultipleClientsProps {
   channelName: string;
   anotherClientId: string;
   anotherChannelName: string;
-  deriveOptions: Types.DeriveOptions;
 }
 
 const UseDerivedChannelComponentMultipleClients = ({
@@ -499,13 +542,12 @@ const UseDerivedChannelComponentMultipleClients = ({
   clientId,
   anotherClientId,
   anotherChannelName,
-  deriveOptions,
 }: UseDerivedChannelComponentMultipleClientsProps) => {
-  const [messages, setMessages] = useState<Types.Message[]>([]);
-  useChannel({ id: clientId, channelName, deriveOptions }, (message) => {
+  const [messages, setMessages] = useState<Ably.Message[]>([]);
+  useChannel({ ablyId: clientId, channelName }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
-  useChannel({ id: anotherClientId, channelName: anotherChannelName, deriveOptions }, (message) => {
+  useChannel({ ablyId: anotherClientId, channelName: anotherChannelName }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
 
@@ -516,14 +558,13 @@ const UseDerivedChannelComponentMultipleClients = ({
 
 interface UseDerivedChannelComponentProps {
   channelName: string;
-  deriveOptions: Types.DeriveOptions;
   skip?: boolean;
 }
 
-const UseDerivedChannelComponent = ({ channelName, deriveOptions, skip = false }: UseDerivedChannelComponentProps) => {
-  const [messages, setMessages] = useState<Types.Message[]>([]);
+const UseDerivedChannelComponent = ({ channelName, skip = false }: UseDerivedChannelComponentProps) => {
+  const [messages, setMessages] = useState<Ably.Message[]>([]);
 
-  useChannel({ channelName, deriveOptions, skip }, (message) => {
+  useChannel({ channelName, skip }, (message) => {
     setMessages((prev) => [...prev, message]);
   });
 
@@ -533,19 +574,17 @@ const UseDerivedChannelComponent = ({ channelName, deriveOptions, skip = false }
 };
 
 interface UseChannelStateErrorsComponentProps {
-  onConnectionError?: (err: Types.ErrorInfo) => unknown;
-  onChannelError?: (err: Types.ErrorInfo) => unknown;
+  onConnectionError?: (err: Ably.ErrorInfo) => unknown;
+  onChannelError?: (err: Ably.ErrorInfo) => unknown;
   channelName?: string;
-  deriveOptions?: Types.DeriveOptions;
 }
 
 const UseChannelStateErrorsComponent = ({
   onConnectionError,
   onChannelError,
   channelName = 'blah',
-  deriveOptions,
 }: UseChannelStateErrorsComponentProps) => {
-  const opts = { channelName, deriveOptions, onConnectionError, onChannelError };
+  const opts = { channelName, onConnectionError, onChannelError };
   const { connectionError, channelError } = useChannel(opts);
 
   return (
@@ -558,18 +597,13 @@ const UseChannelStateErrorsComponent = ({
 
 interface LatestMessageCallbackComponentProps {
   channelName: string;
-  deriveOptions?: Types.DeriveOptions;
   callback: () => any;
 }
 
-const LatestMessageCallbackComponent = ({
-  channelName,
-  deriveOptions,
-  callback,
-}: LatestMessageCallbackComponentProps) => {
+const LatestMessageCallbackComponent = ({ channelName, callback }: LatestMessageCallbackComponentProps) => {
   const [count, setCount] = React.useState(0);
 
-  useChannel({ channelName, deriveOptions }, () => {
+  useChannel({ channelName }, () => {
     callback();
     setCount((count) => count + 1);
   });
@@ -580,7 +614,6 @@ const LatestMessageCallbackComponent = ({
 interface ChangingEventComponentProps {
   newEventName: string;
   channelName?: string;
-  deriveOptions?: Types.DeriveOptions;
   eventName?: string;
 }
 
@@ -588,11 +621,10 @@ const ChangingEventComponent = ({
   channelName = 'blah',
   eventName = 'event1',
   newEventName,
-  deriveOptions,
 }: ChangingEventComponentProps) => {
   const [currentEventName, setCurrentEventName] = useState(eventName);
 
-  useChannel({ channelName, deriveOptions }, currentEventName, vi.fn());
+  useChannel({ channelName }, currentEventName, vi.fn());
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

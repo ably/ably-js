@@ -17,16 +17,15 @@ jobs:
         run: >
           git config --global url."https://github.com/".insteadOf
           ssh://git@github.com/
-      - name: Use Node.js 14.x
+      - name: Use Node.js 20.x
         uses: actions/setup-node@v1
         with:
-          node-version: 14.x
+          node-version: 20.x
       - run: npm ci
       - name: Build bundle reports
         run: |
             mkdir bundle-reports
             npm run sourcemap -- --html bundle-reports/index.html
-            npm run sourcemap:noencryption -- --html bundle-reports/noencryption.html
       - uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: eu-west-2
@@ -37,3 +36,5 @@ jobs:
           sourcePath: bundle-reports
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           artifactName: bundle-report
+      # This step performs some validation and may fail, so it should come after the steps that we want to always execute.
+      - run: npm run modulereport

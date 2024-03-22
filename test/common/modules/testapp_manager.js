@@ -2,14 +2,13 @@
 /* global define, isNativescript, fetch */
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
-define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF8, ably) {
+define(['globals', 'ably'], function (ablyGlobals, ably) {
   var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
     tlsPort = ablyGlobals.tlsPort;
 
   var isBrowser = typeof window === 'object',
     isNativescript = typeof global === 'object' && global.isNativescript,
     httpReq = httpReqFunction(),
-    toBase64 = base64Function(),
     loadJsonData = loadJsonDataNode,
     testResourcesPath = 'test/common/ably-common/test-resources/';
 
@@ -31,35 +30,10 @@ define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF
     }
   }
 
-  function createXHR() {
-    var result = new XMLHttpRequest();
-    if ('withCredentials' in result) return result;
-    if (typeof XDomainRequest !== 'undefined') {
-      var xdr = new XDomainRequest(); /* Use IE-specific "CORS" code with XDR */
-      xdr.isXDR = true;
-      return xdr;
-    }
-    return null;
-  }
-
-  function NSbase64Function(d) {
-    return Base64.stringify(d);
-  }
-
-  function base64Function() {
-    if (isBrowser) {
-      return function (str) {
-        return Base64.stringify(UTF8.parse(str));
-      };
-    } else {
-      return function (str) {
-        return Buffer.from(str, 'ascii').toString('base64');
-      };
-    }
-  }
-
-  function schemeMatchesCurrent(scheme) {
-    return scheme === window.location.protocol.slice(0, -1);
+  function toBase64(str) {
+    var bufferUtils = ably.Realtime.Platform.BufferUtils;
+    var buffer = bufferUtils.utf8Encode(str);
+    return bufferUtils.base64Encode(buffer);
   }
 
   function httpReqFunction() {
@@ -85,36 +59,10 @@ define(['globals', 'base64', 'utf8', 'ably'], function (ablyGlobals, Base64, UTF
       };
     } else if (isBrowser) {
       return function (options, callback) {
-        var xhr = createXHR();
+        var xhr = new XMLHttpRequest();
         var uri;
 
         uri = options.scheme + '://' + options.host + ':' + options.port + options.path;
-
-        if (xhr.isXDR && !schemeMatchesCurrent(options.scheme)) {
-          /* Can't use XDR for cross-scheme. For some requests could just force
-           * the same scheme and be done with it, but not for authenticated
-           * requests to ably, can't use basic auth for non-tls endpoints.
-           * Luckily ably can handle jsonp, so just use the ably Http method,
-           * which will use the jsonp transport. Can't just do this all the time
-           * as the local express webserver serves files statically, so can't do
-           * jsonp. */
-          if (options.method === 'DELETE') {
-            /* Ignore DELETEs -- can't be done with jsonp at the moment, and
-             * simulation apps self-delete after a while */
-            callback();
-          } else {
-            new ably.Rest.Platform.Http().doUri(
-              options.method,
-              null,
-              uri,
-              options.headers,
-              options.body,
-              options.paramsIfNoHeaders || {},
-              callback
-            );
-          }
-          return;
-        }
 
         xhr.open(options.method, uri);
         if (options.headers && !xhr.isXDR) {

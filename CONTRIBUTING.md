@@ -8,9 +8,8 @@
 4. Commit your changes (`git commit -am 'Add some feature'`)
 5. Ensure you have added suitable tests and the test suite is passing(`npm test`)
 6. Ensure the [type definitions](https://github.com/ably/ably-js/blob/main/ably.d.ts) have been updated if the public API has changed
-7. Ensure you stick to the version of JS used by the library (currently ES5). (The minfication task (`npm run grunt -- closureCompiler:ably.js`) will enforce that you stick to ES5 syntax, but will not enforce that you don't use, for example, new methods)
-8. Push the branch (`git push origin my-new-feature`)
-9. Create a new Pull Request
+7. Push the branch (`git push origin my-new-feature`)
+8. Create a new Pull Request
 
 ## Release Process
 
@@ -30,7 +29,7 @@
 
 ## Building the library
 
-To build the library, simply run `npm run build`. Building the library currently requires NodeJS <= v16.
+To build the library, simply run `npm run build`. Building the library currently requires NodeJS >= v16.
 
 Since webpack builds are slow, commands are also available to only build the output for specific platforms (eg `npm run build:node`), see [package.json](./package.json) for the full list of available commands
 
@@ -46,27 +45,27 @@ Run the Mocha test suite
 
     npm run test:node
 
-Or run just one test file
+You can pass any Mocha CLI arguments and flags to the test:node script after the `--` separator, for example running one test file:
 
-    npm run test:node -- --file=test/realtime/auth.test.js
+    npm run test:node -- test/realtime/auth.test.js
 
 Or run just one test
 
-    npm run test:node -- --file=test/rest/status.test.js --grep=test_name_here 
+    npm run test:node -- --grep=test_name_here
 
 Or run test skipping the build
 
-    npm run test:node:skip-build -- --file=test/rest/status.test.js --grep=test_name_here 
+    npm run test:node:skip-build -- test/rest/status.test.js --grep=test_name_here
 
 ### Debugging the mocha tests locally with a debugger
 
 Run the following command to launch tests with the debugger enabled. The tests will block until you attach a debugger.
 
-    node --inspect-brk=9229 node_modules/.bin/grunt test:node
+    node --inspect-brk=9229 node_modules/.bin/mocha
 
 Alternatively you can also run the tests for single file
 
-    node --inspect-brk=9229 node_modules/.bin/grunt test:node --test=test/realtime/auth.test.js
+    node --inspect-brk=9229 node_modules/.bin/mocha test/realtime/auth.test.js
 
 The included vscode launch config allows you to launch and attach the debugger in one step, simply open the test
 file you want to run and start debugging. Note that breakpoint setting for realtime code will be within the

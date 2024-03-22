@@ -1,19 +1,18 @@
 import Platform from 'common/platform';
-import Defaults, { getAgentString } from './defaults';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
-import { NormalisedClientOptions } from 'common/types/ClientOptions';
-import { stringify as stringifyBase64 } from 'crypto-js/build/enc-base64';
-import { parse as parseUtf8 } from 'crypto-js/build/enc-utf8';
+import { ModularPlugins } from '../client/modularplugins';
+import { MsgPack } from 'common/types/msgpack';
 
 function randomPosn(arrOrStr: Array<unknown> | string) {
   return Math.floor(Math.random() * arrOrStr.length);
 }
 
-/*
+/**
  * Add a set of properties to a target object
- * target: the target object
- * props:  an object whose enumerable properties are
- *         added, by reference only
+ *
+ * @param target the target object
+ * @param args objects, which enumerable properties are added to target, by reference only
+ * @returns target object with added properties
  */
 export function mixin(
   target: Record<string, unknown>,
@@ -24,9 +23,9 @@ export function mixin(
     if (!source) {
       break;
     }
-    const hasOwnProperty = Object.prototype.hasOwnProperty;
+
     for (const key in source) {
-      if (!hasOwnProperty || hasOwnProperty.call(source, key)) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
         target[key] = (source as Record<string, unknown>)[key];
       }
     }
@@ -34,25 +33,15 @@ export function mixin(
   return target;
 }
 
-/*
- * Add a set of properties to a target object
- * target: the target object
- * props:  an object whose enumerable properties are
- *         added, by reference only
+/**
+ * Creates a copy of enumerable properties of the source object
+ *
+ * @param src object to copy
+ * @returns copy of src
  */
 export function copy<T = Record<string, unknown>>(src: T | Record<string, unknown> | null | undefined): T {
   return mixin({}, src as Record<string, unknown>) as T;
 }
-
-/*
- * Determine whether or not a given object is
- * an array.
- */
-export const isArray =
-  Array.isArray ||
-  function (value: unknown): value is Array<unknown> {
-    return Object.prototype.toString.call(value) == '[object Array]';
-  };
 
 /*
  * Ensures that an Array object is always returned
@@ -60,10 +49,10 @@ export const isArray =
  * else wrapping the obj in a single element Array
  */
 export function ensureArray(obj: Record<string, unknown>): unknown[] {
-  if (isEmptyArg(obj)) {
+  if (isNil(obj)) {
     return [];
   }
-  if (isArray(obj)) {
+  if (Array.isArray(obj)) {
     return obj;
   }
   return [obj];
@@ -83,26 +72,13 @@ export function isEmpty(ob: Record<string, unknown> | unknown[]): boolean {
   return true;
 }
 
-export function isOnlyPropIn(ob: Record<string, unknown>, property: string): boolean {
-  for (const prop in ob) {
-    if (prop !== property) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/*
- * Determine whether or not an argument to an overloaded function is
- * undefined (missing) or null.
- * This method is useful when constructing functions such as (WebIDL terminology):
- *   off([TreatUndefinedAs=Null] DOMString? event)
- * as you can then confirm the argument using:
- *   Utils.isEmptyArg(event)
+/**
+ * Checks if `value` is `null` or `undefined`.
+ *
+ * Source: https://github.com/lodash/lodash/blob/main/src/isNil.ts
  */
-
-export function isEmptyArg(arg: unknown): arg is null | undefined {
-  return arg === null || arg === undefined;
+export function isNil(arg: unknown): arg is null | undefined {
+  return arg == null;
 }
 
 /*
@@ -129,7 +105,7 @@ export function shallowClone(ob: Record<string, unknown>): Record<string, unknow
  */
 export function prototypicalClone(
   ob: Record<string, unknown>,
-  ownProperties: Record<string, unknown>
+  ownProperties: Record<string, unknown>,
 ): Record<string, unknown> {
   class F {}
   F.prototype = ob;
@@ -167,20 +143,20 @@ export function containsValue(ob: Record<string, unknown>, val: unknown): boolea
   return false;
 }
 
-export function intersect<T>(arr: Array<string>, ob: string[] | Record<string, T>): string[] {
-  return isArray(ob) ? arrIntersect(arr, ob) : arrIntersectOb(arr, ob);
+export function intersect<K extends string, T>(arr: Array<K>, ob: K[] | Partial<Record<K, T>>): K[] {
+  return Array.isArray(ob) ? arrIntersect(arr, ob) : arrIntersectOb(arr, ob);
 }
 
 export function arrIntersect<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   const result = [];
   for (let i = 0; i < arr1.length; i++) {
     const member = arr1[i];
-    if (arrIndexOf(arr2, member) != -1) result.push(member);
+    if (arr2.indexOf(member) != -1) result.push(member);
   }
   return result;
 }
 
-export function arrIntersectOb<T>(arr: Array<T>, ob: Record<string, unknown>): T[] {
+export function arrIntersectOb<K extends string>(arr: Array<K>, ob: Partial<Record<K, unknown>>): K[] {
   const result = [];
   for (let i = 0; i < arr.length; i++) {
     const member = arr[i];
@@ -193,32 +169,13 @@ export function arrSubtract<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
   const result = [];
   for (let i = 0; i < arr1.length; i++) {
     const element = arr1[i];
-    if (arrIndexOf(arr2, element) == -1) result.push(element);
+    if (arr2.indexOf(element) == -1) result.push(element);
   }
   return result;
 }
 
-export const arrIndexOf = (Array.prototype.indexOf as unknown)
-  ? function (arr: Array<unknown>, elem: unknown, fromIndex?: number) {
-      return arr.indexOf(elem, fromIndex);
-    }
-  : function (arr: Array<unknown>, elem: unknown, fromIndex?: number) {
-      fromIndex = fromIndex || 0;
-      const len = arr.length;
-      for (; fromIndex < len; fromIndex++) {
-        if (arr[fromIndex] === elem) {
-          return fromIndex;
-        }
-      }
-      return -1;
-    };
-
-export function arrIn(arr: Array<unknown>, val: unknown): boolean {
-  return arrIndexOf(arr, val) !== -1;
-}
-
 export function arrDeleteValue<T>(arr: Array<T>, val: T): boolean {
-  const idx = arrIndexOf(arr, val);
+  const idx = arr.indexOf(val);
   const res = idx != -1;
   if (res) arr.splice(idx, 1);
   return res;
@@ -270,104 +227,19 @@ export function forInOwnNonNullProperties(ob: Record<string, unknown>, fn: (prop
   }
 }
 
-export const arrForEach = (Array.prototype.forEach as unknown)
-  ? function <T = unknown>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => unknown) {
-      arr.forEach(fn);
-    }
-  : function <T = unknown>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => unknown) {
-      const len = arr.length;
-      for (let i = 0; i < len; i++) {
-        fn(arr[i], i, arr);
-      }
-    };
-
-/* Useful when the function may mutate the array */
-export function safeArrForEach<T = unknown>(
-  arr: Array<T>,
-  fn: (value: T, index: number, arr: Array<T>) => unknown
-): void {
-  return arrForEach(arr.slice(), fn);
-}
-
-export const arrMap = (Array.prototype.map as unknown)
-  ? function <T1, T2>(arr: Array<T1>, fn: (value: T1, index?: number, arr?: Array<T1>) => T2) {
-      return arr.map(fn);
-    }
-  : function <T>(arr: Array<T>, fn: (value: T, index?: number, arr?: Array<T>) => unknown) {
-      const result = [];
-      const len = arr.length;
-      for (let i = 0; i < len; i++) {
-        result.push(fn(arr[i], i, arr));
-      }
-      return result;
-    };
-
-export const arrFilter = (Array.prototype.filter as unknown)
-  ? function <T>(arr: Array<T>, fn: (value: T, index?: number, arr?: Array<T>) => boolean) {
-      return arr.filter(fn);
-    }
-  : function <T>(arr: Array<T>, fn: (value: T, index?: number, arr?: Array<T>) => boolean) {
-      const result = [],
-        len = arr.length;
-      for (let i = 0; i < len; i++) {
-        if (fn(arr[i])) {
-          result.push(arr[i]);
-        }
-      }
-      return result;
-    };
-
-export const arrEvery = (Array.prototype.every as unknown)
-  ? function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
-      return arr.every(fn);
-    }
-  : function <T>(arr: Array<T>, fn: (value: T, index: number, arr: Array<T>) => boolean) {
-      const len = arr.length;
-      for (let i = 0; i < len; i++) {
-        if (!fn(arr[i], i, arr)) {
-          return false;
-        }
-      }
-      return true;
-    };
-
 export function allSame(arr: Array<Record<string, unknown>>, prop: string): boolean {
   if (arr.length === 0) {
     return true;
   }
   const first = arr[0][prop];
-  return arrEvery(arr, function (item) {
+  return arr.every(function (item) {
     return item[prop] === first;
   });
 }
 
-const contentTypes = {
-  json: 'application/json',
-  jsonp: 'application/javascript',
-  xml: 'application/xml',
-  html: 'text/html',
-  msgpack: 'application/x-msgpack',
-};
-
-export function defaultGetHeaders(options: NormalisedClientOptions, format?: Format): Record<string, string> {
-  const accept = contentTypes[format || Format.json];
-  return {
-    accept: accept,
-    'X-Ably-Version': Defaults.protocolVersion.toString(),
-    'Ably-Agent': getAgentString(options),
-  };
-}
-
-export function defaultPostHeaders(options: NormalisedClientOptions, format?: Format): Record<string, string> {
-  let contentType;
-  const accept = (contentType = contentTypes[format || Format.json]);
-
-  return {
-    accept: accept,
-    'content-type': contentType,
-    'X-Ably-Version': Defaults.protocolVersion.toString(),
-    'Ably-Agent': getAgentString(options),
-  };
+export enum Format {
+  msgpack = 'msgpack',
+  json = 'json',
 }
 
 export function arrPopRandomElement<T>(arr: Array<T>): T {
@@ -392,19 +264,8 @@ export function parseQueryString(query: string): Record<string, string> {
   return result;
 }
 
-export const now =
-  Date.now ||
-  function () {
-    /* IE 8 */
-    return new Date().getTime();
-  };
-
 export function isErrorInfoOrPartialErrorInfo(err: unknown): err is ErrorInfo | PartialErrorInfo {
-  return (
-    typeof err == 'object' &&
-    err !== null &&
-    (err.constructor.name == 'ErrorInfo' || err.constructor.name == 'PartialErrorInfo')
-  );
+  return typeof err == 'object' && err !== null && (err instanceof ErrorInfo || err instanceof PartialErrorInfo);
 }
 
 export function inspectError(err: unknown): string {
@@ -445,38 +306,9 @@ export function cheapRandStr(): string {
 /* Takes param the minimum number of bytes of entropy the string must
  * include, not the length of the string. String length produced is not
  * guaranteed. */
-export const randomString = (numBytes: number): string => {
-  if (Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined') {
-    const uIntArr = new Uint8Array(numBytes);
-    (Platform.Config.getRandomValues as Function)(uIntArr);
-    return Platform.BufferUtils.base64Encode(uIntArr);
-  }
-  /* Old browser; fall back to Math.random. Could just use a
-   * CryptoJS version of the above, but want this to still work in nocrypto
-   * versions of the library */
-  const charset = Platform.BufferUtils.base64CharSet;
-  /* base64 has 33% overhead; round length up */
-  const length = Math.round((numBytes * 4) / 3);
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += charset[randomPosn(charset)];
-  }
-  return result;
-};
-
-export const randomHexString = (numBytes: number): string => {
-  if (Platform.Config.getRandomValues && typeof Uint8Array !== 'undefined') {
-    const uIntArr = new Uint8Array(numBytes);
-    (Platform.Config.getRandomValues as Function)(uIntArr);
-    return Platform.BufferUtils.hexEncode(uIntArr);
-  }
-  const charset = Platform.BufferUtils.hexCharSet;
-  const length = numBytes * 2;
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += charset[randomPosn(charset)];
-  }
-  return result;
+export const randomString = async (numBytes: number): Promise<string> => {
+  const buffer = await Platform.Config.getRandomArrayBuffer(numBytes);
+  return Platform.BufferUtils.base64Encode(buffer);
 };
 
 /* Pick n elements at random without replacement from an array */
@@ -490,33 +322,43 @@ export function arrChooseN<T>(arr: Array<T>, n: number): Array<T> {
   return result;
 }
 
-export const trim = (String.prototype.trim as unknown)
-  ? function (str: string) {
-      return str.trim();
-    }
-  : function (str: string) {
-      return str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
-    };
-
-export function promisify<T>(ob: Record<string, any>, fnName: string, args: IArguments | unknown[]): Promise<T> {
-  return new Promise(function (resolve, reject) {
-    ob[fnName](...(args as unknown[]), function (err: Error, res: unknown) {
-      err ? reject(err) : resolve(res as T);
+/**
+ * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
+ */
+export function whenPromiseSettles<T, E = unknown>(
+  promise: Promise<T>,
+  callback?: (err: E | null, result?: T) => void,
+) {
+  promise
+    .then((result) => {
+      callback?.(null, result);
+    })
+    .catch((err: unknown) => {
+      // We make no guarantees about the type of the error that gets passed to the callback. Issue https://github.com/ably/ably-js/issues/1617 will think about how to correctly handle error types.
+      callback?.(err as E);
     });
-  });
 }
 
-export enum Format {
-  msgpack = 'msgpack',
-  json = 'json',
+export function decodeBody<T>(body: unknown, MsgPack: MsgPack | null, format?: Format | null): T {
+  if (format == 'msgpack') {
+    if (!MsgPack) {
+      throwMissingPluginError('MsgPack');
+    }
+    return MsgPack.decode(body as Buffer);
+  }
+
+  return JSON.parse(String(body));
 }
 
-export function decodeBody<T>(body: unknown, format?: Format | null): T {
-  return format == 'msgpack' ? Platform.Config.msgpack.decode(body as Buffer) : JSON.parse(String(body));
-}
+export function encodeBody(body: unknown, MsgPack: MsgPack | null, format?: Format): string | Buffer {
+  if (format == 'msgpack') {
+    if (!MsgPack) {
+      throwMissingPluginError('MsgPack');
+    }
+    return MsgPack.encode(body, true) as Buffer;
+  }
 
-export function encodeBody(body: unknown, format?: Format): string | Buffer {
-  return format == 'msgpack' ? (Platform.Config.msgpack.encode(body, true) as Buffer) : JSON.stringify(body);
+  return JSON.stringify(body);
 }
 
 export function allToLowerCase(arr: Array<string>): Array<string> {
@@ -554,7 +396,7 @@ export function getRetryTime(initialTimeout: number, retryAttempt: number) {
 }
 
 export function getGlobalObject() {
-  if (global) {
+  if (typeof global !== 'undefined') {
     return global;
   }
 
@@ -599,17 +441,24 @@ export function matchDerivedChannel(name: string) {
 }
 
 export function toBase64(str: string) {
-  if (Platform.Config.createHmac) {
-    return Buffer.from(str, 'ascii').toString('base64');
-  }
-  return stringifyBase64(parseUtf8(str));
+  const bufferUtils = Platform.BufferUtils;
+  const textBuffer = bufferUtils.utf8Encode(str);
+  return bufferUtils.base64Encode(textBuffer);
 }
 
 export function arrEquals(a: any[], b: any[]) {
   return (
     a.length === b.length &&
-    arrEvery(a, function (val, i) {
+    a.every(function (val, i) {
       return val === b[i];
     })
   );
+}
+
+export function createMissingPluginError(pluginName: keyof ModularPlugins): ErrorInfo {
+  return new ErrorInfo(`${pluginName} plugin not provided`, 40019, 400);
+}
+
+export function throwMissingPluginError(pluginName: keyof ModularPlugins): never {
+  throw createMissingPluginError(pluginName);
 }

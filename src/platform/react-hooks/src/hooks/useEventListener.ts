@@ -1,12 +1,12 @@
-import { Types } from 'ably';
+import * as Ably from 'ably';
 import { useEffect, useRef } from 'react';
 
 type EventListener<T> = (stateChange: T) => any;
 
 export function useEventListener<
-  S extends Types.ConnectionState | Types.ChannelState,
-  C extends Types.ConnectionStateChange | Types.ChannelStateChange
->(emitter: Types.EventEmitter<EventListener<C>, C, S>, listener: EventListener<C>, event?: S | S[]) {
+  S extends Ably.ConnectionState | Ably.ChannelState,
+  C extends Ably.ConnectionStateChange | Ably.ChannelStateChange,
+>(emitter: Ably.EventEmitter<EventListener<C>, C, S>, listener: EventListener<C>, event?: S | S[]) {
   const savedListener = useRef(listener);
 
   useEffect(() => {

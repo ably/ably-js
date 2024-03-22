@@ -1,12 +1,12 @@
-import { Types } from 'ably';
+import { ErrorInfo } from 'ably';
 import { useState } from 'react';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
 import { useChannelStateListener } from './useChannelStateListener.js';
 import { ChannelNameAndOptions } from '../AblyReactHooks.js';
 
 export function useStateErrors(params: ChannelNameAndOptions) {
-  const [connectionError, setConnectionError] = useState<Types.ErrorInfo | null>(null);
-  const [channelError, setChannelError] = useState<Types.ErrorInfo | null>(null);
+  const [connectionError, setConnectionError] = useState<ErrorInfo | null>(null);
+  const [channelError, setChannelError] = useState<ErrorInfo | null>(null);
 
   useConnectionStateListener(
     ['suspended', 'failed', 'disconnected'],
@@ -16,7 +16,7 @@ export function useStateErrors(params: ChannelNameAndOptions) {
         setConnectionError(stateChange.reason);
       }
     },
-    params.id
+    params.ablyId,
   );
 
   useConnectionStateListener(
@@ -24,7 +24,7 @@ export function useStateErrors(params: ChannelNameAndOptions) {
     () => {
       setConnectionError(null);
     },
-    params.id
+    params.ablyId,
   );
 
   useChannelStateListener(params, ['suspended', 'failed', 'detached'], (stateChange) => {

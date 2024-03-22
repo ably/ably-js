@@ -6,9 +6,12 @@ define(['ably', 'chai'], function (Ably, chai) {
   describe('realtime/api', function () {
     it('Client constructors', function () {
       expect(typeof Ably.Realtime).to.equal('function');
-      expect(typeof Ably.Realtime.Promise).to.equal('function');
-      expect(typeof Ably.Realtime.Callbacks).to.equal('function');
-      expect(Ably.Realtime.Callbacks).to.equal(Ably.Realtime);
+    });
+
+    it('constructor without any arguments', function () {
+      expect(() => new Ably.Realtime()).to.throw(
+        'must be initialized with either a client options object, an Ably API key, or an Ably Token',
+      );
     });
 
     it('Crypto', function () {

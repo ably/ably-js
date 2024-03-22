@@ -1,26 +1,20 @@
-import { Types } from 'ably';
+import * as Ably from 'ably';
 
 export type ChannelNameAndOptions = {
   channelName: string;
-  options?: Types.ChannelOptions;
-  deriveOptions?: Types.DeriveOptions;
-  id?: string;
-  subscribeOnly?: boolean;
+  ablyId?: string;
   skip?: boolean;
 
-  onConnectionError?: (error: Types.ErrorInfo) => unknown;
-  onChannelError?: (error: Types.ErrorInfo) => unknown;
+  onConnectionError?: (error: Ably.ErrorInfo) => unknown;
+  onChannelError?: (error: Ably.ErrorInfo) => unknown;
 };
 
-export type ChannelNameAndId = {
-  channelName: string;
-  id?: string;
-};
+export type ChannelNameAndAblyId = Pick<ChannelNameAndOptions, 'channelName' | 'ablyId'>;
 export type ChannelParameters = string | ChannelNameAndOptions;
 
-export const version = '1.2.50';
+export const version = '2.0.0';
 
-export function channelOptionsWithAgent(options?: Types.ChannelOptions) {
+export function channelOptionsWithAgent(options?: Ably.ChannelOptions) {
   return {
     ...options,
     params: {

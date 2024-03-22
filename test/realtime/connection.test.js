@@ -3,9 +3,12 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
   var closeAndFinish = helper.closeAndFinish;
-  var createPM = Ably.Realtime.ProtocolMessage.fromDeserialized;
+  var closeAndFinishAsync = helper.closeAndFinishAsync;
+  var createPM = Ably.protocolMessageFromDeserialized;
   var displayError = helper.displayError;
   var monitorConnection = helper.monitorConnection;
+  var monitorConnectionAsync = helper.monitorConnectionAsync;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/connection', function () {
     this.timeout(60 * 1000);
@@ -42,7 +45,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
-          realtime.connection.ping(function (err, responseTime) {
+          whenPromiseSettles(realtime.connection.ping(), function (err, responseTime) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -65,7 +68,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('connectionAttributes', function (done) {
       var realtime;
       try {
-        realtime = helper.AblyRealtime({ logLevel: 4 });
+        realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
           try {
             const recoveryContext = JSON.parse(realtime.connection.recoveryKey);
@@ -77,7 +80,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
 
           var channel = realtime.channels.get('connectionattributes');
-          channel.attach(function (err) {
+          whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
               closeAndFinish(done, realtime, err);
               return;
@@ -95,7 +98,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
                 function (cb) {
-                  channel.publish('name', 'data', cb);
+                  whenPromiseSettles(channel.publish('name', 'data'), cb);
                 },
               ],
               function (err) {
@@ -104,7 +107,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   return;
                 }
                 realtime.connection.close();
-                realtime.connection.whenState('closed', function () {
+                whenPromiseSettles(realtime.connection.whenState('closed'), function () {
                   try {
                     expect(realtime.connection.recoveryKey).to.equal(null, 'verify recovery key null after close');
                     closeAndFinish(done, realtime);
@@ -112,7 +115,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     closeAndFinish(done, realtime, err);
                   }
                 });
-              }
+              },
             );
           });
         });
@@ -135,19 +138,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           try {
             expect(stateChange.reason.code).to.equal(
               80018,
-              'verify unrecoverable-connection error set in stateChange.reason'
+              'verify unrecoverable-connection error set in stateChange.reason',
             );
             expect(realtime.connection.errorReason.code).to.equal(
               80018,
-              'verify unrecoverable-connection error set in connection.errorReason'
+              'verify unrecoverable-connection error set in connection.errorReason',
             );
             expect(realtime.connection.connectionManager.msgSerial).to.equal(
               0,
-              'verify msgSerial is 0 (new connection), not 3'
+              'verify msgSerial is 0 (new connection), not 3',
             );
             expect(realtime.connection.key.indexOf('ablyjs_test_fake')).to.equal(
               -1,
-              'verify connection using a new connectionkey'
+              'verify connection using a new connectionkey',
             );
             closeAndFinish(done, realtime);
           } catch (err) {
@@ -162,7 +165,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Check that a message published on one transport that has not yet been
      * acked will be republished with the same msgSerial on a new transport (eg
-     * after a resume or an upgrade), before any new messages are send (and
+     * after a resume), before any new messages are send (and
      * without being merged with new messages)
      */
     it('connectionQueuing', function (done) {
@@ -172,72 +175,105 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       realtime.connection.once('connected', function () {
         var transport = connectionManager.activeProtocol.transport;
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
             return;
           }
+
+          let transportSendCallback;
+
           /* Sabotage sending the message */
           transport.send = function (msg) {
             if (msg.action == 15) {
               expect(msg.msgSerial).to.equal(0, 'Expect msgSerial to be 0');
+
+              if (!transportSendCallback) {
+                done(new Error('transport.send override called before transportSendCallback populated'));
+              }
+
+              transportSendCallback(null);
             }
           };
 
-          async.parallel(
+          let publishCallback;
+
+          async.series(
             [
               function (cb) {
+                transportSendCallback = cb;
+
                 /* Sabotaged publish */
-                channel.publish('first', null, function (err) {
-                  try {
-                    expect(!err, 'Check publish happened (eventually) without err').to.be.ok;
-                  } catch (err) {
-                    cb(err);
-                    return;
+                whenPromiseSettles(channel.publish('first', null), function (err) {
+                  if (!publishCallback) {
+                    done(new Error('publish completed before publishCallback populated'));
                   }
-                  cb();
+                  publishCallback(err);
                 });
               },
-              function (cb) {
-                /* After the disconnect, on reconnect, spy on transport.send again */
-                connectionManager.once('transport.pending', function (transport) {
-                  var oldSend = transport.send;
 
-                  transport.send = function (msg, msgCb) {
-                    if (msg.action === 15) {
-                      if (msg.messages[0].name === 'first') {
+              // We wait for transport.send to recieve the message that we just
+              // published before we proceed to disconnecting the transport, to
+              // make sure that the message got marked as `sendAttempted`.
+
+              function (cb) {
+                async.parallel(
+                  [
+                    function (cb) {
+                      publishCallback = function (err) {
                         try {
-                          expect(msg.msgSerial).to.equal(0, 'Expect msgSerial of original message to still be 0');
-                          expect(msg.messages.length).to.equal(
-                            1,
-                            'Expect second message to not have been merged with the attempted message'
-                          );
-                        } catch (err) {
-                          cb(err);
-                          return;
-                        }
-                      } else if (msg.messages[0].name === 'second') {
-                        try {
-                          expect(msg.msgSerial).to.equal(1, 'Expect msgSerial of new message to be 1');
+                          expect(!err, 'Check publish happened (eventually) without err').to.be.ok;
                         } catch (err) {
                           cb(err);
                           return;
                         }
                         cb();
-                      }
-                    }
-                    oldSend.call(transport, msg, msgCb);
-                  };
-                  channel.publish('second', null);
-                });
+                      };
+                    },
+                    function (cb) {
+                      /* After the disconnect, on reconnect, spy on transport.send again */
+                      connectionManager.once('transport.pending', function (transport) {
+                        var oldSend = transport.send;
 
-                /* Disconnect the transport (will automatically reconnect and resume) () */
-                connectionManager.disconnectAllTransports();
+                        transport.send = function (msg, msgCb) {
+                          if (msg.action === 15) {
+                            if (msg.messages[0].name === 'first') {
+                              try {
+                                expect(msg.msgSerial).to.equal(0, 'Expect msgSerial of original message to still be 0');
+                                expect(msg.messages.length).to.equal(
+                                  1,
+                                  'Expect second message to not have been merged with the attempted message',
+                                );
+                              } catch (err) {
+                                cb(err);
+                                return;
+                              }
+                            } else if (msg.messages[0].name === 'second') {
+                              try {
+                                expect(msg.msgSerial).to.equal(1, 'Expect msgSerial of new message to be 1');
+                              } catch (err) {
+                                cb(err);
+                                return;
+                              }
+                              cb();
+                            }
+                          }
+                          oldSend.call(transport, msg, msgCb);
+                        };
+                        channel.publish('second', null);
+                      });
+
+                      /* Disconnect the transport (will automatically reconnect and resume) () */
+                      connectionManager.disconnectAllTransports();
+                    },
+                  ],
+                  cb,
+                );
               },
             ],
             function (err) {
               closeAndFinish(done, realtime, err);
-            }
+            },
           );
         });
       });
@@ -255,7 +291,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(details.connectionStateTtl).to.equal(12345, 'Check connectionStateTtl in event');
             expect(connectionManager.connectionStateTtl).to.equal(
               12345,
-              'Check connectionStateTtl set in connectionManager'
+              'Check connectionStateTtl set in connectionManager',
             );
             expect(details.clientId).to.equal('foo', 'Check clientId in event');
             expect(realtime.auth.clientId).to.equal('foo', 'Check clientId set in auth');
@@ -277,36 +313,30 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               maxMessageSize: 98765,
               connectionStateTtl: 12345,
             },
-          })
+          }),
         );
       });
       monitorConnection(done, realtime);
     });
 
-    if (typeof Promise !== 'undefined') {
-      describe('connection_promise', function () {
-        it('ping', function (done) {
-          var client = helper.AblyRealtime({ promises: true });
+    it('whenState', async () => {
+      const realtime = helper.AblyRealtime({ autoConnect: false });
 
-          client.connection
-            .once('connected')
-            .then(function () {
-              client.connection
-                .ping()
-                .then(function (responseTime) {
-                  expect(typeof responseTime).to.equal('number', 'check that a responseTime returned');
-                  expect(responseTime > 0, 'check that responseTime was positive').to.be.ok;
-                  closeAndFinish(done, client);
-                })
-                ['catch'](function (err) {
-                  closeAndFinish(done, client, err);
-                });
-            })
-            ['catch'](function (err) {
-              closeAndFinish(done, client, err);
-            });
-        });
-      });
-    }
+      await monitorConnectionAsync(async () => {
+        // RTN26a - when already in given state, returns null
+        const initializedStateChange = await realtime.connection.whenState('initialized');
+        expect(initializedStateChange).to.be.null;
+
+        // RTN26b — when not in given state, calls #once
+        const connectedStateChangePromise = realtime.connection.whenState('connected');
+        realtime.connection.connect();
+        const connectedStateChange = await connectedStateChangePromise;
+        expect(connectedStateChange).not.to.be.null;
+        expect(connectedStateChange.previous).to.equal('connecting');
+        expect(connectedStateChange.current).to.equal('connected');
+      }, realtime);
+
+      await closeAndFinishAsync(realtime);
+    });
   });
 });

@@ -1,10 +1,7 @@
-import { TypedArray } from './IPlatformConfig';
-
-export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, ComparableBuffer> {
+export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   base64CharSet: string;
   hexCharSet: string;
   isBuffer: (buffer: unknown) => buffer is Bufferlike;
-  isArrayBuffer: (buffer: unknown) => buffer is ArrayBuffer;
   // On browser this returns a Uint8Array, on node a Buffer
   toBuffer: (buffer: Bufferlike) => ToBufferOutput;
   toArrayBuffer: (buffer: Bufferlike) => ArrayBuffer;
@@ -14,7 +11,8 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput, Compar
   hexDecode: (string: string) => Output;
   utf8Encode: (string: string) => Output;
   utf8Decode: (buffer: Bufferlike) => string;
-  bufferCompare: (buffer1: ComparableBuffer, buffer2: ComparableBuffer) => number;
+  areBuffersEqual: (buffer1: Bufferlike, buffer2: Bufferlike) => boolean;
   byteLength: (buffer: Bufferlike) => number;
-  typedArrayToBuffer: (typedArray: TypedArray) => Bufferlike;
+  arrayBufferViewToBuffer: (arrayBufferView: ArrayBufferView) => Bufferlike;
+  hmacSha256(message: Bufferlike, key: Bufferlike): Output;
 }

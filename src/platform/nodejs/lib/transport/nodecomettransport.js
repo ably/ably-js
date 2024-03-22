@@ -10,30 +10,29 @@ import http from 'http';
 import https from 'https';
 import url from 'url';
 import util from 'util';
+import { TransportNames } from '../../../../common/constants/TransportName';
 
-var NodeCometTransport = function (connectionManager) {
-  var noop = function () {};
-  var shortName = 'comet';
+var noop = function () {};
+var shortName = TransportNames.Comet;
 
-  /*
-   * A transport to use with nodejs
-   * to simulate an XHR transport for test purposes
-   */
-  function NodeCometTransport(connectionManager, auth, params) {
-    CometTransport.call(this, connectionManager, auth, params);
+/*
+ * A transport to use with nodejs
+ * to simulate an XHR transport for test purposes
+ */
+class NodeCometTransport extends CometTransport {
+  constructor(connectionManager, auth, params) {
+    super(connectionManager, auth, params);
     this.httpAgent = null;
     this.httpsAgent = null;
     this.pendingRequests = 0;
     this.shortName = shortName;
   }
-  util.inherits(NodeCometTransport, CometTransport);
 
-  NodeCometTransport.isAvailable = function () {
+  static isAvailable() {
     return true;
-  };
-  connectionManager.supportedTransports[shortName] = NodeCometTransport;
+  }
 
-  NodeCometTransport.prototype.toString = function () {
+  toString() {
     return (
       'NodeCometTransport; uri=' +
       this.baseUri +
@@ -44,58 +43,61 @@ var NodeCometTransport = function (connectionManager) {
       '; stream=' +
       this.stream
     );
-  };
+  }
 
-  NodeCometTransport.prototype.getAgent = function (tls) {
+  getAgent(tls) {
     var prop = tls ? 'httpsAgent' : 'httpAgent',
       agent = this[prop];
 
     if (!agent) agent = this[prop] = new (tls ? https : http).Agent({ keepAlive: true });
 
     return agent;
-  };
+  }
 
-  NodeCometTransport.prototype.dispose = function () {
+  dispose() {
     var self = this;
     this.onceNoPending(function () {
       if (self.httpAgent) self.httpAgent.destroy();
       if (self.httpsAgent) self.httpsAgent.destroy();
     });
     CometTransport.prototype.dispose.call(this);
-  };
+  }
 
   /* valid in non-streaming mode only, or data only contains last update */
-  NodeCometTransport.prototype.request = function (uri, params, body, requestMode, callback) {
+  request(uri, params, body, requestMode, callback) {
     var req = this.createRequest(uri, params, body, requestMode);
     req.once('complete', callback);
     req.exec();
     return req;
-  };
+  }
 
-  NodeCometTransport.prototype.createRequest = function (uri, headers, params, body, requestMode) {
+  createRequest(uri, headers, params, body, requestMode) {
     return new Request(uri, headers, params, body, requestMode, this.format, this.timeouts, this);
-  };
+  }
 
-  NodeCometTransport.prototype.addPending = function () {
+  addPending() {
     ++this.pendingRequests;
-  };
+  }
 
-  NodeCometTransport.prototype.removePending = function () {
+  removePending() {
     if (--this.pendingRequests <= 0) {
       this.emit('nopending');
     }
-  };
+  }
 
-  NodeCometTransport.prototype.onceNoPending = function (listener) {
+  onceNoPending(listener) {
     if (this.pendingRequests == 0) {
       listener();
       return;
     }
     this.once('nopending', listener);
-  };
+  }
+}
 
-  function Request(uri, headers, params, body, requestMode, format, timeouts, transport) {
-    EventEmitter.call(this);
+class Request extends EventEmitter {
+  constructor(uri, headers, params, body, requestMode, format, timeouts, transport) {
+    super();
+
     if (typeof uri == 'string') uri = url.parse(uri);
     var tls = uri.protocol == 'https:';
     this.client = tls ? https : http;
@@ -130,9 +132,8 @@ var NodeCometTransport = function (connectionManager) {
     });
     if (transport) requestOptions.agent = transport.getAgent(tls);
   }
-  Utils.inherits(Request, EventEmitter);
 
-  Request.prototype.exec = function () {
+  exec() {
     var timeout = this.requestMode == XHRStates.REQ_SEND ? this.timeouts.httpRequestTimeout : this.timeouts.recvTimeout,
       self = this;
 
@@ -148,7 +149,7 @@ var NodeCometTransport = function (connectionManager) {
         clearTimeout(timer);
         self.timer = null;
         self.complete(err);
-      })
+      }),
     );
 
     req.on('response', function (res) {
@@ -168,7 +169,7 @@ var NodeCometTransport = function (connectionManager) {
         (self.onResError = function (err) {
           err = new PartialErrorInfo('Response error: ' + err.message, null, 400);
           self.complete(err);
-        })
+        }),
       );
 
       self.res = res;
@@ -183,9 +184,9 @@ var NodeCometTransport = function (connectionManager) {
     if (this.transport) this.transport.addPending();
 
     req.end(this.body);
-  };
+  }
 
-  Request.prototype.readStream = function () {
+  readStream() {
     var res = this.res,
       self = this;
 
@@ -226,7 +227,7 @@ var NodeCometTransport = function (connectionManager) {
 
         /* the remaining new chunks are complete */
         newChunks.map(onChunk);
-      })
+      }),
     );
 
     res.on('end', function () {
@@ -235,9 +236,9 @@ var NodeCometTransport = function (connectionManager) {
         self.complete();
       });
     });
-  };
+  }
 
-  Request.prototype.readFully = function () {
+  readFully() {
     var res = this.res,
       chunks = [],
       self = this;
@@ -264,7 +265,7 @@ var NodeCometTransport = function (connectionManager) {
          * is contains an error action (hence the nonsuccess statuscode), we can
          * consider the request to have succeeded, just pass it on to
          * onProtocolMessage to decide what to do */
-        if (statusCode < 400 || Utils.isArray(body)) {
+        if (statusCode < 400 || Array.isArray(body)) {
           self.complete(null, body);
           return;
         }
@@ -274,15 +275,15 @@ var NodeCometTransport = function (connectionManager) {
           err = new PartialErrorInfo(
             'Error response received from server: ' + statusCode + ', body was: ' + util.inspect(body),
             null,
-            statusCode
+            statusCode,
           );
         }
         self.complete(err);
       });
     });
-  };
+  }
 
-  Request.prototype.complete = function (err, body) {
+  complete(err, body) {
     if (!this.requestComplete) {
       this.requestComplete = true;
       if (body) this.emit('data', body);
@@ -297,9 +298,9 @@ var NodeCometTransport = function (connectionManager) {
         this.transport.removePending();
       }
     }
-  };
+  }
 
-  Request.prototype.abort = function () {
+  abort() {
     Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', '');
     var timer = this.timer;
     if (timer) {
@@ -315,9 +316,7 @@ var NodeCometTransport = function (connectionManager) {
       this.req = null;
     }
     this.complete({ statusCode: 400, code: 80003, message: 'Cancelled' });
-  };
-
-  return NodeCometTransport;
-};
+  }
+}
 
 export default NodeCometTransport;

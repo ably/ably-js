@@ -19,266 +19,148 @@ define(['shared_helper', 'chai'], function (helper, chai) {
     this.timeout(60 * 1000);
 
     before(function (done) {
-      helper.setupApp(function (err) {
-        if (err) {
-          done(err);
-          return;
-        }
-
-        rest = helper.AblyRest();
+      helper.setupApp(function () {
+        rest = helper.AblyRest({ queryTime: true });
         testApp = helper.getTestApp();
-        rest.time(function (err, time) {
-          if (err) {
+        rest
+          .time()
+          .then(function (time) {
+            currentTime = time;
+            expect(true, 'Obtained time').to.be.ok;
+            done();
+          })
+          .catch(function (err) {
             done(err);
-            return;
-          }
-          currentTime = time;
-          done();
-        });
+          });
       });
     });
 
-    it('Blanket intersection with specified key', function (done) {
+    it('Blanket intersection with specified key', async function () {
       var testKeyOpts = { key: testApp.keys[1].keyStr };
       var testCapability = JSON.parse(testApp.keys[1].capability);
-      rest.auth.requestToken(null, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken(null, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
     });
 
-    it('Equal intersection with specified key', function (done) {
+    it('Equal intersection with specified key', async function () {
       var testKeyOpts = { key: testApp.keys[1].keyStr };
       var testCapability = JSON.parse(testApp.keys[1].capability);
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
     });
 
-    it('Empty ops intersection', function (done) {
+    it('Empty ops intersection', async function () {
       var testKeyOpts = { key: testApp.keys[1].keyStr };
       var testCapability = { 'canpublish:test': ['subscribe'] };
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          try {
-            expect(err.statusCode).to.equal(401, 'Verify request rejected with insufficient capability');
-            done();
-          } catch (err) {
-            done(err);
-          }
-          return;
-        }
-        done(new Error('Invalid capability, expected rejection'));
-      });
+      try {
+        var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      } catch (err) {
+        expect(err.statusCode).to.equal(401, 'Verify request rejected with insufficient capability');
+        return;
+      }
+      expect.fail('Invalid capability, expected rejection');
     });
 
-    it('Empty paths intersection', function (done) {
+    it('Empty paths intersection', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = { channelx: ['publish'] };
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          try {
-            expect(err.statusCode).to.equal(401, 'Verify request rejected with insufficient capability');
-            done();
-          } catch (err) {
-            done(err);
-          }
-          return;
-        }
-        done('Invalid capability, expected rejection');
-      });
+      try {
+        var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      } catch (err) {
+        expect(err.statusCode).to.equal(401, 'Verify request rejected with insufficient capability');
+        return;
+      }
+      expect.fail('Invalid capability, expected rejection');
     });
 
-    it('Ops intersection non-empty', function (done) {
+    it('Ops intersection non-empty', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = { channel2: ['presence', 'subscribe'] };
       var expectedIntersection = { channel2: ['subscribe'] };
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
-    it('Paths intersection non-empty', function (done) {
+    it('Paths intersection non-empty', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = {
         channel2: ['presence', 'subscribe'],
         channelx: ['presence', 'subscribe'],
       };
       var expectedIntersection = { channel2: ['subscribe'] };
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
-    it('Wildcard token with publish and subscribe key', function (done) {
+    it('Wildcard token with publish and subscribe key', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = { channel2: ['*'] };
       var expectedIntersection = { channel2: ['publish', 'subscribe'] };
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
-    it('Publish and subscribe token with wildcard key', function (done) {
+    it('Publish and subscribe token with wildcard key', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = { channel6: ['publish', 'subscribe'] };
       var expectedIntersection = { channel6: ['publish', 'subscribe'] };
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
-    it('Resources wildcard matching 1', function (done) {
+    it('Resources wildcard matching 1', async function () {
       var testKeyOpts = { key: testApp.keys[3].keyStr };
       var testCapability = { cansubscribe: ['subscribe'] };
       var expectedIntersection = testCapability;
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
-    it('Resources wildcard matching 2', function (done) {
+    it('Resources wildcard matching 2', async function () {
       var testKeyOpts = { key: testApp.keys[1].keyStr };
       var testCapability = { 'canpublish:check': ['publish'] };
       var expectedIntersection = testCapability;
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
-    it('Resources wildcard matching 3', function (done) {
+    it('Resources wildcard matching 3', async function () {
       var testKeyOpts = { key: testApp.keys[3].keyStr };
       var testCapability = { 'cansubscribe:*': ['subscribe'] };
       var expectedIntersection = testCapability;
-      rest.auth.requestToken({ capability: testCapability }, testKeyOpts, function (err, tokenDetails) {
-        if (err) {
-          done(err);
-          return;
-        }
-        try {
-          expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
-          done();
-        } catch (err) {
-          done(err);
-        }
-      });
+      var tokenDetails = await rest.auth.requestToken({ capability: testCapability }, testKeyOpts);
+      expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
     /* Invalid capabilities */
-    it('Invalid capabilities 1', function (done) {
-      rest.auth.requestToken({ capability: invalid0 }, function (err, tokenDetails) {
-        if (err) {
-          try {
-            expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
-            done();
-          } catch (err) {
-            done(err);
-          }
-          return;
-        }
-        done(new Error('Invalid capability, expected rejection'));
-      });
+    it('Invalid capabilities 1', async function () {
+      try {
+        var tokenDetails = await rest.auth.requestToken({ capability: invalid0 });
+      } catch (err) {
+        expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
+        return;
+      }
+      expect.fail('Invalid capability, expected rejection');
     });
 
-    it('Invalid capabilities 2', function (done) {
-      rest.auth.requestToken({ capability: invalid1 }, function (err, tokenDetails) {
-        if (err) {
-          try {
-            expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
-            done();
-          } catch (err) {
-            done(err);
-          }
-          return;
-        }
-        done(new Error('Invalid capability, expected rejection'));
-      });
+    it('Invalid capabilities 2', async function () {
+      try {
+        var tokenDetails = await rest.auth.requestToken({ capability: invalid1 });
+      } catch (err) {
+        expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
+        return;
+      }
+      expect.fail('Invalid capability, expected rejection');
     });
 
-    it('Invalid capabilities 3', function (done) {
-      rest.auth.requestToken({ capability: invalid2 }, function (err, tokenDetails) {
-        if (err) {
-          try {
-            expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
-            done();
-          } catch (err) {
-            done(err);
-          }
-          return;
-        }
-        done(new Error('Invalid capability, expected rejection'));
-      });
+    it('Invalid capabilities 3', async function () {
+      try {
+        var tokenDetails = await rest.auth.requestToken({ capability: invalid2 });
+      } catch (err) {
+        expect(err.statusCode).to.equal(400, 'Verify request rejected with bad capability');
+        return;
+      }
+      expect.fail('Invalid capability, expected rejection');
     });
   });
 });

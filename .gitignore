@@ -6,6 +6,6 @@ npm-debug.log
 .tool-versions
 build/
 react/
-docs/generated/
+typedoc/generated/
 junit/
 test/support/mocha_junit_reporter/build/

@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "ES2017",
     "module": "commonjs",
-    "lib": ["ES5", "DOM", "webworker"],
+    "lib": ["ES2017", "DOM", "DOM.Iterable", "webworker"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,6 +12,7 @@
     "baseUrl": "./src"
   },
   "exclude": [
-    "src/platform/react-hooks"
+    "src/platform/react-hooks",
+    "test/package"
   ]
 }

@@ -7,6 +7,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var displayError = helper.displayError;
   var encodingFixturesPath = helper.testResourcesPath + 'messages-encoding.json';
   var closeAndFinish = helper.closeAndFinish;
+  var Defaults = Ably.Rest.Platform.Defaults;
+  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/encoding', function () {
     this.timeout(60 * 1000);
@@ -40,10 +42,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              channel.attach(attachCb);
+              whenPromiseSettles(channel.attach(), attachCb);
             },
             function (attachCb) {
-              binarychannel.attach(attachCb);
+              whenPromiseSettles(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
@@ -64,7 +66,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           if (encodingSpec.expectedHexValue) {
                             expect(BufferUtils.hexEncode(msg.data)).to.equal(
                               encodingSpec.expectedHexValue,
-                              'Check data matches'
+                              'Check data matches',
                             );
                           } else {
                             expect(msg.data).to.deep.equal(encodingSpec.expectedValue, 'Check data matches');
@@ -82,7 +84,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                           if (encodingSpec.expectedHexValue) {
                             expect(BufferUtils.hexEncode(msg.data)).to.equal(
                               encodingSpec.expectedHexValue,
-                              'Check data matches'
+                              'Check data matches',
                             );
                           } else {
                             expect(msg.data).to.deep.equal(encodingSpec.expectedValue, 'Check data matches');
@@ -95,26 +97,29 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       });
                     },
                     function (parallelCb) {
-                      realtime.request(
-                        'post',
-                        channelPath,
-                        null,
-                        { name: name, data: encodingSpec.data, encoding: encodingSpec.encoding },
-                        null,
+                      whenPromiseSettles(
+                        realtime.request(
+                          'post',
+                          channelPath,
+                          Defaults.protocolVersion,
+                          null,
+                          { name: name, data: encodingSpec.data, encoding: encodingSpec.encoding },
+                          null,
+                        ),
                         function (err) {
                           parallelCb(err);
-                        }
+                        },
                       );
                     },
                   ],
-                  eachOfCb
+                  eachOfCb,
                 );
               },
               function (err) {
                 closeAndFinish(done, [realtime, binaryrealtime], err);
-              }
+              },
             );
-          }
+          },
         );
       });
     });
@@ -138,10 +143,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              channel.attach(attachCb);
+              whenPromiseSettles(channel.attach(), attachCb);
             },
             function (attachCb) {
-              binarychannel.attach(attachCb);
+              whenPromiseSettles(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
@@ -163,10 +168,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 async.parallel(
                   [
                     function (parallelCb) {
-                      channel.publish(name, data, parallelCb);
+                      whenPromiseSettles(channel.publish(name, data), parallelCb);
                     },
                     function (parallelCb) {
-                      binarychannel.publish(name, data, parallelCb);
+                      whenPromiseSettles(binarychannel.publish(name, data), parallelCb);
                     },
                   ],
                   function (err) {
@@ -174,47 +179,50 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       eachOfCb(err);
                       return;
                     }
-                    realtime.request('get', channelPath, null, null, null, function (err, resultPage) {
-                      if (err) {
-                        eachOfCb(err);
-                        return;
-                      }
-                      try {
-                        var msgs = helper.arrFilter(resultPage.items, function (m) {
-                          return m.name === name;
-                        });
-                        expect(msgs.length).to.equal(
-                          2,
-                          'Check expected number of results (one from json rt, one from binary rt)'
-                        );
-                        expect(msgs[0].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
-                        expect(msgs[1].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
-                        if (msgs[0].encoding === 'json') {
-                          expect(JSON.parse(encodingSpec.data)).to.deep.equal(
-                            JSON.parse(msgs[0].data),
-                            'Check data matches'
-                          );
-                          expect(JSON.parse(encodingSpec.data)).to.deep.equal(
-                            JSON.parse(msgs[1].data),
-                            'Check data matches'
-                          );
-                        } else {
-                          expect(encodingSpec.data).to.equal(msgs[0].data, 'Check data matches');
-                          expect(encodingSpec.data).to.equal(msgs[1].data, 'Check data matches');
+                    whenPromiseSettles(
+                      realtime.request('get', channelPath, Defaults.protocolVersion, null, null, null),
+                      function (err, resultPage) {
+                        if (err) {
+                          eachOfCb(err);
+                          return;
                         }
-                        eachOfCb();
-                      } catch (err) {
-                        eachOfCb(err);
-                      }
-                    });
-                  }
+                        try {
+                          var msgs = resultPage.items.filter(function (m) {
+                            return m.name === name;
+                          });
+                          expect(msgs.length).to.equal(
+                            2,
+                            'Check expected number of results (one from json rt, one from binary rt)',
+                          );
+                          expect(msgs[0].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
+                          expect(msgs[1].encoding == encodingSpec.encoding, 'Check encodings match').to.be.ok;
+                          if (msgs[0].encoding === 'json') {
+                            expect(JSON.parse(encodingSpec.data)).to.deep.equal(
+                              JSON.parse(msgs[0].data),
+                              'Check data matches',
+                            );
+                            expect(JSON.parse(encodingSpec.data)).to.deep.equal(
+                              JSON.parse(msgs[1].data),
+                              'Check data matches',
+                            );
+                          } else {
+                            expect(encodingSpec.data).to.equal(msgs[0].data, 'Check data matches');
+                            expect(encodingSpec.data).to.equal(msgs[1].data, 'Check data matches');
+                          }
+                          eachOfCb();
+                        } catch (err) {
+                          eachOfCb(err);
+                        }
+                      },
+                    );
+                  },
                 );
               },
               function (err) {
                 closeAndFinish(done, [realtime, binaryrealtime], err);
-              }
+              },
             );
-          }
+          },
         );
       });
     });

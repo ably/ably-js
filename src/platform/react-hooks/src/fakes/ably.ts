@@ -1,11 +1,12 @@
-import { Types } from 'ably';
+import * as Ably from 'ably';
 import { search } from 'jmespath';
 
 export class FakeAblySdk {
   public clientId: string;
   public channels: ClientChannelsCollection;
   public connection: Connection;
-  public options = { promises: true };
+  // TODO check we can remove this
+  //public options = { promises: true };
 
   constructor() {
     this.clientId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -56,7 +57,7 @@ class EventEmitter {
       if (listenerArr) {
         this.listeners.set(
           eventOrListener as string,
-          listenerArr.filter((x) => x !== listener)
+          listenerArr.filter((x) => x !== listener),
         );
         return;
       }
@@ -79,7 +80,7 @@ class EventEmitter {
 }
 
 class Connection extends EventEmitter {
-  state: Types.ConnectionState;
+  state: Ably.ConnectionState;
 
   constructor() {
     super();
@@ -103,19 +104,19 @@ export class ClientChannelsCollection {
     if (channelConnection) {
       return channelConnection;
     } else {
-      channelConnection = new ClientSingleChannelConnection(this.client, this.channels.get(name));
+      channelConnection = new ClientSingleChannelConnection(this.client, this.channels.get(name), name);
       this._channelConnections.set(name, channelConnection);
       return channelConnection;
     }
   }
 
-  public getDerived(name: string, options: Types.DeriveOptions): ClientSingleDerivedChannelConnection {
+  public getDerived(name: string, options: Ably.DeriveOptions): ClientSingleDerivedChannelConnection {
     let channelConnection = this._channelConnections.get(name);
     if (channelConnection) return channelConnection as ClientSingleDerivedChannelConnection;
 
     const channel = this.channels.get(name);
-    channelConnection = new ClientSingleDerivedChannelConnection(this.client, channel, options);
-    this._channelConnections.set(name, channelConnection);
+    channelConnection = new ClientSingleDerivedChannelConnection(this.client, channel, options, name);
+    this._channelConnections.set(`[derived]${name}`, channelConnection);
     return channelConnection;
   }
 }
@@ -126,25 +127,27 @@ export class ClientSingleChannelConnection extends EventEmitter {
 
   public presence: any;
   public state: string;
+  public name: string;
 
-  constructor(client: FakeAblySdk, channel: Channel) {
+  constructor(client: FakeAblySdk, channel: Channel, name: string) {
     super();
     this.client = client;
     this.channel = channel;
     this.presence = new ClientPresenceConnection(this.client, this.channel.presence);
     this.state = 'attached';
+    this.name = name;
   }
 
-  publish(messages: any, callback?: Types.errorCallback): void;
-  publish(name: string, messages: any, callback?: Types.errorCallback): void;
-  publish(name: string, messages: any, options?: Types.PublishOptions, callback?: Types.errorCallback): void;
+  publish(messages: any, callback?: Ably.errorCallback): void;
+  publish(name: string, messages: any, callback?: Ably.errorCallback): void;
+  publish(name: string, messages: any, options?: Ably.PublishOptions, callback?: Ably.errorCallback): void;
   public publish(...rest: any[]) {
     this.channel.publish(this.client.clientId, rest);
   }
 
   public async subscribe(
-    eventOrCallback: Types.messageCallback<Types.Message> | string | Array<string>,
-    listener?: Types.messageCallback<Types.Message>
+    eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
+    listener?: Ably.messageCallback<Ably.Message>,
   ) {
     this.channel.subscribe(this.client.clientId, eventOrCallback, listener);
   }
@@ -156,23 +159,29 @@ export class ClientSingleChannelConnection extends EventEmitter {
   public detach() {
     this.channel.subscriptionsPerClient.delete(this.client.clientId);
   }
+
+  public async setOptions() {
+    // do nothing
+  }
 }
 
 export class ClientSingleDerivedChannelConnection extends EventEmitter {
   private client: FakeAblySdk;
   private channel: Channel;
-  private deriveOpts: Types.DeriveOptions;
+  private deriveOpts: Ably.DeriveOptions;
+  public name?: string;
 
-  constructor(client: FakeAblySdk, channel: Channel, deriveOptions?: Types.DeriveOptions) {
+  constructor(client: FakeAblySdk, channel: Channel, deriveOptions?: Ably.DeriveOptions, name?: string) {
     super();
     this.client = client;
     this.channel = channel;
     this.deriveOpts = deriveOptions;
+    this.name = name;
   }
 
   public async subscribe(
-    eventOrCallback: Types.messageCallback<Types.Message> | string | Array<string>,
-    listener?: Types.messageCallback<Types.Message>
+    eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
+    listener?: Ably.messageCallback<Ably.Message>,
   ) {
     if (typeof eventOrCallback === 'function') eventOrCallback.deriveOptions = this.deriveOpts;
     if (typeof listener === 'function') listener.deriveOpts = this.deriveOpts;
@@ -181,6 +190,14 @@ export class ClientSingleDerivedChannelConnection extends EventEmitter {
 
   public unsubscribe() {
     this.channel.subscriptionsPerClient.delete(this.client.clientId);
+  }
+
+  public async setOptions() {
+    // do nothing
+  }
+
+  public async publish() {
+    throw Error('no publish for derived channel');
   }
 }
 
@@ -202,8 +219,8 @@ export class ClientPresenceConnection {
     this.presence.update(this.client.clientId, message);
   }
 
-  public subscribe(key: string, callback: CallableFunction) {
-    this.presence.subscribe(this.client.clientId, key, callback);
+  public subscribe(key: string | string[], callback: CallableFunction) {
+    (Array.isArray(key) ? key : [key]).forEach((x) => this.presence.subscribe(this.client.clientId, x, callback));
   }
 
   public leave(data?: any) {
@@ -216,8 +233,8 @@ export class ClientPresenceConnection {
     this.presence.enter(this.client.clientId, message);
   }
 
-  public unsubscribe(key: string, listener?: any) {
-    this.presence.unsubscribe(this.client.clientId, key, listener);
+  public unsubscribe(key: string | string[], listener?: any) {
+    (Array.isArray(key) ? key : [key]).forEach((x) => this.presence.unsubscribe(this.client.clientId, x, listener));
   }
 
   private toPressenceMessage(data: any) {
@@ -258,14 +275,14 @@ export class Channel {
     this.presence = new ChannelPresence(this);
   }
 
-  publish(clientId: string, messages: any, callback?: Types.errorCallback): void;
-  publish(clientId: string, name: string, messages: any, callback?: Types.errorCallback): void;
+  publish(clientId: string, messages: any, callback?: Ably.errorCallback): void;
+  publish(clientId: string, name: string, messages: any, callback?: Ably.errorCallback): void;
   publish(
     clientId: string,
     name: string,
     messages: any,
-    options?: Types.PublishOptions,
-    callback?: Types.errorCallback
+    options?: Ably.PublishOptions,
+    callback?: Ably.errorCallback,
   ): void;
   public publish(clientId: string, ...rest: any[]) {
     const name = rest.length <= 2 ? '' : rest[0];
@@ -297,8 +314,8 @@ export class Channel {
 
   public async subscribe(
     clientId: string,
-    eventOrCallback: Types.messageCallback<Types.Message> | string | Array<string>,
-    listener?: Types.messageCallback<Types.Message>
+    eventOrCallback: Ably.messageCallback<Ably.Message> | string | Array<string>,
+    listener?: Ably.messageCallback<Ably.Message>,
   ) {
     if (!this.subscriptionsPerClient.has(clientId)) {
       this.subscriptionsPerClient.set(clientId, new Map<string, CallableFunction[]>());
@@ -326,6 +343,10 @@ export class Channel {
       const subs = subsForClient.get(key);
       subs.push(callback);
     }
+  }
+
+  public async setOptions() {
+    // do nothing
   }
 }
 
@@ -383,8 +404,8 @@ export class ChannelPresence {
   }
 
   private triggerSubs(subType: string, data: any) {
-    for (const [, subscriptions] of this.subscriptionsPerClient.entries()) {
-      const subs = subscriptions.get(subType);
+    for (const subscriptions of this.subscriptionsPerClient.values()) {
+      const subs = subscriptions.get(subType) ?? [];
       for (const callback of subs) {
         callback(data);
       }

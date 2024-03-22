@@ -23,27 +23,16 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect(rest.options.key).to.equal(keyStr);
     });
 
-    it('Init with token string', function (done) {
-      try {
-        /* first generate a token ... */
-        var rest = helper.AblyRest();
-        var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
+    it('Init with token string', async function () {
+      /* first generate a token ... */
+      var rest = helper.AblyRest();
+      var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
 
-        rest.auth.requestToken(null, testKeyOpts, function (err, tokenDetails) {
-          if (err) {
-            done(err);
-            return;
-          }
+      var tokenDetails = await rest.auth.requestToken(null, testKeyOpts);
+      var tokenStr = tokenDetails.token,
+        rest = new helper.Ably.Rest(tokenStr);
 
-          var tokenStr = tokenDetails.token,
-            rest = new helper.Ably.Rest(tokenStr);
-
-          expect(rest.options.token).to.equal(tokenStr);
-          done();
-        });
-      } catch (err) {
-        done(err);
-      }
+      expect(rest.options.token).to.equal(tokenStr);
     });
 
     it('Init with tls: false', function () {
@@ -72,27 +61,6 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect(function () {
         var rest = helper.AblyRest({ clientId: false });
       }, 'Check can’t init library with a boolean clientId').to.throw;
-    });
-
-    it('Init promises', function () {
-      var rest,
-        keyStr = helper.getTestApp().keys[0].keyStr;
-
-      rest = new Ably.Rest(keyStr);
-      expect(!rest.options.promises, 'Check promises defaults to false').to.be.ok;
-
-      rest = new Ably.Rest.Promise(keyStr);
-      expect(rest.options.promises, 'Check promises default to true with promise constructor').to.be.ok;
-
-      if (!isBrowser && typeof require == 'function') {
-        var AblyPromises = require('../../promises');
-        rest = new AblyPromises.Rest(keyStr);
-        expect(rest.options.promises, 'Check promises default to true with promise require target').to.be.ok;
-
-        var AblyCallbacks = require('../../callbacks');
-        rest = new AblyCallbacks.Rest(keyStr);
-        expect(!rest.options.promises, 'Check promises default to false with callback require target').to.be.ok;
-      }
     });
   });
 });

@@ -1,27 +1,28 @@
-import { Types } from 'ably';
+import * as Ably from 'ably';
 import { useAbly } from './useAbly.js';
 import { useEventListener } from './useEventListener.js';
 
-type ConnectionStateListener = (stateChange: Types.ConnectionStateChange) => any;
+type ConnectionStateListener = (stateChange: Ably.ConnectionStateChange) => any;
 
-export function useConnectionStateListener(listener: ConnectionStateListener, id?: string);
+export function useConnectionStateListener(listener: ConnectionStateListener, ablyId?: string);
 
 export function useConnectionStateListener(
-  state: Types.ConnectionState | Types.ConnectionState[],
+  state: Ably.ConnectionState | Ably.ConnectionState[],
   listener: ConnectionStateListener,
-  id?: string
+  ablyId?: string,
 );
 
 export function useConnectionStateListener(
-  stateOrListener?: Types.ConnectionState | Types.ConnectionState[] | ConnectionStateListener,
-  listenerOrId?: string | ConnectionStateListener,
-  id = 'default'
+  stateOrListener?: Ably.ConnectionState | Ably.ConnectionState[] | ConnectionStateListener,
+  listenerOrAblyId?: string | ConnectionStateListener,
+  ablyId = 'default',
 ) {
-  const _id = typeof listenerOrId === 'string' ? listenerOrId : id;
-  const ably = useAbly(_id);
+  const _ablyId = typeof listenerOrAblyId === 'string' ? listenerOrAblyId : ablyId;
+  const ably = useAbly(_ablyId);
 
-  const listener = typeof listenerOrId === 'function' ? listenerOrId : (stateOrListener as ConnectionStateListener);
+  const listener =
+    typeof listenerOrAblyId === 'function' ? listenerOrAblyId : (stateOrListener as ConnectionStateListener);
   const state = typeof stateOrListener !== 'function' ? stateOrListener : undefined;
 
-  useEventListener<Types.ConnectionState, Types.ConnectionStateChange>(ably.connection, listener, state);
+  useEventListener<Ably.ConnectionState, Ably.ConnectionStateChange>(ably.connection, listener, state);
 }

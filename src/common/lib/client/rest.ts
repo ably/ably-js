@@ -1,274 +1,160 @@
 import * as Utils from '../util/utils';
 import Logger, { LoggerOptions } from '../util/logger';
 import Defaults from '../util/defaults';
-import Auth from './auth';
 import Push from './push';
 import PaginatedResource, { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
-import Channel from './channel';
+import RestChannel from './restchannel';
 import ErrorInfo from '../types/errorinfo';
 import Stats from '../types/stats';
 import HttpMethods from '../../constants/HttpMethods';
 import { ChannelOptions } from '../../types/channel';
-import { PaginatedResultCallback, StandardCallback } from '../../types/utils';
-import { ErrnoException, IHttp, RequestParams } from '../../types/http';
-import ClientOptions, { DeprecatedClientOptions, NormalisedClientOptions } from '../../types/ClientOptions';
+import { RequestBody, RequestParams } from '../../types/http';
 import * as API from '../../../../ably';
-
-import Platform from '../../platform';
-import Message from '../types/message';
-import PresenceMessage from '../types/presencemessage';
 import Resource from './resource';
 
-type BatchResult<T> = API.Types.BatchResult<T>;
-type BatchPublishSpec = API.Types.BatchPublishSpec;
-type BatchPublishSuccessResult = API.Types.BatchPublishSuccessResult;
-type BatchPublishFailureResult = API.Types.BatchPublishFailureResult;
+import Platform from '../../platform';
+import BaseClient from './baseclient';
+import { useTokenAuth } from './auth';
+import { RestChannelMixin } from './restchannelmixin';
+import { RestPresenceMixin } from './restpresencemixin';
+
+type BatchResult<T> = API.BatchResult<T>;
+
+type BatchPublishSpec = API.BatchPublishSpec;
+type BatchPublishSuccessResult = API.BatchPublishSuccessResult;
+type BatchPublishFailureResult = API.BatchPublishFailureResult;
 type BatchPublishResult = BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>;
-type BatchPresenceSuccessResult = API.Types.BatchPresenceSuccessResult;
-type BatchPresenceFailureResult = API.Types.BatchPresenceFailureResult;
+type BatchPresenceSuccessResult = API.BatchPresenceSuccessResult;
+type BatchPresenceFailureResult = API.BatchPresenceFailureResult;
 type BatchPresenceResult = BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>;
 
-const noop = function () {};
-class Rest {
-  options: NormalisedClientOptions;
-  baseUri: (host: string) => string;
-  authority: (host: string) => string;
-  _currentFallback: null | {
-    host: string;
-    validUntil: number;
-  };
-  serverTimeOffset: number | null;
-  http: IHttp;
-  auth: Auth;
-  channels: Channels;
-  push: Push;
+type TokenRevocationTargetSpecifier = API.TokenRevocationTargetSpecifier;
+type TokenRevocationOptions = API.TokenRevocationOptions;
+type TokenRevocationSuccessResult = API.TokenRevocationSuccessResult;
+type TokenRevocationFailureResult = API.TokenRevocationFailureResult;
+type TokenRevocationResult = BatchResult<TokenRevocationSuccessResult | TokenRevocationFailureResult>;
 
-  constructor(options: ClientOptions | string) {
-    if (!options) {
-      const msg = 'no options provided';
-      Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-      throw new Error(msg);
-    }
-    const optionsObj = Defaults.objectifyOptions(options);
+export class Rest {
+  private readonly client: BaseClient;
+  readonly channels: Channels;
+  readonly push: Push;
 
-    if (optionsObj.log) {
-      Logger.setLog(optionsObj.log.level, optionsObj.log.handler);
-      Logger.deprecated(
-        'The `log` client option',
-        'Equivalent functionality is provided by the `logLevel` and `logHandler` client options. Update your client options code of the form `{ log: { level: logLevel, handler: logHandler } }` to instead be `{ logLevel, logHandler }`.'
-      );
-    } else {
-      Logger.setLog(optionsObj.logLevel, optionsObj.logHandler);
-    }
+  readonly channelMixin = RestChannelMixin;
+  readonly presenceMixin = RestPresenceMixin;
 
-    Logger.logAction(Logger.LOG_MICRO, 'Rest()', 'initialized with clientOptions ' + Platform.Config.inspect(options));
-
-    const normalOptions = (this.options = Defaults.normaliseOptions(optionsObj));
-
-    /* process options */
-    if (normalOptions.key) {
-      const keyMatch = normalOptions.key.match(/^([^:\s]+):([^:.\s]+)$/);
-      if (!keyMatch) {
-        const msg = 'invalid key parameter';
-        Logger.logAction(Logger.LOG_ERROR, 'Rest()', msg);
-        throw new ErrorInfo(msg, 40400, 404);
-      }
-      normalOptions.keyName = keyMatch[1];
-      normalOptions.keySecret = keyMatch[2];
-    }
-
-    if ('clientId' in normalOptions) {
-      if (!(typeof normalOptions.clientId === 'string' || normalOptions.clientId === null))
-        throw new ErrorInfo('clientId must be either a string or null', 40012, 400);
-      else if (normalOptions.clientId === '*')
-        throw new ErrorInfo(
-          'Can’t use "*" as a clientId as that string is reserved. (To change the default token request behaviour to use a wildcard clientId, use {defaultTokenParams: {clientId: "*"}})',
-          40012,
-          400
-        );
-    }
-
-    Logger.logAction(Logger.LOG_MINOR, 'Rest()', 'started; version = ' + Defaults.version);
-
-    this.baseUri = this.authority = function (host) {
-      return Defaults.getHttpScheme(normalOptions) + host + ':' + Defaults.getPort(normalOptions, false);
-    };
-    this._currentFallback = null;
-
-    this.serverTimeOffset = null;
-    this.http = new Platform.Http(normalOptions);
-    this.auth = new Auth(this, normalOptions);
-    this.channels = new Channels(this);
-    this.push = new Push(this);
+  constructor(client: BaseClient) {
+    this.client = client;
+    this.channels = new Channels(this.client);
+    this.push = new Push(this.client);
   }
 
-  stats(
-    params: RequestParams,
-    callback: StandardCallback<PaginatedResult<Stats>>
-  ): Promise<PaginatedResult<Stats>> | void {
-    /* params and callback are optional; see if params contains the callback */
-    if (callback === undefined) {
-      if (typeof params == 'function') {
-        callback = params;
-        params = null;
-      } else {
-        if (this.options.promises) {
-          return Utils.promisify(this, 'stats', [params]) as Promise<PaginatedResult<Stats>>;
-        }
-        callback = noop;
-      }
-    }
-    const headers = Utils.defaultGetHeaders(this.options),
-      format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.http.supportsLinkHeaders ? undefined : format;
+  async stats(params: RequestParams): Promise<PaginatedResult<Stats>> {
+    const headers = Defaults.defaultGetHeaders(this.client.options),
+      format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      envelope = this.client.http.supportsLinkHeaders ? undefined : format;
 
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+    Utils.mixin(headers, this.client.options.headers);
 
-    new PaginatedResource(this, '/stats', headers, envelope, function (
-      body: unknown,
-      headers: Record<string, string>,
-      unpacked?: boolean
-    ) {
+    return new PaginatedResource(this.client, '/stats', headers, envelope, function (body, headers, unpacked) {
       const statsValues = unpacked ? body : JSON.parse(body as string);
       for (let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
       return statsValues;
-    }).get(params as Record<string, string>, callback);
+    }).get(params as Record<string, string>);
   }
 
-  time(params?: RequestParams | StandardCallback<number>, callback?: StandardCallback<number>): Promise<number> | void {
-    /* params and callback are optional; see if params contains the callback */
-    if (callback === undefined) {
-      if (typeof params == 'function') {
-        callback = params;
-        params = null;
-      } else {
-        if (this.options.promises) {
-          return Utils.promisify(this, 'time', [params]) as Promise<number>;
-        }
-      }
-    }
-
-    const _callback = callback || noop;
-
-    const headers = Utils.defaultGetHeaders(this.options);
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+  async time(params?: RequestParams): Promise<number> {
+    const headers = Defaults.defaultGetHeaders(this.client.options);
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
     const timeUri = (host: string) => {
-      return this.authority(host) + '/time';
+      return this.client.baseUri(host) + '/time';
     };
-    this.http.do(
+
+    let { error, body, unpacked } = await this.client.http.do(
       HttpMethods.Get,
-      this,
       timeUri,
       headers,
       null,
       params as RequestParams,
-      (
-        err?: ErrorInfo | ErrnoException | null,
-        res?: unknown,
-        headers?: Record<string, string>,
-        unpacked?: boolean
-      ) => {
-        if (err) {
-          _callback(err);
-          return;
-        }
-        if (!unpacked) res = JSON.parse(res as string);
-        const time = (res as number[])[0];
-        if (!time) {
-          _callback(new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500));
-          return;
-        }
-        /* calculate time offset only once for this device by adding to the prototype */
-        this.serverTimeOffset = time - Utils.now();
-        _callback(null, time);
-      }
     );
+
+    if (error) {
+      throw error;
+    }
+    if (!unpacked) body = JSON.parse(body as string);
+    const time = (body as number[])[0];
+    if (!time) {
+      throw new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500);
+    }
+    /* calculate time offset only once for this device by adding to the prototype */
+    this.client.serverTimeOffset = time - Date.now();
+    return time;
   }
 
-  request(
+  async request(
     method: string,
     path: string,
+    version: number,
     params: RequestParams,
     body: unknown,
     customHeaders: Record<string, string>,
-    callback: StandardCallback<HttpPaginatedResponse<unknown>>
-  ): Promise<HttpPaginatedResponse<unknown>> | void {
-    const useBinary = this.options.useBinaryProtocol,
-      encoder = useBinary ? Platform.Config.msgpack.encode : JSON.stringify,
-      decoder = useBinary ? Platform.Config.msgpack.decode : JSON.parse,
-      format = useBinary ? Utils.Format.msgpack : Utils.Format.json,
-      envelope = this.http.supportsLinkHeaders ? undefined : format;
+  ): Promise<HttpPaginatedResponse<unknown>> {
+    const [encoder, decoder, format] = (() => {
+      if (this.client.options.useBinaryProtocol) {
+        if (!this.client._MsgPack) {
+          Utils.throwMissingPluginError('MsgPack');
+        }
+        return [this.client._MsgPack.encode, this.client._MsgPack.decode, Utils.Format.msgpack];
+      } else {
+        return [JSON.stringify, JSON.parse, Utils.Format.json];
+      }
+    })();
+    const envelope = this.client.http.supportsLinkHeaders ? undefined : format;
     params = params || {};
     const _method = method.toLowerCase() as HttpMethods;
     const headers =
-      _method == 'get' ? Utils.defaultGetHeaders(this.options, format) : Utils.defaultPostHeaders(this.options, format);
-
-    if (callback === undefined) {
-      if (this.options.promises) {
-        return Utils.promisify(this, 'request', [method, path, params, body, customHeaders]) as Promise<
-          HttpPaginatedResponse<unknown>
-        >;
-      }
-      callback = noop;
-    }
+      _method == 'get'
+        ? Defaults.defaultGetHeaders(this.client.options, { format, protocolVersion: version })
+        : Defaults.defaultPostHeaders(this.client.options, { format, protocolVersion: version });
 
     if (typeof body !== 'string') {
-      body = encoder(body);
+      body = encoder(body) ?? null;
     }
-    if (this.options.headers) {
-      Utils.mixin(headers, this.options.headers);
-    }
+    Utils.mixin(headers, this.client.options.headers);
     if (customHeaders) {
       Utils.mixin(headers, customHeaders);
     }
     const paginatedResource = new PaginatedResource(
-      this,
+      this.client,
       path,
       headers,
       envelope,
-      function (resbody: unknown, headers: Record<string, string>, unpacked?: boolean) {
+      async function (resbody, headers, unpacked) {
         return Utils.ensureArray(unpacked ? resbody : decoder(resbody as string & Buffer));
       },
-      /* useHttpPaginatedResponse: */ true
+      /* useHttpPaginatedResponse: */ true,
     );
 
-    if (!Utils.arrIn(Platform.Http.methods, _method)) {
+    if (!Platform.Http.methods.includes(_method)) {
       throw new ErrorInfo('Unsupported method ' + _method, 40500, 405);
     }
 
-    if (Utils.arrIn(Platform.Http.methodsWithBody, _method)) {
-      paginatedResource[_method as HttpMethods.Post](params, body, callback as PaginatedResultCallback<unknown>);
+    if (Platform.Http.methodsWithBody.includes(_method)) {
+      return paginatedResource[_method as HttpMethods.Post](params, body as RequestBody) as Promise<
+        HttpPaginatedResponse<unknown>
+      >;
     } else {
-      paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](
-        params,
-        callback as PaginatedResultCallback<unknown>
-      );
+      return paginatedResource[_method as HttpMethods.Get | HttpMethods.Delete](params) as Promise<
+        HttpPaginatedResponse<unknown>
+      >;
     }
   }
 
-  batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
+  async batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
     specOrSpecs: T,
-    callback: API.Types.StandardCallback<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]>
-  ): void;
-  batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
-    specOrSpecs: T
-  ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]>;
-  batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(
-    specOrSpecs: T,
-    callbackArg?: API.Types.StandardCallback<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]>
-  ): void | Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
-    if (callbackArg === undefined) {
-      if (this.options.promises) {
-        return Utils.promisify(this, 'batchPublish', [specOrSpecs]);
-      }
-      callbackArg = noop;
-    }
-
-    const callback = callbackArg;
-
+  ): Promise<T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[]> {
     let requestBodyDTO: BatchPublishSpec[];
     let singleSpecMode: boolean;
-    if (Utils.isArray(specOrSpecs)) {
+    if (Array.isArray(specOrSpecs)) {
       requestBodyDTO = specOrSpecs;
       singleSpecMode = false;
     } else {
@@ -276,103 +162,92 @@ class Rest {
       singleSpecMode = true;
     }
 
-    const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(this.options, format);
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(this.client.options, { format });
 
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
-    const requestBody = Utils.encodeBody(requestBodyDTO, format);
-    Resource.post(
-      this,
-      '/messages',
-      requestBody,
-      headers,
-      { newBatchResponse: 'true' },
-      null,
-      (err, body, headers, unpacked) => {
-        if (err) {
-          // TODO remove this type assertion after fixing https://github.com/ably/ably-js/issues/1405
-          callback(err as API.Types.ErrorInfo);
-          return;
-        }
+    const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
 
-        const batchResults = (unpacked ? body : Utils.decodeBody(body, format)) as BatchPublishResult[];
+    const response = await Resource.post(this.client, '/messages', requestBody, headers, {}, null, true);
 
-        // I don't love the below type assertions for `callback` but not sure how to avoid them
-        if (singleSpecMode) {
-          (callback as API.Types.StandardCallback<BatchPublishResult>)(null, batchResults[0]);
-        } else {
-          (callback as API.Types.StandardCallback<BatchPublishResult[]>)(null, batchResults);
-        }
-      }
-    );
+    const batchResults = (
+      response.unpacked ? response.body : Utils.decodeBody(response.body, this.client._MsgPack, format)
+    ) as BatchPublishResult[];
+
+    // I don't love the below type assertions but not sure how to avoid them
+    if (singleSpecMode) {
+      return batchResults[0] as T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[];
+    } else {
+      return batchResults as T extends BatchPublishSpec ? BatchPublishResult : BatchPublishResult[];
+    }
   }
 
-  batchPresence(channels: string[], callback: API.Types.StandardCallback<BatchPresenceResult>): void;
-  batchPresence(channels: string[]): Promise<BatchPresenceResult>;
-  batchPresence(
-    channels: string[],
-    callbackArg?: API.Types.StandardCallback<BatchPresenceResult>
-  ): void | Promise<BatchPresenceResult> {
-    if (callbackArg === undefined) {
-      if (this.options.promises) {
-        return Utils.promisify(this, 'batchPresence', [channels]);
-      }
-      callbackArg = noop;
-    }
+  async batchPresence(channels: string[]): Promise<BatchPresenceResult> {
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(this.client.options, { format });
 
-    const callback = callbackArg;
-
-    const format = this.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Utils.defaultPostHeaders(this.options, format);
-
-    if (this.options.headers) Utils.mixin(headers, this.options.headers);
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
     const channelsParam = channels.join(',');
 
-    Resource.get(
-      this,
-      '/presence',
+    const response = await Resource.get(this.client, '/presence', headers, { channels: channelsParam }, null, true);
+
+    return (
+      response.unpacked ? response.body : Utils.decodeBody(response.body, this.client._MsgPack, format)
+    ) as BatchPresenceResult;
+  }
+
+  async revokeTokens(
+    specifiers: TokenRevocationTargetSpecifier[],
+    options?: TokenRevocationOptions,
+  ): Promise<TokenRevocationResult> {
+    if (useTokenAuth(this.client.options)) {
+      throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
+    }
+
+    const keyName = this.client.options.keyName!;
+
+    let resolvedOptions = options ?? {};
+
+    const requestBodyDTO = {
+      targets: specifiers.map((specifier) => `${specifier.type}:${specifier.value}`),
+      ...resolvedOptions,
+    };
+
+    const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+
+    if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
+
+    const requestBody = Utils.encodeBody(requestBodyDTO, this.client._MsgPack, format);
+
+    const response = await Resource.post(
+      this.client,
+      `/keys/${keyName}/revokeTokens`,
+      requestBody,
       headers,
-      { newBatchResponse: 'true', channels: channelsParam },
+      {},
       null,
-      (err, body, headers, unpacked) => {
-        if (err) {
-          // TODO remove this type assertion after fixing https://github.com/ably/ably-js/issues/1405
-          callback(err as API.Types.ErrorInfo);
-          return;
-        }
-
-        const batchResult = (unpacked ? body : Utils.decodeBody(body, format)) as BatchPresenceResult;
-
-        callback(null, batchResult);
-      }
+      true,
     );
+
+    return (
+      response.unpacked ? response.body : Utils.decodeBody(response.body, this.client._MsgPack, format)
+    ) as TokenRevocationResult;
   }
 
   setLog(logOptions: LoggerOptions): void {
     Logger.setLog(logOptions.level, logOptions.handler);
   }
-
-  static Promise = function (options: DeprecatedClientOptions): Rest {
-    options = Defaults.objectifyOptions(options);
-    options.promises = true;
-    return new Rest(options);
-  };
-
-  static Callbacks = Rest;
-  static Platform = Platform;
-  static Crypto?: typeof Platform.Crypto;
-  static Message = Message;
-  static PresenceMessage = PresenceMessage;
 }
 
 class Channels {
-  rest: Rest;
-  all: Record<string, Channel>;
+  client: BaseClient;
+  all: Record<string, RestChannel>;
 
-  constructor(rest: Rest) {
-    this.rest = rest;
+  constructor(client: BaseClient) {
+    this.client = client;
     this.all = Object.create(null);
   }
 
@@ -380,7 +255,7 @@ class Channels {
     name = String(name);
     let channel = this.all[name];
     if (!channel) {
-      this.all[name] = channel = new Channel(this.rest, name, channelOptions);
+      this.all[name] = channel = new RestChannel(this.client, name, channelOptions);
     } else if (channelOptions) {
       channel.setOptions(channelOptions);
     }
@@ -394,5 +269,3 @@ class Channels {
     delete this.all[String(name)];
   }
 }
-
-export default Rest;

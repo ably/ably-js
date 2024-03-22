@@ -1,8 +1,9 @@
-import { Types } from 'ably';
+import * as Ably from 'ably';
 import React, { useState } from 'react';
 import {
   useChannel,
   usePresence,
+  usePresenceListener,
   useConnectionStateListener,
   useChannelStateListener,
   useAbly,
@@ -10,44 +11,43 @@ import {
 import './App.css';
 
 function App() {
-  const [messages, updateMessages] = useState<Types.Message[]>([]);
-  const [derivedChannelMessages, updateDerivedChannelMessages] = useState<Types.Message[]>([]);
-  const [frontOficeOnlyMessages, updateFrontOfficeOnlyMessages] = useState<Types.Message[]>([]);
+  const [messages, updateMessages] = useState<Ably.Message[]>([]);
+  const [derivedChannelMessages, updateDerivedChannelMessages] = useState<Ably.Message[]>([]);
+  const [frontOficeOnlyMessages, updateFrontOfficeOnlyMessages] = useState<Ably.Message[]>([]);
 
   const [skip, setSkip] = useState(false);
-  const { channel, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
+  const { channel, publish, ably } = useChannel({ channelName: 'your-channel-name', skip }, (message) => {
     updateMessages((prev) => [...prev, message]);
   });
 
   useChannel(
     {
       channelName: 'your-derived-channel-name',
-      deriveOptions: { filter: 'headers.email == `"rob.pike@domain.com"` || headers.company == `"domain"`' },
+      ablyId: 'rob',
     },
     (message) => {
       updateDerivedChannelMessages((prev) => [...prev, message]);
-    }
+    },
   );
 
   useChannel(
     {
       channelName: 'your-derived-channel-name',
-      deriveOptions: { filter: 'headers.role == `"front-office"` || headers.company == `"domain"`' },
+      ablyId: 'frontOffice',
     },
     (message) => {
       updateFrontOfficeOnlyMessages((prev) => [...prev, message]);
-    }
+    },
   );
 
-  const { channel: anotherChannelPublisher } = useChannel({ channelName: 'your-derived-channel-name' });
+  const { publish: anotherChannelPublish } = useChannel({
+    channelName: 'your-derived-channel-name',
+  });
 
-  const { presenceData, updateStatus } = usePresence(
-    { channelName: 'your-channel-name', skip },
-    { foo: 'bar' },
-    (update) => {
-      console.log(update);
-    }
-  );
+  const { updateStatus } = usePresence({ channelName: 'your-channel-name', skip }, { foo: 'bar' });
+  const { presenceData } = usePresenceListener({ channelName: 'your-channel-name', skip }, (update) => {
+    console.log(update);
+  });
 
   const [, setConnectionState] = useState(ably.connection.state);
 
@@ -57,8 +57,8 @@ function App() {
 
   const [ablyErr, setAblyErr] = useState('');
   const [channelState, setChannelState] = useState(channel.state);
-  const [previousChannelState, setPreviousChannelState] = useState<undefined | Types.ChannelState>();
-  const [channelStateReason, setChannelStateReason] = useState<undefined | Types.ErrorInfo>();
+  const [previousChannelState, setPreviousChannelState] = useState<undefined | Ably.ChannelState>();
+  const [channelStateReason, setChannelStateReason] = useState<undefined | Ably.ErrorInfo>();
 
   useChannelStateListener('your-channel-name', (stateChange) => {
     setAblyErr(JSON.stringify(stateChange.reason));
@@ -77,7 +77,8 @@ function App() {
 
   const presentClients = presenceData.map((msg, index) => (
     <li key={index}>
-      {msg.clientId}: {JSON.stringify(msg.data)}
+      {/* PresenceMessage type is not correctly resolved and is missing 'clientId' property due to fail to load 'ably' type declarations in this test file */}
+      {(msg as any).clientId}: {JSON.stringify(msg.data)}
     </li>
   ));
 
@@ -87,7 +88,7 @@ function App() {
       <div>
         <button
           onClick={() => {
-            channel.publish('test-message', {
+            publish('test-message', {
               text: 'message text',
             });
           }}
@@ -99,11 +100,11 @@ function App() {
             updateStatus({ foo: 'baz' });
           }}
         >
-          Update status to hello
+          Update presence status to baz
         </button>
         <button
           onClick={() => {
-            anotherChannelPublisher.publish({
+            anotherChannelPublish({
               name: 'test-message',
               data: {
                 text: 'This is a message for Rob',
@@ -120,7 +121,7 @@ function App() {
         </button>
         <button
           onClick={() => {
-            anotherChannelPublisher.publish({
+            anotherChannelPublish({
               name: 'test-message',
               data: {
                 text: 'This is a company-wide message',
@@ -137,7 +138,7 @@ function App() {
         </button>
         <button
           onClick={() => {
-            anotherChannelPublisher.publish({
+            anotherChannelPublish({
               name: 'test-message',
               data: {
                 text: 'This is a message for front office employees only',
@@ -192,14 +193,14 @@ function App() {
   );
 }
 
-function MessagePreview({ message }: { message: Types.Message }) {
+function MessagePreview({ message }: { message: Ably.Message }) {
   return <li>{message.data.text}</li>;
 }
 
 function ConnectionState() {
   const ably = useAbly();
   const [connectionState, setConnectionState] = useState(ably.connection.state);
-  const [connectionError, setConnectionError] = useState<Types.ErrorInfo | null>(null);
+  const [connectionError, setConnectionError] = useState<Ably.ErrorInfo | null>(null);
   useConnectionStateListener((stateChange) => {
     console.log(stateChange);
     setConnectionState(stateChange.current);

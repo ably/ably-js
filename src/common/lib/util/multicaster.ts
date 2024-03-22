@@ -1,44 +1,75 @@
+import { StandardCallback } from 'common/types/utils';
+import ErrorInfo from 'common/lib/types/errorinfo';
 import Logger from './logger';
 
-type AnyFunction = (...args: any[]) => unknown;
-
-export interface MulticasterInstance extends Function {
-  (...args: unknown[]): void;
-  push: (fn: AnyFunction) => void;
+export interface MulticasterInstance<T> extends Function {
+  (err?: ErrorInfo | null, result?: T): void;
+  push: (fn: StandardCallback<T>) => void;
+  /**
+   * Creates a promise that will be resolved or rejected when this instance is called.
+   */
+  createPromise: () => Promise<T>;
+  /**
+   * Syntatic sugar for when working in a context that uses promises; equivalent to calling as a function with arguments (null, result).
+   */
+  resolveAll(result: T): void;
+  /**
+   * Syntatic sugar for when working in a context that uses promises; equivalent to calling as a function with arguments (err).
+   */
+  rejectAll(err: ErrorInfo): void;
 }
 
-class Multicaster {
-  members: Array<AnyFunction>;
+class Multicaster<T> {
+  members: Array<StandardCallback<T>>;
 
   // Private constructor; use static Multicaster.create instead
-  private constructor(members?: Array<AnyFunction | undefined>) {
-    this.members = (members as Array<AnyFunction>) || [];
+  private constructor(members?: Array<StandardCallback<T> | undefined>) {
+    this.members = (members as Array<StandardCallback<T>>) || [];
   }
 
-  call(...args: unknown[]): void {
+  private call(err?: ErrorInfo | null, result?: T): void {
     for (const member of this.members) {
       if (member) {
         try {
-          member(...args);
+          member(err, result);
         } catch (e) {
           Logger.logAction(
             Logger.LOG_ERROR,
             'Multicaster multiple callback handler',
-            'Unexpected exception: ' + e + '; stack = ' + (e as Error).stack
+            'Unexpected exception: ' + e + '; stack = ' + (e as Error).stack,
           );
         }
       }
     }
   }
 
-  push(...args: Array<AnyFunction>): void {
+  push(...args: Array<StandardCallback<T>>): void {
     this.members.push(...args);
   }
 
-  static create(members?: Array<AnyFunction | undefined>): MulticasterInstance {
+  createPromise(): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.push((err, result) => {
+        err ? reject(err) : resolve(result!);
+      });
+    });
+  }
+
+  resolveAll(result: T) {
+    this.call(null, result);
+  }
+
+  rejectAll(err: ErrorInfo) {
+    this.call(err);
+  }
+
+  static create<T>(members?: Array<StandardCallback<T> | undefined>): MulticasterInstance<T> {
     const instance = new Multicaster(members);
-    return Object.assign((...args: unknown[]) => instance.call(...args), {
-      push: (fn: AnyFunction) => instance.push(fn),
+    return Object.assign((err?: ErrorInfo | null, result?: T) => instance.call(err, result), {
+      push: (fn: StandardCallback<T>) => instance.push(fn),
+      createPromise: () => instance.createPromise(),
+      resolveAll: (result: T) => instance.resolveAll(result),
+      rejectAll: (err: ErrorInfo) => instance.rejectAll(err),
     });
   }
 }

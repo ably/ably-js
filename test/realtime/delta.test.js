@@ -5,6 +5,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
   var displayError = helper.displayError;
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
+  var whenPromiseSettles = helper.whenPromiseSettles;
   var testData = [
     { foo: 'bar', count: 1, status: 'active' },
     { foo: 'bar', count: 2, status: 'active' },
@@ -50,7 +51,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
           }
@@ -58,8 +59,8 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           channel.on('attaching', function (stateChange) {
             done(
               new Error(
-                'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason)
-              )
+                'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason),
+              ),
             );
           });
 
@@ -78,7 +79,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            channel.publish(i.toString(), testData[i], cb);
+            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
@@ -99,9 +100,9 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName);
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
-            closeAndFinish(doner, realtime, err);
+            closeAndFinish(done, realtime, err);
           }
           channel.subscribe(function (message) {
             try {
@@ -118,7 +119,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            channel.publish(i.toString(), testData[i], cb);
+            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
@@ -139,7 +140,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
           }
@@ -165,7 +166,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
                   closeAndFinish(
                     done,
                     realtime,
-                    new Error('Check no further decode failures; reason =' + displayError(stateChange.reason))
+                    new Error('Check no further decode failures; reason =' + displayError(stateChange.reason)),
                   );
                 });
               });
@@ -181,7 +182,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            channel.publish(i.toString(), testData[i], cb);
+            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
@@ -207,7 +208,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
           }
@@ -232,7 +233,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            channel.publish(i.toString(), testData[i], cb);
+            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
@@ -248,7 +249,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         var realtime = helper.AblyRealtime();
         var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });
 
-        channel.attach(function (err) {
+        whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             closeAndFinish(done, realtime, err);
           }
@@ -262,7 +263,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
             closeAndFinish(done, realtime);
           });
           async.timesSeries(testData.length, function (i, cb) {
-            channel.publish(i.toString(), testData[i], cb);
+            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 

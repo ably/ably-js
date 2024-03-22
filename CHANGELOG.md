@@ -2,6 +2,92 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.0.0](https://github.com/ably/ably-js/tree/2.0.0) (2024-03-22)
+
+The 2.0.0 release introduces a number of new features and QoL improvements, including a new way to remove bloat and reduce the bundle size of your ably-js client, first-class support for Promises, a more idiomatic approach to using ably-js' React Hooks, enhancements to TypeScript typings, and more.
+
+Below is an overview of the major changes in this release.
+
+Please refer to the ably-js v2 [lib migration guide](./docs/migration-guides/v2/lib.md) and [React Hooks migration guide](./docs/migration-guides/v2/react-hooks.md) for the full details, including a list of all breaking changes and instructions on how to address them.
+
+### Bundle Size Reduction
+
+The default bundle size for the web has been reduced by ~32% compared to v1 - from 234.11 KiB to 159.32 KiB. When calculated with gzip compression, the reduction is ~30%, from 82.54 KiB to 57.9 KiB.
+
+Additionally, by utilizing the new modular variant of the library (see below) and JavaScript tree shaking, you can create your own minimal useful `Realtime` client and achieve a bundle size reduction of ~60.5% compared to v1 - from 234.11 KiB to 92.38 KiB (or ~66% for gzip: from 82.54 KiB to 28.18 KiB).
+
+### Modular variant of the library
+
+An ESM variant of the library is now available for browsers (but not for Node.js) via import from `ably/modular`. This modular variant of the library supports tree shaking, allowing for a reduction in the Ably bundle size within your application and improving the user experience. It can also be used by Web Workers.
+
+### React Hooks changes
+
+React Hooks, exported at `ably/react`, now require the new `ChannelProvider` component to define the channels you wish to use and the options for them. This addresses the complexities previously encountered with `useChannel` and `usePresence` hooks when attempting to dynamically change options for a channel and provides a more straightforward approach to set and manage these options.
+
+The functionality of the `usePresence` hook has been split into two separate hooks: `usePresence`, which is now used only to enter presence, and `usePresenceListener`, which is used to listen for presence updates. These new hooks offer better control over the desired presence behavior in your React components.
+
+### First-class support for Promises
+
+The callbacks API has been entirely removed, and the library now supports promises for all its asynchronous operations by default.
+
+### TypeScript typings
+
+The Types namespace has been removed. All types it contained are now exported at the top level.
+
+### Browser and Web Worker bundles
+
+- The browser bundle now relies on the native Web Crypto API instead of CryptoJS. The `ably/build/ably.noencryption` bundle has been removed, as it is no longer necessary.
+- The browser bundle can now be directly used by Web Workers. The `ably/build/ably-webworker` bundle has been removed, as it is no longer necessary.
+
+### Supported platforms changes
+
+- Support for Internet Explorer has been dropped.
+- Support for Node.js versions lower than 16 has been dropped. The supported Node.js versions are now 16, 18, and 20.
+- The minimum supported versions for major browsers are: Chrome 58, Firefox 52, Edge 79, Safari 11, and Opera 45.
+
+<details>
+<summary><b>View merged Pull Requests</b></summary>
+
+### Breaking Changes
+
+- Add `ChannelProvider` component to React Hooks [\#1620](https://github.com/ably/ably-js/pull/1620), [\#1654](https://github.com/ably/ably-js/pull/1654)
+- Add untyped stats API [\#1522](https://github.com/ably/ably-js/pull/1522)
+- Add type definitions for key returned by `generateRandomKey` [\#1320](https://github.com/ably/ably-js/pull/1320)
+- Add mandatory `version` param to `Rest.request` [\#1231](https://github.com/ably/ably-js/pull/1231)
+- Change `id` field to be named `ablyId` in React Hooks [\#1676](https://github.com/ably/ably-js/pull/1676)
+- Change `usePresence` hook to two different hooks: for entering presence and subscribing to presence updates [\#1674](https://github.com/ably/ably-js/pull/1674)
+- Change naming for enum-like namespaces in type declarations and change meaning for public `ChannelModes` type [\#1601](https://github.com/ably/ably-js/pull/1601)
+- Change publishing methods to accept a `Message`-shaped object [\#1515](https://github.com/ably/ably-js/pull/1515)
+- Change `Crypto.generateRandomKey` API to use Promises [\#1351](https://github.com/ably/ably-js/pull/1351)
+- Change `fromEncoded()` and `fromEncodedArray()` methods on `Message` and `PresenceMessage` to be async [\#1311](https://github.com/ably/ably-js/pull/1311)
+- Remove `XHRStreaming` transport support [\#1645](https://github.com/ably/ably-js/pull/1645)
+- Remove code that's supporting older platforms [\#1629](https://github.com/ably/ably-js/pull/1629), [\#1633](https://github.com/ably/ably-js/pull/1633), [\#1641](https://github.com/ably/ably-js/pull/1641)
+- Remove `recoveryKey` in favour of `createRecoveryKey()` on `Connection` [\#1613](https://github.com/ably/ably-js/pull/1613)
+- Remove `any` from `stats()` param type [\#1561](https://github.com/ably/ably-js/pull/1561)
+- Remove the dedicated Web Worker bundle `ably/build/ably-webworker` and add support for using `ably` and `ably/modular` in Web Workers [\#1550](https://github.com/ably/ably-js/pull/1550)
+- Remove false class exports in type declarations [\#1524](https://github.com/ably/ably-js/pull/1524)
+- Remove the `Types` namespace [\#1518](https://github.com/ably/ably-js/pull/1518)
+- Remove `noencryption` variant of the library [\#1500](https://github.com/ably/ably-js/pull/1500)
+- Remove public callbacks API [\#1358](https://github.com/ably/ably-js/pull/1358)
+- Remove CryptoJS library and replace it with the Web Crypto API in web bundle [\#1299](https://github.com/ably/ably-js/pull/1299), [\#1325](https://github.com/ably/ably-js/pull/1325), [\#1333](https://github.com/ably/ably-js/pull/1333)
+- Remove `ably-commonjs*.js` files [\#1229](https://github.com/ably/ably-js/pull/1229)
+- Remove deprecated APIs [\#1227](https://github.com/ably/ably-js/pull/1227)
+- Remove deprecated `fromEncoded*` type declarations [\#1222](https://github.com/ably/ably-js/pull/1222)
+- Remove deprecated `ClientOptions` parameters [\#1221](https://github.com/ably/ably-js/pull/1221)
+- Remove the `ClientOptions.log` property and replace it with separate `logLevel` and `logHandler` properties [\#1216](https://github.com/ably/ably-js/pull/1216)
+- Remove support for JSONP [\#1215](https://github.com/ably/ably-js/pull/1215)
+- Fix `whenState` inconsistent behavior in `Connection` and `RealtimeChannel` [\#1640](https://github.com/ably/ably-js/pull/1640)
+- Fix the type definition of `Crypto.getDefaultParams` [\#1352](https://github.com/ably/ably-js/pull/1352)
+
+### Features
+
+- Add `publish` function to the `useChannel` hook [\#1658](https://github.com/ably/ably-js/pull/1658)
+- Add logs to all HTTP activity [\#1581](https://github.com/ably/ably-js/pull/1581)
+
+</details>
+
+[Full Changelog](https://github.com/ably/ably-js/compare/1.2.50...2.0.0)
+
 ## [1.2.50](https://github.com/ably/ably-js/tree/1.2.50) (2024-03-21)
 
 - Add new logging API to `ClientOptions` and add a deprecation warning for the old one [\#1671](https://github.com/ably/ably-js/pull/1671)

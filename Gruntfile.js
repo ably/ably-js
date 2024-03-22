@@ -3,11 +3,12 @@
 var fs = require('fs');
 var path = require('path');
 var webpackConfig = require('./webpack.config');
+var esbuild = require('esbuild');
+var process = require('process');
+var MochaServer = require('./test/web_server');
+var esbuildConfig = require('./grunt/esbuild/build');
 
 module.exports = function (grunt) {
-  grunt.loadNpmTasks('grunt-contrib-concat');
-  grunt.loadNpmTasks('grunt-closure-tools');
-  grunt.loadNpmTasks('grunt-bump');
   grunt.loadNpmTasks('grunt-webpack');
 
   var dirs = {
@@ -16,72 +17,37 @@ module.exports = function (grunt) {
     fragments: 'src/platform/web/fragments',
     static: 'build',
     dest: 'build',
-    crypto_js: 'node_modules/crypto-js/src',
-    tools_compiler: __dirname + '/node_modules/google-closure-compiler/compiler.jar',
   };
 
-  function compilerSpec(src, dest) {
-    return {
-      src: src,
-      dest: dest || src.replace(/\.js/, '.min.js'),
-    };
+  async function execExternalPromises(cmd) {
+    grunt.log.ok('Executing ' + cmd);
+    return new Promise(function (resolve, reject) {
+      require('child_process').exec(cmd, function (err, stdout, stderr) {
+        if (err) {
+          grunt.fatal('Error executing "' + cmd + '":\nstderr:\n' + stderr + '\nstdout:\n' + stdout);
+          reject(err);
+        }
+        console.log(stdout);
+        stderr && console.error(stderr);
+        resolve();
+      });
+    });
   }
 
   function execExternal(cmd) {
     return function () {
       var done = this.async();
-      grunt.log.ok('Executing ' + cmd);
-      require('child_process').exec(cmd, function (err, stdout, stderr) {
-        if (err) {
-          grunt.fatal('Error executing "' + cmd + '": ' + stderr);
-        }
-        console.log(stdout);
-        stderr && console.error(stderr);
-        done();
-      });
+      execExternalPromises(cmd)
+        .then(() => done())
+        .catch((error) => done(error));
     };
   }
 
   var gruntConfig = {
     dirs: dirs,
-    pkgVersion: grunt.file.readJSON('package.json').version,
     webpack: {
       all: Object.values(webpackConfig),
-      node: [webpackConfig.node, webpackConfig.mochaJUnitReporterNode],
       browser: [webpackConfig.browser, webpackConfig.browserMin, webpackConfig.mochaJUnitReporterBrowser],
-    },
-  };
-
-  gruntConfig['closureCompiler'] = {
-    options: {
-      compilerFile: dirs.tools_compiler,
-      compilerOpts: {
-        compilation_level: 'SIMPLE_OPTIMIZATIONS',
-        /* By default, the compiler assumes you're using es6 and transpiles to
-         * es5, adding various (unnecessary and undesired) polyfills. Specify
-         * both in and out to es5 to avoid transpilation */
-        language_in: 'ECMASCRIPT5',
-        language_out: 'ECMASCRIPT5',
-        strict_mode_input: true,
-        checks_only: true,
-        warning_level: 'QUIET',
-      },
-    },
-    'ably.js': compilerSpec('<%= dirs.static %>/ably.js'),
-  };
-
-  gruntConfig.bump = {
-    options: {
-      files: ['package.json', 'README.md'],
-      globalReplace: true,
-      commit: true,
-      commitMessage: 'Regenerate and release version %VERSION%',
-      commitFiles: [], // Add files manually as can't add new files with a commit flag
-      createTag: true,
-      tagName: '%VERSION%',
-      tagMessage: 'Version %VERSION%',
-      push: false,
-      prereleaseName: 'beta',
     },
   };
 
@@ -107,24 +73,54 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all']);
+  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all', 'build:browser', 'build:node']);
 
-  grunt.registerTask('build:node', ['checkGitSubmodules', 'webpack:node']);
+  grunt.registerTask('all', ['build', 'requirejs']);
 
-  grunt.registerTask('build:browser', ['checkGitSubmodules', 'webpack:browser']);
+  grunt.registerTask('mocha:webserver', 'Run the Mocha web server', function () {
+    const done = this.async();
+    const server = new MochaServer();
+    server.listen();
 
-  grunt.registerTask('check-closure-compiler', ['build', 'closureCompiler:ably.js']);
+    process.on('SIGTERM', () => {
+      server.close();
+      done();
+    });
+    process.on('SIGINT', () => {
+      server.close();
+      done();
+    });
+  });
 
-  grunt.registerTask('all', ['build', 'check-closure-compiler', 'requirejs']);
+  grunt.registerTask('build:node', function () {
+    const done = this.async();
 
-  grunt.loadTasks('test/tasks');
+    esbuild
+      .build(esbuildConfig.nodeConfig)
+      .then(() => {
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
 
-  grunt.registerTask('test', ['test:node']);
-  grunt.registerTask(
-    'test:node',
-    'Build the library and run the node test suite\nOptions\n  --test [tests] e.g. --test test/rest/auth.js',
-    ['build:node', 'mocha']
-  );
+  grunt.registerTask('build:browser', function () {
+    var done = this.async();
+
+    Promise.all([
+      esbuild.build(esbuildConfig.webConfig),
+      esbuild.build(esbuildConfig.minifiedWebConfig),
+      esbuild.build(esbuildConfig.modularConfig),
+    ])
+      .then(() => {
+        console.log('esbuild succeeded');
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
 
   grunt.registerTask('test:webserver', 'Launch the Mocha test web server on http://localhost:3000/', [
     'build:browser',
@@ -132,58 +128,71 @@ module.exports = function (grunt) {
     'mocha:webserver',
   ]);
 
-  grunt.registerTask('release:refresh-pkgVersion', 'Refreshes GruntConfig.pkgVersion', function () {
-    grunt.config('pkgVersion', grunt.file.readJSON('package.json').version);
-    grunt.log.ok('pkgVersion updated');
-  });
+  (function () {
+    const baseDir = path.join(__dirname, 'test', 'package', 'browser');
+    const buildDir = path.join(baseDir, 'build');
 
-  grunt.registerTask('release:git-add-generated', 'Adds generated files to the git staging area', function () {
-    var done = this.async();
-    var generatedFiles = [
-      gruntConfig.dirs.common + '/lib/util/defaults.js',
-      gruntConfig.dirs.fragments + '/license.js',
-      'package.json',
-      'package-lock.json',
-      'README.md',
-      'test/support/browser_file_list.js',
-    ];
-    var cmd = 'git add -A ' + generatedFiles.join(' ');
-    grunt.log.ok('Executing ' + cmd);
+    grunt.registerTask(
+      'test:package:browser:prepare-project',
+      'Prepare an app to be used for testing the NPM package in a browser environment',
+      function () {
+        const done = this.async();
 
-    require('child_process').exec(cmd, function (err, stdout, stderr) {
-      if (err) {
-        grunt.fatal('git add . -A failed with ' + stderr);
-      }
-      done();
+        (async function () {
+          if (grunt.file.exists(buildDir)) {
+            grunt.file.delete(buildDir);
+          }
+
+          // Create an app based on the template
+          grunt.file.copy(path.join(baseDir, 'template'), buildDir);
+
+          // Use `npm pack` to generate a .tgz NPM package
+          await execExternalPromises('npm run build');
+          await execExternalPromises('npm pack --pack-destination test/package/browser/build');
+          const version = grunt.file.readJSON('package.json').version;
+          const packFileName = `ably-${version}.tgz`;
+
+          // Configure app to consume the generated .tgz file
+          const pwd = process.cwd();
+          process.chdir(buildDir);
+          await execExternalPromises(`npm install ${packFileName}`);
+
+          // Install further dependencies required for testing the app
+          await execExternalPromises('npm run test:install-deps');
+          process.chdir(pwd);
+        })()
+          .then(() => done(true))
+          .catch((error) => done(error));
+      },
+    );
+
+    grunt.registerTask('test:package:browser:test', 'Test the NPM package in a browser environment', function () {
+      const done = this.async();
+
+      (async function () {
+        grunt.task.requires('test:package:browser:prepare-project');
+
+        const pwd = process.cwd();
+        process.chdir(buildDir);
+
+        // Perform type checking on TypeScript code that imports ably-js
+        await execExternalPromises('npm run typecheck');
+
+        // Build bundle including ably-js
+        await execExternalPromises('npm run build');
+
+        // Test that the code which exercises ably-js behaves as expected
+        await execExternalPromises('npm run test');
+
+        process.chdir(pwd);
+      })()
+        .then(() => done(true))
+        .catch((error) => done(error));
     });
-  });
+  })();
 
-  grunt.registerTask('release:git-push', 'Pushes to git', execExternal('git push origin main --follow-tags'));
-
-  grunt.registerTask('release:ably-deploy', 'Deploys to ably CDN', function () {
-    var version = grunt.file.readJSON('package.json').version,
-      cmd = 'node scripts/cdn_deploy.js --skipCheckout --tag ' + version;
-    console.log('Publishing version ' + version + ' of the library to the CDN');
-    execExternal(cmd).call(this);
-  });
-
-  grunt.registerTask('release:deploy', 'Pushes a new release to github and then deploys to the Ably CDN', function () {
-    grunt.task.run(['release:git-push', 'release:ably-deploy']);
-  });
-
-  grunt.registerTask(
-    'release',
-    'Increments the version, regenerates, and makes a tagged commit. Run as "grunt release:type", where "type" is "major", "minor", "patch", "prepatch", etc.)',
-    function (versionType) {
-      grunt.task.run([
-        'bump-only:' + versionType,
-        'release:refresh-pkgVersion',
-        'all',
-        'release:git-add-generated',
-        'bump-commit',
-      ]);
-    }
-  );
+  grunt.registerTask('test:package:browser', ['test:package:browser:prepare-project', 'test:package:browser:test']);
+  grunt.registerTask('test:package', ['test:package:browser']);
 
   grunt.registerTask('default', 'all');
 };

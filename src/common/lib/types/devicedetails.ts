@@ -1,5 +1,6 @@
+import { MsgPack } from 'common/types/msgpack';
 import * as Utils from '../util/utils';
-import ErrorInfo from './errorinfo';
+import ErrorInfo, { IConvertibleToErrorInfo } from './errorinfo';
 
 enum DeviceFormFactor {
   Phone = 'phone',
@@ -70,17 +71,20 @@ class DeviceDetails {
     return result;
   }
 
-  static toRequestBody = Utils.encodeBody;
+  static toRequestBody(body: unknown, MsgPack: MsgPack | null, format?: Utils.Format) {
+    return Utils.encodeBody(body, MsgPack, format);
+  }
 
   static fromResponseBody(
     body: Array<Record<string, unknown>> | Record<string, unknown>,
-    format?: Utils.Format
+    MsgPack: MsgPack | null,
+    format?: Utils.Format,
   ): DeviceDetails | DeviceDetails[] {
     if (format) {
-      body = Utils.decodeBody(body, format);
+      body = Utils.decodeBody(body, MsgPack, format);
     }
 
-    if (Utils.isArray(body)) {
+    if (Array.isArray(body)) {
       return DeviceDetails.fromValuesArray(body);
     } else {
       return DeviceDetails.fromValues(body);
@@ -88,7 +92,7 @@ class DeviceDetails {
   }
 
   static fromValues(values: Record<string, unknown>): DeviceDetails {
-    values.error = values.error && ErrorInfo.fromValues(values.error as Error);
+    values.error = values.error && ErrorInfo.fromValues(values.error as IConvertibleToErrorInfo);
     return Object.assign(new DeviceDetails(), values);
   }
 

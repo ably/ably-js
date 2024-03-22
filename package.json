@@ -1,27 +1,33 @@
 {
   "name": "ably",
   "description": "Realtime client library for Ably, the realtime messaging service",
-  "version": "1.2.50",
+  "version": "2.0.0",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
-  "main": "./build/ably-node.js",
+  "exports": {
+    ".": {
+      "types": "./ably.d.ts",
+      "node": "./build/ably-node.js",
+      "react-native": "./build/ably-reactnative.js",
+      "default": "./build/ably.js"
+    },
+    "./modular": {
+      "types": "./modular.d.ts",
+      "import": "./build/modular/index.mjs"
+    },
+    "./react": {
+      "require": "./react/cjs/index.js",
+      "import": "./react/mjs/index.js"
+    }
+  },
   "typings": "./ably.d.ts",
-  "react-native": {
-    "./build/ably-node.js": "./build/ably-reactnative.js"
-  },
-  "browser": {
-    "./build/ably-node.js": "./build/ably-commonjs.js"
-  },
   "files": [
     "build/**",
     "ably.d.ts",
-    "callbacks.d.ts",
-    "callbacks.js",
-    "promises.d.ts",
-    "promises.js",
+    "modular.d.ts",
     "resources/**",
     "src/**",
     "react/**"
@@ -44,25 +50,28 @@
     }
   },
   "devDependencies": {
-    "@ably/vcdiff-decoder": "1.0.4",
+    "@ably/vcdiff-decoder": "1.0.6",
     "@arethetypeswrong/cli": "^0.13.1",
-    "@babel/preset-env": "^7.23.6",
+    "@babel/generator": "^7.23.6",
+    "@babel/parser": "^7.23.6",
+    "@babel/traverse": "^7.23.7",
     "@testing-library/react": "^13.3.0",
-    "@types/crypto-js": "^4.0.1",
+    "@types/cli-table": "^0.3.4",
     "@types/jmespath": "^0.15.2",
-    "@types/node": "^15.0.0",
+    "@types/node": "^18.0.0",
     "@types/request": "^2.48.7",
     "@types/ws": "^8.2.0",
-    "@typescript-eslint/eslint-plugin": "^5.14.0",
-    "@typescript-eslint/parser": "^5.14.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.6",
+    "@typescript-eslint/parser": "^5.59.6",
     "@vitejs/plugin-react": "^1.3.2",
     "async": "ably-forks/async#requirejs",
     "aws-sdk": "^2.1413.0",
-    "babel-loader": "^8.3.0",
     "chai": "^4.2.0",
-    "copy-webpack-plugin": "^6.4.1",
+    "cli-table": "^0.3.11",
     "cors": "^2.8.5",
-    "crypto-js": "ably-forks/crypto-js#crypto-lite",
+    "esbuild": "^0.18.10",
+    "esbuild-plugin-umd-wrapper": "ably-forks/esbuild-plugin-umd-wrapper#1.0.7-optional-amd-named-module",
+    "esbuild-runner": "^2.2.2",
     "eslint": "^7.13.0",
     "eslint-plugin-import": "^2.28.0",
     "eslint-plugin-jsdoc": "^40.0.0",
@@ -71,42 +80,39 @@
     "eslint-plugin-security": "^1.4.0",
     "express": "^4.17.1",
     "glob": "~4.4",
-    "google-closure-compiler": "^20180610.0.1",
     "grunt": "^1.6.1",
-    "grunt-bump": "^0.3.1",
     "grunt-cli": "~1.2.0",
-    "grunt-closure-tools": "^1.0.0",
-    "grunt-contrib-concat": "~0.5",
     "grunt-shell": "~1.1",
-    "grunt-webpack": "^4.0.2",
+    "grunt-webpack": "^5.0.0",
     "hexy": "~0.2",
     "jmespath": "^0.16.0",
     "jsdom": "^20.0.0",
-    "kexec": "ably-forks/node-kexec#update-for-node-12",
     "minimist": "^1.2.5",
     "mocha": "^8.1.3",
     "mocha-junit-reporter": "^2.2.1",
-    "null-loader": "^4.0.1",
+    "path-browserify": "^1.0.1",
     "playwright": "^1.39.0",
-    "prettier": "^2.5.1",
+    "prettier": "^2.8.8",
+    "process": "^0.11.10",
     "react": ">=18.1.0",
     "react-dom": ">=18.1.0",
     "requirejs": "~2.1",
     "shelljs": "~0.8",
     "source-map-explorer": "^2.5.2",
-    "ts-loader": "^8.2.0",
+    "source-map-support": "^0.5.21",
+    "stream-browserify": "^3.0.0",
+    "ts-loader": "^9.4.2",
     "tsconfig-paths-webpack-plugin": "^4.0.1",
     "tslib": "^2.3.1",
-    "typedoc": "^0.23.8",
-    "typescript": "^4.6.4",
+    "typedoc": "^0.24.7",
+    "typescript": "^4.9.5",
     "vite": "^4.4.9",
     "vitest": "^0.18.0",
-    "webpack": "^4.44.2",
-    "webpack-cli": "^4.2.0",
-    "webpack-node-externals": "^3.0.0"
+    "webpack": "^5.79.0",
+    "webpack-cli": "^5.0.1"
   },
   "engines": {
-    "node": ">=5.10.x"
+    "node": ">=16"
   },
   "repository": "ably/ably-js",
   "jspm": {
@@ -119,12 +125,13 @@
   "scripts": {
     "start:react": "npx vite serve",
     "grunt": "grunt",
-    "test": "grunt test",
-    "test:node": "grunt test:node",
-    "test:node:skip-build": "grunt mocha",
+    "test": "npm run test:node",
+    "test:node": "npm run build:node && mocha",
+    "test:node:skip-build": "mocha",
     "test:webserver": "grunt test:webserver",
     "test:playwright": "node test/support/runPlaywrightTests.js",
     "test:react": "vitest run",
+    "test:package": "grunt test:package",
     "concat": "grunt concat",
     "build": "grunt build:all && npm run build:react",
     "build:node": "grunt build:node",
@@ -135,12 +142,11 @@
     "requirejs": "grunt requirejs",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "check-closure-compiler": "grunt check-closure-compiler",
     "prepare": "npm run build",
-    "format": "prettier --write --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js docs/chrome-mv3.md",
-    "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts webpack.config.js Gruntfile.js scripts/cdn_deploy.js",
+    "format": "prettier --write --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modular.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/**/*.md grunt",
+    "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modular.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/**/*.md grunt",
     "sourcemap": "source-map-explorer build/ably.min.js",
-    "sourcemap:noencryption": "source-map-explorer build/ably.noencryption.min.js",
-    "docs": "typedoc --entryPoints ably.d.ts --out docs/generated/default --readme docs/landing-pages/default.md && typedoc --entryPoints promises.d.ts --out docs/generated/promises --name \"ably (Promise-based)\" --readme docs/landing-pages/promises.md && cp docs/landing-pages/choose-library.html docs/generated/index.html"
+    "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
+    "docs": "typedoc"
   }
 }
