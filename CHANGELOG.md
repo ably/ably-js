@@ -2,7 +2,7 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
-## [2.0.0](https://github.com/ably/ably-js/tree/2.0.0) (2024-03-21)
+## [2.0.0](https://github.com/ably/ably-js/tree/2.0.0) (2024-03-22)
 
 The 2.0.0 release introduces a number of new features and QoL improvements, including a new way to remove bloat and reduce the bundle size of your ably-js client, first-class support for Promises, a more idiomatic approach to using ably-js' React Hooks, enhancements to TypeScript typings, and more.
 
