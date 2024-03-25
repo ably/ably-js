@@ -303,5 +303,6 @@ define([
     testMessageEquality: testMessageEquality,
     closeActiveClients,
     logTestResults,
+    flushTestLogs: globals.flushLogs,
   });
 });
