@@ -12,5 +12,6 @@ define(['shared_helper'], function (helper) {
 
   afterEach(helper.closeActiveClients);
   afterEach(helper.logTestResults);
+  afterEach(helper.flushTestLogs);
   beforeEach(helper.clearTransportPreference);
 });
