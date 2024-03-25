@@ -91,6 +91,7 @@ const reactNativeConfig = {
     request: false,
     ws: false,
     'react-native': true,
+    fastestsmallesttextencoderdecoder: 'fastestsmallesttextencoderdecoder',
   },
   optimization: {
     minimize: false,

@@ -34,6 +34,7 @@
   ],
   "dependencies": {
     "@ably/msgpack-js": "^0.4.0",
+    "fastestsmallesttextencoderdecoder": "^1.0.22",
     "got": "^11.8.5",
     "ws": "^8.14.2"
   },

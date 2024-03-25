@@ -20,6 +20,9 @@ import PlatformDefaults from '../web/lib/util/defaults';
 import msgpack from '../web/lib/util/msgpack';
 import { defaultBundledRequestImplementations } from '../web/lib/http/request';
 
+// lightweight polyfill for TextEncoder/TextDecoder
+import 'fastestsmallesttextencoderdecoder';
+
 const Config = configFactory(BufferUtils);
 
 const Crypto = createCryptoClass(Config, BufferUtils);
