@@ -51,7 +51,7 @@ const nodeConfig = {
    * where the bun runtime has its own 'ws' module, and the npm 'ws' module
    * doesn't work at all.
    */
-  external: ['ws'],
+  external: ['ws', 'got'],
 };
 
 module.exports = {
