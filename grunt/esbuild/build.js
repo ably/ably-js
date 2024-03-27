@@ -43,6 +43,15 @@ const nodeConfig = {
   platform: 'node',
   entryPoints: ['src/platform/nodejs/index.ts'],
   outfile: 'build/ably-node.js',
+  /**
+   * externals are not bundled into the esbuild output, instead they are left
+   * as commonjs imports. This means that the version installed via package.json
+   * dependencies is used rather than being pinned to whatever version we built
+   * the package release with. This is especially important in the case of 'ws'
+   * where the bun runtime has its own 'ws' module, and the npm 'ws' module
+   * doesn't work at all.
+   */
+  external: ['ws'],
 };
 
 module.exports = {
