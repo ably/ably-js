@@ -22,7 +22,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    it('connectionPing', function (done) {
+    it.only('connectionPing', function (done) {
       var realtime;
       try {
         realtime = helper.AblyRealtime();

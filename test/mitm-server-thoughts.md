@@ -124,3 +124,26 @@ There's something coming called local redirect mode ([here](https://github.com/m
 For Node to work with mitmproxy certs: `NODE_EXTRA_CA_CERTS=~/.mitmproxy/mitmproxy-ca-cert.pem npm run test:node`
 
 I think I need to learn a bit of Python now?
+
+## Writing mitmproxy addon
+
+- install mitmproxy using pipx so that we can install websockets package
+- `pipx inject mitmproxy websockets`
+- run mitmproxy with `mitmdump --mode local:node -s test-proxy.py`
+- run Node tests with `NODE_EXTRA_CA_CERTS=~/.mitmproxy/mitmproxy-ca-cert.pem npm run test:node`
+- to connect to the control API for now, use `websocat ws://localhost:8001`
+
+
+JSON-RPC calls to implement:
+
+proxy to test suite:
+
+- `method`: `transformInterceptedMessage`
+- `params`: something like `{"id": "f72a3312-f899-4b4c-ab39-f5e90b915176", "content": "g6ZhY3Rpb24ErGNvbm5lY3Rpb25JZKpkeGtDLW10dEhYsWNvbm5lY3Rpb25EZXRhaWxziahjbGllbnRJZKEqrWNvbm5 lY3Rpb25LZXnZKmU3ZDJZd091Z0JhOVZWIWR4a0MtbXR0SFhBWE1KVzZnek1UNUYtNjgzYq5tYXhNZXNzYWdlU2l6Zc1AAK5tYXhJbmJvdW5kUmF0Zcz6r21heE91dGJvdW5kUmF0ZWSsbWF4RnJhb WVTaXplzgAEAACoc2VydmVySWTZPmZyb250ZW5kLjY3OTkuMS51cy1lYXN0LTEtQS5pLTBlY2RlYmVjMmNkMGJlOWExLmU3ZDJZd091Z0JhOVZWsmNvbm5lY3Rpb25TdGF0ZVR0bM4AAdTAr21heEl kbGVJbnRlcnZhbM06mA==", "from_client": false}`
+- `result`: the message content, which is either `null` (to drop) or the Base64-encoded content of the message to replace it with (which might just be the original message content)
+
+the way i think it’ll work is that the server will queue all subsequent messages (just in that direction? not sure) until the message has been transformed
+
+test suite to proxy:
+
+TODO (something to do with injecting a message)
