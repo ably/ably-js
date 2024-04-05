@@ -44,6 +44,8 @@ export default async function fetchRequest(
     timeout = setTimeout(
       () => {
         controller.abort();
+        // When AbortController.abort() is called, the fetch() promise rejects with a DOMException named AbortError (source: https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+        // However, we beat it in the Promise.race() by resolving our custom 'Request timed out' error on the next line, thereby exposing users to the better-formatted error.
         resolve({ error: new PartialErrorInfo('Request timed out', null, 408) });
       },
       client ? client.options.timeouts.httpRequestTimeout : Defaults.TIMEOUTS.httpRequestTimeout,
@@ -54,6 +56,7 @@ export default async function fetchRequest(
     method: _method,
     headers: fetchHeaders,
     body: body as any,
+    signal: controller.signal,
   };
 
   if (!Platform.Config.isWebworker) {
