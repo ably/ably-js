@@ -20,12 +20,11 @@
 5. Update the version number to the new version in `src/platform/react-hooks/src/AblyReactHooks.ts`
 6. Create a PR for the release branch
 7. Once the release PR is landed to the `main` branch, checkout the `main` branch locally (remember to pull the remote changes) and run `npm run build`
-8. Run `git tag <VERSION_NUMBER>` with the new version and push the tag to git
+8. Run `git tag <VERSION_NUMBER>` with the new version and push the tag to GitHub with `git push <REMOTE> <VERSION_NUMBER>` (usually `git push origin <VERSION_NUMBER>`)
 9. Run `npm publish .` (should require OTP) - publishes to NPM
 10. Run the GitHub action "Publish to CDN" with the new tag name
-11. Visit https://github.com/ably/ably-js/tags and add release notes to the release (generally you can just copy the notes you added to the CHANGELOG)
-12. For nontrivial releases: update the ably-js submodule ref in the realtime repo
-13. Update the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/)) with these changes (again, you can just copy the notes you added to the CHANGELOG)
+11. Visit https://github.com/ably/ably-js/tags and create a GitHub release based on the new tag (for release notes, you generally can just copy the notes you added to the CHANGELOG)
+12. Update the [Ably Changelog](https://changelog.ably.com/) (via [headwayapp](https://headwayapp.co/)) with these changes (again, you can just copy the notes you added to the CHANGELOG)
 
 ## Building the library
 
