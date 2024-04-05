@@ -50,5 +50,58 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       expect(currentFallback && currentFallback.host).to.equal(goodHost, 'Check good host set again');
       expect(currentFallback.validUntil > now, 'Check validUntil has been re-set').to.be.ok;
     });
+
+    // TO3l6
+    describe('Max elapsed time for host retries', function () {
+      it('can timeout after default host', async function () {
+        const httpRequestTimeout = 1000;
+        // set httpMaxRetryDuration lower than httpRequestTimeout so it would timeout after default host attempt
+        const httpMaxRetryDuration = Math.floor(httpRequestTimeout / 2);
+        const rest = helper.AblyRest({
+          restHost: helper.unroutableHost,
+          fallbackHosts: [helper.unroutableHost],
+          httpRequestTimeout,
+          httpMaxRetryDuration,
+        });
+
+        let thrownError = null;
+        try {
+          // we expect it to fail due to max elapsed time reached for host retries
+          await rest.time();
+        } catch (error) {
+          thrownError = error;
+        }
+
+        expect(thrownError).not.to.be.null;
+        expect(thrownError.message).to.equal(
+          `Timeout for trying fallback hosts retries. Total elapsed time exceeded the ${httpMaxRetryDuration}ms limit`,
+        );
+      });
+
+      it('can timeout after fallback host retries', async function () {
+        const httpRequestTimeout = 1000;
+        // set httpMaxRetryDuration higher than httpRequestTimeout and lower than 2*httpRequestTimeout so it would timeout after first fallback host retry attempt
+        const httpMaxRetryDuration = Math.floor(httpRequestTimeout * 1.5);
+        const rest = helper.AblyRest({
+          restHost: helper.unroutableHost,
+          fallbackHosts: [helper.unroutableHost, helper.unroutableHost],
+          httpRequestTimeout,
+          httpMaxRetryDuration,
+        });
+
+        let thrownError = null;
+        try {
+          // we expect it to fail due to max elapsed time reached for host retries
+          await rest.time();
+        } catch (error) {
+          thrownError = error;
+        }
+
+        expect(thrownError).not.to.be.null;
+        expect(thrownError.message).to.equal(
+          `Timeout for trying fallback hosts retries. Total elapsed time exceeded the ${httpMaxRetryDuration}ms limit`,
+        );
+      });
+    });
   });
 });

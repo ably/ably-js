@@ -238,6 +238,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           disconnectedRetryTimeout: 123,
           suspendedRetryTimeout: 456,
           httpRequestTimeout: 789,
+          httpMaxRetryDuration: 321,
         });
         /* Note: uses internal knowledge of connectionManager */
         try {
@@ -251,7 +252,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           );
           expect(realtime.connection.connectionManager.options.timeouts.httpRequestTimeout).to.equal(
             789,
-            'Verify suspended retry frequency is settable',
+            'Verify http request timeout is settable',
+          );
+          expect(realtime.connection.connectionManager.options.timeouts.httpMaxRetryDuration).to.equal(
+            321,
+            'Verify http max retry duration is settable',
           );
         } catch (err) {
           closeAndFinish(done, realtime, err);
