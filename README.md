@@ -515,6 +515,27 @@ This library currently does not support being the [target of a push notification
 Chrome extensions built with Manifest v3 require service workers instead of background pages.
 This is supported in Ably via the [Web Worker build](#supported-platforms), however [workarounds](docs/chrome-mv3.md) are required to ensure Chrome does not mark the service worker as inactive.
 
+#### Next.js with App Router and Turbopack
+
+If you are using ably-js in your Next.js project with App Router and Turbopack enabled (via running `next dev --turbo`), you may encounter `Failed to compile Module not found` compilation error referencing `./node_modules/keyv/src/index.js` file or see `Critical dependency: the request of a dependency is an expression` warnings for the same `keyv` module.
+
+To fix this, please add `ably` to the `serverComponentsExternalPackages` list in `next.config.js` (read more about this option [here](https://nextjs.org/docs/app/api-reference/next-config-js/serverComponentsExternalPackages)):
+
+```javascript
+const nextConfig = {
+  // ...
+  experimental: {
+    serverComponentsExternalPackages: ['ably'],
+  },
+};
+```
+
+The issue is coming from the fact that when using App Router specifically dependencies used inside Server Components and Route Handlers will automatically be bundled by Next.js. This causes issues with some packages, usually the ones that have complex `require` statements, for example, requiring some packages dynamically during runtime. `keyv` is one of those packages as it uses `require` statement dynamically when requiring its adapters (see [code in repo](https://github.com/jaredwray/keyv/blob/main/packages/keyv/src/index.ts#L102)):
+
+`keyv` ends up being one of `ably-js`'s upstream dependencies for node.js bundle, which causes the errors above when using it with Next.js App Router.
+
+Using `serverComponentsExternalPackages` opt-outs from using Next.js bundling for specific packages and uses native Node.js `require` instead.
+This is a common problem in App Router for a number of packages (for example, see next.js issue [vercel/next.js#52876](https://github.com/vercel/next.js/issues/52876)), and using `serverComponentsExternalPackages` is the recommended approach here.
 
 ## Contributing
 
