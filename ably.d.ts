@@ -107,6 +107,11 @@ export type ChannelEvent =
   | ChannelEvents.UPDATE;
 
 /**
+ * Describes the events emitted by a {@link ChannelGroup} object.
+ */
+export type ChannelGroupEvent = 'active.updated' | 'assigned.updated';
+
+/**
  * The `ConnectionStates` namespace describes the possible values of the {@link ConnectionState} type.
  */
 declare namespace ConnectionStates {
@@ -1490,6 +1495,12 @@ export type channelAndMessageCallback<T> = (channel: string, message: T) => void
  */
 export type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
 /**
+ * The callback used for the events emitted by {@link ChannelGroup}.
+ *
+ * @param channels - The set of channels.
+ */
+export type channelGroupCallback = (channels: string[]) => void;
+/**
  * The callback used for the events emitted by {@link Connection}.
  *
  * @param connectionStateChange - The state change that occurred.
@@ -2020,7 +2031,7 @@ export declare interface Channel {
  *
  * Enables messages to be subscribed to on a group of channels.
  */
-export declare interface ChannelGroup {
+export declare interface ChannelGroup extends EventEmitter<channelGroupCallback, string[], ChannelGroupEvent> {
   /**
    * Registers a listener for messages on this channel group. The caller supplies a listener function, which is called each time one or more messages arrives on the channels in the group.
    *
