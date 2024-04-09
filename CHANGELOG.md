@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.0.2](https://github.com/ably/ably-js/tree/2.0.2) (2024-04-08)
+
+- Fix an issue with realtime connections using the bun runtime [\#1716](https://github.com/ably/ably-js/pull/1716)
+
 ## [2.0.1](https://github.com/ably/ably-js/tree/2.0.1) (2024-03-25)
 
 - Fix `Unable to resolve "ably"` in React Native for ably-js v2.0.0 [\#1711](https://github.com/ably/ably-js/issues/1711)
