@@ -235,7 +235,7 @@ class ConsumerGroup extends EventEmitter {
   }
 }
 
-class ChannelGroup {
+class ChannelGroup extends EventEmitter {
   activeChannels: string[] = [];
   assignedChannels: string[] = [];
   active: RealtimeChannel;
@@ -246,6 +246,7 @@ class ChannelGroup {
   consumerGroup: ConsumerGroup;
 
   constructor(readonly channels: Channels, readonly filter: string, readonly options?: API.ChannelGroupOptions) {
+    super();
     this.subscriptions = new EventEmitter();
     this.active = channels.get(this.safeChannelName(options?.activeChannel || '$ably:active'));
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
@@ -266,6 +267,7 @@ class ChannelGroup {
     await this.active.setOptions({ params: { rewind: '1' } });
     await this.active.subscribe((msg: any) => {
       this.activeChannels = msg.data.active;
+      this.emit('active.updated', this.activeChannels);
       this.updateAssignedChannels();
     });
   }
@@ -275,6 +277,7 @@ class ChannelGroup {
     await this.active.detach();
     await this.consumerGroup.leave();
     this.assignedChannels = [];
+    this.emit('assigned.updated', this.assignedChannels);
     this.removeSubscriptions(Object.keys(this.subscribedChannels));
   }
 
@@ -310,6 +313,7 @@ class ChannelGroup {
       'ChannelGroups.updateAssignedChannels',
       'assignedChannels=' + this.assignedChannels + ' consumerId=' + this.consumerGroup.consumerId,
     );
+    this.emit('assigned.updated', this.assignedChannels);
   }
 
   private unsubscribeTimeout(channel: string) {
