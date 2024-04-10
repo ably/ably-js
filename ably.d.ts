@@ -109,7 +109,7 @@ export type ChannelEvent =
 /**
  * Describes the events emitted by a {@link ChannelGroup} object.
  */
-export type ChannelGroupEvent = 'active.updated' | 'assigned.updated';
+export type ChannelGroupEvent = 'active.updated' | 'assigned.updated' | 'membership.updated';
 
 /**
  * The `ConnectionStates` namespace describes the possible values of the {@link ConnectionState} type.
