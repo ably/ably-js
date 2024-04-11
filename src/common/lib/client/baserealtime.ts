@@ -210,7 +210,7 @@ class ConsumerGroup extends EventEmitter {
         this.locator.remove(member);
       });
 
-      this.emit('membership');
+      this.emit('membership', memberIds);
       Logger.logAction(
         Logger.LOG_MAJOR,
         'ConsumerGroup.computeMembership()',
@@ -250,7 +250,10 @@ class ChannelGroup extends EventEmitter {
     this.subscriptions = new EventEmitter();
     this.active = channels.get(this.safeChannelName(options?.activeChannel || '$ably:active'));
     this.consumerGroup = new ConsumerGroup(channels, options?.consumerGroup?.name);
-    this.consumerGroup.on('membership', () => this.updateAssignedChannels());
+    this.consumerGroup.on('membership', (memberIds: string[]) => {
+      this.emit('membership.updated', memberIds);
+      this.updateAssignedChannels();
+    });
     this.expression = new RegExp(filter); // eslint-disable-line security/detect-non-literal-regexp
   }
 
