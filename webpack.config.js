@@ -76,6 +76,7 @@ const reactNativeConfig = {
   output: {
     ...baseConfig.output,
     filename: 'ably-reactnative.js',
+    globalObject: 'global',
   },
   entry: {
     index: platformPath('react-native'),
