@@ -35,6 +35,24 @@ class BaseRealtime extends BaseClient {
   constructor(options?: ClientOptions | string) {
     super(Defaults.objectifyOptions(options, false, 'BaseRealtime'));
     Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
+
+    // currently we cannot support using Ably.Realtime instances in Vercel Edge runtime.
+    // this error can be removed after fixing https://github.com/ably/ably-js/issues/1731,
+    // and https://github.com/ably/ably-js/issues/1732
+    // @ts-ignore
+    if (typeof EdgeRuntime === 'string') {
+      throw new ErrorInfo(
+        `Ably.Realtime instance cannot be used in Vercel Edge runtime.` +
+          ` If you are running Vercel Edge functions, please replace your` +
+          ` "new Ably.Realtime()" with "new Ably.Rest()" and use Ably Rest API` +
+          ` instead of the Realtime API. If you are server-rendering your application` +
+          ` in the Vercel Edge runtime, please use the condition "if (typeof EdgeRuntime === 'string')"` +
+          ` to prevent instantiating Ably.Realtime instance during SSR in the Vercel Edge runtime.`,
+        40000,
+        400,
+      );
+    }
+
     this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromPlugins(this.options.plugins);
     this._RealtimePresence = this.options.plugins?.RealtimePresence ?? null;
     this.connection = new Connection(this, this.options);
