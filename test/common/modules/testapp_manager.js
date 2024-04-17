@@ -4,7 +4,8 @@
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
 define(['globals', 'ably'], function (ablyGlobals, ably) {
   var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
-    tlsPort = ablyGlobals.tlsPort;
+    port = ablyGlobals.tls ? ablyGlobals.tlsPort : ablyGlobals.port,
+    scheme = ablyGlobals.tls ? 'https' : 'http';
 
   var isBrowser = typeof window === 'object',
     isNativescript = typeof global === 'object' && global.isNativescript,
@@ -132,10 +133,10 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
       var postData = JSON.stringify(testData.post_apps);
       var postOptions = {
         host: restHost,
-        port: tlsPort,
+        port,
         path: '/apps',
         method: 'POST',
-        scheme: 'https',
+        scheme,
         headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'Content-Length': postData.length },
         body: postData,
       };
@@ -171,10 +172,10 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
 
     var postOptions = {
       host: restHost,
-      port: tlsPort,
+      port,
       path: '/stats',
       method: 'POST',
-      scheme: 'https',
+      scheme,
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -200,10 +201,10 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
 
     var delOptions = {
       host: restHost,
-      port: tlsPort,
+      port,
       method: 'DELETE',
       path: '/apps/' + app.appId,
-      scheme: 'https',
+      scheme,
       headers: { Authorization: 'Basic ' + authHeader },
     };
 
