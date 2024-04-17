@@ -1,18 +1,17 @@
-const playwright = require('playwright');
 const path = require('path');
 const MochaServer = require('../web_server');
 const fs = require('fs');
 const jUnitDirectoryPath = require('./junit_directory_path');
+const { openPlaywrightBrowser } = require('./playwrightHelpers');
 
 const port = process.env.PORT || 3000;
 const host = 'localhost';
-const playwrightBrowsers = ['chromium', 'firefox', 'webkit'];
 const mochaServer = new MochaServer(/* playwrightTest: */ true);
 
-const runTests = async (browserType) => {
+const runTests = async () => {
+  const { browserType, browser, page } = await openPlaywrightBrowser(true /* headless */);
+
   await mochaServer.listen();
-  const browser = await browserType.launch();
-  const page = await browser.newPage();
   await page.goto(`http://${host}:${port}`);
 
   console.log(`\nrunning tests in ${browserType.name()}`);
@@ -67,17 +66,7 @@ const runTests = async (browserType) => {
   let caughtError;
 
   try {
-    const browserEnv = process.env.PLAYWRIGHT_BROWSER;
-
-    if (!playwrightBrowsers.includes(browserEnv)) {
-      throw new Error(
-        `PLAYWRIGHT_BROWSER environment variable must be one of: ${playwrightBrowsers.join(
-          ', ',
-        )}. Currently: ${browserEnv}`,
-      );
-    }
-
-    await runTests(playwright[browserEnv]);
+    await runTests();
   } catch (error) {
     // save error for now, we must ensure we end mocha web server first.
     // if we end current process too early, mocha web server will be left running,
