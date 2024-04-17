@@ -23,6 +23,7 @@ type CompleteDefaults = IDefaults & {
     disconnectedRetryTimeout: number;
     suspendedRetryTimeout: number;
     httpRequestTimeout: number;
+    httpMaxRetryDuration: number;
     channelRetryTimeout: number;
     fallbackRetryTimeout: number;
     connectionStateTtl: number;
@@ -73,7 +74,8 @@ const Defaults = {
     disconnectedRetryTimeout: 15000,
     suspendedRetryTimeout: 30000,
     /* Undocumented, but part of the api and can be used by customers: */
-    httpRequestTimeout: 15000,
+    httpRequestTimeout: 10000,
+    httpMaxRetryDuration: 15000,
     channelRetryTimeout: 15000,
     fallbackRetryTimeout: 600000,
     /* For internal / test use only: */

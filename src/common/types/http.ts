@@ -192,10 +192,24 @@ export class Http {
         return this.doUri(method, uriFromHost(hosts[0]), headers, body, params);
       }
 
+      let tryAHostStartedAt: Date | null = null;
       const tryAHost = async (candidateHosts: Array<string>, persistOnSuccess?: boolean): Promise<RequestResult> => {
         const host = candidateHosts.shift();
+        tryAHostStartedAt = tryAHostStartedAt ?? new Date();
         const result = await this.doUri(method, uriFromHost(host as string), headers, body, params);
         if (result.error && this.platformHttp.shouldFallback(result.error as ErrnoException) && candidateHosts.length) {
+          // TO3l6
+          const elapsedTime = Date.now() - tryAHostStartedAt.getTime();
+          if (elapsedTime > client.options.timeouts.httpMaxRetryDuration) {
+            return {
+              error: new ErrorInfo(
+                `Timeout for trying fallback hosts retries. Total elapsed time exceeded the ${client.options.timeouts.httpMaxRetryDuration}ms limit`,
+                50003,
+                500,
+              ),
+            };
+          }
+
           return tryAHost(candidateHosts, true);
         }
         if (persistOnSuccess) {
