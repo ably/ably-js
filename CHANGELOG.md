@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.0.3](https://github.com/ably/ably-js/tree/2.0.3) (2024-04-18)
+
+- Improve error message displayed when trying to use `Ably.Realtime` instance in the Vercel Edge runtime [\#1736](https://github.com/ably/ably-js/pull/1736)
+- Fix to allow `ErrorInfo` export to be accessed as a named export in ESM and when using commonjs interop [\#1741](https://github.com/ably/ably-js/pull/1741)
+- Fix `ReferenceError: self is not defined` error when running Jest tests in React Native using ably-js [\#1738](https://github.com/ably/ably-js/pull/1738)
+- Fix `httpMaxRetryDuration` client option didn't actually limit max elapsed time for rest fallback host retries [\#1721](https://github.com/ably/ably-js/pull/1721)
+- Fix default value for `httpRequestTimeout` client option was wrongly 15 seconds instead of expected 10 seconds [\#1721](https://github.com/ably/ably-js/pull/1721)
+
 ## [2.0.2](https://github.com/ably/ably-js/tree/2.0.2) (2024-04-08)
 
 - Fix an issue with realtime connections using the bun runtime [\#1716](https://github.com/ably/ably-js/pull/1716)
