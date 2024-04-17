@@ -511,9 +511,18 @@ This library currently does not support being the [target of a push notification
 
 - ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.com/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
 
-#### Manifest v3 Chrome Extensions
-Chrome extensions built with Manifest v3 require service workers instead of background pages.
-This is supported in Ably via the [Web Worker build](#supported-platforms), however [workarounds](docs/chrome-mv3.md) are required to ensure Chrome does not mark the service worker as inactive.
+#### Chrome Extensions
+Ably supports Chrome extensions out-of-the-box since v2. However, extension service workers get improved support for
+WebSockets only starting with Chrome 116. Therefore, it is necessary to ensure that the extension runs only on Chrome
+versions supporting WebSockets in service workers by setting the minimum Chrome version to 116 in the manifest:
+
+```json
+{
+  ...
+  "minimum_chrome_version": "116",
+  ...
+}
+```
 
 #### Next.js with App Router and Turbopack
 
