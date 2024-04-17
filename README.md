@@ -512,9 +512,9 @@ This library currently does not support being the [target of a push notification
 - ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.com/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
 
 #### Chrome Extensions
-Ably supports Chrome extensions out-of-the-box since v2. However, extension service workers get improved support for
-WebSockets only starting with Chrome 116. Therefore, it is necessary to ensure that the extension runs only on Chrome
-versions supporting WebSockets in service workers by setting the minimum Chrome version to 116 in the manifest:
+ably-js works out-of-the-box in background scripts for Chrome extensions using manifest v2. However, since manifest v3 background pages are no longer supported so you will need to run ably-js inside a service worker.
+If you are using an ably-js realtime client in a service worker, note that in version of Chrome before 116 active WebSockets would not reset the 30s service worker idle timer which would result in the client being closed prematurely, however in versions 116 and above, service workers will stay active as long as a client is connected.
+You can ensure that your extension only runs in versions 116 and above by adding the following to your `manifest.json`:
 
 ```json
 {
