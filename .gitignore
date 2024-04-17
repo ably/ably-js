@@ -9,3 +9,6 @@ react/
 typedoc/generated/
 junit/
 test/support/mocha_junit_reporter/build/
+
+# Python stuff (for interception proxy)
+__pycache__
