@@ -11,3 +11,6 @@ junit/
 private-api-usage/
 private-api-usage-reports/
 test/support/mocha_junit_reporter/build/
+
+# Python stuff (for interception proxy)
+__pycache__
