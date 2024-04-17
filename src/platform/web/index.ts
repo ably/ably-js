@@ -45,7 +45,7 @@ if (Platform.Config.agent) {
   Platform.Defaults.agent += ' ' + Platform.Config.agent;
 }
 
-export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack, protocolMessageFromDeserialized };
+export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack, protocolMessageFromDeserialized, ErrorInfo };
 
 export default {
   ErrorInfo,
