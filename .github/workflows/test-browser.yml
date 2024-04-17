@@ -25,11 +25,69 @@ jobs:
         with:
           node-version: 20.x
       - run: npm ci
+
+      # Set up Python (for pipx)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
+
+      # Install pipx (for mitmproxy)
+      # See https://pipx.pypa.io/stable/installation/
+      - name: Install pipx
+        run: |
+          python3 -m pip install --user pipx
+          sudo pipx --global ensurepath
+
+      # https://docs.mitmproxy.org/stable/overview-installation/#installation-from-the-python-package-index-pypi
+      - name: Install mitmproxy
+        run: |
+          pipx install mitmproxy
+          # We use this library in our addon
+          pipx inject mitmproxy websockets
+
+      - name: Generate mitmproxy SSL certs
+        run: mitmdump -s test/mitmproxy_addon_generate_certs_and_exit.py
+
+      - name: Start interception proxy server
+        run: ./start-interception-proxy
+
       - name: Install Playwright browsers and dependencies
         run: npx playwright install --with-deps
-      - env:
+
+        # For certutil
+      - name: Install NSS tools
+        run: sudo apt install libnss3-tools
+
+      # This is for Chromium (see https://chromium.googlesource.com/chromium/src/+/master/docs/linux/cert_management.md)
+      # Note this is the same command that we use for adding it to the Firefox profile (see playwrightHelpers.js)
+      - name: Install mitmproxy root CA in NSS shared DB
+        run: |
+          mkdir -p ~/.pki/nssdb
+          certutil -A -d sql:$HOME/.pki/nssdb -t "C" -n "Mitmproxy Root Cert" -i ~/.mitmproxy/mitmproxy-ca-cert.pem
+          certutil -L -d sql:$HOME/.pki/nssdb
+
+      # This is for WebKit (I think because it uses OpenSSL)
+      - name: Install mitmproxy root CA in /usr/local/share/ca-certificates
+        run: |
+          sudo cp ~/.mitmproxy/mitmproxy-ca-cert.cer /usr/local/share/ca-certificates/mitmproxy-ca-cert.crt
+          sudo update-ca-certificates
+
+      - name: Run the tests
+        env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
         run: npm run test:playwright
+
+      - name: Save interception proxy server logs
+        if: always()
+        run: sudo journalctl -u ably-sdk-test-proxy.service > interception-proxy-logs.txt
+
+      - name: Upload interception proxy server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interception-proxy-logs-${{ matrix.browser }}
+          path: interception-proxy-logs.txt
+
       - name: Generate private API usage reports
         run: npm run process-private-api-data private-api-usage/*.json
       - name: Save private API usage data
