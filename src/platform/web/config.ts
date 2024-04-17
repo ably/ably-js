@@ -4,7 +4,13 @@ import * as Utils from 'common/lib/util/utils';
 // Workaround for salesforce lightning locker compat
 const globalObject = Utils.getGlobalObject();
 
-if (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined') {
+// @ts-ignore
+const isVercelEdgeRuntime = typeof EdgeRuntime === 'string';
+
+// We get false positive result here in the Vercel Edge runtime because it lacks the usual global browser objects, such as Window.
+// However, it is closer to the browser environment, so it intentionally uses browser bundles when importing packages.
+// Therefore, we do an additional check to avoid logging this incorrect warning for Vercel Edge runtime.
+if (typeof Window === 'undefined' && typeof WorkerGlobalScope === 'undefined' && !isVercelEdgeRuntime) {
   console.log(
     "Warning: this distribution of Ably is intended for browsers. On nodejs, please use the 'ably' package on npm",
   );
