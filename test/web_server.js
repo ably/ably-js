@@ -46,7 +46,7 @@ class MochaServer {
   }
 
   close() {
-    this.server.close();
+    this.server?.close();
   }
 }
 
