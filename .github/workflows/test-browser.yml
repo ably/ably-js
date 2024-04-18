@@ -25,6 +25,8 @@ jobs:
         with:
           node-version: 20.x
       - run: npm ci
+      - name: Install Playwright dependencies
+        run: npx playwright install-deps
       - name: Install Playwright browsers and dependencies
         run: npx playwright install --with-deps
       - env:
