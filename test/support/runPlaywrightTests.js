@@ -10,7 +10,7 @@ const playwrightBrowsers = ['chromium', 'firefox', 'webkit'];
 const mochaServer = new MochaServer(/* playwrightTest: */ true);
 
 const runTests = async (browserType) => {
-  mochaServer.listen();
+  await mochaServer.listen();
   const browser = await browserType.launch();
   const page = await browser.newPage();
   await page.goto(`http://${host}:${port}`);
