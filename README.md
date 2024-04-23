@@ -513,7 +513,7 @@ This library currently does not support being the [target of a push notification
 
 #### Chrome Extensions
 ably-js works out-of-the-box in background scripts for Chrome extensions using manifest v2. However, since manifest v3 background pages are no longer supported so you will need to run ably-js inside a service worker.
-If you are using an ably-js realtime client in a service worker, note that in version of Chrome before 116 active WebSockets would not reset the 30s service worker idle timer which would result in the client being closed prematurely, however in versions 116 and above, service workers will stay active as long as a client is connected.
+If you are using an ably-js realtime client in a service worker, note that in versions of Chrome before 116, active WebSockets would not reset the 30s service worker idle timer, resulting in the client being closed prematurely, however, in versions 116 and above, service workers will stay active as long as a client is connected.
 You can ensure that your extension only runs in versions 116 and above by adding the following to your `manifest.json`:
 
 ```json
