@@ -2190,7 +2190,7 @@ export declare interface Channels<T> {
    */
   getDerived(name: string, deriveOptions: DeriveOptions, channelOptions?: ChannelOptions): T;
   /**
-   * Releases a {@link Channel} or {@link RealtimeChannel} object, deleting it, and enabling it to be garbage collected. It also removes any listeners associated with the channel. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
+   * Releases a {@link Channel} or {@link RealtimeChannel} object, deleting it, and enabling it to be garbage collected. To release a channel, the {@link ChannelState} must be `INITIALIZED`, `DETACHED`, or `FAILED`.
    *
    * @param name - The channel name.
    */
