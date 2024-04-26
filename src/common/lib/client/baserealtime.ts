@@ -288,7 +288,9 @@ class ChannelGroup extends EventEmitter {
     await this.active.detach();
     await this.consumerGroup.leave();
     this.assignedChannels = [];
+    this.activeChannels = [];
     this.emit('assigned.updated', this.assignedChannels);
+    this.emit('active.updated', this.activeChannels);
     this.removeSubscriptions(Object.keys(this.subscribedChannels));
   }
 
