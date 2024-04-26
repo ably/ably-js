@@ -269,7 +269,15 @@ class ChannelGroup extends EventEmitter {
     await this.consumerGroup.join();
     await this.active.setOptions({ params: { rewind: '1' } });
     await this.active.subscribe((msg: any) => {
-      this.activeChannels = msg.data.active;
+      if (!msg.data || !msg.data.active || !Array.isArray(msg.data.active)) {
+        return;
+      }
+      const newActive = msg.data.active.filter((x: string) => this.expression.test(x));
+      newActive.sort();
+      if (Utils.arrEquals(newActive, this.activeChannels)) {
+        return;
+      }
+      this.activeChannels = newActive;
       this.emit('active.updated', this.activeChannels);
       this.updateAssignedChannels();
     });
@@ -296,9 +304,7 @@ class ChannelGroup extends EventEmitter {
         this.consumerGroup.consumerId,
     );
 
-    const matched = this.activeChannels
-      .filter((x) => this.expression.test(x))
-      .filter((x) => this.consumerGroup.assigned(x));
+    const matched = this.activeChannels.filter((channel) => this.consumerGroup.assigned(channel));
 
     const { add, remove } = diffSets(this.assignedChannels, matched);
     this.assignedChannels = matched;
