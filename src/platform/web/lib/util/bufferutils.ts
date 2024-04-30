@@ -74,7 +74,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
       const ascii = binary_string.charCodeAt(i);
       bytes[i] = ascii;
     }
-    return bytes.buffer;
+    return this.toArrayBuffer(bytes);
   }
 
   isBuffer(buffer: unknown): buffer is Bufferlike {
@@ -92,17 +92,26 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     }
 
     if (ArrayBuffer.isView(buffer)) {
-      return new Uint8Array(buffer.buffer);
+      return new Uint8Array(this.toArrayBuffer(buffer));
     }
 
     throw new Error('BufferUtils.toBuffer expected an ArrayBuffer or a view onto one');
   }
 
   toArrayBuffer(buffer: Bufferlike): ArrayBuffer {
+    if (!ArrayBuffer) {
+      throw new Error("Can't convert to ArrayBuffer: browser does not support the necessary types");
+    }
+
     if (buffer instanceof ArrayBuffer) {
       return buffer;
     }
-    return this.toBuffer(buffer).buffer;
+
+    if (ArrayBuffer.isView(buffer)) {
+      return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    }
+
+    throw new Error('BufferUtils.toArrayBuffer expected an ArrayBuffer or a view onto one');
   }
 
   base64Encode(buffer: Bufferlike): string {
@@ -118,11 +127,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   }
 
   hexEncode(buffer: Bufferlike): string {
-    const arrayBuffer =
-      buffer instanceof ArrayBuffer
-        ? buffer
-        : buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-    const uint8Array = new Uint8Array(arrayBuffer);
+    const uint8Array = this.toBuffer(buffer);
     return uint8Array.reduce((accum, byte) => accum + byte.toString(16).padStart(2, '0'), '');
   }
 
@@ -137,12 +142,13 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
       uint8Array[i] = parseInt(hexEncodedBytes.slice(2 * i, 2 * (i + 1)), 16);
     }
 
-    return uint8Array.buffer.slice(uint8Array.byteOffset, uint8Array.byteOffset + uint8Array.byteLength);
+    return this.toArrayBuffer(uint8Array);
   }
 
   utf8Encode(string: string): Output {
     if (Platform.Config.TextEncoder) {
-      return new Platform.Config.TextEncoder().encode(string).buffer;
+      const encodedByteArray = new Platform.Config.TextEncoder().encode(string);
+      return this.toArrayBuffer(encodedByteArray);
     } else {
       throw new Error('Expected TextEncoder to be configured');
     }
@@ -189,11 +195,12 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
 
   /* Returns ArrayBuffer on browser and Buffer on Node.js */
   arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView): ArrayBuffer {
-    return arrayBufferView.buffer;
+    return this.toArrayBuffer(arrayBufferView);
   }
 
   hmacSha256(message: Bufferlike, key: Bufferlike): Output {
-    return hmacSha256(this.toBuffer(key), this.toBuffer(message));
+    const hash = hmacSha256(this.toBuffer(key), this.toBuffer(message));
+    return this.toArrayBuffer(hash);
   }
 }
 
