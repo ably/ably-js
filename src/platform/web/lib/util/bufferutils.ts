@@ -15,7 +15,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   hexCharSet = '0123456789abcdef';
 
   // // https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
-  uint8ViewToBase64(bytes: Uint8Array) {
+  private uint8ViewToBase64(bytes: Uint8Array) {
     let base64 = '';
     const encodings = this.base64CharSet;
 
@@ -66,7 +66,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return base64;
   }
 
-  base64ToArrayBuffer(base64: string) {
+  private base64ToArrayBuffer(base64: string) {
     const binary_string = atob?.(base64) as string; // this will always be defined in browser so it's safe to cast
     const len = binary_string.length;
     const bytes = new Uint8Array(len);
