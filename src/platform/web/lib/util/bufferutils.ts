@@ -3,8 +3,7 @@ import IBufferUtils from 'common/types/IBufferUtils';
 import { hmac as hmacSha256 } from './hmac-sha256';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
- * The exception is toBuffer, which returns a Uint8Array (and won't work on
- * browsers too old to support it) */
+ * The exception is toBuffer, which returns a Uint8Array */
 
 export type Bufferlike = BufferSource;
 export type Output = Bufferlike;
@@ -14,7 +13,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   base64CharSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
   hexCharSet = '0123456789abcdef';
 
-  // // https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
+  // https://gist.githubusercontent.com/jonleighton/958841/raw/f200e30dfe95212c0165ccf1ae000ca51e9de803/gistfile1.js
   private uint8ViewToBase64(bytes: Uint8Array): string {
     let base64 = '';
     const encodings = this.base64CharSet;
@@ -81,7 +80,6 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return buffer instanceof ArrayBuffer || ArrayBuffer.isView(buffer);
   }
 
-  /* In browsers, returns a Uint8Array */
   toBuffer(buffer: Bufferlike): ToBufferOutput {
     if (!ArrayBuffer) {
       throw new Error("Can't convert to Buffer: browser does not support the necessary types");
@@ -193,7 +191,6 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return -1;
   }
 
-  /* Returns ArrayBuffer on browser and Buffer on Node.js */
   arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView): ArrayBuffer {
     return this.toArrayBuffer(arrayBufferView);
   }
