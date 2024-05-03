@@ -52,6 +52,8 @@ const nodeConfig = {
    * doesn't work at all.
    */
   external: ['ws', 'got'],
+  format: 'cjs',
+  plugins: [],
 };
 
 module.exports = {
