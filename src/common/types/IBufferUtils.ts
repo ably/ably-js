@@ -2,7 +2,9 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   base64CharSet: string;
   hexCharSet: string;
   isBuffer: (buffer: unknown) => buffer is Bufferlike;
-  // On browser this returns a Uint8Array, on node a Buffer
+  /**
+   * On browser this returns a Uint8Array, on node a Buffer
+   */
   toBuffer: (buffer: Bufferlike) => ToBufferOutput;
   toArrayBuffer: (buffer: Bufferlike) => ArrayBuffer;
   base64Encode: (buffer: Bufferlike) => string;
@@ -13,6 +15,9 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   utf8Decode: (buffer: Bufferlike) => string;
   areBuffersEqual: (buffer1: Bufferlike, buffer2: Bufferlike) => boolean;
   byteLength: (buffer: Bufferlike) => number;
+  /**
+   * Returns ArrayBuffer on browser and Buffer on Node.js
+   */
   arrayBufferViewToBuffer: (arrayBufferView: ArrayBufferView) => Bufferlike;
   hmacSha256(message: Bufferlike, key: Bufferlike): Output;
 }

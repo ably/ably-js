@@ -56,7 +56,7 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
   }
 
   arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView): Buffer {
-    return this.toBuffer(arrayBufferView.buffer);
+    return this.toBuffer(arrayBufferView);
   }
 
   utf8Decode(buffer: Bufferlike): string {
