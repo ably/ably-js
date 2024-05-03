@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.0.4](https://github.com/ably/ably-js/tree/2.0.4) (2024-05-03)
+
+- Fix invalid `accessToken` when using REST API Client in React Native [\#1730](https://github.com/ably/ably-js/issues/1730), [\#1749](https://github.com/ably/ably-js/issues/1749)
+- Fix docstring for `Channels.release` method [\#1752](https://github.com/ably/ably-js/pull/1752)
+
 ## [2.0.3](https://github.com/ably/ably-js/tree/2.0.3) (2024-04-18)
 
 - Improve error message displayed when trying to use `Ably.Realtime` instance in the Vercel Edge runtime [\#1736](https://github.com/ably/ably-js/pull/1736)
