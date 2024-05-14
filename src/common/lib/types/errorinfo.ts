@@ -26,6 +26,12 @@ export interface IConvertibleToErrorInfo {
   statusCode: number;
 }
 
+export interface IConvertibleToPartialErrorInfo {
+  message: string;
+  code: number | null;
+  statusCode?: number;
+}
+
 export default class ErrorInfo extends Error implements IPartialErrorInfo, API.ErrorInfo {
   code: number;
   statusCode: number;
@@ -77,5 +83,21 @@ export class PartialErrorInfo extends Error implements IPartialErrorInfo {
 
   toString(): string {
     return toString(this);
+  }
+
+  static fromValues(values: IConvertibleToPartialErrorInfo): PartialErrorInfo {
+    const { message, code, statusCode } = values;
+    if (
+      typeof message !== 'string' ||
+      (!Utils.isNil(code) && typeof code !== 'number') ||
+      (!Utils.isNil(statusCode) && typeof statusCode !== 'number')
+    ) {
+      throw new Error('PartialErrorInfo.fromValues(): invalid values: ' + Platform.Config.inspect(values));
+    }
+    const result = Object.assign(new PartialErrorInfo(message, code, statusCode), values);
+    if (result.code && !result.href) {
+      result.href = 'https://help.ably.io/error/' + result.code;
+    }
+    return result;
   }
 }
