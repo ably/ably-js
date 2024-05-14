@@ -184,7 +184,7 @@ class ConnectionManager extends EventEmitter {
   options: NormalisedClientOptions;
   states: Record<string, ConnectionState>;
   state: ConnectionState;
-  errorReason: IPartialErrorInfo | string | null;
+  errorReason: IPartialErrorInfo | null;
   queuedMessages: MessageQueue;
   msgSerial: number;
   connectionDetails?: Record<string, any>;
@@ -916,7 +916,15 @@ class ConnectionManager extends EventEmitter {
    *********************/
 
   getError(): IPartialErrorInfo | string {
-    return this.errorReason || this.getStateError();
+    if (this.errorReason) {
+      // create new PartialErrorInfo so it has the correct stack trace
+      // which points to the place which caused us to return this error.
+      const newError = PartialErrorInfo.fromValues(this.errorReason);
+      newError.cause = this.errorReason;
+      return newError;
+    }
+
+    return this.getStateError();
   }
 
   getStateError(): ErrorInfo {
