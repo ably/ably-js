@@ -64,6 +64,7 @@ const Http = class {
             body,
             XHRStates.REQ_SEND,
             (client && client.options.timeouts) ?? null,
+            this.logger,
             method,
           );
           req.once(
@@ -86,6 +87,7 @@ const Http = class {
       } else {
         this.checkConnectivity = async function () {
           Logger.logAction(
+            this.logger,
             Logger.LOG_MICRO,
             '(XHRRequest)Http.checkConnectivity()',
             'Sending; ' + connectivityCheckUrl,
@@ -106,7 +108,7 @@ const Http = class {
             result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
           }
 
-          Logger.logAction(Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
+          Logger.logAction(this.logger, Logger.LOG_MICRO, '(XHRRequest)Http.checkConnectivity()', 'Result: ' + result);
           return result;
         };
       }
@@ -116,10 +118,15 @@ const Http = class {
         return fetchRequestImplementation(method, client ?? null, uri, headers, params, body);
       };
       this.checkConnectivity = async function () {
-        Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Sending; ' + connectivityCheckUrl);
+        Logger.logAction(
+          this.logger,
+          Logger.LOG_MICRO,
+          '(Fetch)Http.checkConnectivity()',
+          'Sending; ' + connectivityCheckUrl,
+        );
         const requestResult = await this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null);
         const result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
-        Logger.logAction(Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
+        Logger.logAction(this.logger, Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
         return result;
       };
     } else {
@@ -130,6 +137,10 @@ const Http = class {
         return { error };
       };
     }
+  }
+
+  get logger(): Logger {
+    return this.client?.logger ?? Logger.defaultLogger;
   }
 
   async doUri(

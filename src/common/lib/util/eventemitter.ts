@@ -3,11 +3,12 @@ import Logger from './logger';
 import Platform from 'common/platform';
 
 /* Call the listener, catch any exceptions and log, but continue operation*/
-function callListener(eventThis: { event: string }, listener: Function, args: unknown[]) {
+function callListener(logger: Logger, eventThis: { event: string }, listener: Function, args: unknown[]) {
   try {
     listener.apply(eventThis, args);
   } catch (e) {
     Logger.logAction(
+      logger,
       Logger.LOG_ERROR,
       'EventEmitter.emit()',
       'Unexpected listener exception: ' + e + '; stack = ' + (e && (e as Error).stack),
@@ -58,7 +59,7 @@ class EventEmitter {
   anyOnce: Array<Function>;
   eventsOnce: Record<string, Array<Function>>;
 
-  constructor() {
+  constructor(readonly logger: Logger) {
     this.any = [];
     this.events = Object.create(null);
     this.anyOnce = [];
@@ -215,8 +216,8 @@ class EventEmitter {
       Array.prototype.push.apply(listeners, eventsListeners);
     }
 
-    listeners.forEach(function (listener) {
-      callListener(eventThis, listener, args);
+    listeners.forEach((listener) => {
+      callListener(this.logger, eventThis, listener, args);
     });
   }
 

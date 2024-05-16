@@ -48,9 +48,10 @@ type CompleteDefaults = IDefaults & {
     options: undefined | ClientOptions | string,
     allowKeyOrToken: boolean,
     sourceForErrorMessage: string,
+    logger: Logger,
     modularPluginsToInclude?: ModularPlugins,
   ): ClientOptions;
-  normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions;
+  normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null, logger: Logger | null): NormalisedClientOptions;
   defaultGetHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
   defaultPostHeaders(options: NormalisedClientOptions, headersOptions?: HeadersOptions): Record<string, string>;
 };
@@ -151,12 +152,13 @@ function checkHost(host: string): void {
   }
 }
 
-function getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string {
+function getRealtimeHost(options: ClientOptions, production: boolean, environment: string, logger: Logger): string {
   if (options.realtimeHost) return options.realtimeHost;
   /* prefer setting realtimeHost to restHost as a custom restHost typically indicates
    * a development environment is being used that can't be inferred by the library */
   if (options.restHost) {
     Logger.logAction(
+      logger,
       Logger.LOG_MINOR,
       'Defaults.normaliseOptions',
       'restHost is set to "' +
@@ -193,13 +195,14 @@ export function objectifyOptions(
   options: undefined | ClientOptions | string,
   allowKeyOrToken: boolean,
   sourceForErrorMessage: string,
+  logger: Logger,
   modularPluginsToInclude?: ModularPlugins,
 ): ClientOptions {
   if (options === undefined) {
     const msg = allowKeyOrToken
       ? `${sourceForErrorMessage} must be initialized with either a client options object, an Ably API key, or an Ably Token`
       : `${sourceForErrorMessage} must be initialized with a client options object`;
-    Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+    Logger.logAction(logger, Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
     throw new Error(msg);
   }
 
@@ -209,7 +212,7 @@ export function objectifyOptions(
     if (options.indexOf(':') == -1) {
       if (!allowKeyOrToken) {
         const msg = `${sourceForErrorMessage} cannot be initialized with just an Ably Token; you must provide a client options object with a \`plugins\` property. (Set this Ably Token as the object’s \`token\` property.)`;
-        Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+        Logger.logAction(logger, Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
         throw new Error(msg);
       }
 
@@ -217,7 +220,7 @@ export function objectifyOptions(
     } else {
       if (!allowKeyOrToken) {
         const msg = `${sourceForErrorMessage} cannot be initialized with just an Ably API key; you must provide a client options object with a \`plugins\` property. (Set this Ably API key as the object’s \`key\` property.)`;
-        Logger.logAction(Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
+        Logger.logAction(logger, Logger.LOG_ERROR, `${sourceForErrorMessage}()`, msg);
         throw new Error(msg);
       }
 
@@ -234,9 +237,16 @@ export function objectifyOptions(
   return optionsObj;
 }
 
-export function normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null): NormalisedClientOptions {
+export function normaliseOptions(
+  options: ClientOptions,
+  MsgPack: MsgPack | null,
+  logger: Logger | null, // should only be omitted by tests
+): NormalisedClientOptions {
+  const loggerToUse = logger ?? Logger.defaultLogger;
+
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
     Logger.logAction(
+      loggerToUse,
       Logger.LOG_ERROR,
       'Defaults.normaliseOptions',
       'closeOnUnload was true and a session recovery function was set - these are mutually exclusive, so unsetting the latter',
@@ -261,7 +271,7 @@ export function normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null
   }
 
   const restHost = options.restHost || (production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST);
-  const realtimeHost = getRealtimeHost(options, production, environment);
+  const realtimeHost = getRealtimeHost(options, production, environment, loggerToUse);
 
   (options.fallbackHosts || []).concat(restHost, realtimeHost).forEach(checkHost);
 
@@ -313,11 +323,11 @@ export function normaliseOptions(options: ClientOptions, MsgPack: MsgPack | null
   };
 }
 
-export function normaliseChannelOptions(Crypto: IUntypedCryptoStatic | null, options?: ChannelOptions) {
+export function normaliseChannelOptions(Crypto: IUntypedCryptoStatic | null, logger: Logger, options?: ChannelOptions) {
   const channelOptions = options || {};
   if (channelOptions.cipher) {
     if (!Crypto) Utils.throwMissingPluginError('Crypto');
-    const cipher = Crypto.getCipher(channelOptions.cipher);
+    const cipher = Crypto.getCipher(channelOptions.cipher, logger);
     channelOptions.cipher = cipher.cipherParams;
     channelOptions.channelCipher = cipher.cipher;
   } else if ('cipher' in channelOptions) {

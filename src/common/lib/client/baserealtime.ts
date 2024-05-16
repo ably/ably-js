@@ -33,8 +33,8 @@ class BaseRealtime extends BaseClient {
    * tell the compiler that these cases are possible so that it forces us to handle them.
    */
   constructor(options?: ClientOptions | string) {
-    super(Defaults.objectifyOptions(options, false, 'BaseRealtime'));
-    Logger.logAction(Logger.LOG_MINOR, 'Realtime()', '');
+    super(Defaults.objectifyOptions(options, false, 'BaseRealtime', Logger.defaultLogger));
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Realtime()', '');
 
     // currently we cannot support using Ably.Realtime instances in Vercel Edge runtime.
     // this error can be removed after fixing https://github.com/ably/ably-js/issues/1731,
@@ -78,12 +78,12 @@ class BaseRealtime extends BaseClient {
   }
 
   connect(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'Realtime.connect()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Realtime.connect()', '');
     this.connection.connect();
   }
 
   close(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'Realtime.close()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Realtime.close()', '');
     this.connection.close();
   }
 }
@@ -93,7 +93,7 @@ class Channels extends EventEmitter {
   all: Record<string, RealtimeChannel>;
 
   constructor(realtime: BaseRealtime) {
-    super();
+    super(realtime.logger);
     this.realtime = realtime;
     this.all = Object.create(null);
     realtime.connection.connectionManager.on('transport.active', () => {
@@ -125,6 +125,7 @@ class Channels extends EventEmitter {
     const channelName = msg.channel;
     if (channelName === undefined) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_ERROR,
         'Channels.processChannelMessage()',
         'received event unspecified channel, action = ' + msg.action,
@@ -134,6 +135,7 @@ class Channels extends EventEmitter {
     const channel = this.all[channelName];
     if (!channel) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_ERROR,
         'Channels.processChannelMessage()',
         'received event for non-existent channel: ' + channelName,

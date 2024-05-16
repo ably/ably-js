@@ -30,7 +30,7 @@ class XHRPollingTransport extends CometTransport {
     body: RequestBody | null,
     requestMode: number,
   ) {
-    return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts);
+    return XHRRequest.createRequest(uri, headers, params, body, requestMode, this.timeouts, this.logger);
   }
 }
 

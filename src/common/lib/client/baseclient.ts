@@ -44,26 +44,29 @@ class BaseClient {
   // Extra HTTP request implementations available to this client, in addition to those in web’s Http.bundledRequestImplementations
   readonly _additionalHTTPRequestImplementations: HTTPRequestImplementations | null;
   private readonly __FilteredSubscriptions: typeof FilteredSubscriptions | null;
+  readonly logger: Logger;
 
   constructor(options: ClientOptions) {
     this._additionalHTTPRequestImplementations = options.plugins ?? null;
 
-    Logger.setLog(options.logLevel, options.logHandler);
+    this.logger = new Logger();
+    this.logger.setLog(options.logLevel, options.logHandler);
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'BaseClient()',
       'initialized with clientOptions ' + Platform.Config.inspect(options),
     );
 
     this._MsgPack = options.plugins?.MsgPack ?? null;
-    const normalOptions = (this.options = Defaults.normaliseOptions(options, this._MsgPack));
+    const normalOptions = (this.options = Defaults.normaliseOptions(options, this._MsgPack, this.logger));
 
     /* process options */
     if (normalOptions.key) {
       const keyMatch = normalOptions.key.match(/^([^:\s]+):([^:.\s]+)$/);
       if (!keyMatch) {
         const msg = 'invalid key parameter';
-        Logger.logAction(Logger.LOG_ERROR, 'BaseClient()', msg);
+        Logger.logAction(this.logger, Logger.LOG_ERROR, 'BaseClient()', msg);
         throw new ErrorInfo(msg, 40400, 404);
       }
       normalOptions.keyName = keyMatch[1];
@@ -81,7 +84,7 @@ class BaseClient {
         );
     }
 
-    Logger.logAction(Logger.LOG_MINOR, 'BaseClient()', 'started; version = ' + Defaults.version);
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'BaseClient()', 'started; version = ' + Defaults.version);
 
     this._currentFallback = null;
 
@@ -150,7 +153,7 @@ class BaseClient {
   }
 
   setLog(logOptions: LoggerOptions): void {
-    Logger.setLog(logOptions.level, logOptions.handler);
+    this.logger.setLog(logOptions.level, logOptions.handler);
   }
 
   static Platform = Platform;

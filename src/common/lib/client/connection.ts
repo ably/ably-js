@@ -16,7 +16,7 @@ class Connection extends EventEmitter {
   errorReason: ErrorInfo | null;
 
   constructor(ably: BaseRealtime, options: NormalisedClientOptions) {
-    super();
+    super(ably.logger);
     this.ably = ably;
     this.connectionManager = new ConnectionManager(ably, options);
     this.state = this.connectionManager.state.state;
@@ -42,24 +42,24 @@ class Connection extends EventEmitter {
   }) as any;
 
   connect(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'Connection.connect()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Connection.connect()', '');
     this.connectionManager.requestState({ state: 'connecting' });
   }
 
   async ping(): Promise<number> {
-    Logger.logAction(Logger.LOG_MINOR, 'Connection.ping()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Connection.ping()', '');
     return new Promise((resolve, reject) => {
       this.connectionManager.ping(null, (err: unknown, result: number) => (err ? reject(err) : resolve(result)));
     });
   }
 
   close(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Connection.close()', 'connectionKey = ' + this.key);
     this.connectionManager.requestState({ state: 'closing' });
   }
 
   get recoveryKey(): string | null {
-    Logger.deprecationWarning(
+    this.logger.deprecationWarning(
       'The `Connection.recoveryKey` attribute has been replaced by the `Connection.createRecoveryKey()` method. Replace your usage of `recoveryKey` with the return value of `createRecoveryKey()`. `recoveryKey` will be removed in a future version.',
     );
     return this.createRecoveryKey();

@@ -7,6 +7,7 @@ import { MsgPack } from 'common/types/msgpack';
 import { DefaultPresenceMessage } from '../types/defaultpresencemessage';
 import { Http } from 'common/types/http';
 import Defaults from '../util/defaults';
+import Logger from '../util/logger';
 
 /**
  `DefaultRest` is the class that the non tree-shakable version of the SDK exports as `Rest`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
@@ -20,7 +21,7 @@ export class DefaultRest extends BaseRest {
     }
 
     super(
-      Defaults.objectifyOptions(options, true, 'Rest', {
+      Defaults.objectifyOptions(options, true, 'Rest', Logger.defaultLogger, {
         ...allCommonModularPlugins,
         Crypto: DefaultRest.Crypto ?? undefined,
         MsgPack: DefaultRest._MsgPack ?? undefined,

@@ -1,5 +1,6 @@
 import * as API from '../../../ably';
 import ICipher from './ICipher';
+import Logger from '../../common/lib/util/logger';
 
 export type IGetCipherParams<IV> = (API.CipherParams | API.CipherParamOptions) & { iv?: IV };
 export interface IGetCipherReturnValue<Cipher> {
@@ -11,6 +12,7 @@ export default interface ICryptoStatic<IV, InputPlaintext, OutputCiphertext, Inp
   extends API.Crypto {
   getCipher(
     params: IGetCipherParams<IV>,
+    logger: Logger,
   ): IGetCipherReturnValue<ICipher<InputPlaintext, OutputCiphertext, InputCiphertext, OutputPlaintext>>;
 }
 
@@ -19,5 +21,5 @@ export default interface ICryptoStatic<IV, InputPlaintext, OutputCiphertext, Inp
  can make Platform a generic type (see comment there).
  */
 export interface IUntypedCryptoStatic extends API.Crypto {
-  getCipher(params: any): any;
+  getCipher(params: any, logger: Logger): any;
 }

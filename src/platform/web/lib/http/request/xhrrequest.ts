@@ -69,9 +69,10 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     body: RequestBody | null,
     requestMode: number,
     timeouts: Record<string, number>,
+    logger: Logger,
     method?: HttpMethods,
   ) {
-    super();
+    super(logger);
     params = params || {};
     params.rnd = Utils.cheapRandStr();
     this.uri = uri + Utils.toQueryString(params);
@@ -93,6 +94,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     body: RequestBody | null,
     requestMode: number,
     timeouts: Record<string, number> | null,
+    logger: Logger,
     method?: HttpMethods,
   ): XHRRequest {
     /* XHR requests are used either with the context being a realtime
@@ -106,6 +108,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       body,
       requestMode,
       _timeouts,
+      logger,
       method,
     );
   }
@@ -177,7 +180,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
     ) => {
       let errorMessage = message + ' (event type: ' + errorEvent.type + ')';
       if (this?.xhr?.statusText) errorMessage += ', current statusText is ' + this.xhr.statusText;
-      Logger.logAction(Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
       this.complete(new PartialErrorInfo(errorMessage, code, statusCode));
     };
     xhr.onerror = function (errorEvent) {

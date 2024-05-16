@@ -91,13 +91,13 @@ class RealtimePresence extends EventEmitter {
   name?: string;
 
   constructor(channel: RealtimeChannel) {
-    super();
+    super(channel.logger);
     this.channel = channel;
     this.syncComplete = false;
     this.members = new PresenceMap(this, (item) => item.clientId + ':' + item.connectionId);
     // RTP17h: Store own members by clientId only.
     this._myMembers = new PresenceMap(this, (item) => item.clientId!);
-    this.subscriptions = new EventEmitter();
+    this.subscriptions = new EventEmitter(this.logger);
     this.pendingPresence = [];
   }
 
@@ -135,6 +135,7 @@ class RealtimePresence extends EventEmitter {
     }
 
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'RealtimePresence.' + action + 'Client()',
       'channel = ' + channel.name + ', id = ' + id + ', client = ' + (clientId || '(implicit) ' + getClientId(this)),
@@ -191,6 +192,7 @@ class RealtimePresence extends EventEmitter {
     }
 
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'RealtimePresence.leaveClient()',
       'leaving; channel = ' + this.channel.name + ', client = ' + clientId,
@@ -268,7 +270,7 @@ class RealtimePresence extends EventEmitter {
   }
 
   async history(params: RealtimeHistoryParams | null): Promise<PaginatedResult<PresenceMessage>> {
-    Logger.logAction(Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimePresence.history()', 'channel = ' + this.name);
     // We fetch this first so that any plugin-not-provided error takes priority over other errors
     const restMixin = this.channel.client.rest.presenceMixin;
 
@@ -290,6 +292,7 @@ class RealtimePresence extends EventEmitter {
 
   setPresence(presenceSet: PresenceMessage[], isSync: boolean, syncChannelSerial?: string): void {
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'RealtimePresence.setPresence()',
       'received presence for ' + presenceSet.length + ' participants; syncChannelSerial = ' + syncChannelSerial,
@@ -345,6 +348,7 @@ class RealtimePresence extends EventEmitter {
 
   onAttached(hasPresence?: boolean): void {
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'RealtimePresence.onAttached()',
       'channel = ' + this.channel.name + ', hasPresence = ' + hasPresence,
@@ -367,8 +371,9 @@ class RealtimePresence extends EventEmitter {
     if (pendingPresCount) {
       this.pendingPresence = [];
       const presenceArray = [];
-      const multicaster = Multicaster.create();
+      const multicaster = Multicaster.create(this.logger);
       Logger.logAction(
+        this.logger,
         Logger.LOG_MICRO,
         'RealtimePresence.onAttached',
         'sending ' + pendingPresCount + ' queued presence messages',
@@ -401,6 +406,7 @@ class RealtimePresence extends EventEmitter {
   failPendingPresence(err?: ErrorInfo | null): void {
     if (this.pendingPresence.length) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'RealtimeChannel.failPendingPresence',
         'channel; name = ' + this.channel.name + ', err = ' + Utils.inspectError(err),
@@ -424,7 +430,7 @@ class RealtimePresence extends EventEmitter {
         if (err) {
           const msg = 'Presence auto-re-enter failed: ' + err.toString();
           const wrappedErr = new ErrorInfo(msg, 91004, 400);
-          Logger.logAction(Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
+          Logger.logAction(this.logger, Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
           const change = new ChannelStateChange(this.channel.state, this.channel.state, true, false, wrappedErr);
           this.channel.emit('update', change);
         }
@@ -433,6 +439,7 @@ class RealtimePresence extends EventEmitter {
     for (const memberKey in myMembers.map) {
       const entry = myMembers.map[memberKey];
       Logger.logAction(
+        this.logger,
         Logger.LOG_MICRO,
         'RealtimePresence._ensureMyMembersPresent()',
         'Auto-reentering clientId "' + entry.clientId + '" into the presence set',
@@ -488,7 +495,7 @@ class PresenceMap extends EventEmitter {
   memberKey: (item: PresenceMessage) => string;
 
   constructor(presence: RealtimePresence, memberKey: (item: PresenceMessage) => string) {
-    super();
+    super(presence.logger);
     this.presence = presence;
     this.map = Object.create(null);
     this.syncInProgress = false;
@@ -580,6 +587,7 @@ class PresenceMap extends EventEmitter {
     const map = this.map,
       syncInProgress = this.syncInProgress;
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'PresenceMap.startSync()',
       'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
@@ -595,6 +603,7 @@ class PresenceMap extends EventEmitter {
     const map = this.map,
       syncInProgress = this.syncInProgress;
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'PresenceMap.endSync()',
       'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
@@ -625,6 +634,7 @@ class PresenceMap extends EventEmitter {
   waitSync(callback: () => void) {
     const syncInProgress = this.syncInProgress;
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'PresenceMap.waitSync()',
       'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
@@ -643,7 +653,7 @@ class PresenceMap extends EventEmitter {
   }
 
   setInProgress(inProgress: boolean) {
-    Logger.logAction(Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
     this.syncInProgress = inProgress;
     this.presence.syncComplete = !inProgress;
   }

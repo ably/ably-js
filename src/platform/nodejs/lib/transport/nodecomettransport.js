@@ -96,7 +96,7 @@ class NodeCometTransport extends CometTransport {
 
 class Request extends EventEmitter {
   constructor(uri, headers, params, body, requestMode, format, timeouts, transport) {
-    super();
+    super(transport.logger);
 
     if (typeof uri == 'string') uri = url.parse(uri);
     var tls = uri.protocol == 'https:';
@@ -199,7 +199,7 @@ class Request extends EventEmitter {
         chunk = JSON.parse(chunk);
       } catch (e) {
         var msg = 'Malformed response body from server: ' + e.message;
-        Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readStream()', msg);
+        Logger.logAction(self.logger, Logger.LOG_ERROR, 'NodeCometTransport.Request.readStream()', msg);
         self.complete(new PartialErrorInfo(msg, null, 400));
         return;
       }
@@ -256,7 +256,7 @@ class Request extends EventEmitter {
           body = JSON.parse(String(body));
         } catch (e) {
           var msg = 'Malformed response body from server: ' + e.message;
-          Logger.logAction(Logger.LOG_ERROR, 'NodeCometTransport.Request.readFully()', msg);
+          Logger.logAction(self.logger, Logger.LOG_ERROR, 'NodeCometTransport.Request.readFully()', msg);
           self.complete(new PartialErrorInfo(msg, null, 400));
           return;
         }
@@ -301,7 +301,7 @@ class Request extends EventEmitter {
   }
 
   abort() {
-    Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', '');
     var timer = this.timer;
     if (timer) {
       clearTimeout(timer);
@@ -309,7 +309,7 @@ class Request extends EventEmitter {
     }
     var req = this.req;
     if (req) {
-      Logger.logAction(Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', 'aborting request');
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'NodeCometTransport.Request.abort()', 'aborting request');
       req.removeListener('error', this.onReqError);
       req.on('error', noop);
       req.abort();

@@ -65,9 +65,13 @@ const getDefaultLoggers = (): [Function, Function] => {
 };
 
 class Logger {
-  private static logLevel: LogLevels = LogLevels.Error; // default logLevel
-  private static logHandler: Function;
-  private static logErrorHandler: Function;
+  private static defaultLogLevel: LogLevels = LogLevels.Error;
+  private static defaultLogHandler: Function;
+  private static defaultLogErrorHandler: Function;
+
+  private logLevel: LogLevels;
+  private logHandler: Function;
+  private logErrorHandler: Function;
 
   // public constants
   static readonly LOG_NONE: LogLevels = LogLevels.None;
@@ -76,17 +80,24 @@ class Logger {
   static readonly LOG_MINOR: LogLevels = LogLevels.Minor;
   static readonly LOG_MICRO: LogLevels = LogLevels.Micro;
   // aliases
-  static readonly LOG_DEFAULT: LogLevels = LogLevels.Error;
   static readonly LOG_DEBUG: LogLevels = LogLevels.Micro;
 
-  constructor() {
-    Logger.logLevel = Logger.LOG_DEFAULT;
-  }
+  /**
+   * This logger instance should only be used when there is no more appropriate logger to use, for example when implementing a public static method or function whose API doesn’t accept any logging configuration.
+   */
+  static defaultLogger: Logger;
 
   static initLogHandlers() {
     const [logHandler, logErrorHandler] = getDefaultLoggers();
-    this.logHandler = logHandler;
-    this.logErrorHandler = logErrorHandler;
+    this.defaultLogHandler = logHandler;
+    this.defaultLogErrorHandler = logErrorHandler;
+    this.defaultLogger = new Logger();
+  }
+
+  constructor() {
+    this.logLevel = Logger.defaultLogLevel;
+    this.logHandler = Logger.defaultLogHandler;
+    this.logErrorHandler = Logger.defaultLogErrorHandler;
   }
 
   /* public static functions */
@@ -95,50 +106,54 @@ class Logger {
    *
    * The aforementioned plugin expects `level` to be an expression of the form `Logger.LOG_*`; that is, you can’t dynamically specify the log level.
    */
-  static logAction = (level: LogLevels, action: string, message?: string) => {
-    this.logActionNoStrip(level, action, message);
+  static logAction = (logger: Logger, level: LogLevels, action: string, message?: string) => {
+    this.logActionNoStrip(logger, level, action, message);
   };
 
   /**
    * Calls to this method are never stripped by the `stripLogs` esbuild plugin. Use it for log statements that you wish to always be included in the modular variant of the SDK.
    */
-  static logActionNoStrip(level: LogLevels, action: string, message?: string) {
-    if (Logger.shouldLog(level)) {
-      (level === LogLevels.Error ? Logger.logErrorHandler : Logger.logHandler)('Ably: ' + action + ': ' + message);
+  static logActionNoStrip(logger: Logger, level: LogLevels, action: string, message?: string) {
+    logger.logAction(level, action, message);
+  }
+
+  private logAction(level: LogLevels, action: string, message?: string) {
+    if (this.shouldLog(level)) {
+      (level === LogLevels.Error ? this.logErrorHandler : this.logHandler)('Ably: ' + action + ': ' + message);
     }
   }
 
-  static deprecated = (description: string, msg: string) => {
-    Logger.deprecationWarning(`${description} is deprecated and will be removed in a future version. ${msg}`);
+  deprecated = (description: string, msg: string) => {
+    this.deprecationWarning(`${description} is deprecated and will be removed in a future version. ${msg}`);
   };
 
-  static renamedClientOption(oldName: string, newName: string) {
-    Logger.deprecationWarning(
+  renamedClientOption(oldName: string, newName: string) {
+    this.deprecationWarning(
       `The \`${oldName}\` client option has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`,
     );
   }
 
-  static renamedMethod(className: string, oldName: string, newName: string) {
-    Logger.deprecationWarning(
+  renamedMethod(className: string, oldName: string, newName: string) {
+    this.deprecationWarning(
       `\`${className}\`’s \`${oldName}\` method has been renamed to \`${newName}\`. Please update your code to use \`${newName}\` instead. \`${oldName}\` will be removed in a future version.`,
     );
   }
 
-  static deprecationWarning(message: string) {
-    if (Logger.shouldLog(LogLevels.Error)) {
-      Logger.logErrorHandler(`Ably: Deprecation warning - ${message}`);
+  deprecationWarning(message: string) {
+    if (this.shouldLog(LogLevels.Error)) {
+      this.logErrorHandler(`Ably: Deprecation warning - ${message}`);
     }
   }
 
   /* Where a logging operation is expensive, such as serialisation of data, use shouldLog will prevent
 	   the object being serialised if the log level will not output the message */
-  static shouldLog = (level: LogLevels) => {
-    return level <= Logger.logLevel;
+  shouldLog = (level: LogLevels) => {
+    return level <= this.logLevel;
   };
 
-  static setLog = (level: LogLevels | undefined, handler: Function | undefined) => {
-    if (level !== undefined) Logger.logLevel = level;
-    if (handler !== undefined) Logger.logHandler = Logger.logErrorHandler = handler;
+  setLog = (level: LogLevels | undefined, handler: Function | undefined) => {
+    if (level !== undefined) this.logLevel = level;
+    if (handler !== undefined) this.logHandler = this.logErrorHandler = handler;
   };
 }
 

@@ -211,7 +211,7 @@ class ConnectionManager extends EventEmitter {
   connectCounter: number;
 
   constructor(realtime: BaseRealtime, options: NormalisedClientOptions) {
-    super();
+    super(realtime.logger);
     this.realtime = realtime;
     this.initTransports();
     this.options = options;
@@ -273,7 +273,7 @@ class ConnectionManager extends EventEmitter {
     this.state = this.states.initialized;
     this.errorReason = null;
 
-    this.queuedMessages = new MessageQueue();
+    this.queuedMessages = new MessageQueue(this.logger);
     this.msgSerial = 0;
     this.connectionDetails = undefined;
     this.connectionId = undefined;
@@ -306,22 +306,29 @@ class ConnectionManager extends EventEmitter {
     this.webSocketGiveUpTimer = null;
     this.abandonedWebSocket = false;
 
-    Logger.logAction(Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Realtime.ConnectionManager()', 'started');
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'Realtime.ConnectionManager()',
       'requested transports = [' + (options.transports || Defaults.defaultTransports) + ']',
     );
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'Realtime.ConnectionManager()',
       'available transports = [' + this.transports + ']',
     );
-    Logger.logAction(Logger.LOG_MICRO, 'Realtime.ConnectionManager()', 'http hosts = [' + this.httpHosts + ']');
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MICRO,
+      'Realtime.ConnectionManager()',
+      'http hosts = [' + this.httpHosts + ']',
+    );
 
     if (!this.transports.length) {
       const msg = 'no requested transports available';
-      Logger.logAction(Logger.LOG_ERROR, 'realtime.ConnectionManager()', msg);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, 'realtime.ConnectionManager()', msg);
       throw new Error(msg);
     }
 
@@ -335,6 +342,7 @@ class ConnectionManager extends EventEmitter {
       if (options.closeOnUnload === true) {
         addEventListener('beforeunload', () => {
           Logger.logAction(
+            this.logger,
             Logger.LOG_MAJOR,
             'Realtime.ConnectionManager()',
             'beforeunload event has triggered the connection to close as closeOnUnload is true',
@@ -347,6 +355,7 @@ class ConnectionManager extends EventEmitter {
       addEventListener('online', () => {
         if (this.state == this.states.disconnected || this.state == this.states.suspended) {
           Logger.logAction(
+            this.logger,
             Logger.LOG_MINOR,
             'ConnectionManager caught browser ‘online’ event',
             'reattempting connection',
@@ -364,6 +373,7 @@ class ConnectionManager extends EventEmitter {
       addEventListener('offline', () => {
         if (this.state == this.states.connected) {
           Logger.logAction(
+            this.logger,
             Logger.LOG_MINOR,
             'ConnectionManager caught browser ‘offline’ event',
             'disconnecting active transport',
@@ -424,6 +434,7 @@ class ConnectionManager extends EventEmitter {
         sessionRecoveryName = this.sessionRecoveryName();
       if (lastSessionData && typeof recoverFn === 'function') {
         Logger.logAction(
+          this.logger,
           Logger.LOG_MINOR,
           'ConnectionManager.getTransportParams()',
           'Calling clientOptions-provided recover function with last session data (recovery scope: ' +
@@ -447,6 +458,7 @@ class ConnectionManager extends EventEmitter {
       const transportParams = this.createTransportParams(null, mode);
       if (mode === 'recover') {
         Logger.logAction(
+          this.logger,
           Logger.LOG_MINOR,
           'ConnectionManager.getTransportParams()',
           'Transport recovery mode = recover; recoveryKey = ' + this.options.recover,
@@ -457,6 +469,7 @@ class ConnectionManager extends EventEmitter {
         }
       } else {
         Logger.logAction(
+          this.logger,
           Logger.LOG_MINOR,
           'ConnectionManager.getTransportParams()',
           'Transport params = ' + transportParams.toString(),
@@ -473,7 +486,7 @@ class ConnectionManager extends EventEmitter {
    * @param callback
    */
   tryATransport(transportParams: TransportParams, candidate: TransportName, callback: Function): void {
-    Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.tryATransport()', 'trying ' + candidate);
 
     this.proposedTransport = Transport.tryConnect(
       this.supportedTransports[candidate]!,
@@ -485,6 +498,7 @@ class ConnectionManager extends EventEmitter {
         if (state == this.states.closing || state == this.states.closed || state == this.states.failed) {
           if (transport) {
             Logger.logAction(
+              this.logger,
               Logger.LOG_MINOR,
               'ConnectionManager.tryATransport()',
               'connection ' + state.state + ' while we were attempting the transport; closing ' + transport,
@@ -497,6 +511,7 @@ class ConnectionManager extends EventEmitter {
 
         if (wrappedErr) {
           Logger.logAction(
+            this.logger,
             Logger.LOG_MINOR,
             'ConnectionManager.tryATransport()',
             'transport ' + candidate + ' ' + wrappedErr.event + ', err: ' + wrappedErr.error.toString(),
@@ -536,6 +551,7 @@ class ConnectionManager extends EventEmitter {
         }
 
         Logger.logAction(
+          this.logger,
           Logger.LOG_MICRO,
           'ConnectionManager.tryATransport()',
           'viable transport ' + candidate + '; setting pending',
@@ -555,6 +571,7 @@ class ConnectionManager extends EventEmitter {
   setTransportPending(transport: Transport, transportParams: TransportParams): void {
     const mode = transportParams.mode;
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'ConnectionManager.setTransportPending()',
       'transport = ' + transport + '; mode = ' + mode,
@@ -598,15 +615,26 @@ class ConnectionManager extends EventEmitter {
     connectionId: string,
     connectionDetails: Record<string, any>,
   ): boolean {
-    Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.activateTransport()', 'transport = ' + transport);
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MINOR,
+      'ConnectionManager.activateTransport()',
+      'transport = ' + transport,
+    );
     if (error) {
-      Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'error = ' + error);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', 'error = ' + error);
     }
     if (connectionId) {
-      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.activateTransport()', 'connectionId =  ' + connectionId);
+      Logger.logAction(
+        this.logger,
+        Logger.LOG_MICRO,
+        'ConnectionManager.activateTransport()',
+        'connectionId =  ' + connectionId,
+      );
     }
     if (connectionDetails) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MICRO,
         'ConnectionManager.activateTransport()',
         'connectionDetails =  ' + JSON.stringify(connectionDetails),
@@ -620,6 +648,7 @@ class ConnectionManager extends EventEmitter {
     const existingState = this.state,
       connectedState = this.states.connected.state;
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'ConnectionManager.activateTransport()',
       'current state = ' + existingState.state,
@@ -630,6 +659,7 @@ class ConnectionManager extends EventEmitter {
       existingState.state == this.states.failed.state
     ) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'ConnectionManager.activateTransport()',
         'Disconnecting transport and abandoning',
@@ -643,6 +673,7 @@ class ConnectionManager extends EventEmitter {
     /* if the transport is not connected then don't activate it */
     if (!transport.isConnected) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'ConnectionManager.activateTransport()',
         'Declining to activate transport ' + transport + ' since it appears to no longer be connected',
@@ -701,6 +732,7 @@ class ConnectionManager extends EventEmitter {
          * from other active transports when upgrading, and upgrading waits for
          * the old transport to be idle. So log an error. */
         Logger.logAction(
+          this.logger,
           Logger.LOG_ERROR,
           'ConnectionManager.activateTransport()',
           'Previous active protocol (for transport ' +
@@ -718,7 +750,7 @@ class ConnectionManager extends EventEmitter {
           transport.shortName +
           '; stack = ' +
           new Error().stack;
-        Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
+        Logger.logAction(this.logger, Logger.LOG_ERROR, 'ConnectionManager.activateTransport()', msg);
       } else {
         existingActiveProtocol.finish();
       }
@@ -738,8 +770,14 @@ class ConnectionManager extends EventEmitter {
       wasPending = transport === this.pendingTransport,
       noTransportsScheduledForActivation = this.noTransportsScheduledForActivation();
 
-    Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.deactivateTransport()', 'transport = ' + transport);
     Logger.logAction(
+      this.logger,
+      Logger.LOG_MINOR,
+      'ConnectionManager.deactivateTransport()',
+      'transport = ' + transport,
+    );
+    Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'ConnectionManager.deactivateTransport()',
       'state = ' +
@@ -748,10 +786,16 @@ class ConnectionManager extends EventEmitter {
         (noTransportsScheduledForActivation ? '' : '; another transport is scheduled for activation'),
     );
     if (error && error.message)
-      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.deactivateTransport()', 'reason =  ' + error.message);
+      Logger.logAction(
+        this.logger,
+        Logger.LOG_MICRO,
+        'ConnectionManager.deactivateTransport()',
+        'reason =  ' + error.message,
+      );
 
     if (wasActive) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MICRO,
         'ConnectionManager.deactivateTransport()',
         'Getting, clearing, and requeuing ' +
@@ -823,7 +867,7 @@ class ConnectionManager extends EventEmitter {
       connIdChanged = prevConnId && prevConnId !== connectionId,
       recoverFailure = !prevConnId && hasConnectionError;
     if (connIdChanged || recoverFailure) {
-      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.setConnection()', 'Resetting msgSerial');
       this.msgSerial = 0;
       // RTN19a2: In the event of a new connectionId, previous msgSerials are
       // meaningless.
@@ -831,6 +875,7 @@ class ConnectionManager extends EventEmitter {
     }
     if (this.connectionId !== connectionId) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'ConnectionManager.setConnection()',
         'New connectionId; reattaching any attached channels',
@@ -868,6 +913,7 @@ class ConnectionManager extends EventEmitter {
     const sinceLast = Date.now() - this.lastActivity;
     if (sinceLast > this.connectionStateTtl + (this.maxIdleInterval as number)) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'ConnectionManager.checkConnectionStateFreshness()',
         'Last known activity from realtime was ' + sinceLast + 'ms ago; discarding connection state',
@@ -931,11 +977,12 @@ class ConnectionManager extends EventEmitter {
     const action = 'Connection state';
     const message = stateChange.current + (stateChange.reason ? '; reason: ' + stateChange.reason : '');
     if (stateChange.current === 'failed') {
-      Logger.logAction(Logger.LOG_ERROR, action, message);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, action, message);
     } else {
-      Logger.logAction(Logger.LOG_MAJOR, action, message);
+      Logger.logAction(this.logger, Logger.LOG_MAJOR, action, message);
     }
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'ConnectionManager.enactStateChange',
       'setting new state: ' +
@@ -964,13 +1011,19 @@ class ConnectionManager extends EventEmitter {
 
   startTransitionTimer(transitionState: ConnectionState): void {
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'ConnectionManager.startTransitionTimer()',
       'transitionState: ' + transitionState.state,
     );
 
     if (this.transitionTimer) {
-      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startTransitionTimer()', 'clearing already-running timer');
+      Logger.logAction(
+        this.logger,
+        Logger.LOG_MINOR,
+        'ConnectionManager.startTransitionTimer()',
+        'clearing already-running timer',
+      );
       clearTimeout(this.transitionTimer as number);
     }
 
@@ -978,6 +1031,7 @@ class ConnectionManager extends EventEmitter {
       if (this.transitionTimer) {
         this.transitionTimer = null;
         Logger.logAction(
+          this.logger,
           Logger.LOG_MINOR,
           'ConnectionManager ' + transitionState.state + ' timer expired',
           'requesting new state: ' + transitionState.failState,
@@ -988,7 +1042,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   cancelTransitionTimer(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.cancelTransitionTimer()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.cancelTransitionTimer()', '');
     if (this.transitionTimer) {
       clearTimeout(this.transitionTimer as number);
       this.transitionTimer = null;
@@ -1001,6 +1055,7 @@ class ConnectionManager extends EventEmitter {
       if (this.suspendTimer) {
         this.suspendTimer = null;
         Logger.logAction(
+          this.logger,
           Logger.LOG_MINOR,
           'ConnectionManager suspend timer expired',
           'requesting new state: suspended',
@@ -1025,7 +1080,7 @@ class ConnectionManager extends EventEmitter {
 
   startRetryTimer(interval: number): void {
     this.retryTimer = setTimeout(() => {
-      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager retry timer expired', 'retrying');
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager retry timer expired', 'retrying');
       this.retryTimer = null;
       this.requestState({ state: 'connecting' });
     }, interval);
@@ -1040,11 +1095,17 @@ class ConnectionManager extends EventEmitter {
 
   startWebSocketSlowTimer() {
     this.webSocketSlowTimer = setTimeout(() => {
-      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager WebSocket slow timer', 'checking connectivity');
+      Logger.logAction(
+        this.logger,
+        Logger.LOG_MINOR,
+        'ConnectionManager WebSocket slow timer',
+        'checking connectivity',
+      );
       if (this.wsCheckResult === null) {
         this.checkWsConnectivity()
           .then(() => {
             Logger.logAction(
+              this.logger,
               Logger.LOG_MINOR,
               'ConnectionManager WebSocket slow timer',
               'ws connectivity check succeeded',
@@ -1053,6 +1114,7 @@ class ConnectionManager extends EventEmitter {
           })
           .catch(() => {
             Logger.logAction(
+              this.logger,
               Logger.LOG_MAJOR,
               'ConnectionManager WebSocket slow timer',
               'ws connectivity check failed',
@@ -1064,6 +1126,7 @@ class ConnectionManager extends EventEmitter {
         Utils.whenPromiseSettles(this.realtime.http.checkConnectivity(), (err, connectivity) => {
           if (err || !connectivity) {
             Logger.logAction(
+              this.logger,
               Logger.LOG_MAJOR,
               'ConnectionManager WebSocket slow timer',
               'http connectivity check failed',
@@ -1075,6 +1138,7 @@ class ConnectionManager extends EventEmitter {
             });
           } else {
             Logger.logAction(
+              this.logger,
               Logger.LOG_MINOR,
               'ConnectionManager WebSocket slow timer',
               'http connectivity check succeeded',
@@ -1096,6 +1160,7 @@ class ConnectionManager extends EventEmitter {
     this.webSocketGiveUpTimer = setTimeout(() => {
       if (!this.wsCheckResult) {
         Logger.logAction(
+          this.logger,
           Logger.LOG_MINOR,
           'ConnectionManager WebSocket give up timer',
           'websocket connection took more than 10s; ' + (this.baseTransport ? 'trying base transport' : ''),
@@ -1108,6 +1173,7 @@ class ConnectionManager extends EventEmitter {
         } else {
           // if we don't have a base transport to fallback to, just let the websocket connection attempt time out
           Logger.logAction(
+            this.logger,
             Logger.LOG_MAJOR,
             'ConnectionManager WebSocket give up timer',
             'websocket connectivity appears to be unavailable but no other transports to try',
@@ -1145,6 +1211,7 @@ class ConnectionManager extends EventEmitter {
           !(this.errorReason && Auth.isTokenErr(this.errorReason as ErrorInfo))));
 
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'ConnectionManager.notifyState()',
       'new state: ' + state + (retryImmediately ? '; will retry connection immediately' : ''),
@@ -1193,6 +1260,7 @@ class ConnectionManager extends EventEmitter {
       const sinceLast = this.lastAutoReconnectAttempt && Date.now() - this.lastAutoReconnectAttempt + 1;
       if (sinceLast && sinceLast < 1000) {
         Logger.logAction(
+          this.logger,
           Logger.LOG_MICRO,
           'ConnectionManager.notifyState()',
           'Last reconnect attempt was only ' +
@@ -1221,6 +1289,7 @@ class ConnectionManager extends EventEmitter {
 
     if (state == 'connected' && !this.activeProtocol) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_ERROR,
         'ConnectionManager.notifyState()',
         'Broken invariant: attempted to go into connected state, but there is no active protocol',
@@ -1240,6 +1309,7 @@ class ConnectionManager extends EventEmitter {
   requestState(request: any): void {
     const state = request.state;
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'ConnectionManager.requestState()',
       'requested state: ' + state + '; current state: ' + this.state.state,
@@ -1281,6 +1351,7 @@ class ConnectionManager extends EventEmitter {
   startConnect(): void {
     if (this.state !== this.states.connecting) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'ConnectionManager.startConnect()',
         'Must be in connecting state to connect, but was ' + this.state.state,
@@ -1315,7 +1386,7 @@ class ConnectionManager extends EventEmitter {
       });
     };
 
-    Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.startConnect()', 'starting connection');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.startConnect()', 'starting connection');
     this.startSuspendTimer();
     this.startTransitionTimer(this.states.connecting);
 
@@ -1364,6 +1435,8 @@ class ConnectionManager extends EventEmitter {
        * for upgrading). Any operation can put us into 'disconnected' to cancel
        * connection attempts and wait before retrying, or 'failed' to fail. */
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_MINOR,
         'ConnectionManager.connectImpl()',
         'Must be in connecting state to connect, but was ' + state,
@@ -1382,6 +1455,8 @@ class ConnectionManager extends EventEmitter {
           this.unpersistTransportPreference();
           if (this.state === this.states.connecting) {
             Logger.logAction(
+              this.logger,
+
               Logger.LOG_MINOR,
               'ConnectionManager.connectImpl():',
               'web socket connectivity available, cancelling connection attempt with ' + this.baseTransport,
@@ -1417,7 +1492,7 @@ class ConnectionManager extends EventEmitter {
    *   with the transport and fallback to base transport.
    */
   connectWs(transportParams: TransportParams, connectCount: number) {
-    Logger.logAction(Logger.LOG_DEBUG, 'ConnectionManager.connectWs()');
+    Logger.logAction(this.logger, Logger.LOG_DEBUG, 'ConnectionManager.connectWs()');
     this.startWebSocketSlowTimer();
     this.startWebSocketGiveUpTimer(transportParams);
 
@@ -1427,7 +1502,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   connectBase(transportParams: TransportParams, connectCount: number) {
-    Logger.logAction(Logger.LOG_DEBUG, 'ConnectionManager.connectBase()');
+    Logger.logAction(this.logger, Logger.LOG_DEBUG, 'ConnectionManager.connectBase()');
     if (this.baseTransport) {
       this.tryTransportWithFallbacks(this.baseTransport, transportParams, false, connectCount, () => true);
     } else {
@@ -1445,7 +1520,13 @@ class ConnectionManager extends EventEmitter {
     connectCount: number,
     shouldContinue: () => boolean,
   ): void {
-    Logger.logAction(Logger.LOG_DEBUG, 'ConnectionManager.tryTransportWithFallbacks()', transportName);
+    Logger.logAction(
+      this.logger,
+
+      Logger.LOG_DEBUG,
+      'ConnectionManager.tryTransportWithFallbacks()',
+      transportName,
+    );
     const giveUp = (err: IPartialErrorInfo) => {
       this.notifyState({ state: this.states.connecting.failState as string, error: err });
     };
@@ -1527,12 +1608,14 @@ class ConnectionManager extends EventEmitter {
   }
 
   closeImpl(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.closeImpl()', 'closing connection');
     this.cancelSuspendTimer();
     this.startTransitionTimer(this.states.closing);
 
     if (this.pendingTransport) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_MICRO,
         'ConnectionManager.closeImpl()',
         'Closing pending transport: ' + this.pendingTransport,
@@ -1542,6 +1625,8 @@ class ConnectionManager extends EventEmitter {
 
     if (this.activeProtocol) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_MICRO,
         'ConnectionManager.closeImpl()',
         'Closing active transport: ' + this.activeProtocol.getTransport(),
@@ -1558,6 +1643,8 @@ class ConnectionManager extends EventEmitter {
     switch (this.state.state) {
       case 'connected': {
         Logger.logAction(
+          this.logger,
+
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
           'Sending AUTH message on active transport',
@@ -1598,6 +1685,8 @@ class ConnectionManager extends EventEmitter {
 
       case 'connecting':
         Logger.logAction(
+          this.logger,
+
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
           'Aborting current connection attempts in order to start again with the new auth details',
@@ -1607,6 +1696,8 @@ class ConnectionManager extends EventEmitter {
 
       default: {
         Logger.logAction(
+          this.logger,
+
           Logger.LOG_MICRO,
           'ConnectionManager.onAuthUpdated()',
           'Connection state is ' + this.state.state + '; waiting until either connected or failed',
@@ -1641,13 +1732,21 @@ class ConnectionManager extends EventEmitter {
   }
 
   disconnectAllTransports(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.disconnectAllTransports()', 'Disconnecting all transports');
+    Logger.logAction(
+      this.logger,
+
+      Logger.LOG_MINOR,
+      'ConnectionManager.disconnectAllTransports()',
+      'Disconnecting all transports',
+    );
 
     /* This will prevent any connection procedure in an async part of one of its early stages from continuing */
     this.connectCounter++;
 
     if (this.pendingTransport) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
         'Disconnecting pending transport: ' + this.pendingTransport,
@@ -1658,6 +1757,8 @@ class ConnectionManager extends EventEmitter {
 
     if (this.proposedTransport) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
         'Disconnecting proposed transport: ' + this.pendingTransport,
@@ -1668,6 +1769,8 @@ class ConnectionManager extends EventEmitter {
 
     if (this.activeProtocol) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_MICRO,
         'ConnectionManager.disconnectAllTransports()',
         'Disconnecting active transport: ' + this.activeProtocol.getTransport(),
@@ -1687,19 +1790,21 @@ class ConnectionManager extends EventEmitter {
     const state = this.state;
 
     if (state.sendEvents) {
-      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
+      Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.send()', 'sending event');
       this.sendImpl(new PendingMessage(msg, callback));
       return;
     }
     const shouldQueue = queueEvent && state.queueEvents;
     if (!shouldQueue) {
       const err = 'rejecting event, queueEvent was ' + queueEvent + ', state was ' + state.state;
-      Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.send()', err);
+      Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.send()', err);
       callback(this.errorReason || new ErrorInfo(err, 90000, 400));
       return;
     }
-    if (Logger.shouldLog(Logger.LOG_MICRO)) {
+    if (this.logger.shouldLog(Logger.LOG_MICRO)) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_MICRO,
         'ConnectionManager.send()',
         'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence),
@@ -1719,6 +1824,8 @@ class ConnectionManager extends EventEmitter {
       (this.activeProtocol as Protocol).send(pendingMessage);
     } catch (e) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_ERROR,
         'ConnectionManager.sendImpl()',
         'Unexpected exception in transport.send(): ' + (e as Error).stack,
@@ -1727,7 +1834,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   queue(msg: ProtocolMessage, callback: ErrCallback): void {
-    Logger.logAction(Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.queue()', 'queueing event');
     const lastQueued = this.queuedMessages.last();
     const maxSize = this.options.maxMessageSize;
     /* If have already attempted to send a message, don't merge more messages
@@ -1735,7 +1842,7 @@ class ConnectionManager extends EventEmitter {
      * the dup, they'll be lost */
     if (lastQueued && !lastQueued.sendAttempted && bundleWith(lastQueued.message, msg, maxSize)) {
       if (!lastQueued.merged) {
-        lastQueued.callback = Multicaster.create([lastQueued.callback]);
+        lastQueued.callback = Multicaster.create(this.logger, [lastQueued.callback]);
         lastQueued.merged = true;
       }
       (lastQueued.callback as MulticasterInstance<void>).push(callback);
@@ -1746,6 +1853,8 @@ class ConnectionManager extends EventEmitter {
 
   sendQueuedMessages(): void {
     Logger.logAction(
+      this.logger,
+
       Logger.LOG_MICRO,
       'ConnectionManager.sendQueuedMessages()',
       'sending ' + this.queuedMessages.count() + ' queued messages',
@@ -1757,6 +1866,8 @@ class ConnectionManager extends EventEmitter {
   queuePendingMessages(pendingMessages: Array<PendingMessage>): void {
     if (pendingMessages && pendingMessages.length) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_MICRO,
         'ConnectionManager.queuePendingMessages()',
         'queueing ' + pendingMessages.length + ' pending messages',
@@ -1769,6 +1880,8 @@ class ConnectionManager extends EventEmitter {
     const numQueued = this.queuedMessages.count();
     if (numQueued > 0) {
       Logger.logAction(
+        this.logger,
+
         Logger.LOG_ERROR,
         'ConnectionManager.failQueuedMessages()',
         'failing ' + numQueued + ' queued messages, err = ' + Utils.inspectError(err),
@@ -1793,6 +1906,8 @@ class ConnectionManager extends EventEmitter {
       this.processChannelMessage(pendingChannelMessage.message)
         .catch((err) => {
           Logger.logAction(
+            this.logger,
+
             Logger.LOG_ERROR,
             'ConnectionManager.processNextPendingChannelMessage() received error ',
             err,
@@ -1812,7 +1927,7 @@ class ConnectionManager extends EventEmitter {
   ping(transport: Transport | null, callback: Function): void {
     /* if transport is specified, try that */
     if (transport) {
-      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
 
       const onTimeout = function () {
         transport.off('heartbeat', onHeartbeat);
@@ -1905,11 +2020,11 @@ class ConnectionManager extends EventEmitter {
       this.notifyState({ state: 'failed', error: err });
     } else if (err.statusCode === HttpStatusCodes.Forbidden) {
       const msg = 'Client configured authentication provider returned 403; failing the connection';
-      Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, 'ConnectionManager.actOnErrorFromAuthorize()', msg);
       this.notifyState({ state: 'failed', error: new ErrorInfo(msg, 80019, 403, err) });
     } else {
       const msg = 'Client configured authentication provider request failed';
-      Logger.logAction(Logger.LOG_MINOR, 'ConnectionManager.actOnErrorFromAuthorize', msg);
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.actOnErrorFromAuthorize', msg);
       this.notifyState({ state: this.state.failState as string, error: new ErrorInfo(msg, 80019, 401, err) });
     }
   }
@@ -1926,7 +2041,7 @@ class ConnectionManager extends EventEmitter {
     if (clientId) {
       const err = this.realtime.auth._uncheckedSetClientId(clientId);
       if (err) {
-        Logger.logAction(Logger.LOG_ERROR, 'ConnectionManager.onConnectionDetailsUpdate()', err.message);
+        Logger.logAction(this.logger, Logger.LOG_ERROR, 'ConnectionManager.onConnectionDetailsUpdate()', err.message);
         /* Errors setting the clientId are fatal to the connection */
         transport.fail(err);
         return;

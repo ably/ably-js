@@ -6,8 +6,8 @@ import { PendingMessage } from './protocol';
 class MessageQueue extends EventEmitter {
   messages: Array<PendingMessage>;
 
-  constructor() {
-    super();
+  constructor(logger: Logger) {
+    super(logger);
     this.messages = [];
   }
 
@@ -40,7 +40,12 @@ class MessageQueue extends EventEmitter {
   }
 
   completeMessages(serial: number, count: number, err?: ErrorInfo | null): void {
-    Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.completeMessages()', 'serial = ' + serial + '; count = ' + count);
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MICRO,
+      'MessageQueue.completeMessages()',
+      'serial = ' + serial + '; count = ' + count,
+    );
     err = err || null;
     const messages = this.messages;
     if (messages.length === 0) {
@@ -71,7 +76,12 @@ class MessageQueue extends EventEmitter {
   }
 
   clear(): void {
-    Logger.logAction(Logger.LOG_MICRO, 'MessageQueue.clear()', 'clearing ' + this.messages.length + ' messages');
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MICRO,
+      'MessageQueue.clear()',
+      'clearing ' + this.messages.length + ' messages',
+    );
     this.messages = [];
     this.emit('idle');
   }
