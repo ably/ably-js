@@ -1,5 +1,4 @@
 import * as Utils from '../util/utils';
-import Logger, { LoggerOptions } from '../util/logger';
 import Defaults from '../util/defaults';
 import Push from './push';
 import PaginatedResource, { HttpPaginatedResponse, PaginatedResult } from './paginatedresource';
@@ -235,10 +234,6 @@ export class Rest {
     return (
       response.unpacked ? response.body : Utils.decodeBody(response.body, this.client._MsgPack, format)
     ) as TokenRevocationResult;
-  }
-
-  setLog(logOptions: LoggerOptions): void {
-    Logger.setLog(logOptions.level, logOptions.handler);
   }
 }
 
