@@ -574,9 +574,11 @@ function registerAblyModularTests(helper) {
       });
 
       describe('BaseRealtime with RealtimePresence', () => {
-        it('offers realtime presence functionality', async () => {
+        it.only('offers realtime presence functionality', async () => {
           const rxChannel = new BaseRealtime(
             ablyClientOptions({
+              logHandler: (msg) => console.log("rxChannel: ", msg),
+              logLevel: 4,
               plugins: {
                 WebSocketTransport,
                 FetchRequest,
@@ -587,6 +589,8 @@ function registerAblyModularTests(helper) {
           const txClientId = randomString();
           const txChannel = new BaseRealtime(
             ablyClientOptions({
+              logHandler: (msg) => console.log("txChannel: ", msg),
+              logLevel: 4,
               clientId: txClientId,
               plugins: {
                 WebSocketTransport,
@@ -600,10 +604,16 @@ function registerAblyModularTests(helper) {
           const rxPresenceMessagePromise = new Promise((resolve, reject) => {
             resolveRxPresenceMessagePromise = resolve;
           });
+          console.log("LAWRENCE: begin waiting for presence subscribe");
           await rxChannel.presence.subscribe('enter', resolveRxPresenceMessagePromise);
+          console.log("LAWRENCE: end waiting for presence subscribe");
+          console.log("LAWRENCE: begin waiting for presence enter");
           await txChannel.presence.enter();
+          console.log("LAWRENCE: end waiting for presence enter");
 
+          console.log("LAWRENCE: begin waiting for rxPresenceMessagePromise");
           const rxPresenceMessage = await rxPresenceMessagePromise;
+          console.log("LAWRENCE: end waiting for rxPresenceMessagePromise");
           expect(rxPresenceMessage.clientId).to.equal(txClientId);
         });
       });

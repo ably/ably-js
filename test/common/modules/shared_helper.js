@@ -253,18 +253,20 @@ define([
   }
 
   function logTestResults() {
+    /*
     if (this.currentTest.isFailed()) {
       const logs = globals.getLogs();
       if (logs.length > 0) {
         // empty console.logs are for vertical spacing
         console.log();
-        console.log('Logs for failing test: \n');
+        console.log('Logs for test: \n');
         logs.forEach(([timestamp, log]) => {
           console.log(timestamp, log);
         });
         console.log();
       }
     }
+    */
   }
 
   return (module.exports = {
