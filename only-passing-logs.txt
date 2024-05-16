@@ -1,0 +1,113 @@
+favicon.ico:1 
+        
+        
+       Failed to load resource: the server responded with a status of 404 (Not Found)
+interception_proxy_client.js:20 connected to interception proxy
+interception_proxy_client.js:56 interception proxy sending startInterception request Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"18262122424150573","result":{}}
+interception_proxy_client.js:34 startInterception completed
+testapp_module.js:38 Test App _tmp_Jb47Yw in environment sandbox has been set up
+root_hooks.js:31 START TEST: browser/modular RealtimePresence BaseRealtime with RealtimePresence offers realtime presence functionality
+modular.test.js:607 LAWRENCE: begin waiting for presence subscribe
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"d2e3f2ba-de34-4b24-82ea-c20e34d3bc8a","method":"transformInterceptedMessage","params":{"id":"36d684a2-6bb3-46e2-bc59-2ba9a8cdfe45","connectionID":"8ca58a54-08d2-4ad6-af1c-4f6c41294895","type":"text","data":"{\"action\":4,\"connectionId\":\"y4QUaX-lX2\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dUVsT6wBbzfT!y4QUaX-lX2ATeEsy_osN9J-4166\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.fd57.1.us-east-1-A.i-01fe288a84a67f672.e7dUVsT6wBbzfT\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 36d684a2-6bb3-46e2-bc59-2ba9a8cdfe45 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 36d684a2-6bb3-46e2-bc59-2ba9a8cdfe45 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:580 rxChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=CONNECTED; connectionId=y4QUaX-lX2]; connectionId = undefined
+modular.test.js:580 rxChannel:  Ably: Protocol.send(): sending msg; [ProtocolMessage; action=ATTACH; channel=channel]
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"3bdc930a-b198-4a7a-a95b-c17dcdc241fb","method":"transformInterceptedMessage","params":{"id":"c8852ccb-e0dc-4852-a0b2-839c2df6709b","connectionID":"8ca58a54-08d2-4ad6-af1c-4f6c41294895","type":"text","data":"{\"action\":10,\"channel\":\"channel\"}","fromClient":true}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message c8852ccb-e0dc-4852-a0b2-839c2df6709b unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message c8852ccb-e0dc-4852-a0b2-839c2df6709b Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"601f4f2c-82b9-4474-b1f3-4fbf286abc9b","method":"transformInterceptedMessage","params":{"id":"86f1b10b-86b8-4a93-9207-0ede99770f0c","connectionID":"4e269d0f-837d-4701-be8f-bf608594a4db","type":"text","data":"{\"action\":4,\"connectionId\":\"kyPOsHUTFq\",\"connectionDetails\":{\"clientId\":\"6162797107938209\",\"connectionKey\":\"e7dUVsT6wBbzfT!kyPOsHUTFqAT74zhxpP6QN-4169\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.fd57.1.us-east-1-A.i-01fe288a84a67f672.e7dUVsT6wBbzfT\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 86f1b10b-86b8-4a93-9207-0ede99770f0c unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 86f1b10b-86b8-4a93-9207-0ede99770f0c Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:592 txChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=CONNECTED; connectionId=kyPOsHUTFq]; connectionId = undefined
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"fdb11a81-3e11-4152-a98b-0ddeebe83533","method":"transformInterceptedMessage","params":{"id":"f90bf814-c10e-4fbe-9b2b-61b166fea9f1","connectionID":"8ca58a54-08d2-4ad6-af1c-4f6c41294895","type":"text","data":"{\"action\":11,\"flags\":983105,\"channel\":\"channel\",\"channelSerial\":\"e7d4ExGGQBbzfj18717820@1715954182939-0\"}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message f90bf814-c10e-4fbe-9b2b-61b166fea9f1 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message f90bf814-c10e-4fbe-9b2b-61b166fea9f1 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:580 rxChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ATTACHED; channel=channel; channelSerial=e7d4ExGGQBbzfj18717820@1715954182939-0; flags=HAS_PRESENCE,PRESENCE,PUBLISH,SUBSCRIBE,PRESENCE_SUBSCRIBE]; connectionId = y4QUaX-lX2
+modular.test.js:609 LAWRENCE: end waiting for presence subscribe
+modular.test.js:610 LAWRENCE: begin waiting for presence enter
+modular.test.js:592 txChannel:  Ably: Protocol.send(): sending msg; [ProtocolMessage; action=ATTACH; channel=channel]
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"eadc8a07-a716-4d3d-be49-3da1fe9a1b7b","method":"transformInterceptedMessage","params":{"id":"c9ff71a5-a32e-4150-acf1-a8ab608a2d5a","connectionID":"4e269d0f-837d-4701-be8f-bf608594a4db","type":"text","data":"{\"action\":10,\"channel\":\"channel\"}","fromClient":true}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message c9ff71a5-a32e-4150-acf1-a8ab608a2d5a unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message c9ff71a5-a32e-4150-acf1-a8ab608a2d5a Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"89d4078a-bbef-4ac2-9659-3c633113a646","method":"transformInterceptedMessage","params":{"id":"bc7fdf4f-c3d8-4af1-8a6e-00d2ca16faaf","connectionID":"8ca58a54-08d2-4ad6-af1c-4f6c41294895","type":"text","data":"{\"action\":16,\"channel\":\"channel\",\"channelSerial\":\"e7dUVsT6wBbzfT69031194:\",\"presence\":[],\"count\":0}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message bc7fdf4f-c3d8-4af1-8a6e-00d2ca16faaf unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message bc7fdf4f-c3d8-4af1-8a6e-00d2ca16faaf Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:580 rxChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=SYNC; channel=channel; channelSerial=e7dUVsT6wBbzfT69031194:; count=0; presence=[  ]]; connectionId = y4QUaX-lX2
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"3667cd33-e3a1-41e4-bc87-8f1b054cefb5","method":"transformInterceptedMessage","params":{"id":"9dae6fe9-ab4a-4622-baa9-b82746475a75","connectionID":"4e269d0f-837d-4701-be8f-bf608594a4db","type":"text","data":"{\"action\":11,\"flags\":983104,\"channel\":\"channel\",\"channelSerial\":\"e7d4ExGGQBbzfj18717820@1715954182939-0\"}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 9dae6fe9-ab4a-4622-baa9-b82746475a75 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 9dae6fe9-ab4a-4622-baa9-b82746475a75 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:592 txChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ATTACHED; channel=channel; channelSerial=e7d4ExGGQBbzfj18717820@1715954182939-0; flags=PRESENCE,PUBLISH,SUBSCRIBE,PRESENCE_SUBSCRIBE]; connectionId = kyPOsHUTFq
+modular.test.js:592 txChannel:  Ably: Protocol.send(): sending msg; [ProtocolMessage; action=PRESENCE; channel=channel; msgSerial=0; presence=[ [PresenceMessage; action=enter] ]]
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"421b72a5-440d-427b-99ff-313894a9b6a6","method":"transformInterceptedMessage","params":{"id":"d717b092-68f2-44b7-84c9-683d816cb8d6","connectionID":"4e269d0f-837d-4701-be8f-bf608594a4db","type":"text","data":"{\"action\":14,\"channel\":\"channel\",\"presence\":[{\"action\":2}],\"msgSerial\":0}","fromClient":true}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message d717b092-68f2-44b7-84c9-683d816cb8d6 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message d717b092-68f2-44b7-84c9-683d816cb8d6 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"55a65e27-e0af-4606-926c-70af966e8be2","method":"transformInterceptedMessage","params":{"id":"3e5e942b-94e8-45ae-a931-f3ac00fa3cdf","connectionID":"8ca58a54-08d2-4ad6-af1c-4f6c41294895","type":"text","data":"{\"action\":14,\"id\":\"kyPOsHUTFq:0\",\"connectionId\":\"kyPOsHUTFq\",\"channel\":\"channel\",\"channelSerial\":\"e7d4ExGGQBbzfj18717820@1715954183200-0\",\"timestamp\":1715954183200,\"presence\":[{\"id\":\"kyPOsHUTFq:0:0\",\"clientId\":\"6162797107938209\",\"connectionId\":\"kyPOsHUTFq\",\"timestamp\":1715954183200,\"action\":2}]}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 3e5e942b-94e8-45ae-a931-f3ac00fa3cdf unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 3e5e942b-94e8-45ae-a931-f3ac00fa3cdf Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"71132588-4a6f-4a69-80c9-f005d67a1e89","method":"transformInterceptedMessage","params":{"id":"96b31566-71a4-4c9b-8de1-4309f7732fe8","connectionID":"4e269d0f-837d-4701-be8f-bf608594a4db","type":"text","data":"{\"action\":14,\"id\":\"kyPOsHUTFq:0\",\"connectionId\":\"kyPOsHUTFq\",\"channel\":\"channel\",\"channelSerial\":\"e7d4ExGGQBbzfj18717820@1715954183200-0\",\"timestamp\":1715954183200,\"presence\":[{\"id\":\"kyPOsHUTFq:0:0\",\"clientId\":\"6162797107938209\",\"connectionId\":\"kyPOsHUTFq\",\"timestamp\":1715954183200,\"action\":2}]}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 96b31566-71a4-4c9b-8de1-4309f7732fe8 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 96b31566-71a4-4c9b-8de1-4309f7732fe8 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"6906192b-9da8-477e-8f0c-00b9f7656e3c","method":"transformInterceptedMessage","params":{"id":"c878a150-847b-4f53-88d0-a8cce6a7502d","connectionID":"4e269d0f-837d-4701-be8f-bf608594a4db","type":"text","data":"{\"action\":1,\"count\":1,\"msgSerial\":0}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message c878a150-847b-4f53-88d0-a8cce6a7502d unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message c878a150-847b-4f53-88d0-a8cce6a7502d Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:580 rxChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=PRESENCE; id=kyPOsHUTFq:0; channel=channel; channelSerial=e7d4ExGGQBbzfj18717820@1715954183200-0; connectionId=kyPOsHUTFq; timestamp=1715954183200; presence=[ [PresenceMessage; action=enter; id=kyPOsHUTFq:0:0; timestamp=1715954183200; clientId=6162797107938209; connectionId=kyPOsHUTFq] ]]; connectionId = y4QUaX-lX2
+modular.test.js:592 txChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=PRESENCE; id=kyPOsHUTFq:0; channel=channel; channelSerial=e7d4ExGGQBbzfj18717820@1715954183200-0; connectionId=kyPOsHUTFq; timestamp=1715954183200; presence=[ [PresenceMessage; action=enter; id=kyPOsHUTFq:0:0; timestamp=1715954183200; clientId=6162797107938209; connectionId=kyPOsHUTFq] ]]; connectionId = kyPOsHUTFq
+modular.test.js:592 txChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ACK; count=1; msgSerial=0]; connectionId = kyPOsHUTFq
+modular.test.js:612 LAWRENCE: end waiting for presence enter
+modular.test.js:614 LAWRENCE: begin waiting for rxPresenceMessagePromise
+modular.test.js:616 LAWRENCE: end waiting for rxPresenceMessagePromise
+root_hooks.js:27 END TEST: browser/modular RealtimePresence BaseRealtime with RealtimePresence offers realtime presence functionality
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"b4169a1b-bfca-4a07-aa21-9c8fcceea4ef","method":"transformInterceptedMessage","params":{"id":"4d549b43-e115-4825-9f80-499b05edb9c0","connectionID":"8ca58a54-08d2-4ad6-af1c-4f6c41294895","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_QBQgqg disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 4d549b43-e115-4825-9f80-499b05edb9c0 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 4d549b43-e115-4825-9f80-499b05edb9c0 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"39ab93b4-ed1b-4a4c-b29b-bd85f012dc43","method":"transformInterceptedMessage","params":{"id":"409bfe83-ae10-4407-a6b8-024bdffe19e7","connectionID":"4e269d0f-837d-4701-be8f-bf608594a4db","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_QBQgqg disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 409bfe83-ae10-4407-a6b8-024bdffe19e7 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 409bfe83-ae10-4407-a6b8-024bdffe19e7 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:580 rxChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=DISCONNECTED; error=[_ErrorInfo: Account _tmp_QBQgqg disabled; statusCode=403; code=40300; see https://help.ably.io/error/40300 ]]; connectionId = y4QUaX-lX2
+modular.test.js:592 txChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=DISCONNECTED; error=[_ErrorInfo: Account _tmp_QBQgqg disabled; statusCode=403; code=40300; see https://help.ably.io/error/40300 ]]; connectionId = kyPOsHUTFq
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"29c27579-5667-4de4-88e5-e8f095b490e2","method":"transformInterceptedMessage","params":{"id":"0bcb9b64-08fb-48c6-ac77-b3972a99e405","connectionID":"2b1d5517-a0d7-49eb-b199-b557b1db2a96","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_QBQgqg disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715954184661}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 0bcb9b64-08fb-48c6-ac77-b3972a99e405 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 0bcb9b64-08fb-48c6-ac77-b3972a99e405 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:580 rxChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ERROR; timestamp=1715954184661; error=[_ErrorInfo: Account _tmp_QBQgqg disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]]; connectionId = y4QUaX-lX2
+modular.test.js:580 rxChannel:  Ably: Connection state: failed; reason: [_ErrorInfo: Account _tmp_QBQgqg disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]
+modular.test.js:580 rxChannel:  Ably: Channel state for channel "channel": failed; reason: [_ErrorInfo: Account _tmp_QBQgqg disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"31883944-1405-4076-bb35-f6b3b6643b8d","method":"transformInterceptedMessage","params":{"id":"58749a37-e260-4b86-9dd3-ef98b08940b7","connectionID":"9464a56e-f613-4a7a-b053-8fbf0f6595bb","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_QBQgqg disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715954184670}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 58749a37-e260-4b86-9dd3-ef98b08940b7 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 58749a37-e260-4b86-9dd3-ef98b08940b7 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:592 txChannel:  Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ERROR; timestamp=1715954184670; error=[_ErrorInfo: Account _tmp_QBQgqg disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]]; connectionId = kyPOsHUTFq
+modular.test.js:592 txChannel:  Ably: Connection state: failed; reason: [_ErrorInfo: Account _tmp_QBQgqg disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]
+modular.test.js:592 txChannel:  Ably: Channel state for channel "channel": failed; reason: [_ErrorInfo: Account _tmp_QBQgqg disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]
+testapp_module.js:76 Test App _tmp_Jb47Yw has been torn down
+interception_proxy_client.js:73 interception proxy client disconnected
