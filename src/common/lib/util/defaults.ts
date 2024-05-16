@@ -44,7 +44,6 @@ type CompleteDefaults = IDefaults & {
   getFallbackHosts(options: NormalisedClientOptions): string[];
   getHosts(options: NormalisedClientOptions, ws?: boolean): string[];
   checkHost(host: string): void;
-  getRealtimeHost(options: ClientOptions, production: boolean, environment: string): string;
   objectifyOptions(
     options: undefined | ClientOptions | string,
     allowKeyOrToken: boolean,
