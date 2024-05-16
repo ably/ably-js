@@ -29,9 +29,9 @@ class Protocol extends EventEmitter {
   messageQueue: MessageQueue;
 
   constructor(transport: Transport) {
-    super();
+    super(transport.connectionManager.realtime.logger);
     this.transport = transport;
-    this.messageQueue = new MessageQueue();
+    this.messageQueue = new MessageQueue(this.logger);
     transport.on('ack', (serial: number, count: number) => {
       this.onAck(serial, count);
     });
@@ -41,12 +41,13 @@ class Protocol extends EventEmitter {
   }
 
   onAck(serial: number, count: number): void {
-    Logger.logAction(Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'Protocol.onAck()', 'serial = ' + serial + '; count = ' + count);
     this.messageQueue.completeMessages(serial, count);
   }
 
   onNack(serial: number, count: number, err: ErrorInfo): void {
     Logger.logAction(
+      this.logger,
       Logger.LOG_ERROR,
       'Protocol.onNack()',
       'serial = ' + serial + '; count = ' + count + '; err = ' + Utils.inspectError(err),
@@ -70,8 +71,9 @@ class Protocol extends EventEmitter {
     if (pendingMessage.ackRequired) {
       this.messageQueue.push(pendingMessage);
     }
-    if (Logger.shouldLog(Logger.LOG_MICRO)) {
+    if (this.logger.shouldLog(Logger.LOG_MICRO)) {
       Logger.logActionNoStrip(
+        this.logger,
         Logger.LOG_MICRO,
         'Protocol.send()',
         'sending msg; ' +

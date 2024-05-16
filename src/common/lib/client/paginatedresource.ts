@@ -59,6 +59,10 @@ class PaginatedResource {
     this.useHttpPaginatedResponse = useHttpPaginatedResponse || false;
   }
 
+  get logger(): Logger {
+    return this.client.logger;
+  }
+
   async get<T1, T2>(params: Record<string, T2>): Promise<PaginatedResult<T1>> {
     const result = await Resource.get<T1>(this.client, this.path, this.headers, params, this.envelope, false);
     return this.handlePage(result);
@@ -87,6 +91,7 @@ class PaginatedResource {
   async handlePage<T>(result: ResourceResult<T>): Promise<PaginatedResult<T>> {
     if (result.err && returnErrOnly(result.err, result.body, this.useHttpPaginatedResponse)) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_ERROR,
         'PaginatedResource.handlePage()',
         'Unexpected error getting resource: err = ' + Utils.inspectError(result.err),

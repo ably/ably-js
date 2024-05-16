@@ -13,8 +13,12 @@ class RestPresence {
     this.channel = channel;
   }
 
+  get logger(): Logger {
+    return this.channel.logger;
+  }
+
   async get(params: any): Promise<PaginatedResult<PresenceMessage>> {
-    Logger.logAction(Logger.LOG_MICRO, 'RestPresence.get()', 'channel = ' + this.channel.name);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestPresence.get()', 'channel = ' + this.channel.name);
     const client = this.channel.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.channel.client.http.supportsLinkHeaders ? undefined : format,
@@ -28,10 +32,11 @@ class RestPresence {
       this.channel.client.rest.presenceMixin.basePath(this),
       headers,
       envelope,
-      async function (body, headers, unpacked) {
+      async (body, headers, unpacked) => {
         return await presenceMessageFromResponseBody(
           body as Record<string, unknown>[],
           options as CipherOptions,
+          this.logger,
           client._MsgPack,
           unpacked ? undefined : format,
         );
@@ -40,7 +45,7 @@ class RestPresence {
   }
 
   async history(params: any): Promise<PaginatedResult<PresenceMessage>> {
-    Logger.logAction(Logger.LOG_MICRO, 'RestPresence.history()', 'channel = ' + this.channel.name);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestPresence.history()', 'channel = ' + this.channel.name);
     return this.channel.client.rest.presenceMixin.history(this, params);
   }
 }

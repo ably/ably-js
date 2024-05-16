@@ -32,6 +32,7 @@ export class RestPresenceMixin {
       return await presenceMessageFromResponseBody(
         body as Record<string, unknown>[],
         options as CipherOptions,
+        presence.logger,
         client._MsgPack,
         unpacked ? undefined : format,
       );

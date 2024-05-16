@@ -45,11 +45,12 @@ function normaliseContext(context: CipherOptions | EncodingDecodingContext | Cha
 
 function normalizeCipherOptions(
   Crypto: IUntypedCryptoStatic | null,
+  logger: Logger,
   options: API.ChannelOptions | null,
 ): ChannelOptions {
   if (options && options.cipher) {
     if (!Crypto) Utils.throwMissingPluginError('Crypto');
-    const cipher = Crypto.getCipher(options.cipher);
+    const cipher = Crypto.getCipher(options.cipher, logger);
     return {
       cipher: cipher.cipherParams,
       channelCipher: cipher.cipher,
@@ -76,30 +77,32 @@ function getMessageSize(msg: Message) {
 }
 
 export async function fromEncoded(
+  logger: Logger,
   Crypto: IUntypedCryptoStatic | null,
   encoded: unknown,
   inputOptions?: API.ChannelOptions,
 ): Promise<Message> {
   const msg = fromValues(encoded);
-  const options = normalizeCipherOptions(Crypto, inputOptions ?? null);
+  const options = normalizeCipherOptions(Crypto, logger, inputOptions ?? null);
   /* if decoding fails at any point, catch and return the message decoded to
    * the fullest extent possible */
   try {
     await decode(msg, options);
   } catch (e) {
-    Logger.logAction(Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
+    Logger.logAction(logger, Logger.LOG_ERROR, 'Message.fromEncoded()', (e as Error).toString());
   }
   return msg;
 }
 
 export async function fromEncodedArray(
+  logger: Logger,
   Crypto: IUntypedCryptoStatic | null,
   encodedArray: Array<unknown>,
   options?: API.ChannelOptions,
 ): Promise<Message[]> {
   return Promise.all(
     encodedArray.map(function (encoded) {
-      return fromEncoded(Crypto, encoded, options);
+      return fromEncoded(logger, Crypto, encoded, options);
     }),
   );
 }
@@ -248,6 +251,7 @@ export async function decode(
 export async function fromResponseBody(
   body: Array<Message>,
   options: ChannelOptions | EncodingDecodingContext,
+  logger: Logger,
   MsgPack: MsgPack | null,
   format?: Utils.Format,
 ): Promise<Message[]> {
@@ -260,7 +264,7 @@ export async function fromResponseBody(
     try {
       await decode(msg, options);
     } catch (e) {
-      Logger.logAction(Logger.LOG_ERROR, 'Message.fromResponseBody()', (e as Error).toString());
+      Logger.logAction(logger, Logger.LOG_ERROR, 'Message.fromResponseBody()', (e as Error).toString());
     }
   }
   return body;

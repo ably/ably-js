@@ -11,25 +11,30 @@ function toActionValue(actionString: string) {
   return actions.indexOf(actionString);
 }
 
-export async function fromEncoded(encoded: unknown, options?: API.ChannelOptions): Promise<PresenceMessage> {
+export async function fromEncoded(
+  logger: Logger,
+  encoded: unknown,
+  options?: API.ChannelOptions,
+): Promise<PresenceMessage> {
   const msg = fromValues(encoded as PresenceMessage | Record<string, unknown>, true);
   /* if decoding fails at any point, catch and return the message decoded to
    * the fullest extent possible */
   try {
     await decode(msg, options ?? {});
   } catch (e) {
-    Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
+    Logger.logAction(logger, Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
   }
   return msg;
 }
 
 export async function fromEncodedArray(
+  logger: Logger,
   encodedArray: unknown[],
   options?: API.ChannelOptions,
 ): Promise<PresenceMessage[]> {
   return Promise.all(
     encodedArray.map(function (encoded) {
-      return fromEncoded(encoded, options);
+      return fromEncoded(logger, encoded, options);
     }),
   );
 }
@@ -50,6 +55,7 @@ export const decode = decodeMessage;
 export async function fromResponseBody(
   body: Record<string, unknown>[],
   options: CipherOptions,
+  logger: Logger,
   MsgPack: MsgPack | null,
   format?: Utils.Format,
 ): Promise<PresenceMessage[]> {
@@ -63,7 +69,7 @@ export async function fromResponseBody(
     try {
       await decode(msg, options);
     } catch (e) {
-      Logger.logAction(Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', (e as Error).toString());
+      Logger.logAction(logger, Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', (e as Error).toString());
     }
   }
   return messages;
