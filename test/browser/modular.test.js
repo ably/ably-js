@@ -575,9 +575,30 @@ function registerAblyModularTests(helper) {
 
       describe('BaseRealtime with RealtimePresence', () => {
         it('offers realtime presence functionality', async () => {
+          function pad(timeSegment, three) {
+            return `${timeSegment}`.padStart(three ? 3 : 2, '0');
+          }
+
+          function getHandler(logger) {
+            return function (msg) {
+              const time = new Date();
+              logger(
+                pad(time.getHours()) +
+                  ':' +
+                  pad(time.getMinutes()) +
+                  ':' +
+                  pad(time.getSeconds()) +
+                  '.' +
+                  pad(time.getMilliseconds(), 1) +
+                  ' ' +
+                  msg,
+              );
+            };
+          }
+
           const rxChannel = new BaseRealtime(
             ablyClientOptions({
-              logHandler: (msg) => console.log('rxChannel: ', msg),
+              logHandler: getHandler((msg) => console.log('rxChannel: ', msg)),
               logLevel: 4,
               plugins: {
                 WebSocketTransport,
@@ -589,7 +610,7 @@ function registerAblyModularTests(helper) {
           const txClientId = randomString();
           const txChannel = new BaseRealtime(
             ablyClientOptions({
-              logHandler: (msg) => console.log('txChannel: ', msg),
+              logHandler: getHandler((msg) => console.log('txChannel: ', msg)),
               logLevel: 4,
               clientId: txClientId,
               plugins: {
