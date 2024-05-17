@@ -35,7 +35,7 @@ const modularConfig = {
   entryPoints: ['src/platform/web/modular.ts'],
   outfile: 'build/modular/index.mjs',
   format: 'esm',
-  plugins: [stripLogsPlugin],
+  plugins: [],
 };
 
 const nodeConfig = {
