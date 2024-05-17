@@ -683,7 +683,8 @@ export type capabilityOp =
   | 'stats'
   | 'channel-metadata'
   | 'push-subscribe'
-  | 'push-admin';
+  | 'push-admin'
+  | 'privileged-headers';
 
 /**
  * Capabilities which are available for use within {@link TokenParams}.
