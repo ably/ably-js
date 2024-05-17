@@ -102,7 +102,7 @@ class RealtimePresence extends EventEmitter {
   }
 
   async enter(data: unknown): Promise<void> {
-    Logger.logAction(this.logger, Logger.LOG_DEBUG, "RealtimePresence.enter");
+    Logger.logAction(this.logger, Logger.LOG_DEBUG, 'RealtimePresence.enter');
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must be specified to enter a presence channel', 40012, 400);
     }
@@ -130,7 +130,7 @@ class RealtimePresence extends EventEmitter {
     data: unknown,
     action: string,
   ): Promise<void> {
-    Logger.logAction(this.logger, Logger.LOG_DEBUG, "RealtimePresence._enterOrUpdateClient");
+    Logger.logAction(this.logger, Logger.LOG_DEBUG, 'RealtimePresence._enterOrUpdateClient');
     const channel = this.channel;
     if (!channel.connectionManager.activeState()) {
       throw channel.connectionManager.getError();

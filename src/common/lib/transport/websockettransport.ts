@@ -38,6 +38,7 @@ class WebSocketTransport extends Transport {
 
   createWebSocket(uri: string, connectParams: Record<string, string>) {
     this.uri = uri + Utils.toQueryString(connectParams);
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'WebSocketTransport.createWebSocket()', 'uri:' + this.uri);
     return new Platform.Config.WebSocket(this.uri);
   }
 
