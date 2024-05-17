@@ -574,7 +574,7 @@ function registerAblyModularTests(helper) {
       });
 
       describe('BaseRealtime with RealtimePresence', () => {
-        it.only('offers realtime presence functionality', async () => {
+        it('offers realtime presence functionality', async () => {
           const rxChannel = new BaseRealtime(
             ablyClientOptions({
               logHandler: (msg) => console.log("rxChannel: ", msg),
@@ -608,6 +608,7 @@ function registerAblyModularTests(helper) {
           await rxChannel.presence.subscribe('enter', resolveRxPresenceMessagePromise);
           console.log("LAWRENCE: end waiting for presence subscribe");
           console.log("LAWRENCE: begin waiting for presence enter");
+          console.log("LAWRENCE: txChannel.presence.enter is", txChannel.presence.enter);
           await txChannel.presence.enter();
           console.log("LAWRENCE: end waiting for presence enter");
 
