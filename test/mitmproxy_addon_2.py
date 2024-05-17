@@ -26,7 +26,7 @@ class MitmproxyAddon2:
 
         # (b'Connection', b'Upgrade'), (b'Upgrade', b'websocket')
         intercept = MitmproxyAddon2.is_websocket_upgrade_request(flow.request)
-        logging.info(f'MitmproxyAddon2 {"intercepting" if intercept else "not intercepting"} `request` {flow.request.pretty_host}, scheme {flow.request.scheme}, headers {flow.request.headers}')
+        logging.info(f'MitmproxyAddon2 {"intercepting" if intercept else "not intercepting"} `request` {flow.request.url}, headers {flow.request.headers}')
         # pretty_host takes the "Host" header of the request into account,
         # which is useful in transparent mode where we usually only have the IP
         # otherwise.

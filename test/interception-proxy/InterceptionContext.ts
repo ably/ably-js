@@ -95,6 +95,9 @@ export class InterceptionContext {
           ...(mitmdumpMode === null ? [] : ['--mode', mitmdumpMode]),
           '-s',
           'test/mitmproxy_addon_2.py',
+          '--set',
+          // "full request URL with response status code and HTTP headers" (the default truncates the URL)
+          'flow_detail=2',
         ]);
 
         const formatMitmdumpOutput = (source: string, data: Buffer) => {
