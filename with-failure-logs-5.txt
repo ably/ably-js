@@ -1,0 +1,1003 @@
+favicon.ico:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `time()`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `time()`
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `auth.createTokenRequest()` with `queryTime` option enabled
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `auth.createTokenRequest()` with `queryTime` option enabled
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `stats()`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `stats()`
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `request(...)`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `request(...)`
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `batchPublish(...)`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `batchPublish(...)`
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `batchPresence(...)`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `batchPresence(...)`
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `auth.revokeTokens(...)`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call `auth.revokeTokens(...)`
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call channel’s `history()`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call channel’s `history()`
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call channel’s `presence.history()`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call channel’s `presence.history()`
+ START TEST: browser/modular Rest BaseRest without explicit Rest allows you to call channel’s `status()`
+ END TEST: browser/modular Rest BaseRest without explicit Rest allows you to call channel’s `status()`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to use push admin functionality
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to use push admin functionality
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call `time()`
+ interception proxy got message {"jsonrpc":"2.0","id":"c7b4b8dd-4c39-4d9c-b90d-5625642f3e47","method":"transformInterceptedMessage","params":{"id":"3b2da9f6-6e48-4d08-b7b8-eadfe74b2849","connectionID":"a2edcd9b-abb2-43d8-9c42-5a2b94142e0b","type":"text","data":"{\"action\":4,\"connectionId\":\"gUuf_u0Gqh\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dAszwTABc0Ei!gUuf_u0GqhAZNpQ7_atTYi-376e\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.99b8.2.us-east-1-A.i-0d0eb08c978a5c1d0.e7dAszwTABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 3b2da9f6-6e48-4d08-b7b8-eadfe74b2849 unaltered
+ interception proxy got result of transforming message 3b2da9f6-6e48-4d08-b7b8-eadfe74b2849 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call `time()`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call `auth.createTokenRequest()` with `queryTime` option enabled
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call `auth.createTokenRequest()` with `queryTime` option enabled
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call `stats()`
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call `stats()`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call `request(...)`
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call `request(...)`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call `batchPublish(...)`
+ interception proxy got message {"jsonrpc":"2.0","id":"ff035231-a74f-4eec-b6e1-ab4d3f3fedad","method":"transformInterceptedMessage","params":{"id":"cecd9987-8316-461b-902c-79ee1a06d109","connectionID":"5519debd-9271-4efa-a5eb-33b7818ddf56","type":"text","data":"{\"action\":4,\"connectionId\":\"GSCqygclrb\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dZXIKyABc0Ap!GSCqygclrbAcA-SVDnmROz-4e85\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.591d.1.us-east-1-A.i-07e5ae922b5503d80.e7dZXIKyABc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message cecd9987-8316-461b-902c-79ee1a06d109 unaltered
+ interception proxy got result of transforming message cecd9987-8316-461b-902c-79ee1a06d109 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"fb63d2f5-2b27-436a-bd87-ddba0642fbfc","method":"transformInterceptedMessage","params":{"id":"ec6779eb-b883-4f07-a363-d507f754137d","connectionID":"af5206b9-b434-4cfe-8977-ff04695f3a90","type":"text","data":"{\"action\":4,\"connectionId\":\"vwrRhNUV9m\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7deKLRSQBc0Ap!vwrRhNUV9mAYm6VNzwTXWb-4c5a\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.9ed2.2.us-east-1-A.i-07e5ae922b5503d80.e7deKLRSQBc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message ec6779eb-b883-4f07-a363-d507f754137d unaltered
+ interception proxy got result of transforming message ec6779eb-b883-4f07-a363-d507f754137d Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call `batchPublish(...)`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call `batchPresence(...)`
+ interception proxy got message {"jsonrpc":"2.0","id":"31a3813f-532a-487e-b72c-61d5e96d75a5","method":"transformInterceptedMessage","params":{"id":"b8838edb-b134-46db-ba4a-cf286beebf44","connectionID":"f5ed8dae-1f2b-43be-bd2b-6a141be8aa02","type":"text","data":"{\"action\":4,\"connectionId\":\"VKYc-X2EH3\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dbIQeoABc0Cm!VKYc-X2EH3AXohl9FFd7nL-429b\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.c696.1.us-east-1-A.i-05410be3f8b9acc99.e7dbIQeoABc0Cm\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message b8838edb-b134-46db-ba4a-cf286beebf44 unaltered
+ interception proxy got result of transforming message b8838edb-b134-46db-ba4a-cf286beebf44 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call `batchPresence(...)`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call `auth.revokeTokens(...)`
+ interception proxy got message {"jsonrpc":"2.0","id":"ab14b2eb-6545-474c-ba53-d2f24aed2162","method":"transformInterceptedMessage","params":{"id":"59b00316-c75a-4d87-b703-b41e835dc763","connectionID":"b8da5579-4ed1-49c0-bd31-2a3e21cbf86d","type":"text","data":"{\"action\":4,\"connectionId\":\"EufvCwLJ0L\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7deKLRSQBc0Ap!EufvCwLJ0LAScTJ9S5YH2O-4c5b\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.9ed2.2.us-east-1-A.i-07e5ae922b5503d80.e7deKLRSQBc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 59b00316-c75a-4d87-b703-b41e835dc763 unaltered
+ interception proxy got result of transforming message 59b00316-c75a-4d87-b703-b41e835dc763 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call `auth.revokeTokens(...)`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call channel’s `history()`
+ interception proxy got message {"jsonrpc":"2.0","id":"90c1120c-929c-4776-85cb-bf669c0175a3","method":"transformInterceptedMessage","params":{"id":"06390826-a692-480b-b2e7-260a16faa50c","connectionID":"f128c8dd-ee50-46ba-83fa-68b1bbad60aa","type":"text","data":"{\"action\":4,\"connectionId\":\"Y631DMhArp\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dAszwTABc0Ei!Y631DMhArpAWglQC0NKVoa-3774\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.99b8.2.us-east-1-A.i-0d0eb08c978a5c1d0.e7dAszwTABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 06390826-a692-480b-b2e7-260a16faa50c unaltered
+ interception proxy got result of transforming message 06390826-a692-480b-b2e7-260a16faa50c Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call channel’s `history()`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call channel’s `presence.history()`
+ interception proxy got message {"jsonrpc":"2.0","id":"b464e732-9f5d-4183-8662-2b4b3cb3a560","method":"transformInterceptedMessage","params":{"id":"67bb714b-10d2-4c65-95ff-3bf32df04c33","connectionID":"1aed8420-9fa2-4789-a49e-3d153011e99c","type":"text","data":"{\"action\":4,\"connectionId\":\"zMBohARhlg\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7deKLRSQBc0Ap!zMBohARhlgAVVqUuP2ww23-4c5d\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.9ed2.2.us-east-1-A.i-07e5ae922b5503d80.e7deKLRSQBc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 67bb714b-10d2-4c65-95ff-3bf32df04c33 unaltered
+ interception proxy got result of transforming message 67bb714b-10d2-4c65-95ff-3bf32df04c33 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call channel’s `presence.history()`
+ START TEST: browser/modular Rest BaseRealtime with Rest allows you to call channel’s `status()`
+ interception proxy got message {"jsonrpc":"2.0","id":"31677030-5139-470f-8ece-da8502f080eb","method":"transformInterceptedMessage","params":{"id":"70d1d1eb-59a6-45c8-81c8-ab6aa3e40550","connectionID":"2e0669f5-01ca-469b-a5af-edc9f52e41b2","type":"text","data":"{\"action\":4,\"connectionId\":\"HrxNZ2SZeN\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dzQZ4LABc0Cm!HrxNZ2SZeNAdZKvjhjmtHR-443e\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.a90e.2.us-east-1-A.i-05410be3f8b9acc99.e7dzQZ4LABc0Cm\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 70d1d1eb-59a6-45c8-81c8-ab6aa3e40550 unaltered
+ interception proxy got result of transforming message 70d1d1eb-59a6-45c8-81c8-ab6aa3e40550 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Rest BaseRealtime with Rest allows you to call channel’s `status()`
+ START TEST: browser/modular Rest BaseRealtime without Rest still allows publishing and subscribing
+ interception proxy got message {"jsonrpc":"2.0","id":"f8868784-2ad4-47c8-ae3b-8c07d02c2c2c","method":"transformInterceptedMessage","params":{"id":"c097e7e0-420e-4040-99c6-f2dc69563790","connectionID":"d76117c7-fce1-4aa5-94b7-28756fb1bc35","type":"text","data":"{\"action\":4,\"connectionId\":\"Oxl7brH-4v\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dNIPVFABc0Ei!Oxl7brH-4vAWFp4bWkXHuv-3875\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message c097e7e0-420e-4040-99c6-f2dc69563790 unaltered
+ interception proxy got result of transforming message c097e7e0-420e-4040-99c6-f2dc69563790 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"f9236f76-c229-4b45-b965-53ed861ffe0e","method":"transformInterceptedMessage","params":{"id":"1a403891-9778-4a4a-8157-c3df5405a266","connectionID":"48aee968-2e7c-474f-a20a-91c288c90a6d","type":"text","data":"{\"action\":4,\"connectionId\":\"Ko8-UQsl_8\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dAszwTABc0Ei!Ko8-UQsl_8AVoN8fOU2-b6-3777\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.99b8.2.us-east-1-A.i-0d0eb08c978a5c1d0.e7dAszwTABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 1a403891-9778-4a4a-8157-c3df5405a266 unaltered
+ interception proxy got result of transforming message 1a403891-9778-4a4a-8157-c3df5405a266 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"80c21470-23d2-4396-8cf5-cebb9af5ba16","method":"transformInterceptedMessage","params":{"id":"1e634cbc-84cb-4400-911d-a898b2ab7762","connectionID":"debbdfab-f1d7-41d1-809f-22c96426cb73","type":"text","data":"{\"action\":4,\"connectionId\":\"QhceQnazLN\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dbIQeoABc0Cm!QhceQnazLNAQqqbTcfXlcM-429e\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.c696.1.us-east-1-A.i-05410be3f8b9acc99.e7dbIQeoABc0Cm\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 1e634cbc-84cb-4400-911d-a898b2ab7762 unaltered
+ interception proxy got result of transforming message 1e634cbc-84cb-4400-911d-a898b2ab7762 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"0c4abe1a-31d1-4f67-8abf-8409c105c2bd","method":"transformInterceptedMessage","params":{"id":"685875f6-362f-45ee-a372-18c8d01e137a","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":4,\"connectionId\":\"-DpN2IY7oV\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dNIPVFABc0Ei!-DpN2IY7oVAZHLYWRYVGc9-3878\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 685875f6-362f-45ee-a372-18c8d01e137a unaltered
+ interception proxy got result of transforming message 685875f6-362f-45ee-a372-18c8d01e137a Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"a4299306-bdaa-44cc-9136-fb54601a6c3b","method":"transformInterceptedMessage","params":{"id":"368615d1-9660-424f-8062-3413f5d3aca4","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":10,\"channel\":\"channel\"}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 368615d1-9660-424f-8062-3413f5d3aca4 unaltered
+ interception proxy got result of transforming message 368615d1-9660-424f-8062-3413f5d3aca4 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"10a3d649-d457-4e6e-b0de-62851125e3f7","method":"transformInterceptedMessage","params":{"id":"1d527488-e506-4d32-b4ae-05c5df3be19f","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":11,\"flags\":983104,\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976340141-0\"}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 1d527488-e506-4d32-b4ae-05c5df3be19f unaltered
+ interception proxy got result of transforming message 1d527488-e506-4d32-b4ae-05c5df3be19f Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"92c6f9a1-cc2d-48a8-a93d-6316f6151f25","method":"transformInterceptedMessage","params":{"id":"3d3ce038-a2e3-4254-9415-a3b48de9ba0b","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":15,\"channel\":\"channel\",\"messages\":[{\"encoding\":\"json\",\"data\":\"{\\\"foo\\\":\\\"bar\\\"}\"}],\"msgSerial\":0}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 3d3ce038-a2e3-4254-9415-a3b48de9ba0b unaltered
+ interception proxy got result of transforming message 3d3ce038-a2e3-4254-9415-a3b48de9ba0b Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"64e08738-6ec8-4898-a0e2-133e2d315591","method":"transformInterceptedMessage","params":{"id":"d93d12cf-a01e-47e8-9655-5713a337e52c","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":15,\"id\":\"-DpN2IY7oV:0\",\"connectionId\":\"-DpN2IY7oV\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976341689-0\",\"timestamp\":1715976341689,\"messages\":[{\"encoding\":\"json\",\"data\":\"{\\\"foo\\\":\\\"bar\\\"}\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message d93d12cf-a01e-47e8-9655-5713a337e52c unaltered
+ interception proxy got result of transforming message d93d12cf-a01e-47e8-9655-5713a337e52c Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b1f2bc84-e0a7-4f2e-b779-876ceff99ec4","method":"transformInterceptedMessage","params":{"id":"5e0f5bc8-bc4b-4412-a916-098c8955dbb2","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":1,\"count\":1,\"msgSerial\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 5e0f5bc8-bc4b-4412-a916-098c8955dbb2 unaltered
+ interception proxy got result of transforming message 5e0f5bc8-bc4b-4412-a916-098c8955dbb2 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Rest BaseRealtime without Rest still allows publishing and subscribing
+ START TEST: browser/modular Rest BaseRealtime without Rest allows `auth.createTokenRequest()` without `queryTime` option enabled
+ END TEST: browser/modular Rest BaseRealtime without Rest allows `auth.createTokenRequest()` without `queryTime` option enabled
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to use push admin functionality
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to use push admin functionality
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `time()`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `time()`
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `auth.createTokenRequest()` with `queryTime` option enabled
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `auth.createTokenRequest()` with `queryTime` option enabled
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `stats()`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `stats()`
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `request(...)`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `request(...)`
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `batchPublish(...)`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `batchPublish(...)`
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `batchPresence(...)`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `batchPresence(...)`
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `auth.revokeTokens(...)`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call `auth.revokeTokens(...)`
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call channel’s `history()`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call channel’s `history()`
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call channel’s `presence.history()`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call channel’s `presence.history()`
+ START TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call channel’s `status()`
+ END TEST: browser/modular Rest BaseRealtime without Rest throws an error when attempting to call channel’s `status()`
+ START TEST: browser/modular Crypto standalone functions generateRandomKey
+ END TEST: browser/modular Crypto standalone functions generateRandomKey
+ START TEST: browser/modular Crypto standalone functions getDefaultCryptoParams
+ END TEST: browser/modular Crypto standalone functions getDefaultCryptoParams
+ START TEST: browser/modular Message standalone functions decodeMessage decodes a message’s data
+ END TEST: browser/modular Message standalone functions decodeMessage decodes a message’s data
+ START TEST: browser/modular Message standalone functions decodeMessage throws an error when given channel options with a cipher
+ END TEST: browser/modular Message standalone functions decodeMessage throws an error when given channel options with a cipher
+ START TEST: browser/modular Message standalone functions decodeEncryptedMessage decodes a message’s data
+ END TEST: browser/modular Message standalone functions decodeEncryptedMessage decodes a message’s data
+ START TEST: browser/modular Message standalone functions decodeEncryptedMessage decrypts a message
+ END TEST: browser/modular Message standalone functions decodeEncryptedMessage decrypts a message
+ START TEST: browser/modular Message standalone functions decodeMessages decodes messages’ data
+ END TEST: browser/modular Message standalone functions decodeMessages decodes messages’ data
+ START TEST: browser/modular Message standalone functions decodeMessages throws an error when given channel options with a cipher
+ END TEST: browser/modular Message standalone functions decodeMessages throws an error when given channel options with a cipher
+ START TEST: browser/modular Message standalone functions decodeEncryptedMessages decodes messages’ data
+ END TEST: browser/modular Message standalone functions decodeEncryptedMessages decodes messages’ data
+ START TEST: browser/modular Message standalone functions decodeEncryptedMessages decrypts messages
+ END TEST: browser/modular Message standalone functions decodeEncryptedMessages decrypts messages
+ START TEST: browser/modular Crypto without Crypto BaseRest throws an error when given channel options with a cipher
+ END TEST: browser/modular Crypto without Crypto BaseRest throws an error when given channel options with a cipher
+ START TEST: browser/modular Crypto without Crypto _BaseRealtime throws an error when given channel options with a cipher
+ END TEST: browser/modular Crypto without Crypto _BaseRealtime throws an error when given channel options with a cipher
+ START TEST: browser/modular Crypto with Crypto BaseRest is able to publish encrypted messages
+ interception proxy got message {"jsonrpc":"2.0","id":"9ccd97dd-4970-454d-9116-b0d510a4076c","method":"transformInterceptedMessage","params":{"id":"00e4dad8-aef9-44cc-a43b-c29594c1e571","connectionID":"f15e2d6d-0c1c-4912-a95e-ea5d06439b2c","type":"text","data":"{\"action\":4,\"connectionId\":\"P4M0vM7FBZ\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dbIQeoABc0Cm!P4M0vM7FBZAXH14pah7H4j-42a3\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.c696.1.us-east-1-A.i-05410be3f8b9acc99.e7dbIQeoABc0Cm\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 00e4dad8-aef9-44cc-a43b-c29594c1e571 unaltered
+ interception proxy got result of transforming message 00e4dad8-aef9-44cc-a43b-c29594c1e571 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b530551b-2214-44a7-9904-a7454864eb37","method":"transformInterceptedMessage","params":{"id":"00db4581-64e6-4ad7-bd87-524bfec9dda6","connectionID":"8c9d9e19-1397-45c4-97ba-e83c83b268ba","type":"text","data":"{\"action\":4,\"connectionId\":\"QwemqnVwAU\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dZXIKyABc0Ap!QwemqnVwAUAdHZrRhXTATc-4e8b\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.591d.1.us-east-1-A.i-07e5ae922b5503d80.e7dZXIKyABc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 00db4581-64e6-4ad7-bd87-524bfec9dda6 unaltered
+ interception proxy got result of transforming message 00db4581-64e6-4ad7-bd87-524bfec9dda6 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"61d0221f-e34d-4f4f-ba5f-0c5eeecd7fca","method":"transformInterceptedMessage","params":{"id":"6508feb2-91bb-4d53-9e03-cdd9bc01d5f3","connectionID":"5c3ce37a-18ac-4617-907e-6d09308b69f0","type":"text","data":"{\"action\":4,\"connectionId\":\"7pX4t-CpWB\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dZXIKyABc0Ap!7pX4t-CpWBAddLqW3n3sLE-4e8c\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.591d.1.us-east-1-A.i-07e5ae922b5503d80.e7dZXIKyABc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 6508feb2-91bb-4d53-9e03-cdd9bc01d5f3 unaltered
+ interception proxy got result of transforming message 6508feb2-91bb-4d53-9e03-cdd9bc01d5f3 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"9ab1bb90-0f83-44c4-9da2-e5f86f45446f","method":"transformInterceptedMessage","params":{"id":"a59a1b51-18bd-491a-9261-b3e35beb4c6c","connectionID":"cb215bd9-0655-4a72-9676-8c7c74ead1f5","type":"text","data":"{\"action\":4,\"connectionId\":\"OAZJSzmrEw\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dZXIKyABc0Ap!OAZJSzmrEwAcvFeiM1CIs9-4e8d\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.591d.1.us-east-1-A.i-07e5ae922b5503d80.e7dZXIKyABc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message a59a1b51-18bd-491a-9261-b3e35beb4c6c unaltered
+ interception proxy got result of transforming message a59a1b51-18bd-491a-9261-b3e35beb4c6c Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"c5ac93a3-8791-4c99-a324-788d72c04df2","method":"transformInterceptedMessage","params":{"id":"ff0df625-b4a8-437b-8a37-49bb12445bff","connectionID":"a148dfa2-a37e-472f-8f03-bca2ff804e90","type":"text","data":"{\"action\":4,\"connectionId\":\"UXiVsv9OJx\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dAszwTABc0Ei!UXiVsv9OJxAUwOvtMXuIgh-3778\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.99b8.2.us-east-1-A.i-0d0eb08c978a5c1d0.e7dAszwTABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message ff0df625-b4a8-437b-8a37-49bb12445bff unaltered
+ interception proxy got result of transforming message ff0df625-b4a8-437b-8a37-49bb12445bff Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"5841f7c7-88ff-4428-8a9f-f4ef1ffbba52","method":"transformInterceptedMessage","params":{"id":"8fe9461e-8e98-4804-8850-c107e3d7bb69","connectionID":"1197cf65-f25e-48a9-bce7-b1e18cac12d9","type":"text","data":"{\"action\":4,\"connectionId\":\"vCobPGtM6h\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dbIQeoABc0Cm!vCobPGtM6hAdfvU9UV1Emg-42a4\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.c696.1.us-east-1-A.i-05410be3f8b9acc99.e7dbIQeoABc0Cm\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 8fe9461e-8e98-4804-8850-c107e3d7bb69 unaltered
+ interception proxy got result of transforming message 8fe9461e-8e98-4804-8850-c107e3d7bb69 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"da054b8f-878b-4579-b35d-9e41c7276031","method":"transformInterceptedMessage","params":{"id":"40ace21a-7053-4db0-9433-5e93d6becbef","connectionID":"fe0c80ec-a965-4036-b295-b1bd610d1b14","type":"text","data":"{\"action\":4,\"connectionId\":\"kayc-gqCX6\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dzQZ4LABc0Cm!kayc-gqCX6ARXc1WVSg6B6-4440\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.a90e.2.us-east-1-A.i-05410be3f8b9acc99.e7dzQZ4LABc0Cm\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 40ace21a-7053-4db0-9433-5e93d6becbef unaltered
+ interception proxy got result of transforming message 40ace21a-7053-4db0-9433-5e93d6becbef Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"fe496388-da4b-4633-9796-6f449ae57189","method":"transformInterceptedMessage","params":{"id":"2c44cdd2-2db2-456f-b816-5a4df3e20311","connectionID":"379b5cc2-eb70-48c7-a6ac-44ad741e9010","type":"text","data":"{\"action\":4,\"connectionId\":\"d7U_K4h7Y5\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dNIPVFABc0Ei!d7U_K4h7Y5ATMucJf8LMmu-387a\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 2c44cdd2-2db2-456f-b816-5a4df3e20311 unaltered
+ interception proxy got result of transforming message 2c44cdd2-2db2-456f-b816-5a4df3e20311 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"8d4a5f77-483c-4b23-92e4-9acbf2eddfa2","method":"transformInterceptedMessage","params":{"id":"19644290-96d2-4f49-99b0-745aa989292d","connectionID":"9d5f0fe4-8e1b-4d0a-8b4e-95ba7037f978","type":"text","data":"{\"action\":4,\"connectionId\":\"F0ZlcRB8F6\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dzQZ4LABc0Cm!F0ZlcRB8F6Aec9Af1sTcwE-4441\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.a90e.2.us-east-1-A.i-05410be3f8b9acc99.e7dzQZ4LABc0Cm\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 19644290-96d2-4f49-99b0-745aa989292d unaltered
+ interception proxy got result of transforming message 19644290-96d2-4f49-99b0-745aa989292d Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"a12f94ef-6fc8-4827-89cc-84e3c1298a0e","method":"transformInterceptedMessage","params":{"id":"45c590eb-19c4-4063-9d22-8411e3278b7d","connectionID":"85f5dfce-6c9d-4a57-bbc2-c45d5d72c4a5","type":"text","data":"{\"action\":4,\"connectionId\":\"2g-NX7Eehf\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dNIPVFABc0Ei!2g-NX7EehfAT5rJUXCTI0k-387b\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 45c590eb-19c4-4063-9d22-8411e3278b7d unaltered
+ interception proxy got result of transforming message 45c590eb-19c4-4063-9d22-8411e3278b7d Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"2f7194a4-19f8-4b18-aa28-9977c92b1822","method":"transformInterceptedMessage","params":{"id":"50676b75-90f9-4184-9d56-58a281c48f8e","connectionID":"be11f962-7b07-40b5-a4b9-4de162c3f76a","type":"text","data":"{\"action\":4,\"connectionId\":\"i3yyrZVMth\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dZXIKyABc0Ap!i3yyrZVMthAbH5M5dHKYj_-4e8e\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.591d.1.us-east-1-A.i-07e5ae922b5503d80.e7dZXIKyABc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 50676b75-90f9-4184-9d56-58a281c48f8e unaltered
+ interception proxy got result of transforming message 50676b75-90f9-4184-9d56-58a281c48f8e Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"56ba063f-6d17-4328-8000-6fcf5142fd5a","method":"transformInterceptedMessage","params":{"id":"476cdfb4-5674-421b-ad7f-ee7725dcd047","connectionID":"9ef4a169-866d-4990-b066-27280140bda5","type":"text","data":"{\"action\":4,\"connectionId\":\"bqhO9I40zu\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7deKLRSQBc0Ap!bqhO9I40zuAeGyCJFUbZLI-4c62\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.9ed2.2.us-east-1-A.i-07e5ae922b5503d80.e7deKLRSQBc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 476cdfb4-5674-421b-ad7f-ee7725dcd047 unaltered
+ interception proxy got result of transforming message 476cdfb4-5674-421b-ad7f-ee7725dcd047 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"06d6ba4f-cffc-43b6-aea4-74ab0613482f","method":"transformInterceptedMessage","params":{"id":"0ef81c20-1b96-43c4-86e7-63941b5e0226","connectionID":"12fc4bb7-6c5e-4efe-9ebc-90cc477bdc88","type":"text","data":"{\"action\":4,\"connectionId\":\"bkzRCnNiYp\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dNIPVFABc0Ei!bkzRCnNiYpAaLxvp_eTu-6-387c\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 0ef81c20-1b96-43c4-86e7-63941b5e0226 unaltered
+ interception proxy got result of transforming message 0ef81c20-1b96-43c4-86e7-63941b5e0226 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"0c7fdbbf-d325-45e4-b081-5582ffc7e8a8","method":"transformInterceptedMessage","params":{"id":"7efd5450-8ccc-4c48-a5ac-f34851c9ec09","connectionID":"6f9c70d3-752a-42d8-80b4-bd66350edef5","type":"text","data":"{\"action\":4,\"connectionId\":\"hXSifPL186\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dAszwTABc0Ei!hXSifPL186Ae0tLgm0Wdr6-3779\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.99b8.2.us-east-1-A.i-0d0eb08c978a5c1d0.e7dAszwTABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 7efd5450-8ccc-4c48-a5ac-f34851c9ec09 unaltered
+ interception proxy got result of transforming message 7efd5450-8ccc-4c48-a5ac-f34851c9ec09 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"997a0505-e8c0-46f1-bc56-f5359229bea1","method":"transformInterceptedMessage","params":{"id":"99b675b7-c526-4fbf-8108-a4bba13db323","connectionID":"6f9c70d3-752a-42d8-80b4-bd66350edef5","type":"text","data":"{\"action\":10,\"channel\":\"channel\"}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 99b675b7-c526-4fbf-8108-a4bba13db323 unaltered
+ interception proxy got result of transforming message 99b675b7-c526-4fbf-8108-a4bba13db323 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"31c1ebf7-eff3-43d6-ab72-a2ce96417a6a","method":"transformInterceptedMessage","params":{"id":"43e33d8e-d41e-4f51-a25c-920fee93ff32","connectionID":"6f9c70d3-752a-42d8-80b4-bd66350edef5","type":"text","data":"{\"action\":11,\"flags\":983104,\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976341689-0\"}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 43e33d8e-d41e-4f51-a25c-920fee93ff32 unaltered
+ interception proxy got result of transforming message 43e33d8e-d41e-4f51-a25c-920fee93ff32 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"8dabe80c-ea37-45b8-a508-3a0041f64c7c","method":"transformInterceptedMessage","params":{"id":"0a94f9f1-6ad7-46e5-8f04-9f0297174827","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":15,\"id\":\"QZ/IJZAqUwhe\",\"connectionId\":\"\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976342739-0\",\"timestamp\":1715976342739,\"messages\":[{\"encoding\":\"utf-8/cipher+aes-256-cbc/base64\",\"data\":\"o64tN/hA3Ll/LJ3sRhizzV1iR7SyIxKk9gg2hPzxY+s=\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 0a94f9f1-6ad7-46e5-8f04-9f0297174827 unaltered
+ interception proxy got result of transforming message 0a94f9f1-6ad7-46e5-8f04-9f0297174827 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"322fcfbb-7739-482c-a212-1c1d876b1ace","method":"transformInterceptedMessage","params":{"id":"f7960462-1322-4936-a1bc-85e520528279","connectionID":"6f9c70d3-752a-42d8-80b4-bd66350edef5","type":"text","data":"{\"action\":15,\"id\":\"QZ/IJZAqUwhe\",\"connectionId\":\"\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976342739-0\",\"timestamp\":1715976342739,\"messages\":[{\"encoding\":\"utf-8/cipher+aes-256-cbc/base64\",\"data\":\"o64tN/hA3Ll/LJ3sRhizzV1iR7SyIxKk9gg2hPzxY+s=\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message f7960462-1322-4936-a1bc-85e520528279 unaltered
+ interception proxy got result of transforming message f7960462-1322-4936-a1bc-85e520528279 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Crypto with Crypto BaseRest is able to publish encrypted messages
+ START TEST: browser/modular Crypto with Crypto _BaseRealtime is able to publish encrypted messages
+ interception proxy got message {"jsonrpc":"2.0","id":"cb17f04d-e431-4e95-8728-c73b66192514","method":"transformInterceptedMessage","params":{"id":"24695999-26ef-441b-a6b3-e98ec10661f5","connectionID":"26f33cb2-a126-479b-aea3-4ff7697c8ea3","type":"text","data":"{\"action\":4,\"connectionId\":\"SvQYBrfiAb\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dZXIKyABc0Ap!SvQYBrfiAbAU-YKxqbHecd-4e91\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.591d.1.us-east-1-A.i-07e5ae922b5503d80.e7dZXIKyABc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 24695999-26ef-441b-a6b3-e98ec10661f5 unaltered
+ interception proxy got result of transforming message 24695999-26ef-441b-a6b3-e98ec10661f5 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"cdbaebfc-9a90-4692-8505-30c9d908ff8e","method":"transformInterceptedMessage","params":{"id":"096c5edd-21c2-409d-96cd-ea37b650a0d3","connectionID":"26f33cb2-a126-479b-aea3-4ff7697c8ea3","type":"text","data":"{\"action\":10,\"channel\":\"channel\"}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 096c5edd-21c2-409d-96cd-ea37b650a0d3 unaltered
+ interception proxy got result of transforming message 096c5edd-21c2-409d-96cd-ea37b650a0d3 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"93d5e83f-1091-4ffa-b7e9-e23383d56b6d","method":"transformInterceptedMessage","params":{"id":"32b14024-eb35-4b51-a518-dddb01ffe97b","connectionID":"26f33cb2-a126-479b-aea3-4ff7697c8ea3","type":"text","data":"{\"action\":11,\"flags\":983104,\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976342739-0\"}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 32b14024-eb35-4b51-a518-dddb01ffe97b unaltered
+ interception proxy got result of transforming message 32b14024-eb35-4b51-a518-dddb01ffe97b Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"0f7497b9-43e1-42c6-8ca7-0c80d3ec44ca","method":"transformInterceptedMessage","params":{"id":"94868710-d977-4887-936b-346f3df434ba","connectionID":"3169e6ab-56d8-45bb-a5f7-06ae93b026af","type":"text","data":"{\"action\":4,\"connectionId\":\"0UAr7pzRLG\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7deKLRSQBc0Ap!0UAr7pzRLGAQVYORTGxy84-4c67\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.9ed2.2.us-east-1-A.i-07e5ae922b5503d80.e7deKLRSQBc0Ap\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 94868710-d977-4887-936b-346f3df434ba unaltered
+ interception proxy got result of transforming message 94868710-d977-4887-936b-346f3df434ba Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b58c09f4-a4f8-4fff-a77f-71f7075ec054","method":"transformInterceptedMessage","params":{"id":"9c3f3524-0dab-4af5-a19a-714df4138055","connectionID":"3169e6ab-56d8-45bb-a5f7-06ae93b026af","type":"text","data":"{\"action\":15,\"channel\":\"channel\",\"messages\":[{\"name\":\"message\",\"encoding\":\"utf-8/cipher+aes-256-cbc/base64\",\"data\":\"civN3DmpciBVtVXU/E/I+fwiD92vLcbDMYS6EOF4QkE=\"}],\"msgSerial\":0}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 9c3f3524-0dab-4af5-a19a-714df4138055 unaltered
+ interception proxy got result of transforming message 9c3f3524-0dab-4af5-a19a-714df4138055 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"81134738-20a7-4605-817a-60b4373d7326","method":"transformInterceptedMessage","params":{"id":"5aaff6bb-f6ec-4363-86a1-bebe495c3bdd","connectionID":"26f33cb2-a126-479b-aea3-4ff7697c8ea3","type":"text","data":"{\"action\":15,\"id\":\"0UAr7pzRLG:0\",\"connectionId\":\"0UAr7pzRLG\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976344168-0\",\"timestamp\":1715976344168,\"messages\":[{\"encoding\":\"utf-8/cipher+aes-256-cbc/base64\",\"data\":\"civN3DmpciBVtVXU/E/I+fwiD92vLcbDMYS6EOF4QkE=\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 5aaff6bb-f6ec-4363-86a1-bebe495c3bdd unaltered
+ interception proxy got result of transforming message 5aaff6bb-f6ec-4363-86a1-bebe495c3bdd Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b73a813b-b157-47d6-88ad-eac571d20976","method":"transformInterceptedMessage","params":{"id":"9d99a626-ad1f-47d4-8545-3577609b3a51","connectionID":"6f9c70d3-752a-42d8-80b4-bd66350edef5","type":"text","data":"{\"action\":15,\"id\":\"0UAr7pzRLG:0\",\"connectionId\":\"0UAr7pzRLG\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976344168-0\",\"timestamp\":1715976344168,\"messages\":[{\"encoding\":\"utf-8/cipher+aes-256-cbc/base64\",\"data\":\"civN3DmpciBVtVXU/E/I+fwiD92vLcbDMYS6EOF4QkE=\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 9d99a626-ad1f-47d4-8545-3577609b3a51 unaltered
+ interception proxy got result of transforming message 9d99a626-ad1f-47d4-8545-3577609b3a51 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"9eadf867-ba9f-4c7b-a5fe-5ab0b9c8790f","method":"transformInterceptedMessage","params":{"id":"d1f6b4b9-bf3f-4f50-b66c-b6b6aaef0512","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":15,\"id\":\"0UAr7pzRLG:0\",\"connectionId\":\"0UAr7pzRLG\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976344168-0\",\"timestamp\":1715976344168,\"messages\":[{\"encoding\":\"utf-8/cipher+aes-256-cbc/base64\",\"data\":\"civN3DmpciBVtVXU/E/I+fwiD92vLcbDMYS6EOF4QkE=\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message d1f6b4b9-bf3f-4f50-b66c-b6b6aaef0512 unaltered
+ interception proxy got result of transforming message d1f6b4b9-bf3f-4f50-b66c-b6b6aaef0512 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"93c0bb07-43d7-4ac2-9e79-d76bdbe404de","method":"transformInterceptedMessage","params":{"id":"f708b16c-9fd4-4bb5-a894-4223cdf88999","connectionID":"3169e6ab-56d8-45bb-a5f7-06ae93b026af","type":"text","data":"{\"action\":1,\"count\":1,\"msgSerial\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message f708b16c-9fd4-4bb5-a894-4223cdf88999 unaltered
+ interception proxy got result of transforming message f708b16c-9fd4-4bb5-a894-4223cdf88999 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular Crypto with Crypto _BaseRealtime is able to publish encrypted messages
+ START TEST: browser/modular MsgPack with useBinaryProtocol client option without MsgPack BaseRest uses JSON
+ END TEST: browser/modular MsgPack with useBinaryProtocol client option without MsgPack BaseRest uses JSON
+ START TEST: browser/modular MsgPack with useBinaryProtocol client option without MsgPack BaseRealtime uses JSON
+ END TEST: browser/modular MsgPack with useBinaryProtocol client option without MsgPack BaseRealtime uses JSON
+ START TEST: browser/modular MsgPack with useBinaryProtocol client option with MsgPack BaseRest uses MessagePack
+ END TEST: browser/modular MsgPack with useBinaryProtocol client option with MsgPack BaseRest uses MessagePack
+ START TEST: browser/modular MsgPack with useBinaryProtocol client option with MsgPack BaseRealtime uses MessagePack
+ END TEST: browser/modular MsgPack with useBinaryProtocol client option with MsgPack BaseRealtime uses MessagePack
+ START TEST: browser/modular RealtimePresence BaseRealtime without RealtimePresence throws an error when attempting to access the `presence` property
+ END TEST: browser/modular RealtimePresence BaseRealtime without RealtimePresence throws an error when attempting to access the `presence` property
+ START TEST: browser/modular RealtimePresence BaseRealtime without RealtimePresence doesn’t break when it receives a PRESENCE ProtocolMessage
+ interception proxy got message {"jsonrpc":"2.0","id":"23ac2efe-104e-4015-be06-1448f67623c9","method":"transformInterceptedMessage","params":{"id":"6dc6f74f-6b34-4ec0-9701-545345ea0d68","connectionID":"b301e48b-a1f4-42dc-96b1-9ef32bbdad40","type":"text","data":"{\"action\":4,\"connectionId\":\"vFNykP3bg8\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dzQZ4LABc0Cm!vFNykP3bg8AX0HiMh3zDTk-4448\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.a90e.2.us-east-1-A.i-05410be3f8b9acc99.e7dzQZ4LABc0Cm\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 6dc6f74f-6b34-4ec0-9701-545345ea0d68 unaltered
+ interception proxy got result of transforming message 6dc6f74f-6b34-4ec0-9701-545345ea0d68 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"125fabe6-b5f9-4d0b-b901-ba27809f19f0","method":"transformInterceptedMessage","params":{"id":"52ca9546-7b20-4d29-a710-a204fdff7f62","connectionID":"9708c1de-ea6a-4a7a-99c5-85f7fd00d6f5","type":"text","data":"{\"action\":4,\"connectionId\":\"v12I7jNCFu\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dNIPVFABc0Ei!v12I7jNCFuAVCGXh34-AWB-3883\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 52ca9546-7b20-4d29-a710-a204fdff7f62 unaltered
+ interception proxy got result of transforming message 52ca9546-7b20-4d29-a710-a204fdff7f62 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"1ab9fd87-82c8-426a-9b0e-a57b864db032","method":"transformInterceptedMessage","params":{"id":"71617ac4-6887-419f-892e-83a3b4b3d81d","connectionID":"9708c1de-ea6a-4a7a-99c5-85f7fd00d6f5","type":"text","data":"{\"action\":10,\"channel\":\"channel\"}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 71617ac4-6887-419f-892e-83a3b4b3d81d unaltered
+ interception proxy got result of transforming message 71617ac4-6887-419f-892e-83a3b4b3d81d Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b71cb1b2-404a-4cef-b55c-67bd62c96b8c","method":"transformInterceptedMessage","params":{"id":"5307c0b3-4e87-48ff-9cec-122da74e5a86","connectionID":"9708c1de-ea6a-4a7a-99c5-85f7fd00d6f5","type":"text","data":"{\"action\":11,\"flags\":983104,\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976344168-0\"}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 5307c0b3-4e87-48ff-9cec-122da74e5a86 unaltered
+ interception proxy got result of transforming message 5307c0b3-4e87-48ff-9cec-122da74e5a86 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"e3c09501-fc2d-4d07-aa0d-9d9d3e78640f","method":"transformInterceptedMessage","params":{"id":"c380b8e2-082d-47ea-b98b-732396ab99d1","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":4,\"connectionId\":\"Q0NVRwqS6p\",\"connectionDetails\":{\"clientId\":\"1157576467847643\",\"connectionKey\":\"e7dNIPVFABc0Ei!Q0NVRwqS6pAe7HxYVx1AHi-3886\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message c380b8e2-082d-47ea-b98b-732396ab99d1 unaltered
+ interception proxy got result of transforming message c380b8e2-082d-47ea-b98b-732396ab99d1 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"4f91e904-adb3-42d1-8fde-76c8f17f6ec0","method":"transformInterceptedMessage","params":{"id":"aa75eebd-15b7-47be-b0df-3d65293a2e4d","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":15,\"channel\":\"channel\",\"messages\":[{\"name\":\"message\",\"data\":\"body\"}],\"msgSerial\":0}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message aa75eebd-15b7-47be-b0df-3d65293a2e4d unaltered
+ interception proxy got result of transforming message aa75eebd-15b7-47be-b0df-3d65293a2e4d Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"fe697953-9754-49fd-8d9b-3cdbc07ba570","method":"transformInterceptedMessage","params":{"id":"3f489a3f-87ca-4531-9350-ab2b95e23fef","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":1,\"count\":1,\"msgSerial\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 3f489a3f-87ca-4531-9350-ab2b95e23fef unaltered
+ interception proxy got result of transforming message 3f489a3f-87ca-4531-9350-ab2b95e23fef Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"af75690c-6bee-4130-8d5a-430ca4fa9b40","method":"transformInterceptedMessage","params":{"id":"a036de63-aa4e-4a16-ad09-ccd9ef1371af","connectionID":"6f9c70d3-752a-42d8-80b4-bd66350edef5","type":"text","data":"{\"action\":15,\"id\":\"Q0NVRwqS6p:0\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345556-0\",\"timestamp\":1715976345556,\"messages\":[{\"clientId\":\"1157576467847643\",\"data\":\"body\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message a036de63-aa4e-4a16-ad09-ccd9ef1371af unaltered
+ interception proxy got result of transforming message a036de63-aa4e-4a16-ad09-ccd9ef1371af Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"09dba608-28f0-4665-81d6-5a32dee9a129","method":"transformInterceptedMessage","params":{"id":"91cd2de4-50e4-4b50-96a2-433539b1feea","connectionID":"26f33cb2-a126-479b-aea3-4ff7697c8ea3","type":"text","data":"{\"action\":15,\"id\":\"Q0NVRwqS6p:0\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345556-0\",\"timestamp\":1715976345556,\"messages\":[{\"clientId\":\"1157576467847643\",\"data\":\"body\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 91cd2de4-50e4-4b50-96a2-433539b1feea unaltered
+ interception proxy got result of transforming message 91cd2de4-50e4-4b50-96a2-433539b1feea Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"edc00a6f-7521-4435-a6a5-43228726e370","method":"transformInterceptedMessage","params":{"id":"265c4189-5251-4ad9-98fc-d9162051ba38","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":15,\"id\":\"Q0NVRwqS6p:0\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345556-0\",\"timestamp\":1715976345556,\"messages\":[{\"clientId\":\"1157576467847643\",\"data\":\"body\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 265c4189-5251-4ad9-98fc-d9162051ba38 unaltered
+ interception proxy got result of transforming message 265c4189-5251-4ad9-98fc-d9162051ba38 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"a7aca9ba-64cc-41ac-8b3a-f9bb41f28db7","method":"transformInterceptedMessage","params":{"id":"a9b656db-2c5a-4230-b89a-b0ad62320cfc","connectionID":"9708c1de-ea6a-4a7a-99c5-85f7fd00d6f5","type":"text","data":"{\"action\":15,\"id\":\"Q0NVRwqS6p:0\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345556-0\",\"timestamp\":1715976345556,\"messages\":[{\"clientId\":\"1157576467847643\",\"data\":\"body\",\"name\":\"message\"}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message a9b656db-2c5a-4230-b89a-b0ad62320cfc unaltered
+ interception proxy got result of transforming message a9b656db-2c5a-4230-b89a-b0ad62320cfc Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"526c4951-d25b-4697-a17b-e889727bf72b","method":"transformInterceptedMessage","params":{"id":"d1370dd9-8ae8-4c57-a055-fe2c531b18ca","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":10,\"channel\":\"channel\"}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message d1370dd9-8ae8-4c57-a055-fe2c531b18ca unaltered
+ interception proxy got result of transforming message d1370dd9-8ae8-4c57-a055-fe2c531b18ca Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"52bdc0ce-f1ae-4b98-b89c-bea74c07f7e8","method":"transformInterceptedMessage","params":{"id":"2195fe7a-b446-4d47-9253-421456002aa9","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":11,\"flags\":983104,\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345556-0\"}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 2195fe7a-b446-4d47-9253-421456002aa9 unaltered
+ interception proxy got result of transforming message 2195fe7a-b446-4d47-9253-421456002aa9 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"ead0c8c7-90b9-4f26-89b2-0e1d602870a8","method":"transformInterceptedMessage","params":{"id":"5a7adeff-2344-4815-a8e4-7ee6687c29eb","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":14,\"channel\":\"channel\",\"presence\":[{\"action\":2}],\"msgSerial\":1}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 5a7adeff-2344-4815-a8e4-7ee6687c29eb unaltered
+ interception proxy got result of transforming message 5a7adeff-2344-4815-a8e4-7ee6687c29eb Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"fd13a778-9368-46d8-9fdf-97f3f2e536e7","method":"transformInterceptedMessage","params":{"id":"9732de80-589e-42ce-9e96-eca15cfea4ea","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":14,\"id\":\"Q0NVRwqS6p:1\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345829-0\",\"timestamp\":1715976345829,\"presence\":[{\"id\":\"Q0NVRwqS6p:1:0\",\"clientId\":\"1157576467847643\",\"connectionId\":\"Q0NVRwqS6p\",\"timestamp\":1715976345829,\"action\":2}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 9732de80-589e-42ce-9e96-eca15cfea4ea unaltered
+ interception proxy got result of transforming message 9732de80-589e-42ce-9e96-eca15cfea4ea Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"5cb3737d-197b-4c1f-a915-97a5c8236db1","method":"transformInterceptedMessage","params":{"id":"6f80f687-7780-469b-b6b5-654bb51c9638","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":14,\"id\":\"Q0NVRwqS6p:1\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345829-0\",\"timestamp\":1715976345829,\"presence\":[{\"id\":\"Q0NVRwqS6p:1:0\",\"clientId\":\"1157576467847643\",\"connectionId\":\"Q0NVRwqS6p\",\"timestamp\":1715976345829,\"action\":2}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 6f80f687-7780-469b-b6b5-654bb51c9638 unaltered
+ interception proxy got result of transforming message 6f80f687-7780-469b-b6b5-654bb51c9638 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"161e37bf-4920-48bc-8cf1-156b720de3a1","method":"transformInterceptedMessage","params":{"id":"bab09a38-8075-4827-a9e3-a5d9e4dcd3a9","connectionID":"6f9c70d3-752a-42d8-80b4-bd66350edef5","type":"text","data":"{\"action\":14,\"id\":\"Q0NVRwqS6p:1\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345829-0\",\"timestamp\":1715976345829,\"presence\":[{\"id\":\"Q0NVRwqS6p:1:0\",\"clientId\":\"1157576467847643\",\"connectionId\":\"Q0NVRwqS6p\",\"timestamp\":1715976345829,\"action\":2}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message bab09a38-8075-4827-a9e3-a5d9e4dcd3a9 unaltered
+ interception proxy got result of transforming message bab09a38-8075-4827-a9e3-a5d9e4dcd3a9 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"8efefb36-e7de-4ae8-a3bb-260e19148ed0","method":"transformInterceptedMessage","params":{"id":"0962ab7c-3456-41ed-a4ed-bbe1b52eab09","connectionID":"9708c1de-ea6a-4a7a-99c5-85f7fd00d6f5","type":"text","data":"{\"action\":14,\"id\":\"Q0NVRwqS6p:1\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345829-0\",\"timestamp\":1715976345829,\"presence\":[{\"id\":\"Q0NVRwqS6p:1:0\",\"clientId\":\"1157576467847643\",\"connectionId\":\"Q0NVRwqS6p\",\"timestamp\":1715976345829,\"action\":2}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 0962ab7c-3456-41ed-a4ed-bbe1b52eab09 unaltered
+ interception proxy got result of transforming message 0962ab7c-3456-41ed-a4ed-bbe1b52eab09 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"ac952fa7-6e5c-414d-a797-7d9fb490ee77","method":"transformInterceptedMessage","params":{"id":"338cb9be-99ab-4af9-a997-3f9322c2f452","connectionID":"26f33cb2-a126-479b-aea3-4ff7697c8ea3","type":"text","data":"{\"action\":14,\"id\":\"Q0NVRwqS6p:1\",\"connectionId\":\"Q0NVRwqS6p\",\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345829-0\",\"timestamp\":1715976345829,\"presence\":[{\"id\":\"Q0NVRwqS6p:1:0\",\"clientId\":\"1157576467847643\",\"connectionId\":\"Q0NVRwqS6p\",\"timestamp\":1715976345829,\"action\":2}]}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 338cb9be-99ab-4af9-a997-3f9322c2f452 unaltered
+ interception proxy got result of transforming message 338cb9be-99ab-4af9-a997-3f9322c2f452 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"da24fc9c-3c1c-4b05-92f2-62bd087c9180","method":"transformInterceptedMessage","params":{"id":"157f1af6-d364-4410-bc01-37b9c41819a9","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":1,\"count\":1,\"msgSerial\":1}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 157f1af6-d364-4410-bc01-37b9c41819a9 unaltered
+ interception proxy got result of transforming message 157f1af6-d364-4410-bc01-37b9c41819a9 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular RealtimePresence BaseRealtime without RealtimePresence doesn’t break when it receives a PRESENCE ProtocolMessage
+ START TEST: browser/modular RealtimePresence BaseRealtime with RealtimePresence offers realtime presence functionality
+ rxChannel:  17:05:46.132 Ably: BaseClient(): initialized with clientOptions {"environment":"sandbox","port":80,"tlsPort":443,"tls":true,"logLevel":4,"plugins":{"RealtimePresence":{}},"key":"_tmp_arPTlA.eykGKQ:L6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ"}
+ rxChannel:  17:05:46.133 Ably: BaseClient(): started; version = 2.0.4
+ rxChannel:  17:05:46.133 Ably: Auth(): anonymous, using basic auth
+ rxChannel:  17:05:46.133 Ably: Realtime(): 
+ rxChannel:  17:05:46.133 Ably: Realtime.ConnectionManager(): started
+ rxChannel:  17:05:46.134 Ably: Realtime.ConnectionManager(): requested transports = [xhr_polling,web_socket]
+ rxChannel:  17:05:46.134 Ably: Realtime.ConnectionManager(): available transports = [web_socket]
+ rxChannel:  17:05:46.134 Ably: Realtime.ConnectionManager(): http hosts = [sandbox-rest.ably.io]
+ rxChannel:  17:05:46.134 Ably: Realtime.connect(): 
+ rxChannel:  17:05:46.134 Ably: Connection.connect(): 
+ rxChannel:  17:05:46.134 Ably: ConnectionManager.requestState(): requested state: connecting; current state: initialized
+ rxChannel:  17:05:46.134 Ably: ConnectionManager.cancelTransitionTimer(): 
+ rxChannel:  17:05:46.134 Ably: Connection state: connecting
+ rxChannel:  17:05:46.134 Ably: ConnectionManager.enactStateChange: setting new state: connecting; reason = undefined
+ rxChannel:  17:05:46.134 Ably: RealtimeChannel(): started; name = channel
+ txChannel:  17:05:46.135 Ably: BaseClient(): initialized with clientOptions {"environment":"sandbox","port":80,"tlsPort":443,"tls":true,"logLevel":4,"clientId":"8075554743894953","plugins":{"RealtimePresence":{}},"key":"_tmp_arPTlA.eykGKQ:L6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ"}
+ txChannel:  17:05:46.135 Ably: BaseClient(): started; version = 2.0.4
+ txChannel:  17:05:46.135 Ably: Auth(): anonymous, using basic auth
+ txChannel:  17:05:46.135 Ably: Realtime(): 
+ txChannel:  17:05:46.135 Ably: Realtime.ConnectionManager(): started
+ txChannel:  17:05:46.135 Ably: Realtime.ConnectionManager(): requested transports = [xhr_polling,web_socket]
+ txChannel:  17:05:46.135 Ably: Realtime.ConnectionManager(): available transports = [web_socket]
+ txChannel:  17:05:46.135 Ably: Realtime.ConnectionManager(): http hosts = [sandbox-rest.ably.io]
+ txChannel:  17:05:46.135 Ably: Realtime.connect(): 
+ txChannel:  17:05:46.135 Ably: Connection.connect(): 
+ txChannel:  17:05:46.135 Ably: ConnectionManager.requestState(): requested state: connecting; current state: initialized
+ txChannel:  17:05:46.135 Ably: ConnectionManager.cancelTransitionTimer(): 
+ txChannel:  17:05:46.135 Ably: Connection state: connecting
+ txChannel:  17:05:46.136 Ably: ConnectionManager.enactStateChange: setting new state: connecting; reason = undefined
+ txChannel:  17:05:46.136 Ably: RealtimeChannel(): started; name = channel
+ LAWRENCE: begin waiting for presence subscribe
+ rxChannel:  17:05:46.136 Ably: RealtimeChannel.requestState: name = channel, state = attaching
+ rxChannel:  17:05:46.136 Ably: RealtimeChannel.notifyState: name = channel, current state = initialized, notifying state attaching
+ rxChannel:  17:05:46.136 Ably: Channel state for channel "channel": attaching
+ rxChannel:  17:05:46.136 Ably: RealtimeChannel.checkPendingState: sendEvents is false; state is connecting
+ rxChannel:  17:05:46.136 Ably: ConnectionManager.startConnect(): starting connection
+ rxChannel:  17:05:46.136 Ably: ConnectionManager.startTransitionTimer(): transitionState: connecting
+ rxChannel:  17:05:46.136 Ably: ConnectionManager.getTransportParams(): Transport params = [mode=clean,format=json]
+ rxChannel:  17:05:46.137 Ably: ConnectionManager.connectWs(): undefined
+ rxChannel:  17:05:46.137 Ably: ConnectionManager.tryTransportWithFallbacks(): web_socket
+ rxChannel:  17:05:46.137 Ably: ConnectionManager.tryATransport(): trying web_socket
+ rxChannel:  17:05:46.137 Ably: WebSocketTransport.connect(): starting
+ rxChannel:  17:05:46.137 Ably: WebSocketTransport.connect(): uri: wss://sandbox-realtime.ably.io:443/
+ rxChannel:  17:05:46.137 Ably: WebSocketTransport.connect(): authParams: key: _tmp_arPTlA.eykGKQ:L6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ; err: null
+ rxChannel:  17:05:46.137 Ably: WebSocketTransport.createWebSocket(): uri:wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+ txChannel:  17:05:46.137 Ably: ConnectionManager.startConnect(): starting connection
+ txChannel:  17:05:46.137 Ably: ConnectionManager.startTransitionTimer(): transitionState: connecting
+ txChannel:  17:05:46.137 Ably: ConnectionManager.getTransportParams(): Transport params = [mode=clean,format=json]
+ txChannel:  17:05:46.138 Ably: ConnectionManager.connectWs(): undefined
+ txChannel:  17:05:46.138 Ably: ConnectionManager.tryTransportWithFallbacks(): web_socket
+ txChannel:  17:05:46.138 Ably: ConnectionManager.tryATransport(): trying web_socket
+ txChannel:  17:05:46.138 Ably: WebSocketTransport.connect(): starting
+ txChannel:  17:05:46.138 Ably: WebSocketTransport.connect(): uri: wss://sandbox-realtime.ably.io:443/
+ txChannel:  17:05:46.138 Ably: WebSocketTransport.connect(): authParams: key: _tmp_arPTlA.eykGKQ:L6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ; err: null
+ txChannel:  17:05:46.138 Ably: WebSocketTransport.createWebSocket(): uri:wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&clientId=8075554743894953&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+ rxChannel:  17:05:46.162 Ably: WebSocketTransport.onWsOpen(): opened WebSocket
+ rxChannel:  17:05:46.162 Ably: Transport.tryConnect(): viable transport WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+ rxChannel:  17:05:46.163 Ably: ConnectionManager.tryATransport(): viable transport web_socket; setting pending
+ rxChannel:  17:05:46.163 Ably: ConnectionManager.setTransportPending(): transport = WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser; mode = clean
+ interception proxy got message {"jsonrpc":"2.0","id":"56fa048d-4c39-4492-bacd-52bd70fdbace","method":"transformInterceptedMessage","params":{"id":"288f2908-ae64-48e3-b0f7-e5454cf3a31a","connectionID":"14abb0ae-e150-4e2f-9a38-9d7c925e9e29","type":"text","data":"{\"action\":4,\"connectionId\":\"HkjZzW_e__\",\"connectionDetails\":{\"clientId\":\"*\",\"connectionKey\":\"e7dNIPVFABc0Ei!HkjZzW_e__ARSo2aGkrnMl-3889\",\"maxMessageSize\":16384,\"maxInboundRate\":250,\"maxOutboundRate\":100,\"maxFrameSize\":262144,\"serverId\":\"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei\",\"connectionStateTtl\":120000,\"maxIdleInterval\":15000}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 288f2908-ae64-48e3-b0f7-e5454cf3a31a unaltered
+ interception proxy got result of transforming message 288f2908-ae64-48e3-b0f7-e5454cf3a31a Object
+ interception proxy sending transformInterceptedMessage response Object
+ rxChannel:  17:05:46.663 Ably: WebSocketTransport.onWsData(): data received; length = 354; type = string
+ rxChannel:  17:05:46.664 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=CONNECTED; connectionId=HkjZzW_e__]; connectionId = undefined
+ rxChannel:  17:05:46.664 Ably: ConnectionManager.activateTransport(): transport = WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+ rxChannel:  17:05:46.664 Ably: ConnectionManager.activateTransport(): connectionId =  HkjZzW_e__
+ rxChannel:  17:05:46.664 Ably: ConnectionManager.activateTransport(): connectionDetails =  {"clientId":"*","connectionKey":"e7dNIPVFABc0Ei!HkjZzW_e__ARSo2aGkrnMl-3889","maxMessageSize":16384,"maxInboundRate":250,"maxOutboundRate":100,"maxFrameSize":262144,"serverId":"frontend.3966.1.us-east-1-A.i-0d0eb08c978a5c1d0.e7dNIPVFABc0Ei","connectionStateTtl":120000,"maxIdleInterval":15000}
+ rxChannel:  17:05:46.665 Ably: ConnectionManager.activateTransport(): current state = connecting
+ rxChannel:  17:05:46.665 Ably: ConnectionManager.setConnection(): New connectionId; reattaching any attached channels
+ rxChannel:  17:05:46.665 Ably: ConnectionManager.notifyState(): new state: connected
+ rxChannel:  17:05:46.665 Ably: ConnectionManager.cancelTransitionTimer(): 
+ rxChannel:  17:05:46.666 Ably: Connection state: connected
+ rxChannel:  17:05:46.666 Ably: ConnectionManager.enactStateChange: setting new state: connected; reason = undefined
+ rxChannel:  17:05:46.666 Ably: ConnectionManager.sendQueuedMessages(): sending 0 queued messages
+ rxChannel:  17:05:46.666 Ably: RealtimeChannel.checkPendingState: name = channel, state = attaching
+ rxChannel:  17:05:46.666 Ably: RealtimeChannel.attachImpl(): sending ATTACH message
+ rxChannel:  17:05:46.666 Ably: ConnectionManager.send(): sending event
+ rxChannel:  17:05:46.667 Ably: Protocol.send(): sending msg; [ProtocolMessage; action=ATTACH; channel=channel]
+ interception proxy got message {"jsonrpc":"2.0","id":"b61b5c7b-ce3d-4438-8993-d8b4f11af1e1","method":"transformInterceptedMessage","params":{"id":"3f437cfe-7fe6-429f-8e60-f4acb7e73452","connectionID":"14abb0ae-e150-4e2f-9a38-9d7c925e9e29","type":"text","data":"{\"action\":10,\"channel\":\"channel\"}","fromClient":true}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 3f437cfe-7fe6-429f-8e60-f4acb7e73452 unaltered
+ interception proxy got result of transforming message 3f437cfe-7fe6-429f-8e60-f4acb7e73452 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"84dade75-fb2b-40b2-b5d2-a952d0098c11","method":"transformInterceptedMessage","params":{"id":"1070ec56-a394-4615-9411-2dcdf3e2ce77","connectionID":"14abb0ae-e150-4e2f-9a38-9d7c925e9e29","type":"text","data":"{\"action\":11,\"flags\":983105,\"channel\":\"channel\",\"channelSerial\":\"e7dP5PvyABc0Cq23500427@1715976345829-0\"}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 1070ec56-a394-4615-9411-2dcdf3e2ce77 unaltered
+ interception proxy got result of transforming message 1070ec56-a394-4615-9411-2dcdf3e2ce77 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"6a48d6bc-0271-447e-98db-d76293a5beb3","method":"transformInterceptedMessage","params":{"id":"dceb625e-8355-46f3-965e-c5707970eed3","connectionID":"14abb0ae-e150-4e2f-9a38-9d7c925e9e29","type":"text","data":"{\"action\":16,\"channel\":\"channel\",\"channelSerial\":\"e7dNIPVFABc0Ei11501694:\",\"presence\":[{\"id\":\"Q0NVRwqS6p:1:0\",\"clientId\":\"1157576467847643\",\"connectionId\":\"Q0NVRwqS6p\",\"timestamp\":1715976345829,\"action\":1}],\"count\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message dceb625e-8355-46f3-965e-c5707970eed3 unaltered
+ interception proxy got result of transforming message dceb625e-8355-46f3-965e-c5707970eed3 Object
+ interception proxy sending transformInterceptedMessage response Object
+ rxChannel:  17:05:46.795 Ably: WebSocketTransport.onWsData(): data received; length = 105; type = string
+ rxChannel:  17:05:46.795 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ATTACHED; channel=channel; channelSerial=e7dP5PvyABc0Cq23500427@1715976345829-0; flags=HAS_PRESENCE,PRESENCE,PUBLISH,SUBSCRIBE,PRESENCE_SUBSCRIBE]; connectionId = HkjZzW_e__
+ rxChannel:  17:05:46.796 Ably: RealtimeChannel.setChannelSerial(): Updating channel serial; serial = e7dP5PvyABc0Cq23500427@1715976345829-0; previous = undefined
+ rxChannel:  17:05:46.796 Ably: RealtimeChannel.notifyState: name = channel, current state = attaching, notifying state attached
+ rxChannel:  17:05:46.796 Ably: RealtimePresence.onAttached(): channel = channel, hasPresence = true
+ rxChannel:  17:05:46.796 Ably: PresenceMap.startSync(): channel = channel; syncInProgress = false
+ rxChannel:  17:05:46.796 Ably: PresenceMap.setInProgress(): inProgress = true
+ rxChannel:  17:05:46.797 Ably: Channel state for channel "channel": attached
+ rxChannel:  17:05:46.797 Ably: RealtimeChannel.onAttached: activating channel; name = channel
+ LAWRENCE: end waiting for presence subscribe
+ LAWRENCE: begin waiting for presence enter
+ LAWRENCE: txChannel.presence.enter is 
+ txChannel:  17:05:46.797 Ably: RealtimePresence.enter: undefined
+ txChannel:  17:05:46.797 Ably: RealtimePresence._enterOrUpdateClient: undefined
+ txChannel:  17:05:46.797 Ably: RealtimePresence.enterClient(): channel = channel, id = undefined, client = (implicit) 8075554743894953
+ txChannel:  17:05:46.798 Ably: RealtimeChannel.requestState: name = channel, state = attaching
+ txChannel:  17:05:46.798 Ably: RealtimeChannel.notifyState: name = channel, current state = initialized, notifying state attaching
+ txChannel:  17:05:46.798 Ably: Channel state for channel "channel": attaching
+ txChannel:  17:05:46.798 Ably: RealtimeChannel.checkPendingState: sendEvents is false; state is connecting
+ rxChannel:  17:05:46.798 Ably: WebSocketTransport.onWsData(): data received; length = 217; type = string
+ rxChannel:  17:05:46.798 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=SYNC; channel=channel; channelSerial=e7dNIPVFABc0Ei11501694:; count=0; presence=[ [PresenceMessage; action=present; id=Q0NVRwqS6p:1:0; timestamp=1715976345829; clientId=1157576467847643; connectionId=Q0NVRwqS6p] ]]; connectionId = HkjZzW_e__
+ rxChannel:  17:05:46.798 Ably: RealtimePresence.setPresence(): received presence for 1 participants; syncChannelSerial = e7dNIPVFABc0Ei11501694:
+ rxChannel:  17:05:46.798 Ably: PresenceMap.startSync(): channel = channel; syncInProgress = true
+ rxChannel:  17:05:46.799 Ably: PresenceMap.endSync(): channel = channel; syncInProgress = true
+ rxChannel:  17:05:46.799 Ably: PresenceMap.setInProgress(): inProgress = false
+ txChannel:  17:05:50.140 Ably: ConnectionManager WebSocket slow timer: checking connectivity
+ txChannel:  17:05:50.141 Ably: (Fetch)Http.checkConnectivity(): Sending; https://internet-up.ably-realtime.com/is-the-internet-up.txt
+ txChannel:  17:05:50.211 Ably: (Fetch)Http.checkConnectivity(): Result: true
+ txChannel:  17:05:50.211 Ably: ConnectionManager WebSocket slow timer: http connectivity check succeeded
+ interception proxy got message {"jsonrpc":"2.0","id":"99c0e743-8d73-4c7c-96c1-75eb62ead860","method":"transformInterceptedMessage","params":{"id":"5a91c2f1-ba6c-4d99-82a3-6b01a08a15c5","connectionID":"a2edcd9b-abb2-43d8-9c42-5a2b94142e0b","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 5a91c2f1-ba6c-4d99-82a3-6b01a08a15c5 unaltered
+ interception proxy got result of transforming message 5a91c2f1-ba6c-4d99-82a3-6b01a08a15c5 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"08d7c5b5-636e-4ed3-99f3-158a5808faa4","method":"transformInterceptedMessage","params":{"id":"4845d63d-04b7-4297-a5b1-fbdfe1e88195","connectionID":"5519debd-9271-4efa-a5eb-33b7818ddf56","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 4845d63d-04b7-4297-a5b1-fbdfe1e88195 unaltered
+ interception proxy got result of transforming message 4845d63d-04b7-4297-a5b1-fbdfe1e88195 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"93d8283b-637a-45b6-875c-7e278e8441c9","method":"transformInterceptedMessage","params":{"id":"d0e2596f-4ac8-420b-ae39-7fc04ab3a859","connectionID":"af5206b9-b434-4cfe-8977-ff04695f3a90","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message d0e2596f-4ac8-420b-ae39-7fc04ab3a859 unaltered
+ interception proxy got result of transforming message d0e2596f-4ac8-420b-ae39-7fc04ab3a859 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"1d2c9f77-0b55-4f0b-9c63-c0a412efcf32","method":"transformInterceptedMessage","params":{"id":"48246caf-1978-42ee-bc86-a4d825b4a9a3","connectionID":"f5ed8dae-1f2b-43be-bd2b-6a141be8aa02","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 48246caf-1978-42ee-bc86-a4d825b4a9a3 unaltered
+ interception proxy got result of transforming message 48246caf-1978-42ee-bc86-a4d825b4a9a3 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b30c4ff3-06c6-4ce4-a13a-11962be0d592","method":"transformInterceptedMessage","params":{"id":"71a6dcb1-994c-4688-a21b-10c525bd75c4","connectionID":"b8da5579-4ed1-49c0-bd31-2a3e21cbf86d","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 71a6dcb1-994c-4688-a21b-10c525bd75c4 unaltered
+ interception proxy got result of transforming message 71a6dcb1-994c-4688-a21b-10c525bd75c4 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"e1927c33-b400-4bfc-b856-d3bd2d544ae8","method":"transformInterceptedMessage","params":{"id":"b70d2be3-822e-44cf-b4d9-400da1ea2e26","connectionID":"f128c8dd-ee50-46ba-83fa-68b1bbad60aa","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message b70d2be3-822e-44cf-b4d9-400da1ea2e26 unaltered
+ interception proxy got result of transforming message b70d2be3-822e-44cf-b4d9-400da1ea2e26 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"c3ad3038-3ec1-49d1-94fa-46362712943a","method":"transformInterceptedMessage","params":{"id":"fa9ad7a7-5bed-4157-98c8-0912a9c72074","connectionID":"1aed8420-9fa2-4789-a49e-3d153011e99c","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message fa9ad7a7-5bed-4157-98c8-0912a9c72074 unaltered
+ interception proxy got result of transforming message fa9ad7a7-5bed-4157-98c8-0912a9c72074 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"226de186-0365-45ea-b943-5db4510389be","method":"transformInterceptedMessage","params":{"id":"436dbce9-2f3e-46da-baf1-6c23eca891af","connectionID":"2e0669f5-01ca-469b-a5af-edc9f52e41b2","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 436dbce9-2f3e-46da-baf1-6c23eca891af unaltered
+ interception proxy got result of transforming message 436dbce9-2f3e-46da-baf1-6c23eca891af Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"1eff87b7-480f-47bf-8b28-4a68ab65170f","method":"transformInterceptedMessage","params":{"id":"1d49e402-63eb-4703-8ae6-d3206892e951","connectionID":"d76117c7-fce1-4aa5-94b7-28756fb1bc35","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 1d49e402-63eb-4703-8ae6-d3206892e951 unaltered
+ interception proxy got result of transforming message 1d49e402-63eb-4703-8ae6-d3206892e951 Object
+ interception proxy sending transformInterceptedMessage response Object
+ END TEST: browser/modular RealtimePresence BaseRealtime with RealtimePresence offers realtime presence functionality
+ txChannel:  17:05:56.151 Ably: ConnectionManager WebSocket give up timer: websocket connection took more than 10s; 
+ txChannel:  17:05:56.152 Ably: ConnectionManager WebSocket give up timer: websocket connectivity appears to be unavailable but no other transports to try
+ txChannel:  17:05:56.152 Ably: WebSocketTransport.dispose(): 
+ txChannel:  17:05:56.152 Ably: ConnectionManager.tryATransport(): transport web_socket disconnected, err: [_ErrorInfo: Timeout waiting for transport to indicate itself viable; statusCode=500; code=50000]
+ txChannel:  17:05:56.152 Ably: ConnectionManager.notifyState(): new state: disconnected
+ txChannel:  17:05:56.152 Ably: ConnectionManager.cancelTransitionTimer(): 
+ txChannel:  17:05:56.152 Ably: Connection state: disconnected; reason: [_ErrorInfo: Unable to connect (and no more fallback hosts to try); statusCode=404; code=80003]
+ txChannel:  17:05:56.152 Ably: ConnectionManager.enactStateChange: setting new state: disconnected; reason = Unable to connect (and no more fallback hosts to try)
+ txChannel:  17:05:56.152 Ably: WebSocketTransport.dispose(): closing websocket
+ WebSocket connection to 'wss://sandbox-realtime.ably.io/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&clientId=8075554743894953&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser' failed: WebSocket is closed before the connection is established.
+(anonymous) @ index.mjs:7598
+ txChannel:  17:05:56.153 Ably: ConnectionManager.disconnectAllTransports(): Disconnecting all transports
+ txChannel:  17:05:56.153 Ably: ConnectionManager.disconnectAllTransports(): Disconnecting proposed transport: undefined
+ txChannel:  17:05:56.153 Ably: WebSocketTransport.dispose(): 
+ txChannel:  17:05:56.153 Ably: WebSocketTransport.onError(): Error from WebSocket: undefined
+ txChannel:  17:05:56.153 Ably: WebSocketTransport.onWsClose(): Unclean disconnection of WebSocket ; code = 1006
+ interception proxy got message {"jsonrpc":"2.0","id":"3cf4ce1c-1c7c-4830-9ffa-db3284ecdbb2","method":"transformInterceptedMessage","params":{"id":"99b0c290-4abc-440f-8a49-b391d35c2e69","connectionID":"48aee968-2e7c-474f-a20a-91c288c90a6d","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 99b0c290-4abc-440f-8a49-b391d35c2e69 unaltered
+ interception proxy got result of transforming message 99b0c290-4abc-440f-8a49-b391d35c2e69 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b79410ee-1f3f-48d6-8953-5dddef5ec304","method":"transformInterceptedMessage","params":{"id":"ae0a2cc6-6fbf-4ad6-89b1-b62d771559f0","connectionID":"debbdfab-f1d7-41d1-809f-22c96426cb73","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message ae0a2cc6-6fbf-4ad6-89b1-b62d771559f0 unaltered
+ interception proxy got result of transforming message ae0a2cc6-6fbf-4ad6-89b1-b62d771559f0 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"6523a4d2-f697-4de6-93d3-758cbffa9396","method":"transformInterceptedMessage","params":{"id":"853dd19d-c573-4359-9300-3671b1a15ee8","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":0}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 853dd19d-c573-4359-9300-3671b1a15ee8 unaltered
+ interception proxy got result of transforming message 853dd19d-c573-4359-9300-3671b1a15ee8 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"f7102363-bc99-49e7-b81f-15f2c793925e","method":"transformInterceptedMessage","params":{"id":"d83dde04-e1ae-4671-89c1-20af73b81b8d","connectionID":"5519debd-9271-4efa-a5eb-33b7818ddf56","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message d83dde04-e1ae-4671-89c1-20af73b81b8d unaltered
+ interception proxy got result of transforming message d83dde04-e1ae-4671-89c1-20af73b81b8d Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b56f897c-f2bc-4557-89d4-42dffcd605f7","method":"transformInterceptedMessage","params":{"id":"44f5b8df-f366-44d9-be16-8abd4a495ebc","connectionID":"fe0c80ec-a965-4036-b295-b1bd610d1b14","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 44f5b8df-f366-44d9-be16-8abd4a495ebc unaltered
+ interception proxy got result of transforming message 44f5b8df-f366-44d9-be16-8abd4a495ebc Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"6c9e1223-e546-4dd4-a031-415c680c0d8c","method":"transformInterceptedMessage","params":{"id":"17cbb04b-f50f-41c2-bf23-da23adb964cd","connectionID":"af5206b9-b434-4cfe-8977-ff04695f3a90","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 17cbb04b-f50f-41c2-bf23-da23adb964cd unaltered
+ interception proxy got result of transforming message 17cbb04b-f50f-41c2-bf23-da23adb964cd Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"12372f83-7eef-4fd4-a809-96c16a1391fe","method":"transformInterceptedMessage","params":{"id":"ea6450d8-c7bb-4900-a433-ef5579baafc7","connectionID":"9d5f0fe4-8e1b-4d0a-8b4e-95ba7037f978","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message ea6450d8-c7bb-4900-a433-ef5579baafc7 unaltered
+ interception proxy got result of transforming message ea6450d8-c7bb-4900-a433-ef5579baafc7 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"4cc561e0-b49c-4cf9-94e8-ce0c2eae96a9","method":"transformInterceptedMessage","params":{"id":"37bf5e19-eff5-4cc5-b527-8dcdae9c6a1d","connectionID":"f5ed8dae-1f2b-43be-bd2b-6a141be8aa02","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 37bf5e19-eff5-4cc5-b527-8dcdae9c6a1d unaltered
+ interception proxy got result of transforming message 37bf5e19-eff5-4cc5-b527-8dcdae9c6a1d Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"328ab612-bef0-41ac-9cf5-dcb8116b1a80","method":"transformInterceptedMessage","params":{"id":"cd9f3bbb-220e-4eb9-9587-62808151bcdf","connectionID":"8c9d9e19-1397-45c4-97ba-e83c83b268ba","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message cd9f3bbb-220e-4eb9-9587-62808151bcdf unaltered
+ interception proxy got result of transforming message cd9f3bbb-220e-4eb9-9587-62808151bcdf Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"6735a4ec-4dab-4e1f-9775-2c364f3ec4b4","method":"transformInterceptedMessage","params":{"id":"053abcf5-c111-4e27-87ea-b1b2e1206dcd","connectionID":"b8da5579-4ed1-49c0-bd31-2a3e21cbf86d","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 053abcf5-c111-4e27-87ea-b1b2e1206dcd unaltered
+ interception proxy got result of transforming message 053abcf5-c111-4e27-87ea-b1b2e1206dcd Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"4f07b1ed-fb57-4498-bd12-c125bb98ba9e","method":"transformInterceptedMessage","params":{"id":"13559a96-831a-4e1e-85e6-06e93d5b8260","connectionID":"b301e48b-a1f4-42dc-96b1-9ef32bbdad40","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 13559a96-831a-4e1e-85e6-06e93d5b8260 unaltered
+ interception proxy got result of transforming message 13559a96-831a-4e1e-85e6-06e93d5b8260 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"d0a27d49-fee6-4c68-bc5c-217f627111b2","method":"transformInterceptedMessage","params":{"id":"afb062dc-15ae-49c5-ae1d-38d5e031d8b4","connectionID":"5c3ce37a-18ac-4617-907e-6d09308b69f0","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message afb062dc-15ae-49c5-ae1d-38d5e031d8b4 unaltered
+ interception proxy got result of transforming message afb062dc-15ae-49c5-ae1d-38d5e031d8b4 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"0cd87cbe-49c9-4334-8b25-e012e6adb329","method":"transformInterceptedMessage","params":{"id":"ec34a7e0-54e0-4c9d-a097-1a46018229ec","connectionID":"d76117c7-fce1-4aa5-94b7-28756fb1bc35","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message ec34a7e0-54e0-4c9d-a097-1a46018229ec unaltered
+ interception proxy got result of transforming message ec34a7e0-54e0-4c9d-a097-1a46018229ec Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"0041261c-d4e5-4dd8-a90b-a88453ac0a81","method":"transformInterceptedMessage","params":{"id":"475233d8-29ad-4ada-9113-f32c80595670","connectionID":"2e0669f5-01ca-469b-a5af-edc9f52e41b2","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 475233d8-29ad-4ada-9113-f32c80595670 unaltered
+ interception proxy got result of transforming message 475233d8-29ad-4ada-9113-f32c80595670 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"33443757-6599-4cd1-b4e1-3743da263ef4","method":"transformInterceptedMessage","params":{"id":"82457f28-7606-409e-b65a-b265e95d2d98","connectionID":"26f33cb2-a126-479b-aea3-4ff7697c8ea3","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 82457f28-7606-409e-b65a-b265e95d2d98 unaltered
+ interception proxy got result of transforming message 82457f28-7606-409e-b65a-b265e95d2d98 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"c487b436-7785-46fd-a57c-65256948ec2f","method":"transformInterceptedMessage","params":{"id":"19bac6fa-821a-4e9d-bae5-296510887e8e","connectionID":"8ece73c5-d1bf-4067-8437-e1c3582a8368","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 19bac6fa-821a-4e9d-bae5-296510887e8e unaltered
+ interception proxy got result of transforming message 19bac6fa-821a-4e9d-bae5-296510887e8e Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"5ca4b45c-b385-4b2f-9aa4-2a8fcbcfd7b2","method":"transformInterceptedMessage","params":{"id":"752ec0e3-e233-4f0a-9dc3-f39c4017d892","connectionID":"be11f962-7b07-40b5-a4b9-4de162c3f76a","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 752ec0e3-e233-4f0a-9dc3-f39c4017d892 unaltered
+ interception proxy got result of transforming message 752ec0e3-e233-4f0a-9dc3-f39c4017d892 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"b1509495-339c-41d5-9895-68d6df5603cd","method":"transformInterceptedMessage","params":{"id":"6a5205a2-9115-4290-b852-7571e330c949","connectionID":"379b5cc2-eb70-48c7-a6ac-44ad741e9010","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 6a5205a2-9115-4290-b852-7571e330c949 unaltered
+ interception proxy got result of transforming message 6a5205a2-9115-4290-b852-7571e330c949 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"e4be240f-9294-42cb-907d-fde5ff734e99","method":"transformInterceptedMessage","params":{"id":"9efdd609-8578-4096-ba6c-af9c886791d9","connectionID":"a2edcd9b-abb2-43d8-9c42-5a2b94142e0b","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 9efdd609-8578-4096-ba6c-af9c886791d9 unaltered
+ interception proxy got result of transforming message 9efdd609-8578-4096-ba6c-af9c886791d9 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"34993b85-e02c-489c-af86-037a24fa0834","method":"transformInterceptedMessage","params":{"id":"e075a4a6-fb94-4272-828d-0c17f750906e","connectionID":"85f5dfce-6c9d-4a57-bbc2-c45d5d72c4a5","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message e075a4a6-fb94-4272-828d-0c17f750906e unaltered
+ interception proxy got result of transforming message e075a4a6-fb94-4272-828d-0c17f750906e Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"38d0971d-551e-46d0-9b00-7e26e359aaed","method":"transformInterceptedMessage","params":{"id":"b6f0d338-63d7-4fb2-b39b-0e57ec849730","connectionID":"f128c8dd-ee50-46ba-83fa-68b1bbad60aa","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message b6f0d338-63d7-4fb2-b39b-0e57ec849730 unaltered
+ interception proxy got result of transforming message b6f0d338-63d7-4fb2-b39b-0e57ec849730 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"dfc5dec1-ef73-4221-a243-de53a634fe70","method":"transformInterceptedMessage","params":{"id":"66320d9b-ccf9-4cb4-892b-38f17f9260d5","connectionID":"debbdfab-f1d7-41d1-809f-22c96426cb73","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 66320d9b-ccf9-4cb4-892b-38f17f9260d5 unaltered
+ interception proxy got result of transforming message 66320d9b-ccf9-4cb4-892b-38f17f9260d5 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"f87d4f57-4b3f-42b8-96be-35aae1442f35","method":"transformInterceptedMessage","params":{"id":"c9031b18-85d3-4e5b-b0d3-2a33cb179da2","connectionID":"12fc4bb7-6c5e-4efe-9ebc-90cc477bdc88","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message c9031b18-85d3-4e5b-b0d3-2a33cb179da2 unaltered
+ interception proxy got result of transforming message c9031b18-85d3-4e5b-b0d3-2a33cb179da2 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"5436bd2e-b4a5-4ab8-98b9-5e71ae0a59b9","method":"transformInterceptedMessage","params":{"id":"ea2b4456-5317-41c5-9916-333189302415","connectionID":"3169e6ab-56d8-45bb-a5f7-06ae93b026af","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message ea2b4456-5317-41c5-9916-333189302415 unaltered
+ interception proxy got result of transforming message ea2b4456-5317-41c5-9916-333189302415 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"2875e5fc-9de5-4f6a-9f4a-1a04017b2fea","method":"transformInterceptedMessage","params":{"id":"0a11cb19-4263-4cb6-9161-59ad38cc3186","connectionID":"9ef4a169-866d-4990-b066-27280140bda5","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 0a11cb19-4263-4cb6-9161-59ad38cc3186 unaltered
+ interception proxy got result of transforming message 0a11cb19-4263-4cb6-9161-59ad38cc3186 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"7bd3a3fc-6636-4fc1-bff1-6d770968562f","method":"transformInterceptedMessage","params":{"id":"07802f1d-8c19-47c1-b53a-fd8f01b666a0","connectionID":"cb215bd9-0655-4a72-9676-8c7c74ead1f5","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 07802f1d-8c19-47c1-b53a-fd8f01b666a0 unaltered
+ interception proxy got result of transforming message 07802f1d-8c19-47c1-b53a-fd8f01b666a0 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"4859f8b5-86a4-4757-8cbc-9dca407c5685","method":"transformInterceptedMessage","params":{"id":"0e4e835a-aefa-42cb-ba50-067ced6bc960","connectionID":"48aee968-2e7c-474f-a20a-91c288c90a6d","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 0e4e835a-aefa-42cb-ba50-067ced6bc960 unaltered
+ interception proxy got result of transforming message 0e4e835a-aefa-42cb-ba50-067ced6bc960 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"ec3c2f00-a527-4152-b25b-fa96bb6f5765","method":"transformInterceptedMessage","params":{"id":"5d737080-ce71-4995-9ac4-20cabe665a5a","connectionID":"9708c1de-ea6a-4a7a-99c5-85f7fd00d6f5","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 5d737080-ce71-4995-9ac4-20cabe665a5a unaltered
+ interception proxy got result of transforming message 5d737080-ce71-4995-9ac4-20cabe665a5a Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"1a420b94-0fe9-49cc-aa0f-0ecde4be6b54","method":"transformInterceptedMessage","params":{"id":"a0940f6b-58bc-41ff-ab84-4a21e287e2af","connectionID":"a4b3e3be-7289-4eb3-9295-3f564521a106","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message a0940f6b-58bc-41ff-ab84-4a21e287e2af unaltered
+ interception proxy got result of transforming message a0940f6b-58bc-41ff-ab84-4a21e287e2af Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"96c5dc39-ac23-4e19-8ef8-30a40482faeb","method":"transformInterceptedMessage","params":{"id":"0ea5a040-a331-4af4-9120-857a442ff721","connectionID":"1aed8420-9fa2-4789-a49e-3d153011e99c","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 0ea5a040-a331-4af4-9120-857a442ff721 unaltered
+ interception proxy got result of transforming message 0ea5a040-a331-4af4-9120-857a442ff721 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"3a18a56e-f757-496c-a21a-af30e2ae66df","method":"transformInterceptedMessage","params":{"id":"8473cab9-b5df-4e67-be53-56dc5e56c0f4","connectionID":"14abb0ae-e150-4e2f-9a38-9d7c925e9e29","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 8473cab9-b5df-4e67-be53-56dc5e56c0f4 unaltered
+ interception proxy got result of transforming message 8473cab9-b5df-4e67-be53-56dc5e56c0f4 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"78814af6-b1f6-471f-849a-f39e1a317e9d","method":"transformInterceptedMessage","params":{"id":"1e175f5c-37a7-4da1-81fd-4c751bc2f1da","connectionID":"a148dfa2-a37e-472f-8f03-bca2ff804e90","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 1e175f5c-37a7-4da1-81fd-4c751bc2f1da unaltered
+ interception proxy got result of transforming message 1e175f5c-37a7-4da1-81fd-4c751bc2f1da Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"38ae58bb-dc1c-4677-9957-aa01f24ef44a","method":"transformInterceptedMessage","params":{"id":"bb8fdac1-f6a8-4535-9145-d304d2da1aa6","connectionID":"1197cf65-f25e-48a9-bce7-b1e18cac12d9","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message bb8fdac1-f6a8-4535-9145-d304d2da1aa6 unaltered
+ interception proxy got result of transforming message bb8fdac1-f6a8-4535-9145-d304d2da1aa6 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"bee41dc1-80df-4aa5-a31c-db9d1124902c","method":"transformInterceptedMessage","params":{"id":"3f34c54e-d802-497c-a96f-133a10746617","connectionID":"f15e2d6d-0c1c-4912-a95e-ea5d06439b2c","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 3f34c54e-d802-497c-a96f-133a10746617 unaltered
+ interception proxy got result of transforming message 3f34c54e-d802-497c-a96f-133a10746617 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"9346a690-3ee7-4cf4-b01d-f0333c919831","method":"transformInterceptedMessage","params":{"id":"682018e5-0c70-465f-870f-c9f63d012ba3","connectionID":"6f9c70d3-752a-42d8-80b4-bd66350edef5","type":"text","data":"{\"action\":6,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"}}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 682018e5-0c70-465f-870f-c9f63d012ba3 unaltered
+ interception proxy got result of transforming message 682018e5-0c70-465f-870f-c9f63d012ba3 Object
+ interception proxy sending transformInterceptedMessage response Object
+ rxChannel:  17:05:56.669 Ably: WebSocketTransport.onWsData(): data received; length = 152; type = string
+ rxChannel:  17:05:56.669 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=DISCONNECTED; error=[_ErrorInfo: Account _tmp_nMaZiw disabled; statusCode=403; code=40300; see https://help.ably.io/error/40300 ]]; connectionId = HkjZzW_e__
+ rxChannel:  17:05:56.669 Ably: Transport.onDisconnect(): err = [_ErrorInfo: Account _tmp_nMaZiw disabled; statusCode=403; code=40300; see https://help.ably.io/error/40300 ]
+ rxChannel:  17:05:56.669 Ably: ConnectionManager.deactivateTransport(): transport = WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+ rxChannel:  17:05:56.669 Ably: ConnectionManager.deactivateTransport(): state = disconnected; was active
+ rxChannel:  17:05:56.669 Ably: ConnectionManager.deactivateTransport(): reason =  Account _tmp_nMaZiw disabled
+ rxChannel:  17:05:56.669 Ably: ConnectionManager.deactivateTransport(): Getting, clearing, and requeuing 0 pending messages
+ rxChannel:  17:05:56.670 Ably: MessageQueue.clear(): clearing 0 messages
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.notifyState(): new state: disconnected; will retry connection immediately
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.cancelTransitionTimer(): 
+ rxChannel:  17:05:56.670 Ably: Connection state: disconnected; reason: [_ErrorInfo: Account _tmp_nMaZiw disabled; statusCode=403; code=40300; see https://help.ably.io/error/40300 ]
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.enactStateChange: setting new state: disconnected; reason = Account _tmp_nMaZiw disabled
+ rxChannel:  17:05:56.670 Ably: WebSocketTransport.dispose(): 
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.requestState(): requested state: connecting; current state: disconnected
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.cancelTransitionTimer(): 
+ rxChannel:  17:05:56.670 Ably: Connection state: connecting
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.enactStateChange: setting new state: connecting; reason = undefined
+ rxChannel:  17:05:56.670 Ably: WebSocketTransport.dispose(): closing websocket
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.startConnect(): starting connection
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.startTransitionTimer(): transitionState: connecting
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.getTransportParams(): Transport params = [mode=resume,connectionKey=e7dNIPVFABc0Ei!HkjZzW_e__ARSo2aGkrnMl-3889,format=json]
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.connectWs(): undefined
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.tryTransportWithFallbacks(): web_socket
+ rxChannel:  17:05:56.670 Ably: ConnectionManager.tryATransport(): trying web_socket
+ rxChannel:  17:05:56.670 Ably: WebSocketTransport.connect(): starting
+ rxChannel:  17:05:56.670 Ably: WebSocketTransport.connect(): uri: wss://sandbox-realtime.ably.io:443/
+ rxChannel:  17:05:56.670 Ably: WebSocketTransport.connect(): authParams: key: _tmp_arPTlA.eykGKQ:L6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ; err: null
+ rxChannel:  17:05:56.670 Ably: WebSocketTransport.createWebSocket(): uri:wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&resume=e7dNIPVFABc0Ei!HkjZzW_e__ARSo2aGkrnMl-3889&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+ rxChannel:  17:05:56.687 Ably: WebSocketTransport.onWsClose(): Cleanly closed WebSocket
+ txChannel:  17:05:56.773 Ably: ConnectionManager WebSocket slow timer: ws connectivity check succeeded
+ interception proxy got message {"jsonrpc":"2.0","id":"fd62b1a2-a51f-4d89-a4b2-6fc60c5cd8ab","method":"transformInterceptedMessage","params":{"id":"fdac4b5d-97bf-45f4-80f6-4dd4bc5339af","connectionID":"0dc7b722-a81d-4607-9da6-085980537941","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357174}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message fdac4b5d-97bf-45f4-80f6-4dd4bc5339af unaltered
+ interception proxy got result of transforming message fdac4b5d-97bf-45f4-80f6-4dd4bc5339af Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"0d969a12-077d-4864-b594-9a84e1f81faa","method":"transformInterceptedMessage","params":{"id":"9542b5fc-c9c2-454b-b5b7-5753b3cac444","connectionID":"b55eade6-c287-48d1-b681-fe5a0c81b514","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357176}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 9542b5fc-c9c2-454b-b5b7-5753b3cac444 unaltered
+ interception proxy got result of transforming message 9542b5fc-c9c2-454b-b5b7-5753b3cac444 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"9cdfe80f-5817-4a13-b9d1-5d050bf72fe2","method":"transformInterceptedMessage","params":{"id":"b408c5c1-31b2-453c-ae85-9680aa4dc9dd","connectionID":"7f569c8f-cb8c-46c0-91be-518a752837c6","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357176}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message b408c5c1-31b2-453c-ae85-9680aa4dc9dd unaltered
+ interception proxy got result of transforming message b408c5c1-31b2-453c-ae85-9680aa4dc9dd Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"fefa97e4-6510-426d-9b6b-51b958339186","method":"transformInterceptedMessage","params":{"id":"37667415-85b9-4495-af4f-778dfad3c5a6","connectionID":"3d46ae86-30b7-4f4c-ae54-d373eb51e958","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357178}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 37667415-85b9-4495-af4f-778dfad3c5a6 unaltered
+ interception proxy got result of transforming message 37667415-85b9-4495-af4f-778dfad3c5a6 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"48a9c322-619c-4d9e-abe5-fedded5a8534","method":"transformInterceptedMessage","params":{"id":"f3aefc34-d2dc-4f89-bd7e-378b7a59c0d9","connectionID":"1af7abf3-86e5-495d-a629-7fad874ef824","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357179}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message f3aefc34-d2dc-4f89-bd7e-378b7a59c0d9 unaltered
+ interception proxy got result of transforming message f3aefc34-d2dc-4f89-bd7e-378b7a59c0d9 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"ad708ee4-ded6-4219-8e12-8e38abba2f03","method":"transformInterceptedMessage","params":{"id":"8ace6311-632e-4786-ba48-2acc30d28321","connectionID":"fca00b4c-d3e1-48f3-9437-02dc624cd5e5","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357180}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 8ace6311-632e-4786-ba48-2acc30d28321 unaltered
+ interception proxy got result of transforming message 8ace6311-632e-4786-ba48-2acc30d28321 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"2b9f5303-454c-4e5c-aff5-471cebdacf4f","method":"transformInterceptedMessage","params":{"id":"b5f2473c-9ad2-4765-a852-8e30211771ee","connectionID":"f39078a6-7d1b-4f7d-8cb6-60a5c11a6b99","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357180}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message b5f2473c-9ad2-4765-a852-8e30211771ee unaltered
+ interception proxy got result of transforming message b5f2473c-9ad2-4765-a852-8e30211771ee Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"3a94ea7e-0c90-4292-927a-cb0c05500749","method":"transformInterceptedMessage","params":{"id":"30f4f011-9441-440e-a2b2-1d3848eba8a9","connectionID":"9e506871-8718-43c8-9132-f5a134df8002","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357182}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 30f4f011-9441-440e-a2b2-1d3848eba8a9 unaltered
+ interception proxy got result of transforming message 30f4f011-9441-440e-a2b2-1d3848eba8a9 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"a3ee7fc3-79b8-4668-b52d-b631fc0bfa53","method":"transformInterceptedMessage","params":{"id":"eb85921b-0ead-410b-b07c-a8faa6d9994b","connectionID":"2481bcce-d1dd-4a08-8456-879dfe2cac12","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357211}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message eb85921b-0ead-410b-b07c-a8faa6d9994b unaltered
+ interception proxy got result of transforming message eb85921b-0ead-410b-b07c-a8faa6d9994b Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"55f5b617-aad1-4119-97a1-411e79fec84a","method":"transformInterceptedMessage","params":{"id":"526fd9b4-29e3-4e47-8649-cdcc2cea09a8","connectionID":"9faff42f-3b64-488f-99b8-d4ba0a861a86","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357215}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 526fd9b4-29e3-4e47-8649-cdcc2cea09a8 unaltered
+ interception proxy got result of transforming message 526fd9b4-29e3-4e47-8649-cdcc2cea09a8 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"bd2c18f5-adea-4a41-a15e-e7633854e2ab","method":"transformInterceptedMessage","params":{"id":"efa9c1df-3f88-48ef-8fec-957e07530f46","connectionID":"48c94a59-59f7-4fde-b112-837519636a70","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357307}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message efa9c1df-3f88-48ef-8fec-957e07530f46 unaltered
+ interception proxy got result of transforming message efa9c1df-3f88-48ef-8fec-957e07530f46 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"18754923-ab01-4a10-8879-2428fe65b1de","method":"transformInterceptedMessage","params":{"id":"4011f61d-b2d9-40e5-8cbf-eb1508bea03b","connectionID":"13dde322-87f3-452e-b0d6-ac5e2842ff59","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357488}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 4011f61d-b2d9-40e5-8cbf-eb1508bea03b unaltered
+ interception proxy got result of transforming message 4011f61d-b2d9-40e5-8cbf-eb1508bea03b Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"9a7f6837-2123-4411-ac49-9643a62ac722","method":"transformInterceptedMessage","params":{"id":"cae5528f-d274-49d7-a6c9-2a6b09e38b4c","connectionID":"f2b116ee-5159-484c-bbca-15a79b209052","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976357503}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message cae5528f-d274-49d7-a6c9-2a6b09e38b4c unaltered
+ interception proxy got result of transforming message cae5528f-d274-49d7-a6c9-2a6b09e38b4c Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"6d430dd9-a43a-4c3a-a885-8a15509d7f9d","method":"transformInterceptedMessage","params":{"id":"b5fd6aba-1252-4837-8169-5e18a598a3a8","connectionID":"2412fe5e-388b-4962-8c12-40ecf7626172","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976358492}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message b5fd6aba-1252-4837-8169-5e18a598a3a8 unaltered
+ interception proxy got result of transforming message b5fd6aba-1252-4837-8169-5e18a598a3a8 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"fae8f6b6-582e-4dbb-8993-ab3085cd591d","method":"transformInterceptedMessage","params":{"id":"2077533d-b542-4e8a-ac2a-2d60f07d346c","connectionID":"1ada4ae7-20b4-4c89-9dbb-4d27e4a5befc","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976358585}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message 2077533d-b542-4e8a-ac2a-2d60f07d346c unaltered
+ interception proxy got result of transforming message 2077533d-b542-4e8a-ac2a-2d60f07d346c Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"bbdbbed1-86a8-46fa-b953-2705cfef1a34","method":"transformInterceptedMessage","params":{"id":"abc4243b-441d-41e7-8870-2d8e8cb22231","connectionID":"b9161b92-1cf5-485b-9d7f-a7a536e41885","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976358733}","fromClient":false}}
+ interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+ default transformInterceptedMessage implementation passing message abc4243b-441d-41e7-8870-2d8e8cb22231 unaltered
+ interception proxy got result of transforming message abc4243b-441d-41e7-8870-2d8e8cb22231 Object
+ interception proxy sending transformInterceptedMessage response Object
+ interception proxy got message {"jsonrpc":"2.0","id":"064ff42d-ee63-4def-92ee-92bf85a22c9d","method":"transformInterceptedMessage","params":{"id":"617f1cb8-0449-4d44-b4b0-b5854a9bd9e9","connectionID":"100b6120-fc77-43fc-b8f5-fa08af996d72","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976358813}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 617f1cb8-0449-4d44-b4b0-b5854a9bd9e9 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 617f1cb8-0449-4d44-b4b0-b5854a9bd9e9 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"f64c17b0-ca0e-40b3-bec8-a731c0a01448","method":"transformInterceptedMessage","params":{"id":"c27cc443-a4f9-420b-8a15-4ea7c9be326e","connectionID":"7d1d06a7-a82d-4fe1-bee4-617bfe480e31","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Account _tmp_nMaZiw disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976358923}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message c27cc443-a4f9-420b-8a15-4ea7c9be326e unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message c27cc443-a4f9-420b-8a15-4ea7c9be326e Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"44c813a3-ac63-4c9f-a3a5-34953862eef3","method":"transformInterceptedMessage","params":{"id":"66d49a52-0a72-4f38-839d-a3bd0d93f63f","connectionID":"a7cbefa9-9041-4514-ab10-94aabe202607","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976359325}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 66d49a52-0a72-4f38-839d-a3bd0d93f63f unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 66d49a52-0a72-4f38-839d-a3bd0d93f63f Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"133f01ed-4023-4c65-85e5-03958726a8db","method":"transformInterceptedMessage","params":{"id":"e387a3bf-afd3-434f-8e23-35b3767924d5","connectionID":"cae33f82-9c23-43d3-b2fd-ead3f3874a09","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976359355}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message e387a3bf-afd3-434f-8e23-35b3767924d5 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message e387a3bf-afd3-434f-8e23-35b3767924d5 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"5a721068-f570-44b4-8eb8-f68249f526eb","method":"transformInterceptedMessage","params":{"id":"30e63c3a-8e14-4cfa-b531-3497d62d8d9e","connectionID":"865f1ec4-34af-46f4-bab9-b623ab0180fd","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976359357}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 30e63c3a-8e14-4cfa-b531-3497d62d8d9e unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 30e63c3a-8e14-4cfa-b531-3497d62d8d9e Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"7d73c15d-f693-4aae-983d-3c9c60b6521c","method":"transformInterceptedMessage","params":{"id":"7fa66d8e-cab3-4035-948f-d03bf6276c97","connectionID":"518c9700-7981-4792-8d00-983b34d63d1b","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976359591}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 7fa66d8e-cab3-4035-948f-d03bf6276c97 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 7fa66d8e-cab3-4035-948f-d03bf6276c97 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"f6b1eda7-94f4-49ea-bce1-9f7de9e1546a","method":"transformInterceptedMessage","params":{"id":"ff56eede-5306-440d-8634-4e51a7322667","connectionID":"a348aaf7-a63d-4ee6-b091-84cf25bda68b","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976359979}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message ff56eede-5306-440d-8634-4e51a7322667 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message ff56eede-5306-440d-8634-4e51a7322667 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"879c7db3-2e5f-406e-ad8a-3f9319f604ef","method":"transformInterceptedMessage","params":{"id":"ee344a0f-cd51-4345-852e-764bd13dc93f","connectionID":"27b3b5a4-e93f-4c2b-85f5-379599dc3cd8","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976360183}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message ee344a0f-cd51-4345-852e-764bd13dc93f unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message ee344a0f-cd51-4345-852e-764bd13dc93f Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:601 rxChannel:  17:06:00.670 Ably: ConnectionManager WebSocket slow timer: checking connectivity
+modular.test.js:601 rxChannel:  17:06:00.671 Ably: (Fetch)Http.checkConnectivity(): Sending; https://internet-up.ably-realtime.com/is-the-internet-up.txt
+modular.test.js:601 rxChannel:  17:06:00.673 Ably: (Fetch)Http.checkConnectivity(): Result: true
+modular.test.js:601 rxChannel:  17:06:00.673 Ably: ConnectionManager WebSocket slow timer: http connectivity check succeeded
+modular.test.js:601 rxChannel:  17:06:00.754 Ably: ConnectionManager WebSocket slow timer: ws connectivity check succeeded
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"8934c305-cc67-472d-befb-15710d67b509","method":"transformInterceptedMessage","params":{"id":"5a6f4d02-394b-431f-b6b5-1f1b29fdaf8a","connectionID":"427ad8cc-9c08-40e6-a163-4b505467dee3","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976360996}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 5a6f4d02-394b-431f-b6b5-1f1b29fdaf8a unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 5a6f4d02-394b-431f-b6b5-1f1b29fdaf8a Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"1374c9e5-2b78-4ae0-ac7f-415c59014cf5","method":"transformInterceptedMessage","params":{"id":"86d67362-62de-4e16-8b59-06beb25a96f8","connectionID":"1a8bbd14-a7d3-4da1-8216-914733acba35","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976361073}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 86d67362-62de-4e16-8b59-06beb25a96f8 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 86d67362-62de-4e16-8b59-06beb25a96f8 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"353d24a6-bdef-446a-a82b-08a25c07c2fd","method":"transformInterceptedMessage","params":{"id":"0c355aa0-8f9e-45dd-bf24-92f6f238dc37","connectionID":"6b9776f5-4b90-40d8-984a-8d50fb93d858","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976361159}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 0c355aa0-8f9e-45dd-bf24-92f6f238dc37 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 0c355aa0-8f9e-45dd-bf24-92f6f238dc37 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:601 rxChannel:  17:06:01.277 Ably: WebSocketTransport.onWsOpen(): opened WebSocket
+modular.test.js:601 rxChannel:  17:06:01.277 Ably: Transport.tryConnect(): viable transport WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&resume=e7dNIPVFABc0Ei!HkjZzW_e__ARSo2aGkrnMl-3889&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+modular.test.js:601 rxChannel:  17:06:01.277 Ably: ConnectionManager.tryATransport(): viable transport web_socket; setting pending
+modular.test.js:601 rxChannel:  17:06:01.277 Ably: ConnectionManager.setTransportPending(): transport = WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&resume=e7dNIPVFABc0Ei!HkjZzW_e__ARSo2aGkrnMl-3889&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser; mode = resume
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"4bd2780a-2cb5-412b-84bc-05c18c748bce","method":"transformInterceptedMessage","params":{"id":"87b904d5-6542-4900-85c9-eb472c31552f","connectionID":"1b504529-a530-48a6-9ba0-c5609a94c26a","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976361553}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 87b904d5-6542-4900-85c9-eb472c31552f unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 87b904d5-6542-4900-85c9-eb472c31552f Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"1e5abc8f-9f3e-4a8c-a710-82e83a876de1","method":"transformInterceptedMessage","params":{"id":"bcac6011-7ad3-4c83-9a51-6028e8a899b3","connectionID":"b0e5bae5-9b35-432c-aef5-ab8480e16414","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976361700}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message bcac6011-7ad3-4c83-9a51-6028e8a899b3 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message bcac6011-7ad3-4c83-9a51-6028e8a899b3 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+modular.test.js:601 rxChannel:  17:06:01.774 Ably: WebSocketTransport.onWsData(): data received; length = 232; type = string
+modular.test.js:601 rxChannel:  17:06:01.774 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ERROR; timestamp=1715976361700; error=[_ErrorInfo: Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]]; connectionId = HkjZzW_e__
+modular.test.js:601 rxChannel:  17:06:01.774 Ably: Transport.onProtocolMessage(): received error action; connectionId = HkjZzW_e__; err = {"code":40300,"statusCode":403,"nonfatal":false,"href":"https://help.ably.io/error/40300"}
+modular.test.js:601 rxChannel:  17:06:01.774 Ably: Transport.onFatalError(): err = [_ErrorInfo: Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]
+modular.test.js:601 rxChannel:  17:06:01.775 Ably: ConnectionManager.deactivateTransport(): transport = WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&resume=e7dNIPVFABc0Ei!HkjZzW_e__ARSo2aGkrnMl-3889&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+modular.test.js:601 rxChannel:  17:06:01.775 Ably: ConnectionManager.deactivateTransport(): state = failed; was pending
+modular.test.js:601 rxChannel:  17:06:01.775 Ably: ConnectionManager.deactivateTransport(): reason =  Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)
+modular.test.js:601 rxChannel:  17:06:01.775 Ably: ConnectionManager.notifyState(): new state: failed
+modular.test.js:601 rxChannel:  17:06:01.775 Ably: ConnectionManager.cancelTransitionTimer(): 
+modular.test.js:601 rxChannel:  17:06:01.775 Ably: Connection state: failed; reason: [_ErrorInfo: Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]
+modular.test.js:601 rxChannel:  17:06:01.775 Ably: ConnectionManager.enactStateChange: setting new state: failed; reason = Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)
+modular.test.js:601 rxChannel:  17:06:01.776 Ably: RealtimeChannel.notifyState: name = channel, current state = attached, notifying state failed
+modular.test.js:601 rxChannel:  17:06:01.776 Ably: PresenceMap.setInProgress(): inProgress = false
+modular.test.js:601 rxChannel:  17:06:01.776 Ably: PresenceMap.setInProgress(): inProgress = false
+modular.test.js:601 rxChannel:  17:06:01.776 Ably: Channel state for channel "channel": failed; reason: [_ErrorInfo: Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.); statusCode=403; code=40300]
+modular.test.js:601 rxChannel:  17:06:01.776 Ably: WebSocketTransport.dispose(): 
+modular.test.js:601 rxChannel:  17:06:01.776 Ably: ConnectionManager.disconnectAllTransports(): Disconnecting all transports
+modular.test.js:601 rxChannel:  17:06:01.777 Ably: ConnectionManager.disconnectAllTransports(): Disconnecting pending transport: WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_arPTlA.eykGKQ%3AL6apL_FGTQVYNsaOZMZYF899O96LilTfeMECxAyfcfQ&resume=e7dNIPVFABc0Ei!HkjZzW_e__ARSo2aGkrnMl-3889&format=json&heartbeats=true&v=3&agent=ably-js%2F2.0.4%20browser
+modular.test.js:601 rxChannel:  17:06:01.777 Ably: ConnectionManager.disconnectAllTransports(): Disconnecting proposed transport: undefined
+modular.test.js:601 rxChannel:  17:06:01.777 Ably: WebSocketTransport.dispose(): closing websocket
+modular.test.js:601 rxChannel:  17:06:01.779 Ably: WebSocketTransport.onWsClose(): Cleanly closed WebSocket
+interception_proxy_client.js:28 interception proxy got message {"jsonrpc":"2.0","id":"ba30acde-d94f-4c5d-9872-6e95a1d468f7","method":"transformInterceptedMessage","params":{"id":"8eb4ae8f-6783-4d18-8ad0-6a5774482d13","connectionID":"7546728a-a723-455e-8687-6243c24886a0","type":"text","data":"{\"action\":9,\"error\":{\"message\":\"Application _tmp_arPTlA disabled. (See https://help.ably.io/error/40300 for help.)\",\"code\":40300,\"statusCode\":403,\"nonfatal\":false,\"href\":\"https://help.ably.io/error/40300\"},\"timestamp\":1715976361796}","fromClient":false}}
+interception_proxy_client.js:138 interception proxy awaiting response of transformInterceptedMessage for message Object deserialized to Object
+interception_proxy_client.js:148 default transformInterceptedMessage implementation passing message 8eb4ae8f-6783-4d18-8ad0-6a5774482d13 unaltered
+interception_proxy_client.js:159 interception proxy got result of transforming message 8eb4ae8f-6783-4d18-8ad0-6a5774482d13 Object
+interception_proxy_client.js:179 interception proxy sending transformInterceptedMessage response Object
+testapp_module.js:76 Test App _tmp_arPTlA has been torn down
+interception_proxy_client.js:73 interception proxy client disconnected
