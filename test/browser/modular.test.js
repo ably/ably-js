@@ -64,14 +64,14 @@ function registerAblyModularTests(helper) {
               ablyClientOptions({ ...scenario.getAdditionalClientOptions?.(), plugins: { FetchRequest } }),
             );
 
-            //let thrownError = null;
-            //try {
+            let thrownError = null;
+            try {
               await scenario.action(client);
-            //} catch (error) {
-              //thrownError = error;
-            //}
+            } catch (error) {
+              thrownError = error;
+            }
 
-            //expect(thrownError).to.be.null;
+            expect(thrownError).to.be.null;
           });
         }
       });
