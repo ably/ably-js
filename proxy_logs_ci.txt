@@ -1,32 +1,32 @@
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout: [::1]:59016: POST https://sandbox-rest.ably.io/push/publish?
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Accept: application/json
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Authorization: Basic X3RtcF84Uk8xWHcuYmRjdkxROnRQVjVUVU0wS0JodzA2RHhjZDFONEhLWGJhNzc5eEVGZ0tDaTlnd1pOSFE=
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Content-Type: application/json
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Origin: http://localhost:3000
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Referer: http://localhost:3000/
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Content-Length: 53
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Accept-Encoding: gzip, deflate, br
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Accept-Language: en-US
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Connection: Keep-Alive
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Host: sandbox-rest.ably.io
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Sec-Fetch-Dest: empty
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Sec-Fetch-Mode: cors
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Sec-Fetch-Site: cross-site
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     ably-agent: ably-js/2.0.4 browser
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     x-ably-version: 3
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:  << 204 No Content 0b
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Content-Type: application/json
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Connection: keep-alive
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Access-Control-Allow-Credentials: true
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Access-Control-Allow-Origin: http://localhost:3000
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Access-Control-Expose-Headers: Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Date: Mon, 20 May 2024 18:33:54 GMT
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Vary: Origin
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     X-Ably-Cluster: sandbox
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     X-Ably-Serverid: frontend.78f9.2.us-east-1-A.i-00779d1f5c358a4cb.e7d2mt9CABc6uE
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     X-Robots-Tag: noindex
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     X-Cache: Miss from cloudfront
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     Via: 1.1 a57d2f9cdddfdb2c5779462e97c9c00c.cloudfront.net (CloudFront)
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     X-Amz-Cf-Pop: IAD12-P4
-May 20 18:33:54 fv-az778-673 npm[2749]: mitmdump stdout:     X-Amz-Cf-Id: B9aJu-OhzaodONjjgI9R5xX7TVNSjb0BKDgsuPVjxNsGnP_Y_sXXiA==
+mitmdump stdout: [::1]:59016: POST https://sandbox-rest.ably.io/push/publish?
+mitmdump stdout:     ably-agent: ably-js/2.0.4 browser
+mitmdump stdout:     Accept-Encoding: gzip, deflate, br
+mitmdump stdout:     Accept-Language: en-US
+mitmdump stdout:     Accept: application/json
+mitmdump stdout:     Authorization: Basic X3RtcF84Uk8xWHcuYmRjdkxROnRQVjVUVU0wS0JodzA2RHhjZDFONEhLWGJhNzc5eEVGZ0tDaTlnd1pOSFE=
+mitmdump stdout:     Connection: Keep-Alive
+mitmdump stdout:     Content-Length: 53
+mitmdump stdout:     Content-Type: application/json
+mitmdump stdout:     Host: sandbox-rest.ably.io
+mitmdump stdout:     Origin: http://localhost:3000
+mitmdump stdout:     Referer: http://localhost:3000/
+mitmdump stdout:     Sec-Fetch-Dest: empty
+mitmdump stdout:     Sec-Fetch-Mode: cors
+mitmdump stdout:     Sec-Fetch-Site: cross-site
+mitmdump stdout:     User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15
+mitmdump stdout:     x-ably-version: 3
+mitmdump stdout:  << 204 No Content 0b
+mitmdump stdout:     Access-Control-Allow-Credentials: true
+mitmdump stdout:     Access-Control-Allow-Origin: http://localhost:3000
+mitmdump stdout:     Access-Control-Expose-Headers: Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop
+mitmdump stdout:     Connection: keep-alive
+mitmdump stdout:     Content-Type: application/json
+mitmdump stdout:     Date: Mon, 20 May 2024 18:33:54 GMT
+mitmdump stdout:     Vary: Origin
+mitmdump stdout:     Via: 1.1 a57d2f9cdddfdb2c5779462e97c9c00c.cloudfront.net (CloudFront)
+mitmdump stdout:     X-Ably-Cluster: sandbox
+mitmdump stdout:     X-Ably-Serverid: frontend.78f9.2.us-east-1-A.i-00779d1f5c358a4cb.e7d2mt9CABc6uE
+mitmdump stdout:     X-Amz-Cf-Id: B9aJu-OhzaodONjjgI9R5xX7TVNSjb0BKDgsuPVjxNsGnP_Y_sXXiA==
+mitmdump stdout:     X-Amz-Cf-Pop: IAD12-P4
+mitmdump stdout:     X-Cache: Miss from cloudfront
+mitmdump stdout:     X-Robots-Tag: noindex

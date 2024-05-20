@@ -1,29 +1,29 @@
 mitmdump stdout: 127.0.0.1:50971: POST https://sandbox-rest.ably.io/push/publish? HTTP/2.0
-mitmdump stdout:     content-type: application/json
-mitmdump stdout:     x-ably-version: 3
+mitmdump stdout:     ably-agent: ably-js/2.0.4 browser
+mitmdump stdout:     accept-encoding: gzip, deflate, br
+mitmdump stdout:     accept-language: en-GB,en;q=0.9
 mitmdump stdout:     accept: application/json
 mitmdump stdout:     authorization: Basic X3RtcF9YRDVaTFEudXp4dmZnOmZmVWxMc0NiWlFDb0ZtWUJlcnd1UEdVSlEyYUtXZ0xHZ1VoT2lMM0ZGZGc=
-mitmdump stdout:     ably-agent: ably-js/2.0.4 browser
-mitmdump stdout:     sec-fetch-site: cross-site
-mitmdump stdout:     accept-language: en-GB,en;q=0.9
-mitmdump stdout:     accept-encoding: gzip, deflate, br
-mitmdump stdout:     sec-fetch-mode: cors
-mitmdump stdout:     origin: http://localhost:3000
-mitmdump stdout:     user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15
-mitmdump stdout:     referer: http://localhost:3000/
 mitmdump stdout:     content-length: 53
+mitmdump stdout:     content-type: application/json
+mitmdump stdout:     origin: http://localhost:3000
+mitmdump stdout:     referer: http://localhost:3000/
 mitmdump stdout:     sec-fetch-dest: empty
+mitmdump stdout:     sec-fetch-mode: cors
+mitmdump stdout:     sec-fetch-site: cross-site
+mitmdump stdout:     user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15
+mitmdump stdout:     x-ably-version: 3
 mitmdump stdout:  << HTTP/2.0 204 No Content 0b
+Cluster,Server,X-Amz-Cf-Pop
 mitmdump stdout:     access-control-allow-credentials: true
 mitmdump stdout:     access-control-allow-origin: http://localhost:3000
 mitmdump stdout:     access-control-expose-headers: Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-
-Cluster,Server,X-Amz-Cf-Pop
 mitmdump stdout:     date: Mon, 20 May 2024 18:26:02 GMT
 mitmdump stdout:     vary: Origin
+mitmdump stdout:     via: 1.1 3ed656b86a7abb29b14e84aa169ffd38.cloudfront.net (CloudFront)
 mitmdump stdout:     x-ably-cluster: sandbox
 mitmdump stdout:     x-ably-serverid: frontend.73d8.2.us-east-1-A.i-066e977a6354e9fc9.e7dP0rioQBc6w9
-mitmdump stdout:     x-robots-tag: noindex
-mitmdump stdout:     x-cache: Miss from cloudfront
-mitmdump stdout:     via: 1.1 3ed656b86a7abb29b14e84aa169ffd38.cloudfront.net (CloudFront)
-mitmdump stdout:     x-amz-cf-pop: GRU3-P1
 mitmdump stdout:     x-amz-cf-id: jAbmUv9lIL30McB9sRu0Rj3uF2FQK-0m-1YyyPPyMfee5Qv8UiM_lA==
+mitmdump stdout:     x-amz-cf-pop: GRU3-P1
+mitmdump stdout:     x-cache: Miss from cloudfront
+mitmdump stdout:     x-robots-tag: noindex
