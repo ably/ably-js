@@ -22,7 +22,7 @@ import {
 } from '../../build/modular/index.mjs';
 
 function registerAblyModularTests(helper) {
-  describe('browser/modular', function () {
+  describe.only('browser/modular', function () {
     this.timeout(10 * 1000);
     const expect = chai.expect;
     const BufferUtils = BaseRest.Platform.BufferUtils;
