@@ -68,6 +68,7 @@ function registerAblyModularTests(helper) {
             try {
               await scenario.action(client);
             } catch (error) {
+              console.log('thrownError:', error, 'stack', error.stack);
               thrownError = error;
             }
 
