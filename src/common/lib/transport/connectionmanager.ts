@@ -31,17 +31,6 @@ const haveSessionStorage = () => typeof Platform.WebStorage !== 'undefined' && P
 const noop = function () {};
 const transportPreferenceName = 'ably-transport-preference';
 
-const sessionRecoveryName = 'ably-connection-recovery';
-function getSessionRecoverData() {
-  return haveSessionStorage() && Platform.WebStorage?.getSession?.(sessionRecoveryName);
-}
-function setSessionRecoverData(value: any) {
-  return haveSessionStorage() && Platform.WebStorage?.setSession?.(sessionRecoveryName, value);
-}
-function clearSessionRecoverData() {
-  return haveSessionStorage() && Platform.WebStorage?.removeSession?.(sessionRecoveryName);
-}
-
 function bundleWith(dest: ProtocolMessage, src: ProtocolMessage, maxSize: number) {
   let action;
   if (dest.channel !== src.channel) {
@@ -431,12 +420,15 @@ class ConnectionManager extends EventEmitter {
       }
 
       const recoverFn = this.options.recover,
-        lastSessionData = getSessionRecoverData();
+        lastSessionData = this.getSessionRecoverData(),
+        sessionRecoveryName = this.sessionRecoveryName();
       if (lastSessionData && typeof recoverFn === 'function') {
         Logger.logAction(
           Logger.LOG_MINOR,
           'ConnectionManager.getTransportParams()',
-          'Calling clientOptions-provided recover function with last session data',
+          'Calling clientOptions-provided recover function with last session data (recovery scope: ' +
+            sessionRecoveryName +
+            ')',
         );
         recoverFn(lastSessionData, (shouldRecover?: boolean) => {
           if (shouldRecover) {
@@ -893,7 +885,7 @@ class ConnectionManager extends EventEmitter {
     if (haveSessionStorage()) {
       const recoveryKey = this.createRecoveryKey();
       if (recoveryKey) {
-        setSessionRecoverData({
+        this.setSessionRecoverData({
           recoveryKey: recoveryKey,
           disconnectedAt: Date.now(),
           location: globalObject.location,
@@ -908,7 +900,7 @@ class ConnectionManager extends EventEmitter {
    * state for later recovery. Only applicable in the browser context.
    */
   unpersistConnection(): void {
-    clearSessionRecoverData();
+    this.clearSessionRecoverData();
   }
 
   /*********************
@@ -1967,6 +1959,20 @@ class ConnectionManager extends EventEmitter {
         }
       };
     });
+  }
+
+  sessionRecoveryName() {
+    return this.options.recoveryKeyStorageName || 'ably-connection-recovery';
+  }
+
+  getSessionRecoverData() {
+    return haveSessionStorage() && Platform.WebStorage?.getSession?.(this.sessionRecoveryName());
+  }
+  setSessionRecoverData(value: any) {
+    return haveSessionStorage() && Platform.WebStorage?.setSession?.(this.sessionRecoveryName(), value);
+  }
+  clearSessionRecoverData() {
+    return haveSessionStorage() && Platform.WebStorage?.removeSession?.(this.sessionRecoveryName());
   }
 }
 

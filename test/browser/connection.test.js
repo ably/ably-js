@@ -1,7 +1,7 @@
 'use strict';
 
 define(['shared_helper', 'chai'], function (helper, chai) {
-  var expect = chai.expect;
+  var { expect, assert } = chai;
   var closeAndFinish = helper.closeAndFinish;
   var monitorConnection = helper.monitorConnection;
   var simulateDroppedConnection = helper.simulateDroppedConnection;
@@ -348,6 +348,36 @@ define(['shared_helper', 'chai'], function (helper, chai) {
             closeAndFinish(done, [realtime, newRealtime]);
           });
         });
+      });
+
+      it('page_refresh_with_multiple_recovery_scopes', async () => {
+        const realtimeOpts = { recover: (_, cb) => cb(true) },
+          opts1 = Object.assign({ recoveryKeyStorageName: 'recovery-1' }, realtimeOpts),
+          opts2 = Object.assign({ recoveryKeyStorageName: 'recovery-2' }, realtimeOpts),
+          realtime1 = helper.AblyRealtime(opts1),
+          realtime2 = helper.AblyRealtime(opts2),
+          refreshEvent = new Event('beforeunload', { bubbles: true });
+
+        await Promise.all([realtime1.connection.once('connected'), realtime2.connection.once('connected')]);
+        const connId1 = realtime1.connection.id;
+        const connId2 = realtime2.connection.id;
+
+        document.dispatchEvent(refreshEvent);
+
+        simulateDroppedConnection(realtime1);
+        simulateDroppedConnection(realtime2);
+
+        await new Promise((res) => setTimeout(res, 1000));
+
+        const newRealtime1 = helper.AblyRealtime(opts1);
+        const newRealtime2 = helper.AblyRealtime(opts2);
+        await Promise.all([newRealtime1.connection.once('connected'), newRealtime2.connection.once('connected')]);
+        assert.equal(connId1, newRealtime1.connection.id);
+        assert.equal(connId2, newRealtime2.connection.id);
+
+        await Promise.all(
+          [realtime1, realtime2, newRealtime1, newRealtime2].map((rt) => helper.closeAndFinishAsync(rt)),
+        );
       });
 
       it('persist_preferred_transport', function (done) {

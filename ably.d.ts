@@ -464,6 +464,18 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   recover?: string | recoverConnectionCallback;
 
   /**
+   * If specified, the SDK's internal persistence mechanism for storing the recovery key
+   * over page loads (see the `recover` client option) will store the recovery key under
+   * this identifier (in sessionstorage), so only another library instance which specifies
+   * the same recoveryKeyStorageName will attempt to recover from it. This is useful if you have
+   * multiple ably-js instances sharing a given origin (the origin being the scope of
+   * sessionstorage), as otherwise the multiple instances will overwrite each other's
+   * recovery keys, and after a reload they will all try and recover the same connection,
+   * which is not permitted and will cause broken behaviour.
+   */
+  recoveryKeyStorageName?: string;
+
+  /**
    * When `false`, the client will use an insecure connection. The default is `true`, meaning a TLS connection will be used to connect to Ably.
    *
    * @defaultValue `true`
