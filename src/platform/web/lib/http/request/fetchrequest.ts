@@ -69,6 +69,10 @@ export default async function fetchRequest(
 
       clearTimeout(timeout!);
 
+      if (res.status == 204) {
+        return { error: null, statusCode: res.status };
+      }
+
       const contentType = res.headers.get('Content-Type');
       let body;
       if (contentType && contentType.indexOf('application/x-msgpack') > -1) {
