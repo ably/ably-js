@@ -37,6 +37,14 @@ function registerAblyModularTests(helper) {
       });
     };
 
+    async function monitorConnectionThenCloseAndFinish(action, realtime, states) {
+      try {
+        await helper.monitorConnectionAsync(action, realtime, states);
+      } finally {
+        await helper.closeAndFinishAsync(realtime);
+      }
+    }
+
     before((done) => {
       helper.setupApp(done);
     });
@@ -159,6 +167,7 @@ function registerAblyModularTests(helper) {
           it(`allows you to ${scenario.description}`, async () => {
             const client = new BaseRealtime(
               ablyClientOptions({
+                autoConnect: false,
                 ...scenario.getAdditionalClientOptions?.(),
                 plugins: {
                   WebSocketTransport,
@@ -185,23 +194,27 @@ function registerAblyModularTests(helper) {
         it('still allows publishing and subscribing', async () => {
           const client = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
 
-          const channel = client.channels.get('channel');
-          await channel.attach();
+          await monitorConnectionThenCloseAndFinish(async () => {
+            const channel = client.channels.get('channel');
+            await channel.attach();
 
-          const recievedMessagePromise = new Promise((resolve) => {
-            channel.subscribe((message) => {
-              resolve(message);
+            const recievedMessagePromise = new Promise((resolve) => {
+              channel.subscribe((message) => {
+                resolve(message);
+              });
             });
-          });
 
-          await channel.publish({ data: { foo: 'bar' } });
+            await channel.publish({ data: { foo: 'bar' } });
 
-          const receivedMessage = await recievedMessagePromise;
-          expect(receivedMessage.data).to.eql({ foo: 'bar' });
+            const receivedMessage = await recievedMessagePromise;
+            expect(receivedMessage.data).to.eql({ foo: 'bar' });
+          }, client);
         });
 
         it('allows `auth.createTokenRequest()` without `queryTime` option enabled', async () => {
-          const client = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
+          const client = new BaseRealtime(
+            ablyClientOptions({ autoConnect: false, plugins: { WebSocketTransport, FetchRequest } }),
+          );
 
           const tokenRequest = await client.auth.createTokenRequest();
           expect(tokenRequest).to.be.an('object');
@@ -211,6 +224,7 @@ function registerAblyModularTests(helper) {
           it(`throws an error when attempting to ${scenario.description}`, async () => {
             const client = new BaseRealtime(
               ablyClientOptions({
+                autoConnect: false,
                 ...scenario.getAdditionalClientOptions?.(),
                 plugins: {
                   WebSocketTransport,
@@ -367,6 +381,7 @@ function registerAblyModularTests(helper) {
         async function testThrowsAnErrorWhenGivenChannelOptionsWithACipher(clientClassConfig) {
           const client = new clientClassConfig.clientClass(
             ablyClientOptions({
+              ...clientClassConfig.additionalClientOptions,
               plugins: {
                 ...clientClassConfig.additionalPlugins,
                 FetchRequest,
@@ -379,7 +394,11 @@ function registerAblyModularTests(helper) {
 
         for (const clientClassConfig of [
           { clientClass: BaseRest },
-          { clientClass: BaseRealtime, additionalPlugins: { WebSocketTransport } },
+          {
+            clientClass: BaseRealtime,
+            additionalClientOptions: { autoConnect: false },
+            additionalPlugins: { WebSocketTransport },
+          },
         ]) {
           describe(clientClassConfig.clientClass.name, () => {
             it('throws an error when given channel options with a cipher', async () => {
@@ -398,38 +417,51 @@ function registerAblyModularTests(helper) {
           // Publish the message on a channel configured to use encryption, and receive it on one not configured to use encryption
 
           const rxClient = new BaseRealtime({ ...clientOptions, plugins: { WebSocketTransport, FetchRequest } });
-          const rxChannel = rxClient.channels.get('channel');
-          await rxChannel.attach();
 
-          const rxMessagePromise = new Promise((resolve, _) => rxChannel.subscribe((message) => resolve(message)));
+          await monitorConnectionThenCloseAndFinish(async () => {
+            const rxChannel = rxClient.channels.get('channel');
+            await rxChannel.attach();
 
-          const encryptionChannelOptions = { cipher: { key } };
+            const rxMessagePromise = new Promise((resolve, _) => rxChannel.subscribe((message) => resolve(message)));
 
-          const txMessage = { name: 'message', data: 'data' };
-          const txClient = new clientClassConfig.clientClass({
-            ...clientOptions,
-            plugins: {
-              ...clientClassConfig.additionalPlugins,
-              FetchRequest,
-              Crypto,
-            },
-          });
-          const txChannel = txClient.channels.get('channel', encryptionChannelOptions);
-          await txChannel.publish(txMessage);
+            const encryptionChannelOptions = { cipher: { key } };
 
-          const rxMessage = await rxMessagePromise;
+            const txMessage = { name: 'message', data: 'data' };
+            const txClient = new clientClassConfig.clientClass({
+              ...clientOptions,
+              plugins: {
+                ...clientClassConfig.additionalPlugins,
+                FetchRequest,
+                Crypto,
+              },
+            });
 
-          // Verify that the message was published with encryption
-          expect(rxMessage.encoding).to.equal('utf-8/cipher+aes-256-cbc');
+            await (clientClassConfig.isRealtime ? monitorConnectionThenCloseAndFinish : async (op) => await op())(
+              async () => {
+                const txChannel = txClient.channels.get('channel', encryptionChannelOptions);
+                await txChannel.publish(txMessage);
 
-          // Verify that the message was correctly encrypted
-          const rxMessageDecrypted = await decodeEncryptedMessage(rxMessage, encryptionChannelOptions);
-          testMessageEquality(rxMessageDecrypted, txMessage);
+                const rxMessage = await rxMessagePromise;
+
+                // Verify that the message was published with encryption
+                expect(rxMessage.encoding).to.equal('utf-8/cipher+aes-256-cbc');
+
+                // Verify that the message was correctly encrypted
+                const rxMessageDecrypted = await decodeEncryptedMessage(rxMessage, encryptionChannelOptions);
+                testMessageEquality(rxMessageDecrypted, txMessage);
+              },
+              txClient,
+            );
+          }, rxClient);
         }
 
         for (const clientClassConfig of [
-          { clientClass: BaseRest },
-          { clientClass: BaseRealtime, additionalPlugins: { WebSocketTransport } },
+          { clientClass: BaseRest, isRealtime: false },
+          {
+            clientClass: BaseRealtime,
+            additionalPlugins: { WebSocketTransport },
+            isRealtime: true,
+          },
         ]) {
           describe(clientClassConfig.clientClass.name, () => {
             it('is able to publish encrypted messages', async () => {
@@ -494,7 +526,10 @@ function registerAblyModularTests(helper) {
                   },
                 }),
               );
-              await testRealtimeUsesFormat(client, 'json');
+
+              await monitorConnectionThenCloseAndFinish(async () => {
+                await testRealtimeUsesFormat(client, 'json');
+              }, client);
             });
           });
         });
@@ -528,7 +563,10 @@ function registerAblyModularTests(helper) {
                   },
                 }),
               );
-              await testRealtimeUsesFormat(client, 'msgpack');
+
+              await monitorConnectionThenCloseAndFinish(async () => {
+                await testRealtimeUsesFormat(client, 'msgpack');
+              }, client);
             });
           });
         });
@@ -537,24 +575,55 @@ function registerAblyModularTests(helper) {
 
     describe('RealtimePresence', () => {
       describe('BaseRealtime without RealtimePresence', () => {
-        it('throws an error when attempting to access the `presence` property', () => {
+        it('throws an error when attempting to access the `presence` property', async () => {
           const client = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
-          const channel = client.channels.get('channel');
 
-          expect(() => channel.presence).to.throw('RealtimePresence plugin not provided');
+          await monitorConnectionThenCloseAndFinish(async () => {
+            const channel = client.channels.get('channel');
+
+            expect(() => channel.presence).to.throw('RealtimePresence plugin not provided');
+          }, client);
         });
 
         it('doesn’t break when it receives a PRESENCE ProtocolMessage', async () => {
           const rxClient = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
-          const rxChannel = rxClient.channels.get('channel');
 
-          await rxChannel.attach();
+          await monitorConnectionThenCloseAndFinish(async () => {
+            const rxChannel = rxClient.channels.get('channel');
 
-          const receivedMessagePromise = new Promise((resolve) => rxChannel.subscribe(resolve));
+            await rxChannel.attach();
 
-          const txClient = new BaseRealtime(
+            const receivedMessagePromise = new Promise((resolve) => rxChannel.subscribe(resolve));
+
+            const txClient = new BaseRealtime(
+              ablyClientOptions({
+                clientId: randomString(),
+                plugins: {
+                  WebSocketTransport,
+                  FetchRequest,
+                  RealtimePresence,
+                },
+              }),
+            );
+
+            await monitorConnectionThenCloseAndFinish(async () => {
+              const txChannel = txClient.channels.get('channel');
+
+              await txChannel.publish('message', 'body');
+              await txChannel.presence.enter();
+
+              // The idea being here that in order for receivedMessagePromise to resolve, rxClient must have first processed the PRESENCE ProtocolMessage that resulted from txChannel.presence.enter()
+
+              await receivedMessagePromise;
+            }, txClient);
+          }, rxClient);
+        });
+      });
+
+      describe('BaseRealtime with RealtimePresence', () => {
+        it('offers realtime presence functionality', async () => {
+          const rxClient = new BaseRealtime(
             ablyClientOptions({
-              clientId: randomString(),
               plugins: {
                 WebSocketTransport,
                 FetchRequest,
@@ -562,49 +631,35 @@ function registerAblyModularTests(helper) {
               },
             }),
           );
-          const txChannel = txClient.channels.get('channel');
+          const rxChannel = rxClient.channels.get('channel');
 
-          await txChannel.publish('message', 'body');
-          await txChannel.presence.enter();
+          await monitorConnectionThenCloseAndFinish(async () => {
+            const txClientId = randomString();
+            const txClient = new BaseRealtime(
+              ablyClientOptions({
+                clientId: txClientId,
+                plugins: {
+                  WebSocketTransport,
+                  FetchRequest,
+                  RealtimePresence,
+                },
+              }),
+            );
 
-          // The idea being here that in order for receivedMessagePromise to resolve, rxClient must have first processed the PRESENCE ProtocolMessage that resulted from txChannel.presence.enter()
+            await monitorConnectionThenCloseAndFinish(async () => {
+              const txChannel = txClient.channels.get('channel');
 
-          await receivedMessagePromise;
-        });
-      });
+              let resolveRxPresenceMessagePromise;
+              const rxPresenceMessagePromise = new Promise((resolve, reject) => {
+                resolveRxPresenceMessagePromise = resolve;
+              });
+              await rxChannel.presence.subscribe('enter', resolveRxPresenceMessagePromise);
+              await txChannel.presence.enter();
 
-      describe('BaseRealtime with RealtimePresence', () => {
-        it('offers realtime presence functionality', async () => {
-          const rxChannel = new BaseRealtime(
-            ablyClientOptions({
-              plugins: {
-                WebSocketTransport,
-                FetchRequest,
-                RealtimePresence,
-              },
-            }),
-          ).channels.get('channel');
-          const txClientId = randomString();
-          const txChannel = new BaseRealtime(
-            ablyClientOptions({
-              clientId: txClientId,
-              plugins: {
-                WebSocketTransport,
-                FetchRequest,
-                RealtimePresence,
-              },
-            }),
-          ).channels.get('channel');
-
-          let resolveRxPresenceMessagePromise;
-          const rxPresenceMessagePromise = new Promise((resolve, reject) => {
-            resolveRxPresenceMessagePromise = resolve;
-          });
-          await rxChannel.presence.subscribe('enter', resolveRxPresenceMessagePromise);
-          await txChannel.presence.enter();
-
-          const rxPresenceMessage = await rxPresenceMessagePromise;
-          expect(rxPresenceMessage.clientId).to.equal(txClientId);
+              const rxPresenceMessage = await rxPresenceMessagePromise;
+              expect(rxPresenceMessage.clientId).to.equal(txClientId);
+            }, txClient);
+          }, rxClient);
         });
       });
     });
@@ -679,20 +734,22 @@ function registerAblyModularTests(helper) {
                 }),
               );
 
-              let firstTransportCandidate;
-              const connectionManager = realtime.connection.connectionManager;
-              const originalTryATransport = connectionManager.tryATransport;
-              realtime.connection.connectionManager.tryATransport = (transportParams, candidate, callback) => {
-                if (!firstTransportCandidate) {
-                  firstTransportCandidate = candidate;
-                }
-                originalTryATransport.bind(connectionManager)(transportParams, candidate, callback);
-              };
+              await monitorConnectionThenCloseAndFinish(async () => {
+                let firstTransportCandidate;
+                const connectionManager = realtime.connection.connectionManager;
+                const originalTryATransport = connectionManager.tryATransport;
+                realtime.connection.connectionManager.tryATransport = (transportParams, candidate, callback) => {
+                  if (!firstTransportCandidate) {
+                    firstTransportCandidate = candidate;
+                  }
+                  originalTryATransport.bind(connectionManager)(transportParams, candidate, callback);
+                };
 
-              realtime.connect();
+                realtime.connect();
 
-              await realtime.connection.once('connected');
-              expect(firstTransportCandidate).to.equal(scenario.transportName);
+                await realtime.connection.once('connected');
+                expect(firstTransportCandidate).to.equal(scenario.transportName);
+              }, realtime);
             });
           });
         }
@@ -724,30 +781,36 @@ function registerAblyModularTests(helper) {
         describe('without MessageInteractions', () => {
           it('is able to subscribe to and unsubscribe from channel events, as long as a MessageFilter isn’t passed', async () => {
             const realtime = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
-            const channel = realtime.channels.get('channel');
-            await channel.attach();
 
-            const subscribeReceivedMessagePromise = new Promise((resolve) => channel.subscribe(resolve));
+            await monitorConnectionThenCloseAndFinish(async () => {
+              const channel = realtime.channels.get('channel');
+              await channel.attach();
 
-            await channel.publish('message', 'body');
+              const subscribeReceivedMessagePromise = new Promise((resolve) => channel.subscribe(resolve));
 
-            const subscribeReceivedMessage = await subscribeReceivedMessagePromise;
-            expect(subscribeReceivedMessage.data).to.equal('body');
+              await channel.publish('message', 'body');
+
+              const subscribeReceivedMessage = await subscribeReceivedMessagePromise;
+              expect(subscribeReceivedMessage.data).to.equal('body');
+            }, realtime);
           });
 
           it('throws an error when attempting to subscribe to channel events using a MessageFilter', async () => {
             const realtime = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
-            const channel = realtime.channels.get('channel');
 
-            let thrownError = null;
-            try {
-              await channel.subscribe({ clientId: 'someClientId' }, () => {});
-            } catch (error) {
-              thrownError = error;
-            }
+            await monitorConnectionThenCloseAndFinish(async () => {
+              const channel = realtime.channels.get('channel');
 
-            expect(thrownError).not.to.be.null;
-            expect(thrownError.message).to.equal('MessageInteractions plugin not provided');
+              let thrownError = null;
+              try {
+                await channel.subscribe({ clientId: 'someClientId' }, () => {});
+              } catch (error) {
+                thrownError = error;
+              }
+
+              expect(thrownError).not.to.be.null;
+              expect(thrownError.message).to.equal('MessageInteractions plugin not provided');
+            }, realtime);
           });
         });
 
@@ -762,50 +825,53 @@ function registerAblyModularTests(helper) {
                 },
               }),
             );
-            const channel = realtime.channels.get('channel');
 
-            await channel.attach();
+            await monitorConnectionThenCloseAndFinish(async () => {
+              const channel = realtime.channels.get('channel');
 
-            // Test `subscribe` with a filter: send two messages with different clientIds, and check that unfiltered subscription receives both messages but clientId-filtered subscription only receives the matching one.
-            const messageFilter = { clientId: 'someClientId' }; // note that `unsubscribe` compares filter by reference, I found that a bit surprising
+              await channel.attach();
 
-            const filteredSubscriptionReceivedMessages = [];
-            channel.subscribe(messageFilter, (message) => {
-              filteredSubscriptionReceivedMessages.push(message);
-            });
+              // Test `subscribe` with a filter: send two messages with different clientIds, and check that unfiltered subscription receives both messages but clientId-filtered subscription only receives the matching one.
+              const messageFilter = { clientId: 'someClientId' }; // note that `unsubscribe` compares filter by reference, I found that a bit surprising
 
-            const unfilteredSubscriptionReceivedFirstTwoMessagesPromise = new Promise((resolve) => {
-              const receivedMessages = [];
-              channel.subscribe(function listener(message) {
-                receivedMessages.push(message);
-                if (receivedMessages.length === 2) {
+              const filteredSubscriptionReceivedMessages = [];
+              channel.subscribe(messageFilter, (message) => {
+                filteredSubscriptionReceivedMessages.push(message);
+              });
+
+              const unfilteredSubscriptionReceivedFirstTwoMessagesPromise = new Promise((resolve) => {
+                const receivedMessages = [];
+                channel.subscribe(function listener(message) {
+                  receivedMessages.push(message);
+                  if (receivedMessages.length === 2) {
+                    channel.unsubscribe(listener);
+                    resolve();
+                  }
+                });
+              });
+
+              await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
+              await channel.publish(await decodeMessage({ clientId: 'someOtherClientId' }));
+              await unfilteredSubscriptionReceivedFirstTwoMessagesPromise;
+
+              expect(filteredSubscriptionReceivedMessages.length).to.equal(1);
+              expect(filteredSubscriptionReceivedMessages[0].clientId).to.equal('someClientId');
+
+              // Test `unsubscribe` with a filter: call `unsubscribe` with the clientId filter, publish a message matching the filter, check that only the unfiltered listener recieves it
+              channel.unsubscribe(messageFilter);
+
+              const unfilteredSubscriptionReceivedNextMessagePromise = new Promise((resolve) => {
+                channel.subscribe(function listener() {
                   channel.unsubscribe(listener);
                   resolve();
-                }
+                });
               });
-            });
 
-            await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
-            await channel.publish(await decodeMessage({ clientId: 'someOtherClientId' }));
-            await unfilteredSubscriptionReceivedFirstTwoMessagesPromise;
+              await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
+              await unfilteredSubscriptionReceivedNextMessagePromise;
 
-            expect(filteredSubscriptionReceivedMessages.length).to.equal(1);
-            expect(filteredSubscriptionReceivedMessages[0].clientId).to.equal('someClientId');
-
-            // Test `unsubscribe` with a filter: call `unsubscribe` with the clientId filter, publish a message matching the filter, check that only the unfiltered listener recieves it
-            channel.unsubscribe(messageFilter);
-
-            const unfilteredSubscriptionReceivedNextMessagePromise = new Promise((resolve) => {
-              channel.subscribe(function listener() {
-                channel.unsubscribe(listener);
-                resolve();
-              });
-            });
-
-            await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
-            await unfilteredSubscriptionReceivedNextMessagePromise;
-
-            expect(filteredSubscriptionReceivedMessages.length).to./* (still) */ equal(1);
+              expect(filteredSubscriptionReceivedMessages.length).to./* (still) */ equal(1);
+            }, realtime);
           });
         });
       });
