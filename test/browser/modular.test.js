@@ -61,7 +61,7 @@ function registerAblyModularTests(helper) {
         for (const scenario of restScenarios) {
           it(`allows you to ${scenario.description}`, async () => {
             const client = new BaseRest(
-              ablyClientOptions({ ...scenario.getAdditionalClientOptions?.(), plugins: { FetchRequest } }),
+              ablyClientOptions({ ...scenario.getAdditionalClientOptions?.(), plugins: { FetchRequest }, tls: false }),
             );
 
             let thrownError = null;
