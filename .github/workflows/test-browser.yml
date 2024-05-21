@@ -72,10 +72,23 @@ jobs:
           sudo cp ~/.mitmproxy/mitmproxy-ca-cert.cer /usr/local/share/ca-certificates/mitmproxy-ca-cert.crt
           sudo update-ca-certificates
 
+      - name: Install tcpdump
+        run: sudo apt-get install tcpdump
+
       - name: Run the tests
         env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
-        run: npm run test:playwright
+        run: |
+          sudo tcpdump -i any -nn -w packet-capture.pcap &
+          npm run test:playwright
+          sudo pkill tcpdump
+
+      - name: Upload packet capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packet-capture-${{ matrix.browser }}.pcap
+          path: packet-capture.pcap
 
       - name: Save interception proxy server logs
         if: always()
