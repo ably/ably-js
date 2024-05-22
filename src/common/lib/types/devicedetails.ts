@@ -22,10 +22,15 @@ export enum DevicePlatform {
 
 type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
 
+interface WebPushEncryptionKey {
+  p256dh: string;
+  auth: string;
+}
+
 interface WebPushRecipient {
   transportType: 'web';
   targetUrl: string;
-  encryptionKey: string;
+  encryptionKey: WebPushEncryptionKey;
 }
 
 interface PushChannelRecipient {

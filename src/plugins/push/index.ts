@@ -1,4 +1,5 @@
 import PushChannel from './pushchannel';
+import { getW3CPushDeviceDetails } from './getW3CDeviceDetails';
 import { ActivationStateMachine, CalledActivate, CalledDeactivate, localDeviceFactory } from './pushactivation';
 
 export {
@@ -7,6 +8,7 @@ export {
   CalledActivate,
   CalledDeactivate,
   PushChannel,
+  getW3CPushDeviceDetails,
 };
 
 export default {
@@ -15,4 +17,5 @@ export default {
   CalledActivate,
   CalledDeactivate,
   PushChannel,
+  getW3CPushDeviceDetails,
 };

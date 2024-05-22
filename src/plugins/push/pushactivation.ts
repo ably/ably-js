@@ -135,7 +135,7 @@ export class ActivationStateMachine {
   updateFailedCallback?: ErrCallback;
 
   // Used for testing
-  pushManager?: PushManager;
+  _pushManager?: PushManager;
 
   // exported for testing
   GettingPushDeviceDetailsFailed = GettingPushDeviceDetailsFailed;
@@ -481,18 +481,16 @@ class NotActivated extends ActivationState {
 
       if (device.push.recipient) {
         machine.pendingEvents.push(new GotPushDeviceDetails());
+      } else if (machine.pushConfig.getPushDeviceDetails) {
+        machine.pushConfig.getPushDeviceDetails?.(machine);
+      } else if (machine.pushConfig.platform === DevicePlatform.Browser) {
+        getW3CPushDeviceDetails(machine);
       } else {
-        if (machine.pushConfig.getPushDeviceDetails) {
-          machine.pushConfig.getPushDeviceDetails?.(machine);
-        } else if (machine.pushConfig.platform === DevicePlatform.Browser) {
-          getW3CPushDeviceDetails(machine);
-        } else {
-          machine.handleEvent(
-            new GettingPushDeviceDetailsFailed(
-              new machine.client.ErrorInfo('No available implementation to get push device details', 50000, 500),
-            ),
-          );
-        }
+        machine.handleEvent(
+          new GettingPushDeviceDetailsFailed(
+            new machine.client.ErrorInfo('No available implementation to get push device details', 50000, 500),
+          ),
+        );
       }
 
       return new WaitingForPushDeviceDetails();
