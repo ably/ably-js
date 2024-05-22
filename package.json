@@ -25,11 +25,16 @@
     "./react": {
       "require": "./react/cjs/index.js",
       "import": "./react/mjs/index.js"
+    },
+    "./push": {
+      "types": "./push.d.ts",
+      "import": "./build/push.js"
     }
   },
   "files": [
     "build/**",
     "ably.d.ts",
+    "push.d.ts",
     "modular.d.ts",
     "resources/**",
     "src/**",
@@ -131,7 +136,7 @@
     "start:react": "npx vite serve",
     "grunt": "grunt",
     "test": "npm run test:node",
-    "test:node": "npm run build:node && mocha",
+    "test:node": "npm run build:node && npm run build:push && mocha",
     "test:node:skip-build": "mocha",
     "test:webserver": "grunt test:webserver",
     "test:playwright": "node test/support/runPlaywrightTests.js",
@@ -144,6 +149,7 @@
     "build:react": "npm run build:react:mjs && npm run build:react:cjs && cp src/platform/react-hooks/res/package.react.json react/package.json",
     "build:react:mjs": "tsc --project src/platform/react-hooks/tsconfig.mjs.json && cp src/platform/react-hooks/res/package.mjs.json react/mjs/package.json",
     "build:react:cjs": "tsc --project src/platform/react-hooks/tsconfig.cjs.json && cp src/platform/react-hooks/res/package.cjs.json react/cjs/package.json",
+    "build:push": "grunt build:push",
     "requirejs": "grunt requirejs",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",

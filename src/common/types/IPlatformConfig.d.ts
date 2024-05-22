@@ -1,3 +1,5 @@
+import { DeviceFormFactor, DevicePlatform } from 'common/lib/types/devicedetails';
+
 /**
  * Interface for common config properties shared between all platforms and that are relevant for all platforms.
  *
@@ -15,6 +17,7 @@ export interface ICommonPlatformConfig {
   inspect: (value: unknown) => string;
   stringByteSize: Buffer.byteLength;
   getRandomArrayBuffer: (byteLength: number) => Promise<ArrayBuffer>;
+  push?: IPlatformPushConfig;
 }
 
 /**
@@ -35,6 +38,19 @@ export interface ISpecificPlatformConfig {
   TextEncoder?: typeof TextEncoder;
   TextDecoder?: typeof TextDecoder;
   isWebworker?: boolean;
+}
+
+export interface IPlatformPushStorage {
+  get(name: string): string;
+  set(name: string, value: string);
+  remove(name: string);
+}
+
+export interface IPlatformPushConfig {
+  platform: DevicePlatform;
+  formFactor: DeviceFormFactor;
+  storage: IPlatformPushStorage;
+  getPushDeviceDetails?(machine: any);
 }
 
 export type IPlatformConfig = ICommonPlatformConfig & ISpecificPlatformConfig;

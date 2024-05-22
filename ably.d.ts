@@ -594,6 +594,11 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
    * @defaultValue 65536
    */
   maxMessageSize?: number;
+
+  /**
+   * A URL pointing to a service worker script which is used as the target for web push notifications.
+   */
+  pushServiceWorkerUrl?: string;
 }
 
 /**
@@ -604,6 +609,11 @@ export interface CorePlugins {
    * A plugin capable of decoding `vcdiff`-encoded messages. For more information on how to configure a channel to use delta encoding, see the [documentation for the `@ably-forks/vcdiff-decoder` package](https://github.com/ably-forks/vcdiff-decoder#usage).
    */
   vcdiff?: any;
+
+  /**
+   * A plugin which allows the client to be the target of push notifications.
+   */
+  Push?: unknown;
 }
 
 /**
@@ -1494,6 +1504,37 @@ export type recoverConnectionCallback = (
   callback: recoverConnectionCompletionCallback,
 ) => void;
 
+/**
+ * A standard callback format which is invoked upon completion of a task.
+ *
+ * @param err - An error object if the task failed.
+ * @param result - The result of the task, if any.
+ */
+type StandardCallback<T> = (err: ErrorInfo | null, result?: T) => void;
+
+/**
+ * A function passed to {@link Push.activate} in order to override the default implementation to register a device for push activation.
+ *
+ * @param device - A DeviceDetails object representing the local device
+ * @param callback - A callback to be invoked when the registration is complete
+ */
+export type RegisterCallback = (device: DeviceDetails, callback: StandardCallback<DeviceDetails>) => void;
+
+/**
+ * A function passed to {@link Push.activate} in order to override the default implementation to deregister a device for push activation.
+ *
+ * @param device - A DeviceDetails object representing the local device
+ * @param callback - A callback to be invoked when the deregistration is complete
+ */
+export type DeregisterCallback = (device: DeviceDetails, callback: StandardCallback<string>) => void;
+
+/**
+ * A callback which returns only an error, or null, when complete.
+ *
+ * @param error - The error if the task failed, or null not.
+ */
+export type ErrorCallback = (error: ErrorInfo | null) => void;
+
 // Internal Interfaces
 
 // To allow a uniform (callback) interface between on and once even in the
@@ -1928,6 +1969,39 @@ export declare interface RealtimePresence {
 }
 
 /**
+ * Enables devices to subscribe to push notifications for a channel.
+ */
+export declare interface PushChannel {
+  /**
+   * Subscribes the device to push notifications for the channel.
+   */
+  subscribeDevice(): Promise<void>;
+
+  /**
+   * Unsubscribes the device from receiving push notifications for the channel.
+   */
+  unsubscribeDevice(): Promise<void>;
+
+  /**
+   * Subscribes all devices associated with the current device's `clientId` to push notifications for the channel.
+   */
+  subscribeClient(): Promise<void>;
+
+  /**
+   * Unsubscribes all devices associated with the current device's `clientId` from receiving push notifications for the channel.
+   */
+  unsubscribeClient(): Promise<void>;
+
+  /**
+   * Retrieves all push subscriptions for the channel. Subscriptions can be filtered using a params object.
+   *
+   * @param params - An object containing key-value pairs to filter subscriptions by. Can contain `clientId`, `deviceId` or a combination of both, and a `limit` on the number of subscriptions returned, up to 1,000.
+   * @returns a {@link PaginatedResult} object containing an array of {@link PushChannelSubscription} objects.
+   */
+  listSubscriptions(params?: Record<string, string>): Promise<PaginatedResult<PushChannelSubscription>>;
+}
+
+/**
  * Enables messages to be published and historic messages to be retrieved for a channel.
  */
 export declare interface Channel {
@@ -1940,6 +2014,10 @@ export declare interface Channel {
    * A {@link Presence} object.
    */
   presence: Presence;
+  /**
+   * A {@link PushChannel} object.
+   */
+  push: PushChannel;
   /**
    * Retrieves a {@link PaginatedResult} object, containing an array of historical {@link InboundMessage} objects for the channel. If the channel is configured to persist messages, then messages can be retrieved from history for up to 72 hours in the past. If not, messages can only be retrieved from history for up to two minutes in the past.
    *
@@ -2540,6 +2618,21 @@ export declare interface Push {
    * A {@link PushAdmin} object.
    */
   admin: PushAdmin;
+
+  /**
+   * Activates the device for push notifications. Subsequently registers the device with Ably and stores the deviceIdentityToken in local storage.
+   *
+   * @param registerCallback - A function passed to override the default implementation to register the local device for push activation.
+   * @param updateFailedCallback - A callback to be invoked when the device registration failed to update.
+   */
+  activate(registerCallback?: RegisterCallback, updateFailedCallback?: ErrorCallback): Promise<void>;
+
+  /**
+   * Deactivates the device from receiving push notifications.
+   *
+   * @param deregisterCallback - A function passed to override the default implementation to deregister the local device for push activation.
+   */
+  deactivate(deregisterCallback: DeregisterCallback): Promise<void>;
 }
 
 /**

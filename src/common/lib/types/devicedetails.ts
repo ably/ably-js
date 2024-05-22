@@ -1,8 +1,9 @@
 import { MsgPack } from 'common/types/msgpack';
+import type { LocalDevice } from 'plugins/push/pushactivation';
 import * as Utils from '../util/utils';
 import ErrorInfo, { IConvertibleToErrorInfo } from './errorinfo';
 
-enum DeviceFormFactor {
+export enum DeviceFormFactor {
   Phone = 'phone',
   Tablet = 'tablet',
   Desktop = 'desktop',
@@ -13,7 +14,7 @@ enum DeviceFormFactor {
   Other = 'other',
 }
 
-enum DevicePlatform {
+export enum DevicePlatform {
   Android = 'android',
   IOS = 'ios',
   Browser = 'browser',
@@ -21,9 +22,24 @@ enum DevicePlatform {
 
 type DevicePushState = 'ACTIVE' | 'FAILING' | 'FAILED';
 
-type DevicePushDetails = {
+interface WebPushRecipient {
+  transportType: 'web';
+  targetUrl: string;
+  encryptionKey: string;
+}
+
+interface PushChannelRecipient {
+  transportType: 'ablyChannel';
+  channel: string;
+  ablyKey: string;
+  ablyUrl: string;
+}
+
+type PushRecipient = WebPushRecipient | PushChannelRecipient;
+
+export type DevicePushDetails = {
   error?: ErrorInfo;
-  recipient?: string;
+  recipient?: PushRecipient;
   state?: DevicePushState;
   metadata?: string;
 };
@@ -94,6 +110,10 @@ class DeviceDetails {
   static fromValues(values: Record<string, unknown>): DeviceDetails {
     values.error = values.error && ErrorInfo.fromValues(values.error as IConvertibleToErrorInfo);
     return Object.assign(new DeviceDetails(), values);
+  }
+
+  static fromLocalDevice(device: LocalDevice): DeviceDetails {
+    return Object.assign(new DeviceDetails(), device);
   }
 
   static fromValuesArray(values: Array<Record<string, unknown>>): DeviceDetails[] {
