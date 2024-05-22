@@ -39,6 +39,7 @@
     "@ably/msgpack-js": "^0.4.0",
     "fastestsmallesttextencoderdecoder": "^1.0.22",
     "got": "^11.8.5",
+    "ulid": "^2.3.0",
     "ws": "^8.17.1"
   },
   "peerDependencies": {
