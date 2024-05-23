@@ -1492,7 +1492,7 @@ class ConnectionManager extends EventEmitter {
    *   with the transport and fallback to base transport.
    */
   connectWs(transportParams: TransportParams, connectCount: number) {
-    Logger.logAction(this.logger, Logger.LOG_DEBUG, 'ConnectionManager.connectWs()');
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.connectWs()');
     this.startWebSocketSlowTimer();
     this.startWebSocketGiveUpTimer(transportParams);
 
@@ -1502,7 +1502,7 @@ class ConnectionManager extends EventEmitter {
   }
 
   connectBase(transportParams: TransportParams, connectCount: number) {
-    Logger.logAction(this.logger, Logger.LOG_DEBUG, 'ConnectionManager.connectBase()');
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.connectBase()');
     if (this.baseTransport) {
       this.tryTransportWithFallbacks(this.baseTransport, transportParams, false, connectCount, () => true);
     } else {
@@ -1523,7 +1523,7 @@ class ConnectionManager extends EventEmitter {
     Logger.logAction(
       this.logger,
 
-      Logger.LOG_DEBUG,
+      Logger.LOG_MICRO,
       'ConnectionManager.tryTransportWithFallbacks()',
       transportName,
     );

@@ -79,8 +79,6 @@ class Logger {
   static readonly LOG_MAJOR: LogLevels = LogLevels.Major;
   static readonly LOG_MINOR: LogLevels = LogLevels.Minor;
   static readonly LOG_MICRO: LogLevels = LogLevels.Micro;
-  // aliases
-  static readonly LOG_DEBUG: LogLevels = LogLevels.Micro;
 
   /**
    * This logger instance should only be used when there is no more appropriate logger to use, for example when implementing a public static method or function whose API doesn’t accept any logging configuration.
