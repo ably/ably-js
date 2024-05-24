@@ -36,7 +36,13 @@ export class RestChannelMixin {
       headers,
       unpacked,
     ) {
-      return await messageFromResponseBody(body as Message[], options, client._MsgPack, unpacked ? undefined : format);
+      return await messageFromResponseBody(
+        body as Message[],
+        options,
+        channel.logger,
+        client._MsgPack,
+        unpacked ? undefined : format,
+      );
     }).get(params as Record<string, unknown>);
   }
 

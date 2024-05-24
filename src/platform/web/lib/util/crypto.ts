@@ -152,12 +152,12 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
      * @param params either a CipherParams instance or some subset of its
      * fields that includes a key
      */
-    static getCipher(params: IGetCipherParams<IV>) {
+    static getCipher(params: IGetCipherParams<IV>, logger: Logger) {
       var cipherParams = isCipherParams(params) ? (params as CipherParams) : this.getDefaultParams(params);
 
       return {
         cipherParams: cipherParams,
-        cipher: new CBCCipher(cipherParams, params.iv ?? null),
+        cipher: new CBCCipher(cipherParams, params.iv ?? null, logger),
       };
     }
   }
@@ -170,7 +170,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
     key: ArrayBuffer;
     iv: ArrayBuffer | null;
 
-    constructor(params: CipherParams, iv: IV | null) {
+    constructor(params: CipherParams, iv: IV | null, private readonly logger: Logger) {
       if (!crypto.subtle) {
         if (isSecureContext) {
           throw new Error(
@@ -207,7 +207,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
     }
 
     async encrypt(plaintext: InputPlaintext): Promise<OutputCiphertext> {
-      Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+      Logger.logAction(this.logger, Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 
       const iv = await this.getIv();
       const cryptoKey = await crypto.subtle.importKey('raw', this.key, this.webCryptoAlgorithm, false, ['encrypt']);
@@ -217,7 +217,7 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
     }
 
     async decrypt(ciphertext: InputCiphertext): Promise<OutputPlaintext> {
-      Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
+      Logger.logAction(this.logger, Logger.LOG_MICRO, 'CBCCipher.decrypt()', '');
 
       const ciphertextArrayBuffer = bufferUtils.toArrayBuffer(ciphertext);
       const iv = ciphertextArrayBuffer.slice(0, DEFAULT_BLOCKLENGTH);

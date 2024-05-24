@@ -1,4 +1,5 @@
 import * as API from '../../../../ably';
+import Logger from '../util/logger';
 import PresenceMessage, { fromEncoded, fromEncodedArray, fromValues } from './presencemessage';
 
 /**
@@ -6,14 +7,14 @@ import PresenceMessage, { fromEncoded, fromEncodedArray, fromValues } from './pr
  */
 export class DefaultPresenceMessage extends PresenceMessage {
   static async fromEncoded(encoded: unknown, inputOptions?: API.ChannelOptions): Promise<PresenceMessage> {
-    return fromEncoded(encoded, inputOptions);
+    return fromEncoded(Logger.defaultLogger, encoded, inputOptions);
   }
 
   static async fromEncodedArray(
     encodedArray: Array<unknown>,
     options?: API.ChannelOptions,
   ): Promise<PresenceMessage[]> {
-    return fromEncodedArray(encodedArray, options);
+    return fromEncodedArray(Logger.defaultLogger, encodedArray, options);
   }
 
   static fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage {

@@ -2,6 +2,7 @@ import BaseClient from './baseclient';
 import ClientOptions from '../../types/ClientOptions';
 import { Rest } from './rest';
 import Defaults from '../util/defaults';
+import Logger from '../util/logger';
 
 /**
  `BaseRest` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRest` class exported by the non tree-shakable version.
@@ -18,6 +19,6 @@ export class BaseRest extends BaseClient {
    * tell the compiler that these cases are possible so that it forces us to handle them.
    */
   constructor(options?: ClientOptions | string) {
-    super(Defaults.objectifyOptions(options, false, 'BaseRest', { Rest }));
+    super(Defaults.objectifyOptions(options, false, 'BaseRest', Logger.defaultLogger, { Rest }));
   }
 }

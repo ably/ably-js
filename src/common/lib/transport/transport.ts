@@ -58,7 +58,7 @@ abstract class Transport extends EventEmitter {
   lastActivity: number | null;
 
   constructor(connectionManager: ConnectionManager, auth: Auth, params: TransportParams, forceJsonProtocol?: boolean) {
-    super();
+    super(connectionManager.logger);
     if (forceJsonProtocol) {
       params.format = undefined;
       params.heartbeats = true;
@@ -120,8 +120,9 @@ abstract class Transport extends EventEmitter {
   }
 
   onProtocolMessage(message: ProtocolMessage): void {
-    if (Logger.shouldLog(Logger.LOG_MICRO)) {
+    if (this.logger.shouldLog(Logger.LOG_MICRO)) {
       Logger.logActionNoStrip(
+        this.logger,
         Logger.LOG_MICRO,
         'Transport.onProtocolMessage()',
         'received on ' +
@@ -137,6 +138,7 @@ abstract class Transport extends EventEmitter {
     switch (message.action) {
       case actions.HEARTBEAT:
         Logger.logActionNoStrip(
+          this.logger,
           Logger.LOG_MICRO,
           'Transport.onProtocolMessage()',
           this.shortName + ' heartbeat; connectionId = ' + this.connectionManager.connectionId,
@@ -166,9 +168,10 @@ abstract class Transport extends EventEmitter {
         // Ignored.
         break;
       case actions.AUTH:
-        Utils.whenPromiseSettles(this.auth.authorize(), function (err: ErrorInfo | null) {
+        Utils.whenPromiseSettles(this.auth.authorize(), (err: ErrorInfo | null) => {
           if (err) {
             Logger.logAction(
+              this.logger,
               Logger.LOG_ERROR,
               'Transport.onProtocolMessage()',
               'Ably requested re-authentication, but unable to obtain a new token: ' + Utils.inspectError(err),
@@ -178,6 +181,7 @@ abstract class Transport extends EventEmitter {
         break;
       case actions.ERROR:
         Logger.logAction(
+          this.logger,
           Logger.LOG_MINOR,
           'Transport.onProtocolMessage()',
           'received error action; connectionId = ' +
@@ -216,7 +220,7 @@ abstract class Transport extends EventEmitter {
     /* Used for when the server has disconnected the client (usually with a
      * DISCONNECTED action) */
     const err = message && message.error;
-    Logger.logAction(Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Transport.onDisconnect()', 'err = ' + Utils.inspectError(err));
     this.finish('disconnected', err);
   }
 
@@ -225,23 +229,23 @@ abstract class Transport extends EventEmitter {
      * will close the connection and the transport, and do not need to request
      * a disconnection - RTN15i */
     const err = message && message.error;
-    Logger.logAction(Logger.LOG_MINOR, 'Transport.onFatalError()', 'err = ' + Utils.inspectError(err));
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Transport.onFatalError()', 'err = ' + Utils.inspectError(err));
     this.finish('failed', err);
   }
 
   onClose(message: ProtocolMessage): void {
     const err = message && message.error;
-    Logger.logAction(Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Transport.onClose()', 'err = ' + Utils.inspectError(err));
     this.finish('closed', err);
   }
 
   requestClose(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'Transport.requestClose()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Transport.requestClose()', '');
     this.send(closeMessage);
   }
 
   requestDisconnect(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Transport.requestDisconnect()', '');
     this.send(disconnectMessage);
   }
 
@@ -252,7 +256,7 @@ abstract class Transport extends EventEmitter {
   }
 
   dispose(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'Transport.dispose()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Transport.dispose()', '');
     this.isDisposed = true;
     this.off();
   }
@@ -282,7 +286,7 @@ abstract class Transport extends EventEmitter {
     const timeRemaining = this.maxIdleInterval - sinceLast;
     if (timeRemaining <= 0) {
       const msg = 'No activity seen from realtime in ' + sinceLast + 'ms; assuming connection has dropped';
-      Logger.logAction(Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, 'Transport.onIdleTimerExpire()', msg);
       this.disconnect(new ErrorInfo(msg, 80003, 408));
     } else {
       this.setIdleTimer(timeRemaining + 100);
@@ -317,7 +321,12 @@ abstract class Transport extends EventEmitter {
 
     transport.on(['failed', 'disconnected'], errorCb);
     transport.on('preconnect', function () {
-      Logger.logAction(Logger.LOG_MINOR, 'Transport.tryConnect()', 'viable transport ' + transport);
+      Logger.logAction(
+        connectionManager.logger,
+        Logger.LOG_MINOR,
+        'Transport.tryConnect()',
+        'viable transport ' + transport,
+      );
       clearTimeout(transportAttemptTimer);
       transport.off(['failed', 'disconnected'], errorCb);
       callback(null, transport);

@@ -73,7 +73,7 @@ abstract class CometTransport extends Transport {
   ): IXHRRequest;
 
   connect(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'CometTransport.connect()', 'starting');
     Transport.prototype.connect.call(this);
     const params = this.params;
     const options = params.options;
@@ -83,7 +83,7 @@ abstract class CometTransport extends Transport {
 
     this.baseUri = cometScheme + host + ':' + port + '/comet/';
     const connectUri = this.baseUri + 'connect';
-    Logger.logAction(Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'CometTransport.connect()', 'uri: ' + connectUri);
     Utils.whenPromiseSettles(this.auth.getAuthParams(), (err: Error | null, authParams?: Record<string, any>) => {
       if (err) {
         this.disconnect(err);
@@ -96,6 +96,7 @@ abstract class CometTransport extends Transport {
       const connectParams = this.params.getConnectParams(authParams!);
       if ('stream' in connectParams) this.stream = connectParams.stream;
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'CometTransport.connect()',
         'connectParams:' + Utils.toQueryString(connectParams),
@@ -157,12 +158,12 @@ abstract class CometTransport extends Transport {
   }
 
   requestClose(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestClose()');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'CometTransport.requestClose()');
     this._requestCloseOrDisconnect(true);
   }
 
   requestDisconnect(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'CometTransport.requestDisconnect()');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'CometTransport.requestDisconnect()');
     this._requestCloseOrDisconnect(false);
   }
 
@@ -174,6 +175,7 @@ abstract class CometTransport extends Transport {
       request.on('complete', (err: ErrorInfo) => {
         if (err) {
           Logger.logAction(
+            this.logger,
             Logger.LOG_ERROR,
             'CometTransport.request' + (closing ? 'Close()' : 'Disconnect()'),
             'request returned err = ' + Utils.inspectError(err),
@@ -186,11 +188,11 @@ abstract class CometTransport extends Transport {
   }
 
   dispose(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'CometTransport.dispose()', '');
     if (!this.isDisposed) {
       this.isDisposed = true;
       if (this.recvRequest) {
-        Logger.logAction(Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
+        Logger.logAction(this.logger, Logger.LOG_MINOR, 'CometTransport.dispose()', 'aborting recv request');
         this.recvRequest.abort();
         this.recvRequest = null;
       }
@@ -215,7 +217,7 @@ abstract class CometTransport extends Transport {
     Transport.prototype.onConnect.call(this, message);
 
     const baseConnectionUri = (this.baseUri as string) + connectionStr;
-    Logger.logAction(Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'CometTransport.onConnect()', 'baseUri = ' + baseConnectionUri);
     this.sendUri = baseConnectionUri + '/send';
     this.recvUri = baseConnectionUri + '/recv';
     this.closeUri = baseConnectionUri + '/close';
@@ -260,6 +262,7 @@ abstract class CometTransport extends Transport {
     sendRequest.on('complete', (err: ErrorInfo, data: string) => {
       if (err)
         Logger.logAction(
+          this.logger,
           Logger.LOG_ERROR,
           'CometTransport.sendItems()',
           'on complete: err = ' + Utils.inspectError(err),
@@ -354,6 +357,7 @@ abstract class CometTransport extends Transport {
           );
     } catch (e) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_ERROR,
         'CometTransport.onData()',
         'Unexpected exception handing channel event: ' + (e as Error).stack,

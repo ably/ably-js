@@ -72,15 +72,23 @@ export function appendingParams(uri: string, params: Record<string, any> | null)
   return uri + (params ? '?' : '') + paramString(params);
 }
 
-function logResult(result: RequestResult, method: HttpMethods, uri: string, params: Record<string, string> | null) {
+function logResult(
+  result: RequestResult,
+  method: HttpMethods,
+  uri: string,
+  params: Record<string, string> | null,
+  logger: Logger,
+) {
   if (result.error) {
     Logger.logActionNoStrip(
+      logger,
       Logger.LOG_MICRO,
       'Http.' + method + '()',
       'Received Error; ' + appendingParams(uri, params) + '; Error: ' + Utils.inspectError(result.error),
     );
   } else {
     Logger.logActionNoStrip(
+      logger,
       Logger.LOG_MICRO,
       'Http.' + method + '()',
       'Received; ' +
@@ -97,9 +105,10 @@ function logResult(result: RequestResult, method: HttpMethods, uri: string, para
   }
 }
 
-function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, params: RequestParams) {
-  if (Logger.shouldLog(Logger.LOG_MICRO)) {
+function logRequest(method: HttpMethods, uri: string, body: RequestBody | null, params: RequestParams, logger: Logger) {
+  if (logger.shouldLog(Logger.LOG_MICRO)) {
     Logger.logActionNoStrip(
+      logger,
       Logger.LOG_MICRO,
       'Http.' + method + '()',
       'Sending; ' +
@@ -120,6 +129,10 @@ export class Http {
     this.checkConnectivity = this.platformHttp.checkConnectivity
       ? () => this.platformHttp.checkConnectivity!()
       : undefined;
+  }
+
+  get logger(): Logger {
+    return this.client?.logger ?? Logger.defaultLogger;
   }
 
   get supportsAuthHeaders() {
@@ -239,12 +252,12 @@ export class Http {
     params: RequestParams,
   ): Promise<RequestResult> {
     try {
-      logRequest(method, uri, body, params);
+      logRequest(method, uri, body, params, this.logger);
 
       const result = await this.platformHttp.doUri(method, uri, headers, body, params);
 
-      if (Logger.shouldLog(Logger.LOG_MICRO)) {
-        logResult(result, method, uri, params);
+      if (this.logger.shouldLog(Logger.LOG_MICRO)) {
+        logResult(result, method, uri, params, this.logger);
       }
 
       return result;

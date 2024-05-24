@@ -6,7 +6,7 @@ define(['ably', 'chai'], function (Ably, chai) {
 
   describe('rest/defaults', function () {
     it('Init with no endpoint-related options', function () {
-      var normalisedOptions = Defaults.normaliseOptions({});
+      var normalisedOptions = Defaults.normaliseOptions({}, null, null);
 
       expect(normalisedOptions.restHost).to.equal('rest.ably.io');
       expect(normalisedOptions.realtimeHost).to.equal('realtime.ably.io');
@@ -24,7 +24,7 @@ define(['ably', 'chai'], function (Ably, chai) {
     });
 
     it('Init with production environment', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ environment: 'production' });
+      var normalisedOptions = Defaults.normaliseOptions({ environment: 'production' }, null, null);
 
       expect(normalisedOptions.restHost).to.equal('rest.ably.io');
       expect(normalisedOptions.realtimeHost).to.equal('realtime.ably.io');
@@ -42,7 +42,7 @@ define(['ably', 'chai'], function (Ably, chai) {
     });
 
     it('Init with given environment', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ environment: 'sandbox' });
+      var normalisedOptions = Defaults.normaliseOptions({ environment: 'sandbox' }, null, null);
 
       expect(normalisedOptions.restHost).to.equal('sandbox-rest.ably.io');
       expect(normalisedOptions.realtimeHost).to.equal('sandbox-realtime.ably.io');
@@ -62,7 +62,11 @@ define(['ably', 'chai'], function (Ably, chai) {
     });
 
     it('Init with local environment and non-default ports', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ environment: 'local', port: 8080, tlsPort: 8081 });
+      var normalisedOptions = Defaults.normaliseOptions(
+        { environment: 'local', port: 8080, tlsPort: 8081 },
+        null,
+        null,
+      );
 
       expect(normalisedOptions.restHost).to.equal('local-rest.ably.io');
       expect(normalisedOptions.realtimeHost).to.equal('local-realtime.ably.io');
@@ -79,7 +83,7 @@ define(['ably', 'chai'], function (Ably, chai) {
     });
 
     it('Init with given host', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ restHost: 'test.org' });
+      var normalisedOptions = Defaults.normaliseOptions({ restHost: 'test.org' }, null, null);
 
       expect(normalisedOptions.restHost).to.equal('test.org');
       expect(normalisedOptions.realtimeHost).to.equal('test.org');
@@ -97,7 +101,11 @@ define(['ably', 'chai'], function (Ably, chai) {
 
     /* init with given restHost and realtimeHost */
     it('Init with given restHost and realtimeHost', function () {
-      var normalisedOptions = Defaults.normaliseOptions({ restHost: 'test.org', realtimeHost: 'ws.test.org' });
+      var normalisedOptions = Defaults.normaliseOptions(
+        { restHost: 'test.org', realtimeHost: 'ws.test.org' },
+        null,
+        null,
+      );
 
       expect(normalisedOptions.restHost).to.equal('test.org');
       expect(normalisedOptions.realtimeHost).to.equal('ws.test.org');
@@ -115,7 +123,7 @@ define(['ably', 'chai'], function (Ably, chai) {
 
     it('Init with no endpoint-related options and given default environment', function () {
       Defaults.ENVIRONMENT = 'sandbox';
-      var normalisedOptions = Defaults.normaliseOptions({});
+      var normalisedOptions = Defaults.normaliseOptions({}, null, null);
 
       expect(normalisedOptions.restHost).to.equal('sandbox-rest.ably.io');
       expect(normalisedOptions.realtimeHost).to.equal('sandbox-realtime.ably.io');
@@ -141,7 +149,7 @@ define(['ably', 'chai'], function (Ably, chai) {
         describe('given MsgPack implementation', () => {
           it('maintains useBinaryProtocol as true', () => {
             const StubMsgPack = {};
-            var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, StubMsgPack);
+            var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, StubMsgPack, null);
 
             expect(normalisedOptions.useBinaryProtocol).to.be.true;
           });
@@ -150,7 +158,7 @@ define(['ably', 'chai'], function (Ably, chai) {
 
       describe('given no MsgPack implementation', () => {
         it('changes useBinaryProtocol to false', () => {
-          var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, null);
+          var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, null, null);
 
           expect(normalisedOptions.useBinaryProtocol).to.be.false;
         });
@@ -161,23 +169,23 @@ define(['ably', 'chai'], function (Ably, chai) {
       var options;
 
       /* Default to true */
-      options = Defaults.normaliseOptions({});
+      options = Defaults.normaliseOptions({}, null, null);
       expect(options.closeOnUnload).to.equal(true);
 
       /* Default to false if using manual recovery */
-      options = Defaults.normaliseOptions({ recover: 'someRecoveryKey' });
+      options = Defaults.normaliseOptions({ recover: 'someRecoveryKey' }, null, null);
       expect(options.closeOnUnload).to.equal(false);
 
       /* Default to false if using autorecovery */
-      options = Defaults.normaliseOptions({ recover: function () {} });
+      options = Defaults.normaliseOptions({ recover: function () {} }, null, null);
       expect(options.closeOnUnload).to.equal(false);
 
       /* can override default with manual recovery */
-      options = Defaults.normaliseOptions({ recover: 'someRecoveryKey', closeOnUnload: true });
+      options = Defaults.normaliseOptions({ recover: 'someRecoveryKey', closeOnUnload: true }, null, null);
       expect(options.closeOnUnload).to.equal(true);
 
       /* can override default with autorecovery only at the cost of unsetting autorecovery */
-      options = Defaults.normaliseOptions({ recover: function () {}, closeOnUnload: true });
+      options = Defaults.normaliseOptions({ recover: function () {}, closeOnUnload: true }, null, null);
       expect(options.closeOnUnload).to.equal(true);
       expect(!options.recover).to.be.ok;
     });

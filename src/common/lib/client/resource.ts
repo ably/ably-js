@@ -75,15 +75,23 @@ function unenvelope<T>(
   return { err: result.err, body: response, headers: wrappedHeaders, unpacked: true, statusCode: wrappedStatusCode };
 }
 
-function logResult<T>(result: ResourceResult<T>, method: HttpMethods, path: string, params: Record<string, string>) {
+function logResult<T>(
+  result: ResourceResult<T>,
+  method: HttpMethods,
+  path: string,
+  params: Record<string, string>,
+  logger: Logger,
+) {
   if (result.err) {
     Logger.logAction(
+      logger,
       Logger.LOG_MICRO,
       'Resource.' + method + '()',
       'Received Error; ' + urlFromPathAndParams(path, params) + '; Error: ' + Utils.inspectError(result.err),
     );
   } else {
     Logger.logAction(
+      logger,
       Logger.LOG_MICRO,
       'Resource.' + method + '()',
       'Received; ' +
@@ -298,12 +306,14 @@ class Resource {
       (params = params || {})['envelope'] = envelope;
     }
 
+    const logger = client.logger;
+
     async function doRequest(
       this: any,
       headers: Record<string, string>,
       params: Record<string, any>,
     ): Promise<ResourceResult<T>> {
-      if (Logger.shouldLog(Logger.LOG_MICRO)) {
+      if (logger.shouldLog(Logger.LOG_MICRO)) {
         let decodedBody = body;
         if (headers['content-type']?.indexOf('msgpack') > 0) {
           try {
@@ -313,6 +323,7 @@ class Resource {
             decodedBody = client._MsgPack.decode(body as Buffer);
           } catch (decodeErr) {
             Logger.logAction(
+              logger,
               Logger.LOG_MICRO,
               'Resource.' + method + '()',
               'Sending MsgPack Decoding Error: ' + Utils.inspectError(decodeErr),
@@ -320,6 +331,7 @@ class Resource {
           }
         }
         Logger.logAction(
+          logger,
           Logger.LOG_MICRO,
           'Resource.' + method + '()',
           'Sending; ' + urlFromPathAndParams(path, params) + '; Body: ' + decodedBody,
@@ -350,8 +362,8 @@ class Resource {
       result = unenvelope(result, client._MsgPack, envelope);
     }
 
-    if (Logger.shouldLog(Logger.LOG_MICRO)) {
-      logResult(result, method, path, params);
+    if (logger.shouldLog(Logger.LOG_MICRO)) {
+      logResult(result, method, path, params, logger);
     }
 
     if (throwError) {

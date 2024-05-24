@@ -34,19 +34,23 @@ class RestChannel {
   channelOptions: ChannelOptions;
 
   constructor(client: BaseRest, name: string, channelOptions?: ChannelOptions) {
-    Logger.logAction(Logger.LOG_MINOR, 'RestChannel()', 'started; name = ' + name);
+    Logger.logAction(client.logger, Logger.LOG_MINOR, 'RestChannel()', 'started; name = ' + name);
     this.name = name;
     this.client = client;
     this.presence = new RestPresence(this);
-    this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, channelOptions);
+    this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, this.logger, channelOptions);
+  }
+
+  get logger(): Logger {
+    return this.client.logger;
   }
 
   setOptions(options?: ChannelOptions): void {
-    this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, options);
+    this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, this.logger, options);
   }
 
   async history(params: RestHistoryParams | null): Promise<PaginatedResult<Message>> {
-    Logger.logAction(Logger.LOG_MICRO, 'RestChannel.history()', 'channel = ' + this.name);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.history()', 'channel = ' + this.name);
     return this.client.rest.channelMixin.history(this, params);
   }
 

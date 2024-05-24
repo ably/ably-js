@@ -189,12 +189,12 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
      * @param params either a CipherParams instance or some subset of its
      * fields that includes a key
      */
-    static getCipher(params: IGetCipherParams<IV>) {
+    static getCipher(params: IGetCipherParams<IV>, logger: Logger) {
       var cipherParams = isInstCipherParams(params) ? (params as CipherParams) : this.getDefaultParams(params);
 
       return {
         cipherParams: cipherParams,
-        cipher: new CBCCipher(cipherParams, params.iv ?? null),
+        cipher: new CBCCipher(cipherParams, params.iv ?? null, logger),
       };
     }
   }
@@ -207,14 +207,14 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
     iv: Buffer | null;
     encryptCipher: NodeCipher | null = null;
 
-    constructor(params: CipherParams, iv: Buffer | null) {
+    constructor(params: CipherParams, iv: Buffer | null, private readonly logger: Logger) {
       this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
       this.key = params.key;
       this.iv = iv;
     }
 
     async encrypt(plaintext: InputPlaintext): Promise<OutputCiphertext> {
-      Logger.logAction(Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
+      Logger.logAction(this.logger, Logger.LOG_MICRO, 'CBCCipher.encrypt()', '');
 
       const iv = await this.getIv();
       if (!this.encryptCipher) {

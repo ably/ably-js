@@ -46,14 +46,14 @@ class WebSocketTransport extends Transport {
   }
 
   connect() {
-    Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'starting');
     Transport.prototype.connect.call(this);
     const self = this,
       params = this.params,
       options = params.options;
     const wsScheme = options.tls ? 'wss://' : 'ws://';
     const wsUri = wsScheme + this.wsHost + ':' + Defaults.getPort(options) + '/';
-    Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'uri: ' + wsUri);
     Utils.whenPromiseSettles(
       this.auth.getAuthParams(),
       function (err: ErrorInfo | null, authParams?: Record<string, string>) {
@@ -62,7 +62,12 @@ class WebSocketTransport extends Transport {
         }
         let paramStr = '';
         for (const param in authParams) paramStr += ' ' + param + ': ' + authParams[param] + ';';
-        Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.connect()', 'authParams:' + paramStr + ' err: ' + err);
+        Logger.logAction(
+          self.logger,
+          Logger.LOG_MINOR,
+          'WebSocketTransport.connect()',
+          'authParams:' + paramStr + ' err: ' + err,
+        );
         if (err) {
           self.disconnect(err);
           return;
@@ -92,6 +97,7 @@ class WebSocketTransport extends Transport {
           }
         } catch (e) {
           Logger.logAction(
+            self.logger,
             Logger.LOG_ERROR,
             'WebSocketTransport.connect()',
             'Unexpected exception creating websocket: err = ' + ((e as Error).stack || (e as Error).message),
@@ -105,7 +111,7 @@ class WebSocketTransport extends Transport {
   send(message: ProtocolMessage) {
     const wsConnection = this.wsConnection;
     if (!wsConnection) {
-      Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
+      Logger.logAction(this.logger, Logger.LOG_ERROR, 'WebSocketTransport.send()', 'No socket connection');
       return;
     }
     try {
@@ -114,7 +120,7 @@ class WebSocketTransport extends Transport {
       );
     } catch (e) {
       const msg = 'Exception from ws connection when trying to send: ' + Utils.inspectError(e);
-      Logger.logAction(Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, 'WebSocketTransport.send()', msg);
       /* Don't try to request a disconnect, that'll just involve sending data
        * down the websocket again. Just finish the transport. */
       this.finish('disconnected', new ErrorInfo(msg, 50000, 500));
@@ -123,6 +129,7 @@ class WebSocketTransport extends Transport {
 
   onWsData(data: string) {
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'WebSocketTransport.onWsData()',
       'data received; length = ' + data.length + '; type = ' + typeof data,
@@ -138,6 +145,7 @@ class WebSocketTransport extends Transport {
       );
     } catch (e) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_ERROR,
         'WebSocketTransport.onWsData()',
         'Unexpected exception handing channel message: ' + (e as Error).stack,
@@ -146,7 +154,7 @@ class WebSocketTransport extends Transport {
   }
 
   onWsOpen() {
-    Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsOpen()', 'opened WebSocket');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'WebSocketTransport.onWsOpen()', 'opened WebSocket');
     this.emit('preconnect');
   }
 
@@ -164,20 +172,25 @@ class WebSocketTransport extends Transport {
     }
     delete this.wsConnection;
     if (wasClean) {
-      Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'Cleanly closed WebSocket');
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', 'Cleanly closed WebSocket');
       const err = new ErrorInfo('Websocket closed', 80003, 400);
       this.finish('disconnected', err);
     } else {
       const msg = 'Unclean disconnection of WebSocket ; code = ' + code,
         err = new ErrorInfo(msg, 80003, 400);
-      Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', msg);
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'WebSocketTransport.onWsClose()', msg);
       this.finish('disconnected', err);
     }
     this.emit('disposed');
   }
 
   onWsError(err: ErrorEvent) {
-    Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.onError()', 'Error from WebSocket: ' + err.message);
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MINOR,
+      'WebSocketTransport.onError()',
+      'Error from WebSocket: ' + err.message,
+    );
     /* Wait a tick before aborting: if the websocket was connected, this event
      * will be immediately followed by an onclose event with a close code. Allow
      * that to close it (so we see the close code) rather than anticipating it */
@@ -187,7 +200,7 @@ class WebSocketTransport extends Transport {
   }
 
   dispose() {
-    Logger.logAction(Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'WebSocketTransport.dispose()', '');
     this.isDisposed = true;
     const wsConnection = this.wsConnection;
     if (wsConnection) {
@@ -198,8 +211,8 @@ class WebSocketTransport extends Transport {
       delete this.wsConnection;
       /* defer until the next event loop cycle before closing the socket,
        * giving some implementations the opportunity to send any outstanding close message */
-      Platform.Config.nextTick(function () {
-        Logger.logAction(Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
+      Platform.Config.nextTick(() => {
+        Logger.logAction(this.logger, Logger.LOG_MICRO, 'WebSocketTransport.dispose()', 'closing websocket');
         if (!wsConnection) {
           throw new Error('WebSocketTransport.dispose(): wsConnection is not defined');
         }

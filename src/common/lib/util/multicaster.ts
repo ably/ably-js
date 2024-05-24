@@ -23,7 +23,7 @@ class Multicaster<T> {
   members: Array<StandardCallback<T>>;
 
   // Private constructor; use static Multicaster.create instead
-  private constructor(members?: Array<StandardCallback<T> | undefined>) {
+  private constructor(private readonly logger: Logger, members?: Array<StandardCallback<T> | undefined>) {
     this.members = (members as Array<StandardCallback<T>>) || [];
   }
 
@@ -34,6 +34,7 @@ class Multicaster<T> {
           member(err, result);
         } catch (e) {
           Logger.logAction(
+            this.logger,
             Logger.LOG_ERROR,
             'Multicaster multiple callback handler',
             'Unexpected exception: ' + e + '; stack = ' + (e as Error).stack,
@@ -63,8 +64,8 @@ class Multicaster<T> {
     this.call(err);
   }
 
-  static create<T>(members?: Array<StandardCallback<T> | undefined>): MulticasterInstance<T> {
-    const instance = new Multicaster(members);
+  static create<T>(logger: Logger, members?: Array<StandardCallback<T> | undefined>): MulticasterInstance<T> {
+    const instance = new Multicaster(logger, members);
     return Object.assign((err?: ErrorInfo | null, result?: T) => instance.call(err, result), {
       push: (fn: StandardCallback<T>) => instance.push(fn),
       createPromise: () => instance.createPromise(),

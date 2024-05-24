@@ -38,32 +38,32 @@ const stripLogsPlugin = {
             babel.types.isIdentifier(path.node.callee.object, { name: 'Logger' })
           ) {
             if (babel.types.isIdentifier(path.node.callee.property, { name: 'logAction' })) {
-              const firstArgument = path.node.arguments[0];
+              const secondArgument = path.node.arguments[1];
 
               if (
-                babel.types.isMemberExpression(firstArgument) &&
-                babel.types.isIdentifier(firstArgument.object, { name: 'Logger' }) &&
-                firstArgument.property.name.startsWith('LOG_')
+                babel.types.isMemberExpression(secondArgument) &&
+                babel.types.isIdentifier(secondArgument.object, { name: 'Logger' }) &&
+                secondArgument.property.name.startsWith('LOG_')
               ) {
-                if (firstArgument.property.name === 'LOG_ERROR') {
-                  // `path` is a call to `Logger.logAction(Logger.LOG_ERROR, ...)`; preserve it.
+                if (secondArgument.property.name === 'LOG_ERROR') {
+                  // `path` is a call to `Logger.logAction(arg0, Logger.LOG_ERROR, ...)`; preserve it.
                   foundErrorLog = true;
                 } else {
-                  // `path` is a call to `Logger.logAction(Logger.LOG_*, ...) for some other log level; strip it.
+                  // `path` is a call to `Logger.logAction(arg0, Logger.LOG_*, ...) for some other log level; strip it.
                   foundLogToStrip = true;
                   path.remove();
                 }
               } else {
-                // `path` is a call to `Logger.logAction(...)` with some argument other than a `Logger.LOG_*` expression; raise an error because we can’t determine whether to strip it.
+                // `path` is a call to `Logger.logAction(arg0, ...)` with some argument other than a `Logger.LOG_*` expression; raise an error because we can’t determine whether to strip it.
                 errors.push({
                   location: {
                     file: args.path,
-                    column: firstArgument.loc.start.column,
-                    line: firstArgument.loc.start.line,
-                    lineText: lines[firstArgument.loc.start.line - 1],
+                    column: secondArgument.loc.start.column,
+                    line: secondArgument.loc.start.line,
+                    lineText: lines[secondArgument.loc.start.line - 1],
                   },
-                  text: `First argument passed to Logger.logAction() must be Logger.LOG_*, got \`${
-                    babel.generator.default(firstArgument).code
+                  text: `Second argument passed to Logger.logAction() must be Logger.LOG_*, got \`${
+                    babel.generator.default(secondArgument).code
                   }\``,
                 });
               }
@@ -96,7 +96,7 @@ const stripLogsPlugin = {
       // accidentally strip all logging calls).
 
       if (!foundErrorLog) {
-        errorMessages.push('Did not find any Logger.logAction(Logger.LOG_ERROR, ...) calls to preserve');
+        errorMessages.push('Did not find any Logger.logAction(arg0, Logger.LOG_ERROR, ...) calls to preserve');
       }
 
       if (!foundNoStripLog) {

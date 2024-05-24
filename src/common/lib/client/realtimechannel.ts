@@ -99,15 +99,15 @@ class RealtimeChannel extends EventEmitter {
   retryCount: number = 0;
 
   constructor(client: BaseRealtime, name: string, options?: API.ChannelOptions) {
-    super();
-    Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
+    super(client.logger);
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'RealtimeChannel()', 'started; name = ' + name);
     this.name = name;
-    this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, options);
+    this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, this.logger, options);
     this.client = client;
     this._presence = client._RealtimePresence ? new client._RealtimePresence.RealtimePresence(this) : null;
     this.connectionManager = client.connection.connectionManager;
     this.state = 'initialized';
-    this.subscriptions = new EventEmitter();
+    this.subscriptions = new EventEmitter(this.logger);
     this.syncChannelSerial = undefined;
     this.properties = {
       attachSerial: undefined,
@@ -130,7 +130,7 @@ class RealtimeChannel extends EventEmitter {
     };
     /* Only differences between this and the public event emitter is that this emits an
      * update event for all ATTACHEDs, whether resumed or not */
-    this._allChannelChanges = new EventEmitter();
+    this._allChannelChanges = new EventEmitter(this.logger);
   }
 
   invalidStateError(): ErrorInfo {
@@ -157,7 +157,7 @@ class RealtimeChannel extends EventEmitter {
     if (err) {
       throw err;
     }
-    this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, options);
+    this.channelOptions = normaliseChannelOptions(this.client._Crypto ?? null, this.logger, options);
     if (this._decodingContext) this._decodingContext.channelOptions = this.channelOptions;
     if (this._shouldReattachToSetOptions(options, previousChannelOptions)) {
       /* This does not just do _attach(true, null, callback) because that would put us
@@ -253,7 +253,7 @@ class RealtimeChannel extends EventEmitter {
   }
 
   _publish(messages: Array<Message>, callback: ErrCallback) {
-    Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
     const state = this.state;
     switch (state) {
       case 'failed':
@@ -261,7 +261,12 @@ class RealtimeChannel extends EventEmitter {
         callback(ErrorInfo.fromValues(this.invalidStateError()));
         break;
       default: {
-        Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'sending message; channel state is ' + state);
+        Logger.logAction(
+          this.logger,
+          Logger.LOG_MICRO,
+          'RealtimeChannel.publish()',
+          'sending message; channel state is ' + state,
+        );
         const msg = new ProtocolMessage();
         msg.action = actions.MESSAGE;
         msg.channel = this.name;
@@ -273,7 +278,7 @@ class RealtimeChannel extends EventEmitter {
   }
 
   onEvent(messages: Array<any>): void {
-    Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.onEvent()', 'received message');
     const subscriptions = this.subscriptions;
     for (let i = 0; i < messages.length; i++) {
       const message = messages[i];
@@ -297,9 +302,14 @@ class RealtimeChannel extends EventEmitter {
     callback?: StandardCallback<ChannelStateChange>,
   ): void {
     if (!callback) {
-      callback = function (err?: ErrorInfo | null) {
+      callback = (err?: ErrorInfo | null) => {
         if (err) {
-          Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel._attach()', 'Channel attach failed: ' + err.toString());
+          Logger.logAction(
+            this.logger,
+            Logger.LOG_ERROR,
+            'RealtimeChannel._attach()',
+            'Channel attach failed: ' + err.toString(),
+          );
         }
       };
     }
@@ -336,7 +346,7 @@ class RealtimeChannel extends EventEmitter {
   }
 
   attachImpl(): void {
-    Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.attachImpl()', 'sending ATTACH message');
     const attachMsg = protocolMessageFromValues({
       action: actions.ATTACH,
       channel: this.name,
@@ -401,7 +411,7 @@ class RealtimeChannel extends EventEmitter {
   }
 
   detachImpl(callback?: ErrCallback): void {
-    Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
     const msg = protocolMessageFromValues({ action: actions.DETACH, channel: this.name });
     this.sendMessage(msg, callback || noop);
   }
@@ -562,7 +572,12 @@ class RealtimeChannel extends EventEmitter {
             if (!presenceMsg.timestamp) presenceMsg.timestamp = timestamp;
             if (!presenceMsg.id) presenceMsg.id = id + ':' + i;
           } catch (e) {
-            Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());
+            Logger.logAction(
+              this.logger,
+              Logger.LOG_ERROR,
+              'RealtimeChannel.processMessage()',
+              (e as Error).toString(),
+            );
           }
         }
         if (this._presence) {
@@ -574,6 +589,7 @@ class RealtimeChannel extends EventEmitter {
         //RTL17
         if (this.state !== 'attached') {
           Logger.logAction(
+            this.logger,
             Logger.LOG_MAJOR,
             'RealtimeChannel.processMessage()',
             'Message "' +
@@ -605,7 +621,7 @@ class RealtimeChannel extends EventEmitter {
             '" on this channel "' +
             this.name +
             '".';
-          Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', msg);
+          Logger.logAction(this.logger, Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', msg);
           this._startDecodeFailureRecovery(new ErrorInfo(msg, 40018, 400));
           break;
         }
@@ -616,7 +632,12 @@ class RealtimeChannel extends EventEmitter {
             await decodeMessage(msg, this._decodingContext);
           } catch (e) {
             /* decrypt failed .. the most likely cause is that we have the wrong key */
-            Logger.logAction(Logger.LOG_ERROR, 'RealtimeChannel.processMessage()', (e as Error).toString());
+            Logger.logAction(
+              this.logger,
+              Logger.LOG_ERROR,
+              'RealtimeChannel.processMessage()',
+              (e as Error).toString(),
+            );
             switch ((e as ErrorInfo).code) {
               case 40018:
                 /* decode failure */
@@ -655,6 +676,7 @@ class RealtimeChannel extends EventEmitter {
 
       default:
         Logger.logAction(
+          this.logger,
           Logger.LOG_ERROR,
           'RealtimeChannel.processMessage()',
           'Fatal protocol error: unrecognised action (' + message.action + ')',
@@ -666,6 +688,7 @@ class RealtimeChannel extends EventEmitter {
   _startDecodeFailureRecovery(reason: ErrorInfo): void {
     if (!this._lastPayload.decodeFailureRecoveryInProgress) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MAJOR,
         'RealtimeChannel.processMessage()',
         'Starting decode failure recovery process.',
@@ -678,7 +701,12 @@ class RealtimeChannel extends EventEmitter {
   }
 
   onAttached(): void {
-    Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.onAttached', 'activating channel; name = ' + this.name);
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MINOR,
+      'RealtimeChannel.onAttached',
+      'activating channel; name = ' + this.name,
+    );
   }
 
   notifyState(
@@ -689,6 +717,7 @@ class RealtimeChannel extends EventEmitter {
     hasBacklog?: boolean,
   ): void {
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'RealtimeChannel.notifyState',
       'name = ' + this.name + ', current state = ' + this.state + ', notifying state ' + state,
@@ -718,9 +747,9 @@ class RealtimeChannel extends EventEmitter {
     const action = 'Channel state for channel "' + this.name + '"';
     const message = state + (reason ? '; reason: ' + reason : '');
     if (state === 'failed') {
-      Logger.logAction(Logger.LOG_ERROR, action, message);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, action, message);
     } else {
-      Logger.logAction(Logger.LOG_MAJOR, action, message);
+      Logger.logAction(this.logger, Logger.LOG_MAJOR, action, message);
     }
 
     if (state !== 'attaching' && state !== 'suspended') {
@@ -744,7 +773,12 @@ class RealtimeChannel extends EventEmitter {
   }
 
   requestState(state: API.ChannelState, reason?: ErrorInfo | null): void {
-    Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.requestState', 'name = ' + this.name + ', state = ' + state);
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MINOR,
+      'RealtimeChannel.requestState',
+      'name = ' + this.name + ', state = ' + state,
+    );
     this.notifyState(state, reason);
     /* send the event and await response */
     this.checkPendingState();
@@ -755,6 +789,7 @@ class RealtimeChannel extends EventEmitter {
     const cmState = this.connectionManager.state;
     if (!cmState.sendEvents) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'RealtimeChannel.checkPendingState',
         'sendEvents is false; state is ' + this.connectionManager.state.state,
@@ -763,6 +798,7 @@ class RealtimeChannel extends EventEmitter {
     }
 
     Logger.logAction(
+      this.logger,
       Logger.LOG_MINOR,
       'RealtimeChannel.checkPendingState',
       'name = ' + this.name + ', state = ' + this.state,
@@ -807,7 +843,7 @@ class RealtimeChannel extends EventEmitter {
   startStateTimerIfNotRunning(): void {
     if (!this.stateTimer) {
       this.stateTimer = setTimeout(() => {
-        Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel.startStateTimerIfNotRunning', 'timer expired');
+        Logger.logAction(this.logger, Logger.LOG_MINOR, 'RealtimeChannel.startStateTimerIfNotRunning', 'timer expired');
         this.stateTimer = null;
         this.timeoutPendingState();
       }, this.client.options.timeouts.realtimeRequestTimeout);
@@ -833,7 +869,12 @@ class RealtimeChannel extends EventEmitter {
        * will be triggered once it connects again */
       if (this.state === 'suspended' && this.connectionManager.state.sendEvents) {
         this.retryTimer = null;
-        Logger.logAction(Logger.LOG_MINOR, 'RealtimeChannel retry timer expired', 'attempting a new attach');
+        Logger.logAction(
+          this.logger,
+          Logger.LOG_MINOR,
+          'RealtimeChannel retry timer expired',
+          'attempting a new attach',
+        );
         this.requestState('attaching');
       }
     }, retryDelay);
@@ -850,7 +891,7 @@ class RealtimeChannel extends EventEmitter {
     this: RealtimeChannel,
     params: RealtimeHistoryParams | null,
   ): Promise<PaginatedResult<Message>> {
-    Logger.logAction(Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 
     // We fetch this first so that any plugin-not-provided error takes priority over other errors
     const restMixin = this.client.rest.channelMixin;
@@ -893,6 +934,7 @@ class RealtimeChannel extends EventEmitter {
 
   setChannelSerial(channelSerial?: string | null): void {
     Logger.logAction(
+      this.logger,
       Logger.LOG_MICRO,
       'RealtimeChannel.setChannelSerial()',
       'Updating channel serial; serial = ' + channelSerial + '; previous = ' + this.properties.channelSerial,

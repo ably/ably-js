@@ -72,18 +72,18 @@ function c14n(capability?: string | Record<string, Array<string>>) {
   return JSON.stringify(c14nCapability);
 }
 
-function logAndValidateTokenAuthMethod(authOptions: AuthOptions) {
+function logAndValidateTokenAuthMethod(authOptions: AuthOptions, logger: Logger) {
   if (authOptions.authCallback) {
-    Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
+    Logger.logAction(logger, Logger.LOG_MINOR, 'Auth()', 'using token auth with authCallback');
   } else if (authOptions.authUrl) {
-    Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
+    Logger.logAction(logger, Logger.LOG_MINOR, 'Auth()', 'using token auth with authUrl');
   } else if (authOptions.key) {
-    Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
+    Logger.logAction(logger, Logger.LOG_MINOR, 'Auth()', 'using token auth with client-side signing');
   } else if (authOptions.tokenDetails) {
-    Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
+    Logger.logAction(logger, Logger.LOG_MINOR, 'Auth()', 'using token auth with supplied token only');
   } else {
     const msg = 'authOptions must include valid authentication parameters';
-    Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+    Logger.logAction(logger, Logger.LOG_ERROR, 'Auth()', msg);
     throw new Error(msg);
   }
 }
@@ -144,24 +144,29 @@ class Auth {
       /* Token auth */
       if (noWayToRenew(options)) {
         Logger.logAction(
+          this.logger,
           Logger.LOG_ERROR,
           'Auth()',
           'Warning: library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help',
         );
       }
       this._saveTokenOptions(options.defaultTokenParams as API.TokenDetails, options);
-      logAndValidateTokenAuthMethod(this.authOptions);
+      logAndValidateTokenAuthMethod(this.authOptions, this.logger);
     } else {
       /* Basic auth */
       if (!options.key) {
         const msg =
           'No authentication options provided; need one of: key, authUrl, or authCallback (or for testing only, token or tokenDetails)';
-        Logger.logAction(Logger.LOG_ERROR, 'Auth()', msg);
+        Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth()', msg);
         throw new ErrorInfo(msg, 40160, 401);
       }
-      Logger.logAction(Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth()', 'anonymous, using basic auth');
       this._saveBasicOptions(options);
     }
+  }
+
+  get logger(): Logger {
+    return this.client.logger;
   }
 
   /**
@@ -303,7 +308,7 @@ class Auth {
      * not the passed in ones. */
     this._saveTokenOptions(tokenParams, authOptions);
 
-    logAndValidateTokenAuthMethod(this.authOptions);
+    logAndValidateTokenAuthMethod(this.authOptions, this.logger);
 
     try {
       return this._ensureValidAuthCredentials(true);
@@ -403,10 +408,10 @@ class Auth {
       client = this.client;
 
     if (resolvedAuthOptions.authCallback) {
-      Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authCallback');
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authCallback');
       tokenRequestCallback = resolvedAuthOptions.authCallback;
     } else if (resolvedAuthOptions.authUrl) {
-      Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with authUrl');
       tokenRequestCallback = (params, cb) => {
         const authHeaders = Utils.mixin(
           { accept: 'application/json, text/plain' },
@@ -429,12 +434,13 @@ class Auth {
         }
         /* RSA8c2 */
         const authParams = Utils.mixin({}, resolvedAuthOptions.authParams || {}, params) as RequestParams;
-        const authUrlRequestCallback = function (result: RequestResult) {
+        const authUrlRequestCallback = (result: RequestResult) => {
           let body = (result.body ?? null) as string | Bufferlike | API.TokenDetails | API.TokenRequest | null;
 
           let contentType: string | null = null;
           if (result.error) {
             Logger.logAction(
+              this.logger,
               Logger.LOG_MICRO,
               'Auth.requestToken().tokenRequestCallback',
               'Received Error: ' + Utils.inspectError(result.error),
@@ -448,6 +454,7 @@ class Auth {
               contentType = contentTypeHeaderOrHeaders;
             }
             Logger.logAction(
+              this.logger,
               Logger.LOG_MICRO,
               'Auth.requestToken().tokenRequestCallback',
               'Received; content-type: ' + contentType + '; body: ' + Utils.inspectBody(body),
@@ -503,6 +510,7 @@ class Auth {
           cb(null, body as Exclude<typeof body, Bufferlike>, contentType);
         };
         Logger.logAction(
+          this.logger,
           Logger.LOG_MICRO,
           'Auth.requestToken().tokenRequestCallback',
           'Requesting token from ' +
@@ -541,7 +549,12 @@ class Auth {
         }
       };
     } else if (resolvedAuthOptions.key) {
-      Logger.logAction(Logger.LOG_MINOR, 'Auth.requestToken()', 'using token auth with client-side signing');
+      Logger.logAction(
+        this.logger,
+        Logger.LOG_MINOR,
+        'Auth.requestToken()',
+        'using token auth with client-side signing',
+      );
       tokenRequestCallback = (params, cb) => {
         Utils.whenPromiseSettles(this.createTokenRequest(params, resolvedAuthOptions), (err, result) =>
           cb(err as string | ErrorInfo | null, result ?? null),
@@ -551,6 +564,7 @@ class Auth {
       const msg =
         'Need a new token, but authOptions does not include any way to request one (no authUrl, authCallback, or key)';
       Logger.logAction(
+        this.logger,
         Logger.LOG_ERROR,
         'Auth()',
         'library initialized with a token literal without any way to renew the token when it expires (no authUrl, authCallback, or key). See https://help.ably.io/error/40171 for help',
@@ -577,6 +591,7 @@ class Auth {
       const requestHeaders = Defaults.defaultPostHeaders(this.client.options);
       if (resolvedAuthOptions.requestHeaders) Utils.mixin(requestHeaders, resolvedAuthOptions.requestHeaders);
       Logger.logAction(
+        this.logger,
         Logger.LOG_MICRO,
         'Auth.requestToken().requestToken',
         'Sending POST to ' + path + '; Token params: ' + JSON.stringify(signedTokenParams),
@@ -593,19 +608,20 @@ class Auth {
     return new Promise((resolve, reject) => {
       let tokenRequestCallbackTimeoutExpired = false,
         timeoutLength = this.client.options.timeouts.realtimeRequestTimeout,
-        tokenRequestCallbackTimeout = setTimeout(function () {
+        tokenRequestCallbackTimeout = setTimeout(() => {
           tokenRequestCallbackTimeoutExpired = true;
           const msg = 'Token request callback timed out after ' + timeoutLength / 1000 + ' seconds';
-          Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+          Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
           reject(new ErrorInfo(msg, 40170, 401));
         }, timeoutLength);
 
-      tokenRequestCallback!(resolvedTokenParams, function (err, tokenRequestOrDetails, contentType) {
+      tokenRequestCallback!(resolvedTokenParams, (err, tokenRequestOrDetails, contentType) => {
         if (tokenRequestCallbackTimeoutExpired) return;
         clearTimeout(tokenRequestCallbackTimeout);
 
         if (err) {
           Logger.logAction(
+            this.logger,
             Logger.LOG_ERROR,
             'Auth.requestToken()',
             'token request signing call returned error; err = ' + Utils.inspectError(err),
@@ -648,7 +664,7 @@ class Auth {
           const msg =
             'Expected token request callback to call back with a token string or token request/details object, but got a ' +
             typeof tokenRequestOrDetails;
-          Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+          Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
           reject(new ErrorInfo(msg, 40170, 401));
           return;
         }
@@ -671,14 +687,15 @@ class Auth {
         if (!('keyName' in tokenRequestOrDetails)) {
           const msg =
             'Expected token request callback to call back with a token string, token request object, or token details object';
-          Logger.logAction(Logger.LOG_ERROR, 'Auth.requestToken()', msg);
+          Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth.requestToken()', msg);
           reject(new ErrorInfo(msg, 40170, 401));
           return;
         }
         /* it's a token request, so make the request */
-        tokenRequest(tokenRequestOrDetails, function (err, tokenResponse, unpacked) {
+        tokenRequest(tokenRequestOrDetails, (err, tokenResponse, unpacked) => {
           if (err) {
             Logger.logAction(
+              this.logger,
               Logger.LOG_ERROR,
               'Auth.requestToken()',
               'token request API call returned error; err = ' + Utils.inspectError(err),
@@ -687,7 +704,7 @@ class Auth {
             return;
           }
           if (!unpacked) tokenResponse = JSON.parse(tokenResponse as string);
-          Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
+          Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth.getToken()', 'token received');
           resolve(tokenResponse as API.TokenDetails);
         });
       });
@@ -779,7 +796,7 @@ class Auth {
      * simply for testing purposes. */
     request.mac = request.mac || hmac(signText, keySecret);
 
-    Logger.logAction(Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth.getTokenRequest()', 'generated signed request');
 
     return request as API.TokenRequest;
   }
@@ -897,16 +914,21 @@ class Auth {
        * automatically remove expired tokens. Else just use the cached token. If it is
        * expired Ably will tell us and we'll discard it then. */
       if (!this.isTimeOffsetSet() || !token.expires || token.expires >= this.getTimestampUsingOffset()) {
-        Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'using cached token; expires = ' + token.expires);
+        Logger.logAction(
+          this.logger,
+          Logger.LOG_MINOR,
+          'Auth.getToken()',
+          'using cached token; expires = ' + token.expires,
+        );
         return token;
       }
       /* expired, so remove and fallthrough to getting a new one */
-      Logger.logAction(Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
+      Logger.logAction(this.logger, Logger.LOG_MINOR, 'Auth.getToken()', 'deleting expired token');
       this.tokenDetails = null;
     }
 
     const promise = (
-      this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster.create())
+      this.waitingForTokenRequest || (this.waitingForTokenRequest = Multicaster.create(this.logger))
     ).createPromise();
     if (this.currentTokenRequestId !== null && !forceSupersede) {
       return promise;
@@ -925,6 +947,7 @@ class Auth {
 
     if ((this.currentTokenRequestId as number) > tokenRequestId) {
       Logger.logAction(
+        this.logger,
         Logger.LOG_MINOR,
         'Auth._ensureValidAuthCredentials()',
         'Discarding token request response; overtaken by newer one',
@@ -967,7 +990,7 @@ class Auth {
        * recognise mismatch and return an error */
       const msg = 'Unexpected clientId mismatch: client has ' + this.clientId + ', requested ' + clientId;
       const err = new ErrorInfo(msg, 40102, 401);
-      Logger.logAction(Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
+      Logger.logAction(this.logger, Logger.LOG_ERROR, 'Auth._uncheckedSetClientId()', msg);
       return err;
     } else {
       /* RSA7a4: if options.clientId is provided and is not
