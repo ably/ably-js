@@ -7,7 +7,7 @@ import { useStateErrors } from './useStateErrors.js';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
 
 export interface PresenceResult<T> {
-  updateStatus: (messageOrPresenceObject: T) => void;
+  updateStatus: (messageOrPresenceObject: T) => Promise<void>;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
 }
@@ -71,8 +71,8 @@ export function usePresence<T = any>(
   }, [shouldNotEnterPresence, channel, ably]);
 
   const updateStatus = useCallback(
-    (messageOrPresenceObject: T) => {
-      channel.presence.update(messageOrPresenceObject);
+    async (messageOrPresenceObject: T) => {
+      await channel.presence.update(messageOrPresenceObject);
     },
     [channel],
   );
