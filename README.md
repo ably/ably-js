@@ -28,7 +28,7 @@ This SDK supports the following platforms:
 
 **Node.js:** version 16.x or newer. (1.1.x versions work on Node.js 4.5 or newer, 1.2.x versions work on Node.js 8.17 or newer). We do not currently provide an ESM bundle, please [contact us](https://www.ably.com/contact) if you would would like to use ably-js in a NodeJS ESM project.
 
-**React (release candidate):** We offer a set of React Hooks which make it seamless to use ably-js in your React application. See the [React Hooks documentation](./docs/react.md) for more details.
+**React:** We offer a set of React Hooks which make it seamless to use ably-js in your React application. See the [React Hooks documentation](./docs/react.md) for more details.
 
 **React Native:** We aim to support all platforms supported by React Native. If you find any issues please raise an issue or [contact us](https://www.ably.com/contact).
 
