@@ -2,6 +2,22 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.1.0](https://github.com/ably/ably-js/tree/2.1.0) (2024-06-03)
+
+With this release, Ably React Hooks have now moved to the general availability phase and are considered stable. Non-major version changes to the `ably` package won't include breaking changes for React Hooks going forward.
+
+All changes:
+
+- Add support for optional multiple recovery scopes via `ClientOptions.recoveryKeyStorageName` [\#1762](https://github.com/ably/ably-js/pull/1762)
+- Add wildcard `*` and `privileged-headers` values for `TokenParams.capability` field [\#1765](https://github.com/ably/ably-js/pull/1765)
+- Add support for unique `logHandler` per Ably client by removing the global effects of setting `logHandler` and `logLevel` [\#1764](https://github.com/ably/ably-js/pull/1764)
+- Change `updateStatus` function returned by `usePresence` hook to be async [\#1777](https://github.com/ably/ably-js/pull/1777)
+- Fix some of the errors thrown by `ConnectionManager` have misleading stack traces [\#1760](https://github.com/ably/ably-js/pull/1760)
+- Fix `FetchRequest` doesn't properly handle a 204 response [\#1773](https://github.com/ably/ably-js/pull/1773)
+- Fix `Connection closed` errors when using `usePresence` hook [\#1761](https://github.com/ably/ably-js/pull/1761)
+- Fix `Unable to enter presence channel while in suspended state` errors with `usePresence` [\#1781](https://github.com/ably/ably-js/pull/1781)
+- Fix `Can't resolve 'ably'` error for environments that don't support `exports` field in `package.json` yet [\#1782](https://github.com/ably/ably-js/pull/1782)
+
 ## [2.0.4](https://github.com/ably/ably-js/tree/2.0.4) (2024-05-03)
 
 - Fix invalid `accessToken` when using REST API Client in React Native [\#1730](https://github.com/ably/ably-js/issues/1730), [\#1749](https://github.com/ably/ably-js/issues/1749)
