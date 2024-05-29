@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.0.5](https://github.com/ably/ably-js/tree/2.0.5) (#TODO REPLACE WITH RELEVANT DATE)
+
+TODO: WRITE ACTUAL CHANGELOG
+- React Hooks are now stable
+
 ## [2.0.4](https://github.com/ably/ably-js/tree/2.0.4) (2024-05-03)
 
 - Fix invalid `accessToken` when using REST API Client in React Native [\#1730](https://github.com/ably/ably-js/issues/1730), [\#1749](https://github.com/ably/ably-js/issues/1749)
