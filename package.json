@@ -58,6 +58,10 @@
     "@babel/parser": "^7.23.6",
     "@babel/traverse": "^7.23.7",
     "@testing-library/react": "^13.3.0",
+    "@tsconfig/node16": "^16.1.3",
+    "@tsconfig/node18": "^18.2.4",
+    "@types/babel__generator": "^7.6.8",
+    "@types/babel__traverse": "^7.20.6",
     "@types/cli-table": "^0.3.4",
     "@types/jmespath": "^0.15.2",
     "@types/node": "^18.0.0",
@@ -81,7 +85,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-security": "^1.4.0",
     "express": "^4.17.1",
-    "glob": "~4.4",
+    "glob": "^10.4.1",
     "grunt": "^1.6.1",
     "grunt-cli": "~1.2.0",
     "grunt-shell": "~1.1",
@@ -104,6 +108,7 @@
     "source-map-support": "^0.5.21",
     "stream-browserify": "^3.0.0",
     "ts-loader": "^9.4.2",
+    "ts-node": "^10.9.2",
     "tsconfig-paths-webpack-plugin": "^4.0.1",
     "tslib": "^2.3.1",
     "typedoc": "^0.24.7",
@@ -149,6 +154,7 @@
     "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modular.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/**/*.md grunt",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
+    "test:private-api-report": "tsc --noEmit --esModuleInterop --target ES2017 --moduleResolution node scripts/testPrivateAPIReport.ts && esr scripts/testPrivateAPIReport.ts",
     "docs": "typedoc"
   }
 }
