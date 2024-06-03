@@ -1,8 +1,5 @@
 # ably-js React Hooks
 
-> [!IMPORTANT]
-> The ably-js React Hooks are currently in the release candidate phase, and there may be breaking changes in a future non-major release.
-
 Use Ably in your React application using idiomatic, easy to use, React Hooks!
 
 Using this module you can:
