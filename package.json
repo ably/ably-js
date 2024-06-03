@@ -7,7 +7,10 @@
     "url": "https://github.com/ably/ably-js/issues",
     "email": "support@ably.com"
   },
+  "main": "./build/ably-node.js",
+  "browser": "./build/ably.js",
   "react-native": "./build/ably-reactnative.js",
+  "typings": "./ably.d.ts",
   "exports": {
     ".": {
       "types": "./ably.d.ts",
@@ -24,7 +27,6 @@
       "import": "./react/mjs/index.js"
     }
   },
-  "typings": "./ably.d.ts",
   "files": [
     "build/**",
     "ably.d.ts",
