@@ -5,6 +5,7 @@ import { useAbly } from './useAbly.js';
 import { useChannelInstance } from './useChannelInstance.js';
 import { useStateErrors } from './useStateErrors.js';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
+import { useChannelStateListener } from './useChannelStateListener.js';
 
 export interface PresenceResult<T> {
   updateStatus: (messageOrPresenceObject: T) => Promise<void>;
@@ -13,6 +14,7 @@ export interface PresenceResult<T> {
 }
 
 const INACTIVE_CONNECTION_STATES: Ably.ConnectionState[] = ['suspended', 'closing', 'closed', 'failed'];
+const INACTIVE_CHANNEL_STATES: Ably.ChannelState[] = ['failed', 'suspended', 'detaching'];
 
 export function usePresence<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,
@@ -47,7 +49,16 @@ export function usePresence<T = any>(
   useConnectionStateListener((stateChange) => {
     setConnectionState(stateChange.current);
   });
-  const shouldNotEnterPresence = INACTIVE_CONNECTION_STATES.includes(connectionState) || skip;
+
+  // similar to connection states, we should only attempt to enter presence when in certain
+  // channel states.
+  const [channelState, setChannelState] = useState(channel.state);
+  useChannelStateListener(params, (stateChange) => {
+    setChannelState(stateChange.current);
+  });
+
+  const shouldNotEnterPresence =
+    INACTIVE_CONNECTION_STATES.includes(connectionState) || INACTIVE_CHANNEL_STATES.includes(channelState) || skip;
 
   useEffect(() => {
     if (shouldNotEnterPresence) {

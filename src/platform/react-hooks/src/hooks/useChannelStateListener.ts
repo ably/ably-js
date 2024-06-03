@@ -7,6 +7,8 @@ type ChannelStateListener = (stateChange: Ably.ChannelStateChange) => any;
 
 export function useChannelStateListener(channelName: string, listener?: ChannelStateListener);
 
+export function useChannelStateListener(options: ChannelNameAndAblyId, listener?: ChannelStateListener);
+
 export function useChannelStateListener(
   options: ChannelNameAndAblyId | string,
   state?: Ably.ChannelState | Ably.ChannelState[],
