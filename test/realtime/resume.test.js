@@ -75,8 +75,10 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
         /* re-open the connection, verify resume mode */
         rxRealtime.connection.connect();
         var connectionManager = rxRealtime.connection.connectionManager;
+        helper.recordPrivateApi('listen.connectionManager.transport.active');
         connectionManager.once('transport.active', function (transport) {
           try {
+            helper.recordPrivateApi('read.transport.params.mode');
             expect(transport.params.mode).to.equal('resume', 'Verify reconnect is resume mode');
           } catch (err) {
             callback(err);
@@ -208,8 +210,10 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
         rxCount = 0;
         rxRealtime.connection.connect();
         var connectionManager = rxRealtime.connection.connectionManager;
+        helper.recordPrivateApi('listen.connectionManager.transport.active');
         connectionManager.on('transport.active', function (transport) {
           try {
+            helper.recordPrivateApi('read.transport.params.mode');
             expect(transport.params.mode).to.equal('resume', 'Verify reconnect is resume mode');
           } catch (err) {
             callback(err);
@@ -284,17 +288,23 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
                 });
               },
               function (cb) {
+                helper.recordPrivateApi('write.channel.state');
                 suspendedChannel.state = 'suspended';
                 Helper.whenPromiseSettles(attachedChannel.attach(), cb);
               },
               function (cb) {
                 /* Sabotage the resume */
-                (connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____'),
+                helper.recordPrivateApi('write.connectionManager.connectionKey');
+                helper.recordPrivateApi('write.connectionManager.connectionId');
+                helper.recordPrivateApi('write.connectionManager.msgSerial')(
+                  (connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____'),
+                ),
                   (connection.connectionManager.connectionId = 'ablyjs_tes');
                 connection.connectionManager.msgSerial = 15;
                 connection.once('disconnected', function () {
                   cb();
                 });
+                helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
                 connection.connectionManager.disconnectAllTransports();
               },
               function (cb) {
@@ -306,7 +316,9 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
                     );
                     expect(attachedChannel.state).to.equal('attaching', 'Attached channel went into attaching');
                     expect(suspendedChannel.state).to.equal('attaching', 'Suspended channel went into attaching');
+                    helper.recordPrivateApi('read.connectionManager.msgSerial');
                     expect(connection.connectionManager.msgSerial).to.equal(0, 'Check msgSerial is reset to 0');
+                    helper.recordPrivateApi('read.connectionManager.connectionId');
                     expect(
                       connection.connectionManager.connectionId !== 'ablyjs_tes',
                       'Check connectionId is set by the new CONNECTED',
@@ -356,6 +368,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
               },
               function (cb) {
                 /* Sabotage the resume - use a valid but now-expired token */
+                helper.recordPrivateApi('write.auth.tokenDetails.token');
                 realtime.auth.tokenDetails.token = badtoken.token;
                 connection.once(function (stateChange) {
                   try {
@@ -366,6 +379,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
                   }
                   cb();
                 });
+                helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
                 connection.connectionManager.disconnectAllTransports();
               },
               function (cb) {
@@ -403,7 +417,9 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
                 });
               },
               function (cb) {
+                helper.recordPrivateApi('read.auth.key');
                 var keyName = realtime.auth.key.split(':')[0];
+                helper.recordPrivateApi('write.auth.key');
                 realtime.auth.key = keyName + ':wrong';
                 connection.once(function (stateChange) {
                   try {
@@ -414,6 +430,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
                   }
                   cb();
                 });
+                helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
+
                 connection.connectionManager.disconnectAllTransports();
               },
               function (cb) {
@@ -523,6 +541,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
             helper.becomeSuspended(realtime, cb);
           },
           function (cb) {
+            helper.recordPrivateApi('replace.connectionManager.tryATransport');
             realtime.connection.connectionManager.tryATransport = function (transportParams) {
               try {
                 expect(transportParams.mode).to.equal('clean', 'Check library didn’t try to resume');
@@ -552,10 +571,14 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
         connectionManager = connection.connectionManager;
 
       connection.once('connected', function () {
+        helper.recordPrivateApi('write.connectionManager.lastActivity');
         connectionManager.lastActivity = Date.now() - 10000000;
         /* noop-out onProtocolMessage so that a DISCONNECTED message doesn't
          * reset the last activity timer */
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
         connectionManager.activeProtocol.getTransport().onProtocolMessage = function () {};
+        helper.recordPrivateApi('replace.connectionManager.tryATransport');
         connectionManager.tryATransport = function (transportParams) {
           try {
             expect(transportParams.mode).to.equal('clean', 'Check library didn’t try to resume');
@@ -565,6 +588,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
           }
           helper.closeAndFinish(done, realtime);
         };
+        helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
         connectionManager.disconnectAllTransports();
       });
     });
@@ -595,9 +619,12 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
             var resumed_receiver_realtime = helper.AblyRealtime();
             var connectionManager = resumed_receiver_realtime.connection.connectionManager;
 
+            helper.recordPrivateApi('replace.connectionManager.send');
             var sendOrig = connectionManager.send;
             connectionManager.send = function (msg, queueEvent, callback) {
+              helper.recordPrivateApi('call.ProtocolMessage.setFlag');
               msg.setFlag('ATTACH_RESUME');
+              helper.recordPrivateApi('call.connectionManager.send');
               sendOrig.call(connectionManager, msg, queueEvent, callback);
             };
 

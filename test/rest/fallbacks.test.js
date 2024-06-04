@@ -30,26 +30,34 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       var validUntil;
       var serverTime = await rest.time();
       expect(serverTime, 'Check serverTime returned').to.be.ok;
+      helper.recordPrivateApi('read.rest._currentFallback');
       var currentFallback = rest._currentFallback;
       expect(currentFallback, 'Check current fallback stored').to.be.ok;
+      helper.recordPrivateApi('read.rest._currentFallback.host');
       expect(currentFallback && currentFallback.host).to.equal(goodHost, 'Check good host set');
+      helper.recordPrivateApi('read.rest._currentFallback.validUntil');
       validUntil = currentFallback.validUntil;
       /* now try again, check that this time it uses the remembered good endpoint straight away */
       var serverTime = await rest.time();
       expect(serverTime, 'Check serverTime returned').to.be.ok;
       var currentFallback = rest._currentFallback;
+      helper.recordPrivateApi('read.rest._currentFallback.validUntil');
       expect(currentFallback.validUntil).to.equal(
         validUntil,
         'Check validUntil is the same (implying currentFallback has not been re-set)',
       );
       /* set the validUntil to the past and check that the stored fallback is forgotten */
       var now = Date.now();
+      helper.recordPrivateApi('write.rest._currentFallback.validUntil');
       rest._currentFallback.validUntil = now - 1000;
       var serverTime = await rest.time();
       expect(serverTime, 'Check serverTime returned').to.be.ok;
+      helper.recordPrivateApi('read.rest._currentFallback');
       var currentFallback = rest._currentFallback;
       expect(currentFallback, 'Check current fallback re-stored').to.be.ok;
+      helper.recordPrivateApi('read.rest._currentFallback.host');
       expect(currentFallback && currentFallback.host).to.equal(goodHost, 'Check good host set again');
+      helper.recordPrivateApi('read.rest._currentFallback.validUntil');
       expect(currentFallback.validUntil > now, 'Check validUntil has been re-set').to.be.ok;
     });
 

@@ -155,6 +155,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, v
 
             if (index === 1) {
               /* Simulate issue */
+              helper.recordPrivateApi('write.channel._lastPayload');
               channel._lastPayload.messageId = null;
               channel.once('attaching', function (stateChange) {
                 try {

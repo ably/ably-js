@@ -46,6 +46,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       messages.forEach(function (msg) {
         ids[msg.id] = msg;
       });
+      helper.recordPrivateApi('call.Utils.keysArray');
       expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
@@ -69,6 +70,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       messages.forEach(function (msg) {
         ids[msg.id] = msg;
       });
+      helper.recordPrivateApi('call.Utils.keysArray');
       expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
@@ -107,6 +109,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
         }
       }
       /* verify message ids are unique */
+      helper.recordPrivateApi('call.Utils.keysArray');
       expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
@@ -147,6 +150,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       }
 
       /* verify message ids are unique */
+      helper.recordPrivateApi('call.Utils.keysArray');
       expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
@@ -220,6 +224,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       }
 
       /* verify message ids are unique */
+      helper.recordPrivateApi('call.Utils.keysArray');
       expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',

@@ -133,9 +133,12 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
 
     it('Token generation with explicit auth', async function () {
       const helper = this.test.helper;
+      helper.recordPrivateApi('call.auth.getAuthHeaders');
       const authHeaders = await rest.auth.getAuthHeaders();
+      helper.recordPrivateApi('write.auth.authOptions.requestHeaders');
       rest.auth.authOptions.requestHeaders = authHeaders;
       var tokenDetails = await rest.auth.requestToken();
+      helper.recordPrivateApi('delete.auth.authOptions.requestHeaders');
       delete rest.auth.authOptions.requestHeaders;
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
       expect(tokenDetails.issued && tokenDetails.issued >= currentTime, 'Verify token issued').to.be.ok;
@@ -145,6 +148,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
 
     it('Token generation with explicit auth, different key', async function () {
       const helper = this.test.helper;
+      helper.recordPrivateApi('call.auth.getAuthHeaders');
       const authHeaders = await rest.auth.getAuthHeaders();
       var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
       var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
@@ -280,7 +284,9 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
         const helper = this.test.helper;
         var currentKey = helper.getTestApp().keys[0];
         var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
+        helper.recordPrivateApi('call.Utils.mixin');
         var authParams = helper.Utils.mixin(keys, params);
+        helper.recordPrivateApi('call.Utils.toQueryString');
         var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(authParams);
         var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
@@ -308,6 +314,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
     it('JWT request with invalid key', async function () {
       const helper = this.test.helper;
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
+      helper.recordPrivateApi('call.Utils.toQueryString');
       var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
       var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
@@ -330,6 +337,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
       const helper = this.test.helper;
       var currentKey = helper.getTestApp().keys[0];
       var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
+      helper.recordPrivateApi('call.Utils.toQueryString');
       var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
       var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
@@ -349,6 +357,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
     it('Rest JWT with authCallback and invalid keys', async function () {
       const helper = this.test.helper;
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
+      helper.recordPrivateApi('call.Utils.toQueryString');
       var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
       var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 

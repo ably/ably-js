@@ -10,7 +10,8 @@ define([
   'globals',
   'async',
   'chai',
-], function (testAppModule, clientModule, testAppManager, globals, async, chai) {
+  'private_api_recorder',
+], function (testAppModule, clientModule, testAppManager, globals, async, chai, privateApiRecorder) {
   var utils = clientModule.Ably.Realtime.Utils;
   var platform = clientModule.Ably.Realtime.Platform;
   var BufferUtils = platform.BufferUtils;
@@ -20,14 +21,9 @@ define([
   var unroutableAddress = 'http://' + unroutableHost + '/';
 
   class SharedHelper {
-    setupApp = testAppModule.setup;
-    tearDownApp = testAppModule.tearDown;
-    createStats = testAppModule.createStatsFixtureData;
     getTestApp = testAppModule.getTestApp;
 
     Ably = clientModule.Ably;
-    AblyRest = clientModule.AblyRest;
-    ablyClientOptions = clientModule.ablyClientOptions;
     Utils = utils;
 
     loadTestData = testAppManager.loadJsonData;
@@ -42,30 +38,123 @@ define([
         throw new Error('SharedHelper created without context');
       }
       this.context = context;
+      this.privateApiContext = privateApiRecorder.createContext(context);
+    }
+
+    addingHelperFunction(helperFunctionName) {
+      return new SharedHelper({ ...this.context, helperStack: [helperFunctionName, ...this.context.helperStack] });
+    }
+
+    withParameterisedTestTitle(title) {
+      return new SharedHelper({ ...this.context, parameterisedTestTitle: title });
+    }
+
+    static createContext(data) {
+      return {
+        ...data,
+        helperStack: [],
+      };
+    }
+
+    static extractSuiteHierarchy(suite) {
+      const hierarchy = [];
+      while (suite.title) {
+        hierarchy.unshift(suite.title);
+        suite = suite.parent;
+      }
+      return hierarchy;
     }
 
     static forTest(thisInBeforeEach) {
-      return new this(thisInBeforeEach.currentTest.fullTitle());
+      const context = {
+        type: 'test',
+        file: thisInBeforeEach.currentTest.file,
+        suite: this.extractSuiteHierarchy(thisInBeforeEach.currentTest.parent),
+        title: thisInBeforeEach.currentTest.title,
+        parameterisedTestTitle: null,
+      };
+
+      return new this(this.createContext(context));
     }
 
     static forHook(thisInHook) {
-      return new this(thisInHook.test.fullTitle());
+      /**
+       * Based on what I’ve observed (haven’t found good documentation about it), the value of `this` in a hook varies:
+       *
+       * - `before` hook in a test file: Context, with properties:
+       *    - test: Hook
+       *
+       * - `beforeEach` hook in a test file: Suite, which has a `ctx`: Context property with properties:
+       *   - test: Hook
+       *
+       * - global `after` hook: Context, with properties:
+       *   - test: Hook
+       *
+       *  For the test file hooks, the Hook has a `file` property, but for some reason the root hook doesn’t (i.e. doesn’t indicate which file the hook lives in)
+       */
+      const mochaContext = 'ctx' in thisInHook ? thisInHook.ctx : thisInHook;
+      const mochaHook = mochaContext.test;
+
+      const context = {
+        type: 'hook',
+        title: mochaHook.originalTitle,
+      };
+
+      if (!mochaHook.parent.root) {
+        // For some reason the root hook doesn’t contain file information
+        context.file = mochaHook.file;
+        context.suite = this.extractSuiteHierarchy(mochaHook.parent);
+      } else {
+        context.file = null;
+        context.suite = null;
+      }
+
+      return new this(this.createContext(context));
     }
 
     static forTestDefinition(thisInDescribe, label) {
       if (!label) {
         throw new Error('SharedHelper.forTestDefinition called without label');
       }
-      return new this(`${thisInDescribe.title} (defining ${label})`);
+
+      const context = {
+        type: 'definition',
+        file: thisInDescribe.file,
+        suite: this.extractSuiteHierarchy(thisInDescribe),
+        label,
+      };
+
+      return new this(this.createContext(context));
+    }
+
+    recordTestStart() {
+      this.privateApiContext.recordTestStart();
+    }
+
+    recordPrivateApi(identifier) {
+      this.privateApiContext.record(identifier);
     }
 
     get availableTransports() {
+      const helper = this.addingHelperFunction('availableTransports');
+      return helper._availableTransports;
+    }
+
+    get _availableTransports() {
+      this.recordPrivateApi('call.Utils.keysArray');
+      this.recordPrivateApi('call.ConnectionManager.supportedTransports');
+      this.recordPrivateApi('read.Realtime._transports');
       return utils.keysArray(
         clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
       );
     }
 
     get bestTransport() {
+      const helper = this.addingHelperFunction('bestTransport');
+      return helper._bestTransport;
+    }
+
+    get _bestTransport() {
       return this.availableTransports[0];
     }
 
@@ -99,6 +188,11 @@ define([
     }
 
     closeAndFinish(done, realtime, err) {
+      const helper = this.addingHelperFunction('closeAndFinish');
+      helper._closeAndFinish(done, realtime, err);
+    }
+
+    _closeAndFinish(done, realtime, err) {
       if (typeof realtime === 'undefined') {
         // Likely called in a catch block for an exception
         // that occured before realtime was initialized
@@ -115,6 +209,11 @@ define([
       this.callbackOnClose(realtime, function () {
         done(err);
       });
+    }
+
+    async closeAndFinishAsync(realtime, err) {
+      const helper = this.addingHelperFunction('closeAndFinishAsync');
+      return helper._closeAndFinishAsync(realtime, err);
     }
 
     async closeAndFinishAsync(realtime, err) {
@@ -137,18 +236,34 @@ define([
     }
 
     simulateDroppedConnection(realtime) {
+      const helper = this.addingHelperFunction('simulateDroppedConnection');
+      helper._simulateDroppedConnection(realtime);
+    }
+
+    _simulateDroppedConnection(realtime) {
+      const self = this;
       // Go into the 'disconnected' state before actually disconnecting the transports
       // to avoid the instantaneous reconnect attempt that would be triggered in
       // notifyState by the active transport getting disconnected from a connected state
       realtime.connection.once('disconnected', function () {
+        self.recordPrivateApi('call.connectionManager.disconnectAllTransports');
         realtime.connection.connectionManager.disconnectAllTransports();
       });
+      this.recordPrivateApi('call.connectionManager.requestState');
       realtime.connection.connectionManager.requestState({ state: 'disconnected' });
     }
 
     becomeSuspended(realtime, cb) {
+      const helper = this.addingHelperFunction('becomeSuspended');
+      helper._becomeSuspended(realtime, cb);
+    }
+
+    _becomeSuspended(realtime, cb) {
+      this.recordPrivateApi('call.connectionManager.disconnectAllTransports');
       realtime.connection.connectionManager.disconnectAllTransports();
+      const self = this;
       realtime.connection.once('disconnected', function () {
+        self.recordPrivateApi('call.connectionManager.notifyState');
         realtime.connection.connectionManager.notifyState({ state: 'suspended' });
       });
       if (cb)
@@ -158,25 +273,40 @@ define([
     }
 
     callbackOnClose(realtime, callback) {
+      const helper = this.addingHelperFunction('callbackOnClose');
+      helper._callbackOnClose(realtime, callback);
+    }
+
+    _callbackOnClose(realtime, callback) {
+      this.recordPrivateApi('read.connectionManager.activeProtocol');
       if (!realtime.connection.connectionManager.activeProtocol) {
+        this.recordPrivateApi('call.Platform.nextTick');
         platform.Config.nextTick(function () {
           realtime.close();
           callback();
         });
         return;
       }
+      this.recordPrivateApi('read.connectionManager.activeProtocol.transport');
+      this.recordPrivateApi('listen.transport.disposed');
       realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function () {
         callback();
       });
       /* wait a tick before closing in order to avoid the final close
        * happening synchronously in a publish/attach callback, which
        * complicates channelattach_publish_invalid etc. */
+      this.recordPrivateApi('call.Platform.nextTick');
       platform.Config.nextTick(function () {
         realtime.close();
       });
     }
 
     closeAndFinishSeveral(done, realtimeArray, e) {
+      const helper = this.addingHelperFunction('closeAndFinishSeveral');
+      helper._closeAndFinishSeveral(done, realtimeArray, e);
+    }
+
+    _closeAndFinishSeveral(done, realtimeArray, e) {
       async.map(
         realtimeArray,
         (realtime, mapCb) => {
@@ -201,34 +331,46 @@ define([
 
     /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
     static testOnAllTransports(thisInDescribe, name, testFn, skip) {
-      const helper = this.forTestDefinition(thisInDescribe, name);
+      const helper = this.forTestDefinition(thisInDescribe, name).addingHelperFunction('testOnAllTransports');
       var itFn = skip ? it.skip : it;
+
+      function createTest(options) {
+        return function (done) {
+          this.test.helper = this.test.helper.withParameterisedTestTitle(name);
+          return testFn(options).apply(this, [done]);
+        };
+      }
+
       let transports = helper.availableTransports;
       transports.forEach(function (transport) {
         itFn(
           name + '_with_' + transport + '_binary_transport',
-          testFn({ transports: [transport], useBinaryProtocol: true }),
+          createTest({ transports: [transport], useBinaryProtocol: true }),
         );
         itFn(
           name + '_with_' + transport + '_text_transport',
-          testFn({ transports: [transport], useBinaryProtocol: false }),
+          createTest({ transports: [transport], useBinaryProtocol: false }),
         );
       });
       /* Plus one for no transport specified (ie use websocket/base mechanism if
        * present).  (we explicitly specify all transports since node only does
        * websocket+nodecomet if comet is explicitly requested)
        * */
-      itFn(name + '_with_binary_transport', testFn({ transports, useBinaryProtocol: true }));
-      itFn(name + '_with_text_transport', testFn({ transports, useBinaryProtocol: false }));
+      itFn(name + '_with_binary_transport', createTest({ transports, useBinaryProtocol: true }));
+      itFn(name + '_with_text_transport', createTest({ transports, useBinaryProtocol: false }));
     }
 
     static restTestOnJsonMsgpack(name, testFn, skip) {
       var itFn = skip ? it.skip : it;
       itFn(name + ' with binary protocol', async function () {
-        await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary', this.test.helper);
+        const helper = this.test.helper.withParameterisedTestTitle(name);
+
+        await testFn(new clientModule.AblyRest(helper, { useBinaryProtocol: true }), name + '_binary', helper);
       });
       itFn(name + ' with text protocol', async function () {
-        await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text', this.test.helper);
+        const helper = this.test.helper.withParameterisedTestTitle(name);
+
+        await testFn(new clientModule.AblyRest(helper, { useBinaryProtocol: false }), name + '_text', helper);
       });
     }
 
@@ -251,6 +393,11 @@ define([
     }
 
     testMessageEquality(one, two) {
+      const helper = this.addingHelperFunction('testMessageEquality');
+      return helper._testMessageEquality(one, two);
+    }
+
+    _testMessageEquality(one, two) {
       // treat `null` same as `undefined` (using ==, rather than ===)
       expect(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').").to
         .be.ok;
@@ -260,7 +407,9 @@ define([
         return;
       }
 
+      this.recordPrivateApi('call.BufferUtils.isBuffer');
       if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
+        this.recordPrivateApi('call.BufferUtils.areBuffersEqual');
         expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
         return;
       }
@@ -274,10 +423,18 @@ define([
       expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
     }
 
+    ablyClientOptions(options) {
+      return clientModule.ablyClientOptions(this, options);
+    }
+
+    AblyRest(options) {
+      return clientModule.AblyRest(this, options);
+    }
+
     static activeClients = [];
 
     AblyRealtime(options) {
-      const client = clientModule.AblyRealtime(options);
+      const client = clientModule.AblyRealtime(this, options);
       SharedHelper.activeClients.push(client);
       return client;
     }
@@ -304,6 +461,22 @@ define([
           console.log();
         }
       }
+    }
+
+    createStats(app, statsData, callback) {
+      testAppModule.createStatsFixtureData(this, app, statsData, callback);
+    }
+
+    setupApp(forceSetup, done) {
+      return testAppModule.setup(this, forceSetup, done);
+    }
+
+    tearDownApp(app, callback) {
+      testAppModule.tearDown(this, app, callback);
+    }
+
+    dumpPrivateApiUsage() {
+      privateApiRecorder.dump();
     }
   }
 
