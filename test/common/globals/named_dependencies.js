@@ -13,5 +13,9 @@ define(function () {
     shared_helper: { browser: 'test/common/modules/shared_helper', node: 'test/common/modules/shared_helper' },
     async: { browser: 'node_modules/async/lib/async' },
     chai: { browser: 'node_modules/chai/chai', node: 'node_modules/chai/chai' },
+    private_api_recorder: {
+      browser: 'test/common/modules/private_api_recorder',
+      node: 'test/common/modules/private_api_recorder',
+    },
   });
 });

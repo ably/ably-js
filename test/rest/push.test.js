@@ -83,6 +83,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           data: { foo: 'bar' },
         };
 
+        helper.recordPrivateApi('read.realtime.options');
+        helper.recordPrivateApi('call.Defaults.getHost');
+        helper.recordPrivateApi('call.realtime.baseUri');
         var baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
         var pushRecipient = {
           transportType: 'ablyChannel',

@@ -26,10 +26,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channel = rest.channels.get('rest_implicit_client_id_0');
 
       var originalPublish = channel._publish;
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
         expect(!message.clientId, 'client ID is not added by the client library as it is implicit').to.be.ok;
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 
@@ -49,6 +51,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channel = rest.channels.get('rest_explicit_client_id_0');
 
       var originalPublish = channel._publish;
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
@@ -56,6 +59,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           message.clientId == clientId,
           'client ID is added by the client library as it is explicit in the publish',
         ).to.be.ok;
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 
@@ -80,6 +84,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channel = rest.channels.get('rest_explicit_client_id_1');
 
       var originalPublish = channel._publish;
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
@@ -87,6 +92,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           message.clientId == invalidClientId,
           'invalid client ID is added by the client library as it is explicit in the publish',
         ).to.be.ok;
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 
@@ -150,6 +156,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         originalPublish = channel._publish,
         originalDoUri = Ably.Realtime._Http.doUri;
 
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody) {
         var messageOne = JSON.parse(requestBody)[0];
         var messageTwo = JSON.parse(requestBody)[1];
@@ -161,11 +168,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         expect(idTwo, 'id set on message 2').to.be.ok;
         expect(idOne && idOne.split(':')[1]).to.equal('0', 'check zero-based index');
         expect(idTwo && idTwo.split(':')[1]).to.equal('1', 'check zero-based index');
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 
+      helper.recordPrivateApi('replace.http.doUri');
       Ably.Rest._Http.doUri = async function (method, uri, headers, body, params) {
+        helper.recordPrivateApi('call.http.doUri');
         const resultPromise = originalDoUri(method, uri, headers, body, params);
+        helper.recordPrivateApi('replace.http.doUri');
         Ably.Rest._Http.doUri = originalDoUri;
         const result = await resultPromise;
         if (result.error) {
@@ -193,8 +204,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var originalPublish = channel._publish;
 
       /* Stub out _publish to check params */
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody, headers, params) {
         expect(params && params.testParam).to.equal('testParamValue');
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 

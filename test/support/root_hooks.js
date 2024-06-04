@@ -9,6 +9,7 @@ define(['shared_helper'], function (Helper) {
       }
       done();
     });
+    helper.dumpPrivateApiUsage();
   });
 
   afterEach(function () {

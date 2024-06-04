@@ -143,6 +143,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           txRealtime,
           rxRealtime;
         try {
+          helper.recordPrivateApi('call.Utils.mixin');
           txRealtime = helper.AblyRealtime(helper.Utils.mixin(realtimeOpts, { autoConnect: false }));
           rxRealtime = helper.AblyRealtime();
           var txChannel = txRealtime.channels.get('publishQueued_' + String(Math.random()).substr(2));
@@ -634,9 +635,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         realtime = helper.AblyRealtime({ clientId: clientId });
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
         var transport = realtime.connection.connectionManager.activeProtocol.transport,
           originalSend = transport.send;
 
+        helper.recordPrivateApi('replace.transport.send');
         transport.send = function (message) {
           try {
             if (message.action === 15) {
@@ -644,6 +647,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               expect(!message.messages[0].clientId, 'client ID is not added by the client library as it is implicit').to
                 .be.ok;
             }
+            helper.recordPrivateApi('call.transport.send');
             originalSend.apply(transport, arguments);
           } catch (err) {
             helper.closeAndFinish(done, realtime, err);
@@ -674,15 +678,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         realtime = helper.AblyRealtime({ clientId: clientId, transports: [helper.bestTransport] });
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
         var transport = realtime.connection.connectionManager.activeProtocol.transport,
           originalSend = transport.send;
 
+        helper.recordPrivateApi('replace.transport.send');
         transport.send = function (message) {
           try {
             if (message.action === 15) {
               expect(message.messages[0].name === 'event0', 'Outgoing message interecepted').to.be.ok;
               expect(message.messages[0].clientId === clientId, 'client ID is present when published to Ably').to.be.ok;
             }
+            helper.recordPrivateApi('call.transport.send');
             originalSend.apply(transport, arguments);
           } catch (err) {
             helper.closeAndFinish(done, realtime, err);
@@ -764,9 +771,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           }, 500); // ensure that the message is not published
         });
 
+        helper.recordPrivateApi('listen.connectionManager.transport.pending');
         realtime.connection.connectionManager.on('transport.pending', function (transport) {
           var originalSend = transport.send;
 
+          helper.recordPrivateApi('replace.transport.send');
           transport.send = function (message) {
             try {
               if (message.action === 15) {
@@ -774,6 +783,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 expect(message.messages[0].clientId === invalidClientId, 'client ID is present when published to Ably')
                   .to.be.ok;
               }
+              helper.recordPrivateApi('call.transport.send');
               originalSend.apply(transport, arguments);
             } catch (err) {
               helper.closeAndFinish(done, realtime, err);
@@ -820,6 +830,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                     ++received;
                     if (received === 2) {
                       /* wait a tick to make sure no more messages come in */
+                      helper.recordPrivateApi('call.Platform.nextTick');
                       config.nextTick(function () {
                         innercb();
                       });
@@ -901,6 +912,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               return cb(e);
             }
             // Wait for any errant messages to arrive before continuing
+            helper.recordPrivateApi('call.Platform.nextTick');
             config.nextTick(cb);
           },
         );
@@ -954,12 +966,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             return expect.fail('Listener should not fire');
           };
           channel.subscribe({ refType: 'com.ably.test', refTimeserial: '0123456789' }, listener);
+          helper.recordPrivateApi('call.filteredSubscriptions.has');
           expect(channel.filteredSubscriptions.has(listener), 'Listener should initially be present').to.be.true;
           channel.unsubscribe(listener);
           expect(
             channel.filteredSubscriptions.has(listener),
             'Listener should no longer be present after unsubscribing',
           ).to.be.false;
+          helper.recordPrivateApi('call.Platform.nextTick');
           config.nextTick(cb);
         } catch (e) {
           cb(e);
@@ -1038,6 +1052,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channel = realtime.channels.get('maxMessageSize');
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('listen.connectionManager.connectiondetails');
         connectionManager.once('connectiondetails', function (details) {
           Helper.whenPromiseSettles(
             channel.publish('foo', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
@@ -1054,7 +1069,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           );
         });
         var connectionDetails = connectionManager.connectionDetails;
+        helper.recordPrivateApi('write.connectionManager.connectionDetails.maxMessageSize');
         connectionDetails.maxMessageSize = 64;
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+        helper.recordPrivateApi('call.transport.onProtocolMessage');
         connectionManager.activeProtocol.getTransport().onProtocolMessage(
           createPM({
             action: 4,
@@ -1099,6 +1118,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       channelOne.publish({ name: 'm', id: 'bundle_m', data: { expectedBundle: 9 } });
       channelOne.publish('z_last', { expectedBundle: 10 });
 
+      helper.recordPrivateApi('call.transport.onProtocolMessage');
       var queue = realtime.connection.connectionManager.queuedMessages;
       var messages;
       try {

@@ -22,6 +22,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       var keyStr = helper.getTestApp().keys[0].keyStr;
       var rest = new helper.Ably.Rest(keyStr);
 
+      helper.recordPrivateApi('read.rest.options.key');
       expect(rest.options.key).to.equal(keyStr);
     });
 
@@ -35,18 +36,21 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       var tokenStr = tokenDetails.token,
         rest = new helper.Ably.Rest(tokenStr);
 
+      helper.recordPrivateApi('read.rest.options.token');
       expect(rest.options.token).to.equal(tokenStr);
     });
 
     it('Init with tls: false', function () {
       const helper = this.test.helper;
       var rest = helper.AblyRest({ tls: false, port: 123, tlsPort: 456 });
+      helper.recordPrivateApi('call.rest.baseUri');
       expect(rest.baseUri('example.com')).to.equal('http://example.com:123');
     });
 
     it('Init with tls: true', function () {
       const helper = this.test.helper;
       var rest = helper.AblyRest({ tls: true, port: 123, tlsPort: 456 });
+      helper.recordPrivateApi('call.rest.baseUri');
       expect(rest.baseUri('example.com')).to.equal('https://example.com:456');
     });
 
@@ -54,6 +58,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     it('Init without any tls key should enable tls', function () {
       const helper = this.test.helper;
       var rest = helper.AblyRest({ port: 123, tlsPort: 456 });
+      helper.recordPrivateApi('call.rest.baseUri');
       expect(rest.baseUri('example.com')).to.equal('https://example.com:456');
     });
 

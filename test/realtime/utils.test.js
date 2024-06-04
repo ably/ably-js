@@ -10,6 +10,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
       var retryAttempts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
       var initialTimeout = 15;
 
+      helper.recordPrivateApi('call.Utils.getRetryTime');
       var retryTimeouts = retryAttempts.map((attempt) => helper.Utils.getRetryTime(initialTimeout, attempt));
       expect(retryTimeouts.filter((timeout) => timeout >= 30).length).to.equal(0);
 

@@ -21,16 +21,24 @@ None
 
 ### `test/realtime/delta.test.js`
 
+Marked in code.
+
 - `channel._lastPayload.messageId = null`
   - to make decoding fail
 
+Note that this test passes an overridden VCDiff decoder, but some SDKs don't use a VCDiff decoder
+
 ### `test/realtime/encoding.test.js`
+
+Marked in code.
 
 - `var BufferUtils = Ably.Realtime.Platform.BufferUtils;`
 - `var Defaults = Ably.Rest.Platform.Defaults;`
   - just used for accessing library’s baked-in protocol version, to pass to `request()`
 
 ### `test/realtime/presence.test.js`
+
+Marked in code.
 
 - `var createPM = Ably.protocolMessageFromDeserialized;`
 - `var PresenceMessage = Ably.Realtime.PresenceMessage;`
@@ -47,6 +55,8 @@ None
 
 ### `test/realtime/event_emitter.test.js`
 
+Marked in code.
+
 - `eventEmitter.emit('custom');` — RTE6 says that `emit` is internal
 
 ### `test/realtime/api.test.js`
@@ -55,14 +65,17 @@ None
 
 ### `test/realtime/crypto.test.js`
 
+Marked in code.
+
 - `var BufferUtils = Ably.Realtime.Platform.BufferUtils;`
 - `var msgpack = typeof window == 'object' ? Ably.msgpack : require('@ably/msgpack-js');`
 - `Message.encode(testMessage, channelOpts)`
 - `Message.decode(encryptedMessage, channelOpts);`
-- `Message.fromValues(`
 - `expect(channel.channelOptions.cipher.algorithm).to.equal('aes');` — `channel.channelOptions` is not public API
 
 ### `test/realtime/failure.test.js`
+
+Marked in code.
 
 - `webSocketConnectTimeout: 50` client option
 - replacing `channel.processMessage` to drop `ATTACHED`
@@ -74,6 +87,8 @@ None
 - replacing `connectionManager.onChannelMessage` to listen for `MESSAGE`and then calling `requestState('attaching')` on a channel in response
 
 ### `test/realtime/channel.test.js`
+
+Marked in code.
 
 - `var createPM = Ably.protocolMessageFromDeserialized;`
 - `expect(channel.channelOptions).to.deep.equal(channelOptions, 'Check requested channel options');` (`channelOptions` isn’t public API)
@@ -88,12 +103,17 @@ None
 
 ### `test/realtime/auth.test.js`
 
+Marked in code.
+
 - `var http = new Ably.Realtime._Http();` — just uses this as an HTTP client to fetch a JWT
+- reads `realtime.auth.method` to check it’s `token`
 - spies on `rest.time` to count how many times called
 - checks `rest.serverTimeOffset`
 - spies on `transport.send` to look for an outgoing `AUTH` and check its properties
 
 ### `test/realtime/transports.test.js`
+
+Skipped marking in code.
 
 Transports are a JS-specific concept so might not be worth worrying too much about the contents of this file
 
@@ -111,11 +131,17 @@ Transports are a JS-specific concept so might not be worth worrying too much abo
 
 ### `test/realtime/utils.test.js`
 
+Marked in code.
+
 Ah, I just realised that some of the properties on `shared_helper` actually refer to properties of the library, e.g. `helper.Utils` is actually `Ably.Realtime.Utils`. So perhaps I missed some usages of internal APIs in earlier files. But can figure that out later.
+
+(I’ve addressed this in the context of marking the code; utils stuff is properly marked.)
 
 - this entire file is a test of the internal `utils.getRetryTime(…)` method
 
 ### `test/realtime/resume.test.js`
+
+Marked in code.
 
 - `connectionManager.once('transport.active',` and inside the callback it makes an assertion on `transport.params.mode`
 - sets a channel’s state: `suspendedChannel.state = 'suspended';`
@@ -132,6 +158,8 @@ Ah, I just realised that some of the properties on `shared_helper` actually refe
 
 ### `test/realtime/message.test.js`
 
+Marked in code.
+
 - `let config = Ably.Realtime.Platform.Config;`
 - `var createPM = Ably.protocolMessageFromDeserialized;`
 - modifies `transport.send` to check the `clientId` on the outgoing `MESSAGE`
@@ -141,6 +169,8 @@ Ah, I just realised that some of the properties on `shared_helper` actually refe
 
 ### `test/realtime/connection.test.js`
 
+Marked in code.
+
 - creates a `recover` client option which uses knowledge of ably-js’s serialization of recovery key
 - spies on `transport.send` to listen for `MESSAGE`, check its properties, and then continue the test
 - calls `connectionManager.disconnectAllTransports();`
@@ -148,6 +178,8 @@ Ah, I just realised that some of the properties on `shared_helper` actually refe
 - checks `realtime.options.maxMessageSize`
 
 ### `test/realtime/init.test.js`
+
+Marked in code.
 
 - accesses `var transport = realtime.connection.connectionManager.activeProtocol.transport.uri` or `.recvRequest.recvUri` to check the `v=3` query parameter
 - `expect(realtime.options).to.deep.equal(realtime.connection.connectionManager.options);`
@@ -165,6 +197,8 @@ None
 
 ### `test/realtime/connectivity.test.js`
 
+Marked in code.
+
 - directly calls `new Ably.Realtime._Http().checkConnectivity()` and checks it succeeds (i.e. directly tests this method)
 
 ### `test/realtime/reauth.test.js`
@@ -173,18 +207,26 @@ None
 
 ### `test/realtime/sync.test.js`
 
+Marked in code.
+
 - calling `channel.processMessage` to inject an `ATTACHED` with a presence flag, and then a `SYNC`, later on a `PRESENCE`
 - spies on `channel.processMessage` to, after processing a received `SYNC`, inject a `PRESENCE`
 
 ### `test/browser/simple.test.js`
 
+Skipped marking in code since it’s browser-specific.
+
 - checks whether a transport is available using `transport in Ably.Realtime.ConnectionManager.supportedTransports(Ably.Realtime._transports)`
 
 ### `test/browser/http.test.js`
 
+Skipped marking in code since it’s browser-specific.
+
 - changes `Ably.Rest.Platform.Config.xhrSupported` to false to make it use Fetch
 
 ### `test/browser/connection.test.js`
+
+Skipped marking in code since it’s browser-specific.
 
 (I guess that this is a test that we might not include in the unified test suite.)
 
@@ -196,6 +238,8 @@ None
 - tests `realtime.connection.connectionManager.baseTransport` and `realtime.connection.connectionManager.webSocketTransportAvailable`
 
 ### `test/browser/modular.test.js`
+
+Skipped marking in code since it’s browser-specific.
 
 Another file that probably wouldn’t be part of a unified test suite.
 
@@ -227,9 +271,13 @@ N/A
 
 ### `test/common/modules/client_module.js`
 
-- uses `Ably.Realtime.Utils` for its `mixin` function
+Marked in code.
+
+- uses `Ably.Realtime.Utils` for its `mixin` and `copy` function
 
 ### `test/common/modules/testapp_manager.js`
+
+Marked in code.
 
 - uses `ably.Realtime.Platform.BufferUtils`
 
@@ -238,6 +286,8 @@ N/A
 None
 
 ### `test/common/modules/shared_helper.js`
+
+Marked in code.
 
 - `var utils = clientModule.Ably.Realtime.Utils;`
 - `var platform = clientModule.Ably.Realtime.Platform;`
@@ -314,14 +364,20 @@ N/A
 
 ### `test/rest/bufferutils.test.js`
 
+Skipped marking in code.
+
 This file is a unit test of `Ably.Realtime.Platform.BufferUtils`; something we wouldn’t include in a unified test suite.
 
 ### `test/rest/presence.test.js`
+
+Marked in code.
 
 - `var BufferUtils = Ably.Realtime.Platform.BufferUtils;`
   - I’m going to stop mentioning the use of BufferUtils as a test util now; the pattern is clear and not hard to fix.
 
 ### `test/rest/fallbacks.test.js`
+
+Marked in code.
 
 - checks `rest._currentFallback.{host, validUntil}` to check that the working fallback has been stored correctly
 - modifies `rest._currentFallback.validUntil` to check library correctly forgets stored fallback
@@ -344,11 +400,15 @@ None
 
 ### `test/rest/auth.test.js`
 
+Marked in code.
+
 - ditto will stop mentioning usage of `Utils` for stuff that will be pretty easy to replace
 
 None
 
 ### `test/rest/http.test.js`
+
+Marked in code.
 
 - accesses `Ably.Rest.Platform.Defaults` to check its `version` is being used to populate `Ably-Agent`
 - spies on `rest.http.do` to make assertions about request headers
@@ -360,9 +420,13 @@ None
 
 ### `test/rest/push.test.js`
 
+Marked in code.
+
 None
 
 ### `test/rest/message.test.js`
+
+Marked in code.
 
 - spies on `channel._publish` to verify that client does / doesn’t add a `clientId`
   - ditto to check that idempotent REST publishing generates message IDs
@@ -371,13 +435,19 @@ None
 
 ### `test/rest/init.test.js`
 
+Marked in code.
+
 - accesses various properties of `rest.options` to check the effect of passing various things to the constructor
 
 ### `test/rest/history.test.js`
 
+Marked in code.
+
 None
 
 ### `test/rest/defaults.test.js`
+
+Marked in code.
 
 This appears to be a unit test of the `Defaults` class’s `normaliseOptions()`, `getHosts()`, and `getPort()` methods. But I imagine it’s actually providing the test suite’s coverage of a bunch of spec points which aren’t written in terms of this API.
 
@@ -386,6 +456,8 @@ This appears to be a unit test of the `Defaults` class’s `normaliseOptions()`,
 None
 
 ### `test/rest/request.test.js`
+
+Marked in code.
 
 - overrides `rest.http.do()` to check `X-Ably-Version` request header
 
