@@ -30,6 +30,11 @@ jobs:
       - env:
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
         run: npm run test:playwright
+      - name: Save private API usage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-api-usage-${{ matrix.browser }}
+          path: private-api-usage
       - name: Upload test results
         if: always()
         uses: ably/test-observability-action@v1

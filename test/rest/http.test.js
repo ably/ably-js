@@ -24,6 +24,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
      * @specpartial RSC7d2 - tests Ably-Agent only for http
      */
     it('Should send X-Ably-Version and Ably-Agent headers in get/post requests', async function () {
+      const helper = this.test.helper;
       var originalDo = rest.http.do;
 
       // Intercept Http.do with test
@@ -34,6 +35,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         // This test should not directly validate version against Defaults.version, as
         // ultimately the version header has been derived from that value.
         expect(headers['X-Ably-Version']).to.equal('3', 'Verify current version number');
+        helper.recordPrivateApi('read.Defaults.version');
         expect(headers['Ably-Agent'].indexOf('ably-js/' + Defaults.version) > -1, 'Verify agent').to.be.ok;
         expect(headers['Ably-Agent'].indexOf('custom-agent/0.1.2') > -1, 'Verify custom agent').to.be.ok;
 
@@ -49,9 +51,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
           expect(headers['Ably-Agent'].indexOf('nodejs') > -1, 'Verify agent').to.be.ok;
         }
 
+        helper.recordPrivateApi('call.rest.http.do');
         return originalDo.call(rest.http, method, path, headers, body, params);
       }
 
+      helper.recordPrivateApi('replace.rest.http.do');
       rest.http.do = testRequestHandler;
 
       // Call all methods that use rest http calls
@@ -65,12 +69,14 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /** @nospec */
     it('Should handle no content responses', async function () {
+      const helper = this.test.helper;
       //Intercept Http.do with test
 
       async function testRequestHandler() {
         return { error: null, body: null, headers: { 'X-Ably-Foo': 'headerValue' }, unpacked: false, statusCode: 204 };
       }
 
+      helper.recordPrivateApi('replace.rest.http.do');
       rest.http.do = testRequestHandler;
 
       const response = await rest.request('GET', '/foo', {}, null, {});

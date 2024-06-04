@@ -158,6 +158,30 @@ When using the test webserver `npm run test:webserver` the following test variab
 - `tls` - true or false to enable/disable use of TLS respectively
 - `log_level` - Log level for the client libraries, defaults to 2, 4 is `MICRO`
 
+### Adding private API annotations to tests
+
+We have an ongoing project which aims to reuse the ably-js test suite as a unified test suite for all of our client libraries. To enable this work, we want to be able to monitor the test suite’s usage of APIs that are private to ably-js.
+
+When you use a private API in a test, record its usage using the `recordPrivateApi` method on the test’s helper object. For example:
+
+```javascript
+/* Sabotage the reattach attempt, then simulate a server-sent detach */
+helper.recordPrivateApi('replace.channel.sendMessage');
+channel.sendMessage = function () {};
+```
+
+The current list of private API usage identifiers can be found in [`test/common/modules/private_api_recorder.js`](test/common/modules/private_api_recorder.js); add new ones there as necessary.
+
+The following test files do not utilise private API annotations, and you don’t need to add them:
+
+- [`test/realtime/transports.test.js`](test/realtime/transports.test.js)
+- [`test/browser/simple.test.js`](test/browser/simple.test.js)
+- [`test/browser/http.test.js`](test/browser/http.test.js)
+- [`test/browser/connection.test.js`](test/browser/connection.test.js)
+- [`test/browser/modular.test.js`](test/browser/modular.test.js)
+- [`test/browser/push.test.js`](test/browser/push.test.js)
+- [`test/rest/bufferutils.test.js`](test/rest/bufferutils.test.js)
+
 ## React hooks
 
 The react sample application is configured to execute using Vite - which will load a sample web app that acts as a simple test harness for the hooks.

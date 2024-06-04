@@ -37,6 +37,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         return;
       }
       var realtime = helper.AblyRealtime();
+      helper.recordPrivateApi('call.BufferUtils.base64Decode');
       var key = BufferUtils.base64Decode(testData.key);
       var iv = BufferUtils.base64Decode(testData.iv);
       var channel = realtime.channels.get(channelName, { cipher: { key: key, iv: iv } });
@@ -63,9 +64,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
           if (testPlaintextVariants) {
             var testMessage = await createTestMessage();
+            helper.recordPrivateApi('call.BufferUtils.isBuffer');
             if (BufferUtils.isBuffer(testMessage.data) && !(testMessage.data instanceof ArrayBuffer)) {
               // Now, check that we can also handle an ArrayBuffer plaintext.
               var testMessageWithArrayBufferData = await createTestMessage();
+              helper.recordPrivateApi('call.BufferUtils.toArrayBuffer');
               testMessageWithArrayBufferData.data = BufferUtils.toArrayBuffer(testMessageWithArrayBufferData.data);
               runTest(testMessageWithArrayBufferData);
             }
@@ -161,13 +164,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /** @specpartial RSE1c - can accept binary key */
     it('getDefaultParams_ArrayBuffer_key', function (done) {
+      const helper = this.test.helper;
       Helper.whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
         }
+        helper.recordPrivateApi('call.BufferUtils.toArrayBuffer');
         var arrayBufferKey = Ably.Realtime.Platform.BufferUtils.toArrayBuffer(key);
         var params = Crypto.getDefaultParams({ key: arrayBufferKey });
         try {
+          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
           expect(BufferUtils.areBuffersEqual(params.key, key)).to.equal(true);
           done();
         } catch (err) {
@@ -178,14 +184,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /** @specpartial RSE1c - can accept base64 string key */
     it('getDefaultParams_base64_key', function (done) {
+      const helper = this.test.helper;
       Helper.whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
           done(err);
           return;
         }
+        helper.recordPrivateApi('call.BufferUtils.base64Encode');
         var b64key = Ably.Realtime.Platform.BufferUtils.base64Encode(key);
         var params = Crypto.getDefaultParams({ key: b64key });
         try {
+          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
           expect(BufferUtils.areBuffersEqual(params.key, key)).to.equal(true);
           done();
         } catch (err) {
@@ -254,6 +263,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
+          helper.recordPrivateApi('call.Message.encode');
           Helper.whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
             /* compare */
             testMessageEquality(done, helper, testMessage, encryptedMessage);
@@ -277,6 +287,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         true,
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
+          helper.recordPrivateApi('call.Message.encode');
           Helper.whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
             /* compare */
             testMessageEquality(done, helper, testMessage, encryptedMessage);
@@ -300,6 +311,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         false,
         async function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
+          helper.recordPrivateApi('call.Message.decode');
           await Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, helper, testMessage, encryptedMessage);
@@ -322,6 +334,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         false,
         async function (channelOpts, testMessage, encryptedMessage) {
           /* decrypt encrypted message; decode() also to handle data that is not string or buffer */
+          helper.recordPrivateApi('call.Message.decode');
           await Message.decode(encryptedMessage, channelOpts);
           /* compare */
           testMessageEquality(done, helper, testMessage, encryptedMessage);
@@ -343,6 +356,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           done(err);
           return;
         }
+        helper.recordPrivateApi('call.BufferUtils.base64Decode');
         var key = BufferUtils.base64Decode(testData.key);
         var iv = BufferUtils.base64Decode(testData.iv);
 
@@ -372,9 +386,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           2,
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
+            helper.recordPrivateApi('call.Message.encode');
             Helper.whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
+              helper.recordPrivateApi('call.msgpack.encode');
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
+              helper.recordPrivateApi('call.BufferUtils.base64Decode');
+              helper.recordPrivateApi('call.msgpack.decode');
               var messageFromMsgpack = Message.fromValues(
                 msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
               );
@@ -382,6 +400,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
                  * the platform's ICipher implementation into the msgpack binary type */
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
                   true,
                   'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual',
@@ -413,8 +432,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
             Helper.whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
+              helper.recordPrivateApi('call.msgpack.encode');
               var msgpackFromEncoded = msgpack.encode(testMessage);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
+              helper.recordPrivateApi('call.BufferUtils.base64Decode');
+              helper.recordPrivateApi('call.msgpack.decode');
               var messageFromMsgpack = Message.fromValues(
                 msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
               );
@@ -422,6 +444,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               try {
                 /* Mainly testing that we're correctly encoding the direct output from
                  * the platform's ICipher implementation into the msgpack binary type */
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(BufferUtils.areBuffersEqual(msgpackFromEncoded, msgpackFromEncrypted)).to.equal(
                   true,
                   'verify msgpack encodings of newly-encrypted and preencrypted messages identical using areBuffersEqual',
@@ -440,6 +463,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     }
 
     function single_send(done, helper, realtimeOpts, keyLength) {
+      // the _128 and _256 variants both call this so it makes more sense for this to be the parameterisedTestTitle instead of that set by testOnAllTransports
+      helper = helper.withParameterisedTestTitle('single_send');
+
       if (!Crypto) {
         done(new Error('Encryption not supported'));
         return;
@@ -463,6 +489,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             return;
           }
           try {
+            helper.recordPrivateApi('read.channel.channelOptions.cipher');
             expect(channel.channelOptions.cipher.algorithm).to.equal('aes');
             expect(channel.channelOptions.cipher.keyLength).to.equal(keyLength);
           } catch (err) {
@@ -498,6 +525,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     function _multiple_send(done, helper, text, iterations, delay) {
+      helper = helper.withParameterisedTestTitle('multiple_send');
+
       if (!Crypto) {
         done(new Error('Encryption not supported'));
         return;
@@ -511,6 +540,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       Helper.whenPromiseSettles(Crypto.generateRandomKey(128), function (err, key) {
         channel.setOptions({ cipher: { key: key } });
         try {
+          helper.recordPrivateApi('read.channel.channelOptions.cipher');
           expect(channel.channelOptions.cipher.algorithm).to.equal('aes');
           expect(channel.channelOptions.cipher.keyLength).to.equal(128);
         } catch (err) {
@@ -642,6 +672,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               return;
             }
             try {
+              helper.recordPrivateApi('read.channel.channelOptions.cipher');
               expect(txChannel.channelOptions.cipher.algorithm).to.equal('aes');
               expect(rxChannel.channelOptions.cipher.algorithm).to.equal('aes');
             } catch (err) {

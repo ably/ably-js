@@ -438,6 +438,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               }
               cb();
             });
+
+            helper.recordPrivateApi('call.PresenceMessage.fromValues');
             presence.enter(
               PresenceMessage.fromValues({
                 extras: { headers: { key: 'value' } },
@@ -458,6 +460,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               }
               cb();
             });
+            helper.recordPrivateApi('call.PresenceMessage.fromValues');
             presence.leave(
               PresenceMessage.fromValues({
                 extras: { headers: { otherKey: 'otherValue' } },
@@ -1250,6 +1253,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var channel = client.channels.get('presenceClientIdIsImplicit'),
         presence = channel.presence;
 
+      helper.recordPrivateApi('replace.channel.sendPresence');
       var originalSendPresence = channel.sendPresence;
       channel.sendPresence = function (presence, callback) {
         try {
@@ -1258,6 +1262,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           helper.closeAndFinish(done, client, err);
           return;
         }
+        helper.recordPrivateApi('call.channel.sendPresence');
         originalSendPresence.apply(channel, arguments);
       };
 
@@ -1299,13 +1304,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           transports: [helper.bestTransport],
         };
 
+      helper.recordPrivateApi('call.Utils.mixin');
       var realtimeBin = helper.AblyRealtime(helper.Utils.mixin(options, { useBinaryProtocol: true }));
       var realtimeJson = helper.AblyRealtime(helper.Utils.mixin(options, { useBinaryProtocol: false }));
 
       var runTest = function (realtime, callback) {
+        helper.recordPrivateApi('listen.connectionManager.transport.active');
         realtime.connection.connectionManager.once('transport.active', function (transport) {
           var originalSend = transport.send;
 
+          helper.recordPrivateApi('replace.transport.send');
           transport.send = function (message) {
             if (message.action === 14) {
               /* Message is formatted for Ably by the toJSON method, so need to
@@ -1319,9 +1327,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 callback(err);
                 return;
               }
+              helper.recordPrivateApi('replace.transport.send');
               transport.send = originalSend;
               callback();
             }
+            helper.recordPrivateApi('call.transport.send');
             originalSend.apply(transport, arguments);
           };
 
@@ -1635,6 +1645,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             if (!channel.presence.syncComplete) {
+              helper.recordPrivateApi('call.presence.waitSync');
               channel.presence.members.waitSync(cb);
             } else {
               cb();
@@ -1649,7 +1660,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             /* inject an additional member into the myMember set, then force a suspended state */
+            helper.recordPrivateApi('read.connectionManager.connectionId');
             var connId = realtime.connection.connectionManager.connectionId;
+            helper.recordPrivateApi('call.presence._myMembers.put');
             channel.presence._myMembers.put({
               action: 'enter',
               clientId: 'two',
@@ -1677,8 +1690,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
              * that realtime will feel it necessary to do a sync - if it doesn't,
              * we request one */
             if (channel.presence.syncComplete) {
+              helper.recordPrivateApi('call.channel.sync');
               channel.sync();
             }
+            helper.recordPrivateApi('call.presence.waitSync');
             channel.presence.members.waitSync(cb);
           },
           function (cb) {
@@ -1761,6 +1776,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             if (!channel.presence.syncComplete) {
+              helper.recordPrivateApi('call.presence.waitSync');
               channel.presence.members.waitSync(cb);
             } else {
               cb();
@@ -1779,7 +1795,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             /* inject an additional member into the myMember set, then force a suspended state */
+            helper.recordPrivateApi('read.connectionManager.connectionId');
             var connId = realtime.connection.connectionManager.connectionId;
+            helper.recordPrivateApi('call.presence._myMembers.put');
             channel.presence._myMembers.put({
               action: 'enter',
               clientId: 'me',
@@ -1847,6 +1865,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             /* stub out attachimpl */
+            helper.recordPrivateApi('replace.channel.attachImpl');
             channel.attachImpl = function () {};
             channel.attach();
 
@@ -1854,13 +1873,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               channel.presence.enterClient('client_' + i.toString(), i.toString());
             }
 
+            helper.recordPrivateApi('replace.channel.attachImpl');
             channel.attachImpl = originalAttachImpl;
+
+            helper.recordPrivateApi('call.channel.checkPendingState');
             channel.checkPendingState();
 
             /* Now just wait for an enter. One enter implies all, they'll all be
              * sent in one protocol message */
             channel.presence.subscribe('enter', function () {
               channel.presence.unsubscribe('enter');
+              helper.recordPrivateApi('call.Platform.nextTick');
               Ably.Realtime.Platform.Config.nextTick(cb);
             });
           },
@@ -1934,6 +1957,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             /* Inject an additional member locally */
+            helper.recordPrivateApi('call.channel.processMessage');
             channel
               .processMessage({
                 action: 14,
@@ -1977,6 +2001,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               }
               cb();
             });
+            helper.recordPrivateApi('call.channel.sync');
             channel.sync();
           },
           function (cb) {
@@ -2070,6 +2095,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               cb();
             });
             /* Inject an ATTACHED with RESUMED and HAS_PRESENCE both false */
+            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
             channel.processMessage(
               createPM({
                 action: 11,

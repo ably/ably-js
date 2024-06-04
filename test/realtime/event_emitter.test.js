@@ -93,6 +93,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         callbackCalled = true;
       });
 
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('custom');
       try {
         expect(callbackCalled, 'Last callback should have been called').to.be.ok;
@@ -118,6 +119,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         onCallbackCalled += 1;
       });
 
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('custom');
       eventEmitter.emit('custom');
       eventEmitter.emit('custom');
@@ -152,6 +154,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
       eventEmitter.once('custom', callback);
       eventEmitter.once('custom', callback);
 
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('custom');
       eventEmitter.emit('custom');
 
@@ -181,11 +184,13 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         eventEmitter.on('custom', callback);
         eventEmitter.on('custom', callback);
 
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(3, 'The same callback should have been called for every registration');
 
         callbackCalled = 0;
         eventEmitter.off(callback);
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
@@ -212,11 +217,13 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         eventEmitter.on('custom', callback);
         eventEmitter.on('custom', callback);
 
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(3, 'The same callback should have been called for every registration');
 
         callbackCalled = 0;
         eventEmitter.off();
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
@@ -243,11 +250,13 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         eventEmitter.on('custom', callback);
         eventEmitter.on('custom', callback);
 
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(3, 'The same callback should have been called for every registration');
 
         callbackCalled = 0;
         eventEmitter.off('custom', callback);
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
@@ -278,11 +287,13 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         eventEmitter.on('custom', callback);
         eventEmitter.on('custom', callback);
 
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(3, 'The same callback should have been called for every registration');
 
         callbackCalled = 0;
         eventEmitter.off('custom');
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
@@ -313,16 +324,20 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
       try {
         eventEmitter.once('custom', callback);
         eventEmitter.on('custom', callback);
+        helper.recordPrivateApi('read.EventEmitter.events');
         expect('custom' in eventEmitter.events, 'custom event array exists').to.be.ok;
 
         eventEmitter.off('custom', callback);
+        helper.recordPrivateApi('read.EventEmitter.events');
         expect(!('custom' in eventEmitter.events), 'custom event listener array is removed from object').to.be.ok;
 
         eventEmitter.once('custom', callback);
         eventEmitter.on('custom', callback);
+        helper.recordPrivateApi('read.EventEmitter.events');
         expect('custom' in eventEmitter.events, 'custom event array exists').to.be.ok;
 
         eventEmitter.off(callback);
+        helper.recordPrivateApi('read.EventEmitter.events');
         expect(!('custom' in eventEmitter.events), 'event listener array is removed from object').to.be.ok;
       } catch (err) {
         helper.closeAndFinish(done, realtime, err);
@@ -348,6 +363,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
       };
 
       try {
+        helper.recordPrivateApi('call.EventEmitter.emit');
         callbackCalled = 0;
         eventEmitter.on(['a', 'b', 'c'], callback);
         eventEmitter.emit('a');
@@ -396,6 +412,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
       try {
         callbackCalled = 0;
         eventEmitter.once(['a', 'b', 'c'], callback);
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('a', 'expected');
         eventEmitter.emit('b', 'wrong');
         eventEmitter.emit('c', 'wrong');
@@ -427,6 +444,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           secondCbCalled = true;
         });
       });
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('a');
 
       try {
@@ -475,6 +493,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         eventEmitter.off();
       });
 
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('a');
 
       try {
@@ -533,6 +552,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           eventEmitter = realtime.connection;
 
         const p = eventEmitter.once();
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('b');
         p.then(function () {
           helper.closeAndFinish(done, realtime);
@@ -551,6 +571,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           eventEmitter = realtime.connection;
 
         const p = eventEmitter.once(['a', 'b', 'c']);
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('b');
         p.then(function () {
           helper.closeAndFinish(done, realtime);

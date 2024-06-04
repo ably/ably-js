@@ -75,8 +75,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
           try {
+            helper.recordPrivateApi('deserialize.recoveryKey');
             const recoveryContext = JSON.parse(realtime.connection.recoveryKey);
             expect(recoveryContext.connectionKey).to.equal(realtime.connection.key);
+            helper.recordPrivateApi('read.connectionManager.msgSerial');
             expect(recoveryContext.msgSerial).to.equal(realtime.connection.connectionManager.msgSerial);
           } catch (err) {
             helper.closeAndFinish(done, realtime, err);
@@ -94,8 +96,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 function (cb) {
                   channel.subscribe(function () {
                     setTimeout(function () {
+                      helper.recordPrivateApi('deserialize.recoveryKey');
                       const recoveryContext = JSON.parse(realtime.connection.recoveryKey);
                       expect(recoveryContext.connectionKey).to.equal(realtime.connection.key);
+                      helper.recordPrivateApi('read.connectionManager.msgSerial');
                       expect(recoveryContext.msgSerial).to.equal(realtime.connection.connectionManager.msgSerial);
                       cb();
                     }, 0);
@@ -133,6 +137,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     it('unrecoverableConnection', function (done) {
       const helper = this.test.helper;
       var realtime;
+      helper.recordPrivateApi('serialize.recoveryKey');
       const fakeRecoveryKey = JSON.stringify({
         connectionKey: '_____!ablyjs_test_fake-key____',
         msgSerial: 3,
@@ -150,6 +155,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               80018,
               'verify unrecoverable-connection error set in connection.errorReason',
             );
+            helper.recordPrivateApi('read.connectionManager.msgSerial');
             expect(realtime.connection.connectionManager.msgSerial).to.equal(
               0,
               'verify msgSerial is 0 (new connection), not 3',
@@ -185,6 +191,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         connectionManager = realtime.connection.connectionManager;
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
         var transport = connectionManager.activeProtocol.transport;
         Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
@@ -194,6 +201,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
           let transportSendCallback;
 
+          helper.recordPrivateApi('replace.transport.send');
           /* Sabotage sending the message */
           transport.send = function (msg) {
             if (msg.action == 15) {
@@ -243,9 +251,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                     },
                     function (cb) {
                       /* After the disconnect, on reconnect, spy on transport.send again */
+                      helper.recordPrivateApi('listen.connectionManager.transport.pending');
                       connectionManager.once('transport.pending', function (transport) {
                         var oldSend = transport.send;
 
+                        helper.recordPrivateApi('replace.transport.send');
                         transport.send = function (msg, msgCb) {
                           if (msg.action === 15) {
                             if (msg.messages[0].name === 'first') {
@@ -269,12 +279,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                               cb();
                             }
                           }
+                          helper.recordPrivateApi('call.transport.send');
                           oldSend.call(transport, msg, msgCb);
                         };
                         channel.publish('second', null);
                       });
 
                       /* Disconnect the transport (will automatically reconnect and resume) () */
+                      helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
                       connectionManager.disconnectAllTransports();
                     },
                   ],
@@ -303,15 +315,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         realtime = helper.AblyRealtime(),
         connectionManager = realtime.connection.connectionManager;
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('listen.connectionManager.connectiondetails');
         connectionManager.once('connectiondetails', function (details) {
           try {
             expect(details.connectionStateTtl).to.equal(12345, 'Check connectionStateTtl in event');
+            helper.recordPrivateApi('read.connectionManager.connectionStateTtl');
             expect(connectionManager.connectionStateTtl).to.equal(
               12345,
               'Check connectionStateTtl set in connectionManager',
             );
             expect(details.clientId).to.equal('foo', 'Check clientId in event');
             expect(realtime.auth.clientId).to.equal('foo', 'Check clientId set in auth');
+            helper.recordPrivateApi('read.realtime.options.maxMessageSize');
             expect(realtime.options.maxMessageSize).to.equal(98765, 'Check maxMessageSize set');
           } catch (err) {
             helper.closeAndFinish(done, realtime, err);
@@ -319,6 +334,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           }
           helper.closeAndFinish(done, realtime);
         });
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        helper.recordPrivateApi('call.protocolMessageFromDeserialized');
         connectionManager.activeProtocol.getTransport().onProtocolMessage(
           createPM({
             action: 4,

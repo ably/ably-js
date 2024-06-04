@@ -125,6 +125,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         var lifecycleTest = function (transports) {
           return function (cb) {
             var connectionEvents = [];
+
+            helper.recordPrivateApi('pass.clientOption.webSocketConnectTimeout');
             var realtime = helper.AblyRealtime({
               transports: transports,
               realtimeHost: 'invalid',
@@ -372,10 +374,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channel = realtime.channels.get('failed_attach'),
         originalProcessMessage = channel.processMessage.bind(channel);
 
+      helper.recordPrivateApi('replace.channel.processMessage');
       channel.processMessage = async function (message) {
         if (message.action === 11) {
           return;
         }
+        helper.recordPrivateApi('call.channel.processMessage');
         await originalProcessMessage(message);
       };
 
@@ -422,17 +426,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
         var performance = isBrowser ? window.performance : require('perf_hooks').performance;
 
+        helper.recordPrivateApi('replace.channel.processMessage');
         channel.processMessage = async function (message) {
           // Ignore ATTACHED messages
           if (message.action === 11) {
             return;
           }
+          helper.recordPrivateApi('call.channel.processMessage');
           await originalProcessMessage(message);
         };
 
         var retryTimeouts = [];
 
         realtime.connection.on('connected', function () {
+          helper.recordPrivateApi('write.realtime.options.timeouts.realtimeRequestTimeout');
           realtime.options.timeouts.realtimeRequestTimeout = 1;
           Helper.whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
@@ -479,7 +486,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     function nack_on_connection_failure(failureFn, expectedRealtimeState, expectedNackCode) {
       return function (done) {
         /* Use one transport because stubbing out transport#onProtocolMesage */
-        var helper = this.test.helper,
+        var helper = this.test.helper.withParameterisedTestTitle('nack_on_connection_failure'),
           realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
           channel = realtime.channels.get('nack_on_connection_failure');
 
@@ -494,12 +501,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               Helper.whenPromiseSettles(channel.attach(), cb);
             },
             function (cb) {
+              helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
               var transport = realtime.connection.connectionManager.activeProtocol.transport,
                 originalOnProtocolMessage = transport.onProtocolMessage;
 
+              helper.recordPrivateApi('replace.transport.onProtocolMessage');
               transport.onProtocolMessage = function (message) {
                 /* make sure we don't get an ack! */
                 if (message.action !== 1) {
+                  helper.recordPrivateApi('call.transport.onProtocolMessage');
                   originalOnProtocolMessage.apply(this, arguments);
                 }
               };
@@ -516,8 +526,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                   cb(err);
                 }
               });
+              helper.recordPrivateApi('call.Platform.nextTick');
               Ably.Realtime.Platform.Config.nextTick(function () {
-                failureFn(realtime, helper);
+                failureFn(realtime, helper.withParameterisedTestTitle(null));
               });
             },
           ],
@@ -544,7 +555,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     it(
       'nack_on_connection_failed',
       nack_on_connection_failure(
-        function (realtime) {
+        function (realtime, helper) {
+          helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
           realtime.connection.connectionManager.activeProtocol.transport.onProtocolMessage({
             action: 9,
             error: { statusCode: 401, code: 40100, message: 'connection failed because reasons' },
@@ -573,12 +586,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000 }),
         originalOnProtocolMessage;
 
+      helper.recordPrivateApi('listen.connectionManager.transport.pending');
       realtime.connection.connectionManager.on('transport.pending', function (transport) {
         originalOnProtocolMessage = transport.onProtocolMessage;
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
         transport.onProtocolMessage = function (message) {
           if (message.action === 4) {
             message.connectionDetails.maxIdleInterval = 100;
           }
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
           originalOnProtocolMessage.call(this, message);
         };
       });
@@ -605,10 +621,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /** @specpartial RTN14d - last sentence: check that if we received a 5xx disconnected, when we try again we use a fallback host */
     Helper.testOnAllTransports(this, 'try_fallback_hosts_on_placement_constraint', function (realtimeOpts) {
       return function (done) {
+        const helper = this.test.helper;
         /* Use the echoserver as a fallback host because it doesn't support
          * websockets, so it'll fail to connect, which we can detect */
-        var helper = this.test.helper,
-          realtime = helper.AblyRealtime(helper.Utils.mixin({ fallbackHosts: ['echo.ably.io'] }, realtimeOpts)),
+        helper.recordPrivateApi('call.Utils.mixin');
+        var realtime = helper.AblyRealtime(helper.Utils.mixin({ fallbackHosts: ['echo.ably.io'] }, realtimeOpts)),
           connection = realtime.connection,
           connectionManager = connection.connectionManager;
 
@@ -627,6 +644,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               helper.closeAndFinish(done, realtime);
             });
           });
+          helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
           connectionManager.activeProtocol.getTransport().onProtocolMessage(
             createPM({
               action: 6,
@@ -664,10 +684,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
             var connectionManager = sender_realtime.connection.connectionManager;
             var onChannelMsgOrig = connectionManager.onChannelMessage;
+            helper.recordPrivateApi('replace.connectionManager.onChannelMessage');
             connectionManager.onChannelMessage = function (msg, transport) {
               if (msg.action === 15) {
+                helper.recordPrivateApi('call.channel.requestState');
                 sender_channel.requestState('attaching');
               }
+              helper.recordPrivateApi('call.connectionManager.onChannelMessage');
               onChannelMsgOrig.call(connectionManager, msg, transport);
             };
 

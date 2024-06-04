@@ -50,6 +50,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'syncexistingset',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -66,6 +68,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         async.series(
           [
             function (cb) {
+              helper.recordPrivateApi('call.channel.processMessage');
               channel
                 .processMessage({
                   action: 16,
@@ -109,6 +112,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             },
             function (cb) {
               /* Trigger another sync. Two has gone without so much as a `leave` message! */
+              helper.recordPrivateApi('call.channel.processMessage');
               channel
                 .processMessage({
                   action: 16,
@@ -175,6 +179,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'sync_member_arrives_in_middle',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -184,6 +190,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       );
 
       /* First sync */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -199,6 +206,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       /* A second sync, this time in multiple parts, with a presence message in the middle */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -214,6 +222,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -228,6 +237,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -281,6 +291,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'sync_member_arrives_normally_after_came_in_sync',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -289,6 +301,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         }),
       );
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -304,6 +317,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -318,6 +332,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -368,6 +383,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'sync_member_arrives_normally_before_comes_in_sync',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -376,6 +393,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         }),
       );
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -391,6 +409,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -405,6 +424,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -459,6 +479,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'sync_ordering',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -467,6 +489,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       );
 
       /* One enters */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -482,6 +505,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       /* An earlier leave from one (should be ignored) */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -497,6 +521,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       /* One adds some data in a newer msgSerial */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -513,6 +538,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       /* Two enters */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -528,6 +554,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       /* Two updates twice in the same message */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -549,6 +576,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       /* Three enters */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -565,6 +593,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       /* Synthesized leave for three (with earlier msgSerial, incompatible id,
        * and later timestamp) */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -652,11 +681,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             var originalProcessMessage = syncerChannel.processMessage;
+            helper.recordPrivateApi('replace.channel.processMessage');
             syncerChannel.processMessage = async function (message) {
+              helper.recordPrivateApi('call.channel.processMessage');
               await originalProcessMessage.apply(this, arguments);
               /* Inject an additional presence message after the first sync */
               if (message.action === 16) {
+                helper.recordPrivateApi('replace.channel.processMessage');
                 syncerChannel.processMessage = originalProcessMessage;
+                helper.recordPrivateApi('call.channel.processMessage');
                 await syncerChannel.processMessage({
                   action: 14,
                   id: 'messageid:0',

@@ -68,6 +68,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                       channel.subscribe(name, function (msg) {
                         try {
                           if (encodingSpec.expectedHexValue) {
+                            helper.recordPrivateApi('call.BufferUtils.hexEncode');
                             expect(BufferUtils.hexEncode(msg.data)).to.equal(
                               encodingSpec.expectedHexValue,
                               'Check data matches',
@@ -86,6 +87,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                       binarychannel.subscribe(name, function (msg) {
                         try {
                           if (encodingSpec.expectedHexValue) {
+                            helper.recordPrivateApi('call.BufferUtils.hexEncode');
                             expect(BufferUtils.hexEncode(msg.data)).to.equal(
                               encodingSpec.expectedHexValue,
                               'Check data matches',
@@ -169,6 +171,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 var data,
                   name = index.toString();
                 if (encodingSpec.expectedHexValue) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
                   data = BufferUtils.base64Decode(encodingSpec.data);
                 } else {
                   data = encodingSpec.expectedValue;

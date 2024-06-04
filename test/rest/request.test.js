@@ -28,7 +28,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RSC7e - tests providing a version value in .request parameters
      * @specpartial CSV2c - tests version is provided in http requests
      */
-    Helper.restTestOnJsonMsgpack('request_version', function (rest) {
+    Helper.restTestOnJsonMsgpack('request_version', function (rest, _, helper) {
       const version = 150; // arbitrarily chosen
 
       async function testRequestHandler(_, __, headers) {
@@ -42,6 +42,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         return new Promise(() => {});
       }
 
+      helper.recordPrivateApi('replace.rest.http.do');
       rest.http.do = testRequestHandler;
 
       rest.request('get', '/time' /* arbitrarily chosen */, version, null, null, null);
@@ -212,7 +213,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     ['put', 'patch', 'delete'].forEach(function (method) {
       /** @specpartial RSC19f - tests put, patch, delete methods are supported */
       it('check' + method, async function () {
-        const helper = this.test.helper;
+        const helper = this.test.helper.withParameterisedTestTitle('check');
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
         var res = await restEcho.request(method, '/methods', 3, {}, {}, {});
         expect(res.items[0] && res.items[0].method).to.equal(method);

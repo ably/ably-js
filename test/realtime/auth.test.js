@@ -13,8 +13,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   /*
    * Helper function to fetch JWT tokens from the echo server
    */
-  function getJWT(params, callback) {
+  function getJWT(params, helper, callback) {
+    helper = helper.addingHelperFunction('getJWT');
     var authUrl = echoServer + '/createJWT';
+    helper.recordPrivateApi('call.http.doUri');
     Helper.whenPromiseSettles(http.doUri('get', authUrl, null, null, params), function (err, result) {
       if (result.error) {
         callback(result.error, null);
@@ -200,6 +202,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       realtime.connection.on('connected', function () {
         try {
+          helper.recordPrivateApi('read.auth.method');
           expect(realtime.auth.method).to.equal('token');
           helper.closeAndFinish(done, realtime);
         } catch (err) {
@@ -244,6 +247,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       realtime.connection.on('connected', function () {
         try {
+          helper.recordPrivateApi('read.auth.method');
           expect(realtime.auth.method).to.equal('token');
           helper.closeAndFinish(done, realtime);
         } catch (err) {
@@ -285,6 +289,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       realtime.connection.on('connected', function () {
         try {
+          helper.recordPrivateApi('read.auth.method');
           expect(realtime.auth.method).to.equal('token');
           helper.closeAndFinish(done, realtime);
         } catch (err) {
@@ -325,6 +330,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           keyName: tokenRequest.keyName,
           mac: tokenRequest.mac,
         };
+        helper.recordPrivateApi('call.Utils.toQueryString');
         var authPath = echoServer + '/qs_to_body' + helper.Utils.toQueryString(lowerPrecedenceTokenRequestParts);
 
         realtime = helper.AblyRealtime({ authUrl: authPath, authParams: higherPrecedenceTokenRequestParts });
@@ -779,6 +785,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             done(err);
             return;
           }
+          helper.recordPrivateApi('call.Utils.mixin');
           clientRealtime = helper.AblyRealtime(
             helper.Utils.mixin(realtimeOpts, { tokenDetails: tokenDetails, queryTime: true }),
           );
@@ -817,12 +824,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         originalTime = rest.time;
 
       /* stub time */
+      helper.recordPrivateApi('replace.rest.time');
       rest.time = async function () {
         timeRequestCount += 1;
         return originalTime.call(rest);
       };
 
       try {
+        helper.recordPrivateApi('read.rest.serverTimeOffset');
         expect(
           isNaN(parseInt(rest.serverTimeOffset)) && !rest.serverTimeOffset,
           'Server time offset is empty and falsey until a time request has been made',
@@ -839,6 +848,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             if (err) {
               return callback(err);
             }
+            helper.recordPrivateApi('read.rest.serverTimeOffset');
             expect(
               !isNaN(parseInt(rest.serverTimeOffset)),
               'Server time offset is configured when time is requested',
@@ -888,6 +898,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         };
 
+        helper.recordPrivateApi('call.Utils.mixin');
         realtime = helper.AblyRealtime(
           helper.Utils.mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }),
         );
@@ -936,6 +947,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         };
 
+        helper.recordPrivateApi('call.Utils.mixin');
         realtime = helper.AblyRealtime(
           helper.Utils.mixin(realtimeOpts, { authCallback: authCallback, clientId: clientId }),
         );
@@ -978,6 +990,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               helper.closeAndFinish(done, realtime, err);
               return;
             }
+            helper.recordPrivateApi('call.Utils.mixin');
             realtime = helper.AblyRealtime(
               helper.Utils.mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }),
             );
@@ -1026,6 +1039,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               return;
             }
             setTimeout(function () {
+              helper.recordPrivateApi('call.Utils.mixin');
               realtime = helper.AblyRealtime(
                 helper.Utils.mixin(realtimeOpts, { token: tokenDetails.token, clientId: clientId }),
               );
@@ -1080,6 +1094,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         };
 
+        helper.recordPrivateApi('call.Utils.mixin');
         realtime = helper.AblyRealtime(helper.Utils.mixin(realtimeOpts, { authCallback: authCallback }));
         realtime.connection.once('connected', function () {
           var channel = realtime.channels.get('right');
@@ -1126,6 +1141,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         });
 
       try {
+        helper.recordPrivateApi('read.auth.tokenParams.version');
+        helper.recordPrivateApi('read.auth.authOptions.authUrl');
+
         expect(realtime.auth.tokenParams.version).to.equal(1, 'Check initial defaultTokenParams stored');
         expect(realtime.auth.tokenDetails.token).to.equal('1', 'Check initial token stored');
         expect(realtime.auth.authOptions.authUrl).to.equal('1', 'Check initial authUrl stored');
@@ -1166,8 +1184,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         realtime = helper.AblyRealtime({ authCallback: authCallback, transports: [helper.bestTransport] });
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
         var transport = realtime.connection.connectionManager.activeProtocol.transport,
           originalSend = transport.send;
+        helper.recordPrivateApi('replace.transport.send');
         /* Spy on transport.send to detect the outgoing AUTH */
         transport.send = function (message) {
           if (message.action === 17) {
@@ -1178,10 +1198,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               helper.closeAndFinish(done, realtime, err);
             }
           } else {
+            helper.recordPrivateApi('call.transport.send');
             originalSend.call(this, message);
           }
         };
         /* Inject a fake AUTH from realtime */
+        helper.recordPrivateApi('call.transport.onProtocolMessage');
         transport.onProtocolMessage({ action: 17 });
       });
     });
@@ -1198,9 +1220,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var currentKey = helper.getTestApp().keys[0];
       var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
       var clientId = 'testJWTClientId';
+      helper.recordPrivateApi('call.Utils.mixin');
       var params = helper.Utils.mixin(keys, { clientId: clientId });
       var authCallback = function (tokenParams, callback) {
-        getJWT(params, callback);
+        getJWT(params, helper, callback);
       };
 
       var realtime = helper.AblyRealtime({ authCallback: authCallback });
@@ -1237,9 +1260,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var currentKey = helper.getTestApp().keys[0];
       var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret, returnType: 'jwt' };
       var clientId = 'testJWTClientId';
+      helper.recordPrivateApi('call.Utils.mixin');
       var params = helper.Utils.mixin(keys, { clientId: clientId });
       var authCallback = function (tokenParams, callback) {
-        getJWT(params, callback);
+        getJWT(params, helper, callback);
       };
 
       var realtime = helper.AblyRealtime({ authCallback: authCallback });
@@ -1273,7 +1297,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
       var params = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
       var authCallback = function (tokenParams, callback) {
-        getJWT(params, callback);
+        getJWT(params, helper, callback);
       };
 
       var realtime = helper.AblyRealtime({ authCallback: authCallback });
@@ -1303,7 +1327,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var currentKey = helper.getTestApp().keys[0];
       var params = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
       var authCallback = function (tokenParams, callback) {
-        getJWT(params, callback);
+        getJWT(params, helper, callback);
       };
 
       var publishEvent = 'publishEvent',
@@ -1335,7 +1359,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var currentKey = helper.getTestApp().keys[0];
       var params = { keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 5 };
       var authCallback = function (tokenParams, callback) {
-        getJWT(params, callback);
+        getJWT(params, helper, callback);
       };
 
       var realtime = helper.AblyRealtime({ authCallback: authCallback });
@@ -1366,7 +1390,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       // We create a token that lasts 35 so there's room to receive the update event message.
       var params = { keyName: currentKey.keyName, keySecret: currentKey.keySecret, expiresIn: 35 };
       var authCallback = function (tokenParams, callback) {
-        getJWT(params, callback);
+        getJWT(params, helper, callback);
       };
 
       var realtime = helper.AblyRealtime({ authCallback: authCallback });
@@ -1394,7 +1418,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const helper = this.test.helper;
       var currentKey = helper.getTestApp().keys[0];
       var params = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
-      getJWT(params, function (err, token) {
+      getJWT(params, helper, function (err, token) {
         if (err) {
           done(err);
           return;
