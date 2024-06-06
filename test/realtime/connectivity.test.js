@@ -2,10 +2,6 @@
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
-  var utils = helper.Utils;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/connectivity', function () {
     this.timeout(60 * 1000);
@@ -23,9 +19,9 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      * Connect with available http transports; internet connectivity check should work
      */
     it('http_connectivity_check', function (done) {
-      whenPromiseSettles(new Ably.Realtime._Http().checkConnectivity(), function (err, res) {
+      helper.whenPromiseSettles(new Ably.Realtime._Http().checkConnectivity(), function (err, res) {
         try {
-          expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+          expect(res && !err, 'Connectivity check completed ' + (err && helper.Utils.inspectError(err))).to.be.ok;
         } catch (err) {
           done(err);
           return;
@@ -49,11 +45,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var failUrl = echoServer + '/respondwith?status=500';
 
       it('succeeds with scheme', function (done) {
-        whenPromiseSettles(
+        helper.whenPromiseSettles(
           new helper.AblyRealtime(options(urlScheme + successUrl)).http.checkConnectivity(),
           function (err, res) {
             try {
-              expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+              expect(res && !err, 'Connectivity check completed ' + (err && helper.Utils.inspectError(err))).to.be.ok;
             } catch (err) {
               done(err);
               return;
@@ -64,7 +60,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
 
       it('fails with scheme', function (done) {
-        whenPromiseSettles(
+        helper.whenPromiseSettles(
           new helper.AblyRealtime(options(urlScheme + failUrl)).http.checkConnectivity(),
           function (err, res) {
             try {
@@ -78,33 +74,39 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
 
       it('succeeds with querystring', function (done) {
-        whenPromiseSettles(new helper.AblyRealtime(options(successUrl)).http.checkConnectivity(), function (err, res) {
-          try {
-            expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
-            done();
-          } catch (err) {
-            done(err);
-          }
-        });
+        helper.whenPromiseSettles(
+          new helper.AblyRealtime(options(successUrl)).http.checkConnectivity(),
+          function (err, res) {
+            try {
+              expect(res && !err, 'Connectivity check completed ' + (err && helper.Utils.inspectError(err))).to.be.ok;
+              done();
+            } catch (err) {
+              done(err);
+            }
+          },
+        );
       });
 
       it('fails with querystring', function (done) {
-        whenPromiseSettles(new helper.AblyRealtime(options(failUrl)).http.checkConnectivity(), function (err, res) {
-          try {
-            expect(!res, 'Connectivity check expected to return false').to.be.ok;
-            done();
-          } catch (err) {
-            done(err);
-          }
-        });
+        helper.whenPromiseSettles(
+          new helper.AblyRealtime(options(failUrl)).http.checkConnectivity(),
+          function (err, res) {
+            try {
+              expect(!res, 'Connectivity check expected to return false').to.be.ok;
+              done();
+            } catch (err) {
+              done(err);
+            }
+          },
+        );
       });
 
       it('succeeds with plain url', function (done) {
-        whenPromiseSettles(
+        helper.whenPromiseSettles(
           new helper.AblyRealtime(options('sandbox-rest.ably.io/time')).http.checkConnectivity(),
           function (err, res) {
             try {
-              expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+              expect(res && !err, 'Connectivity check completed ' + (err && helper.Utils.inspectError(err))).to.be.ok;
               done();
             } catch (err) {
               done(err);
@@ -114,7 +116,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
 
       it('fails with plain url', function (done) {
-        whenPromiseSettles(
+        helper.whenPromiseSettles(
           new helper.AblyRealtime(options('echo.ably.io')).http.checkConnectivity(),
           function (err, res) {
             try {
@@ -129,11 +131,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     it('disable_connectivity_check', function (done) {
-      whenPromiseSettles(
+      helper.whenPromiseSettles(
         new helper.AblyRealtime(options('notarealhost', true)).http.checkConnectivity(),
         function (err, res) {
           try {
-            expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+            expect(res && !err, 'Connectivity check completed ' + (err && helper.Utils.inspectError(err))).to.be.ok;
             done();
           } catch (err) {
             done(err);
