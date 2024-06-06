@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   let config = Ably.Realtime.Platform.Config;
   var createPM = Ably.protocolMessageFromDeserialized;
@@ -71,7 +73,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Test publishes in quick succession (on successive ticks of the event loop)
      */
-    helper.testOnAllTransports('publishfast', function (realtimeOpts) {
+    Helper.testOnAllTransports('publishfast', function (realtimeOpts) {
       return function (done) {
         try {
           var realtime = helper.AblyRealtime(realtimeOpts);
@@ -134,7 +136,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Test queuing: publishing a series of messages that start before the lib is connected
      * Also checks they arrive in the right order
      */
-    helper.testOnAllTransports('publishQueued', function (realtimeOpts) {
+    Helper.testOnAllTransports('publishQueued', function (realtimeOpts) {
       return function (done) {
         var txRealtime, rxRealtime;
         try {
@@ -584,7 +586,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }, 500);
     });
 
-    helper.testOnAllTransports('publish', function (realtimeOpts) {
+    Helper.testOnAllTransports('publish', function (realtimeOpts) {
       return function (done) {
         var count = 10;
         var cbCount = 10;

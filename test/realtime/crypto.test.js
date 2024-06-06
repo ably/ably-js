@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
   var Crypto = Ably.Realtime.Platform.Crypto;
@@ -415,13 +417,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /**
      * Publish and subscribe, various transport, 128 and 256-bit
      */
-    helper.testOnAllTransports('single_send_128', function (realtimeOpts) {
+    Helper.testOnAllTransports('single_send_128', function (realtimeOpts) {
       return function (done) {
         single_send(done, realtimeOpts, 128);
       };
     });
 
-    helper.testOnAllTransports('single_send_256', function (realtimeOpts) {
+    Helper.testOnAllTransports('single_send_256', function (realtimeOpts) {
       return function (done) {
         single_send(done, realtimeOpts, 256);
       };

@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai, Ably) {
+define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai, Ably) {
+  const helper = new Helper();
+
   const expect = chai.expect;
   const Defaults = Ably.Rest.Platform.Defaults;
   const originialWsCheckUrl = Defaults.wsConnectivityUrl;

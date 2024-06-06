@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
 
   describe('realtime/init', function () {

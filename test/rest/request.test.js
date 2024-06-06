@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+  const helper = new Helper();
+
   var rest;
   var expect = chai.expect;
   var echoServerHost = 'echo.ably.io';
@@ -20,7 +22,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    helper.restTestOnJsonMsgpack('request_version', function (rest) {
+    Helper.restTestOnJsonMsgpack('request_version', function (rest) {
       const version = 150; // arbitrarily chosen
 
       async function testRequestHandler(_, __, headers) {
@@ -39,7 +41,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       rest.request('get', '/time' /* arbitrarily chosen */, version, null, null, null);
     });
 
-    helper.restTestOnJsonMsgpack('request_time', async function (rest) {
+    Helper.restTestOnJsonMsgpack('request_time', async function (rest) {
       const res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
       expect(res.statusCode).to.equal(200, 'Check statusCode');
       expect(res.success).to.equal(true, 'Check success');
@@ -47,7 +49,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items.length).to.equal(1, 'Check array was of length 1');
     });
 
-    helper.restTestOnJsonMsgpack('request_404', async function (rest) {
+    Helper.restTestOnJsonMsgpack('request_404', async function (rest) {
       /* NB: can't just use /invalid or something as the CORS preflight will
        * fail. Need something superficially a valid path but where the actual
        * request fails */
@@ -79,7 +81,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     /* Use the request feature to publish, then retrieve (one at a time), some messages */
-    helper.restTestOnJsonMsgpack('request_post_get_messages', async function (rest, channelName) {
+    Helper.restTestOnJsonMsgpack('request_post_get_messages', async function (rest, channelName) {
       var channelPath = '/channels/' + channelName + '/messages',
         msgone = { name: 'faye', data: 'whittaker' },
         msgtwo = { name: 'martin', data: 'reed' };
@@ -121,7 +123,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items[0].data).to.equal(msgtwo.data, 'Check data is as expected');
     });
 
-    helper.restTestOnJsonMsgpack('request_batch_api_success', async function (rest, name) {
+    Helper.restTestOnJsonMsgpack('request_batch_api_success', async function (rest, name) {
       var body = { channels: [name + '1', name + '2'], messages: { data: 'foo' } };
 
       const res = await rest.request('POST', '/messages', 2, {}, body, {});
@@ -141,7 +143,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items[1].channel).to.equal(name + '2', 'Verify channel2 response includes correct channel');
     });
 
-    helper.restTestOnJsonMsgpack.skip('request_batch_api_partial_success', async function (rest, name) {
+    Helper.restTestOnJsonMsgpack.skip('request_batch_api_partial_success', async function (rest, name) {
       var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
 
       var res = await rest.request('POST', '/messages', 2, {}, body, {});
