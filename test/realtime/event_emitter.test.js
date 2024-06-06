@@ -2,10 +2,6 @@
 
 define(['shared_helper', 'chai'], function (helper, chai) {
   var expect = chai.expect;
-  var displayError = helper.displayError;
-  var utils = helper.Utils;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
 
   describe('realtime/event_emitter', function () {
     this.timeout(60 * 1000);
@@ -60,13 +56,13 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           });
           channel.attach(function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -89,10 +85,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       try {
         expect(callbackCalled, 'Last callback should have been called').to.be.ok;
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('onceCalledOnlyOnce', function (done) {
@@ -116,11 +112,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         expect(onCallbackCalled).to.equal(3, 'On callback called every time');
         expect(onceCallbackCalled).to.equal(1, 'Once callback called once');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('onceCallbackDoesNotImpactOnCallback', function (done) {
@@ -142,11 +138,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       try {
         expect(callbackCalled).to.equal(4, 'On callback called both times but once callbacks only called once');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('offRemovesAllMatchingListeners', function (done) {
@@ -171,11 +167,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('offRemovesAllListeners', function (done) {
@@ -200,11 +196,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('offRemovesAllMatchingEventListeners', function (done) {
@@ -229,11 +225,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('offRemovesAllMatchingEvents', function (done) {
@@ -258,11 +254,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     /**
@@ -293,11 +289,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.off(callback);
         expect(!('custom' in eventEmitter.events), 'event listener array is removed from object').to.be.ok;
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('arrayOfEvents', function (done) {
@@ -332,11 +328,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.emit('c');
         expect(callbackCalled).to.equal(2, 'callbacks b and c should not have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('arrayOfEventsWithOnce', function (done) {
@@ -357,11 +353,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.emit('c', 'wrong');
         expect(callbackCalled).to.equal(1, 'listener called back only once, for the first event emitted');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     /* check that listeners added in a listener cb are not called during that
@@ -384,11 +380,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         expect(firstCbCalled, 'check first callback called').to.be.ok;
         expect(!secondCbCalled, 'check second callback not called').to.be.ok;
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     /* check that listeners removed in a listener cb are still called in that
@@ -429,11 +425,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         expect(anyCbCalledTimes).to.equal(1, 'check any callback called exactly once');
         expect(anyOnceCbCalledTimes).to.equal(1, 'check anyOnce callback called exactly once');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     describe('event_emitter_promise', function () {
@@ -444,10 +440,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter
           .whenState('connected')
           .then(function () {
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           })
           ['catch'](function (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           });
       });
 
@@ -458,10 +454,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter
           .once('connected')
           .then(function () {
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           })
           ['catch'](function (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           });
       });
 
@@ -472,9 +468,9 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         const p = eventEmitter.once();
         eventEmitter.emit('b');
         p.then(function () {
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         }).catch(function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         });
       });
 
@@ -485,9 +481,9 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         const p = eventEmitter.once(['a', 'b', 'c']);
         eventEmitter.emit('b');
         p.then(function () {
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         }).catch(function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         });
       });
     });

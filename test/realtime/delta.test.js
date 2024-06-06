@@ -2,10 +2,6 @@
 
 define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, vcdiffDecoder, async, chai) {
   var expect = chai.expect;
-  var displayError = helper.displayError;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
-  var whenPromiseSettles = helper.whenPromiseSettles;
   var testData = [
     { foo: 'bar', count: 1, status: 'active' },
     { foo: 'bar', count: 2, status: 'active' },
@@ -51,15 +47,16 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
 
           channel.on('attaching', function (stateChange) {
             done(
               new Error(
-                'Channel reattaching, presumably due to decode failure; reason =' + displayError(stateChange.reason),
+                'Channel reattaching, presumably due to decode failure; reason =' +
+                  helper.displayError(stateChange.reason),
               ),
             );
           });
@@ -71,21 +68,21 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
 
               if (index === testData.length - 1) {
                 expect(testVcdiffDecoder.numberOfCalls).to.equal(testData.length - 1, 'Check number of delta messages');
-                closeAndFinish(done, realtime);
+                helper.closeAndFinish(done, realtime);
               }
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -100,9 +97,9 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName);
 
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
           channel.subscribe(function (message) {
             try {
@@ -111,21 +108,21 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
 
               if (index === testData.length - 1) {
                 expect(testVcdiffDecoder.numberOfCalls).to.equal(0, 'Check number of delta messages');
-                closeAndFinish(done, realtime);
+                helper.closeAndFinish(done, realtime);
               }
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -140,16 +137,16 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
           channel.subscribe(function (message) {
             var index = Number(message.name);
             try {
               expect(equals(testData[index], message.data), 'Check message.data').to.be.ok;
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
 
             if (index === 1) {
@@ -159,14 +156,14 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
                 try {
                   expect(stateChange.reason.code).to.equal(40018, 'Check error code passed through per RTL18c');
                 } catch (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                   return;
                 }
                 channel.on('attaching', function (stateChange) {
-                  closeAndFinish(
+                  helper.closeAndFinish(
                     done,
                     realtime,
-                    new Error('Check no further decode failures; reason =' + displayError(stateChange.reason)),
+                    new Error('Check no further decode failures; reason =' + helper.displayError(stateChange.reason)),
                   );
                 });
               });
@@ -174,21 +171,21 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
               try {
                 expect(testVcdiffDecoder.numberOfCalls).to.equal(testData.length - 2, 'Check number of delta messages');
               } catch (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             }
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -208,15 +205,15 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
           channel.on('attaching', function (stateChange) {
             try {
               expect(stateChange.reason.code).to.equal(40018, 'Check error code passed through per RTL18c');
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           });
           channel.subscribe(function (message) {
@@ -224,22 +221,22 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
             try {
               expect(equals(testData[index], message.data), 'Check message.data').to.be.ok;
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
 
             if (index === testData.length - 1) {
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             }
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -249,27 +246,27 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         var realtime = helper.AblyRealtime();
         var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });
 
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
           channel.once('failed', function (stateChange) {
             try {
               expect(stateChange.reason.code).to.equal(40019, 'Check error code');
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           });
           async.timesSeries(testData.length, function (i, cb) {
-            whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
   });

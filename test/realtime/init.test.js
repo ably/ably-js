@@ -2,9 +2,6 @@
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/init', function () {
     this.timeout(60 * 1000);
@@ -35,14 +32,14 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             try {
               expect(connectUri.indexOf('v=3') > -1, 'Check uri includes v=3').to.be.ok;
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           });
-          monitorConnection(done, realtime);
+          helper.monitorConnection(done, realtime);
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         }
       });
     }
@@ -58,12 +55,12 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           expect(realtime.options.key).to.equal(keyStr);
           expect(realtime.options).to.deep.equal(realtime.connection.connectionManager.options);
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
           return;
         }
-        closeAndFinish(done, realtime);
+        helper.closeAndFinish(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -74,7 +71,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         var rest = helper.AblyRest();
         var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
 
-        whenPromiseSettles(rest.auth.requestToken(null, testKeyOpts), function (err, tokenDetails) {
+        helper.whenPromiseSettles(rest.auth.requestToken(null, testKeyOpts), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
@@ -86,9 +83,9 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           try {
             expect(realtime.options.token).to.equal(tokenStr);
             expect(realtime.options).to.deep.equal(realtime.connection.connectionManager.options);
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
         });
       } catch (err) {
@@ -110,13 +107,13 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           try {
             expect(realtime.auth.tokenDetails.clientId).to.equal(undefined);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -139,13 +136,13 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             expect(realtime.auth.clientId).to.equal('*');
             expect(realtime.auth.tokenDetails.expires - realtime.auth.tokenDetails.issued).to.equal(123456);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -165,13 +162,13 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             expect(realtime.auth.tokenDetails.clientId).to.equal('test');
             expect(realtime.auth.clientId).to.equal('test');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -191,13 +188,13 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             expect(realtime.auth.tokenDetails.clientId).to.equal('yes');
             expect(realtime.auth.clientId).to.equal('yes');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -259,10 +256,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
             'Verify http max retry duration is settable',
           );
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
           return;
         }
-        closeAndFinish(done, realtime);
+        helper.closeAndFinish(done, realtime);
       } catch (err) {
         done(err);
       }
@@ -303,10 +300,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           try {
             expect(stateChange.reason.code).to.equal(80003, 'Expected error code after no fallback host works');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
         realtime.connection.connect();
       } catch (err) {
@@ -322,9 +319,9 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           realtime = helper.AblyRealtime({ transports: helper.availableTransports });
           expect(realtime.connection.connectionManager.baseTransport).to.equal('comet');
           expect(realtime.connection.connectionManager.webSocketTransportAvailable).to.be.ok;
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         }
       });
     }
@@ -347,7 +344,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
               }
               originalOnProtocolMessage.call(transport, message);
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           };
         });
@@ -362,10 +359,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
               'connection key from connectionDetails should be used',
             );
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       } catch (err) {
         done(err);
@@ -386,10 +383,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           expect(hosts[0]).to.equal(realtime.options.realtimeHost, 'Check connected realtime host is the first option');
           expect(hosts.length).to.equal(4, 'Check also have three fallbacks');
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
           return;
         }
-        closeAndFinish(done, realtime);
+        helper.closeAndFinish(done, realtime);
       });
     });
 
@@ -407,10 +404,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         try {
           expect(hosts[0]).to.equal(goodHost, 'Check connected realtime host is the first option');
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
           return;
         }
-        closeAndFinish(done, realtime);
+        helper.closeAndFinish(done, realtime);
       });
     });
   });

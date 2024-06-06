@@ -1,10 +1,8 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
-  var Utils = helper.Utils;
   var exports = {};
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
   var testDevice = {
     id: 'testId',
     clientId: 'testClientId',

@@ -4,9 +4,6 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var expect = chai.expect;
   var clientId = 'testClientId';
   var rest;
-  var mixin = helper.Utils.mixin;
-  var displayError = helper.displayError;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/reauth', function () {
     this.timeout(60 * 1000);
@@ -26,8 +23,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
     function getToken(tokenParams) {
       return function (state, callback) {
-        whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, token) {
-          callback(err, mixin(state, { token: token }));
+        helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, token) {
+          callback(err, helper.Utils.mixin(state, { token: token }));
         });
       };
     }
@@ -44,9 +41,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
     function connectWithToken() {
       return function (state, callback) {
-        var realtime = helper.AblyRealtime(mixin({ token: state.token }, state.realtimeOpts));
+        var realtime = helper.AblyRealtime(helper.Utils.mixin({ token: state.token }, state.realtimeOpts));
         realtime.connection.once('connected', function () {
-          callback(null, mixin(state, { realtime: realtime }));
+          callback(null, helper.Utils.mixin(state, { realtime: realtime }));
         });
       };
     }
@@ -60,7 +57,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           }
         };
         state.realtime.connection.on(listener);
-        callback(null, mixin(state, { connectionMonitor: listener }));
+        callback(null, helper.Utils.mixin(state, { connectionMonitor: listener }));
       };
     }
 
@@ -73,7 +70,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         async.parallel(
           [
             function (cb) {
-              whenPromiseSettles(state.realtime.auth.authorize(null, { token: state.token }), cb);
+              helper.whenPromiseSettles(state.realtime.auth.authorize(null, { token: state.token }), cb);
             },
             function (cb) {
               state.realtime.connection.on('update', function (stateChange) {
@@ -91,7 +88,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function attach(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           callback(err, state);
         });
       };
@@ -147,7 +144,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCantAttach(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err && err.code === 40160) {
             callback(null, state);
           } else {
@@ -160,7 +157,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCanPublish(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        whenPromiseSettles(channel.publish(null, null), function (err) {
+        helper.whenPromiseSettles(channel.publish(null, null), function (err) {
           callback(err, state);
         });
       };
@@ -169,7 +166,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCantPublish(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        whenPromiseSettles(channel.publish(null, null), function (err) {
+        helper.whenPromiseSettles(channel.publish(null, null), function (err) {
           if (err && err.code === 40160) {
             callback(null, state);
           } else {
@@ -188,7 +185,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           });
           async.waterfall(_steps, function (err) {
             try {
-              expect(!err, err && name + ': ' + displayError(err)).to.be.ok;
+              expect(!err, err && name + ': ' + helper.displayError(err)).to.be.ok;
             } catch (err) {
               done(err);
               return;
