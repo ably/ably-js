@@ -2,14 +2,8 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var utils = helper.Utils;
   var noop = function () {};
-  var simulateDroppedConnection = helper.simulateDroppedConnection;
   var createPM = Ably.protocolMessageFromDeserialized;
-  var availableTransports = helper.availableTransports;
-  var testOnAllTransports = helper.testOnAllTransports;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/failure', function () {
     this.timeout(60 * 1000);
@@ -59,13 +53,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           };
         };
         async.parallel(
-          availableTransports
+          helper.availableTransports
             .map(function (transport) {
               return failure_test([transport]);
             })
             .concat(failure_test(null)), // to test not specifying a transport (so will use websocket/base mechanism)
           function (err, realtimes) {
-            closeAndFinish(done, realtimes, err);
+            helper.closeAndFinish(done, realtimes, err);
           },
         );
       } catch (err) {
@@ -94,22 +88,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   realtime,
                 );
               });
-              simulateDroppedConnection(realtime);
+              helper.simulateDroppedConnection(realtime);
             });
           };
         };
         async.parallel(
-          availableTransports
+          helper.availableTransports
             .map(function (transport) {
               return break_test([transport]);
             })
             .concat(break_test(null)), // to test not specifying a transport (so will use websocket/base mechanism)
           function (err, realtimes) {
-            closeAndFinish(done, realtimes, err);
+            helper.closeAndFinish(done, realtimes, err);
           },
         );
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -179,7 +173,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           };
         };
         async.parallel(
-          availableTransports
+          helper.availableTransports
             .map(function (transport) {
               return lifecycleTest([transport]);
             })
@@ -192,7 +186,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         );
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -201,7 +195,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(value).to.be.below(max);
     }
 
-    availableTransports.forEach(function (transport) {
+    helper.availableTransports.forEach(function (transport) {
       /**
        * @spec RTB1a
        * @spec RTB1b
@@ -234,14 +228,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               for (var i = 3; i < retryTimeouts.length; i++) {
                 checkIsBetween(retryTimeouts[i], 240, 300);
               }
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
               return;
             }
             try {
               retryTimeouts.push(stateChange.retryIn);
               retryCount += 1;
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           }
         });
@@ -263,7 +257,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       var tests = [
         function (callback) {
-          whenPromiseSettles(failChan.publish('event', 'data'), function (err) {
+          helper.whenPromiseSettles(failChan.publish('event', 'data'), function (err) {
             try {
               expect(err, 'publish failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'publish failure code');
@@ -274,7 +268,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          whenPromiseSettles(failChan.subscribe('event', noop), function (err) {
+          helper.whenPromiseSettles(failChan.subscribe('event', noop), function (err) {
             try {
               expect(err, 'subscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');
@@ -285,7 +279,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          whenPromiseSettles(failChan.presence.enterClient('clientId'), function (err) {
+          helper.whenPromiseSettles(failChan.presence.enterClient('clientId'), function (err) {
             try {
               expect(err, 'presence enter failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence enter failure code');
@@ -296,7 +290,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          whenPromiseSettles(failChan.presence.leaveClient('clientId'), function (err) {
+          helper.whenPromiseSettles(failChan.presence.leaveClient('clientId'), function (err) {
             try {
               expect(err, 'presence leave failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence leave failure code');
@@ -307,7 +301,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
+          helper.whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
             try {
               expect(err, 'presence subscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');
@@ -318,7 +312,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
+          helper.whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
             try {
               expect(err, 'presence unsubscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');
@@ -329,7 +323,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
         },
         function (callback) {
-          whenPromiseSettles(failChan.presence.get(), function (err) {
+          helper.whenPromiseSettles(failChan.presence.get(), function (err) {
             try {
               expect(err, 'presence get failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence get failure code');
@@ -344,21 +338,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         realtime.connection.once('connected', function () {
           failChan = realtime.channels.get('::');
-          whenPromiseSettles(failChan.attach(), function (err) {
+          helper.whenPromiseSettles(failChan.attach(), function (err) {
             try {
               expect(err, 'channel attach failed').to.be.ok;
               expect(failChan.state).to.equal('failed', 'channel in failed state');
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             async.parallel(tests, function (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             });
           });
         });
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -379,28 +373,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
 
       realtime.connection.once('connected', function () {
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           try {
             expect(err.code).to.equal(90007, 'check channel error code');
             expect(err.statusCode).to.equal(408, 'check timeout statusCode');
             expect(channel.state).to.equal('suspended', 'check channel goes into suspended state');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           channel.once(function (stateChange) {
             try {
               expect(stateChange.current).to.equal('attaching', 'check channel tries to attach again');
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           });
         });
       });
     });
 
-    availableTransports.forEach(function (transport) {
+    helper.availableTransports.forEach(function (transport) {
       /**
        * @spec RTL13b
        * @spec RTB1a
@@ -432,7 +426,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         realtime.connection.on('connected', function () {
           realtime.options.timeouts.realtimeRequestTimeout = 1;
-          whenPromiseSettles(channel.attach(), function (err) {
+          helper.whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
               var lastSuspended = performance.now();
               channel.on(function (stateChange) {
@@ -448,7 +442,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     for (var i = 3; i < retryTimeouts.length; i++) {
                       checkIsBetween(retryTimeouts[i], 240, 300 + 10);
                     }
-                    closeAndFinish(done, realtime);
+                    helper.closeAndFinish(done, realtime);
                     return;
                   }
                   var elapsedSinceSuspneded = performance.now() - lastSuspended;
@@ -457,12 +451,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     retryTimeouts.push(elapsedSinceSuspneded);
                     retryCount += 1;
                   } catch (err) {
-                    closeAndFinish(done, realtime, err);
+                    helper.closeAndFinish(done, realtime, err);
                   }
                 }
               });
             } else {
-              closeAndFinish(done, realtime, new Error('Expected channel attach to timeout'));
+              helper.closeAndFinish(done, realtime, new Error('Expected channel attach to timeout'));
             }
           });
         });
@@ -488,7 +482,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               });
             },
             function (cb) {
-              whenPromiseSettles(channel.attach(), cb);
+              helper.whenPromiseSettles(channel.attach(), cb);
             },
             function (cb) {
               var transport = realtime.connection.connectionManager.activeProtocol.transport,
@@ -500,7 +494,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   originalOnProtocolMessage.apply(this, arguments);
                 }
               };
-              whenPromiseSettles(channel.publish('foo', 'bar'), function (err) {
+              helper.whenPromiseSettles(channel.publish('foo', 'bar'), function (err) {
                 try {
                   expect(err, 'Publish failed as expected').to.be.ok;
                   expect(realtime.connection.state).to.equal(
@@ -519,7 +513,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             },
           ],
           function (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           },
         );
       };
@@ -590,10 +584,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(statechange.reason.code).to.equal(80003, 'check code');
             expect(statechange.reason.statusCode).to.equal(408, 'check statusCode');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -603,7 +597,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       return function (done) {
         /* Use the echoserver as a fallback host because it doesn't support
          * websockets, so it'll fail to connect, which we can detect */
-        var realtime = helper.AblyRealtime(utils.mixin({ fallbackHosts: ['echo.ably.io'] }, realtimeOpts)),
+        var realtime = helper.AblyRealtime(helper.Utils.mixin({ fallbackHosts: ['echo.ably.io'] }, realtimeOpts)),
           connection = realtime.connection,
           connectionManager = connection.connectionManager;
 
@@ -616,10 +610,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   'expect next connection attempt to fail due to using the (bad) fallback host',
                 );
               } catch (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             });
           });
           connectionManager.activeProtocol.getTransport().onProtocolMessage(
@@ -649,7 +643,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         sender_channel.subscribe(function (message) {
           if (messageReceived) {
-            closeAndFinish(done, realtime, new Error('Message received when channel not in ATTACHED state.'));
+            helper.closeAndFinish(done, realtime, new Error('Message received when channel not in ATTACHED state.'));
           }
 
           try {
@@ -668,10 +662,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             sender_channel.publish('1', testMessage2);
 
             setTimeout(function () {
-              closeAndFinish(done, sender_realtime);
+              helper.closeAndFinish(done, sender_realtime);
             }, 7000);
           } catch (err) {
-            closeAndFinish(done, sender_realtime, err);
+            helper.closeAndFinish(done, sender_realtime, err);
           }
         });
 
@@ -679,7 +673,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           sender_channel.publish('0', testMessage);
         });
       } catch (err) {
-        closeAndFinish(done, sender_realtime, err);
+        helper.closeAndFinish(done, sender_realtime, err);
       }
     });
   });

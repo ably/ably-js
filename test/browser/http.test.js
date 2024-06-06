@@ -3,7 +3,6 @@
 define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
   var rest;
   var expect = chai.expect;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('rest/http/fetch', function () {
     this.timeout(60 * 1000);
@@ -36,7 +35,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     /** @nospec */
     it('Should succeed in using fetch to publish a message', function (done) {
       const channel = rest.channels.get('http_test_channel');
-      whenPromiseSettles(channel.publish('test', 'Testing fetch support'), (err) => {
+      helper.whenPromiseSettles(channel.publish('test', 'Testing fetch support'), (err) => {
         expect(err).to.not.exist;
         done();
       });
@@ -50,7 +49,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      */
     it('Should pass errors correctly', function (done) {
       const channel = rest.channels.get('');
-      whenPromiseSettles(channel.publish('test', 'Invalid message'), (err) => {
+      helper.whenPromiseSettles(channel.publish('test', 'Invalid message'), (err) => {
         expect(err).to.exist;
         done();
       });

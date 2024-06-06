@@ -2,8 +2,6 @@
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var randomString = helper.randomString;
 
   describe('rest/batchPublish', function () {
     this.timeout(60 * 1000);
@@ -228,7 +226,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect('error' in batchResult.results[1]).to.be.false;
 
       await new Promise((resolve, reject) => {
-        closeAndFinish((err) => {
+        helper.closeAndFinish((err) => {
           err ? reject(err) : resolve();
         }, presenceEnterRealtime);
       });
@@ -269,8 +267,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         key: testApp.keys[4].keyStr /* this key has revocableTokens enabled */,
       });
 
-      const clientId1 = `clientId1-${randomString()}`;
-      const clientId2 = `clientId2-${randomString()}`;
+      const clientId1 = `clientId1-${helper.randomString()}`;
+      const clientId2 = `clientId2-${helper.randomString()}`;
 
       // First, we fetch tokens for a couple of different clientIds...
       const [clientId1TokenDetails, clientId2TokenDetails] = await Promise.all([
@@ -341,7 +339,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       await Promise.all(
         [clientId1Realtime, clientId2Realtime].map((realtime) => {
           new Promise((resolve, reject) => {
-            closeAndFinish((err) => {
+            helper.closeAndFinish((err) => {
               err ? reject(err) : resolve();
             }, realtime);
           });
@@ -365,7 +363,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         key: testApp.keys[4].keyStr /* this key has revocableTokens enabled */,
       });
 
-      const clientId = `clientId-${randomString()}`;
+      const clientId = `clientId-${helper.randomString()}`;
 
       const serverTimeAtStartOfTest = await rest.time();
       const issuedBefore = serverTimeAtStartOfTest - 20 * 60 * 1000; // i.e. ~20 minutes ago (arbitrarily chosen)

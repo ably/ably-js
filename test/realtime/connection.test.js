@@ -2,13 +2,7 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var closeAndFinishAsync = helper.closeAndFinishAsync;
   var createPM = Ably.protocolMessageFromDeserialized;
-  var displayError = helper.displayError;
-  var monitorConnection = helper.monitorConnection;
-  var monitorConnectionAsync = helper.monitorConnectionAsync;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/connection', function () {
     this.timeout(60 * 1000);
@@ -30,14 +24,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         realtime.connection.on('connected', function () {
           try {
             realtime.connection.ping();
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -47,23 +41,23 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
-          whenPromiseSettles(realtime.connection.ping(), function (err, responseTime) {
+          helper.whenPromiseSettles(realtime.connection.ping(), function (err, responseTime) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             try {
               expect(typeof responseTime).to.equal('number', 'check that a responseTime returned');
               expect(responseTime > 0, 'check that responseTime was +ve').to.be.ok;
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -81,14 +75,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(recoveryContext.connectionKey).to.equal(realtime.connection.key);
             expect(recoveryContext.msgSerial).to.equal(realtime.connection.connectionManager.msgSerial);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
 
           var channel = realtime.channels.get('connectionattributes');
-          whenPromiseSettles(channel.attach(), function (err) {
+          helper.whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             async.parallel(
@@ -104,30 +98,30 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
                 function (cb) {
-                  whenPromiseSettles(channel.publish('name', 'data'), cb);
+                  helper.whenPromiseSettles(channel.publish('name', 'data'), cb);
                 },
               ],
               function (err) {
                 if (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                   return;
                 }
                 realtime.connection.close();
-                whenPromiseSettles(realtime.connection.whenState('closed'), function () {
+                helper.whenPromiseSettles(realtime.connection.whenState('closed'), function () {
                   try {
                     expect(realtime.connection.recoveryKey).to.equal(null, 'verify recovery key null after close');
-                    closeAndFinish(done, realtime);
+                    helper.closeAndFinish(done, realtime);
                   } catch (err) {
-                    closeAndFinish(done, realtime, err);
+                    helper.closeAndFinish(done, realtime, err);
                   }
                 });
               },
             );
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -159,13 +153,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               -1,
               'verify connection using a new connectionkey',
             );
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
         });
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -186,9 +180,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       realtime.connection.once('connected', function () {
         var transport = connectionManager.activeProtocol.transport;
-        whenPromiseSettles(channel.attach(), function (err) {
+        helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
 
@@ -215,7 +209,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 transportSendCallback = cb;
 
                 /* Sabotaged publish */
-                whenPromiseSettles(channel.publish('first', null), function (err) {
+                helper.whenPromiseSettles(channel.publish('first', null), function (err) {
                   if (!publishCallback) {
                     done(new Error('publish completed before publishCallback populated'));
                   }
@@ -283,7 +277,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               },
             ],
             function (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             },
           );
         });
@@ -313,10 +307,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(realtime.auth.clientId).to.equal('foo', 'Check clientId set in auth');
             expect(realtime.options.maxMessageSize).to.equal(98765, 'Check maxMessageSize set');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
         connectionManager.activeProtocol.getTransport().onProtocolMessage(
           createPM({
@@ -332,7 +326,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }),
         );
       });
-      monitorConnection(done, realtime);
+      helper.monitorConnection(done, realtime);
     });
 
     /**
@@ -342,7 +336,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('whenState', async () => {
       const realtime = helper.AblyRealtime({ autoConnect: false });
 
-      await monitorConnectionAsync(async () => {
+      await helper.monitorConnectionAsync(async () => {
         // RTN26a - when already in given state, returns null
         const initializedStateChange = await realtime.connection.whenState('initialized');
         expect(initializedStateChange).to.be.null;
@@ -356,7 +350,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         expect(connectedStateChange.current).to.equal('connected');
       }, realtime);
 
-      await closeAndFinishAsync(realtime);
+      await helper.closeAndFinishAsync(realtime);
     });
   });
 });

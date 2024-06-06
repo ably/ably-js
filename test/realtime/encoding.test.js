@@ -2,13 +2,12 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
-  var loadTestData = helper.loadTestData;
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
-  var displayError = helper.displayError;
-  var encodingFixturesPath = helper.testResourcesPath + 'messages-encoding.json';
-  var closeAndFinish = helper.closeAndFinish;
   var Defaults = Ably.Rest.Platform.Defaults;
-  var whenPromiseSettles = helper.whenPromiseSettles;
+
+  function encodingFixturesPath() {
+    return helper.testResourcesPath + 'messages-encoding.json';
+  }
 
   describe('realtime/encoding', function () {
     this.timeout(60 * 1000);
@@ -30,7 +29,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSL6a1 - publish through REST API, receive via realtime for all transports
      */
     it('message_decoding', function (done) {
-      loadTestData(encodingFixturesPath, function (err, testData) {
+      helper.loadTestData(encodingFixturesPath(), function (err, testData) {
         if (err) {
           done(err);
           return;
@@ -45,15 +44,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              whenPromiseSettles(channel.attach(), attachCb);
+              helper.whenPromiseSettles(channel.attach(), attachCb);
             },
             function (attachCb) {
-              whenPromiseSettles(binarychannel.attach(), attachCb);
+              helper.whenPromiseSettles(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
             if (err) {
-              closeAndFinish(done, [realtime, binaryrealtime], err);
+              helper.closeAndFinish(done, [realtime, binaryrealtime], err);
               return;
             }
             async.eachOf(
@@ -100,7 +99,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       });
                     },
                     function (parallelCb) {
-                      whenPromiseSettles(
+                      helper.whenPromiseSettles(
                         realtime.request(
                           'post',
                           channelPath,
@@ -119,7 +118,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 );
               },
               function (err) {
-                closeAndFinish(done, [realtime, binaryrealtime], err);
+                helper.closeAndFinish(done, [realtime, binaryrealtime], err);
               },
             );
           },
@@ -134,9 +133,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSL6a1 - publish through realtime, receive via rest (history) for all transports
      */
     it('message_encoding', function (done) {
-      loadTestData(encodingFixturesPath, function (err, testData) {
+      helper.loadTestData(encodingFixturesPath(), function (err, testData) {
         if (err) {
-          done(new Error('Unable to get test assets; err = ' + displayError(err)));
+          done(new Error('Unable to get test assets; err = ' + helper.displayError(err)));
           return;
         }
         var realtime = helper.AblyRealtime({ useBinaryProtocol: false }),
@@ -149,15 +148,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              whenPromiseSettles(channel.attach(), attachCb);
+              helper.whenPromiseSettles(channel.attach(), attachCb);
             },
             function (attachCb) {
-              whenPromiseSettles(binarychannel.attach(), attachCb);
+              helper.whenPromiseSettles(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
             if (err) {
-              closeAndFinish(done, [realtime, binaryrealtime], err);
+              helper.closeAndFinish(done, [realtime, binaryrealtime], err);
               return;
             }
             async.eachOf(
@@ -174,10 +173,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 async.parallel(
                   [
                     function (parallelCb) {
-                      whenPromiseSettles(channel.publish(name, data), parallelCb);
+                      helper.whenPromiseSettles(channel.publish(name, data), parallelCb);
                     },
                     function (parallelCb) {
-                      whenPromiseSettles(binarychannel.publish(name, data), parallelCb);
+                      helper.whenPromiseSettles(binarychannel.publish(name, data), parallelCb);
                     },
                   ],
                   function (err) {
@@ -185,7 +184,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       eachOfCb(err);
                       return;
                     }
-                    whenPromiseSettles(
+                    helper.whenPromiseSettles(
                       realtime.request('get', channelPath, 3, null, null, null),
                       function (err, resultPage) {
                         if (err) {
@@ -225,7 +224,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 );
               },
               function (err) {
-                closeAndFinish(done, [realtime, binaryrealtime], err);
+                helper.closeAndFinish(done, [realtime, binaryrealtime], err);
               },
             );
           },

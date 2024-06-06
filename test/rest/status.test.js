@@ -2,9 +2,7 @@
 
 define(['shared_helper', 'chai'], function (helper, chai) {
   var rest;
-  var utils = helper.Utils;
   var expect = chai.expect;
-  var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
 
   describe('rest/status', function () {
     this.timeout(30 * 1000);
@@ -35,7 +33,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
      * @spec CHM2e
      * @spec CHM2f
      */
-    restTestOnJsonMsgpack('status0', async function (rest) {
+    helper.restTestOnJsonMsgpack('status0', async function (rest) {
       var channel = rest.channels.get('status0');
       var channelDetails = await channel.status();
       expect(channelDetails.channelId).to.equal('status0');

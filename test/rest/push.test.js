@@ -8,10 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
   pushChannelTransport,
   PushPlugin,
 ) {
-  var Utils = helper.Utils;
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var whenPromiseSettles = helper.whenPromiseSettles;
   var originalPushConfig = Ably.Realtime.Platform.Config.push;
 
   function PushRealtime(options) {
@@ -402,15 +399,15 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
               expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
               expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
               expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           })
           .then(() => {
-            whenPromiseSettles(realtime.push.admin.publish(pushRecipient, pushPayload), function (err) {
+            helper.whenPromiseSettles(realtime.push.admin.publish(pushRecipient, pushPayload), function (err) {
               if (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
               }
             });
           });

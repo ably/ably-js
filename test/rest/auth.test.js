@@ -4,7 +4,6 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
   var currentTime;
   var rest;
   var expect = chai.expect;
-  var utils = helper.Utils;
   var echoServer = 'https://echo.ably.io';
 
   describe('rest/auth', function () {
@@ -370,8 +369,8 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       it(description, async function () {
         var currentKey = helper.getTestApp().keys[0];
         var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
-        var authParams = utils.mixin(keys, params);
-        var authUrl = echoServer + '/createJWT' + utils.toQueryString(authParams);
+        var authParams = helper.Utils.mixin(keys, params);
+        var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(authParams);
         var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
         var tokenDetails = await restJWTRequester.auth.requestToken();
@@ -400,7 +399,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
      */
     it('JWT request with invalid key', async function () {
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
-      var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
+      var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
       var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
       var tokenDetails = await restJWTRequester.auth.requestToken();
@@ -419,7 +418,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
     it('Rest JWT with authCallback', async function () {
       var currentKey = helper.getTestApp().keys[0];
       var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
-      var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
+      var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
       var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
       var authCallback = function (tokenParams, callback) {
@@ -438,7 +437,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
      */
     it('Rest JWT with authCallback and invalid keys', async function () {
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
-      var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
+      var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
       var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
 
       var authCallback = function (tokenParams, callback) {

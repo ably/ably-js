@@ -2,7 +2,6 @@
 
 define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, helper, chai, PushPlugin) {
   const expect = chai.expect;
-  const whenPromiseSettles = helper.whenPromiseSettles;
   const swUrl = '/push_sw.js';
   let rest;
 
