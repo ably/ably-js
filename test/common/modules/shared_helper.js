@@ -16,12 +16,12 @@ define([
   var BufferUtils = platform.BufferUtils;
   var expect = chai.expect;
   var availableTransports = utils.keysArray(
-      clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
-    ),
-    bestTransport = availableTransports[0],
-    /* IANA reserved; requests to it will hang forever */
-    unroutableHost = '10.255.255.1',
-    unroutableAddress = 'http://' + unroutableHost + '/';
+    clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
+  );
+  var bestTransport = availableTransports[0];
+  /* IANA reserved; requests to it will hang forever */
+  var unroutableHost = '10.255.255.1';
+  var unroutableAddress = 'http://' + unroutableHost + '/';
 
   function displayError(err) {
     if (typeof err == 'string' || err == null) return err;
