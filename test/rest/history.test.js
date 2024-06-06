@@ -4,8 +4,6 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var rest;
   var expect = chai.expect;
   var exports = {};
-  var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
-  var utils = helper.Utils;
   var testMessages = [
     { name: 'event0', data: 'some data' },
     { name: 'event1', data: 'some more data' },
@@ -27,7 +25,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     });
 
-    restTestOnJsonMsgpack('history_simple', async function (rest, channelName) {
+    helper.restTestOnJsonMsgpack('history_simple', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -47,13 +45,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       messages.forEach(function (msg) {
         ids[msg.id] = msg;
       });
-      expect(utils.keysArray(ids).length).to.equal(
+      expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
       );
     });
 
-    restTestOnJsonMsgpack('history_multiple', async function (rest, channelName) {
+    helper.restTestOnJsonMsgpack('history_multiple', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -70,13 +68,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       messages.forEach(function (msg) {
         ids[msg.id] = msg;
       });
-      expect(utils.keysArray(ids).length).to.equal(
+      expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
       );
     });
 
-    restTestOnJsonMsgpack('history_simple_paginated_b', async function (rest, channelName) {
+    helper.restTestOnJsonMsgpack('history_simple_paginated_b', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -108,7 +106,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         }
       }
       /* verify message ids are unique */
-      expect(utils.keysArray(ids).length).to.equal(
+      expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
       );
@@ -147,7 +145,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       }
 
       /* verify message ids are unique */
-      expect(utils.keysArray(ids).length).to.equal(
+      expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
       );
@@ -219,13 +217,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       }
 
       /* verify message ids are unique */
-      expect(utils.keysArray(ids).length).to.equal(
+      expect(helper.Utils.keysArray(ids).length).to.equal(
         testMessages.length,
         'Verify correct number of distinct message ids found',
       );
     });
 
-    restTestOnJsonMsgpack('history_encoding_errors', async function (rest, channelName) {
+    helper.restTestOnJsonMsgpack('history_encoding_errors', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
       var badMessage = { name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{"foo":"bar"}' };
       testchannel.publish(badMessage);
@@ -237,7 +235,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       expect(message.encoding).to.equal(badMessage.encoding, 'Verify encoding preserved');
     });
 
-    restTestOnJsonMsgpack('history_no_next_page', async function (rest, channelName) {
+    helper.restTestOnJsonMsgpack('history_no_next_page', async function (rest, channelName) {
       const channel = rest.channels.get(channelName);
 
       const firstPage = await channel.history();

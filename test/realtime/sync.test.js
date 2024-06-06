@@ -2,12 +2,7 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
   var expect = chai.expect;
-  var displayError = helper.displayError;
-  var utils = helper.Utils;
-  var closeAndFinish = helper.closeAndFinish;
   var createPM = Ably.protocolMessageFromDeserialized;
-  var monitorConnection = helper.monitorConnection;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/sync', function () {
     this.timeout(60 * 1000);
@@ -93,7 +88,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
             },
             function (cb) {
-              whenPromiseSettles(channel.presence.get(), function (err, results) {
+              helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
                 try {
                   expect(results.length).to.equal(2, 'Check correct number of results');
                   expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
@@ -136,7 +131,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
             },
             function (cb) {
-              whenPromiseSettles(channel.presence.get(), function (err, results) {
+              helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
                 try {
                   expect(results.length).to.equal(2, 'Check correct number of results');
                   expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
@@ -153,7 +148,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             },
           ],
           function (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           },
         );
       });
@@ -241,9 +236,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        whenPromiseSettles(channel.presence.get(), function (err, results) {
+        helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           try {
@@ -254,10 +249,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               'check expected presence members',
             );
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -327,9 +322,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        whenPromiseSettles(channel.presence.get(), function (err, results) {
+        helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           try {
@@ -337,10 +332,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
             expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -410,9 +405,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        whenPromiseSettles(channel.presence.get(), function (err, results) {
+        helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           try {
@@ -420,10 +415,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
             expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -562,9 +557,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var done = function (err) {
           err ? reject(err) : resolve();
         };
-        whenPromiseSettles(channel.presence.get(), function (err, results) {
+        helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           try {
@@ -574,10 +569,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(extractMember(results, 'one').data).to.equal('onedata', 'check correct data on one');
             expect(extractMember(results, 'two').data).to.equal('twodata', 'check correct data on two');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -614,13 +609,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         [
           waitForBothConnect,
           function (cb) {
-            whenPromiseSettles(entererChannel.attach(), cb);
+            helper.whenPromiseSettles(entererChannel.attach(), cb);
           },
           function (cb) {
             async.times(
               110,
               function (i, presCb) {
-                whenPromiseSettles(entererChannel.presence.enterClient(i.toString(), null), presCb);
+                helper.whenPromiseSettles(entererChannel.presence.enterClient(i.toString(), null), presCb);
               },
               cb,
             );
@@ -646,10 +641,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               }
             };
-            whenPromiseSettles(syncerChannel.attach(), cb);
+            helper.whenPromiseSettles(syncerChannel.attach(), cb);
           },
           function (cb) {
-            whenPromiseSettles(syncerChannel.presence.get(), function (err, presenceSet) {
+            helper.whenPromiseSettles(syncerChannel.presence.get(), function (err, presenceSet) {
               try {
                 expect(presenceSet && presenceSet.length).to.equal(111, 'Check everyone’s in presence set');
               } catch (err) {
@@ -661,7 +656,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, [enterer, syncer], err);
+          helper.closeAndFinish(done, [enterer, syncer], err);
         },
       );
     });

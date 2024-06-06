@@ -2,9 +2,6 @@
 
 define(['shared_helper', 'chai'], function (helper, chai) {
   var { expect, assert } = chai;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
-  var simulateDroppedConnection = helper.simulateDroppedConnection;
   var transportPreferenceName = 'ably-transport-preference';
 
   function supportedBrowser() {
@@ -47,7 +44,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           connection = realtime.connection,
           offlineEvent = new Event('offline', { bubbles: true });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
 
         connection.once('connected', function () {
           var connectedAt = new Date().getTime();
@@ -59,7 +56,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
                 'Offline event caused connection to move to the disconnected state',
               ).to.be.ok;
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             connection.once('connecting', function () {
@@ -70,11 +67,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
                   'Client automatically reattempts connection without waiting for disconnect timeout, even if the state is still offline',
                 ).to.be.ok;
               } catch (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
               connection.once('connected', function () {
-                closeAndFinish(done, realtime);
+                helper.closeAndFinish(done, realtime);
               });
             });
           });
@@ -90,7 +87,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           connection = realtime.connection,
           onlineEvent = new Event('online', { bubbles: true });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
 
         // simulate the internet being failed by stubbing out tryATransport to foil
         // the initial connection. (No immediate reconnect attempt since it was never
@@ -106,7 +103,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               'Connection should still be disconnected before we trigger it to connect',
             ).to.be.ok;
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           connection.once('connecting', function () {
@@ -116,11 +113,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
                 'Online event should have caused the connection to enter the connecting state without waiting for disconnect timeout',
               ).to.be.ok;
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             connection.once('connected', function () {
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             });
           });
           // restore the 'internet' and simulate an online event
@@ -143,7 +140,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         connection.connectionManager.tryATransport = function () {};
 
         connection.on('failed', function () {
-          closeAndFinish(done, realtime, new Error('connection to server failed'));
+          helper.closeAndFinish(done, realtime, new Error('connection to server failed'));
         });
 
         connection.once('suspended', function () {
@@ -154,7 +151,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               'Connection should still be suspended before we trigger it to connect',
             ).to.be.ok;
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           connection.once('connecting', function () {
@@ -164,10 +161,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
                 'Online event should have caused the connection to enter the connecting state without waiting for suspended timeout',
               ).to.be.ok;
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           });
           // simulate online event
           document.dispatchEvent(onlineEvent);
@@ -181,7 +178,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           oldTransport,
           newTransport;
 
-        monitorConnection(done, realtime, ['failed', 'disconnected', 'suspended']);
+        helper.monitorConnection(done, realtime, ['failed', 'disconnected', 'suspended']);
 
         /* Sabotage the connection attempt by emitting onlineEvent when transport is pending */
         connection.connectionManager.once('transport.pending', function (transport) {
@@ -199,7 +196,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           expect(newTransport.isDisposed).to.not.be.ok;
           expect(oldTransport).to.not.equal(newTransport);
           expect(realtime.connection.connectionManager.activeProtocol.transport).to.equal(newTransport);
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
 
@@ -218,7 +215,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           realtime = helper.AblyRealtime(realtimeOpts),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
           var connectionKey = realtime.connection.key;
@@ -228,9 +225,9 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               'connected',
               'check connection state initially unaffected by page refresh',
             );
-            simulateDroppedConnection(realtime);
+            helper.simulateDroppedConnection(realtime);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
 
@@ -242,10 +239,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
                 'Check new realtime recovered the connection from the cookie',
               ).to.be.ok;
             } catch (err) {
-              closeAndFinish(done, [realtime, newRealtime], err);
+              helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
             }
-            closeAndFinish(done, [realtime, newRealtime]);
+            helper.closeAndFinish(done, [realtime, newRealtime]);
           });
         });
       });
@@ -259,7 +256,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         var realtime = helper.AblyRealtime(realtimeOpts),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
           var connectionKey = realtime.connection.key;
@@ -269,9 +266,9 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               'connected',
               'check connection state initially unaffected by page refresh',
             );
-            simulateDroppedConnection(realtime);
+            helper.simulateDroppedConnection(realtime);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
 
@@ -283,12 +280,12 @@ define(['shared_helper', 'chai'], function (helper, chai) {
                 'Check new realtime created a new connection',
               ).to.be.ok;
             } catch (err) {
-              closeAndFinish(done, [realtime, newRealtime], err);
+              helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
             }
-            closeAndFinish(done, [realtime, newRealtime]);
+            helper.closeAndFinish(done, [realtime, newRealtime]);
           });
-          monitorConnection(done, newRealtime);
+          helper.monitorConnection(done, newRealtime);
         });
       });
 
@@ -296,7 +293,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         var realtime = helper.AblyRealtime({ closeOnUnload: true }),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
           try {
@@ -316,7 +313,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         var realtime = helper.AblyRealtime({ closeOnUnload: false }),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
           var connectionKey = realtime.connection.key,
@@ -328,9 +325,9 @@ define(['shared_helper', 'chai'], function (helper, chai) {
               'connected',
               'check connection state initially unaffected by page refresh',
             );
-            simulateDroppedConnection(realtime);
+            helper.simulateDroppedConnection(realtime);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
 
@@ -342,10 +339,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
                 'Check new realtime recovered the old',
               ).to.be.ok;
             } catch (err) {
-              closeAndFinish(done, [realtime, newRealtime], err);
+              helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
             }
-            closeAndFinish(done, [realtime, newRealtime]);
+            helper.closeAndFinish(done, [realtime, newRealtime]);
           });
         });
       });
@@ -364,8 +361,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
         document.dispatchEvent(refreshEvent);
 
-        simulateDroppedConnection(realtime1);
-        simulateDroppedConnection(realtime2);
+        helper.simulateDroppedConnection(realtime1);
+        helper.simulateDroppedConnection(realtime2);
 
         await new Promise((res) => setTimeout(res, 1000));
 
@@ -390,13 +387,13 @@ define(['shared_helper', 'chai'], function (helper, chai) {
                 JSON.stringify({ value: 'web_socket' }),
               );
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           }
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       });
 
       it('browser_transports', function (done) {
@@ -405,10 +402,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           expect(realtime.connection.connectionManager.baseTransport).to.equal('xhr_polling');
           expect(realtime.connection.connectionManager.webSocketTransportAvailable).to.be.ok;
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
           return;
         }
-        closeAndFinish(done, realtime);
+        helper.closeAndFinish(done, realtime);
       });
     });
   }
