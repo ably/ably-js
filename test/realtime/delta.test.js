@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, vcdiffDecoder, async, chai) {
+define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, vcdiffDecoder, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var testData = [
     { foo: 'bar', count: 1, status: 'active' },

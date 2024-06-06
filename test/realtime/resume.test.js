@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
 
   describe('realtime/resume', function () {
@@ -133,7 +135,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     }
 
-    helper.testOnAllTransports('resume_inactive', function (realtimeOpts) {
+    Helper.testOnAllTransports('resume_inactive', function (realtimeOpts) {
       return function (done) {
         resume_inactive(done, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
       };
@@ -253,7 +255,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     }
 
-    helper.testOnAllTransports('resume_active', function (realtimeOpts) {
+    Helper.testOnAllTransports('resume_active', function (realtimeOpts) {
       return function (done) {
         resume_active(done, 'resume_active' + String(Math.random()), {}, realtimeOpts);
       };
@@ -262,7 +264,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     /* RTN15c3
      * Resume with loss of continuity
      */
-    helper.testOnAllTransports(
+    Helper.testOnAllTransports(
       'resume_lost_continuity',
       function (realtimeOpts) {
         return function (done) {
@@ -328,7 +330,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     /* RTN15c5
      * Resume with token error
      */
-    helper.testOnAllTransports(
+    Helper.testOnAllTransports(
       'resume_token_error',
       function (realtimeOpts) {
         return function (done) {
@@ -381,7 +383,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     /* RTN15c4
      * Resume with fatal error
      */
-    helper.testOnAllTransports(
+    Helper.testOnAllTransports(
       'resume_fatal_error',
       function (realtimeOpts) {
         return function (done) {

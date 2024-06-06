@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var noop = function () {};
   var createPM = Ably.protocolMessageFromDeserialized;
@@ -557,7 +559,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* RTN14d last sentence: Check that if we received a 5xx disconnected, when
      * we try again we use a fallback host */
-    helper.testOnAllTransports('try_fallback_hosts_on_placement_constraint', function (realtimeOpts) {
+    Helper.testOnAllTransports('try_fallback_hosts_on_placement_constraint', function (realtimeOpts) {
       return function (done) {
         /* Use the echoserver as a fallback host because it doesn't support
          * websockets, so it'll fail to connect, which we can detect */

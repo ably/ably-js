@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var clientId = 'testClientId';
   var rest;
@@ -177,7 +179,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     }
 
     function testCase(name, steps) {
-      helper.testOnAllTransports(name, function (realtimeOpts) {
+      Helper.testOnAllTransports(name, function (realtimeOpts) {
         return function (done) {
           var _steps = steps.slice();
           _steps.unshift(function (cb) {

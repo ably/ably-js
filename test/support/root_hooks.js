@@ -1,4 +1,6 @@
-define(['shared_helper'], function (helper) {
+define(['shared_helper'], function (Helper) {
+  const helper = new Helper();
+
   after(function (done) {
     this.timeout(10 * 1000);
     helper.tearDownApp(function (err) {
@@ -10,8 +12,16 @@ define(['shared_helper'], function (helper) {
     });
   });
 
-  afterEach(helper.closeActiveClients);
-  afterEach(helper.logTestResults);
-  afterEach(helper.flushTestLogs);
-  beforeEach(helper.clearTransportPreference);
+  afterEach(function () {
+    helper.closeActiveClients();
+  });
+  afterEach(function () {
+    helper.logTestResults(this);
+  });
+  afterEach(function () {
+    helper.flushTestLogs();
+  });
+  beforeEach(function () {
+    helper.clearTransportPreference();
+  });
 });
