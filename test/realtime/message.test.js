@@ -1,13 +1,15 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   let config = Ably.Realtime.Platform.Config;
   var createPM = Ably.protocolMessageFromDeserialized;
 
   var publishIntervalHelper = function (currentMessageNum, channel, dataFn, onPublish) {
     return function () {
-      helper.whenPromiseSettles(channel.publish('event0', dataFn()), function () {
+      Helper.whenPromiseSettles(channel.publish('event0', dataFn()), function () {
         onPublish();
       });
     };
@@ -40,7 +42,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         realtime.connection.on('connected', function () {
           var testMsg = 'Hello world';
           var rtChannel = realtime.channels.get('publishonce');
-          helper.whenPromiseSettles(rtChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -71,13 +73,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Test publishes in quick succession (on successive ticks of the event loop)
      */
-    helper.testOnAllTransports('publishfast', function (realtimeOpts) {
+    Helper.testOnAllTransports('publishfast', function (realtimeOpts) {
       return function (done) {
         try {
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             var channel = realtime.channels.get('publishfast_' + String(Math.random()).substr(2));
-            helper.whenPromiseSettles(channel.attach(), function (err) {
+            Helper.whenPromiseSettles(channel.attach(), function (err) {
               if (err) {
                 helper.closeAndFinish(done, realtime, err);
                 return;
@@ -95,7 +97,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (cb) {
                     var ackd = 0;
                     var publish = function (i) {
-                      helper.whenPromiseSettles(channel.publish('event', i.toString()), function (err) {
+                      Helper.whenPromiseSettles(channel.publish('event', i.toString()), function (err) {
                         try {
                           expect(
                             !err,
@@ -134,7 +136,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Test queuing: publishing a series of messages that start before the lib is connected
      * Also checks they arrive in the right order
      */
-    helper.testOnAllTransports('publishQueued', function (realtimeOpts) {
+    Helper.testOnAllTransports('publishQueued', function (realtimeOpts) {
       return function (done) {
         var txRealtime, rxRealtime;
         try {
@@ -151,7 +153,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               },
               function (cb) {
-                helper.whenPromiseSettles(rxChannel.attach(), function (err) {
+                Helper.whenPromiseSettles(rxChannel.attach(), function (err) {
                   cb(err);
                 });
               },
@@ -175,7 +177,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     function (parCb) {
                       var ackd = 0;
                       var publish = function (i) {
-                        helper.whenPromiseSettles(txChannel.publish('event', { num: i }), function (err) {
+                        Helper.whenPromiseSettles(txChannel.publish('event', { num: i }), function (err) {
                           try {
                             expect(
                               !err,
@@ -254,7 +256,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
 
       // attach rtNoEchoChannel
-      helper.whenPromiseSettles(rtNoEchoChannel.attach(), function (err) {
+      Helper.whenPromiseSettles(rtNoEchoChannel.attach(), function (err) {
         try {
           expect(!err, 'Attached to rtNoEchoChannel with no error').to.be.ok;
         } catch (err) {
@@ -270,7 +272,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         });
 
         // attach rtEchoChannel
-        helper.whenPromiseSettles(rtEchoChannel.attach(), function (err) {
+        Helper.whenPromiseSettles(rtEchoChannel.attach(), function (err) {
           try {
             expect(!err, 'Attached to rtEchoChannel with no error').to.be.ok;
           } catch (err) {
@@ -286,7 +288,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
 
           // publish testMsg1 via rtNoEcho
-          helper.whenPromiseSettles(rtNoEchoChannel.publish('event0', testMsg1), function () {
+          Helper.whenPromiseSettles(rtNoEchoChannel.publish('event0', testMsg1), function () {
             // publish testMsg2 via rtEcho
             rtEchoChannel.publish('event0', testMsg2);
           });
@@ -323,7 +325,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         /* connect and attach */
         realtime.connection.on('connected', function () {
           var rtChannel = realtime.channels.get('publishVariations');
-          helper.whenPromiseSettles(rtChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -393,7 +395,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             async.eachSeries(
               testArguments,
               function iterator(args, callback) {
-                helper.whenPromiseSettles(restChannel.publish.apply(restChannel, args), callback);
+                Helper.whenPromiseSettles(restChannel.publish.apply(restChannel, args), callback);
               },
               function (err) {
                 if (err) {
@@ -428,7 +430,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         /* connect and attach */
         realtime.connection.on('connected', function () {
           var rtChannel = realtime.channels.get('publishDisallowed');
-          helper.whenPromiseSettles(rtChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -482,7 +484,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         /* connect and attach */
         realtime.connection.on('connected', function () {
           var rtChannel = realtime.channels.get('publishEncodings');
-          helper.whenPromiseSettles(rtChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -529,7 +531,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 testArguments,
                 function iterator(item, callback) {
                   try {
-                    helper.whenPromiseSettles(restChannel.publish(item), function (err) {
+                    Helper.whenPromiseSettles(restChannel.publish(item), function (err) {
                       try {
                         expect(!err, 'Successfully published').to.be.ok;
                       } catch (err) {
@@ -584,7 +586,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }, 500);
     });
 
-    helper.testOnAllTransports('publish', function (realtimeOpts) {
+    Helper.testOnAllTransports('publish', function (realtimeOpts) {
       return function (done) {
         var count = 10;
         var cbCount = 10;
@@ -600,7 +602,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var realtime = helper.AblyRealtime(realtimeOpts);
         var channel = realtime.channels.get('publish ' + JSON.stringify(realtimeOpts));
         /* subscribe to event */
-        helper.whenPromiseSettles(
+        Helper.whenPromiseSettles(
           channel.subscribe('event0', function () {
             --count;
             checkFinish();
@@ -678,7 +680,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         var channel = realtime.channels.get('explicit_client_id_0');
         /* subscribe to event */
-        helper.whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             try {
               expect(!err, err && helper.displayError(err)).to.be.ok;
@@ -702,7 +704,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               },
               function (cb) {
-                helper.whenPromiseSettles(channel.publish({ name: 'event0', clientId: clientId }), function (err) {
+                Helper.whenPromiseSettles(channel.publish({ name: 'event0', clientId: clientId }), function (err) {
                   cb(err);
                 });
               },
@@ -722,7 +724,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         invalidClientId = 'invalid',
         rest = helper.AblyRest();
 
-      helper.whenPromiseSettles(rest.auth.requestToken({ clientId: clientId }), function (err, token) {
+      Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: clientId }), function (err, token) {
         if (err) {
           done(err);
           return;
@@ -739,7 +741,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           channel = realtime.channels.get('explicit_client_id_1');
 
         // Publish before authentication to ensure the client library does not reject the message as the clientId is not known
-        helper.whenPromiseSettles(channel.publish({ name: 'event0', clientId: invalidClientId }), function (err) {
+        Helper.whenPromiseSettles(channel.publish({ name: 'event0', clientId: invalidClientId }), function (err) {
           try {
             expect(err, 'Message was not published').to.be.ok;
           } catch (err) {
@@ -786,7 +788,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            helper.whenPromiseSettles(channel.attach(), function (err) {
+            Helper.whenPromiseSettles(channel.attach(), function (err) {
               cb(err);
             });
           },
@@ -812,7 +814,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
                 function (innercb) {
-                  helper.whenPromiseSettles(
+                  Helper.whenPromiseSettles(
                     channel.publish([{ name: 'a' }, { name: 'b' }, { name: 'c' }, { name: 'd' }]),
                     function (err) {
                       innercb(err);
@@ -835,7 +837,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       const channel = realtime.channels.get('subscribe_with_filter_object');
 
       function send(cb) {
-        helper.whenPromiseSettles(
+        Helper.whenPromiseSettles(
           channel.publish([
             {
               name: 'correct',
@@ -898,7 +900,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            return helper.whenPromiseSettles(channel.attach(), cb);
+            return Helper.whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             return async.parallel([subscribe, send], cb);
@@ -915,7 +917,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       const channel = realtime.channels.get('unsubscribe_with_filter_object');
 
       function send(cb) {
-        helper.whenPromiseSettles(
+        Helper.whenPromiseSettles(
           channel.publish([
             {
               name: 'incorrect',
@@ -957,7 +959,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            return helper.whenPromiseSettles(channel.attach(), cb);
+            return Helper.whenPromiseSettles(channel.attach(), cb);
           },
           unsubscribe,
           send,
@@ -981,7 +983,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            helper.whenPromiseSettles(channel.attach(), cb);
+            Helper.whenPromiseSettles(channel.attach(), cb);
           },
           function (outercb) {
             async.parallel(
@@ -999,7 +1001,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
                 function (innercb) {
-                  helper.whenPromiseSettles(channel.publish([{ name: 'a', extras: extras }]), innercb);
+                  Helper.whenPromiseSettles(channel.publish([{ name: 'a', extras: extras }]), innercb);
                 },
               ],
               outercb,
@@ -1020,7 +1022,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       realtime.connection.once('connected', function () {
         connectionManager.once('connectiondetails', function (details) {
-          helper.whenPromiseSettles(
+          Helper.whenPromiseSettles(
             channel.publish('foo', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
             function (err) {
               try {
@@ -1113,7 +1115,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('idempotentRealtimePublishing');
 
-      helper.whenPromiseSettles(channel.attach(), function (err) {
+      Helper.whenPromiseSettles(channel.attach(), function (err) {
         if (err) {
           helper.closeAndFinish(done, realtime, err);
           return;
@@ -1208,7 +1210,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var filteredMessages = [];
           var unFilteredMessages = [];
           /* subscribe to event */
-          helper.whenPromiseSettles(rtFilteredChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtFilteredChannel.attach(), function (err) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -1223,7 +1225,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               }
             });
 
-            helper.whenPromiseSettles(rtUnfilteredChannel.attach(), function (err) {
+            Helper.whenPromiseSettles(rtUnfilteredChannel.attach(), function (err) {
               if (err) {
                 helper.closeAndFinish(done, realtime, err);
                 return;

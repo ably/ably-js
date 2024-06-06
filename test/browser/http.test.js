@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
+  const helper = new Helper();
+
   var rest;
   var expect = chai.expect;
 
@@ -33,7 +35,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     it('Should succeed in using fetch to publish a message', function (done) {
       const channel = rest.channels.get('http_test_channel');
-      helper.whenPromiseSettles(channel.publish('test', 'Testing fetch support'), (err) => {
+      Helper.whenPromiseSettles(channel.publish('test', 'Testing fetch support'), (err) => {
         expect(err).to.not.exist;
         done();
       });
@@ -41,7 +43,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     it('Should pass errors correctly', function (done) {
       const channel = rest.channels.get('');
-      helper.whenPromiseSettles(channel.publish('test', 'Invalid message'), (err) => {
+      Helper.whenPromiseSettles(channel.publish('test', 'Invalid message'), (err) => {
         expect(err).to.exist;
         done();
       });

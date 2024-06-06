@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+  const helper = new Helper();
+
   var currentTime;
   var exampleTokenDetails;
   var exports = {};
@@ -15,7 +17,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
    */
   function getJWT(params, callback) {
     var authUrl = echoServer + '/createJWT';
-    helper.whenPromiseSettles(http.doUri('get', authUrl, null, null, params), function (err, result) {
+    Helper.whenPromiseSettles(http.doUri('get', authUrl, null, null, params), function (err, result) {
       if (result.error) {
         callback(result.error, null);
       }
@@ -34,13 +36,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }
 
         var rest = helper.AblyRest({ queryTime: true });
-        helper.whenPromiseSettles(rest.time(), function (err, time) {
+        Helper.whenPromiseSettles(rest.time(), function (err, time) {
           if (err) {
             done(err);
             return;
           } else {
             currentTime = time;
-            helper.whenPromiseSettles(rest.auth.requestToken({}), function (err, tokenDetails) {
+            Helper.whenPromiseSettles(rest.auth.requestToken({}), function (err, tokenDetails) {
               try {
                 expect(!err, err && helper.displayError(err)).to.be.ok;
                 done();
@@ -58,7 +60,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('authbase0', function (done) {
       var realtime = helper.AblyRealtime({ queryTime: true });
-      helper.whenPromiseSettles(realtime.auth.requestToken(), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(realtime.auth.requestToken(), function (err, tokenDetails) {
         if (err) {
           helper.closeAndFinish(done, realtime, err);
           return;
@@ -82,7 +84,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('auth_useAuthUrl_json', function (done) {
       var realtime,
         rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
         if (err) {
           helper.closeAndFinish(done, realtime, err);
           return;
@@ -107,7 +109,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('auth_useAuthUrl_post_json', function (done) {
       var realtime,
         rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
         if (err) {
           helper.closeAndFinish(done, realtime, err);
           return;
@@ -132,7 +134,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('auth_useAuthUrl_plainText', function (done) {
       var realtime,
         rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
         if (err) {
           helper.closeAndFinish(done, realtime, err);
           return;
@@ -158,7 +160,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime,
         rest = helper.AblyRest();
       var authCallback = function (tokenParams, callback) {
-        helper.whenPromiseSettles(rest.auth.createTokenRequest(tokenParams, null), function (err, tokenRequest) {
+        Helper.whenPromiseSettles(rest.auth.createTokenRequest(tokenParams, null), function (err, tokenRequest) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
             return;
@@ -196,7 +198,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         rest = helper.AblyRest();
       var clientId = 'test clientid';
       var authCallback = function (tokenParams, callback) {
-        helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
+        Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
             return;
@@ -232,7 +234,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime,
         rest = helper.AblyRest();
       var authCallback = function (tokenParams, callback) {
-        helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
+        Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
             return;
@@ -269,7 +271,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('auth_useAuthUrl_mixed_authParams_qsParams', function (done) {
       var realtime,
         rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.createTokenRequest(null, null), function (err, tokenRequest) {
+      Helper.whenPromiseSettles(rest.auth.createTokenRequest(null, null), function (err, tokenRequest) {
         if (err) {
           helper.closeAndFinish(done, realtime, err);
           return;
@@ -306,7 +308,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var rest = helper.AblyRest(),
         testClientId = 'testClientId';
       var authCallback = function (tokenParams, callback) {
-        helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
+        Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
@@ -344,7 +346,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var clientRealtime,
         testClientId = 'test client id';
       var rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
         if (err) {
           done(err);
           return;
@@ -370,7 +372,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime,
         testClientId = 'test client id';
       var rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken({ clientId: '*' }), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: '*' }), function (err, tokenDetails) {
         if (err) {
           done(err);
           return;
@@ -398,7 +400,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime,
         testClientId = 'test client id';
       var rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken({ clientId: '*' }), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: '*' }), function (err, tokenDetails) {
         if (err) {
           done(err);
           return;
@@ -426,7 +428,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var clientRealtime,
         testClientId = 'test client id';
       var rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
         if (err) {
           done(err);
           return;
@@ -601,7 +603,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('authUrl_403_previously_active', function (done) {
       var realtime,
         rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
+      Helper.whenPromiseSettles(rest.auth.requestToken(null, null), function (err, tokenDetails) {
         if (err) {
           helper.closeAndFinish(done, realtime, err);
           return;
@@ -613,7 +615,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
         realtime.connection.on('connected', function () {
           /* replace the authUrl and reauth */
-          helper.whenPromiseSettles(
+          Helper.whenPromiseSettles(
             realtime.auth.authorize(null, { authUrl: echoServer + '/respondwith?status=403' }),
             function (err, tokenDetails) {
               try {
@@ -639,12 +641,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Check state change reason is propogated during a disconnect
      * (when connecting with a token that expires while connected)
      */
-    helper.testOnAllTransports('auth_token_expires', function (realtimeOpts) {
+    Helper.testOnAllTransports('auth_token_expires', function (realtimeOpts) {
       return function (done) {
         var clientRealtime,
           rest = helper.AblyRest();
 
-        helper.whenPromiseSettles(rest.auth.requestToken({ ttl: 5000 }, null), function (err, tokenDetails) {
+        Helper.whenPromiseSettles(rest.auth.requestToken({ ttl: 5000 }, null), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
@@ -701,7 +703,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var asyncFns = [];
       for (var i = 0; i < 10; i++) {
         asyncFns.push(function (callback) {
-          helper.whenPromiseSettles(rest.auth.createTokenRequest({}, null), function (err, tokenDetails) {
+          Helper.whenPromiseSettles(rest.auth.createTokenRequest({}, null), function (err, tokenDetails) {
             if (err) {
               return callback(err);
             }
@@ -733,14 +735,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * If using authcallback when a token expires, should automatically request a
      * new token
      */
-    helper.testOnAllTransports('auth_tokenDetails_expiry_with_authcallback', function (realtimeOpts) {
+    Helper.testOnAllTransports('auth_tokenDetails_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
         var realtime,
           rest = helper.AblyRest();
         var clientId = 'test clientid';
         var authCallback = function (tokenParams, callback) {
           tokenParams.ttl = 5000;
-          helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
+          Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -776,14 +778,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Same as previous but with just a token, so ably-js doesn't know that the
      * token's expired
      */
-    helper.testOnAllTransports('auth_token_string_expiry_with_authcallback', function (realtimeOpts) {
+    Helper.testOnAllTransports('auth_token_string_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
         var realtime,
           rest = helper.AblyRest();
         var clientId = 'test clientid';
         var authCallback = function (tokenParams, callback) {
           tokenParams.ttl = 5000;
-          helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
+          Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -818,12 +820,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Same as previous but with no way to generate a new token
      */
-    helper.testOnAllTransports('auth_token_string_expiry_with_token', function (realtimeOpts) {
+    Helper.testOnAllTransports('auth_token_string_expiry_with_token', function (realtimeOpts) {
       return function (done) {
         var realtime,
           rest = helper.AblyRest();
         var clientId = 'test clientid';
-        helper.whenPromiseSettles(
+        Helper.whenPromiseSettles(
           rest.auth.requestToken({ ttl: 5000, clientId: clientId }, null),
           function (err, tokenDetails) {
             if (err) {
@@ -861,12 +863,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * Try to connect with an expired token string
      */
-    helper.testOnAllTransports('auth_expired_token_string', function (realtimeOpts) {
+    Helper.testOnAllTransports('auth_expired_token_string', function (realtimeOpts) {
       return function (done) {
         var realtime,
           rest = helper.AblyRest();
         var clientId = 'test clientid';
-        helper.whenPromiseSettles(
+        Helper.whenPromiseSettles(
           rest.auth.requestToken({ ttl: 1, clientId: clientId }, null),
           function (err, tokenDetails) {
             if (err) {
@@ -905,7 +907,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /*
      * use authorize() to force a reauth using an existing authCallback
      */
-    helper.testOnAllTransports.skip('reauth_authCallback', function (realtimeOpts) {
+    Helper.testOnAllTransports.skip('reauth_authCallback', function (realtimeOpts) {
       return function (done) {
         var realtime,
           rest = helper.AblyRest();
@@ -914,7 +916,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           tokenParams.clientId = '*';
           tokenParams.capability = firstTime ? { wrong: ['*'] } : { right: ['*'] };
           firstTime = false;
-          helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
+          Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -926,7 +928,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         realtime = helper.AblyRealtime(helper.Utils.mixin(realtimeOpts, { authCallback: authCallback }));
         realtime.connection.once('connected', function () {
           var channel = realtime.channels.get('right');
-          helper.whenPromiseSettles(channel.attach(), function (err) {
+          Helper.whenPromiseSettles(channel.attach(), function (err) {
             try {
               expect(err, 'Check using first token, without channel attach capability').to.be.ok;
               expect(err.code).to.equal(40160, 'Check expected error code');
@@ -936,14 +938,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             }
 
             /* soon after connected, reauth */
-            helper.whenPromiseSettles(realtime.auth.authorize(null, null), function (err) {
+            Helper.whenPromiseSettles(realtime.auth.authorize(null, null), function (err) {
               try {
                 expect(!err, err && helper.displayError(err)).to.be.ok;
               } catch (err) {
                 done(err);
                 return;
               }
-              helper.whenPromiseSettles(channel.attach(), function (err) {
+              Helper.whenPromiseSettles(channel.attach(), function (err) {
                 try {
                   expect(!err, 'Check using second token, with channel attach capability').to.be.ok;
                   helper.closeAndFinish(done, realtime);
@@ -994,7 +996,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var rest = helper.AblyRest(),
         authCallback = function (tokenParams, callback) {
           // Request a token (should happen twice)
-          helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
+          Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -1105,7 +1107,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       var realtime = helper.AblyRealtime({ authCallback: authCallback });
       realtime.connection.once('connected', function () {
         var channel = realtime.channels.get(jwtTestChannelName);
-        helper.whenPromiseSettles(channel.publish('greeting', 'Hello World!'), function (err) {
+        Helper.whenPromiseSettles(channel.publish('greeting', 'Hello World!'), function (err) {
           try {
             expect(err.code).to.equal(40160, 'Verify publish denied code');
             expect(err.statusCode).to.equal(401, 'Verify publish denied status code');
@@ -1229,7 +1231,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('reauth_consistently_expired_token', function (done) {
       var realtime,
         rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken({ ttl: 1 }), function (err, token) {
+      Helper.whenPromiseSettles(rest.auth.requestToken({ ttl: 1 }), function (err, token) {
         if (err) {
           done(err);
           return;
@@ -1262,7 +1264,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('expired_token_no_autoremove_when_dont_have_servertime', function (done) {
       var realtime,
         rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken(), function (err, token) {
+      Helper.whenPromiseSettles(rest.auth.requestToken(), function (err, token) {
         if (err) {
           done(err);
           return;
@@ -1290,7 +1292,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('expired_token_autoremove_when_have_servertime', function (done) {
       var realtime,
         rest = helper.AblyRest();
-      helper.whenPromiseSettles(rest.auth.requestToken(), function (err, token) {
+      Helper.whenPromiseSettles(rest.auth.requestToken(), function (err, token) {
         if (err) {
           done(err);
           return;
@@ -1304,7 +1306,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         };
         realtime = helper.AblyRealtime({ authCallback: authCallback, autoConnect: false });
         /* Set the server time offset */
-        helper.whenPromiseSettles(realtime.time(), function () {
+        Helper.whenPromiseSettles(realtime.time(), function () {
           realtime.connect();
           realtime.connection.on('connected', function () {
             try {
@@ -1328,21 +1330,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         defaultTokenParams: { capability: { wrong: ['*'] } },
       });
       realtime.connection.once('connected', function () {
-        helper.whenPromiseSettles(realtime.auth.authorize({ capability: { stillWrong: ['*'] } }), function (err) {
+        Helper.whenPromiseSettles(realtime.auth.authorize({ capability: { stillWrong: ['*'] } }), function (err) {
           try {
             expect(!err, 'Check first authorize cb was called').to.be.ok;
           } catch (err) {
             done(err);
           }
         });
-        helper.whenPromiseSettles(realtime.auth.authorize({ capability: { alsoNope: ['*'] } }), function (err) {
+        Helper.whenPromiseSettles(realtime.auth.authorize({ capability: { alsoNope: ['*'] } }), function (err) {
           try {
             expect(!err, 'Check second authorize cb was called').to.be.ok;
           } catch (err) {
             done(err);
           }
         });
-        helper.whenPromiseSettles(
+        Helper.whenPromiseSettles(
           realtime.auth.authorize({ capability: { wtfAreYouThinking: ['*'] } }),
           function (err) {
             try {
@@ -1352,11 +1354,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             }
           },
         );
-        helper.whenPromiseSettles(realtime.auth.authorize({ capability: { right: ['*'] } }), function (err) {
+        Helper.whenPromiseSettles(realtime.auth.authorize({ capability: { right: ['*'] } }), function (err) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
           }
-          helper.whenPromiseSettles(realtime.channels.get('right').attach(), function (err) {
+          Helper.whenPromiseSettles(realtime.channels.get('right').attach(), function (err) {
             try {
               expect(!err, (err && helper.displayError(err)) || 'Successfully attached').to.be.ok;
               helper.closeAndFinish(done, realtime);
@@ -1368,7 +1370,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    helper.testOnAllTransports('authorize_immediately_after_init', function (realtimeOpts) {
+    Helper.testOnAllTransports('authorize_immediately_after_init', function (realtimeOpts) {
       return function (done) {
         var realtime = helper.AblyRealtime({
           useTokenAuth: true,
@@ -1379,7 +1381,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           helper.closeAndFinish(done, realtime, err);
         });
         realtime.connection.once('connected', function () {
-          helper.whenPromiseSettles(realtime.channels.get('right').attach(), function (err) {
+          Helper.whenPromiseSettles(realtime.channels.get('right').attach(), function (err) {
             try {
               expect(!err, (err && helper.displayError(err)) || 'Successfully attached').to.be.ok;
               helper.closeAndFinish(done, realtime);

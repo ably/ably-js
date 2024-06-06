@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'chai'], function (helper, chai) {
+define(['shared_helper', 'chai'], function (Helper, chai) {
+  const helper = new Helper();
+
   var rest;
   var expect = chai.expect;
 
@@ -19,7 +21,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
-    helper.restTestOnJsonMsgpack('status0', async function (rest) {
+    Helper.restTestOnJsonMsgpack('status0', async function (rest) {
       var channel = rest.channels.get('status0');
       var channelDetails = await channel.status();
       expect(channelDetails.channelId).to.equal('status0');

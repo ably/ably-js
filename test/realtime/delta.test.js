@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, vcdiffDecoder, async, chai) {
+define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, vcdiffDecoder, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var testData = [
     { foo: 'bar', count: 1, status: 'active' },
@@ -47,7 +49,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        helper.whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
           }
@@ -76,7 +78,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            Helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
@@ -97,7 +99,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName);
 
-        helper.whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
           }
@@ -116,7 +118,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            Helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
@@ -137,7 +139,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        helper.whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
           }
@@ -179,7 +181,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            Helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
@@ -205,7 +207,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         });
         var channel = realtime.channels.get(testName, { params: { delta: 'vcdiff' } });
 
-        helper.whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
           }
@@ -230,7 +232,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
           });
 
           async.timesSeries(testData.length, function (i, cb) {
-            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            Helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 
@@ -246,7 +248,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
         var realtime = helper.AblyRealtime();
         var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });
 
-        helper.whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
           }
@@ -260,7 +262,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
             helper.closeAndFinish(done, realtime);
           });
           async.timesSeries(testData.length, function (i, cb) {
-            helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
+            Helper.whenPromiseSettles(channel.publish(i.toString(), testData[i]), cb);
           });
         });
 

@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
 
   describe('browser/simple', function () {
@@ -71,7 +73,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         ably.connection.on('connected', function () {
           connectionTimeout.stop();
           heartbeatTimeout = failWithin(25, done, ably, 'wait for heartbeat');
-          helper.whenPromiseSettles(ably.connection.ping(), function (err) {
+          Helper.whenPromiseSettles(ably.connection.ping(), function (err) {
             heartbeatTimeout.stop();
             done(err);
             ably.close();
@@ -115,7 +117,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         receiveMessagesTimeout = failWithin(15, done, ably, 'wait for published messages to be received');
 
         timer = setInterval(function () {
-          helper.whenPromiseSettles(channel.publish('event0', 'Hello world at: ' + new Date()), function (err) {
+          Helper.whenPromiseSettles(channel.publish('event0', 'Hello world at: ' + new Date()), function (err) {
             sentCbCount++;
             checkFinish();
           });

@@ -1,6 +1,8 @@
 'use strict';
 
-define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, async, globals) {
+define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, async, globals) {
+  const helper = new Helper();
+
   var currentTime;
   var rest;
   var expect = chai.expect;
