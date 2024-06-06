@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var indexes = [1, 2, 3, 4, 5];
   var preAttachMessages = indexes.map(function (i) {
@@ -13,7 +15,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var parallelPublishMessages = function (done, channel, messages, callback) {
     var publishTasks = messages.map(function (event) {
       return function (publishCb) {
-        helper.whenPromiseSettles(channel.publish(event.name, event.data), publishCb);
+        Helper.whenPromiseSettles(channel.publish(event.name, event.data), publishCb);
       };
     });
 
@@ -57,9 +59,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       parallelPublishMessages(done, restChannel, preAttachMessages, function () {
         /* second, connect and attach to the channel */
         try {
-          helper.whenPromiseSettles(realtime.connection.whenState('connected'), function () {
+          Helper.whenPromiseSettles(realtime.connection.whenState('connected'), function () {
             var rtChannel = realtime.channels.get('persisted:history_until_attach');
-            helper.whenPromiseSettles(rtChannel.attach(), function (err) {
+            Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
               if (err) {
                 helper.closeAndFinish(done, realtime, err);
                 return;
@@ -75,7 +77,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
                 var tests = [
                   function (callback) {
-                    helper.whenPromiseSettles(rtChannel.history(), function (err, resultPage) {
+                    Helper.whenPromiseSettles(rtChannel.history(), function (err, resultPage) {
                       if (err) {
                         callback(err);
                       }
@@ -92,7 +94,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                     });
                   },
                   function (callback) {
-                    helper.whenPromiseSettles(rtChannel.history({ untilAttach: false }), function (err, resultPage) {
+                    Helper.whenPromiseSettles(rtChannel.history({ untilAttach: false }), function (err, resultPage) {
                       if (err) {
                         callback(err);
                       }
@@ -109,7 +111,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                     });
                   },
                   function (callback) {
-                    helper.whenPromiseSettles(rtChannel.history({ untilAttach: true }), function (err, resultPage) {
+                    Helper.whenPromiseSettles(rtChannel.history({ untilAttach: true }), function (err, resultPage) {
                       if (err) {
                         callback(err);
                       }

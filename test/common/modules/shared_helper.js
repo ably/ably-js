@@ -23,286 +23,270 @@ define([
   var unroutableHost = '10.255.255.1';
   var unroutableAddress = 'http://' + unroutableHost + '/';
 
-  function displayError(err) {
-    if (typeof err == 'string' || err == null) return err;
+  class SharedHelper {
+    setupApp = testAppModule.setup;
+    tearDownApp = testAppModule.tearDown;
+    createStats = testAppModule.createStatsFixtureData;
+    getTestApp = testAppModule.getTestApp;
 
-    var result = '';
-    if (err.statusCode) result += err.statusCode + '; ';
-    if (typeof err.message == 'string') result += err.message;
-    if (typeof err.message == 'object') result += JSON.stringify(err.message);
+    Ably = clientModule.Ably;
+    AblyRest = clientModule.AblyRest;
+    ablyClientOptions = clientModule.ablyClientOptions;
+    Utils = utils;
 
-    return result;
-  }
+    loadTestData = testAppManager.loadJsonData;
+    testResourcesPath = testAppManager.testResourcesPath;
 
-  function monitorConnection(done, realtime, states) {
-    (states || ['failed', 'suspended']).forEach(function (state) {
-      realtime.connection.on(state, function () {
-        done(new Error('Connection monitoring: state changed to ' + state + ', aborting test'));
-        realtime.close();
-      });
-    });
-  }
+    availableTransports = availableTransports;
+    bestTransport = bestTransport;
+    unroutableHost = unroutableHost;
+    unroutableAddress = unroutableAddress;
+    flushTestLogs = globals.flushLogs;
 
-  async function monitorConnectionAsync(action, realtime, states) {
-    const monitoringResultPromise = new Promise((resolve, reject) => {
-      monitorConnection((err) => (err ? reject(err) : resolve()), realtime, states);
-    });
-    const actionResultPromise = Promise.resolve(action());
+    displayError(err) {
+      if (typeof err == 'string' || err == null) return err;
 
-    return Promise.race([monitoringResultPromise, actionResultPromise]);
-  }
+      var result = '';
+      if (err.statusCode) result += err.statusCode + '; ';
+      if (typeof err.message == 'string') result += err.message;
+      if (typeof err.message == 'object') result += JSON.stringify(err.message);
 
-  function closeAndFinish(done, realtime, err) {
-    if (typeof realtime === 'undefined') {
-      // Likely called in a catch block for an exception
-      // that occured before realtime was initialized
-      done(err);
-      return;
+      return result;
     }
-    if (Object.prototype.toString.call(realtime) == '[object Array]') {
-      var realtimes = realtime.filter(function (rt) {
-        return rt !== undefined;
+
+    monitorConnection(done, realtime, states) {
+      (states || ['failed', 'suspended']).forEach(function (state) {
+        realtime.connection.on(state, function () {
+          done(new Error('Connection monitoring: state changed to ' + state + ', aborting test'));
+          realtime.close();
+        });
       });
-      closeAndFinishSeveral(done, realtimes, err);
-      return;
     }
-    callbackOnClose(realtime, function () {
-      done(err);
-    });
-  }
 
-  async function closeAndFinishAsync(realtime, err) {
-    return new Promise((resolve, reject) => {
-      closeAndFinish((err) => (err ? reject(err) : resolve()), realtime, err);
-    });
-  }
-
-  /**
-   * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
-   */
-  function whenPromiseSettles(promise, callback) {
-    promise
-      .then((result) => {
-        callback(null, result);
-      })
-      .catch((err) => {
-        callback(err);
+    async monitorConnectionAsync(action, realtime, states) {
+      const monitoringResultPromise = new Promise((resolve, reject) => {
+        this.monitorConnection((err) => (err ? reject(err) : resolve()), realtime, states);
       });
-  }
+      const actionResultPromise = Promise.resolve(action());
 
-  function simulateDroppedConnection(realtime) {
-    // Go into the 'disconnected' state before actually disconnecting the transports
-    // to avoid the instantaneous reconnect attempt that would be triggered in
-    // notifyState by the active transport getting disconnected from a connected state
-    realtime.connection.once('disconnected', function () {
+      return Promise.race([monitoringResultPromise, actionResultPromise]);
+    }
+
+    closeAndFinish(done, realtime, err) {
+      if (typeof realtime === 'undefined') {
+        // Likely called in a catch block for an exception
+        // that occured before realtime was initialized
+        done(err);
+        return;
+      }
+      if (Object.prototype.toString.call(realtime) == '[object Array]') {
+        var realtimes = realtime.filter(function (rt) {
+          return rt !== undefined;
+        });
+        this.closeAndFinishSeveral(done, realtimes, err);
+        return;
+      }
+      this.callbackOnClose(realtime, function () {
+        done(err);
+      });
+    }
+
+    async closeAndFinishAsync(realtime, err) {
+      return new Promise((resolve, reject) => {
+        this.closeAndFinish((err) => (err ? reject(err) : resolve()), realtime, err);
+      });
+    }
+
+    /**
+     * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
+     */
+    static whenPromiseSettles(promise, callback) {
+      promise
+        .then((result) => {
+          callback(null, result);
+        })
+        .catch((err) => {
+          callback(err);
+        });
+    }
+
+    simulateDroppedConnection(realtime) {
+      // Go into the 'disconnected' state before actually disconnecting the transports
+      // to avoid the instantaneous reconnect attempt that would be triggered in
+      // notifyState by the active transport getting disconnected from a connected state
+      realtime.connection.once('disconnected', function () {
+        realtime.connection.connectionManager.disconnectAllTransports();
+      });
+      realtime.connection.connectionManager.requestState({ state: 'disconnected' });
+    }
+
+    becomeSuspended(realtime, cb) {
       realtime.connection.connectionManager.disconnectAllTransports();
-    });
-    realtime.connection.connectionManager.requestState({ state: 'disconnected' });
-  }
-
-  function becomeSuspended(realtime, cb) {
-    realtime.connection.connectionManager.disconnectAllTransports();
-    realtime.connection.once('disconnected', function () {
-      realtime.connection.connectionManager.notifyState({ state: 'suspended' });
-    });
-    if (cb)
-      realtime.connection.once('suspended', function () {
-        cb();
+      realtime.connection.once('disconnected', function () {
+        realtime.connection.connectionManager.notifyState({ state: 'suspended' });
       });
-  }
+      if (cb)
+        realtime.connection.once('suspended', function () {
+          cb();
+        });
+    }
 
-  function callbackOnClose(realtime, callback) {
-    if (!realtime.connection.connectionManager.activeProtocol) {
-      platform.Config.nextTick(function () {
-        realtime.close();
+    callbackOnClose(realtime, callback) {
+      if (!realtime.connection.connectionManager.activeProtocol) {
+        platform.Config.nextTick(function () {
+          realtime.close();
+          callback();
+        });
+        return;
+      }
+      realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function () {
         callback();
       });
-      return;
+      /* wait a tick before closing in order to avoid the final close
+       * happening synchronously in a publish/attach callback, which
+       * complicates channelattach_publish_invalid etc. */
+      platform.Config.nextTick(function () {
+        realtime.close();
+      });
     }
-    realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function () {
-      callback();
-    });
-    /* wait a tick before closing in order to avoid the final close
-     * happening synchronously in a publish/attach callback, which
-     * complicates channelattach_publish_invalid etc. */
-    platform.Config.nextTick(function () {
-      realtime.close();
-    });
-  }
 
-  function closeAndFinishSeveral(done, realtimeArray, e) {
-    async.map(
-      realtimeArray,
-      function (realtime, mapCb) {
-        var parallelItem = function (parallelCb) {
-          callbackOnClose(realtime, function () {
-            parallelCb();
+    closeAndFinishSeveral(done, realtimeArray, e) {
+      async.map(
+        realtimeArray,
+        (realtime, mapCb) => {
+          var parallelItem = (parallelCb) => {
+            this.callbackOnClose(realtime, function () {
+              parallelCb();
+            });
+          };
+          mapCb(null, parallelItem);
+        },
+        function (err, parallelItems) {
+          async.parallel(parallelItems, function () {
+            if (err) {
+              done(err);
+              return;
+            }
+            done(e);
           });
-        };
-        mapCb(null, parallelItem);
-      },
-      function (err, parallelItems) {
-        async.parallel(parallelItems, function () {
-          if (err) {
-            done(err);
-            return;
-          }
-          done(e);
-        });
-      },
-    );
-  }
-
-  /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
-  function testOnAllTransports(name, testFn, skip) {
-    var itFn = skip ? it.skip : it;
-    let transports = availableTransports;
-    transports.forEach(function (transport) {
-      itFn(
-        name + '_with_' + transport + '_binary_transport',
-        testFn({ transports: [transport], useBinaryProtocol: true }),
+        },
       );
-      itFn(
-        name + '_with_' + transport + '_text_transport',
-        testFn({ transports: [transport], useBinaryProtocol: false }),
-      );
-    });
-    /* Plus one for no transport specified (ie use websocket/base mechanism if
-     * present).  (we explicitly specify all transports since node only does
-     * websocket+nodecomet if comet is explicitly requested)
-     * */
-    itFn(name + '_with_binary_transport', testFn({ transports, useBinaryProtocol: true }));
-    itFn(name + '_with_text_transport', testFn({ transports, useBinaryProtocol: false }));
-  }
-
-  testOnAllTransports.skip = function (name, testFn) {
-    testOnAllTransports(name, testFn, true);
-  };
-
-  function restTestOnJsonMsgpack(name, testFn, skip) {
-    var itFn = skip ? it.skip : it;
-    itFn(name + ' with binary protocol', async function () {
-      await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary');
-    });
-    itFn(name + ' with text protocol', async function () {
-      await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text');
-    });
-  }
-
-  restTestOnJsonMsgpack.skip = function (name, testFn) {
-    restTestOnJsonMsgpack(name, testFn, true);
-  };
-
-  function clearTransportPreference() {
-    if (isBrowser && window.localStorage) {
-      window.localStorage.removeItem('ably-transport-preference');
-    }
-  }
-
-  function isComet(transport) {
-    return transport.toString().indexOf('/comet/') > -1;
-  }
-
-  function isWebsocket(transport) {
-    return !!transport.toString().match(/wss?\:/);
-  }
-
-  function randomString() {
-    return Math.random().toString().slice(2);
-  }
-
-  function testMessageEquality(one, two) {
-    // treat `null` same as `undefined` (using ==, rather than ===)
-    expect(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').").to.be
-      .ok;
-
-    if (typeof one.data === 'string' && typeof two.data === 'string') {
-      expect(one.data === two.data, 'String data contents mismatch.').to.be.ok;
-      return;
     }
 
-    if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
-      expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
-      return;
+    /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
+    static testOnAllTransports(name, testFn, skip) {
+      var itFn = skip ? it.skip : it;
+      let transports = availableTransports;
+      transports.forEach(function (transport) {
+        itFn(
+          name + '_with_' + transport + '_binary_transport',
+          testFn({ transports: [transport], useBinaryProtocol: true }),
+        );
+        itFn(
+          name + '_with_' + transport + '_text_transport',
+          testFn({ transports: [transport], useBinaryProtocol: false }),
+        );
+      });
+      /* Plus one for no transport specified (ie use websocket/base mechanism if
+       * present).  (we explicitly specify all transports since node only does
+       * websocket+nodecomet if comet is explicitly requested)
+       * */
+      itFn(name + '_with_binary_transport', testFn({ transports, useBinaryProtocol: true }));
+      itFn(name + '_with_text_transport', testFn({ transports, useBinaryProtocol: false }));
     }
 
-    var json1 = JSON.stringify(one.data);
-    var json2 = JSON.stringify(two.data);
-    if (null === json1 || undefined === json1 || null === json2 || undefined === json2) {
-      expect(false, 'JSON stringify failed.').to.be.ok;
-      return;
+    static restTestOnJsonMsgpack(name, testFn, skip) {
+      var itFn = skip ? it.skip : it;
+      itFn(name + ' with binary protocol', async function () {
+        await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary');
+      });
+      itFn(name + ' with text protocol', async function () {
+        await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text');
+      });
     }
-    expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
-  }
 
-  let activeClients = [];
+    clearTransportPreference() {
+      if (isBrowser && window.localStorage) {
+        window.localStorage.removeItem('ably-transport-preference');
+      }
+    }
 
-  function AblyRealtime(options) {
-    const client = clientModule.AblyRealtime(options);
-    activeClients.push(client);
-    return client;
-  }
+    isComet(transport) {
+      return transport.toString().indexOf('/comet/') > -1;
+    }
 
-  /* Slightly crude catch-all hook to close any dangling realtime clients left open
-   * after a test fails without calling closeAndFinish */
-  function closeActiveClients() {
-    activeClients.forEach((client) => {
-      client.close();
-    });
-    activeClients = [];
-  }
+    isWebsocket(transport) {
+      return !!transport.toString().match(/wss?\:/);
+    }
 
-  function logTestResults() {
-    if (this.currentTest.isFailed()) {
-      const logs = globals.getLogs();
-      if (logs.length > 0) {
-        // empty console.logs are for vertical spacing
-        console.log();
-        console.log('Logs for failing test: \n');
-        logs.forEach(([timestamp, log]) => {
-          console.log(timestamp, log);
-        });
-        console.log();
+    static randomString() {
+      return Math.random().toString().slice(2);
+    }
+
+    testMessageEquality(one, two) {
+      // treat `null` same as `undefined` (using ==, rather than ===)
+      expect(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').").to
+        .be.ok;
+
+      if (typeof one.data === 'string' && typeof two.data === 'string') {
+        expect(one.data === two.data, 'String data contents mismatch.').to.be.ok;
+        return;
+      }
+
+      if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
+        expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
+        return;
+      }
+
+      var json1 = JSON.stringify(one.data);
+      var json2 = JSON.stringify(two.data);
+      if (null === json1 || undefined === json1 || null === json2 || undefined === json2) {
+        expect(false, 'JSON stringify failed.').to.be.ok;
+        return;
+      }
+      expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
+    }
+
+    static activeClients = [];
+
+    AblyRealtime(options) {
+      const client = clientModule.AblyRealtime(options);
+      SharedHelper.activeClients.push(client);
+      return client;
+    }
+
+    /* Slightly crude catch-all hook to close any dangling realtime clients left open
+     * after a test fails without calling closeAndFinish */
+    closeActiveClients() {
+      SharedHelper.activeClients.forEach((client) => {
+        client.close();
+      });
+      SharedHelper.activeClients = [];
+    }
+
+    logTestResults(afterEachThis) {
+      if (afterEachThis.currentTest.isFailed()) {
+        const logs = globals.getLogs();
+        if (logs.length > 0) {
+          // empty console.logs are for vertical spacing
+          console.log();
+          console.log('Logs for failing test: \n');
+          logs.forEach(([timestamp, log]) => {
+            console.log(timestamp, log);
+          });
+          console.log();
+        }
       }
     }
   }
 
-  return (module.exports = {
-    setupApp: testAppModule.setup,
-    tearDownApp: testAppModule.tearDown,
-    createStats: testAppModule.createStatsFixtureData,
-    getTestApp: testAppModule.getTestApp,
+  SharedHelper.testOnAllTransports.skip = function (name, testFn) {
+    SharedHelper.testOnAllTransports(name, testFn, true);
+  };
 
-    Ably: clientModule.Ably,
-    AblyRest: clientModule.AblyRest,
-    AblyRealtime: AblyRealtime,
-    ablyClientOptions: clientModule.ablyClientOptions,
-    Utils: utils,
+  SharedHelper.restTestOnJsonMsgpack.skip = function (name, testFn) {
+    SharedHelper.restTestOnJsonMsgpack(name, testFn, true);
+  };
 
-    loadTestData: testAppManager.loadJsonData,
-    testResourcesPath: testAppManager.testResourcesPath,
-
-    displayError: displayError,
-    monitorConnection: monitorConnection,
-    monitorConnectionAsync: monitorConnectionAsync,
-    closeAndFinish: closeAndFinish,
-    closeAndFinishAsync: closeAndFinishAsync,
-    simulateDroppedConnection: simulateDroppedConnection,
-    becomeSuspended: becomeSuspended,
-    testOnAllTransports: testOnAllTransports,
-    restTestOnJsonMsgpack: restTestOnJsonMsgpack,
-    availableTransports: availableTransports,
-    bestTransport: bestTransport,
-    clearTransportPreference: clearTransportPreference,
-    isComet: isComet,
-    isWebsocket: isWebsocket,
-    unroutableHost: unroutableHost,
-    unroutableAddress: unroutableAddress,
-    whenPromiseSettles: whenPromiseSettles,
-    randomString: randomString,
-    testMessageEquality: testMessageEquality,
-    closeActiveClients,
-    logTestResults,
-    flushTestLogs: globals.flushLogs,
-  });
+  return (module.exports = SharedHelper);
 });

@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var goodHost;
 

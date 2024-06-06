@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var createPM = Ably.protocolMessageFromDeserialized;
 
@@ -93,7 +95,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
             },
             function (cb) {
-              helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
+              Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
                 try {
                   expect(results.length).to.equal(2, 'Check correct number of results');
                   expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
@@ -136,7 +138,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
             },
             function (cb) {
-              helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
+              Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
                 try {
                   expect(results.length).to.equal(2, 'Check correct number of results');
                   expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
@@ -245,7 +247,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
+        Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
             return;
@@ -334,7 +336,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
+        Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
             return;
@@ -420,7 +422,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
+        Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
             return;
@@ -578,7 +580,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var done = function (err) {
           err ? reject(err) : resolve();
         };
-        helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
+        Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
             return;
@@ -632,13 +634,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         [
           waitForBothConnect,
           function (cb) {
-            helper.whenPromiseSettles(entererChannel.attach(), cb);
+            Helper.whenPromiseSettles(entererChannel.attach(), cb);
           },
           function (cb) {
             async.times(
               110,
               function (i, presCb) {
-                helper.whenPromiseSettles(entererChannel.presence.enterClient(i.toString(), null), presCb);
+                Helper.whenPromiseSettles(entererChannel.presence.enterClient(i.toString(), null), presCb);
               },
               cb,
             );
@@ -664,10 +666,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               }
             };
-            helper.whenPromiseSettles(syncerChannel.attach(), cb);
+            Helper.whenPromiseSettles(syncerChannel.attach(), cb);
           },
           function (cb) {
-            helper.whenPromiseSettles(syncerChannel.presence.get(), function (err, presenceSet) {
+            Helper.whenPromiseSettles(syncerChannel.presence.get(), function (err, presenceSet) {
               try {
                 expect(presenceSet && presenceSet.length).to.equal(111, 'Check everyone’s in presence set');
               } catch (err) {

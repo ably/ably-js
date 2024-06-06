@@ -1,6 +1,8 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
 
   describe('realtime/resume', function () {
@@ -27,7 +29,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         receivingChannel.unsubscribe(event);
         callback();
       });
-      helper.whenPromiseSettles(sendingChannel.publish(event, message), function (err) {
+      Helper.whenPromiseSettles(sendingChannel.publish(event, message), function (err) {
         if (err) callback(err);
       });
     }
@@ -47,7 +49,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       var rxCount = 0;
 
       function phase0(callback) {
-        helper.whenPromiseSettles(rxChannel.attach(), callback);
+        Helper.whenPromiseSettles(rxChannel.attach(), callback);
       }
 
       function phase1(callback) {
@@ -137,7 +139,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Related to RTN15b, RTN15c.
      * @nospec
      */
-    helper.testOnAllTransports('resume_inactive', function (realtimeOpts) {
+    Helper.testOnAllTransports('resume_inactive', function (realtimeOpts) {
       return function (done) {
         resume_inactive(done, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
       };
@@ -158,7 +160,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       var rxCount = 0;
 
       function phase0(callback) {
-        helper.whenPromiseSettles(rxChannel.attach(), callback);
+        Helper.whenPromiseSettles(rxChannel.attach(), callback);
       }
 
       function phase1(callback) {
@@ -184,7 +186,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         var txCount = 0;
 
         function ph2TxOnce() {
-          helper.whenPromiseSettles(
+          Helper.whenPromiseSettles(
             txChannel.publish('sentWhileDisconnected', 'phase 2, message ' + txCount),
             function (err) {
               if (err) callback(err);
@@ -261,7 +263,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Related to RTN15b, RTN15c.
      * @nospec
      */
-    helper.testOnAllTransports('resume_active', function (realtimeOpts) {
+    Helper.testOnAllTransports('resume_active', function (realtimeOpts) {
       return function (done) {
         resume_active(done, 'resume_active' + String(Math.random()), {}, realtimeOpts);
       };
@@ -271,7 +273,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Resume with loss of continuity
      * @spec RTN15c7
      */
-    helper.testOnAllTransports(
+    Helper.testOnAllTransports(
       'resume_lost_continuity',
       function (realtimeOpts) {
         return function (done) {
@@ -291,7 +293,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               },
               function (cb) {
                 suspendedChannel.state = 'suspended';
-                helper.whenPromiseSettles(attachedChannel.attach(), cb);
+                Helper.whenPromiseSettles(attachedChannel.attach(), cb);
               },
               function (cb) {
                 /* Sabotage the resume */
@@ -338,7 +340,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Resume with token error
      * @spec RTN15c5
      */
-    helper.testOnAllTransports(
+    Helper.testOnAllTransports(
       'resume_token_error',
       function (realtimeOpts) {
         return function (done) {
@@ -354,7 +356,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 });
               },
               function (cb) {
-                helper.whenPromiseSettles(realtime.auth.requestToken({ ttl: 1 }, null), function (err, token) {
+                Helper.whenPromiseSettles(realtime.auth.requestToken({ ttl: 1 }, null), function (err, token) {
                   badtoken = token;
                   cb(err);
                 });
@@ -392,7 +394,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Resume with fatal error
      * @spec RTN15c4
      */
-    helper.testOnAllTransports(
+    Helper.testOnAllTransports(
       'resume_fatal_error',
       function (realtimeOpts) {
         return function (done) {
@@ -658,7 +660,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       const rxChannels = channelNames.map((name) => rxRealtime.channels.get(name));
 
       function attachChannels(callback) {
-        async.each(rxChannels, (channel, cb) => helper.whenPromiseSettles(channel.attach(), cb), callback);
+        async.each(rxChannels, (channel, cb) => Helper.whenPromiseSettles(channel.attach(), cb), callback);
       }
 
       function publishSubscribeWhileConnectedOnce(callback) {
@@ -688,7 +690,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           channelNames,
           (name, cb) => {
             const tx = txRest.channels.get(name);
-            helper.whenPromiseSettles(tx.publish('sentWhileDisconnected', null), cb);
+            Helper.whenPromiseSettles(tx.publish('sentWhileDisconnected', null), cb);
           },
           callback,
         );

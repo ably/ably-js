@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
   var Defaults = Ably.Rest.Platform.Defaults;
@@ -44,10 +46,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              helper.whenPromiseSettles(channel.attach(), attachCb);
+              Helper.whenPromiseSettles(channel.attach(), attachCb);
             },
             function (attachCb) {
-              helper.whenPromiseSettles(binarychannel.attach(), attachCb);
+              Helper.whenPromiseSettles(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
@@ -99,7 +101,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       });
                     },
                     function (parallelCb) {
-                      helper.whenPromiseSettles(
+                      Helper.whenPromiseSettles(
                         realtime.request(
                           'post',
                           channelPath,
@@ -148,10 +150,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (attachCb) {
-              helper.whenPromiseSettles(channel.attach(), attachCb);
+              Helper.whenPromiseSettles(channel.attach(), attachCb);
             },
             function (attachCb) {
-              helper.whenPromiseSettles(binarychannel.attach(), attachCb);
+              Helper.whenPromiseSettles(binarychannel.attach(), attachCb);
             },
           ],
           function (err) {
@@ -173,10 +175,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 async.parallel(
                   [
                     function (parallelCb) {
-                      helper.whenPromiseSettles(channel.publish(name, data), parallelCb);
+                      Helper.whenPromiseSettles(channel.publish(name, data), parallelCb);
                     },
                     function (parallelCb) {
-                      helper.whenPromiseSettles(binarychannel.publish(name, data), parallelCb);
+                      Helper.whenPromiseSettles(binarychannel.publish(name, data), parallelCb);
                     },
                   ],
                   function (err) {
@@ -184,7 +186,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       eachOfCb(err);
                       return;
                     }
-                    helper.whenPromiseSettles(
+                    Helper.whenPromiseSettles(
                       realtime.request('get', channelPath, 3, null, null, null),
                       function (err, resultPage) {
                         if (err) {

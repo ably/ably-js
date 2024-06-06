@@ -2,12 +2,14 @@
 
 define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_transport', 'push'], function (
   Ably,
-  helper,
+  Helper,
   async,
   chai,
   pushChannelTransport,
   PushPlugin,
 ) {
+  const helper = new Helper();
+
   var expect = chai.expect;
   var originalPushConfig = Ably.Realtime.Platform.Config.push;
 
@@ -405,7 +407,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
             }
           })
           .then(() => {
-            helper.whenPromiseSettles(realtime.push.admin.publish(pushRecipient, pushPayload), function (err) {
+            Helper.whenPromiseSettles(realtime.push.admin.publish(pushRecipient, pushPayload), function (err) {
               if (err) {
                 helper.closeAndFinish(done, realtime, err);
               }

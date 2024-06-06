@@ -1,6 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
+  const helper = new Helper();
+
   var rest;
   var expect = chai.expect;
   var Defaults = Ably.Rest.Platform.Defaults;

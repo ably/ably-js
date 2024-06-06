@@ -21,9 +21,10 @@ import {
   MessageInteractions,
 } from '../../build/modular/index.mjs';
 
-function registerAblyModularTests(helper) {
+function registerAblyModularTests(Helper) {
   describe('browser/modular', function () {
     this.timeout(10 * 1000);
+    const helper = new Helper();
     const expect = chai.expect;
     const BufferUtils = BaseRest.Platform.BufferUtils;
     const loadTestData = async (dataPath) => {
@@ -638,7 +639,7 @@ function registerAblyModularTests(helper) {
 
             const txClient = new BaseRealtime(
               helper.ablyClientOptions({
-                clientId: helper.randomString(),
+                clientId: Helper.randomString(),
                 plugins: {
                   WebSocketTransport,
                   FetchRequest,
@@ -681,7 +682,7 @@ function registerAblyModularTests(helper) {
           const rxChannel = rxClient.channels.get('channel');
 
           await monitorConnectionThenCloseAndFinish(async () => {
-            const txClientId = helper.randomString();
+            const txClientId = Helper.randomString();
             const txClient = new BaseRealtime(
               helper.ablyClientOptions({
                 clientId: txClientId,
@@ -958,8 +959,8 @@ function registerAblyModularTests(helper) {
 // This function is called by browser_setup.js once `require` is available
 window.registerAblyModularTests = async () => {
   return new Promise((resolve) => {
-    require(['shared_helper'], (helper) => {
-      registerAblyModularTests(helper);
+    require(['shared_helper'], (Helper) => {
+      registerAblyModularTests(Helper);
       resolve();
     });
   });
