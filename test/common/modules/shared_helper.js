@@ -100,7 +100,7 @@ define([
     /**
      * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
      */
-    whenPromiseSettles(promise, callback) {
+    static whenPromiseSettles(promise, callback) {
       promise
         .then((result) => {
           callback(null, result);
@@ -219,7 +219,7 @@ define([
       return !!transport.toString().match(/wss?\:/);
     }
 
-    randomString() {
+    static randomString() {
       return Math.random().toString().slice(2);
     }
 

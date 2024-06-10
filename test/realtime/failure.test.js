@@ -237,7 +237,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       var tests = [
         function (callback) {
-          helper.whenPromiseSettles(failChan.publish('event', 'data'), function (err) {
+          Helper.whenPromiseSettles(failChan.publish('event', 'data'), function (err) {
             try {
               expect(err, 'publish failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'publish failure code');
@@ -248,7 +248,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         },
         function (callback) {
-          helper.whenPromiseSettles(failChan.subscribe('event', noop), function (err) {
+          Helper.whenPromiseSettles(failChan.subscribe('event', noop), function (err) {
             try {
               expect(err, 'subscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');
@@ -259,7 +259,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         },
         function (callback) {
-          helper.whenPromiseSettles(failChan.presence.enterClient('clientId'), function (err) {
+          Helper.whenPromiseSettles(failChan.presence.enterClient('clientId'), function (err) {
             try {
               expect(err, 'presence enter failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence enter failure code');
@@ -270,7 +270,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         },
         function (callback) {
-          helper.whenPromiseSettles(failChan.presence.leaveClient('clientId'), function (err) {
+          Helper.whenPromiseSettles(failChan.presence.leaveClient('clientId'), function (err) {
             try {
               expect(err, 'presence leave failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence leave failure code');
@@ -281,7 +281,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         },
         function (callback) {
-          helper.whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
+          Helper.whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
             try {
               expect(err, 'presence subscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');
@@ -292,7 +292,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         },
         function (callback) {
-          helper.whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
+          Helper.whenPromiseSettles(failChan.presence.subscribe('event', noop), function (err) {
             try {
               expect(err, 'presence unsubscribe failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'subscribe failure code');
@@ -303,7 +303,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
         },
         function (callback) {
-          helper.whenPromiseSettles(failChan.presence.get(), function (err) {
+          Helper.whenPromiseSettles(failChan.presence.get(), function (err) {
             try {
               expect(err, 'presence get failed').to.be.ok;
               expect(err.code).to.equal(channelFailedCode, 'presence get failure code');
@@ -318,7 +318,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       try {
         realtime.connection.once('connected', function () {
           failChan = realtime.channels.get('::');
-          helper.whenPromiseSettles(failChan.attach(), function (err) {
+          Helper.whenPromiseSettles(failChan.attach(), function (err) {
             try {
               expect(err, 'channel attach failed').to.be.ok;
               expect(failChan.state).to.equal('failed', 'channel in failed state');
@@ -349,7 +349,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
 
       realtime.connection.once('connected', function () {
-        helper.whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           try {
             expect(err.code).to.equal(90007, 'check channel error code');
             expect(err.statusCode).to.equal(408, 'check timeout statusCode');
@@ -395,7 +395,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
         realtime.connection.on('connected', function () {
           realtime.options.timeouts.realtimeRequestTimeout = 1;
-          helper.whenPromiseSettles(channel.attach(), function (err) {
+          Helper.whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
               var lastSuspended = performance.now();
               channel.on(function (stateChange) {
@@ -451,7 +451,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               });
             },
             function (cb) {
-              helper.whenPromiseSettles(channel.attach(), cb);
+              Helper.whenPromiseSettles(channel.attach(), cb);
             },
             function (cb) {
               var transport = realtime.connection.connectionManager.activeProtocol.transport,
@@ -463,7 +463,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                   originalOnProtocolMessage.apply(this, arguments);
                 }
               };
-              helper.whenPromiseSettles(channel.publish('foo', 'bar'), function (err) {
+              Helper.whenPromiseSettles(channel.publish('foo', 'bar'), function (err) {
                 try {
                   expect(err, 'Publish failed as expected').to.be.ok;
                   expect(realtime.connection.state).to.equal(
