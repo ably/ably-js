@@ -1,8 +1,6 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   let config = Ably.Realtime.Platform.Config;
   var createPM = Ably.protocolMessageFromDeserialized;
@@ -24,6 +22,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   describe('realtime/message', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -33,6 +32,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('publishonce', function (done) {
+      const helper = this.test.helper;
       try {
         /* set up realtime */
         var realtime = helper.AblyRealtime();
@@ -75,6 +75,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      */
     Helper.testOnAllTransports('publishfast', function (realtimeOpts) {
       return function (done) {
+        const helper = this.test.helper;
         try {
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
@@ -138,7 +139,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      */
     Helper.testOnAllTransports('publishQueued', function (realtimeOpts) {
       return function (done) {
-        var txRealtime, rxRealtime;
+        var helper = this.test.helper,
+          txRealtime,
+          rxRealtime;
         try {
           txRealtime = helper.AblyRealtime(helper.Utils.mixin(realtimeOpts, { autoConnect: false }));
           rxRealtime = helper.AblyRealtime();
@@ -228,7 +231,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      */
     it('publishEcho', function (done) {
       // set up two realtimes
-      var rtNoEcho = helper.AblyRealtime({ echoMessages: false }),
+      var helper = this.test.helper,
+        rtNoEcho = helper.AblyRealtime({ echoMessages: false }),
         rtEcho = helper.AblyRealtime({ echoMessages: true }),
         rtNoEchoChannel = rtNoEcho.channels.get('publishecho'),
         rtEchoChannel = rtEcho.channels.get('publishecho'),
@@ -297,6 +301,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('publishVariations', function (done) {
+      const helper = this.test.helper;
       var testData = 'Some data';
       var testArguments = [
         [{ name: 'objectWithName' }],
@@ -413,6 +418,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('publishDisallowed', function (done) {
+      const helper = this.test.helper;
       var testArguments = [
         [{ name: 'objectAndBoolData', data: false }],
         ['nameAndBoolData', false],
@@ -464,6 +470,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('publishEncodings', function (done) {
+      const helper = this.test.helper;
       var testData = 'testData';
       var testArguments = [
         // valid
@@ -559,6 +566,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('restpublish', function (done) {
+      const helper = this.test.helper;
       var count = 10;
       var rest = helper.AblyRest();
       var realtime = helper.AblyRealtime();
@@ -588,6 +596,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     Helper.testOnAllTransports('publish', function (realtimeOpts) {
       return function (done) {
+        const helper = this.test.helper;
         var count = 10;
         var cbCount = 10;
         var checkFinish = function () {
@@ -620,7 +629,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /* Authenticate with a clientId and ensure that the clientId is not sent in the Message
 	   and is implicitly added when published */
     it('implicit_client_id_0', function (done) {
-      var clientId = 'implicit_client_id_0',
+      var helper = this.test.helper,
+        clientId = 'implicit_client_id_0',
         realtime = helper.AblyRealtime({ clientId: clientId });
 
       realtime.connection.once('connected', function () {
@@ -658,7 +668,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /* Authenticate with a clientId and explicitly provide the same clientId in the Message
 	   and ensure it is published */
     it('explicit_client_id_0', function (done) {
-      var clientId = 'explicit_client_id_0',
+      var helper = this.test.helper,
+        clientId = 'explicit_client_id_0',
         /* Use a fixed transport as intercepting transport.send */
         realtime = helper.AblyRealtime({ clientId: clientId, transports: [helper.bestTransport] });
 
@@ -720,7 +731,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /* Authenticate with a clientId and explicitly provide a different invalid clientId in the Message
 	   and expect it to not be published and be rejected */
     it('explicit_client_id_1', function (done) {
-      var clientId = 'explicit_client_id_1',
+      var helper = this.test.helper,
+        clientId = 'explicit_client_id_1',
         invalidClientId = 'invalid',
         rest = helper.AblyRest();
 
@@ -777,7 +789,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('subscribe_with_event_array', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('subscribe_with_event_array');
 
       async.series(
@@ -833,6 +846,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('subscribe_with_filter_object', function (done) {
+      const helper = this.test.helper;
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('subscribe_with_filter_object');
 
@@ -913,6 +927,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('unsubscribe_with_filter_object', function (done) {
+      const helper = this.test.helper;
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('unsubscribe_with_filter_object');
 
@@ -971,7 +986,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('extras_field', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('extras_field'),
         extras = { headers: { some: 'metadata' } };
 
@@ -1016,7 +1032,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /* TO3l8; CD2C; RSL1i */
     it('maxMessageSize', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         connectionManager = realtime.connection.connectionManager,
         channel = realtime.channels.get('maxMessageSize');
 
@@ -1050,7 +1067,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /* RTL6d: publish a series of messages that exercise various bundling
      * constraints, check they're satisfied */
     it.skip('bundling', function (done) {
-      var realtime = helper.AblyRealtime({ maxMessageSize: 256, autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ maxMessageSize: 256, autoConnect: false }),
         channelOne = realtime.channels.get('bundlingOne'),
         channelTwo = realtime.channels.get('bundlingTwo');
 
@@ -1112,7 +1130,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('idempotentRealtimePublishing', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('idempotentRealtimePublishing');
 
       Helper.whenPromiseSettles(channel.attach(), function (err) {
@@ -1146,6 +1165,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('subscribes to filtered channel', function (done) {
+      const helper = this.test.helper;
+
       var testData = [
         {
           name: 'filtered',

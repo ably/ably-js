@@ -1,14 +1,13 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   var createPM = Ably.protocolMessageFromDeserialized;
 
   describe('realtime/sync', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -41,7 +40,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * different presence set
      */
     it('sync_existing_set', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'syncexistingset',
         channel = realtime.channels.get(channelName);
 
@@ -161,7 +161,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * middle of the sync should should discard the former, but not the latter
      * */
     it('sync_member_arrives_in_middle', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_in_middle',
         channel = realtime.channels.get(channelName);
 
@@ -263,7 +264,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Presence message that was in the sync arrives again as a normal message, after it's come in the sync
      */
     it('sync_member_arrives_normally_after_came_in_sync', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_normally_after_came_in_sync',
         channel = realtime.channels.get(channelName);
 
@@ -346,7 +348,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Presence message that will be in the sync arrives as a normal message, before it comes in the sync
      */
     it('sync_member_arrives_normally_before_comes_in_sync', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_normally_before_comes_in_sync',
         channel = realtime.channels.get(channelName);
 
@@ -430,7 +433,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * index, and synthesized leaves, check that the end result is correct
      */
     it('presence_ordering', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_ordering',
         channel = realtime.channels.get(channelName);
 
@@ -584,6 +588,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * presence enter between the syncs. Check everything was entered correctly
      */
     it('presence_sync_interruptus', function (done) {
+      const helper = this.test.helper;
       var channelName = 'presence_sync_interruptus';
       var interrupterClientId = 'dark_horse';
       var enterer = helper.AblyRealtime();

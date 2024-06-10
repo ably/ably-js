@@ -1,8 +1,6 @@
 'use strict';
 
 define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   var indexes = [1, 2, 3, 4, 5];
   var preAttachMessages = indexes.map(function (i) {
@@ -36,6 +34,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -46,6 +45,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     });
 
     it('history_until_attach', function (done) {
+      const helper = this.test.helper;
       var rest = helper.AblyRest();
       var realtime = helper.AblyRealtime();
       var restChannel = rest.channels.get('persisted:history_until_attach');

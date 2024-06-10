@@ -1,8 +1,6 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, Helper, chai, PushPlugin) {
-  const helper = new Helper();
-
   const expect = chai.expect;
   const swUrl = '/push_sw.js';
   let rest;
@@ -29,6 +27,7 @@ define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, Helper, chai, 
       this.timeout(60 * 1000);
 
       before(function (done) {
+        const helper = Helper.forHook(this);
         helper.setupApp(function () {
           rest = helper.AblyRest({
             pushServiceWorkerUrl: swUrl,

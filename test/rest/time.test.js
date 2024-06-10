@@ -1,13 +1,12 @@
 'use strict';
 
 define(['shared_helper', 'chai'], function (Helper, chai) {
-  const helper = new Helper();
-
   var rest;
   var expect = chai.expect;
 
   describe('rest/time', function () {
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);

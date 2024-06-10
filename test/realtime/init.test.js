@@ -1,13 +1,12 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
 
   describe('realtime/init', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -19,35 +18,39 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* Restrict to websocket or xhr polling for the v= test as if stream=false the
      * recvRequest may not be the connectRequest by the time we check it. */
-    if (helper.bestTransport === 'web_socket' || helper.bestTransport === 'xhr_polling') {
-      /*
-       * Base init case
-       */
-      it('initbase0', function (done) {
-        var realtime;
-        try {
-          realtime = helper.AblyRealtime({ transports: ['web_socket', 'xhr_polling'] });
-          realtime.connection.on('connected', function () {
-            /* check api version */
-            var transport = realtime.connection.connectionManager.activeProtocol.transport;
-            var connectUri = helper.isWebsocket(transport) ? transport.uri : transport.recvRequest.recvUri;
-            try {
-              expect(connectUri.indexOf('v=3') > -1, 'Check uri includes v=3').to.be.ok;
-            } catch (err) {
-              helper.closeAndFinish(done, realtime, err);
-              return;
-            }
-            helper.closeAndFinish(done, realtime);
-          });
-          helper.monitorConnection(done, realtime);
-        } catch (err) {
-          helper.closeAndFinish(done, realtime, err);
-        }
-      });
-    }
+    ((testDefinitionHelper) => {
+      if (testDefinitionHelper.bestTransport === 'web_socket' || testDefinitionHelper.bestTransport === 'xhr_polling') {
+        /*
+         * Base init case
+         */
+        it('initbase0', function (done) {
+          const helper = this.test.helper;
+          var realtime;
+          try {
+            realtime = helper.AblyRealtime({ transports: ['web_socket', 'xhr_polling'] });
+            realtime.connection.on('connected', function () {
+              /* check api version */
+              var transport = realtime.connection.connectionManager.activeProtocol.transport;
+              var connectUri = helper.isWebsocket(transport) ? transport.uri : transport.recvRequest.recvUri;
+              try {
+                expect(connectUri.indexOf('v=3') > -1, 'Check uri includes v=3').to.be.ok;
+              } catch (err) {
+                helper.closeAndFinish(done, realtime, err);
+                return;
+              }
+              helper.closeAndFinish(done, realtime);
+            });
+            helper.monitorConnection(done, realtime);
+          } catch (err) {
+            helper.closeAndFinish(done, realtime, err);
+          }
+        });
+      }
+    })(Helper.forTestDefinition(this, 'initbase0'));
 
     /* init with key string */
     it('init_key_string', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
@@ -68,6 +71,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* init with token string */
     it('init_token_string', function (done) {
+      const helper = this.test.helper;
       try {
         /* first generate a token ... */
         var rest = helper.AblyRest();
@@ -97,6 +101,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* init with key string and useTokenAuth: true */
     it('init_key_with_usetokenauth', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
@@ -122,6 +127,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     /* init with key string, useTokenAuth: true, and some defaultTokenParams to
      * request a wildcard clientId */
     it('init_usetokenauth_defaulttokenparams_wildcard', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
@@ -150,6 +156,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* init with using defaultTokenParams to set a non-wildcard clientId should set auth.clientId */
     it('init_defaulttokenparams_nonwildcard', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
@@ -176,6 +183,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* init when specifying clientId both in defaultTokenParams and in clientOptions: the latter takes precedence */
     it('init_conflicting_clientids', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
@@ -202,6 +210,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* init with useTokenAuth: false with a clientId (should fail) */
     it('init_with_usetokenauth_false_and_a_clientid', function (done) {
+      const helper = this.test.helper;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
         expect(function () {
@@ -215,6 +224,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* check default httpHost selection */
     it('init_defaulthost', function (done) {
+      const helper = this.test.helper;
       try {
         /* want to check the default host when no custom environment or custom
          * host set, so not using helpers.realtime this time, which will use a
@@ -231,6 +241,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* check changing the default timeouts */
     it('init_timeouts', function (done) {
+      const helper = this.test.helper;
       try {
         var realtime = helper.AblyRealtime({
           key: 'not_a.real:key',
@@ -269,6 +280,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     /* check changing the default fallback hosts and changing httpMaxRetryCount */
     it('init_fallbacks', function (done) {
+      const helper = this.test.helper;
       try {
         var realtime = helper.AblyRealtime({
           key: 'not_a.real:key',
@@ -316,6 +328,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     /* Check base and websocket transports (nodejs only; browser tests in their own section) */
     if (!isBrowser) {
       it('node_transports', function (done) {
+        const helper = this.test.helper;
         var realtime;
         try {
           realtime = helper.AblyRealtime({ transports: helper.availableTransports });
@@ -331,6 +344,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     /* Check that the connectionKey in ConnectionDetails updates the client connectionKey,
 	   and clientId in ConnectionDetails updates the client clientId */
     it('init_and_connection_details', function (done) {
+      const helper = this.test.helper;
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
         var realtime = helper.AblyRealtime({ key: keyStr, useTokenAuth: true });
@@ -372,6 +386,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     it('init_fallbacks_once_connected', function (done) {
+      const helper = this.test.helper;
       var realtime = helper.AblyRealtime({
         httpMaxRetryCount: 3,
         fallbackHosts: ['a', 'b', 'c'],
@@ -393,6 +408,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     it('init_fallbacks_once_connected_2', function (done) {
+      const helper = this.test.helper;
       var goodHost = helper.AblyRest().options.realtimeHost;
       var realtime = helper.AblyRealtime({
         httpMaxRetryCount: 3,
