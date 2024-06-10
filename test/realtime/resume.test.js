@@ -1,14 +1,13 @@
 'use strict';
 
 define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
 
   describe('realtime/resume', function () {
     this.timeout(120 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -38,7 +37,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Empty resume case
      * Send 5 messages; disconnect; reconnect; send 5 messages
      */
-    function resume_inactive(done, channelName, txOpts, rxOpts) {
+    function resume_inactive(done, helper, channelName, txOpts, rxOpts) {
       var count = 5;
 
       var txRest = helper.AblyRest(mixin(txOpts));
@@ -137,7 +136,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
 
     Helper.testOnAllTransports('resume_inactive', function (realtimeOpts) {
       return function (done) {
-        resume_inactive(done, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
+        resume_inactive(done, this.helper, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
       };
     });
 
@@ -145,7 +144,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Simple resume case
      * Send 5 messages; disconnect; send 5 messages; reconnect
      */
-    function resume_active(done, channelName, txOpts, rxOpts) {
+    function resume_active(done, helper, channelName, txOpts, rxOpts) {
       var count = 5;
 
       var txRest = helper.AblyRest(mixin(txOpts));
@@ -257,7 +256,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
 
     Helper.testOnAllTransports('resume_active', function (realtimeOpts) {
       return function (done) {
-        resume_active(done, 'resume_active' + String(Math.random()), {}, realtimeOpts);
+        resume_active(done, this.helper, 'resume_active' + String(Math.random()), {}, realtimeOpts);
       };
     });
 
@@ -268,7 +267,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       'resume_lost_continuity',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtime(realtimeOpts),
+          var helper = this.helper,
+            realtime = helper.AblyRealtime(realtimeOpts),
             connection = realtime.connection,
             attachedChannelName = 'resume_lost_continuity_attached',
             suspendedChannelName = 'resume_lost_continuity_suspended',
@@ -334,7 +334,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       'resume_token_error',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtime(mixin(realtimeOpts, { useTokenAuth: true })),
+          var helper = this.helper,
+            realtime = helper.AblyRealtime(mixin(realtimeOpts, { useTokenAuth: true })),
             badtoken,
             connection = realtime.connection;
 
@@ -387,7 +388,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       'resume_fatal_error',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtime(realtimeOpts),
+          var helper = this.helper,
+            realtime = helper.AblyRealtime(realtimeOpts),
             connection = realtime.connection;
 
           async.series(
@@ -437,7 +439,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * TODO: enable once realtime supports this
      */
     it('channel_resumed_flag', function (done) {
-      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+      var helper = this.helper,
+        realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         realtimeTwo,
         recoveryKey,
         connection = realtime.connection,
@@ -501,7 +504,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Check the library doesn't try to resume once the connectionStateTtl has expired
      */
     it('no_resume_once_suspended', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.helper,
+        realtime = helper.AblyRealtime(),
         connection = realtime.connection,
         channelName = 'no_resume_once_suspended';
 
@@ -539,7 +543,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * connection was > connectionStateTtl ago
      */
     it('no_resume_last_activity', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.helper,
+        realtime = helper.AblyRealtime(),
         connection = realtime.connection,
         connectionManager = connection.connectionManager;
 
@@ -562,6 +567,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     });
 
     it('resume_rewind_1', function (done) {
+      const helper = this.helper;
       var testName = 'resume_rewind_1';
       var testMessage = { foo: 'bar', count: 1, status: 'active' };
       try {
@@ -619,6 +625,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
 
     // Tests recovering multiple channels only receives the expected messages.
     it('recover multiple channels', function (done) {
+      const helper = this.helper;
       const NUM_MSGS = 5;
 
       const txRest = helper.AblyRest();

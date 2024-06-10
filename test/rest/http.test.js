@@ -1,8 +1,6 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
-  const helper = new Helper();
-
   var rest;
   var expect = chai.expect;
   var Defaults = Ably.Rest.Platform.Defaults;
@@ -10,6 +8,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
   describe('rest/http', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function () {
         rest = helper.AblyRest({
           agents: {
