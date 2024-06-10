@@ -1,8 +1,6 @@
 'use strict';
 
 define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, async, globals) {
-  const helper = new Helper();
-
   var currentTime;
   var rest;
   var expect = chai.expect;
@@ -12,6 +10,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function () {
         rest = helper.AblyRest({ queryTime: true });
         rest
@@ -55,6 +54,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @specpartial TO3j2 - test passing token in ClientOptions for Rest client
      */
     it('Generate token and init library with it', async function () {
+      const helper = this.test.helper;
       var tokenDetails = await rest.auth.requestToken();
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
       helper.AblyRest({ token: tokenDetails.token });
@@ -162,6 +162,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @specpartial RSA6 - infer capability from provided key
      */
     it('Token generation with specified key', async function () {
+      const helper = this.test.helper;
       var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
       var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
       var tokenDetails = await rest.auth.requestToken(null, testKeyOpts);
@@ -174,6 +175,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
 
     /** @nospec */
     it('Token generation with explicit auth', async function () {
+      const helper = this.test.helper;
       const authHeaders = await rest.auth.getAuthHeaders();
       rest.auth.authOptions.requestHeaders = authHeaders;
       var tokenDetails = await rest.auth.requestToken();
@@ -189,6 +191,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @nospec
      */
     it('Token generation with explicit auth, different key', async function () {
+      const helper = this.test.helper;
       const authHeaders = await rest.auth.getAuthHeaders();
       var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
       var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
@@ -216,6 +219,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
 
     /** @spec TO3j11 */
     it('Token generation with defaultTokenParams set and no tokenParams passed in', async function () {
+      const helper = this.test.helper;
       var rest1 = helper.AblyRest({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
       var tokenDetails = await rest1.auth.requestToken();
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
@@ -228,6 +232,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @specpartial RSA8e - test passing any options overrides library default
      */
     it('Token generation: if tokenParams passed in, defaultTokenParams should be ignored altogether, not merged', async function () {
+      const helper = this.test.helper;
       var rest1 = helper.AblyRest({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
       var tokenDetails = await rest1.auth.requestToken({ clientId: 'bar' }, null);
       expect(tokenDetails.clientId).to.equal(
@@ -320,6 +325,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @specpartial RSA9h - test passing null for TokenParams and AuthOptions
      */
     it('createTokenRequest without authOptions', async function () {
+      const helper = this.test.helper;
       var tokenRequest = await rest.auth.createTokenRequest(null, null);
       expect('mac' in tokenRequest, 'check tokenRequest contains a mac').to.be.ok;
       expect('nonce' in tokenRequest, 'check tokenRequest contains a nonce').to.be.ok;
@@ -334,6 +340,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @nospec
      */
     it('createTokenRequest uses the key it was initialized with if authOptions does not have a "key" key', async function () {
+      const helper = this.test.helper;
       var tokenRequest = await rest.auth.createTokenRequest();
       expect(tokenRequest.keyName).to.equal(helper.getTestApp().keys[0].keyName);
     });
@@ -369,6 +376,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
        * @specpartial RSA3d - test JWT is correctly passed in REST request
        */
       it(description, async function () {
+        const helper = this.test.helper;
         var currentKey = helper.getTestApp().keys[0];
         var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
         var authParams = helper.Utils.mixin(keys, params);
@@ -400,6 +408,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @nospec
      */
     it('JWT request with invalid key', async function () {
+      const helper = this.test.helper;
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
       var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
       var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
@@ -418,6 +427,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
 
     /** @specpartial RSA8g - test using authCallback with JWT */
     it('Rest JWT with authCallback', async function () {
+      const helper = this.test.helper;
       var currentKey = helper.getTestApp().keys[0];
       var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
       var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
@@ -438,6 +448,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @nospec
      */
     it('Rest JWT with authCallback and invalid keys', async function () {
+      const helper = this.test.helper;
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
       var authUrl = echoServer + '/createJWT' + helper.Utils.toQueryString(keys);
       var restJWTRequester = helper.AblyRest({ authUrl: authUrl });
@@ -464,6 +475,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
      * @nospec
      */
     it('authCallback is only invoked once on concurrent auth', async function () {
+      const helper = this.test.helper;
       var authCallbackInvocations = 0;
       function authCallback(tokenParams, callback) {
         authCallbackInvocations++;

@@ -1,8 +1,6 @@
 'use strict';
 
 define(['shared_helper', 'chai'], function (Helper, chai) {
-  const helper = new Helper();
-
   var currentTime;
   var rest;
   var testApp;
@@ -21,6 +19,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function () {
         rest = helper.AblyRest({ queryTime: true });
         testApp = helper.getTestApp();

@@ -1,14 +1,13 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
 
   describe('rest/init', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -23,6 +22,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
      * @specpartial RSC1c - test with key string
      */
     it('Init with key string', function () {
+      const helper = this.test.helper;
       var keyStr = helper.getTestApp().keys[0].keyStr;
       var rest = new helper.Ably.Rest(keyStr);
 
@@ -34,6 +34,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
      * @specpartial RSC1c - test with token string
      */
     it('Init with token string', async function () {
+      const helper = this.test.helper;
       /* first generate a token ... */
       var rest = helper.AblyRest();
       var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
@@ -52,6 +53,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
      * @spec TO3k5
      */
     it('Init with tls: false', function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest({ tls: false, port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('http://example.com:123');
     });
@@ -62,6 +64,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
      * @spec TO3k5
      */
     it('Init with tls: true', function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest({ tls: true, port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('https://example.com:456');
     });
@@ -75,6 +78,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
      */
 
     it('Init without any tls key should enable tls', function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest({ port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('https://example.com:456');
     });
@@ -85,6 +89,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
      * @spec RSA15c
      */
     it("Init with clientId set to '*' or anything other than a string or null should error", function () {
+      const helper = this.test.helper;
       expect(function () {
         var rest = helper.AblyRest({ clientId: '*' });
       }, 'Check can’t init library with a wildcard clientId').to.throw;

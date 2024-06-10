@@ -1,8 +1,6 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
-  const helper = new Helper();
-
   var rest;
   var expect = chai.expect;
 
@@ -10,6 +8,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     this.timeout(60 * 1000);
     let initialXhrSupported;
     before(function (done) {
+      const helper = Helper.forHook(this);
       initialXhrSupported = Ably.Rest.Platform.Config.xhrSupported;
       Ably.Rest.Platform.Config.xhrSupported = false;
       helper.setupApp(function () {

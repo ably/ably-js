@@ -1,8 +1,6 @@
 'use strict';
 
 define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   var goodHost;
 
@@ -10,6 +8,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -22,6 +21,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
 
     /** @spec RSC15f */
     it('Store working fallback', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest({
         restHost: helper.unroutableHost,
         fallbackHosts: [goodHost],
@@ -56,6 +56,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     describe('Max elapsed time for host retries', function () {
       /** @spec TO3l6 */
       it('can timeout after default host', async function () {
+        const helper = this.test.helper;
         const httpRequestTimeout = 1000;
         // set httpMaxRetryDuration lower than httpRequestTimeout so it would timeout after default host attempt
         const httpMaxRetryDuration = Math.floor(httpRequestTimeout / 2);
@@ -82,6 +83,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
 
       /** @spec TO3l6 */
       it('can timeout after fallback host retries', async function () {
+        const helper = this.test.helper;
         const httpRequestTimeout = 1000;
         // set httpMaxRetryDuration higher than httpRequestTimeout and lower than 2*httpRequestTimeout so it would timeout after first fallback host retry attempt
         const httpMaxRetryDuration = Math.floor(httpRequestTimeout * 1.5);

@@ -1,8 +1,6 @@
 'use strict';
 
 define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai, Ably) {
-  const helper = new Helper();
-
   const expect = chai.expect;
   const Defaults = Ably.Rest.Platform.Defaults;
   const originialWsCheckUrl = Defaults.wsConnectivityUrl;
@@ -14,7 +12,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
   const defaultTransports = new Ably.Realtime({ key: 'xxx:yyy', autoConnect: false }).connection.connectionManager
     .transports;
 
-  function baseTransport() {
+  function baseTransport(helper) {
     return new Ably.Realtime({
       key: 'xxx:yyy',
       autoConnect: false,
@@ -42,6 +40,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -54,9 +53,12 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
     afterEach(restoreWsConnectivityUrl);
     afterEach(restoreWebSocketConstructor);
 
-    if (helper.availableTransports.length > 1) {
+    if (
+      Helper.forTestDefinition(this, 'tests that are run if there are multiple transports').availableTransports.length >
+      1
+    ) {
       // ensure comet transport is used for nodejs tests
-      function options(opts) {
+      function options(helper, opts) {
         return helper.Utils.mixin(
           {
             transports: helper.availableTransports,
@@ -67,7 +69,8 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
 
       /** @nospec */
       it('websocket_is_default', function (done) {
-        const realtime = helper.AblyRealtime(options());
+        const helper = this.test.helper;
+        const realtime = helper.AblyRealtime(options(helper));
 
         realtime.connection.on('connected', function () {
           try {
@@ -83,16 +86,21 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
 
       /** @nospec */
       it('no_ws_connectivity', function (done) {
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
-        const realtime = helper.AblyRealtime(options({ webSocketSlowTimeout: 1000, webSocketConnectTimeout: 3000 }));
+        const realtime = helper.AblyRealtime(
+          options(helper, { webSocketSlowTimeout: 1000, webSocketConnectTimeout: 3000 }),
+        );
 
         realtime.connection.on('connected', function () {
           try {
-            expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(baseTransport());
+            expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(
+              baseTransport(helper),
+            );
             // check that transport preference is set
             if (localStorageSupported) {
               expect(window.localStorage.getItem(transportPreferenceName)).to.equal(
-                JSON.stringify({ value: baseTransport() }),
+                JSON.stringify({ value: baseTransport(helper) }),
               );
             }
           } catch (err) {
@@ -106,9 +114,10 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
 
       /** @nospec */
       it('ws_primary_host_fails', function (done) {
+        const helper = this.test.helper;
         const goodHost = helper.AblyRest().options.realtimeHost;
         const realtime = helper.AblyRealtime(
-          options({ realtimeHost: helper.unroutableAddress, fallbackHosts: [goodHost] }),
+          options(helper, { realtimeHost: helper.unroutableAddress, fallbackHosts: [goodHost] }),
         );
 
         realtime.connection.on('connected', function () {
@@ -121,8 +130,11 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
 
       /** @specpartial RTN14d */
       it('no_internet_connectivity', function (done) {
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
-        const realtime = helper.AblyRealtime(options({ connectivityCheckUrl: failUrl, webSocketSlowTimeout: 1000 }));
+        const realtime = helper.AblyRealtime(
+          options(helper, { connectivityCheckUrl: failUrl, webSocketSlowTimeout: 1000 }),
+        );
 
         // expect client to transition to disconnected rather than attempting base transport (which would succeed in this instance)
         realtime.connection.on('disconnected', function () {
@@ -132,6 +144,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
 
       /** @specpartial RTN14d */
       it('no_websocket_or_base_transport', function (done) {
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
         const realtime = helper.AblyRealtime({
           transports: ['web_socket'],
@@ -147,8 +160,9 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       if (localStorageSupported) {
         /** @nospec */
         it('base_transport_preference', function (done) {
-          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport() }));
-          const realtime = helper.AblyRealtime(options());
+          const helper = this.test.helper;
+          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
+          const realtime = helper.AblyRealtime(options(helper));
 
           // make ws connectivity check only resolve after connected with base transport.
           // prevents a race condition where the wsConnectivity check succeeds before base transport is activated;
@@ -164,7 +178,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
           realtime.connection.on('connected', function () {
             try {
               expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(
-                baseTransport(),
+                baseTransport(helper),
               );
             } catch (err) {
               helper.closeAndFinish(done, realtime, err);
@@ -176,8 +190,9 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
 
         /** @nospec */
         it('transport_preference_reset_while_connecting', function (done) {
-          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport() }));
-          const realtime = helper.AblyRealtime(options());
+          const helper = this.test.helper;
+          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
+          const realtime = helper.AblyRealtime(options(helper));
 
           // make ws connectivity check fast so that it succeeds while base transport is still connecting
           realtime.connection.connectionManager.checkWsConnectivity = function () {
@@ -201,8 +216,9 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
 
         /** @nospec */
         it('transport_preference_reset_after_connected', function (done) {
-          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport() }));
-          const realtime = helper.AblyRealtime(options());
+          const helper = this.test.helper;
+          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
+          const realtime = helper.AblyRealtime(options(helper));
 
           // make ws connectivity check only resolve after connected with base transport
           realtime.connection.connectionManager.checkWsConnectivity = function () {
@@ -210,7 +226,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
               realtime.connection.once('connected', () => {
                 try {
                   expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(
-                    baseTransport(),
+                    baseTransport(helper),
                   );
                   resolve();
                 } catch (err) {

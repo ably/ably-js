@@ -1,8 +1,6 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   var createPM = Ably.protocolMessageFromDeserialized;
   var PresenceMessage = Ably.Realtime.PresenceMessage;
@@ -25,7 +23,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   var testClientId = 'testclient',
     testClientId2 = 'testclient2';
 
-  var createListenerChannel = function (channelName, callback) {
+  var createListenerChannel = function (helper, channelName, callback) {
     var channel, realtime;
     try {
       realtime = helper.AblyRealtime();
@@ -55,9 +53,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     };
   };
 
-  var runTestWithEventListener = function (done, channel, eventListener, testRunner) {
+  var runTestWithEventListener = function (done, helper, channel, eventListener, testRunner) {
     try {
-      createListenerChannel(channel, function (err, listenerRealtime, presenceChannel) {
+      createListenerChannel(helper, channel, function (err, listenerRealtime, presenceChannel) {
         if (err) {
           helper.closeAndFinish(done, listenerRealtime, err);
           return;
@@ -93,6 +91,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   describe('realtime/presence', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -145,6 +144,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specskip
      */
     it.skip('presenceAttachAndEnter', function (done) {
+      const helper = this.test.helper;
       var channelName = 'attachAndEnter';
       var attachAndEnter = function (cb) {
         /* set up authenticated connection */
@@ -165,7 +165,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), attachAndEnter);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), attachAndEnter);
     });
 
     /**
@@ -175,6 +175,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP8a - doesn't test entering with data
      */
     it('presenceEnterWithoutAttach', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithoutAttach';
       var enterWithoutAttach = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -191,7 +192,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutAttach);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithoutAttach);
     });
 
     /**
@@ -200,6 +201,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @nospec
      */
     it('presenceEnterWithoutConnect', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithoutConnect';
       var enterWithoutConnect = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -213,7 +215,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutConnect);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithoutConnect);
     });
 
     /**
@@ -225,6 +227,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specskip
      */
     it.skip('presenceEnterDetachRace', function (done) {
+      const helper = this.test.helper;
       // Can't use runTestWithEventListener helper as one of the successful
       // outcomes is an error in presence enter, in which case listenForEventOn
       // will not run its callback
@@ -233,7 +236,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       try {
         /* listen for the enter event, test is complete when received */
 
-        createListenerChannel(channelName, function (err, listenerRealtime, presenceChannel) {
+        createListenerChannel(helper, channelName, function (err, listenerRealtime, presenceChannel) {
           if (err) {
             helper.closeAndFinish(done, listenerRealtime, err);
             return;
@@ -290,6 +293,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP8b - test successful callback
      */
     it('presenceEnterWithCallback', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithCallback';
       var enterWithCallback = function (cb) {
         /* set up authenticated connection */
@@ -310,7 +314,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithCallback);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithCallback);
     });
 
     /**
@@ -318,6 +322,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP8a - test entering presence without data and callback
      */
     it('presenceEnterWithNothing', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithNothing';
       var enterWithNothing = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -336,7 +341,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithNothing);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithNothing);
     });
 
     /**
@@ -345,6 +350,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP8a - test entering presence with data
      */
     it('presenceEnterWithData', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithData';
       var enterWithData = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -363,7 +369,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithData);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithData);
     });
 
     /**
@@ -373,6 +379,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP8c - test sending ENTER action
      */
     it('presenceMessageAction', function (done) {
+      const helper = this.test.helper;
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var channelName = 'presenceMessageAction';
       var clientChannel = clientRealtime.channels.get(channelName);
@@ -406,6 +413,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP8e - doesn't test leaving without extras
      */
     it('presenceMessageExtras', function (done) {
+      const helper = this.test.helper;
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var channelName = 'presenceEnterWithExtras';
       var clientChannel = clientRealtime.channels.get(channelName);
@@ -478,6 +486,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @nospec
      */
     it('presenceEnterDetachEnter', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterDetachEnter';
       var secondEventListener = function (channel, callback) {
         var presenceHandler = function (presenceMsg) {
@@ -515,7 +524,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, secondEventListener, enterDetachEnter);
+      runTestWithEventListener(done, helper, channelName, secondEventListener, enterDetachEnter);
     });
 
     /**
@@ -525,6 +534,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP8d - test throwing error if channel in DETACHED or FAILED state
      */
     it('presenceEnterInvalid', function (done) {
+      const helper = this.test.helper;
       var clientRealtime;
       try {
         clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -556,6 +566,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP10
      */
     it('presenceEnterAndLeave', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterAndLeave';
       var enterAndLeave = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -581,7 +592,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('leave'), enterAndLeave);
+      runTestWithEventListener(done, helper, channelName, listenerFor('leave'), enterAndLeave);
     });
 
     /**
@@ -591,6 +602,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP9a - tests passing new data
      */
     it('presenceEnterUpdate', function (done) {
+      const helper = this.test.helper;
       var newData = 'New data';
       var channelName = 'enterUpdate';
       var eventListener = function (channel, callback) {
@@ -632,7 +644,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterUpdate);
+      runTestWithEventListener(done, helper, channelName, eventListener, enterUpdate);
     });
 
     /**
@@ -640,6 +652,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP11a
      */
     it('presenceEnterGet', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterGet';
       var testData = 'some data for presenceEnterGet';
       var eventListener = function (channel, callback) {
@@ -681,7 +694,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterGet);
+      runTestWithEventListener(done, helper, channelName, eventListener, enterGet);
     });
 
     /**
@@ -689,6 +702,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP6c
      */
     it('presenceSubscribeUnattached', function (done) {
+      const helper = this.test.helper;
       var channelName = 'subscribeUnattached';
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var clientRealtime2;
@@ -720,6 +734,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP11c1 - tests default behavior waitForSync=true
      */
     it('presenceGetUnattached', function (done) {
+      const helper = this.test.helper;
       var channelName = 'getUnattached';
       var testData = 'some data';
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -764,6 +779,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP10c
      */
     it('presenceEnterLeaveGet', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterLeaveGet';
       var eventListener = function (channel, callback) {
         var presenceHandler = function () {
@@ -811,7 +827,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterLeaveGet);
+      runTestWithEventListener(done, helper, channelName, eventListener, enterLeaveGet);
     });
 
     /**
@@ -820,6 +836,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP12c
      */
     it('presenceHistory', function (done) {
+      const helper = this.test.helper;
       var clientRealtime;
       var channelName = 'history';
       var testClientData = 'Test client data (history0)';
@@ -895,6 +912,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @nospec
      */
     it('presenceSecondConnection', function (done) {
+      const helper = this.test.helper;
       var clientRealtime1, clientRealtime2;
       var channelName = 'secondConnection';
       try {
@@ -978,6 +996,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP11c3
      */
     it('presenceTwoMembers', function (done) {
+      const helper = this.test.helper;
       var clientRealtime1, clientRealtime2, clientChannel1, clientChannel2;
       var channelName = 'twoMembers';
       try {
@@ -1147,6 +1166,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @nospec
      */
     it('presenceEnterAfterClose', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterAfterClose';
       var secondEnterListener = function (channel, callback) {
         var presenceHandler = function (presenceMsg) {
@@ -1182,7 +1202,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, secondEnterListener, enterAfterClose);
+      runTestWithEventListener(done, helper, channelName, secondEnterListener, enterAfterClose);
     });
 
     /**
@@ -1190,6 +1210,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP15e - tests only enterClient
      */
     it('presenceEnterClosed', function (done) {
+      const helper = this.test.helper;
       var clientRealtime;
       var channelName = 'enterClosed';
       try {
@@ -1222,7 +1243,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP10c
      */
     it('presenceClientIdIsImplicit', function (done) {
-      var clientId = 'implicitClient',
+      var helper = this.test.helper,
+        clientId = 'implicitClient',
         client = helper.AblyRealtime({ clientId: clientId });
 
       var channel = client.channels.get('presenceClientIdIsImplicit'),
@@ -1267,7 +1289,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP8e - test encoding of message and data
      */
     it('presenceEncoding', function (done) {
-      var data = { foo: 'bar' },
+      var helper = this.test.helper,
+        data = { foo: 'bar' },
         encodedData = JSON.stringify(data),
         options = {
           clientId: testClientId,
@@ -1333,6 +1356,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @nospec
      */
     it('presence_enter_inherited_clientid', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enter_inherited_clientid';
 
       var authCallback = function (tokenParams, callback) {
@@ -1362,7 +1386,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.monitorConnection(done, realtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
     });
 
     /**
@@ -1374,6 +1398,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @nospec
      */
     it('presence_enter_before_know_clientid', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enter_before_know_clientid';
 
       var enterInheritedClientId = function (cb) {
@@ -1404,7 +1429,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         });
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
     });
 
     /**
@@ -1414,6 +1439,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP15b
      */
     it('presence_refresh_on_detach', function (done) {
+      const helper = this.test.helper;
       var channelName = 'presence_refresh_on_detach';
       var realtime = helper.AblyRealtime();
       var observer = helper.AblyRealtime();
@@ -1529,6 +1555,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /** @nospec */
     it('presence_detach_during_sync', function (done) {
+      const helper = this.test.helper;
       var channelName = 'presence_detach_during_sync';
       var enterer = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var detacher = helper.AblyRealtime();
@@ -1591,6 +1618,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP17i - tests simple re-entry, no RESUMED flag test
      */
     it('presence_auto_reenter', function (done) {
+      const helper = this.test.helper;
       var channelName = 'presence_auto_reenter';
       var realtime = helper.AblyRealtime();
       var channel = realtime.channels.get(channelName);
@@ -1704,7 +1732,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specskip
      */
     it.skip('presence_failed_auto_reenter', function (done) {
-      var channelName = 'presence_failed_auto_reenter',
+      var helper = this.test.helper,
+        channelName = 'presence_failed_auto_reenter',
         realtime,
         channel,
         token;
@@ -1804,7 +1833,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @nospec
      */
     it('multiple_pending', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('multiple_pending'),
         originalAttachImpl = channel.attachImpl;
 
@@ -1859,7 +1889,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP19
      */
     it('leave_published_for_member_missing_from_sync', function (done) {
-      var realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
         continuousClientId = 'continuous',
         goneClientId = 'gone',
         continuousRealtime = helper.AblyRealtime({ clientId: continuousClientId }),
@@ -1977,7 +2008,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP19a
      */
     it('leave_published_for_members_on_presenceless_attached', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channelName = 'leave_published_for_members_on_presenceless_attached',
         channel = realtime.channels.get(channelName),
         fakeClientId = 'faker';
@@ -2073,7 +2105,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP11d
      */
     it('suspended_preserves_presence', function (done) {
-      var mainRealtime = helper.AblyRealtime({ clientId: 'main' }),
+      var helper = this.test.helper,
+        mainRealtime = helper.AblyRealtime({ clientId: 'main' }),
         continuousRealtime = helper.AblyRealtime({ clientId: 'continuous' }),
         leavesRealtime = helper.AblyRealtime({ clientId: 'leaves' }),
         channelName = 'suspended_preserves_presence',
@@ -2213,6 +2246,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP9a
      */
     it('presence_many_updates', function (done) {
+      const helper = this.test.helper;
       var client = helper.AblyRealtime({ clientId: testClientId });
 
       var channel = client.channels.get('presence_many_updates'),

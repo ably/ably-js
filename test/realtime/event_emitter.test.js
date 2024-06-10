@@ -1,13 +1,12 @@
 'use strict';
 
 define(['shared_helper', 'chai'], function (Helper, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
 
   describe('realtime/event_emitter', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -30,6 +29,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @specpartial RTL2 - RealtimeChannel implements EventEmitter
      */
     it('attachdetach0', function (done) {
+      const helper = this.test.helper;
       try {
         var realtime = helper.AblyRealtime(),
           index,
@@ -78,7 +78,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
 
     /** @specpartial RTE6 - test exceptions in callbacks do not propagate */
     it('emitCallsAllCallbacksIgnoringExceptions', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = false,
         eventEmitter = realtime.connection;
 
@@ -104,7 +105,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
 
     /** @specpartial RTE4 - ensure that each registration is only invoked once */
     it('onceCalledOnlyOnce', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         onCallbackCalled = 0,
         onceCallbackCalled = 0,
         eventEmitter = realtime.connection;
@@ -137,7 +139,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @specpartial RTE4 - same listener is added multiple times listener registry
      */
     it('onceCallbackDoesNotImpactOnCallback', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -164,7 +167,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
 
     /** @specpartial RTE5 - test remove matching listeners */
     it('offRemovesAllMatchingListeners', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -194,7 +198,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
 
     /** @specpartial RTE5 - test remove all listeners */
     it('offRemovesAllListeners', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -224,7 +229,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
 
     /** @specpartial RTE5 - test remove matching both event and listener */
     it('offRemovesAllMatchingEventListeners', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -258,7 +264,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @nospec
      */
     it('offRemovesAllMatchingEvents', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -297,7 +304,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @nospec
      */
     it('offRemovesEmptyEventNameListeners', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         eventEmitter = realtime.connection;
 
       var callback = function () {};
@@ -330,7 +338,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @nospec
      */
     it('arrayOfEvents', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -374,7 +383,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @nospec
      */
     it('arrayOfEventsWithOnce', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -405,7 +415,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @nospec
      */
     it('listenerAddedInListenerCb', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         eventEmitter = realtime.connection,
         firstCbCalled = false,
         secondCbCalled = false;
@@ -436,7 +447,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @nospec
      */
     it('listenerRemovedInListenerCb', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         eventEmitter = realtime.connection,
         onCbCalledTimes = 0,
         onceCbCalledTimes = 0,
@@ -481,6 +493,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
     describe('event_emitter_promise', function () {
       /** @specpartial RTN26b - tests only that listener was called, not the params */
       it('whenState', function (done) {
+        const helper = this.test.helper;
         var realtime = helper.AblyRealtime();
         var eventEmitter = realtime.connection;
 
@@ -499,6 +512,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
        * @nospec
        */
       it('once', function (done) {
+        const helper = this.test.helper;
         var realtime = helper.AblyRealtime();
         var eventEmitter = realtime.connection;
 
@@ -514,7 +528,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
 
       /** @specpartial RTE4 - promise is resolved for the first event that is emitted when no event argument is provided */
       it('anyEventsWithOnce', function (done) {
-        var realtime = helper.AblyRealtime({ autoConnect: false }),
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime({ autoConnect: false }),
           eventEmitter = realtime.connection;
 
         const p = eventEmitter.once();
@@ -531,7 +546,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
        * @nospec
        */
       it('arrayOfEventsWithOnce', function (done) {
-        var realtime = helper.AblyRealtime({ autoConnect: false }),
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime({ autoConnect: false }),
           eventEmitter = realtime.connection;
 
         const p = eventEmitter.once(['a', 'b', 'c']);

@@ -1,8 +1,6 @@
 'use strict';
 
 define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, vcdiffDecoder, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   var testData = [
     { foo: 'bar', count: 1, status: 'active' },
@@ -30,6 +28,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, v
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -40,6 +39,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, v
 
     /** @spec PC3 */
     it('deltaPlugin', function (done) {
+      const helper = this.test.helper;
       var testName = 'deltaPlugin';
       try {
         var testVcdiffDecoder = getTestVcdiffDecoder();
@@ -95,6 +95,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, v
      * @nospec
      */
     it('unusedPlugin', function (done) {
+      const helper = this.test.helper;
       var testName = 'unusedPlugin';
       try {
         var testVcdiffDecoder = getTestVcdiffDecoder();
@@ -140,6 +141,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, v
      * @spec RTL18c
      */
     it('lastMessageNotFoundRecovery', function (done) {
+      const helper = this.test.helper;
       var testName = 'lastMessageNotFoundRecovery';
       try {
         var testVcdiffDecoder = getTestVcdiffDecoder();
@@ -208,6 +210,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, v
      * @spec RTL18c
      */
     it('deltaDecodeFailureRecovery', function (done) {
+      const helper = this.test.helper;
       var testName = 'deltaDecodeFailureRecovery';
       try {
         var failingTestVcdiffDecoder = {
@@ -265,6 +268,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (Helper, v
      * @nospec
      */
     it('noPlugin', function (done) {
+      const helper = this.test.helper;
       try {
         var realtime = helper.AblyRealtime();
         var channel = realtime.channels.get('noPlugin', { params: { delta: 'vcdiff' } });

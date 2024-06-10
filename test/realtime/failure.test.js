@@ -1,8 +1,6 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   var noop = function () {};
   var createPM = Ably.protocolMessageFromDeserialized;
@@ -10,6 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   describe('realtime/failure', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -25,6 +24,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTN14a
      */
     it('invalid_cred_failure', function (done) {
+      const helper = this.test.helper;
       try {
         var failure_test = function (transports) {
           return function (cb) {
@@ -76,6 +76,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTN14d - test only transition to DISCONNECTED
      */
     it('break_transport', function (done) {
+      const helper = this.test.helper;
       try {
         var break_test = function (transports) {
           return function (cb) {
@@ -119,6 +120,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTN14d - doesn't test fallback hosts used
      */
     it('no_connection_lifecycle', function (done) {
+      const helper = this.test.helper;
       try {
         var lifecycleTest = function (transports) {
           return function (cb) {
@@ -197,7 +199,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       expect(value).to.be.below(max);
     }
 
-    helper.availableTransports.forEach(function (transport) {
+    Helper.forTestDefinition(this, 'disconnected_backoff_').availableTransports.forEach(function (transport) {
       /**
        * @spec RTB1a
        * @spec RTB1b
@@ -207,6 +209,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
        * @specpartial TA2 - retryIn passed in ConnectionStateChange
        */
       it('disconnected_backoff_' + transport, function (done) {
+        const helper = this.test.helper;
         var disconnectedRetryTimeout = 150;
         var realtime = helper.AblyRealtime({
           disconnectedRetryTimeout: disconnectedRetryTimeout,
@@ -253,6 +256,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTP15d - error on leave presence
      */
     it('failed_channel', function (done) {
+      const helper = this.test.helper;
       var realtime = helper.AblyRealtime();
       var failChan;
       var channelFailedCode = 90001;
@@ -363,7 +367,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTL13b - tests re-attach attempt once
      */
     it('attach_timeout', function (done) {
-      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000, channelRetryTimeout: 1000 }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000, channelRetryTimeout: 1000 }),
         channel = realtime.channels.get('failed_attach'),
         originalProcessMessage = channel.processMessage.bind(channel);
 
@@ -396,7 +401,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
     });
 
-    helper.availableTransports.forEach(function (transport) {
+    Helper.forTestDefinition(this, 'channel_backoff_').availableTransports.forEach(function (transport) {
       /**
        * @spec RTL13b
        * @spec RTB1a
@@ -405,6 +410,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
        * @specpartial RTB1 - test backoff for channel
        */
       it('channel_backoff_' + transport, function (done) {
+        const helper = this.test.helper;
         var channelRetryTimeout = 150;
         var realtime = helper.AblyRealtime({
             channelRetryTimeout: channelRetryTimeout,
@@ -473,7 +479,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     function nack_on_connection_failure(failureFn, expectedRealtimeState, expectedNackCode) {
       return function (done) {
         /* Use one transport because stubbing out transport#onProtocolMesage */
-        var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
           channel = realtime.channels.get('nack_on_connection_failure');
 
         async.series(
@@ -510,7 +517,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 }
               });
               Ably.Realtime.Platform.Config.nextTick(function () {
-                failureFn(realtime);
+                failureFn(realtime, helper);
               });
             },
           ],
@@ -525,7 +532,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     it(
       'nack_on_connection_suspended',
       nack_on_connection_failure(
-        function (realtime) {
+        function (realtime, helper) {
           helper.becomeSuspended(realtime);
         },
         'suspended',
@@ -562,7 +569,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /** @spec RTN23a */
     it('idle_transport_timeout', function (done) {
-      var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000 }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000 }),
         originalOnProtocolMessage;
 
       realtime.connection.connectionManager.on('transport.pending', function (transport) {
@@ -599,7 +607,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       return function (done) {
         /* Use the echoserver as a fallback host because it doesn't support
          * websockets, so it'll fail to connect, which we can detect */
-        var realtime = helper.AblyRealtime(helper.Utils.mixin({ fallbackHosts: ['echo.ably.io'] }, realtimeOpts)),
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime(helper.Utils.mixin({ fallbackHosts: ['echo.ably.io'] }, realtimeOpts)),
           connection = realtime.connection,
           connectionManager = connection.connectionManager;
 
@@ -634,6 +643,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /** @spec RTL17 */
     it('no_messages_if_not_attached', function (done) {
+      const helper = this.test.helper;
       var testName = 'no_messages_if_not_attached';
       var testMessage = { foo: 'bar', count: 1, status: 'active' };
       var testMessage2 = { foo: 'bar', count: 2, status: 'active' };

@@ -1,13 +1,11 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
   var Defaults = Ably.Rest.Platform.Defaults;
 
-  function encodingFixturesPath() {
+  function encodingFixturesPath(helper) {
     return helper.testResourcesPath + 'messages-encoding.json';
   }
 
@@ -15,6 +13,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -31,7 +30,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RSL6a1 - publish through REST API, receive via realtime for all transports
      */
     it('message_decoding', function (done) {
-      helper.loadTestData(encodingFixturesPath(), function (err, testData) {
+      const helper = this.test.helper;
+      helper.loadTestData(encodingFixturesPath(helper), function (err, testData) {
         if (err) {
           done(err);
           return;
@@ -135,7 +135,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RSL6a1 - publish through realtime, receive via rest (history) for all transports
      */
     it('message_encoding', function (done) {
-      helper.loadTestData(encodingFixturesPath(), function (err, testData) {
+      const helper = this.test.helper;
+      helper.loadTestData(encodingFixturesPath(helper), function (err, testData) {
         if (err) {
           done(new Error('Unable to get test assets; err = ' + helper.displayError(err)));
           return;

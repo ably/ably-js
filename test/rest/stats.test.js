@@ -1,8 +1,6 @@
 'use strict';
 
 define(['shared_helper', 'chai'], function (Helper, chai) {
-  const helper = new Helper();
-
   var rest;
   var expect = chai.expect;
 
@@ -65,6 +63,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
 
     before(function (done) {
       // force a new app to be created with first argument true so that stats are not effected by other tests
+      const helper = Helper.forHook(this);
       helper.setupApp(true, function () {
         rest = helper.AblyRest();
         helper.createStats(helper.getTestApp(), statsFixtures, function (err) {

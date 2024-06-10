@@ -43,6 +43,28 @@ define([
     unroutableAddress = unroutableAddress;
     flushTestLogs = globals.flushLogs;
 
+    constructor(context) {
+      if (!context) {
+        throw new Error('SharedHelper created without context');
+      }
+      this.context = context;
+    }
+
+    static forTest(thisInBeforeEach) {
+      return new this(thisInBeforeEach.currentTest.fullTitle());
+    }
+
+    static forHook(thisInHook) {
+      return new this(thisInHook.test.fullTitle());
+    }
+
+    static forTestDefinition(thisInDescribe, label) {
+      if (!label) {
+        throw new Error('SharedHelper.forTestDefinition called without label');
+      }
+      return new this(`${thisInDescribe.title} (defining ${label})`);
+    }
+
     displayError(err) {
       if (typeof err == 'string' || err == null) return err;
 
@@ -198,10 +220,10 @@ define([
     static restTestOnJsonMsgpack(name, testFn, skip) {
       var itFn = skip ? it.skip : it;
       itFn(name + ' with binary protocol', async function () {
-        await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary');
+        await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary', this.test.helper);
       });
       itFn(name + ' with text protocol', async function () {
-        await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text');
+        await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text', this.test.helper);
       });
     }
 

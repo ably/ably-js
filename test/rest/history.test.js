@@ -1,8 +1,6 @@
 'use strict';
 
 define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
-  const helper = new Helper();
-
   var rest;
   var expect = chai.expect;
   var exports = {};
@@ -21,6 +19,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function () {
         rest = helper.AblyRest();
         done();
@@ -32,7 +31,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * @spec RSL2
      * @spec RSL2a
      */
-    Helper.restTestOnJsonMsgpack('history_simple', async function (rest, channelName) {
+    Helper.restTestOnJsonMsgpack('history_simple', async function (rest, channelName, helper) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -63,7 +62,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * @spec RSL2
      * @spec RSL2a
      */
-    Helper.restTestOnJsonMsgpack('history_multiple', async function (rest, channelName) {
+    Helper.restTestOnJsonMsgpack('history_multiple', async function (rest, channelName, helper) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -91,7 +90,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * @spec RSL2b2
      * @specpartial RSL2b3 - should also test maximum supported limit of 1000
      */
-    Helper.restTestOnJsonMsgpack('history_simple_paginated_b', async function (rest, channelName) {
+    Helper.restTestOnJsonMsgpack('history_simple_paginated_b', async function (rest, channelName, helper) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
       /* first, send a number of events to this channel */
@@ -134,6 +133,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * @specpartial RSL2b3 - should also test maximum supported limit of 1000
      */
     it('history_simple_paginated_f', async function () {
+      const helper = this.test.helper;
       var testchannel = rest.channels.get('persisted:history_simple_paginated_f');
 
       /* first, send a number of events to this channel */
@@ -215,6 +215,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * @specpartial RSL2b3 - should also test maximum supported limit of 1000
      */
     it('history_multiple_paginated_f', async function () {
+      const helper = this.test.helper;
       var testchannel = rest.channels.get('persisted:history_multiple_paginated_f');
 
       /* first, send a number of events to this channel */

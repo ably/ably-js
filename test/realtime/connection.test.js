@@ -1,8 +1,6 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
-  const helper = new Helper();
-
   var expect = chai.expect;
   var createPM = Ably.protocolMessageFromDeserialized;
 
@@ -10,6 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -20,6 +19,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /** @spec RTN13 */
     it('connectionPing', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
@@ -39,6 +39,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /** @specpartial RTN13a - callback is called with response time */
     it('connectionPingWithCallback', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
@@ -68,6 +69,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTN16g - connectionKey, the current msgSerial
      */
     it('connectionAttributes', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
@@ -129,6 +131,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /** @spec RTN15c7 */
     it('unrecoverableConnection', function (done) {
+      const helper = this.test.helper;
       var realtime;
       const fakeRecoveryKey = JSON.stringify({
         connectionKey: '_____!ablyjs_test_fake-key____',
@@ -176,7 +179,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTN19a2
      */
     it('connectionQueuing', function (done) {
-      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channel = realtime.channels.get('connectionQueuing'),
         connectionManager = realtime.connection.connectionManager;
 
@@ -295,7 +299,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial TO3l8 - default can be overridden by the maxMessageSize in the connectionDetails
      */
     it('connectionDetails', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         connectionManager = realtime.connection.connectionManager;
       realtime.connection.once('connected', function () {
         connectionManager.once('connectiondetails', function (details) {
@@ -335,7 +340,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTN26a
      * @spec RTN26b
      */
-    it('whenState', async () => {
+    it('whenState', async function () {
+      const helper = this.test.helper;
       const realtime = helper.AblyRealtime({ autoConnect: false });
 
       await helper.monitorConnectionAsync(async () => {
