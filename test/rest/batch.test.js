@@ -216,8 +216,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         key: testApp.keys[4].keyStr /* this key has revocableTokens enabled */,
       });
 
-      const clientId1 = `clientId1-${helper.randomString()}`;
-      const clientId2 = `clientId2-${helper.randomString()}`;
+      const clientId1 = `clientId1-${Helper.randomString()}`;
+      const clientId2 = `clientId2-${Helper.randomString()}`;
 
       // First, we fetch tokens for a couple of different clientIds...
       const [clientId1TokenDetails, clientId2TokenDetails] = await Promise.all([
@@ -303,7 +303,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         key: testApp.keys[4].keyStr /* this key has revocableTokens enabled */,
       });
 
-      const clientId = `clientId-${helper.randomString()}`;
+      const clientId = `clientId-${Helper.randomString()}`;
 
       const serverTimeAtStartOfTest = await rest.time();
       const issuedBefore = serverTimeAtStartOfTest - 20 * 60 * 1000; // i.e. ~20 minutes ago (arbitrarily chosen)

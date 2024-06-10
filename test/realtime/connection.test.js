@@ -41,7 +41,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       try {
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
-          helper.whenPromiseSettles(realtime.connection.ping(), function (err, responseTime) {
+          Helper.whenPromiseSettles(realtime.connection.ping(), function (err, responseTime) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -76,7 +76,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           }
 
           var channel = realtime.channels.get('connectionattributes');
-          helper.whenPromiseSettles(channel.attach(), function (err) {
+          Helper.whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
               helper.closeAndFinish(done, realtime, err);
               return;
@@ -94,7 +94,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                   });
                 },
                 function (cb) {
-                  helper.whenPromiseSettles(channel.publish('name', 'data'), cb);
+                  Helper.whenPromiseSettles(channel.publish('name', 'data'), cb);
                 },
               ],
               function (err) {
@@ -103,7 +103,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                   return;
                 }
                 realtime.connection.close();
-                helper.whenPromiseSettles(realtime.connection.whenState('closed'), function () {
+                Helper.whenPromiseSettles(realtime.connection.whenState('closed'), function () {
                   try {
                     expect(realtime.connection.recoveryKey).to.equal(null, 'verify recovery key null after close');
                     helper.closeAndFinish(done, realtime);
@@ -171,7 +171,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       realtime.connection.once('connected', function () {
         var transport = connectionManager.activeProtocol.transport;
-        helper.whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             helper.closeAndFinish(done, realtime, err);
             return;
@@ -200,7 +200,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 transportSendCallback = cb;
 
                 /* Sabotaged publish */
-                helper.whenPromiseSettles(channel.publish('first', null), function (err) {
+                Helper.whenPromiseSettles(channel.publish('first', null), function (err) {
                   if (!publishCallback) {
                     done(new Error('publish completed before publishCallback populated'));
                   }

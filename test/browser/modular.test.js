@@ -597,7 +597,7 @@ function registerAblyModularTests(Helper) {
 
             const txClient = new BaseRealtime(
               helper.ablyClientOptions({
-                clientId: helper.randomString(),
+                clientId: Helper.randomString(),
                 plugins: {
                   WebSocketTransport,
                   FetchRequest,
@@ -634,7 +634,7 @@ function registerAblyModularTests(Helper) {
           const rxChannel = rxClient.channels.get('channel');
 
           await monitorConnectionThenCloseAndFinish(async () => {
-            const txClientId = helper.randomString();
+            const txClientId = Helper.randomString();
             const txClient = new BaseRealtime(
               helper.ablyClientOptions({
                 clientId: txClientId,

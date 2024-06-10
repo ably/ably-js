@@ -73,7 +73,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         var rest = helper.AblyRest();
         var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
 
-        helper.whenPromiseSettles(rest.auth.requestToken(null, testKeyOpts), function (err, tokenDetails) {
+        Helper.whenPromiseSettles(rest.auth.requestToken(null, testKeyOpts), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
