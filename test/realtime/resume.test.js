@@ -134,7 +134,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       });
     }
 
-    Helper.testOnAllTransports('resume_inactive', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'resume_inactive', function (realtimeOpts) {
       return function (done) {
         resume_inactive(done, this.test.helper, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
       };
@@ -254,7 +254,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       });
     }
 
-    Helper.testOnAllTransports('resume_active', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'resume_active', function (realtimeOpts) {
       return function (done) {
         resume_active(done, this.test.helper, 'resume_active' + String(Math.random()), {}, realtimeOpts);
       };
@@ -264,6 +264,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Resume with loss of continuity
      */
     Helper.testOnAllTransports(
+      this,
       'resume_lost_continuity',
       function (realtimeOpts) {
         return function (done) {
@@ -331,6 +332,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Resume with token error
      */
     Helper.testOnAllTransports(
+      this,
       'resume_token_error',
       function (realtimeOpts) {
         return function (done) {
@@ -385,6 +387,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Resume with fatal error
      */
     Helper.testOnAllTransports(
+      this,
       'resume_fatal_error',
       function (realtimeOpts) {
         return function (done) {

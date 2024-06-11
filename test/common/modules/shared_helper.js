@@ -15,10 +15,6 @@ define([
   var platform = clientModule.Ably.Realtime.Platform;
   var BufferUtils = platform.BufferUtils;
   var expect = chai.expect;
-  var availableTransports = utils.keysArray(
-    clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
-  );
-  var bestTransport = availableTransports[0];
   /* IANA reserved; requests to it will hang forever */
   var unroutableHost = '10.255.255.1';
   var unroutableAddress = 'http://' + unroutableHost + '/';
@@ -37,8 +33,6 @@ define([
     loadTestData = testAppManager.loadJsonData;
     testResourcesPath = testAppManager.testResourcesPath;
 
-    availableTransports = availableTransports;
-    bestTransport = bestTransport;
     unroutableHost = unroutableHost;
     unroutableAddress = unroutableAddress;
     flushTestLogs = globals.flushLogs;
@@ -63,6 +57,16 @@ define([
         throw new Error('SharedHelper.forTestDefinition called without label');
       }
       return new this(`${thisInDescribe.title} (defining ${label})`);
+    }
+
+    get availableTransports() {
+      return utils.keysArray(
+        clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
+      );
+    }
+
+    get bestTransport() {
+      return this.availableTransports[0];
     }
 
     displayError(err) {
@@ -196,9 +200,10 @@ define([
     }
 
     /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
-    static testOnAllTransports(name, testFn, skip) {
+    static testOnAllTransports(thisInDescribe, name, testFn, skip) {
+      const helper = this.forTestDefinition(thisInDescribe, name);
       var itFn = skip ? it.skip : it;
-      let transports = availableTransports;
+      let transports = helper.availableTransports;
       transports.forEach(function (transport) {
         itFn(
           name + '_with_' + transport + '_binary_transport',
@@ -302,8 +307,8 @@ define([
     }
   }
 
-  SharedHelper.testOnAllTransports.skip = function (name, testFn) {
-    SharedHelper.testOnAllTransports(name, testFn, true);
+  SharedHelper.testOnAllTransports.skip = function (thisInDescribe, name, testFn) {
+    SharedHelper.testOnAllTransports(thisInDescribe, name, testFn, true);
   };
 
   SharedHelper.restTestOnJsonMsgpack.skip = function (name, testFn) {

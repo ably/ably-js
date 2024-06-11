@@ -165,7 +165,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * Channel init with options
      */
-    Helper.testOnAllTransports('channelinit0', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelinit0', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -199,7 +199,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * Base attach case
      */
-    Helper.testOnAllTransports('channelattach0', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattach0', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -223,7 +223,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * Attach before connect
      */
-    Helper.testOnAllTransports('channelattach2', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattach2', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -247,6 +247,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach then detach
      */
     Helper.testOnAllTransports(
+      this,
       'channelattach3',
       function (realtimeOpts) {
         return function (done) {
@@ -284,7 +285,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach with an empty channel and expect a channel error
      * and the connection to remain open
      */
-    Helper.testOnAllTransports('channelattachempty', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattachempty', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -317,7 +318,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach with an invalid channel name and expect a channel error
      * and the connection to remain open
      */
-    Helper.testOnAllTransports('channelattachinvalid', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattachinvalid', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -356,7 +357,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * Publishing on a nonattached channel
      */
-    Helper.testOnAllTransports('publish_no_attach', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'publish_no_attach', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -384,7 +385,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * publishing on a nonattached channel with an invalid channel name
      */
-    Helper.testOnAllTransports('channelattach_publish_invalid', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattach_publish_invalid', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -414,7 +415,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach with an invalid channel name and expect a channel error
      * and the connection to remain open
      */
-    Helper.testOnAllTransports('channelattach_invalid_twice', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattach_invalid_twice', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -496,7 +497,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       }
     });
 
-    Helper.testOnAllTransports('attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsBasicChannelsGet';
@@ -550,7 +551,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
     });
 
-    Helper.testOnAllTransports('attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsBasicSetOptions';
@@ -600,7 +601,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
     });
 
-    Helper.testOnAllTransports('subscribeAfterSetOptions', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'subscribeAfterSetOptions', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'subscribeAfterSetOptions';
@@ -674,7 +675,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       }
     });
 
-    Helper.testOnAllTransports('setOptionsCallbackBehaviour', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'setOptionsCallbackBehaviour', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'setOptionsCallbackBehaviour';
@@ -750,7 +751,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /* Verify modes is ignored when params.modes is present */
-    Helper.testOnAllTransports('attachWithChannelParamsModesAndChannelModes', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelParamsModesAndChannelModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsModesAndChannelModes';
@@ -805,7 +806,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
     });
 
-    Helper.testOnAllTransports('attachWithChannelModes', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelModes';
@@ -855,7 +856,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       };
     });
 
-    Helper.testOnAllTransports('attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsDeltaAndModes';
