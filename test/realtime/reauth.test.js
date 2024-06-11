@@ -177,8 +177,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       };
     }
 
-    function testCase(name, createSteps) {
-      Helper.testOnAllTransports(name, function (realtimeOpts) {
+    function testCase(thisInDescribe, name, createSteps) {
+      Helper.testOnAllTransports(thisInDescribe, name, function (realtimeOpts) {
         return function (done) {
           const helper = this.test.helper;
           var _steps = createSteps(helper).slice();
@@ -203,7 +203,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      ****************/
 
     /* RTC8a1 */
-    testCase('reauthCapabilityUpgradeNewChannel', (helper) => [
+    testCase(this, 'reauthCapabilityUpgradeNewChannel', (helper) => [
       getToken(helper, { clientId: clientId, capability: { wrongchannel: ['*'] } }),
       connectWithToken(helper),
       monitorConnectionContinuity(helper),
@@ -215,7 +215,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     ]);
 
     /* RTC8a1 */
-    testCase('reauthCapabilityDowngradeFullChannel', (helper) => [
+    testCase(this, 'reauthCapabilityDowngradeFullChannel', (helper) => [
       getToken(helper, { clientId: clientId, capability: { channel: ['*'], another: ['*'] } }),
       connectWithToken(helper),
       monitorConnectionContinuity(helper),
@@ -228,7 +228,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       close(),
     ]);
 
-    testCase('reauthCapabilityUpgradeAddPublish', (helper) => [
+    testCase(this, 'reauthCapabilityUpgradeAddPublish', (helper) => [
       getToken(helper, { clientId: clientId, capability: { channel: ['subscribe'] } }),
       connectWithToken(helper),
       monitorConnectionContinuity(helper),
@@ -241,7 +241,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       close(),
     ]);
 
-    testCase('reauthCapabilityDowngradePublish', (helper) => [
+    testCase(this, 'reauthCapabilityDowngradePublish', (helper) => [
       getToken(helper, { clientId: clientId, capability: { channel: ['subscribe', 'publish'] } }),
       connectWithToken(helper),
       monitorConnectionContinuity(helper),

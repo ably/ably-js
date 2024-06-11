@@ -655,7 +655,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Check state change reason is propogated during a disconnect
      * (when connecting with a token that expires while connected)
      */
-    Helper.testOnAllTransports('auth_token_expires', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'auth_token_expires', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           clientRealtime,
@@ -751,7 +751,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * If using authcallback when a token expires, should automatically request a
      * new token
      */
-    Helper.testOnAllTransports('auth_tokenDetails_expiry_with_authcallback', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'auth_tokenDetails_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -795,7 +795,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Same as previous but with just a token, so ably-js doesn't know that the
      * token's expired
      */
-    Helper.testOnAllTransports('auth_token_string_expiry_with_authcallback', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'auth_token_string_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -838,7 +838,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * Same as previous but with no way to generate a new token
      */
-    Helper.testOnAllTransports('auth_token_string_expiry_with_token', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'auth_token_string_expiry_with_token', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -882,7 +882,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * Try to connect with an expired token string
      */
-    Helper.testOnAllTransports('auth_expired_token_string', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'auth_expired_token_string', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -927,7 +927,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * use authorize() to force a reauth using an existing authCallback
      */
-    Helper.testOnAllTransports.skip('reauth_authCallback', function (realtimeOpts) {
+    Helper.testOnAllTransports.skip(this, 'reauth_authCallback', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -1404,7 +1404,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
     });
 
-    Helper.testOnAllTransports('authorize_immediately_after_init', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'authorize_immediately_after_init', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var realtime = helper.AblyRealtime({

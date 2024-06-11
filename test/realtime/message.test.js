@@ -73,7 +73,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /*
      * Test publishes in quick succession (on successive ticks of the event loop)
      */
-    Helper.testOnAllTransports('publishfast', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'publishfast', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -137,7 +137,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Test queuing: publishing a series of messages that start before the lib is connected
      * Also checks they arrive in the right order
      */
-    Helper.testOnAllTransports('publishQueued', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'publishQueued', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           txRealtime,
@@ -594,7 +594,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       }, 500);
     });
 
-    Helper.testOnAllTransports('publish', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'publish', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var count = 10;

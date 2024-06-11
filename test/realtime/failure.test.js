@@ -567,7 +567,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /* RTN14d last sentence: Check that if we received a 5xx disconnected, when
      * we try again we use a fallback host */
-    Helper.testOnAllTransports('try_fallback_hosts_on_placement_constraint', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'try_fallback_hosts_on_placement_constraint', function (realtimeOpts) {
       return function (done) {
         /* Use the echoserver as a fallback host because it doesn't support
          * websockets, so it'll fail to connect, which we can detect */
