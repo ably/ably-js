@@ -170,7 +170,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTS3c
      * @spec RTL16
      */
-    Helper.testOnAllTransports('channelinit0', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelinit0', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -207,7 +207,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4
      */
-    Helper.testOnAllTransports('channelattach0', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattach0', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -234,7 +234,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4
      */
-    Helper.testOnAllTransports('channelattach2', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattach2', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -262,6 +262,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL5
      */
     Helper.testOnAllTransports(
+      this,
       'channelattach3',
       function (realtimeOpts) {
         return function (done) {
@@ -301,7 +302,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4d
      */
-    Helper.testOnAllTransports('channelattachempty', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattachempty', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -336,7 +337,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4d
      */
-    Helper.testOnAllTransports('channelattachinvalid', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattachinvalid', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -377,7 +378,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL6
      */
-    Helper.testOnAllTransports('publish_no_attach', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'publish_no_attach', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -407,7 +408,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @specpartial RTL6b - callback which is called with an error
      */
-    Helper.testOnAllTransports('channelattach_publish_invalid', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattach_publish_invalid', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -441,7 +442,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @nospec
      */
-    Helper.testOnAllTransports('channelattach_invalid_twice', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'channelattach_invalid_twice', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -536,7 +537,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4k1
      * @spec RTL4m
      */
-    Helper.testOnAllTransports('attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsBasicChannelsGet';
@@ -598,7 +599,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4m
      * @spec RTL16
      */
-    Helper.testOnAllTransports('attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsBasicSetOptions';
@@ -652,7 +653,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL16
      * @spec RTL7c
      */
-    Helper.testOnAllTransports('subscribeAfterSetOptions', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'subscribeAfterSetOptions', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'subscribeAfterSetOptions';
@@ -728,7 +729,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /** @spec RTL16a */
-    Helper.testOnAllTransports('setOptionsCallbackBehaviour', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'setOptionsCallbackBehaviour', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'setOptionsCallbackBehaviour';
@@ -807,7 +808,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Verify modes is ignored when params.modes is present
      * @nospec
      */
-    Helper.testOnAllTransports('attachWithChannelParamsModesAndChannelModes', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelParamsModesAndChannelModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsModesAndChannelModes';
@@ -869,7 +870,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4l
      * @spec RTL4m
      */
-    Helper.testOnAllTransports('attachWithChannelModes', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelModes';
@@ -928,7 +929,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4l
      * @spec RTL4m
      */
-    Helper.testOnAllTransports('attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsDeltaAndModes';

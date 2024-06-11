@@ -484,14 +484,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     // Publish and subscribe, various transport, 128 and 256-bit
     /** @specpartial RSL5b - test aes 128 */
-    Helper.testOnAllTransports('single_send_128', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'single_send_128', function (realtimeOpts) {
       return function (done) {
         single_send(done, this.test.helper, realtimeOpts, 128);
       };
     });
 
     /** @specpartial RSL5b - test aes 256 */
-    Helper.testOnAllTransports('single_send_256', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'single_send_256', function (realtimeOpts) {
       return function (done) {
         single_send(done, this.test.helper, realtimeOpts, 256);
       };

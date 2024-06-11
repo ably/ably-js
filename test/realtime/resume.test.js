@@ -138,7 +138,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Related to RTN15b, RTN15c.
      * @nospec
      */
-    Helper.testOnAllTransports('resume_inactive', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'resume_inactive', function (realtimeOpts) {
       return function (done) {
         resume_inactive(done, this.test.helper, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
       };
@@ -262,7 +262,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Related to RTN15b, RTN15c.
      * @nospec
      */
-    Helper.testOnAllTransports('resume_active', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'resume_active', function (realtimeOpts) {
       return function (done) {
         resume_active(done, this.test.helper, 'resume_active' + String(Math.random()), {}, realtimeOpts);
       };
@@ -273,6 +273,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * @spec RTN15c7
      */
     Helper.testOnAllTransports(
+      this,
       'resume_lost_continuity',
       function (realtimeOpts) {
         return function (done) {
@@ -341,6 +342,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * @spec RTN15c5
      */
     Helper.testOnAllTransports(
+      this,
       'resume_token_error',
       function (realtimeOpts) {
         return function (done) {
@@ -396,6 +398,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * @spec RTN15c4
      */
     Helper.testOnAllTransports(
+      this,
       'resume_fatal_error',
       function (realtimeOpts) {
         return function (done) {

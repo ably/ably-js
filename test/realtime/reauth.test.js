@@ -177,8 +177,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       };
     }
 
-    function testCase(name, createSteps) {
-      Helper.testOnAllTransports(name, function (realtimeOpts) {
+    function testCase(thisInDescribe, name, createSteps) {
+      Helper.testOnAllTransports(thisInDescribe, name, function (realtimeOpts) {
         return function (done) {
           const helper = this.test.helper;
           var _steps = createSteps(helper).slice();
@@ -203,7 +203,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      ****************/
 
     /** @specpartial RTC8a1 - change capability without loss of continuity */
-    testCase('reauthCapabilityUpgradeNewChannel', (helper) => [
+    testCase(this, 'reauthCapabilityUpgradeNewChannel', (helper) => [
       getToken(helper, { clientId: clientId, capability: { wrongchannel: ['*'] } }),
       connectWithToken(helper),
       monitorConnectionContinuity(helper),
@@ -215,7 +215,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     ]);
 
     /** @specpartial RTC8a1 - capability downgrade leads to an error an failed channel state */
-    testCase('reauthCapabilityDowngradeFullChannel', (helper) => [
+    testCase(this, 'reauthCapabilityDowngradeFullChannel', (helper) => [
       getToken(helper, { clientId: clientId, capability: { channel: ['*'], another: ['*'] } }),
       connectWithToken(helper),
       monitorConnectionContinuity(helper),
@@ -232,7 +232,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Related to RTC8a1.
      * @nospec
      */
-    testCase('reauthCapabilityUpgradeAddPublish', (helper) => [
+    testCase(this, 'reauthCapabilityUpgradeAddPublish', (helper) => [
       getToken(helper, { clientId: clientId, capability: { channel: ['subscribe'] } }),
       connectWithToken(helper),
       monitorConnectionContinuity(helper),
@@ -249,7 +249,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Related to RTC8a1.
      * @nospec
      */
-    testCase('reauthCapabilityDowngradePublish', (helper) => [
+    testCase(this, 'reauthCapabilityDowngradePublish', (helper) => [
       getToken(helper, { clientId: clientId, capability: { channel: ['subscribe', 'publish'] } }),
       connectWithToken(helper),
       monitorConnectionContinuity(helper),
