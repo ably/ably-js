@@ -25,7 +25,7 @@ globalThis.testAblyPackage = async function () {
   // Check that id and timestamp of a message received from Ably can be assigned to non-optional types
   const { id: string, timestamp: number } = receivedMessage;
 
-  channel.unsubscribe();
+  channel.unsubscribeAll();
 
   // Check that we can use the TypeScript overload that accepts a Message object
   await channel.publish({ name: 'message', data: { foo: 'bar' } });

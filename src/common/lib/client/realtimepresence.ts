@@ -483,7 +483,19 @@ class RealtimePresence extends EventEmitter {
     const args = RealtimeChannel.processListenerArgs(_args);
     const event = args[0];
     const listener = args[1];
+
+    if (event === undefined && listener === undefined) {
+      this.logger.deprecated(
+        'The ability to call `RealtimePresence.unsubscribe()` without any valid parameters',
+        'Please use `RealtimePresence.unsubscribeAll()` method if you want to deregister all listeners currently receiving presence messages for the channel.',
+      );
+    }
+
     this.subscriptions.off(event, listener);
+  }
+
+  unsubscribeAll(): void {
+    this.subscriptions.off();
   }
 }
 

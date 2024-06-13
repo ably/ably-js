@@ -1847,9 +1847,14 @@ export declare interface RealtimePresence {
   unsubscribe(listener: messageCallback<PresenceMessage>): void;
   /**
    * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel.
+   *
+   * @deprecated This method overload is deprecated and will be removed in a future version. Use the {@link RealtimePresence.unsubscribeAll | `unsubscribeAll()`} method instead.
    */
   unsubscribe(): void;
-
+  /**
+   * Deregisters all listeners currently receiving {@link PresenceMessage} for the channel.
+   */
+  unsubscribeAll(): void;
   /**
    * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
    *
@@ -2044,9 +2049,14 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
   unsubscribe(listener: messageCallback<InboundMessage>): void;
   /**
    * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
+   *
+   * @deprecated This method overload is deprecated and will be removed in a future version. Use the {@link RealtimeChannel.unsubscribeAll | `unsubscribeAll()`} method instead.
    */
   unsubscribe(): void;
-
+  /**
+   * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
+   */
+  unsubscribeAll(): void;
   /**
    * A {@link RealtimePresence} object.
    */

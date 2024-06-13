@@ -1837,7 +1837,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             channel.presence.subscribe(function (presmsg) {
-              channel.presence.unsubscribe();
+              channel.presence.unsubscribeAll();
               try {
                 expect(presmsg.action).to.equal('leave', 'Check action was leave');
                 expect(presmsg.clientId).to.equal(goneClientId, 'Check goneClient has left');
