@@ -38,7 +38,9 @@ function getHandler(logger: Function): Function {
             msg,
         );
       }
-    : logger;
+    : function (msg: string) {
+        logger(msg);
+      };
 }
 
 const getDefaultLoggers = (): [Function, Function] => {
@@ -117,7 +119,7 @@ class Logger {
 
   private logAction(level: LogLevels, action: string, message?: string) {
     if (this.shouldLog(level)) {
-      (level === LogLevels.Error ? this.logErrorHandler : this.logHandler)('Ably: ' + action + ': ' + message);
+      (level === LogLevels.Error ? this.logErrorHandler : this.logHandler)('Ably: ' + action + ': ' + message, level);
     }
   }
 
@@ -139,7 +141,7 @@ class Logger {
 
   deprecationWarning(message: string) {
     if (this.shouldLog(LogLevels.Error)) {
-      this.logErrorHandler(`Ably: Deprecation warning - ${message}`);
+      this.logErrorHandler(`Ably: Deprecation warning - ${message}`, LogLevels.Error);
     }
   }
 

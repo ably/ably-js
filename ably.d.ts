@@ -404,8 +404,9 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
    * Controls the log output of the library. This is a function to handle each line of log output. If you do not set this value, then `console.log` will be used.
    *
    * @param msg - The log message emitted by the library.
+   * @param level - The level of the log. Values are one of: 0 (no logs), 1 (errors only), 2 (errors plus connection and channel state changes), 3 (high-level debug output), and 4 (full debug output).
    */
-  logHandler?: (msg: string) => void;
+  logHandler?: (msg: string, level: number) => void;
 
   /**
    * Enables a non-default Ably port to be specified. For development environments only. The default value is 80.
