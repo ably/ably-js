@@ -462,3 +462,8 @@ export function createMissingPluginError(pluginName: keyof ModularPlugins): Erro
 export function throwMissingPluginError(pluginName: keyof ModularPlugins): never {
   throw createMissingPluginError(pluginName);
 }
+
+export async function withTimeoutAsync<A>(promise: Promise<A>, timeout = 5000, err = 'Timeout expired'): Promise<A> {
+  const e = new ErrorInfo(err, 50000, 500);
+  return Promise.race([promise, new Promise<A>((_resolve, reject) => setTimeout(() => reject(e), timeout))]);
+}

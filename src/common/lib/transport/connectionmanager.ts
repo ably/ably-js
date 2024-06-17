@@ -1924,66 +1924,35 @@ class ConnectionManager extends EventEmitter {
     await this.realtime.channels.processChannelMessage(message);
   }
 
-  ping(transport: Transport | null, callback: Function): void {
-    /* if transport is specified, try that */
-    if (transport) {
-      Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
-
-      const onTimeout = function () {
-        transport.off('heartbeat', onHeartbeat);
-        callback(new ErrorInfo('Timeout waiting for heartbeat response', 50000, 500));
-      };
-
-      const pingStart = Date.now(),
-        id = Utils.cheapRandStr();
-
-      const onHeartbeat = function (responseId: string) {
-        if (responseId === id) {
-          transport.off('heartbeat', onHeartbeat);
-          clearTimeout(timer);
-          const responseTime = Date.now() - pingStart;
-          callback(null, responseTime);
-        }
-      };
-
-      const timer = setTimeout(onTimeout, this.options.timeouts.realtimeRequestTimeout);
-
-      transport.on('heartbeat', onHeartbeat);
-      transport.ping(id);
-      return;
-    }
-
-    /* if we're not connected, don't attempt */
+  async ping(): Promise<number> {
     if (this.state.state !== 'connected') {
-      callback(new ErrorInfo('Unable to ping service; not connected', 40000, 400));
-      return;
+      throw new ErrorInfo('Unable to ping service; not connected', 40000, 400);
     }
 
-    /* no transport was specified, so use the current (connected) one
-     * but ensure that we retry if the transport is superseded before we complete */
-    let completed = false;
+    const transport = this.activeProtocol?.getTransport();
+    if (!transport) {
+      throw this.getStateError();
+    }
 
-    const onPingComplete = (err: Error, responseTime: number) => {
-      this.off('transport.active', onTransportActive);
-      if (!completed) {
-        completed = true;
-        callback(err, responseTime);
-      }
-    };
+    Logger.logAction(this.logger, Logger.LOG_MINOR, 'ConnectionManager.ping()', 'transport = ' + transport);
 
-    const onTransportActive = () => {
-      if (!completed) {
-        /* ensure that no callback happens for the currently outstanding operation */
-        completed = true;
-        /* repeat but picking up the new transport */
-        Platform.Config.nextTick(() => {
-          this.ping(null, callback);
-        });
-      }
-    };
+    const pingStart = Date.now();
+    const id = Utils.cheapRandStr();
 
-    this.on('transport.active', onTransportActive);
-    this.ping((this.activeProtocol as Protocol).getTransport(), onPingComplete);
+    return Utils.withTimeoutAsync<number>(
+      new Promise((resolve) => {
+        const onHeartbeat = (responseId: string) => {
+          if (responseId === id) {
+            transport.off('heartbeat', onHeartbeat);
+            resolve(Date.now() - pingStart);
+          }
+        };
+        transport.on('heartbeat', onHeartbeat);
+        transport.ping(id);
+      }),
+      this.options.timeouts.realtimeRequestTimeout,
+      'Timeout waiting for heartbeat response',
+    );
   }
 
   abort(error: ErrorInfo): void {
