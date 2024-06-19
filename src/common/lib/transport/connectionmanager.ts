@@ -1134,7 +1134,7 @@ class ConnectionManager extends EventEmitter {
             this.cancelWebSocketGiveUpTimer();
             this.notifyState({
               state: 'disconnected',
-              error: new ErrorInfo("new ErrorInfo('Unable to connect (network unreachable)'", 80003, 404),
+              error: new ErrorInfo('Unable to connect (network unreachable)', 80003, 404),
             });
           } else {
             Logger.logAction(
