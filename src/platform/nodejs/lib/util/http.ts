@@ -10,7 +10,7 @@ import {
   RequestResult,
 } from '../../../../common/types/http';
 import HttpMethods from '../../../../common/constants/HttpMethods';
-import got, { Response, Options, CancelableRequest, Agents } from 'got';
+import { Response, CancelableRequest, Agents, OptionsInit } from 'got';
 import http from 'http';
 import https from 'https';
 import BaseClient from 'common/lib/client/baseclient';
@@ -54,12 +54,14 @@ const Http: IPlatformHttpStatic = class {
     body: RequestBody | null,
     params: RequestParams,
   ): Promise<RequestResult> {
+    const { got, HTTPError } = await import('got');
+
     /* Will generally be making requests to one or two servers exclusively
      * (Ably and perhaps an auth server), so for efficiency, use the
      * foreverAgent to keep the TCP stream alive between requests where possible */
     const agentOptions =
       (this.client && this.client.options.restAgentOptions) || (Defaults.restAgentOptions as RestAgentOptions);
-    const doOptions: Options = { headers: headers || undefined, responseType: 'buffer' };
+    const doOptions: OptionsInit = { headers: headers || undefined, responseType: 'buffer' };
 
     if (!this.agent) {
       const persistedAgent = globalAgentPool.find((x) => shallowEquals(agentOptions, x.options))?.agents;
@@ -97,7 +99,7 @@ const Http: IPlatformHttpStatic = class {
       const res = await (got[method](doOptions) as CancelableRequest<Response>);
       return this._handler(null, res, res.body);
     } catch (err) {
-      if (err instanceof got.HTTPError) {
+      if (err instanceof HTTPError) {
         return this._handler(null, err.response, err.response.body);
       }
       return this._handler(err as ErrnoException);
