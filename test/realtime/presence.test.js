@@ -1824,7 +1824,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * set but missing from a sync */
     it('leave_published_for_member_missing_from_sync', function (done) {
       var helper = this.test.helper,
-        realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
+        realtime = helper.AblyRealtime(),
         continuousClientId = 'continuous',
         goneClientId = 'gone',
         continuousRealtime = helper.AblyRealtime({ clientId: continuousClientId }),

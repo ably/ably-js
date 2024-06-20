@@ -112,21 +112,6 @@ define([
       return new this(this.createContext(context));
     }
 
-    static forTestDefinition(thisInDescribe, label) {
-      if (!label) {
-        throw new Error('SharedHelper.forTestDefinition called without label');
-      }
-
-      const context = {
-        type: 'definition',
-        file: thisInDescribe.file,
-        suite: this.extractSuiteHierarchy(thisInDescribe),
-        label,
-      };
-
-      return new this(this.createContext(context));
-    }
-
     recordTestStart() {
       this.privateApiContext.recordTestStart();
     }
@@ -331,7 +316,6 @@ define([
 
     /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
     static testOnAllTransports(thisInDescribe, name, testFn, skip) {
-      const helper = this.forTestDefinition(thisInDescribe, name).addingHelperFunction('testOnAllTransports');
       var itFn = skip ? it.skip : it;
 
       function createTest(options) {
@@ -341,23 +325,8 @@ define([
         };
       }
 
-      let transports = helper.availableTransports;
-      transports.forEach(function (transport) {
-        itFn(
-          name + '_with_' + transport + '_binary_transport',
-          createTest({ transports: [transport], useBinaryProtocol: true }),
-        );
-        itFn(
-          name + '_with_' + transport + '_text_transport',
-          createTest({ transports: [transport], useBinaryProtocol: false }),
-        );
-      });
-      /* Plus one for no transport specified (ie use websocket/base mechanism if
-       * present).  (we explicitly specify all transports since node only does
-       * websocket+nodecomet if comet is explicitly requested)
-       * */
-      itFn(name + '_with_binary_transport', createTest({ transports, useBinaryProtocol: true }));
-      itFn(name + '_with_text_transport', createTest({ transports, useBinaryProtocol: false }));
+      itFn(name + '_with_binary_transport', createTest({ useBinaryProtocol: true }));
+      itFn(name + '_with_text_transport', createTest({ useBinaryProtocol: false }));
     }
 
     static restTestOnJsonMsgpack(name, testFn, skip) {
