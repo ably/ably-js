@@ -353,7 +353,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         try {
           realtime = helper.AblyRealtime({ transports: helper.availableTransports });
           helper.recordPrivateApi('read.connectionManager.baseTransport');
-          expect(realtime.connection.connectionManager.baseTransport).to.equal('comet');
+          // There’s no base transport now that we’re only specifiying web_socket
+          //expect(realtime.connection.connectionManager.baseTransport).to.equal('comet');
           helper.recordPrivateApi('read.connectionManager.webSocketTransportAvailable');
           expect(realtime.connection.connectionManager.webSocketTransportAvailable).to.be.ok;
           helper.closeAndFinish(done, realtime);

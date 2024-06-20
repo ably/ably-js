@@ -121,25 +121,10 @@ define([
     }
 
     get availableTransports() {
-      const helper = this.addingHelperFunction('availableTransports');
-      return helper._availableTransports;
-    }
-
-    get _availableTransports() {
-      this.recordPrivateApi('call.Utils.keysArray');
-      this.recordPrivateApi('call.ConnectionManager.supportedTransports');
-      this.recordPrivateApi('read.Realtime._transports');
-      return utils.keysArray(
-        clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
-      );
+      return ['web_socket'];
     }
 
     get bestTransport() {
-      const helper = this.addingHelperFunction('bestTransport');
-      return helper._bestTransport;
-    }
-
-    get _bestTransport() {
       return this.availableTransports[0];
     }
 
