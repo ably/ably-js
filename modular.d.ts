@@ -141,11 +141,11 @@ export declare const RealtimePresence: unknown;
  * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest } });
  * ```
  *
- * Note that network conditions, such as firewalls or proxies, might prevent the client from establishing a WebSocket connection. For this reason, you may wish to provide the `BaseRealtime` instance with the ability to alternatively establish a connection using long polling which is less susceptible to these external conditions. You do this by passing in the {@link XHRPolling} module, alongside `WebSocketTransport`:
+ * Note that network conditions, such as firewalls or proxies, might prevent the client from establishing a WebSocket connection. For this reason, you may wish to provide the `BaseRealtime` instance with the ability to alternatively establish a connection using long polling which is less susceptible to these external conditions. You do this by passing in the {@link XHRPolling} plugin, alongside `WebSocketTransport`:
  *
  * ```javascript
- * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modules';
- * const realtime = new BaseRealtime(options, { WebSocketTransport, XHRPolling, FetchRequest });
+ * import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular';
+ * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, XHRPolling, FetchRequest } });
  * ```
  */
 export declare const WebSocketTransport: unknown;
