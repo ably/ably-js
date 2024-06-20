@@ -201,51 +201,48 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       expect(value).to.be.below(max);
     }
 
-    Helper.forTestDefinition(this, 'disconnected_backoff_').availableTransports.forEach(function (transport) {
-      /**
-       * @spec RTB1a
-       * @spec RTB1b
-       * @spec TO3l1
-       * @specpartial RTB1 - test backoff for connection
-       * @specpartial RTN14d - retries and retryIn calculation
-       * @specpartial TA2 - retryIn passed in ConnectionStateChange
-       */
-      it('disconnected_backoff_' + transport, function (done) {
-        const helper = this.test.helper;
-        var disconnectedRetryTimeout = 150;
-        var realtime = helper.AblyRealtime({
-          disconnectedRetryTimeout: disconnectedRetryTimeout,
-          realtimeHost: 'invalid',
-          restHost: 'invalid',
-          transports: [transport],
-        });
+    /**
+     * @spec RTB1a
+     * @spec RTB1b
+     * @spec TO3l1
+     * @specpartial RTB1 - test backoff for connection
+     * @specpartial RTN14d - retries and retryIn calculation
+     * @specpartial TA2 - retryIn passed in ConnectionStateChange
+     */
+    it('disconnected_backoff', function (done) {
+      const helper = this.test.helper;
+      var disconnectedRetryTimeout = 150;
+      var realtime = helper.AblyRealtime({
+        disconnectedRetryTimeout: disconnectedRetryTimeout,
+        realtimeHost: 'invalid',
+        restHost: 'invalid',
+      });
 
-        var retryCount = 0;
-        var retryTimeouts = [];
+      var retryCount = 0;
+      var retryTimeouts = [];
 
-        realtime.connection.on(function (stateChange) {
-          if (stateChange.previous === 'connecting' && stateChange.current === 'disconnected') {
-            if (retryCount > 4) {
-              // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
-              // Lower bound = 0.8 * Upper bound
-              checkIsBetween(retryTimeouts[0], 120, 150);
-              checkIsBetween(retryTimeouts[1], 160, 200);
-              checkIsBetween(retryTimeouts[2], 200, 250);
+      realtime.connection.on(function (stateChange) {
+        if (stateChange.previous === 'connecting' && stateChange.current === 'disconnected') {
+          if (retryCount > 4) {
+            // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+            // Lower bound = 0.8 * Upper bound
+            checkIsBetween(retryTimeouts[0], 120, 150);
+            checkIsBetween(retryTimeouts[1], 160, 200);
+            checkIsBetween(retryTimeouts[2], 200, 250);
 
-              for (var i = 3; i < retryTimeouts.length; i++) {
-                checkIsBetween(retryTimeouts[i], 240, 300);
-              }
-              helper.closeAndFinish(done, realtime);
-              return;
+            for (var i = 3; i < retryTimeouts.length; i++) {
+              checkIsBetween(retryTimeouts[i], 240, 300);
             }
-            try {
-              retryTimeouts.push(stateChange.retryIn);
-              retryCount += 1;
-            } catch (err) {
-              helper.closeAndFinish(done, realtime, err);
-            }
+            helper.closeAndFinish(done, realtime);
+            return;
           }
-        });
+          try {
+            retryTimeouts.push(stateChange.retryIn);
+            retryCount += 1;
+          } catch (err) {
+            helper.closeAndFinish(done, realtime, err);
+          }
+        }
       });
     });
 
@@ -405,75 +402,84 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
     });
 
-    Helper.forTestDefinition(this, 'channel_backoff_').availableTransports.forEach(function (transport) {
-      /**
-       * @spec RTL13b
-       * @spec RTB1a
-       * @spec RTB1b
-       * @spec TO3l7
-       * @specpartial RTB1 - test backoff for channel
-       */
-      it('channel_backoff_' + transport, function (done) {
-        const helper = this.test.helper;
-        var channelRetryTimeout = 150;
-        var realtime = helper.AblyRealtime({
-            channelRetryTimeout: channelRetryTimeout,
-            transports: [transport],
-          }),
-          channel = realtime.channels.get('failed_attach'),
-          originalProcessMessage = channel.processMessage.bind(channel),
-          retryCount = 0;
+    /**
+     * @spec RTL13b
+     * @spec RTB1a
+     * @spec RTB1b
+     * @spec TO3l7
+     * @specpartial RTB1 - test backoff for channel
+     */
+    it('channel_backoff', function (done) {
+      const helper = this.test.helper;
+      var channelRetryTimeout = 150;
+      var realtime = helper.AblyRealtime({
+          channelRetryTimeout: channelRetryTimeout,
+        }),
+        channel = realtime.channels.get('failed_attach'),
+        originalProcessMessage = channel.processMessage.bind(channel),
+        retryCount = 0;
 
-        var performance = isBrowser ? window.performance : require('perf_hooks').performance;
+      var performance = isBrowser ? window.performance : require('perf_hooks').performance;
 
-        helper.recordPrivateApi('replace.channel.processMessage');
-        channel.processMessage = async function (message) {
-          // Ignore ATTACHED messages
-          if (message.action === 11) {
-            return;
-          }
-          helper.recordPrivateApi('call.channel.processMessage');
-          await originalProcessMessage(message);
-        };
+      helper.recordPrivateApi('replace.channel.processMessage');
+      channel.processMessage = async function (message) {
+        // Ignore ATTACHED messages
+        if (message.action === 11) {
+          return;
+        }
+        helper.recordPrivateApi('call.channel.processMessage');
+        await originalProcessMessage(message);
+      };
 
-        var retryTimeouts = [];
+      var performance = isBrowser ? window.performance : require('perf_hooks').performance;
 
-        realtime.connection.on('connected', function () {
-          helper.recordPrivateApi('write.realtime.options.timeouts.realtimeRequestTimeout');
-          realtime.options.timeouts.realtimeRequestTimeout = 1;
-          Helper.whenPromiseSettles(channel.attach(), function (err) {
-            if (err) {
-              var lastSuspended = performance.now();
-              channel.on(function (stateChange) {
-                if (stateChange.current === 'suspended') {
-                  if (retryCount > 4) {
-                    // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
-                    // Lower bound = 0.8 * Upper bound
-                    // Additional 10 is a calculationDelayTimeout
-                    checkIsBetween(retryTimeouts[0], 120, 150 + 10);
-                    checkIsBetween(retryTimeouts[1], 160, 200 + 10);
-                    checkIsBetween(retryTimeouts[2], 200, 250 + 10);
+      helper.recordPrivateApi('replace.channel.processMessage');
+      channel.processMessage = async function (message) {
+        // Ignore ATTACHED messages
+        if (message.action === 11) {
+          return;
+        }
+        helper.recordPrivateApi('call.channel.processMessage');
+        await originalProcessMessage(message);
+      };
 
-                    for (var i = 3; i < retryTimeouts.length; i++) {
-                      checkIsBetween(retryTimeouts[i], 240, 300 + 10);
-                    }
-                    helper.closeAndFinish(done, realtime);
-                    return;
+      var retryTimeouts = [];
+
+      realtime.connection.on('connected', function () {
+        helper.recordPrivateApi('write.realtime.options.timeouts.realtimeRequestTimeout');
+        realtime.options.timeouts.realtimeRequestTimeout = 1;
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
+          if (err) {
+            var lastSuspended = performance.now();
+            channel.on(function (stateChange) {
+              if (stateChange.current === 'suspended') {
+                if (retryCount > 4) {
+                  // Upper bound = min((retryAttempt + 2) / 3, 2) * initialTimeout
+                  // Lower bound = 0.8 * Upper bound
+                  // Additional 10 is a calculationDelayTimeout
+                  checkIsBetween(retryTimeouts[0], 120, 150 + 10);
+                  checkIsBetween(retryTimeouts[1], 160, 200 + 10);
+                  checkIsBetween(retryTimeouts[2], 200, 250 + 10);
+
+                  for (var i = 3; i < retryTimeouts.length; i++) {
+                    checkIsBetween(retryTimeouts[i], 240, 300 + 10);
                   }
-                  var elapsedSinceSuspneded = performance.now() - lastSuspended;
-                  lastSuspended = performance.now();
-                  try {
-                    retryTimeouts.push(elapsedSinceSuspneded);
-                    retryCount += 1;
-                  } catch (err) {
-                    helper.closeAndFinish(done, realtime, err);
-                  }
+                  helper.closeAndFinish(done, realtime);
+                  return;
                 }
-              });
-            } else {
-              helper.closeAndFinish(done, realtime, new Error('Expected channel attach to timeout'));
-            }
-          });
+                var elapsedSinceSuspneded = performance.now() - lastSuspended;
+                lastSuspended = performance.now();
+                try {
+                  retryTimeouts.push(elapsedSinceSuspneded);
+                  retryCount += 1;
+                } catch (err) {
+                  helper.closeAndFinish(done, realtime, err);
+                }
+              }
+            });
+          } else {
+            helper.closeAndFinish(done, realtime, new Error('Expected channel attach to timeout'));
+          }
         });
       });
     });
