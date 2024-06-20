@@ -46,7 +46,7 @@ type PrivateApiUsageDto = {
   privateAPIIdentifier: string;
 };
 
-const usageDtos = JSON.parse(readFileSync('private-api-usage-9986dc4.json').toString('utf-8')) as PrivateApiUsageDto[];
+let usageDtos = JSON.parse(readFileSync('private-api-usage-9986dc4.json').toString('utf-8')) as PrivateApiUsageDto[];
 
 function stripFilePrefix(usageDtos: PrivateApiUsageDto[]) {
   for (const usage of usageDtos) {
@@ -57,6 +57,52 @@ function stripFilePrefix(usageDtos: PrivateApiUsageDto[]) {
 }
 
 stripFilePrefix(usageDtos);
+
+function filtered(usageDtos: PrivateApiUsageDto[]) {
+  // Ignore things called via one of these helpers.
+  const excludedHelpers = [
+    // I’m pretty sure we can find a way to get the same effect without private APIs 🤷
+    'closeAndFinish',
+  ];
+
+  // Ignore usage of these private APIs.
+  const excludedPrivateAPIIdentifiers = [
+    // This is all helper stuff that we could pull into the test suite, and which for now we could just continue using the version privately exposed by ably-js, even in the UTS.
+    'call.BufferUtils.areBuffersEqual',
+    'call.BufferUtils.base64Decode',
+    'call.BufferUtils.base64Encode',
+    'call.BufferUtils.hexEncode',
+    'call.BufferUtils.isBuffer',
+    'call.BufferUtils.toArrayBuffer',
+    'call.BufferUtils.utf8Encode',
+    'call.Utils.copy',
+    'call.Utils.inspectError',
+    'call.Utils.keysArray',
+    'call.Utils.mixin',
+    'call.Utils.toQueryString',
+    'call.msgpack.decode',
+    'call.msgpack.encode',
+  ];
+
+  function intersects(a: string[], b: string[]) {
+    for (const element of a) {
+      if (b.includes(element)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  return usageDtos.filter(
+    (usageDto) =>
+      !(
+        intersects(usageDto.context.helperStack, excludedHelpers) ||
+        excludedPrivateAPIIdentifiers.includes(usageDto.privateAPIIdentifier)
+      ),
+  );
+}
+
+usageDtos = filtered(usageDtos);
 
 console.log(usageDtos);
 
