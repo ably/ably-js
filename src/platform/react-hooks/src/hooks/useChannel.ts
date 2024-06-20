@@ -91,14 +91,4 @@ async function handleChannelMount(channel: Ably.RealtimeChannel, ...subscribeArg
 
 async function handleChannelUnmount(channel: Ably.RealtimeChannel, ...subscribeArgs: SubscribeArgs) {
   await (channel.unsubscribe as any)(...subscribeArgs);
-
-  setTimeout(async () => {
-    // React is very mount/unmount happy, so if we just detatch the channel
-    // it's quite likely it will be reattached again by a subsequent handleChannelMount calls.
-    // To solve this, we set a timer, and if all the listeners have been removed, we know that the component
-    // has been removed for good and we can detatch the channel.
-    if (channel.listeners.length === 0) {
-      await channel.detach();
-    }
-  }, 2500);
 }
