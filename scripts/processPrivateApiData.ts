@@ -259,7 +259,5 @@ writeFileSync('private-api-data.csv', result);
 
 // TODO we need
 // 1. stats on the whole test suite (i.e. also tests that don’t use private APIs) so we can get percentages
-// 2. to indicate which tests use private APIs as a result of a hook they rely on
 // 3. something that lets us speculate like "if we were to change x, we’d be able to run y% of tests" etc
 // 4. a way to make notes about the usages
-// 5. a way to attribute the hooks to the tests instead (needed for the above)
