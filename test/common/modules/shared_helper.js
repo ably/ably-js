@@ -90,6 +90,10 @@ define([
       return new this(this.createContext(context));
     }
 
+    recordTestStart() {
+      this.privateApiContext.recordTestStart();
+    }
+
     recordPrivateApi(identifier) {
       this.privateApiContext.record(identifier);
     }
