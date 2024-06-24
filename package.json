@@ -150,7 +150,7 @@
     "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modular.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/**/*.md grunt",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
-    "process-private-api-data": "tsc --noEmit --esModuleInterop scripts/processPrivateApiData.ts && esr scripts/processPrivateApiData.ts",
+    "process-private-api-data": "tsc --noEmit --esModuleInterop --strictNullChecks scripts/processPrivateApiData.ts && esr scripts/processPrivateApiData.ts",
     "docs": "typedoc"
   }
 }

@@ -1,8 +1,6 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { stringify as csvStringify } from 'csv-stringify/sync';
 
-console.log('here');
-
 type TestPrivateApiContextDto = {
   type: 'test';
   title: string;
@@ -46,17 +44,35 @@ type PrivateApiUsageDto = {
   privateAPIIdentifier: string;
 };
 
-let usageDtos = JSON.parse(readFileSync('private-api-usage-4ad5132.json').toString('utf-8')) as PrivateApiUsageDto[];
+type TestStartRecord = {
+  context: TestPrivateApiContextDto;
+  privateAPIIdentifier: null;
+};
 
-function stripFilePrefix(usageDtos: PrivateApiUsageDto[]) {
-  for (const usage of usageDtos) {
-    if (usage.context.file !== null) {
-      usage.context.file = usage.context.file.replace('/home/runner/work/ably-js/ably-js/', '');
+type Record = PrivateApiUsageDto | TestStartRecord;
+
+let records = JSON.parse(
+  readFileSync('private-api-usage-f5959cec85ebaa1f55a769c0ebf8b649d62ba4fa.json').toString('utf-8'),
+) as Record[];
+
+function stripFilePrefix(records: Record[]) {
+  for (const record of records) {
+    if (record.context.file !== null) {
+      record.context.file = record.context.file.replace('/home/runner/work/ably-js/ably-js/', '');
     }
   }
 }
 
-stripFilePrefix(usageDtos);
+stripFilePrefix(records);
+
+function splittingRecords(records: Record[]) {
+  return {
+    testStartRecords: records.filter((record) => record.privateAPIIdentifier == null) as TestStartRecord[],
+    usageDtos: records.filter((record) => record.privateAPIIdentifier !== null) as PrivateApiUsageDto[],
+  };
+}
+
+let { usageDtos, testStartRecords } = splittingRecords(records);
 
 function filtered(usageDtos: PrivateApiUsageDto[]) {
   // Ignore things called via one of these helpers.
@@ -103,8 +119,6 @@ function filtered(usageDtos: PrivateApiUsageDto[]) {
 }
 
 usageDtos = filtered(usageDtos);
-
-console.log(usageDtos);
 
 /* figuring out the plan:
  *
@@ -201,20 +215,11 @@ function dedupeUsages(contextGroups: ContextGroup[]) {
 
 dedupeUsages(grouped);
 
-console.log(grouped);
-
-const forCSV = grouped;
-
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/max#getting_the_maximum_element_of_an_array
-const maxSuiteLevel = forCSV
-  .map((group) => (group.context.suite ?? []).length)
-  .reduce((a, b) => Math.max(a, b), -Infinity);
-
 function suiteAtLevelForCSV(suites: string[] | null, level: number) {
   return suites?.[level] ?? '';
 }
 
-function suitesColumnsForCSV(suites: string[] | null) {
+function suitesColumnsForCSV(suites: string[] | null, maxSuiteLevel: number) {
   const result: string[] = [];
   for (let i = 0; i < maxSuiteLevel; i++) {
     result.push(suiteAtLevelForCSV(suites, i));
@@ -222,7 +227,7 @@ function suitesColumnsForCSV(suites: string[] | null) {
   return result;
 }
 
-function suitesHeaders() {
+function suitesHeaders(maxSuiteLevel: number) {
   const result: string[] = [];
   for (let i = 0; i < maxSuiteLevel; i++) {
     result.push(`Suite (level ${i + 1})`);
@@ -230,34 +235,94 @@ function suitesHeaders() {
   return result;
 }
 
-const columnHeaders = ['Context', 'File', ...suitesHeaders(), 'Description', 'Via helpers', 'Private API called'];
+function commonHeaders(maxSuiteLevel: number) {
+  return ['File', ...suitesHeaders(maxSuiteLevel), 'Description'];
+}
 
-const records = forCSV
-  .map((contextGroup) => {
-    const context = contextGroup.context as PrivateApiContextDto;
-    const contextColumns = [
-      context.type,
-      context.file,
-      ...suitesColumnsForCSV(context.suite),
-      context.type === 'definition' ? context.label : context.title,
-    ];
+function writePrivateAPIUsageCSV(contextGroups: ContextGroup[]) {
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/max#getting_the_maximum_element_of_an_array
+  const maxSuiteLevel = contextGroups
+    .map((group) => (group.context.suite ?? []).length)
+    .reduce((a, b) => Math.max(a, b), -Infinity);
 
-    return contextGroup.usages.map((usage) => [
-      ...contextColumns,
-      [...usage.helperStack].reverse().join(' -> '),
-      usage.privateAPIIdentifier,
-    ]);
-  })
-  .flat();
+  const columnHeaders = ['Context', ...commonHeaders(maxSuiteLevel), 'Via helpers', 'Private API called'];
 
-const result = csvStringify([columnHeaders, ...records]);
-console.log(result);
+  const csvRows = contextGroups
+    .map((contextGroup) => {
+      const context = contextGroup.context as PrivateApiContextDto;
+      const contextColumns = [
+        context.type,
+        context.file,
+        ...suitesColumnsForCSV(context.suite, maxSuiteLevel),
+        context.type === 'definition' ? context.label : context.title,
+      ];
 
-console.log(`There are ${forCSV.length} tests with private API usage.`);
+      return contextGroup.usages.map((usage) => [
+        ...contextColumns,
+        [...usage.helperStack].reverse().join(' -> '),
+        usage.privateAPIIdentifier,
+      ]);
+    })
+    .flat();
 
-writeFileSync('private-api-data.csv', result);
+  const result = csvStringify([columnHeaders, ...csvRows]);
+  writeFileSync('private-api-data.csv', result);
+}
+
+function extractTestsWithoutPrivateAPIUsage(testStartRecords: TestStartRecord[], groupedUsages: ContextGroup[]) {
+  return testStartRecords.filter(
+    (testStartRecord) =>
+      !groupedUsages.some(
+        (contextGroup) =>
+          groupIdentifier(testStartRecord.context) === groupIdentifier(contextGroup.context as PrivateApiContextDto),
+      ),
+  );
+}
+
+const testsWithoutPrivateAPIUsage = extractTestsWithoutPrivateAPIUsage(testStartRecords, grouped);
+
+function writeNoPrivateAPIUsageCSV(testStartRecords: TestStartRecord[]) {
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/max#getting_the_maximum_element_of_an_array
+  const maxSuiteLevel = testStartRecords
+    .map((record) => record.context.suite.length)
+    .reduce((a, b) => Math.max(a, b), -Infinity);
+
+  const columnHeaders = commonHeaders(maxSuiteLevel);
+
+  const csvRows = testStartRecords.map((record) => {
+    const context = record.context;
+    return [context.file, ...suitesColumnsForCSV(context.suite, maxSuiteLevel), context.title];
+  });
+
+  const result = csvStringify([columnHeaders, ...csvRows]);
+  writeFileSync('no-private-api-data.csv', result);
+}
+
+function percentageString(value: number, total: number) {
+  return `${((100 * value) / total).toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
+}
+
+const totalNumberOfTests = testStartRecords.length;
+const numberOfTestsWithNoPrivateAPIUsage = testsWithoutPrivateAPIUsage.length;
+const numberOfTestsWithPrivateAPIUsage = grouped.length;
+
+console.log(
+  `Total number of tests: ${totalNumberOfTests}
+Number of tests with no private API usage: ${numberOfTestsWithNoPrivateAPIUsage} (${percentageString(
+    numberOfTestsWithNoPrivateAPIUsage,
+    totalNumberOfTests,
+  )})
+Number of tests with private API usage: ${numberOfTestsWithPrivateAPIUsage} (${percentageString(
+    numberOfTestsWithPrivateAPIUsage,
+    totalNumberOfTests,
+  )})
+`,
+);
 
 // TODO we need
-// 1. stats on the whole test suite (i.e. also tests that don’t use private APIs) so we can get percentages
+// 1. a way to categorise the tests that are parameterised so that we have an idea of the _effort_ — I think that we could add the common function’s name as a helper or something
 // 3. something that lets us speculate like "if we were to change x, we’d be able to run y% of tests" etc
 // 4. a way to make notes about the usages
+
+writePrivateAPIUsageCSV(grouped);
+writeNoPrivateAPIUsageCSV(testsWithoutPrivateAPIUsage);
