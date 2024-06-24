@@ -1,88 +1,4 @@
 Context,File,Suite (level 1),Suite (level 2),Suite (level 3),Description,Via helpers,Private API called
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_token_expires,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_token_expires,availableTransports,read.Realtime._transports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_tokenDetails_expiry_with_authcallback,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_tokenDetails_expiry_with_authcallback,availableTransports,read.Realtime._transports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_token_string_expiry_with_authcallback,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_token_string_expiry_with_authcallback,availableTransports,read.Realtime._transports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_token_string_expiry_with_token,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_token_string_expiry_with_token,availableTransports,read.Realtime._transports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_expired_token_string,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/auth.test.js,realtime/auth,,,auth_expired_token_string,availableTransports,read.Realtime._transports
-definition,test/realtime/auth.test.js,realtime/auth,,,reauth_authCallback,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/auth.test.js,realtime/auth,,,reauth_authCallback,availableTransports,read.Realtime._transports
-definition,test/realtime/auth.test.js,realtime/auth,,,authorize_immediately_after_init,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/auth.test.js,realtime/auth,,,authorize_immediately_after_init,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelinit0,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelinit0,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach0,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach0,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach2,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach2,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach3,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach3,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattachempty,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattachempty,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattachinvalid,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattachinvalid,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,publish_no_attach,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,publish_no_attach,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach_publish_invalid,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach_publish_invalid,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach_invalid_twice,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,channelattach_invalid_twice,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicChannelsGet,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicChannelsGet,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicSetOptions,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicSetOptions,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,subscribeAfterSetOptions,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,subscribeAfterSetOptions,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsModesAndChannelModes,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsModesAndChannelModes,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelModes,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelModes,availableTransports,read.Realtime._transports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsDeltaAndModes,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsDeltaAndModes,availableTransports,read.Realtime._transports
-definition,test/realtime/crypto.test.js,realtime/crypto,,,single_send_128,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/crypto.test.js,realtime/crypto,,,single_send_128,availableTransports,read.Realtime._transports
-definition,test/realtime/crypto.test.js,realtime/crypto,,,single_send_256,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/crypto.test.js,realtime/crypto,,,single_send_256,availableTransports,read.Realtime._transports
-definition,test/realtime/failure.test.js,realtime/failure,,,disconnected_backoff_,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/failure.test.js,realtime/failure,,,disconnected_backoff_,availableTransports,read.Realtime._transports
-definition,test/realtime/failure.test.js,realtime/failure,,,channel_backoff_,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/failure.test.js,realtime/failure,,,channel_backoff_,availableTransports,read.Realtime._transports
-definition,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint,availableTransports,read.Realtime._transports
-definition,test/realtime/init.test.js,realtime/init,,,initbase0,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/init.test.js,realtime/init,,,initbase0,bestTransport -> availableTransports,read.Realtime._transports
-definition,test/realtime/message.test.js,realtime/message,,,publishfast,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/message.test.js,realtime/message,,,publishfast,availableTransports,read.Realtime._transports
-definition,test/realtime/message.test.js,realtime/message,,,publishQueued,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/message.test.js,realtime/message,,,publishQueued,availableTransports,read.Realtime._transports
-definition,test/realtime/message.test.js,realtime/message,,,publish,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/message.test.js,realtime/message,,,publish,availableTransports,read.Realtime._transports
-definition,test/realtime/reauth.test.js,realtime/reauth,,,reauthCapabilityUpgradeNewChannel,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/reauth.test.js,realtime/reauth,,,reauthCapabilityUpgradeNewChannel,availableTransports,read.Realtime._transports
-definition,test/realtime/reauth.test.js,realtime/reauth,,,reauthCapabilityDowngradeFullChannel,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/reauth.test.js,realtime/reauth,,,reauthCapabilityDowngradeFullChannel,availableTransports,read.Realtime._transports
-definition,test/realtime/reauth.test.js,realtime/reauth,,,reauthCapabilityUpgradeAddPublish,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/reauth.test.js,realtime/reauth,,,reauthCapabilityUpgradeAddPublish,availableTransports,read.Realtime._transports
-definition,test/realtime/reauth.test.js,realtime/reauth,,,reauthCapabilityDowngradePublish,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/reauth.test.js,realtime/reauth,,,reauthCapabilityDowngradePublish,availableTransports,read.Realtime._transports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_inactive,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_inactive,availableTransports,read.Realtime._transports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_active,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_active,availableTransports,read.Realtime._transports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_lost_continuity,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_lost_continuity,availableTransports,read.Realtime._transports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_token_error,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_token_error,availableTransports,read.Realtime._transports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_fatal_error,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/resume.test.js,realtime/resume,,,resume_fatal_error,availableTransports,read.Realtime._transports
-definition,test/realtime/transports.test.js,realtime/transports,,,tests that are run if there are multiple transports,availableTransports,call.ConnectionManager.supportedTransports
-definition,test/realtime/transports.test.js,realtime/transports,,,tests that are run if there are multiple transports,availableTransports,read.Realtime._transports
 test,test/realtime/auth.test.js,realtime/auth,,,auth_useAuthCallback_tokenRequestResponse,,read.auth.method
 test,test/realtime/auth.test.js,realtime/auth,,,auth_useAuthCallback_tokenDetailsResponse,,read.auth.method
 test,test/realtime/auth.test.js,realtime/auth,,,auth_useAuthCallback_tokenStringResponse,,read.auth.method
@@ -90,8 +6,6 @@ test,test/realtime/auth.test.js,realtime/auth,,,auth_query_time_once,,replace.re
 test,test/realtime/auth.test.js,realtime/auth,,,auth_query_time_once,,read.rest.serverTimeOffset
 test,test/realtime/auth.test.js,realtime/auth,,,authorize_updates_stored_details,,read.auth.tokenParams.version
 test,test/realtime/auth.test.js,realtime/auth,,,authorize_updates_stored_details,,read.auth.authOptions.authUrl
-test,test/realtime/auth.test.js,realtime/auth,,,mocked_reauth,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/auth.test.js,realtime/auth,,,mocked_reauth,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/auth.test.js,realtime/auth,,,mocked_reauth,,read.connectionManager.activeProtocol.transport
 test,test/realtime/auth.test.js,realtime/auth,,,mocked_reauth,,replace.transport.send
 test,test/realtime/auth.test.js,realtime/auth,,,mocked_reauth,,call.transport.onProtocolMessage
@@ -103,111 +17,55 @@ test,test/realtime/auth.test.js,realtime/auth,,,auth_jwt_with_publish_capability
 test,test/realtime/auth.test.js,realtime/auth,,,auth_jwt_with_token_that_expires,,call.http.doUri
 test,test/realtime/auth.test.js,realtime/auth,,,auth_jwt_with_token_that_renews,,call.http.doUri
 test,test/realtime/auth.test.js,realtime/auth,,,init_client_with_simple_jwt_token,,call.http.doUri
-test,test/realtime/channel.test.js,realtime/channel,,,channelinit0_with_web_socket_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,channelinit0_with_web_socket_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,channelinit0_with_comet_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,channelinit0_with_comet_text_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,channelinit0_with_binary_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,channelinit0_with_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicChannelsGet_with_web_socket_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicChannelsGet_with_web_socket_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicChannelsGet_with_comet_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicChannelsGet_with_comet_text_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicChannelsGet_with_binary_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicChannelsGet_with_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicSetOptions_with_web_socket_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicSetOptions_with_web_socket_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicSetOptions_with_comet_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicSetOptions_with_comet_text_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicSetOptions_with_binary_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsBasicSetOptions_with_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_web_socket_binary_transport,,listen.channel._allChannelChanges.update
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_web_socket_binary_transport,,call.Platform.nextTick
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_web_socket_binary_transport,,listen.channel._allChannelChanges.attached
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_web_socket_text_transport,,listen.channel._allChannelChanges.update
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_web_socket_text_transport,,call.Platform.nextTick
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_web_socket_text_transport,,listen.channel._allChannelChanges.attached
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_comet_binary_transport,,listen.channel._allChannelChanges.update
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_comet_binary_transport,,call.Platform.nextTick
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_comet_binary_transport,,listen.channel._allChannelChanges.attached
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_comet_text_transport,,listen.channel._allChannelChanges.update
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_comet_text_transport,,call.Platform.nextTick
-test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_comet_text_transport,,listen.channel._allChannelChanges.attached
 test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_binary_transport,,listen.channel._allChannelChanges.update
 test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_binary_transport,,call.Platform.nextTick
 test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_binary_transport,,listen.channel._allChannelChanges.attached
 test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_text_transport,,listen.channel._allChannelChanges.update
 test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_text_transport,,call.Platform.nextTick
 test,test/realtime/channel.test.js,realtime/channel,,,setOptionsCallbackBehaviour_with_text_transport,,listen.channel._allChannelChanges.attached
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsModesAndChannelModes_with_web_socket_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsModesAndChannelModes_with_web_socket_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsModesAndChannelModes_with_comet_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsModesAndChannelModes_with_comet_text_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsModesAndChannelModes_with_binary_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsModesAndChannelModes_with_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelModes_with_web_socket_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelModes_with_web_socket_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelModes_with_comet_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelModes_with_comet_text_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelModes_with_binary_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelModes_with_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsDeltaAndModes_with_web_socket_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsDeltaAndModes_with_web_socket_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsDeltaAndModes_with_comet_binary_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsDeltaAndModes_with_comet_text_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsDeltaAndModes_with_binary_transport,,read.channel.channelOptions
 test,test/realtime/channel.test.js,realtime/channel,,,attachWithChannelParamsDeltaAndModes_with_text_transport,,read.channel.channelOptions
-test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached,,replace.channel.sendMessage
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached,,write.realtime.options.timeouts.realtimeRequestTimeout
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached,,call.connectionManager.activeProtocol.getTransport
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached,,call.protocolMessageFromDeserialized
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached,,call.transport.onProtocolMessage
-test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached_while_attaching,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached_while_attaching,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached_while_attaching,,call.connectionManager.activeProtocol.getTransport
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached_while_attaching,,replace.channel.sendMessage
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached_while_attaching,,call.Platform.nextTick
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached_while_attaching,,call.protocolMessageFromDeserialized
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_detached_while_attaching,,call.transport.onProtocolMessage
-test,test/realtime/channel.test.js,realtime/channel,,,server_sent_error,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,server_sent_error,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_error,,call.connectionManager.activeProtocol.getTransport
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_error,,call.protocolMessageFromDeserialized
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_error,,call.transport.onProtocolMessage
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_attached_err,,call.connectionManager.activeProtocol.getTransport
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_attached_err,,call.protocolMessageFromDeserialized
 test,test/realtime/channel.test.js,realtime/channel,,,server_sent_attached_err,,call.transport.onProtocolMessage
-test,test/realtime/channel.test.js,realtime/channel,,,channel_attach_timeout,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,channel_attach_timeout,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/channel.test.js,realtime/channel,,,channel_attach_timeout,,replace.channel.sendMessage
 test,test/realtime/channel.test.js,realtime/channel,,,channel_attach_timeout,,call.Platform.nextTick
-test,test/realtime/channel.test.js,realtime/channel,,,suspended_connection,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,suspended_connection,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/channel.test.js,realtime/channel,,,suspended_connection,,replace.channel.sendMessage
 test,test/realtime/channel.test.js,realtime/channel,,,suspended_connection,,write.realtime.options.timeouts.realtimeRequestTimeout
 test,test/realtime/channel.test.js,realtime/channel,,,suspended_connection,becomeSuspended,call.connectionManager.disconnectAllTransports
 test,test/realtime/channel.test.js,realtime/channel,,,suspended_connection,becomeSuspended,call.connectionManager.notifyState
 test,test/realtime/channel.test.js,realtime/channel,,,suspended_connection,,call.Platform.nextTick
-test,test/realtime/channel.test.js,realtime/channel,,,attached_while_detaching,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,attached_while_detaching,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/channel.test.js,realtime/channel,,,attached_while_detaching,,replace.channel.sendMessage
 test,test/realtime/channel.test.js,realtime/channel,,,attached_while_detaching,,call.connectionManager.activeProtocol.getTransport
 test,test/realtime/channel.test.js,realtime/channel,,,attached_while_detaching,,call.protocolMessageFromDeserialized
 test,test/realtime/channel.test.js,realtime/channel,,,attached_while_detaching,,call.transport.onProtocolMessage
-test,test/realtime/channel.test.js,realtime/channel,,,detaching from suspended channel transitions channel to detached state,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,detaching from suspended channel transitions channel to detached state,bestTransport -> availableTransports,read.Realtime._transports
-test,test/realtime/channel.test.js,realtime/channel,,,detaching from failed channel results in error,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,detaching from failed channel results in error,bestTransport -> availableTransports,read.Realtime._transports
-test,test/realtime/channel.test.js,realtime/channel,,,rewind works on channel after reattaching,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/channel.test.js,realtime/channel,,,rewind works on channel after reattaching,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/connection.test.js,realtime/connection,,,connectionAttributes,,deserialize.recoveryKey
 test,test/realtime/connection.test.js,realtime/connection,,,connectionAttributes,,read.connectionManager.msgSerial
 test,test/realtime/connection.test.js,realtime/connection,,,unrecoverableConnection,,serialize.recoveryKey
 test,test/realtime/connection.test.js,realtime/connection,,,unrecoverableConnection,,read.connectionManager.msgSerial
-test,test/realtime/connection.test.js,realtime/connection,,,connectionQueuing,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/connection.test.js,realtime/connection,,,connectionQueuing,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/connection.test.js,realtime/connection,,,connectionQueuing,,read.connectionManager.activeProtocol.transport
 test,test/realtime/connection.test.js,realtime/connection,,,connectionQueuing,,replace.transport.send
 test,test/realtime/connection.test.js,realtime/connection,,,connectionQueuing,,listen.connectionManager.transport.pending
@@ -245,20 +103,8 @@ test,test/realtime/crypto.test.js,realtime/crypto,,,encrypt_message_256,,call.Me
 test,test/realtime/crypto.test.js,realtime/crypto,,,decrypt_message_128,,call.Message.decode
 test,test/realtime/crypto.test.js,realtime/crypto,,,decrypt_message_256,,call.Message.decode
 test,test/realtime/crypto.test.js,realtime/crypto,,,msgpack_128,,call.Message.encode
-test,test/realtime/crypto.test.js,realtime/crypto,,,msgpack_128,,call.msgpack.encode
-test,test/realtime/crypto.test.js,realtime/crypto,,,msgpack_128,,call.msgpack.decode
-test,test/realtime/crypto.test.js,realtime/crypto,,,msgpack_256,,call.msgpack.encode
-test,test/realtime/crypto.test.js,realtime/crypto,,,msgpack_256,,call.msgpack.decode
-test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_128_with_web_socket_binary_transport,,read.channel.channelOptions.cipher
-test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_128_with_web_socket_text_transport,,read.channel.channelOptions.cipher
-test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_128_with_comet_binary_transport,,read.channel.channelOptions.cipher
-test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_128_with_comet_text_transport,,read.channel.channelOptions.cipher
 test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_128_with_binary_transport,,read.channel.channelOptions.cipher
 test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_128_with_text_transport,,read.channel.channelOptions.cipher
-test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_256_with_web_socket_binary_transport,,read.channel.channelOptions.cipher
-test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_256_with_web_socket_text_transport,,read.channel.channelOptions.cipher
-test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_256_with_comet_binary_transport,,read.channel.channelOptions.cipher
-test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_256_with_comet_text_transport,,read.channel.channelOptions.cipher
 test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_256_with_binary_transport,,read.channel.channelOptions.cipher
 test,test/realtime/crypto.test.js,realtime/crypto,,,single_send_256_with_text_transport,,read.channel.channelOptions.cipher
 test,test/realtime/crypto.test.js,realtime/crypto,,,multiple_send_binary_2_200,,read.channel.channelOptions.cipher
@@ -286,54 +132,28 @@ test,test/realtime/event_emitter.test.js,realtime/event_emitter,,,listenerAddedI
 test,test/realtime/event_emitter.test.js,realtime/event_emitter,,,listenerRemovedInListenerCb,,call.EventEmitter.emit
 test,test/realtime/event_emitter.test.js,realtime/event_emitter,event_emitter_promise,,anyEventsWithOnce,,call.EventEmitter.emit
 test,test/realtime/event_emitter.test.js,realtime/event_emitter,event_emitter_promise,,arrayOfEventsWithOnce,,call.EventEmitter.emit
-test,test/realtime/failure.test.js,realtime/failure,,,invalid_cred_failure,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/failure.test.js,realtime/failure,,,invalid_cred_failure,availableTransports,read.Realtime._transports
-test,test/realtime/failure.test.js,realtime/failure,,,break_transport,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/failure.test.js,realtime/failure,,,break_transport,availableTransports,read.Realtime._transports
 test,test/realtime/failure.test.js,realtime/failure,,,break_transport,simulateDroppedConnection,call.connectionManager.requestState
 test,test/realtime/failure.test.js,realtime/failure,,,break_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/failure.test.js,realtime/failure,,,no_connection_lifecycle,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/failure.test.js,realtime/failure,,,no_connection_lifecycle,availableTransports,read.Realtime._transports
 test,test/realtime/failure.test.js,realtime/failure,,,no_connection_lifecycle,,pass.clientOption.webSocketConnectTimeout
 test,test/realtime/failure.test.js,realtime/failure,,,attach_timeout,,replace.channel.processMessage
 test,test/realtime/failure.test.js,realtime/failure,,,attach_timeout,,call.channel.processMessage
-test,test/realtime/failure.test.js,realtime/failure,,,channel_backoff_web_socket,,replace.channel.processMessage
-test,test/realtime/failure.test.js,realtime/failure,,,channel_backoff_web_socket,,write.realtime.options.timeouts.realtimeRequestTimeout
-test,test/realtime/failure.test.js,realtime/failure,,,channel_backoff_comet,,replace.channel.processMessage
-test,test/realtime/failure.test.js,realtime/failure,,,channel_backoff_comet,,write.realtime.options.timeouts.realtimeRequestTimeout
-test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_suspended,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_suspended,bestTransport -> availableTransports,read.Realtime._transports
+test,test/realtime/failure.test.js,realtime/failure,,,channel_backoff,,replace.channel.processMessage
+test,test/realtime/failure.test.js,realtime/failure,,,channel_backoff,,write.realtime.options.timeouts.realtimeRequestTimeout
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_suspended,,read.connectionManager.activeProtocol.transport
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_suspended,,replace.transport.onProtocolMessage
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_suspended,,call.Platform.nextTick
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_suspended,becomeSuspended,call.connectionManager.disconnectAllTransports
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_suspended,becomeSuspended,call.connectionManager.notifyState
-test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_failed,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_failed,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_failed,,read.connectionManager.activeProtocol.transport
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_failed,,replace.transport.onProtocolMessage
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_failed,,call.Platform.nextTick
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_failed,,call.transport.onProtocolMessage
-test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_closed,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_closed,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_closed,,read.connectionManager.activeProtocol.transport
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_closed,,replace.transport.onProtocolMessage
 test,test/realtime/failure.test.js,realtime/failure,,,nack_on_connection_closed,,call.Platform.nextTick
 test,test/realtime/failure.test.js,realtime/failure,,,idle_transport_timeout,,listen.connectionManager.transport.pending
 test,test/realtime/failure.test.js,realtime/failure,,,idle_transport_timeout,,replace.transport.onProtocolMessage
 test,test/realtime/failure.test.js,realtime/failure,,,idle_transport_timeout,,call.transport.onProtocolMessage
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_web_socket_binary_transport,,call.protocolMessageFromDeserialized
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_web_socket_binary_transport,,call.connectionManager.activeProtocol.getTransport
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_web_socket_binary_transport,,call.transport.onProtocolMessage
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_web_socket_text_transport,,call.protocolMessageFromDeserialized
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_web_socket_text_transport,,call.connectionManager.activeProtocol.getTransport
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_web_socket_text_transport,,call.transport.onProtocolMessage
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_comet_binary_transport,,call.protocolMessageFromDeserialized
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_comet_binary_transport,,call.connectionManager.activeProtocol.getTransport
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_comet_binary_transport,,call.transport.onProtocolMessage
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_comet_text_transport,,call.protocolMessageFromDeserialized
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_comet_text_transport,,call.connectionManager.activeProtocol.getTransport
-test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_comet_text_transport,,call.transport.onProtocolMessage
 test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_binary_transport,,call.protocolMessageFromDeserialized
 test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_binary_transport,,call.connectionManager.activeProtocol.getTransport
 test,test/realtime/failure.test.js,realtime/failure,,,try_fallback_hosts_on_placement_constraint_with_binary_transport,,call.transport.onProtocolMessage
@@ -360,8 +180,6 @@ test,test/realtime/init.test.js,realtime/init,,,init_timeouts,,read.connectionMa
 test,test/realtime/init.test.js,realtime/init,,,init_timeouts,,read.connectionManager.options.timeouts.httpMaxRetryDuration
 test,test/realtime/init.test.js,realtime/init,,,init_fallbacks,,read.connectionManager.httpHosts
 test,test/realtime/init.test.js,realtime/init,,,init_fallbacks,,replace.connectionManager.tryATransport
-test,test/realtime/init.test.js,realtime/init,,,node_transports,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/init.test.js,realtime/init,,,node_transports,availableTransports,read.Realtime._transports
 test,test/realtime/init.test.js,realtime/init,,,node_transports,,read.connectionManager.baseTransport
 test,test/realtime/init.test.js,realtime/init,,,node_transports,,read.connectionManager.webSocketTransportAvailable
 test,test/realtime/init.test.js,realtime/init,,,init_and_connection_details,,listen.connectionManager.transport.pending
@@ -373,13 +191,9 @@ test,test/realtime/init.test.js,realtime/init,,,init_fallbacks_once_connected_2,
 test,test/realtime/message.test.js,realtime/message,,,implicit_client_id_0,,read.connectionManager.activeProtocol.transport
 test,test/realtime/message.test.js,realtime/message,,,implicit_client_id_0,,replace.transport.send
 test,test/realtime/message.test.js,realtime/message,,,implicit_client_id_0,,call.transport.send
-test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_0,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_0,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_0,,read.connectionManager.activeProtocol.transport
 test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_0,,replace.transport.send
 test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_0,,call.transport.send
-test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_1,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_1,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_1,,listen.connectionManager.transport.pending
 test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_1,,replace.transport.send
 test,test/realtime/message.test.js,realtime/message,,,explicit_client_id_1,,call.transport.send
@@ -393,12 +207,8 @@ test,test/realtime/message.test.js,realtime/message,,,maxMessageSize,,call.conne
 test,test/realtime/message.test.js,realtime/message,,,maxMessageSize,,call.protocolMessageFromDeserialized
 test,test/realtime/message.test.js,realtime/message,,,maxMessageSize,,call.transport.onProtocolMessage
 test,test/realtime/presence.test.js,realtime/presence,,,presenceMessageExtras,,call.PresenceMessage.fromValues
-test,test/realtime/presence.test.js,realtime/presence,,,presenceEnterDetachEnter,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/presence.test.js,realtime/presence,,,presenceEnterDetachEnter,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/presence.test.js,realtime/presence,,,presenceClientIdIsImplicit,,replace.channel.sendPresence
 test,test/realtime/presence.test.js,realtime/presence,,,presenceClientIdIsImplicit,,call.channel.sendPresence
-test,test/realtime/presence.test.js,realtime/presence,,,presenceEncoding,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/presence.test.js,realtime/presence,,,presenceEncoding,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/presence.test.js,realtime/presence,,,presenceEncoding,,listen.connectionManager.transport.active
 test,test/realtime/presence.test.js,realtime/presence,,,presenceEncoding,,replace.transport.send
 test,test/realtime/presence.test.js,realtime/presence,,,presenceEncoding,,call.transport.send
@@ -410,29 +220,11 @@ test,test/realtime/presence.test.js,realtime/presence,,,presence_auto_reenter,be
 test,test/realtime/presence.test.js,realtime/presence,,,multiple_pending,,replace.channel.attachImpl
 test,test/realtime/presence.test.js,realtime/presence,,,multiple_pending,,call.channel.checkPendingState
 test,test/realtime/presence.test.js,realtime/presence,,,multiple_pending,,call.Platform.nextTick
-test,test/realtime/presence.test.js,realtime/presence,,,leave_published_for_member_missing_from_sync,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/presence.test.js,realtime/presence,,,leave_published_for_member_missing_from_sync,availableTransports,read.Realtime._transports
 test,test/realtime/presence.test.js,realtime/presence,,,leave_published_for_member_missing_from_sync,,call.channel.processMessage
 test,test/realtime/presence.test.js,realtime/presence,,,leave_published_for_member_missing_from_sync,,call.channel.sync
 test,test/realtime/presence.test.js,realtime/presence,,,leave_published_for_members_on_presenceless_attached,,call.protocolMessageFromDeserialized
 test,test/realtime/presence.test.js,realtime/presence,,,suspended_preserves_presence,becomeSuspended,call.connectionManager.disconnectAllTransports
 test,test/realtime/presence.test.js,realtime/presence,,,suspended_preserves_presence,becomeSuspended,call.connectionManager.notifyState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_web_socket_binary_transport,simulateDroppedConnection,call.connectionManager.requestState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_web_socket_binary_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_web_socket_binary_transport,,listen.connectionManager.transport.active
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_web_socket_binary_transport,,read.transport.params.mode
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_web_socket_text_transport,simulateDroppedConnection,call.connectionManager.requestState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_web_socket_text_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_web_socket_text_transport,,listen.connectionManager.transport.active
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_web_socket_text_transport,,read.transport.params.mode
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_comet_binary_transport,simulateDroppedConnection,call.connectionManager.requestState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_comet_binary_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_comet_binary_transport,,listen.connectionManager.transport.active
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_comet_binary_transport,,read.transport.params.mode
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_comet_text_transport,simulateDroppedConnection,call.connectionManager.requestState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_comet_text_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_comet_text_transport,,listen.connectionManager.transport.active
-test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_comet_text_transport,,read.transport.params.mode
 test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_binary_transport,simulateDroppedConnection,call.connectionManager.requestState
 test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_binary_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
 test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_binary_transport,,listen.connectionManager.transport.active
@@ -441,22 +233,6 @@ test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_text_tr
 test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_text_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
 test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_text_transport,,listen.connectionManager.transport.active
 test,test/realtime/resume.test.js,realtime/resume,,,resume_inactive_with_text_transport,,read.transport.params.mode
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_web_socket_binary_transport,simulateDroppedConnection,call.connectionManager.requestState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_web_socket_binary_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_web_socket_binary_transport,,listen.connectionManager.transport.active
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_web_socket_binary_transport,,read.transport.params.mode
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_web_socket_text_transport,simulateDroppedConnection,call.connectionManager.requestState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_web_socket_text_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_web_socket_text_transport,,listen.connectionManager.transport.active
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_web_socket_text_transport,,read.transport.params.mode
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_comet_binary_transport,simulateDroppedConnection,call.connectionManager.requestState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_comet_binary_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_comet_binary_transport,,listen.connectionManager.transport.active
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_comet_binary_transport,,read.transport.params.mode
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_comet_text_transport,simulateDroppedConnection,call.connectionManager.requestState
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_comet_text_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_comet_text_transport,,listen.connectionManager.transport.active
-test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_comet_text_transport,,read.transport.params.mode
 test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_binary_transport,simulateDroppedConnection,call.connectionManager.requestState
 test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_binary_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
 test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_binary_transport,,listen.connectionManager.transport.active
@@ -465,8 +241,6 @@ test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_text_tran
 test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_text_transport,simulateDroppedConnection,call.connectionManager.disconnectAllTransports
 test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_text_transport,,listen.connectionManager.transport.active
 test,test/realtime/resume.test.js,realtime/resume,,,resume_active_with_text_transport,,read.transport.params.mode
-test,test/realtime/resume.test.js,realtime/resume,,,channel_resumed_flag,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/resume.test.js,realtime/resume,,,channel_resumed_flag,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/resume.test.js,realtime/resume,,,channel_resumed_flag,becomeSuspended,call.connectionManager.disconnectAllTransports
 test,test/realtime/resume.test.js,realtime/resume,,,channel_resumed_flag,becomeSuspended,call.connectionManager.notifyState
 test,test/realtime/resume.test.js,realtime/resume,,,no_resume_once_suspended,becomeSuspended,call.connectionManager.disconnectAllTransports
@@ -480,8 +254,6 @@ test,test/realtime/resume.test.js,realtime/resume,,,no_resume_last_activity,,cal
 test,test/realtime/resume.test.js,realtime/resume,,,resume_rewind_1,,replace.connectionManager.send
 test,test/realtime/resume.test.js,realtime/resume,,,resume_rewind_1,,call.ProtocolMessage.setFlag
 test,test/realtime/resume.test.js,realtime/resume,,,resume_rewind_1,,call.connectionManager.send
-test,test/realtime/resume.test.js,realtime/resume,,,recover multiple channels,bestTransport -> availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/resume.test.js,realtime/resume,,,recover multiple channels,bestTransport -> availableTransports,read.Realtime._transports
 test,test/realtime/sync.test.js,realtime/sync,,,sync_existing_set,,call.protocolMessageFromDeserialized
 test,test/realtime/sync.test.js,realtime/sync,,,sync_existing_set,,call.channel.processMessage
 test,test/realtime/sync.test.js,realtime/sync,,,sync_member_arrives_in_middle,,call.protocolMessageFromDeserialized
@@ -494,14 +266,6 @@ test,test/realtime/sync.test.js,realtime/sync,,,presence_ordering,,call.protocol
 test,test/realtime/sync.test.js,realtime/sync,,,presence_ordering,,call.channel.processMessage
 test,test/realtime/sync.test.js,realtime/sync,,,presence_sync_interruptus,,replace.channel.processMessage
 test,test/realtime/sync.test.js,realtime/sync,,,presence_sync_interruptus,,call.channel.processMessage
-test,test/realtime/transports.test.js,realtime/transports,,,websocket_is_default,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/transports.test.js,realtime/transports,,,websocket_is_default,availableTransports,read.Realtime._transports
-test,test/realtime/transports.test.js,realtime/transports,,,no_ws_connectivity,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/transports.test.js,realtime/transports,,,no_ws_connectivity,availableTransports,read.Realtime._transports
-test,test/realtime/transports.test.js,realtime/transports,,,ws_primary_host_fails,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/transports.test.js,realtime/transports,,,ws_primary_host_fails,availableTransports,read.Realtime._transports
-test,test/realtime/transports.test.js,realtime/transports,,,no_internet_connectivity,availableTransports,call.ConnectionManager.supportedTransports
-test,test/realtime/transports.test.js,realtime/transports,,,no_internet_connectivity,availableTransports,read.Realtime._transports
 test,test/realtime/utils.test.js,incremental backoff and jitter,,,should calculate retry timeouts using incremental backoff and jitter,,call.Utils.getRetryTime
 test,test/rest/auth.test.js,rest/auth,,,Token generation with explicit auth,,call.auth.getAuthHeaders
 test,test/rest/auth.test.js,rest/auth,,,Token generation with explicit auth,,write.auth.authOptions.requestHeaders

@@ -46,7 +46,7 @@ type PrivateApiUsageDto = {
   privateAPIIdentifier: string;
 };
 
-let usageDtos = JSON.parse(readFileSync('private-api-usage-9986dc4.json').toString('utf-8')) as PrivateApiUsageDto[];
+let usageDtos = JSON.parse(readFileSync('private-api-usage-4ad5132.json').toString('utf-8')) as PrivateApiUsageDto[];
 
 function stripFilePrefix(usageDtos: PrivateApiUsageDto[]) {
   for (const usage of usageDtos) {
@@ -252,6 +252,8 @@ const records = forCSV
 
 const result = csvStringify([columnHeaders, ...records]);
 console.log(result);
+
+console.log(`There are ${forCSV.length} tests with private API usage.`);
 
 writeFileSync('private-api-data.csv', result);
 
