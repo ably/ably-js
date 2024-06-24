@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.2.0](https://github.com/ably/ably-js/tree/2.2.0) (2024-06-24)
+
+- Add passing a log level as a second parameter to `ClientOptions.logHandler` function [\#1787](https://github.com/ably/ably-js/pull/1787)
+- Fix pings stacking when calling `Connection.ping()` if none ever succeed [\#1793](https://github.com/ably/ably-js/pull/1793)
+
 ## [2.1.0](https://github.com/ably/ably-js/tree/2.1.0) (2024-06-03)
 
 With this release, Ably React Hooks have now moved to the general availability phase and are considered stable. Non-major version changes to the `ably` package won't include breaking changes for React Hooks going forward.
