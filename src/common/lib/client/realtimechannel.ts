@@ -539,9 +539,11 @@ class RealtimeChannel extends EventEmitter {
            * attaching, go into suspended, fail messages, and wait a few seconds
            * before retrying */
           this.notifyState('suspended', detachErr);
-        } else {
+        } else if (this.state === 'attached' || this.state === 'suspended') {
+          // RTL13a
           this.requestState('attaching', detachErr);
         }
+        // else no action (detached in initialized, detached, or failed state is a noop)
         break;
       }
 
