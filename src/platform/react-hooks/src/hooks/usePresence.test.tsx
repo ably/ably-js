@@ -28,6 +28,7 @@ describe('usePresence', () => {
     otherClient = new FakeAblySdk().connectTo(channels);
   });
 
+  /** @nospec */
   it('presence is entered after effect runs', async () => {
     const enterListener = vi.fn();
     ablyClient.channels.get(testChannelName).presence.subscribe(['enter'], enterListener);
@@ -39,6 +40,7 @@ describe('usePresence', () => {
     });
   });
 
+  /** @nospec */
   it('presence data updates when update function is triggered', async () => {
     const updateListener = vi.fn();
     ablyClient.channels.get(testChannelName).presence.subscribe(['update'], updateListener);
@@ -56,6 +58,7 @@ describe('usePresence', () => {
     });
   });
 
+  /** @nospec */
   it('presence API works with type information provided', async () => {
     const enterListener = vi.fn();
     const updateListener = vi.fn();
@@ -81,6 +84,7 @@ describe('usePresence', () => {
     });
   });
 
+  /** @nospec */
   it('`skip` param prevents mounting and entering presence', async () => {
     const enterListener = vi.fn();
     ablyClient.channels.get(testChannelName).presence.subscribe('enter', enterListener);
@@ -98,6 +102,7 @@ describe('usePresence', () => {
     });
   });
 
+  /** @nospec */
   it('usePresence works with multiple clients', async () => {
     const updateListener = vi.fn();
     ablyClient.channels.get(testChannelName).presence.subscribe('update', updateListener);
@@ -123,6 +128,7 @@ describe('usePresence', () => {
     });
   });
 
+  /** @nospec */
   it('handles channel errors', async () => {
     const onChannelError = vi.fn();
     const reason = { message: 'foo' };
@@ -149,6 +155,7 @@ describe('usePresence', () => {
     expect(onChannelError).toHaveBeenCalledWith(reason);
   });
 
+  /** @nospec */
   it('handles connection errors', async () => {
     const onConnectionError = vi.fn();
     const reason = { message: 'foo' };
@@ -175,6 +182,7 @@ describe('usePresence', () => {
     expect(onConnectionError).toHaveBeenCalledWith(reason);
   });
 
+  /** @nospec */
   it('should not affect existing presence listeners when hook unmounts', async () => {
     const enterListener = vi.fn();
     const leaveListener = vi.fn();
