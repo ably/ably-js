@@ -18,7 +18,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     });
 
-    /* RSC15f */
+    /** @spec RSC15f */
     it('Store working fallback', async function () {
       var rest = helper.AblyRest({
         restHost: helper.unroutableHost,
@@ -51,8 +51,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       expect(currentFallback.validUntil > now, 'Check validUntil has been re-set').to.be.ok;
     });
 
-    // TO3l6
     describe('Max elapsed time for host retries', function () {
+      /** @spec TO3l6 */
       it('can timeout after default host', async function () {
         const httpRequestTimeout = 1000;
         // set httpMaxRetryDuration lower than httpRequestTimeout so it would timeout after default host attempt
@@ -78,6 +78,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         );
       });
 
+      /** @spec TO3l6 */
       it('can timeout after fallback host retries', async function () {
         const httpRequestTimeout = 1000;
         // set httpMaxRetryDuration higher than httpRequestTimeout and lower than 2*httpRequestTimeout so it would timeout after first fallback host retry attempt
