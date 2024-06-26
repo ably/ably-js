@@ -36,7 +36,7 @@ globalThis.testAblyPackage = async function () {
 
   await checkStandaloneFunction();
 
-  channel.unsubscribe();
+  channel.unsubscribeAll();
 
   // Check that we can use the TypeScript overload that accepts a Message object
   await channel.publish({ name: 'message', data: { foo: 'bar' } });

@@ -444,7 +444,18 @@ class RealtimeChannel extends EventEmitter {
       return;
     }
 
+    if (event === undefined && listener === undefined) {
+      this.logger.deprecated(
+        'The ability to call `RealtimeChannel.unsubscribe()` without any valid parameters',
+        'Please use `RealtimeChannel.unsubscribeAll()` method if you want to deregister all listeners to messages on the channel.',
+      );
+    }
+
     this.subscriptions.off(event, listener);
+  }
+
+  unsubscribeAll(): void {
+    this.subscriptions.off();
   }
 
   sync(): void {

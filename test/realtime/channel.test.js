@@ -1043,7 +1043,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var unsubscribeTest = function () {
           channelByEvent.unsubscribe('event', listenerByEvent);
           channelByListener.unsubscribe(listenerNoEvent);
-          channelAll.unsubscribe();
+          channelAll.unsubscribeAll();
           whenPromiseSettles(channelByEvent.publish('event', 'data'), function (err) {
             try {
               expect(!err, 'Error publishing single event: ' + err).to.be.ok;
