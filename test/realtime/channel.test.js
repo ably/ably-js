@@ -169,8 +169,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Channel init with options
+     *
+     * @spec RTS3a
+     * @spec RTS3b
+     * @spec RTS3c
+     * @spec RTL16
      */
     testOnAllTransports('channelinit0', function (realtimeOpts) {
       return function (done) {
@@ -202,8 +207,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
-     * Base attach case
+    /**
+     * Base attach case.
+     * Doesn't test anything specific, just that the channel eventually attaches
+     *
+     * @spec RTL4
      */
     testOnAllTransports('channelattach0', function (realtimeOpts) {
       return function (done) {
@@ -225,8 +233,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
-     * Attach before connect
+    /**
+     * Attach before connect.
+     * Doesn't test anything specific, just that we can call attach before connecting and it eventually attaches
+     *
+     * @spec RTL4
      */
     testOnAllTransports('channelattach2', function (realtimeOpts) {
       return function (done) {
@@ -247,8 +258,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
-     * Attach then detach
+    /**
+     * Attach then detach.
+     * Doesn't test anything specific
+     *
+     * @spec RTL4
+     * @spec RTL5
      */
     testOnAllTransports(
       'channelattach3',
@@ -283,9 +298,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       true,
     );
 
-    /*
+    /**
      * Attach with an empty channel and expect a channel error
      * and the connection to remain open
+     *
+     * @spec RTL4d
      */
     testOnAllTransports('channelattachempty', function (realtimeOpts) {
       return function (done) {
@@ -315,9 +332,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Attach with an invalid channel name and expect a channel error
      * and the connection to remain open
+     *
+     * @spec RTL4d
      */
     testOnAllTransports('channelattachinvalid', function (realtimeOpts) {
       return function (done) {
@@ -354,8 +373,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Publishing on a nonattached channel
+     *
+     * @spec RTL6
      */
     testOnAllTransports('publish_no_attach', function (realtimeOpts) {
       return function (done) {
@@ -377,8 +398,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
-     * publishing on a nonattached channel with an invalid channel name
+    /**
+     * Publishing on a nonattached channel with an invalid channel name.
+     *
+     * @specpartial RTL6b - callback which is called with an error
      */
     testOnAllTransports('channelattach_publish_invalid', function (realtimeOpts) {
       return function (done) {
@@ -405,9 +428,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Attach with an invalid channel name and expect a channel error
-     * and the connection to remain open
+     * and the connection to remain open.
+     * Related to RTL4d.
+     *
+     *
+     * @nospec
      */
     testOnAllTransports('channelattach_invalid_twice', function (realtimeOpts) {
       return function (done) {
@@ -443,8 +470,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Attach then later call whenState which fires immediately
+     * Closely related to RTL25a, but this just tests that listener is called at all, without checking parameters
+     *
+     * @nospec
      */
     it('channelattachWhenState', function (done) {
       try {
@@ -462,8 +492,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Attach and call whenState before attach which fires later
+     *
+     * @spec RTL25b
      */
     it('channelattachOnceOrIfBefore', function (done) {
       try {
@@ -488,6 +520,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /**
+     * No spec items found for 'modes' property behavior (like preventing publish, entering presence, presence subscription)
+     *
+     * @spec RTS3b
+     * @spec RTL4k
+     * @spec RTL4k1
+     * @spec RTL4m
+     */
     testOnAllTransports('attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
       return function (done) {
         var testName = 'attachWithChannelParamsBasicChannelsGet';
@@ -541,6 +581,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
+    /**
+     * No spec items found for 'modes' property behavior (like preventing publish, entering presence, presence subscription)
+     *
+     * @spec RTL4k
+     * @spec RTL4k1
+     * @spec RTL4m
+     * @spec RTL16
+     */
     testOnAllTransports('attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
       return function (done) {
         var testName = 'attachWithChannelParamsBasicSetOptions';
@@ -590,6 +638,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
+    /**
+     * @spec RTL16
+     * @spec RTL7c
+     */
     testOnAllTransports('subscribeAfterSetOptions', function (realtimeOpts) {
       return function (done) {
         var testName = 'subscribeAfterSetOptions';
@@ -620,6 +672,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
+    /** @spec RTS3c1 */
     it('channelGetShouldThrowWhenWouldCauseReattach', function (done) {
       var testName = 'channelGetShouldThrowWhenWouldCauseReattach';
       try {
@@ -662,6 +715,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /** @spec RTL16a */
     testOnAllTransports('setOptionsCallbackBehaviour', function (realtimeOpts) {
       return function (done) {
         var testName = 'setOptionsCallbackBehaviour';
@@ -736,7 +790,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /* Verify modes is ignored when params.modes is present */
+    /**
+     * Verify modes is ignored when params.modes is present
+     * @nospec
+     */
     testOnAllTransports('attachWithChannelParamsModesAndChannelModes', function (realtimeOpts) {
       return function (done) {
         var testName = 'attachWithChannelParamsModesAndChannelModes';
@@ -791,6 +848,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
+    /**
+     * No spec items found for 'modes' property behavior (like preventing publish, entering presence, presence subscription)
+     *
+     * @spec RTS3b
+     * @spec RTL4l
+     * @spec RTL4m
+     */
     testOnAllTransports('attachWithChannelModes', function (realtimeOpts) {
       return function (done) {
         var testName = 'attachWithChannelModes';
@@ -840,6 +904,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
+    /**
+     * No spec items found for 'modes' property behavior (like preventing publish, entering presence, presence subscription)
+     *
+     * @spec RTS3b
+     * @spec RTL4k
+     * @spec RTL4k1
+     * @spec RTL4l
+     * @spec RTL4m
+     */
     testOnAllTransports('attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
       return function (done) {
         var testName = 'attachWithChannelParamsDeltaAndModes';
@@ -891,6 +964,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
+    /**
+     * @spec TB2d
+     * @spec TB2c
+     * @spec RTL4k1
+     */
     it('attachWithInvalidChannelParams', function (done) {
       var testName = 'attachWithInvalidChannelParams';
       var defaultChannelModes = 'presence,publish,subscribe,presence_subscribe';
@@ -996,8 +1074,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
-     * Subscribe, then unsubscribe, binary transport
+    /**
+     * Subscribe, then unsubscribe, binary transport.
+     * Only tests that those functions can be called, not their behavior.
+     *
+     * @spec RTL7
+     * @spec RTL8
      */
     it('channelsubscribe0', function (done) {
       try {
@@ -1030,8 +1112,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Subscribe, then unsubscribe listeners by event, by listener, and then all events & listener
+     *
+     * @spec RTL7a
+     * @spec RTL7b
+     * @spec RTL8c
+     * @spec RTL8a
+     * @spec RTL8b
      */
     it('channelsubscribe1', function (done) {
       var messagesReceived = 0;
@@ -1107,9 +1195,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /* RTL13
+    /**
      * A server-sent DETACHED, with err, should cause the channel to attempt an
      * immediate reattach. If that fails, it should go into suspended
+     *
+     * @spec RTL13
      */
     it('server_sent_detached', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
@@ -1158,9 +1248,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /*
+    /**
      * A server-sent DETACHED, with err, while in the attaching state, should
      * result in the channel becoming suspended
+     *
+     * @specpartial RTL13b - tests transition to the SUSPENDED state with emitted error
      */
     it('server_sent_detached_while_attaching', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
@@ -1199,8 +1291,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * A server-sent ERROR, with channel field, should fail the channel
+     *
+     * @specpartial RTL14 - tests transition to the FAILED state
      */
     it('server_sent_error', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
@@ -1234,10 +1328,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RTL12
+    /**
      * A server-sent ATTACHED indicating a loss of connection continuity (i.e.
      * with no resumed flag, possibly with an error) on an attached channel
      * should emit an UPDATE event on the channel
+     *
+     * @spec RTL12
      */
     it('server_sent_attached_err', function (done) {
       var realtime = helper.AblyRealtime(),
@@ -1280,8 +1376,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /*
+    /**
      * Check that queueMessages: false disables queuing for connection queue state
+     *
+     * @spec TO3g
      */
     it('publish_no_queueing', function (done) {
       var realtime = helper.AblyRealtime({ queueMessages: false }),
@@ -1298,8 +1396,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * A channel attach that times out should be retried
+     *
+     * @spec RTL4f
+     * @spec RTL13a
      */
     it('channel_attach_timeout', function (done) {
       /* Use a fixed transport as attaches are resent when the transport changes */
@@ -1345,8 +1446,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* RTL3c, RTL3d
+    /**
      * Check channel state implications of connection going into suspended
+     *
+     * @spec RTL3c
+     * @spec RTL3d
      */
     it('suspended_connection', function (done) {
       /* Use a fixed transport as attaches are resent when the transport changes */
@@ -1417,7 +1521,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* RTL5i */
+    /** @spec RTL5i */
     it('attached_while_detaching', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channelName = 'server_sent_detached',
@@ -1446,7 +1550,6 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 cb();
               }
             };
-            /* */
             channel.detach();
             setTimeout(function () {
               var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
@@ -1460,7 +1563,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    // RTL5j
+    /** @spec RTL5j */
     it('detaching from suspended channel transitions channel to detached state', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
       var channelName = 'detach_from_suspended';
@@ -1481,7 +1584,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    // RTL5b
+    /** @spec RTL5b */
     it('detaching from failed channel results in error', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
       var channelName = 'detach_from_failed';
@@ -1498,6 +1601,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /** @nospec */
     it('rewind works on channel after reattaching', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
       var channelName = 'rewind_after_detach';
@@ -1525,6 +1629,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       channel.subscribe(subscriber);
     });
 
+    /** @spec RTL4d1 */
     it('attach_returns_state_change', function (done) {
       var realtime = helper.AblyRealtime();
       var channelName = 'attach_returns_state_chnage';
@@ -1561,6 +1666,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /** @spec RTL7c */
     it('subscribe_returns_state_change', function (done) {
       var realtime = helper.AblyRealtime();
       var channelName = 'subscribe_returns_state_chnage';
@@ -1587,6 +1693,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /** @specpartial RTL2i - hasBacklog is false with no backlog */
     it('rewind_has_backlog_0', function (done) {
       var realtime = helper.AblyRealtime();
       var channelName = 'rewind_has_backlog_0';
@@ -1610,6 +1717,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /** @specpartial RTL2i - hasBacklog is true with backlog */
     it('rewind_has_backlog_1', function (done) {
       var realtime = helper.AblyRealtime();
       var rest = helper.AblyRest();
@@ -1641,6 +1749,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /** @spec RTS3c1 - test .get() with same options should not trigger reattachment and exception */
     it('should not throw exception then run RealtimeChannels.get() with same options', function (done) {
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('channel-with-options', { modes: ['PRESENCE'] });
@@ -1655,6 +1764,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * @spec RTL25a
+     * @spec RTL25b
+     */
     it('whenState', async () => {
       const realtime = helper.AblyRealtime();
 
