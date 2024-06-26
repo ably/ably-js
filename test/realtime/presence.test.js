@@ -137,8 +137,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
-     * Attach to channel, enter presence channel with data and await entered event
+    /**
+     * Attach to channel, enter presence channel with data and await entered event.
+     *
+     * @specpartial RTP8a - doesn't test entering with data
+     * @specskip
      */
     it.skip('presenceAttachAndEnter', function (done) {
       var channelName = 'attachAndEnter';
@@ -164,8 +167,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('enter'), attachAndEnter);
     });
 
-    /*
+    /**
      * Enter presence channel without prior attach and await entered event
+     *
+     * @spec RTP8d
+     * @specpartial RTP8a - doesn't test entering with data
      */
     it('presenceEnterWithoutAttach', function (done) {
       var channelName = 'enterWithoutAttach';
@@ -184,8 +190,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutAttach);
     });
 
-    /*
+    /**
      * Enter presence channel without prior connect and await entered event
+     * Related to RTP8d.
+     * @nospec
      */
     it('presenceEnterWithoutConnect', function (done) {
       var channelName = 'enterWithoutConnect';
@@ -201,9 +209,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutConnect);
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel (without waiting for attach callback), detach
-     * from channel immediately in 'attached' callback
+     * from channel immediately in 'attached' callback.
+     * Related to RTP8d, RTP8g
+     *
+     * @specpartial RTP16b - test queued presence messages are failed  once channel becomes detached
+     * @specskip
      */
     it.skip('presenceEnterDetachRace', function (done) {
       // Can't use runTestWithEventListener helper as one of the successful
@@ -265,8 +277,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel with a callback but no data and await entered event
+     *
+     * @specpartial RTP8b - test successful callback
      */
     it('presenceEnterWithCallback', function (done) {
       var channelName = 'enterWithCallback';
@@ -292,8 +306,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithCallback);
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel with neither callback nor data and await entered event
+     * @specpartial RTP8a - test entering presence without data and callback
      */
     it('presenceEnterWithNothing', function (done) {
       var channelName = 'enterWithNothing';
@@ -317,8 +332,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithNothing);
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel with data but no callback and await entered event
+     *
+     * @specpartial RTP8a - test entering presence with data
      */
     it('presenceEnterWithData', function (done) {
       var channelName = 'enterWithData';
@@ -342,9 +359,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithData);
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel and ensure PresenceMessage
-     * has valid action string
+     * has valid action string.
+     *
+     * @specpartial RTP8c - test sending ENTER action
      */
     it('presenceMessageAction', function (done) {
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -372,9 +391,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, clientRealtime);
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel with extras and check received
      * PresenceMessage has extras. Then do the same for leaving presence.
+     *
+     * @specpartial RTP8a - test entering presence with extras
+     * @specpartial RTP8e - doesn't test leaving without extras
      */
     it('presenceMessageExtras', function (done) {
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -440,8 +462,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, clientRealtime);
     });
 
-    /*
-     * Enter presence channel (without attaching), detach, then enter again to reattach
+    /**
+     * Enter presence channel (without attaching), detach, then enter again to reattach.
+     * Related to RTP8d, RTP8g. Test seems strange: based on RTP8g spec item,
+     * if trying to enter while channel is in DETACHED state it should throw an error immediately,
+     * but we don't expect an error in this test.
+     *
+     * @nospec
      */
     it('presenceEnterDetachEnter', function (done) {
       var channelName = 'enterDetachEnter';
@@ -484,8 +511,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, secondEventListener, enterDetachEnter);
     });
 
-    /*
+    /**
      * Enter invalid presence channel (without attaching), check callback was called with error
+     *
+     * @spec RTP8g
+     * @specpartial RTP8d - test throwing error if channel in DETACHED or FAILED state
      */
     it('presenceEnterInvalid', function (done) {
       var clientRealtime;
@@ -513,8 +543,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Attach to channel, enter+leave presence channel and await leave event
+     *
+     * @spec RTP10
      */
     it('presenceEnterAndLeave', function (done) {
       var channelName = 'enterAndLeave';
@@ -545,8 +577,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('leave'), enterAndLeave);
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel, update data, and await update event
+     *
+     * @spec RTP9d
+     * @specpartial RTP9a - tests passing new data
      */
     it('presenceEnterUpdate', function (done) {
       var newData = 'New data';
@@ -593,8 +628,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, eventListener, enterUpdate);
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel and get presence
+     * @spec RTP11a
      */
     it('presenceEnterGet', function (done) {
       var channelName = 'enterGet';
@@ -641,8 +677,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, eventListener, enterGet);
     });
 
-    /*
+    /**
      * Realtime presence subscribe on an unattached channel should implicitly attach
+     * @spec RTP6c
      */
     it('presenceSubscribeUnattached', function (done) {
       var channelName = 'subscribeUnattached';
@@ -669,8 +706,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, clientRealtime);
     });
 
-    /*
-     * Realtime presence GET on an unattached channel should attach and wait for sync
+    /**
+     * Realtime presence GET on an unattached channel should attach and wait for sync.
+     *
+     * @spec RTP11b
+     * @specpartial RTP11c1 - tests default behavior waitForSync=true
      */
     it('presenceGetUnattached', function (done) {
       var channelName = 'getUnattached';
@@ -710,8 +750,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, clientRealtime);
     });
 
-    /*
-     * Attach to channel, enter+leave presence channel and get presence
+    /**
+     * Attach to channel, enter+leave presence channel and get presence.
+     *
+     * @spec RTP11a
+     * @spec RTP10c
      */
     it('presenceEnterLeaveGet', function (done) {
       var channelName = 'enterLeaveGet';
@@ -764,8 +807,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, eventListener, enterLeaveGet);
     });
 
-    /*
-     * Attach to channel, enter+leave presence, detatch again, and get presence history
+    /**
+     * Attach to channel, enter+leave presence, detatch again, and get presence history.
+     *
+     * @spec RTP12c
      */
     it('presenceHistory', function (done) {
       var clientRealtime;
@@ -835,9 +880,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Attach to channel, enter presence channel, then initiate second
      * connection, seeing existing member in message subsequent to second attach response
+     * Related to RTP14d.
+     *
+     * @nospec
      */
     it('presenceSecondConnection', function (done) {
       var clientRealtime1, clientRealtime2;
@@ -914,10 +962,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
-     * Attach and enter channel on two connections, seeing
-     * both members in presence set
-     * Use get to filter by clientId and connectionId
+    /**
+     * Attach and enter channel on two connections, seeing both members in presence set.
+     * Use get to filter by clientId and connectionId.
+     *
+     * @spec RTP14d
+     * @spec RTP11c2
+     * @spec RTP11c3
      */
     it('presenceTwoMembers', function (done) {
       var clientRealtime1, clientRealtime2, clientChannel1, clientChannel2;
@@ -1078,9 +1129,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Enter presence channel (without attaching), close the connection,
      * reconnect, then enter again to reattach
+     * Related to RTP8d.
+     *
+     * @nospec
      */
     it('presenceEnterAfterClose', function (done) {
       var channelName = 'enterAfterClose';
@@ -1121,8 +1175,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, secondEnterListener, enterAfterClose);
     });
 
-    /*
-     * Try to enter presence channel on a closed connection and check error callback
+    /**
+     * Try to enter presence channel on a closed connection and check error callback.
+     * @specpartial RTP15e - tests only enterClient
      */
     it('presenceEnterClosed', function (done) {
       var clientRealtime;
@@ -1149,8 +1204,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
-     * Client ID is implicit in the connection so should not be sent for current client operations
+    /**
+     * Client ID is implicit in the connection so should not be sent for current client operations.
+     *
+     * @spec RTP8c
+     * @spec RTP9d
+     * @spec RTP10c
      */
     it('presenceClientIdIsImplicit', function (done) {
       var clientId = 'implicitClient',
@@ -1191,8 +1250,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Check that encodable presence messages are encoded correctly
+     * Related to G1.
+     *
+     * @specpartial RTP8e - test encoding of message and data
      */
     it('presenceEncoding', function (done) {
       var data = { foo: 'bar' },
@@ -1253,9 +1315,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /*
+    /**
      * Request a token using clientId, then initialize a connection without one,
-     * and check that can enter presence with the clientId inherited from tokenDetails
+     * and check that can enter presence with the clientId inherited from tokenDetails.
+     * Related to RSA7b3, RTP8c.
+     *
+     * @nospec
      */
     it('presence_enter_inherited_clientid', function (done) {
       var channelName = 'enter_inherited_clientid';
@@ -1290,10 +1355,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
     });
 
-    /*
+    /**
      * Request a token using clientId, then initialize a connection without one,
      * and check that can enter presence with the clientId inherited from tokenDetails
-     * before we're connected, so before we know our clientId
+     * before we're connected, so before we know our clientId.
+     * Related to RSA7b3, RTP8c.
+     *
+     * @nospec
      */
     it('presence_enter_before_know_clientid', function (done) {
       var channelName = 'enter_before_know_clientid';
@@ -1329,9 +1397,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
     });
 
-    /*
+    /**
      * Check that, on a reattach when presence map has changed since last attach,
-     * all members are emitted and map is in the correct state
+     * all members are emitted and map is in the correct state.
+     *
+     * @spec RTP15b
      */
     it('presence_refresh_on_detach', function (done) {
       var channelName = 'presence_refresh_on_detach';
@@ -1447,6 +1517,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /** @nospec */
     it('presence_detach_during_sync', function (done) {
       var channelName = 'presence_detach_during_sync';
       var enterer = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -1498,11 +1569,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* RTP5c2, RTP17
+    /**
      * Test the auto-re-enter functionality by injecting a member into the
      * private _myMembers set while suspended. Expect on re-attach and sync that
      * member to be sent to realtime and, with luck, make its way into the normal
-     * presence set */
+     * presence set.
+     *
+     * @spec RTP5f
+     * @spec RTP17
+     * @spec RTP17g
+     * @specpartial RTP17i - tests simple re-entry, no RESUMED flag test
+     */
     it('presence_auto_reenter', function (done) {
       var channelName = 'presence_auto_reenter';
       var realtime = helper.AblyRealtime();
@@ -1610,8 +1687,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* RTP17e
-     * Test failed presence auto-re-entering */
+    /**
+     * Test failed presence auto-re-entering
+     *
+     * @spec RTP17e
+     * @specskip
+     */
     it.skip('presence_failed_auto_reenter', function (done) {
       var channelName = 'presence_failed_auto_reenter',
         realtime,
@@ -1706,7 +1787,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* Enter ten clients while attaching, finish the attach, check they were all entered correctly */
+    /**
+     * Enter ten clients while attaching, finish the attach, check they were all entered correctly.
+     * Related to RTP15b, RTP11a.
+     *
+     * @nospec
+     */
     it('multiple_pending', function (done) {
       var realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('multiple_pending'),
@@ -1756,9 +1842,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* RTP19
+    /**
      * Check that a LEAVE message is published for anyone in the local presence
-     * set but missing from a sync */
+     * set but missing from a sync.
+     *
+     * @spec RTP19
+     */
     it('leave_published_for_member_missing_from_sync', function (done) {
       var realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
         continuousClientId = 'continuous',
@@ -1871,9 +1960,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* RTP19a
+    /**
      * Check that a LEAVE message is published for anyone in the local presence
-     * set if get an ATTACHED with no HAS_PRESENCE */
+     * set if get an ATTACHED with no HAS_PRESENCE.
+     *
+     * @spec RTP19a
+     */
     it('leave_published_for_members_on_presenceless_attached', function (done) {
       var realtime = helper.AblyRealtime(),
         channelName = 'leave_published_for_members_on_presenceless_attached',
@@ -1962,10 +2054,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* RTP5f; RTP11d
+    /**
      * Check that on ATTACHED -> SUSPENDED -> ATTACHED, members map is preserved
      * and only members that changed between ATTACHED states should result in
-     * presence events */
+     * presence events.
+     *
+     * @spec RTP5f
+     * @spec RTP11d
+     */
     it('suspended_preserves_presence', function (done) {
       var mainRealtime = helper.AblyRealtime({ clientId: 'main' }),
         continuousRealtime = helper.AblyRealtime({ clientId: 'continuous' }),
@@ -2099,10 +2195,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /*
+    /**
      * Send >10 presence updates, check they were all broadcast. Point of this is
      * to check for a bug in the original 0.8 spec re presence membersmap
      * comparisons.
+     *
+     * @spec RTP9a
      */
     it('presence_many_updates', function (done) {
       var client = helper.AblyRealtime({ clientId: testClientId });
