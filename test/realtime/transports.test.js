@@ -62,6 +62,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         );
       }
 
+      /** @nospec */
       it('websocket_is_default', function (done) {
         const realtime = helper.AblyRealtime(options());
 
@@ -77,6 +78,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         monitorConnection(done, realtime);
       });
 
+      /** @nospec */
       it('no_ws_connectivity', function (done) {
         Config.WebSocket = FakeWebSocket;
         const realtime = helper.AblyRealtime(options({ webSocketSlowTimeout: 1000, webSocketConnectTimeout: 3000 }));
@@ -99,6 +101,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         monitorConnection(done, realtime);
       });
 
+      /** @nospec */
       it('ws_primary_host_fails', function (done) {
         const goodHost = helper.AblyRest().options.realtimeHost;
         const realtime = helper.AblyRealtime(
@@ -113,6 +116,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         monitorConnection(done, realtime);
       });
 
+      /** @specpartial RTN14d */
       it('no_internet_connectivity', function (done) {
         Config.WebSocket = FakeWebSocket;
         const realtime = helper.AblyRealtime(options({ connectivityCheckUrl: failUrl, webSocketSlowTimeout: 1000 }));
@@ -123,6 +127,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         });
       });
 
+      /** @specpartial RTN14d */
       it('no_websocket_or_base_transport', function (done) {
         Config.WebSocket = FakeWebSocket;
         const realtime = helper.AblyRealtime({
@@ -137,6 +142,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       });
 
       if (localStorageSupported) {
+        /** @nospec */
         it('base_transport_preference', function (done) {
           window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport }));
           const realtime = helper.AblyRealtime(options());
@@ -163,6 +169,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
           monitorConnection(done, realtime);
         });
 
+        /** @nospec */
         it('transport_preference_reset_while_connecting', function (done) {
           window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport }));
           const realtime = helper.AblyRealtime(options());
@@ -187,6 +194,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
           monitorConnection(done, realtime);
         });
 
+        /** @nospec */
         it('transport_preference_reset_after_connected', function (done) {
           window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport }));
           const realtime = helper.AblyRealtime(options());
