@@ -22,6 +22,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /** @spec RTN13 */
     it('connectionPing', function (done) {
       var realtime;
       try {
@@ -40,6 +41,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /** @specpartial RTN13a - callback is called with response time */
     it('connectionPingWithCallback', function (done) {
       var realtime;
       try {
@@ -65,6 +67,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /**
+     * @spec RTN16g2
+     * @specpartial RTN16g - connectionKey, the current msgSerial
+     */
     it('connectionAttributes', function (done) {
       var realtime;
       try {
@@ -125,6 +131,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /** @spec RTN15c7 */
     it('unrecoverableConnection', function (done) {
       var realtime;
       const fakeRecoveryKey = JSON.stringify({
@@ -162,11 +169,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Check that a message published on one transport that has not yet been
      * acked will be republished with the same msgSerial on a new transport (eg
      * after a resume), before any new messages are send (and
      * without being merged with new messages)
+     *
+     * @spec RTN7b
+     * @spec RTN19a
+     * @spec RTN19a2
      */
     it('connectionQueuing', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
@@ -279,8 +290,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Inject a new CONNECTED with different connectionDetails; check they're used
+     *
+     * @spec CD1
+     * @spec RTN21
+     * @specpartial DF1a - can be overridden by CONNECTED ProtocolMessage
+     * @specpartial TO3l8 - default can be overridden by the maxMessageSize in the connectionDetails
      */
     it('connectionDetails', function (done) {
       var realtime = helper.AblyRealtime(),
@@ -319,6 +335,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, realtime);
     });
 
+    /**
+     * @spec RTN26a
+     * @spec RTN26b
+     */
     it('whenState', async () => {
       const realtime = helper.AblyRealtime({ autoConnect: false });
 
