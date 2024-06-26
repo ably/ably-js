@@ -36,6 +36,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * @spec RSL1b
+     * @spec RTL7b
+     */
     it('publishonce', function (done) {
       try {
         /* set up realtime */
@@ -74,8 +78,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Test publishes in quick succession (on successive ticks of the event loop)
+     * @spec RTL6b
      */
     testOnAllTransports('publishfast', function (realtimeOpts) {
       return function (done) {
@@ -136,9 +141,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Test queuing: publishing a series of messages that start before the lib is connected
      * Also checks they arrive in the right order
+     *
+     * @spec RTL6c2
+     * @specpartial RTL3d - test processing queued messages
      */
     testOnAllTransports('publishQueued', function (realtimeOpts) {
       return function (done) {
@@ -223,12 +231,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Test that a message is not sent back to the same realtime client
      * when echoMessages is false (RTC1a and RTL7f)
      *
      * Test that a message is sent back to the same realtime client
      * when echoMessages is true (RTC1a and RTL7f)
+     *
+     * @spec RTC1a
+     * @spec RTL7f
      */
     it('publishEcho', function (done) {
       // set up two realtimes
@@ -300,6 +311,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * @spec RSL1b
+     * @spec RSL1e
+     * @spec TM2g
+     * @spec TM2d
+     * @specpartial RSL1a - doesn't test array of Message objects
+     */
     it('publishVariations', function (done) {
       var testData = 'Some data';
       var testArguments = [
@@ -416,6 +434,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /** @spec RSL4a */
     it('publishDisallowed', function (done) {
       var testArguments = [
         [{ name: 'objectAndBoolData', data: false }],
@@ -467,6 +486,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /**
+     * @spec RSL4b
+     * @spec RTL7e
+     * @spec TM2e
+     * @specpartial RSL6b
+     */
     it('publishEncodings', function (done) {
       var testData = 'testData';
       var testArguments = [
@@ -562,6 +587,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /**
+     * @spec RSL1b
+     * @spec RTL7b
+     */
     it('restpublish', function (done) {
       var count = 10;
       var rest = helper.AblyRest();
@@ -590,6 +619,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }, 500);
     });
 
+    /**
+     * @spec RTL6
+     * @spec RTL6b
+     */
     testOnAllTransports('publish', function (realtimeOpts) {
       return function (done) {
         var count = 10;
@@ -621,8 +654,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /* Authenticate with a clientId and ensure that the clientId is not sent in the Message
-	   and is implicitly added when published */
+    /**
+     * Authenticate with a clientId and ensure that the clientId is not sent in the Message
+     * and is implicitly added when published.
+     *
+     * @specpartial RSL1m1 - in the context of RealtimeChannel
+     */
     it('implicit_client_id_0', function (done) {
       var clientId = 'implicit_client_id_0',
         realtime = helper.AblyRealtime({ clientId: clientId });
@@ -659,8 +696,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* Authenticate with a clientId and explicitly provide the same clientId in the Message
-	   and ensure it is published */
+    /**
+     * Authenticate with a clientId and explicitly provide the same clientId in the Message
+     * and ensure it is published.
+     *
+     * @specpartial RSL1m2 - in the context of RealtimeChannel
+     */
     it('explicit_client_id_0', function (done) {
       var clientId = 'explicit_client_id_0',
         /* Use a fixed transport as intercepting transport.send */
@@ -721,8 +762,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* Authenticate with a clientId and explicitly provide a different invalid clientId in the Message
-	   and expect it to not be published and be rejected */
+    /**
+     * Authenticate with a clientId and explicitly provide a different invalid clientId in the Message
+     * and expect it to not be published and be rejected.
+     *
+     * @specpartial RSL1m4 - in the context of RealtimeChannel
+     */
     it('explicit_client_id_1', function (done) {
       var clientId = 'explicit_client_id_1',
         invalidClientId = 'invalid',
@@ -780,6 +825,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * Related to RTL7. Passing an array of events to .subscribe is not documented in the spec.
+     * @nospec
+     */
     it('subscribe_with_event_array', function (done) {
       var realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('subscribe_with_event_array');
@@ -836,6 +885,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /**
+     * Related to RTL7.
+     *
+     * @spec RTL22c
+     * @spec RTL22d
+     * @spec MFI2b
+     * @spec MFI2c
+     * @specpartial RTL22 - tests only subscribe
+     * @specpartial RTL22a - doesn't test for name
+     */
     it('subscribe_with_filter_object', function (done) {
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('subscribe_with_filter_object');
@@ -916,6 +975,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /**
+     * Related to RTL8.
+     *
+     * @spec RTL22c
+     * @spec RTL22d
+     * @spec MFI2b
+     * @spec MFI2c
+     * @specpartial RTL22 - tests only unsubscribe
+     * @specpartial RTL22a - doesn't test for name
+     */
     it('unsubscribe_with_filter_object', function (done) {
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('unsubscribe_with_filter_object');
@@ -974,6 +1043,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /** @spec RSL6a2 */
     it('extras_field', function (done) {
       var realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('extras_field'),
@@ -1018,7 +1088,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
-    /* TO3l8; CD2C; RSL1i */
+    /**
+     * @spec TO3l8
+     * @spec CD2c
+     * @spec RSL1i
+     */
     it('maxMessageSize', function (done) {
       var realtime = helper.AblyRealtime(),
         connectionManager = realtime.connection.connectionManager,
@@ -1051,8 +1125,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RTL6d: publish a series of messages that exercise various bundling
-     * constraints, check they're satisfied */
+    /**
+     * Publish a series of messages that exercise various bundling constraints, check they're satisfied.
+     *
+     * @spec RTL6d
+     * @spec RTL6d1
+     * @spec RTL6d2
+     * @spec RTL6d3
+     * @spec RTL6d5
+     * @spec RTL6d6
+     * @spec RTL6d7
+     * @specskip
+     */
     it.skip('bundling', function (done) {
       var realtime = helper.AblyRealtime({ maxMessageSize: 256, autoConnect: false }),
         channelOne = realtime.channels.get('bundlingOne'),
@@ -1115,6 +1199,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       realtime.connect();
     });
 
+    /**
+     * @spec RSL1k2
+     * @spec RSL1k5
+     */
     it('idempotentRealtimePublishing', function (done) {
       var realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('idempotentRealtimePublishing');
@@ -1149,6 +1237,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * @spec RTS5
+     * @spec RTS5a
+     * @spec DO1
+     * @spec DO2
+     * @spec DO2a
+     */
     it('subscribes to filtered channel', function (done) {
       var testData = [
         {
