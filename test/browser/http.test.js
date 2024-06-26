@@ -22,6 +22,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       done();
     });
 
+    /** @nospec */
     it('Should use fetch when XHR is not supported', function (done) {
       let oldFetch = window.fetch;
       window.fetch = () => {
@@ -32,6 +33,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       channel.publish('test', 'Testing fetch support');
     });
 
+    /** @nospec */
     it('Should succeed in using fetch to publish a message', function (done) {
       const channel = rest.channels.get('http_test_channel');
       whenPromiseSettles(channel.publish('test', 'Testing fetch support'), (err) => {
@@ -40,6 +42,12 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
+    /**
+     * RTL6b talks about a callback which should receive an error object (which what we're doing here), but suggests to test other things.
+     * This test simply tests that with fetch API we're still receiving an error, so it's probably @nospec.
+     *
+     * @nospec
+     */
     it('Should pass errors correctly', function (done) {
       const channel = rest.channels.get('');
       whenPromiseSettles(channel.publish('test', 'Invalid message'), (err) => {
