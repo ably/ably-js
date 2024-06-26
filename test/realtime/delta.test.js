@@ -40,6 +40,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
       });
     });
 
+    /** @spec PC3 */
     it('deltaPlugin', function (done) {
       var testName = 'deltaPlugin';
       try {
@@ -89,6 +90,11 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
       }
     });
 
+    /**
+     * Related to PC3
+     *
+     * @nospec
+     */
     it('unusedPlugin', function (done) {
       var testName = 'unusedPlugin';
       try {
@@ -129,6 +135,11 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
       }
     });
 
+    /**
+     * @spec RTL18
+     * @spec RTL18b
+     * @spec RTL18c
+     */
     it('lastMessageNotFoundRecovery', function (done) {
       var testName = 'lastMessageNotFoundRecovery';
       try {
@@ -172,6 +183,7 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
               });
             } else if (index === testData.length - 1) {
               try {
+                // RTL18b - one message was discarded due to failed decoding
                 expect(testVcdiffDecoder.numberOfCalls).to.equal(testData.length - 2, 'Check number of delta messages');
               } catch (err) {
                 closeAndFinish(done, realtime, err);
@@ -192,6 +204,10 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
       }
     });
 
+    /**
+     * @spec RTL18
+     * @spec RTL18c
+     */
     it('deltaDecodeFailureRecovery', function (done) {
       var testName = 'deltaDecodeFailureRecovery';
       try {
@@ -243,7 +259,12 @@ define(['shared_helper', 'vcdiff-decoder', 'async', 'chai'], function (helper, v
       }
     });
 
-    /* Check that channel becomes failed if we get deltas when we don't have a vcdiff plugin */
+    /**
+     * Check that channel becomes failed if we get deltas when we don't have a vcdiff plugin.
+     * Related to PC3.
+     *
+     * @nospec
+     */
     it('noPlugin', function (done) {
       try {
         var realtime = helper.AblyRealtime();
