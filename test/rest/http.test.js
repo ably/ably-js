@@ -19,7 +19,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     /**
-     * RSC7a
+     * @spec RSC7a
+     * @specpartial RSC7d2 - tests Ably-Agent only for http
      */
     it('Should send X-Ably-Version and Ably-Agent headers in get/post requests', async function () {
       var originalDo = rest.http.do;
@@ -61,6 +62,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       await channel.presence.get();
     });
 
+    /** @nospec */
     it('Should handle no content responses', async function () {
       //Intercept Http.do with test
 
