@@ -42,6 +42,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eraseSession('ably-connection-recovery');
       });
 
+      /** @spec RTN20a */
       it('device_going_offline_causes_disconnected_state', function (done) {
         var realtime = helper.AblyRealtime(),
           connection = realtime.connection,
@@ -84,6 +85,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      /** @spec RTN20b */
       it('device_going_online_causes_disconnected_connection_to_reconnect_immediately', function (done) {
         /* Give up trying to connect fairly quickly */
         var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 1000 }),
@@ -129,6 +131,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      /** @spec RTN20b */
       it('device_going_online_causes_suspended_connection_to_reconnect_immediately', function (done) {
         /* move to suspended state after 2s of being disconnected */
         var realtime = helper.AblyRealtime({
@@ -174,6 +177,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      /** @spec RTN20c */
       it('device_going_online_causes_connecting_connection_to_retry_attempt', function (done) {
         var realtime = helper.AblyRealtime({}),
           connection = realtime.connection,
@@ -209,6 +213,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         return keyA.split('-')[0] === keyB.split('-')[0];
       }
 
+      /**
+       * @specpartial RTN16 test
+       * @specpartial RTN16d
+       */
       it('page_refresh_with_recovery', function (done) {
         var realtimeOpts = {
             recover: function (lastConnectionDetails, cb) {
@@ -250,6 +258,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      /** @nospec */
       it('page_refresh_persist_with_denied_recovery', function (done) {
         var realtimeOpts = {
           recover: function (lastConnectionDetails, cb) {
@@ -292,6 +301,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      /** @nospec */
       it('page_refresh_with_close_on_unload', function (done) {
         var realtime = helper.AblyRealtime({ closeOnUnload: true }),
           refreshEvent = new Event('beforeunload', { bubbles: true });
@@ -312,6 +322,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      /**
+       * @specpartial RTN16
+       * @specpartial RTN16d
+       */
       it('page_refresh_with_manual_recovery', function (done) {
         var realtime = helper.AblyRealtime({ closeOnUnload: false }),
           refreshEvent = new Event('beforeunload', { bubbles: true });
@@ -350,6 +364,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      /** @nospec */
       it('page_refresh_with_multiple_recovery_scopes', async () => {
         const realtimeOpts = { recover: (_, cb) => cb(true) },
           opts1 = Object.assign({ recoveryKeyStorageName: 'recovery-1' }, realtimeOpts),
@@ -380,6 +395,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         );
       });
 
+      /** @nospec */
       it('persist_preferred_transport', function (done) {
         var realtime = helper.AblyRealtime();
 
@@ -399,6 +415,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         monitorConnection(done, realtime);
       });
 
+      /** @nospec */
       it('browser_transports', function (done) {
         var realtime = helper.AblyRealtime();
         try {
