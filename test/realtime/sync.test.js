@@ -35,13 +35,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     }
 
-    /*
+    /**
      * Sync with an existing presence set - should discard any member who wasn't
      * included in the sync.
      * Note: doesn't use a real connection as everything's being done with
      * simulated protocol messages. Start with a fake-attached channel with no
      * sync in progress, then do one sync, then a second with a slightly
-     * different presence set
+     * different presence set.
+     *
+     * @spec RTP13
+     * @spec RTP18
+     * @spec RTP18c
+     * @specpartial RTP19
      */
     it('sync_existing_set', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
@@ -159,10 +164,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Sync with an existing presence set and a presence member added in the
      * middle of the sync should should discard the former, but not the latter
-     * */
+     *
+     * Related to RTP2f, RTP18a, RTP18b, RTP2d.
+     *
+     * @nospec
+     */
     it('sync_member_arrives_in_middle', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_in_middle',
@@ -262,8 +271,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
-     * Presence message that was in the sync arrives again as a normal message, after it's come in the sync
+    /**
+     * Presence message that was in the sync arrives again as a normal message, after it's come in the sync.
+     * Related to RTP2f, RTP18a, RTP18b, RTP2d.
+     *
+     * @nospec
      */
     it('sync_member_arrives_normally_after_came_in_sync', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
@@ -345,8 +357,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
-     * Presence message that will be in the sync arrives as a normal message, before it comes in the sync
+    /**
+     * Presence message that will be in the sync arrives as a normal message, before it comes in the sync.
+     * Related to RTP2f, RTP18a, RTP18b, RTP2d.
+     *
+     * @nospec
      */
     it('sync_member_arrives_normally_before_comes_in_sync', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
@@ -428,9 +443,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Get several presence messages with various combinations of msgserial,
-     * index, and synthesized leaves, check that the end result is correct
+     * index, and synthesized leaves, check that the end result is correct.
+     *
+     * @spec RTP2a
+     * @spec RTP2b1
+     * @spec RTP2b1a
+     * @spec RTP2b2
+     * @spec RTP2c
      */
     it('presence_ordering', async function () {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
@@ -582,9 +603,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Do a 110-member sync, so split into two sync messages. Inject a normal
-     * presence enter between the syncs. Check everything was entered correctly
+     * presence enter between the syncs. Check everything was entered correctly.
+     *
+     * @specpartial RTP4 - not enough members tested, should be 250
      */
     it('presence_sync_interruptus', function (done) {
       var channelName = 'presence_sync_interruptus';
