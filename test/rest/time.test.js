@@ -16,6 +16,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
+    /** @spec RSC16 */
     it('time0', async function () {
       var serverTime = await rest.time();
       var localFiveMinutesAgo = Date.now() - 5 * 60 * 1000;
