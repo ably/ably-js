@@ -21,8 +21,9 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     /* Restrict to websocket or xhr polling for the v= test as if stream=false the
      * recvRequest may not be the connectRequest by the time we check it. */
     if (helper.bestTransport === 'web_socket' || helper.bestTransport === 'xhr_polling') {
-      /*
-       * Base init case
+      /**
+       * Base init case.
+       * @spec RTN2f
        */
       it('initbase0', function (done) {
         var realtime;
@@ -47,7 +48,12 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     }
 
-    /* init with key string */
+    /**
+     * Init with key string.
+     *
+     * @specpartial RSC1a
+     * @specpartial RSC1c - test Realtime constructor with an API key
+     */
     it('init_key_string', function (done) {
       var realtime;
       try {
@@ -67,7 +73,12 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* init with token string */
+    /**
+     * Init with token string.
+     *
+     * @specpartial RSC1a
+     * @specpartial RSC1c - test Realtime constructor with a token string
+     */
     it('init_token_string', function (done) {
       try {
         /* first generate a token ... */
@@ -96,7 +107,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* init with key string and useTokenAuth: true */
+    /**
+     * Init with key string and useTokenAuth: true.
+     * @spec TO3j4
+     */
     it('init_key_with_usetokenauth', function (done) {
       var realtime;
       try {
@@ -120,8 +134,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* init with key string, useTokenAuth: true, and some defaultTokenParams to
-     * request a wildcard clientId */
+    /**
+     * Init with key string, useTokenAuth: true, and some defaultTokenParams to request a wildcard clientId
+     * @spec RSA7b4
+     */
     it('init_usetokenauth_defaulttokenparams_wildcard', function (done) {
       var realtime;
       try {
@@ -149,7 +165,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* init with using defaultTokenParams to set a non-wildcard clientId should set auth.clientId */
+    /**
+     * Init with using defaultTokenParams to set a non-wildcard clientId should set auth.clientId
+     * @spec RSA7b3
+     */
     it('init_defaulttokenparams_nonwildcard', function (done) {
       var realtime;
       try {
@@ -175,7 +194,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* init when specifying clientId both in defaultTokenParams and in clientOptions: the latter takes precedence */
+    /**
+     * Init when specifying clientId both in defaultTokenParams and in clientOptions: the latter takes precedence.
+     * @spec RSA7a4
+     */
     it('init_conflicting_clientids', function (done) {
       var realtime;
       try {
@@ -201,7 +223,12 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* init with useTokenAuth: false with a clientId (should fail) */
+    /**
+     * Init with useTokenAuth: false with a clientId (should fail).
+     * Related to RSA7.
+     *
+     * @nospec
+     */
     it('init_with_usetokenauth_false_and_a_clientid', function (done) {
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
@@ -214,7 +241,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* check default httpHost selection */
+    /**
+     * Check default httpHost selection.
+     * @specpartial RSC11 - tests only default value
+     */
     it('init_defaulthost', function (done) {
       try {
         /* want to check the default host when no custom environment or custom
@@ -230,7 +260,14 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* check changing the default timeouts */
+    /**
+     * Check changing the default timeouts.
+     *
+     * @specpartial TO3l1 - test property can be set
+     * @specpartial TO3l2 - test property can be set
+     * @specpartial TO3l4 - test property can be set
+     * @specpartial TO3l6 - test property can be set
+     */
     it('init_timeouts', function (done) {
       try {
         var realtime = helper.AblyRealtime({
@@ -268,7 +305,16 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
-    /* check changing the default fallback hosts and changing httpMaxRetryCount */
+    /**
+     * Check changing the default fallback hosts and changing httpMaxRetryCount.
+     *
+     * @spec RSC12
+     * @spec RTN17b2
+     * @spec TO3k2
+     * @spec TO3l5
+     * @specpartial RSC11 - test override endpoint using restHost
+     * @specpartial RSC15a - httpMaxRetryCount has been reached
+     */
     it('init_fallbacks', function (done) {
       try {
         var realtime = helper.AblyRealtime({
@@ -316,6 +362,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     /* Check base and websocket transports (nodejs only; browser tests in their own section) */
     if (!isBrowser) {
+      /**
+       * Related to RTN1.
+       * @nospec
+       */
       it('node_transports', function (done) {
         var realtime;
         try {
@@ -329,8 +379,16 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     }
 
-    /* Check that the connectionKey in ConnectionDetails updates the client connectionKey,
-	   and clientId in ConnectionDetails updates the client clientId */
+    /**
+     * Check that the connectionKey in ConnectionDetails updates the client connectionKey,
+     * and clientId in ConnectionDetails updates the client clientId.
+     *
+     * Related to RTN9, RTN15e, RTN16d.
+     * No spec item explicitly states that connection.key should be set
+     * from ConnectionDetails.connectionKey on the first connection.
+     *
+     * @spec RSA7b3
+     */
     it('init_and_connection_details', function (done) {
       try {
         var keyStr = helper.getTestApp().keys[0].keyStr;
@@ -372,6 +430,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     });
 
+    /** @spec RTN17b2 */
     it('init_fallbacks_once_connected', function (done) {
       var realtime = helper.AblyRealtime({
         httpMaxRetryCount: 3,
@@ -393,6 +452,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
+    /** @specpartial RTN17e */
     it('init_fallbacks_once_connected_2', function (done) {
       var goodHost = helper.AblyRest().options.realtimeHost;
       var realtime = helper.AblyRealtime({
