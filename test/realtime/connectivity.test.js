@@ -19,8 +19,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
-    /*
+    /**
      * Connect with available http transports; internet connectivity check should work
+     *
+     * @nospec
      */
     it('http_connectivity_check', function (done) {
       whenPromiseSettles(new Ably.Realtime._Http().checkConnectivity(), function (err, res) {
@@ -48,6 +50,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       var successUrl = echoServer + '/respondwith?status=200';
       var failUrl = echoServer + '/respondwith?status=500';
 
+      /** @nospec */
       it('succeeds with scheme', function (done) {
         whenPromiseSettles(
           new helper.AblyRealtime(options(urlScheme + successUrl)).http.checkConnectivity(),
@@ -63,6 +66,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         );
       });
 
+      /** @nospec */
       it('fails with scheme', function (done) {
         whenPromiseSettles(
           new helper.AblyRealtime(options(urlScheme + failUrl)).http.checkConnectivity(),
@@ -77,6 +81,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         );
       });
 
+      /** @nospec */
       it('succeeds with querystring', function (done) {
         whenPromiseSettles(new helper.AblyRealtime(options(successUrl)).http.checkConnectivity(), function (err, res) {
           try {
@@ -88,6 +93,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         });
       });
 
+      /** @nospec */
       it('fails with querystring', function (done) {
         whenPromiseSettles(new helper.AblyRealtime(options(failUrl)).http.checkConnectivity(), function (err, res) {
           try {
@@ -99,6 +105,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         });
       });
 
+      /** @nospec */
       it('succeeds with plain url', function (done) {
         whenPromiseSettles(
           new helper.AblyRealtime(options('sandbox-rest.ably.io/time')).http.checkConnectivity(),
@@ -113,6 +120,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         );
       });
 
+      /** @nospec */
       it('fails with plain url', function (done) {
         whenPromiseSettles(
           new helper.AblyRealtime(options('echo.ably.io')).http.checkConnectivity(),
@@ -128,6 +136,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
+    /** @nospec */
     it('disable_connectivity_check', function (done) {
       whenPromiseSettles(
         new helper.AblyRealtime(options('notarealhost', true)).http.checkConnectivity(),
