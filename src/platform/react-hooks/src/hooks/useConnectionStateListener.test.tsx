@@ -19,6 +19,7 @@ describe('useConnectionStateListener', () => {
     ablyClient = new FakeAblySdk();
   });
 
+  /** @nospec */
   it('can register a connection state listener for all state changes', async () => {
     renderInCtxProvider(ablyClient, <UseConnectionStateListenerComponent></UseConnectionStateListenerComponent>);
 
@@ -29,6 +30,7 @@ describe('useConnectionStateListener', () => {
     expect(screen.getAllByRole('connectionState')[0].innerHTML).toEqual('connected');
   });
 
+  /** @nospec */
   it('can register a connection state listener for named state changes', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -50,6 +52,7 @@ describe('useConnectionStateListener', () => {
     expect(screen.getAllByRole('connectionState')[0].innerHTML).toEqual('failed');
   });
 
+  /** @nospec */
   it('can register a connection state listener for an array of named state changes', async () => {
     renderInCtxProvider(
       ablyClient,
