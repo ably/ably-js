@@ -26,6 +26,7 @@ describe('useChannelStateListener', () => {
     ablyClient = new FakeAblySdk().connectTo(channels);
   });
 
+  /** @nospec */
   it('can register a channel state listener for all state changes', async () => {
     renderInCtxProvider(ablyClient, <UseChannelStateListenerComponent></UseChannelStateListenerComponent>);
 
@@ -36,6 +37,7 @@ describe('useChannelStateListener', () => {
     expect(screen.getAllByRole('channelState')[0].innerHTML).toEqual('attached');
   });
 
+  /** @nospec */
   it('can register a channel state listener for named state changes', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -55,6 +57,7 @@ describe('useChannelStateListener', () => {
     expect(screen.getAllByRole('channelState')[0].innerHTML).toEqual('failed');
   });
 
+  /** @nospec */
   it('can register a channel state listener for an array of named state changes', async () => {
     renderInCtxProvider(
       ablyClient,
