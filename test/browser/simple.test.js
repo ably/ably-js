@@ -132,6 +132,11 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     }
 
+    /**
+     * Related to RTN4, but this test just reconfirms this behaviour in a browser.
+     *
+     * @nospec
+     */
     it('simpleInitBase0', function (done) {
       try {
         var timeout,
@@ -161,19 +166,30 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     var wsTransport = 'web_socket';
     if (isTransportAvailable(wsTransport)) {
+      /**
+       * Related to RTN1 and RTN4. does basic connection test for websocket transport in a browser.
+       *
+       * @nospec
+       */
       it('wsbase0', function (done) {
         connectionWithTransport(done, wsTransport);
       });
 
-      /*
+      /**
        * Publish and subscribe, json transport
+       * Tests RTL6i1 and RTL7b for websocket transport in a browser
+       *
+       * @nospec
        */
       it('wspublish0', function (done) {
         publishWithTransport(done, wsTransport);
       });
 
-      /*
+      /**
        * Check heartbeat
+       * Tests RTN13a, RTN13b and RTN13c for websocket transport in a browser
+       *
+       * @nospec
        */
       it('wsheartbeat0', function (done) {
         heartbeatWithTransport(done, wsTransport);
@@ -182,38 +198,60 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     var xhrPollingTransport = 'xhr_polling';
     if (isTransportAvailable(xhrPollingTransport)) {
+      /**
+       * Related to RTN1 and RTN4. does basic connection test for xhr polling transport in a browser
+       *
+       * @nospec
+       */
       it('xhrpollingbase0', function (done) {
         connectionWithTransport(done, xhrPollingTransport);
       });
 
-      /*
+      /**
        * Publish and subscribe, json transport
+       * Tests RTL6i1 and RTL7b for xhr polling transport in a browser
+       *
+       * @nospec
        */
       it('xhrpollingpublish0', function (done) {
         publishWithTransport(done, xhrPollingTransport);
       });
 
-      /*
+      /**
        * Check heartbeat
+       * Tests RTN13a, RTN13b and RTN13c for xhr polling transport in a browser
+       *
+       * @nospec
        */
       it('xhrpollingheartbeat0', function (done) {
         heartbeatWithTransport(done, xhrPollingTransport);
       });
     }
 
+    /**
+     * Related to RTN1 and RTN4: does basic connection test in a browser with automatically choosing a transport
+     *
+     * @nospec
+     */
     it('auto_transport_base0', function (done) {
       connectionWithTransport(done);
     });
 
-    /*
+    /**
      * Publish and subscribe
+     * Tests RTL6i1 and RTL7b in a browser with automatically choosing a transport
+     *
+     * @nospec
      */
     it('auto_transport_publish0', function (done) {
       publishWithTransport(done);
     });
 
-    /*
+    /**
      * Check heartbeat
+     * Tests RTN13a, RTN13b and RTN13c in a browser with automatically choosing a transport
+     *
+     * @nospec
      */
     it('auto_transport_heartbeat0', function (done) {
       heartbeatWithTransport(done);
