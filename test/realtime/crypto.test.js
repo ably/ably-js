@@ -97,7 +97,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* generateRandomKey with an explicit keyLength */
+    /**
+     * generateRandomKey with an explicit keyLength
+     *
+     * @spec RSE2
+     * @spec RSE2b
+     * @specpartial RSE2a - tests length in bits with explicit keyLength
+     */
     it('generateRandomKey0', function (done) {
       whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
@@ -114,7 +120,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* generateRandomKey with no keyLength should generate 256-bit keys */
+    /**
+     * generateRandomKey with no keyLength should generate 256-bit keys
+     *
+     * @spec RSE2
+     * @spec RSE2b
+     * @specpartial RSE2a - tests length in bits without keyLength
+     */
     it('generateRandomKey1', function (done) {
       whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
@@ -130,6 +142,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * @spec RSE1
+     * @spec RSE1a
+     * @specpartial RSE1b - tests only passing key
+     */
     it('getDefaultParams_withResultOfGenerateRandomKey', function (done) {
       whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
@@ -147,6 +164,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /** @specpartial RSE1c - can accept binary key */
     it('getDefaultParams_ArrayBuffer_key', function (done) {
       whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
@@ -163,6 +181,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /** @specpartial RSE1c - can accept base64 string key */
     it('getDefaultParams_base64_key', function (done) {
       whenPromiseSettles(Crypto.generateRandomKey(), function (err, key) {
         if (err) {
@@ -180,6 +199,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * Checks the minimum spec item requirement - checking the calculated keyLength is a valid key length
+     * for the encryption algorithm (for example, 128 or 256 for AES).
+     *
+     * @spec RSE1e
+     */
     it('getDefaultParams_check_keylength', function (done) {
       whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
@@ -195,6 +220,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * @spec RSE1d
+     * @spec RSE1e
+     * @specpartial RSE1b - tests key, algorithm, mode
+     */
     it('getDefaultParams_preserves_custom_algorithms', function (done) {
       whenPromiseSettles(Crypto.generateRandomKey(64), function (err, key) {
         if (err) {
@@ -214,6 +244,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * @specpartial RSL5c - encrypt aes 128
+     * @specpartial RSL5b - aes 128
+     */
     it('encrypt_message_128', function (done) {
       testEachFixture(
         done,
@@ -231,6 +265,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /**
+     * @specpartial RSL5c - encrypt aes 256
+     * @specpartial RSL5b - aes 256
+     */
     it('encrypt_message_256', function (done) {
       testEachFixture(
         done,
@@ -248,6 +286,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /**
+     * @specpartial RSL5c - decrypt aes 128
+     * @specpartial RSL5b - aes 128
+     */
     it('decrypt_message_128', function (done) {
       testEachFixture(
         done,
@@ -264,6 +306,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /**
+     * @specpartial RSL5c - decrypt aes 256
+     * @specpartial RSL5b - aes 256
+     */
     it('decrypt_message_256', function (done) {
       testEachFixture(
         done,
@@ -280,6 +326,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
     });
 
+    /** @specpartial TM3 - can decode and decrypt using cipher from provided channelOptions */
     it('fromEncoded_cipher_options', function (done) {
       if (!Crypto) {
         done(new Error('Encryption not supported'));
@@ -306,6 +353,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* Tests require encryption and binary transport */
     if (typeof ArrayBuffer !== 'undefined') {
+      /**
+       * Related to G1, RSC8a, RSL4c, RSL6a1
+       * @nospec
+       */
       it('msgpack_128', function (done) {
         testEachFixture(
           done,
@@ -340,6 +391,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         );
       });
 
+      /**
+       * Related to G1, RSC8a, RSL4c, RSL6a1
+       * @nospec
+       */
       it('msgpack_256', function (done) {
         testEachFixture(
           done,
@@ -418,15 +473,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     }
 
-    /**
-     * Publish and subscribe, various transport, 128 and 256-bit
-     */
+    // Publish and subscribe, various transport, 128 and 256-bit
+    /** @specpartial RSL5b - test aes 128 */
     testOnAllTransports('single_send_128', function (realtimeOpts) {
       return function (done) {
         single_send(done, realtimeOpts, 128);
       };
     });
 
+    /** @specpartial RSL5b - test aes 256 */
     testOnAllTransports('single_send_256', function (realtimeOpts) {
       return function (done) {
         single_send(done, realtimeOpts, 256);
@@ -489,26 +544,56 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     }
 
+    /**
+     * Related to TB2b
+     *
+     * @specpartial RSL5a - cipher is set via setOptions instead on channel instantiation
+     */
     it('multiple_send_binary_2_200', function (done) {
       _multiple_send(done, false, 2, 200);
     });
 
+    /**
+     * Related to TB2b
+     *
+     * @specpartial RSL5a - cipher is set via setOptions instead on channel instantiation
+     */
     it('multiple_send_text_2_200', function (done) {
       _multiple_send(done, true, 2, 200);
     });
 
+    /**
+     * Related to TB2b
+     *
+     * @specpartial RSL5a - cipher is set via setOptions instead on channel instantiation
+     */
     it('multiple_send_binary_20_100', function (done) {
       _multiple_send(done, false, 20, 100);
     });
 
+    /**
+     * Related to TB2b
+     *
+     * @specpartial RSL5a - cipher is set via setOptions instead on channel instantiation
+     */
     it('multiple_send_text_20_100', function (done) {
       _multiple_send(done, true, 20, 100);
     });
 
+    /**
+     * Related to TB2b
+     *
+     * @specpartial RSL5a - cipher is set via setOptions instead on channel instantiation
+     */
     it('multiple_send_binary_10_10', function (done) {
       _multiple_send(done, false, 10, 10);
     });
 
+    /**
+     * Related to TB2b
+     *
+     * @specpartial RSL5a - cipher is set via setOptions instead on channel instantiation
+     */
     it('multiple_send_text_10_10', function (done) {
       _multiple_send(done, true, 10, 10);
     });
@@ -575,6 +660,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Connect twice to the service, using the binary protocol
      * and the text protocol. Publish an encrypted message on that channel using
      * the default cipher params and verify correct receipt.
+     * Related to RSL5, G1.
+     *
+     * @nospec
      */
     it('single_send_binary_text', function (done) {
       _single_send_separate_realtimes(done, { useBinaryProtocol: true }, { useBinaryProtocol: false });
@@ -584,11 +672,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Connect twice to the service, using the text protocol and the
      * binary protocol. Publish an encrypted message on that channel using
      * the default cipher params and verify correct receipt.
+     * Related to RSL5a, G1.
+     *
+     * @nospec
      */
     it('single_send_text_binary', function (done) {
       _single_send_separate_realtimes(done, { useBinaryProtocol: false }, { useBinaryProtocol: true });
     });
 
+    /**
+     * Related to RSL5a
+     *
+     * @nospec
+     */
     it('publish_immediately', function (done) {
       if (!Crypto) {
         done(new Error('Encryption not supported'));
@@ -629,6 +725,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Publish an encrypted message on that channel using
      * the default cipher params and verify that the decrypt failure
      * is noticed as bad recovered plaintext.
+     * Related to RTL7e.
+     *
+     * @specpartial RSL6b - only tests the message is still delivered
      */
     it('single_send_key_mismatch', function (done) {
       if (!Crypto) {
@@ -695,6 +794,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Connect twice to the service, one with and one without encryption.
      * Publish an unencrypted message and verify that the receiving connection
      * does not attempt to decrypt it.
+     * Related to RSL5, RSL6b, RTL7e.
+     *
+     * @nospec
      */
     it('single_send_unencrypted', function (done) {
       if (!Crypto) {
@@ -738,6 +840,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Connect twice to the service, one with and one without encryption.
      * Publish an encrypted message and verify that the receiving connection
      * handles the encrypted message correctly.
+     *
+     * @spec RTL7e
+     * @specpartial RSL6b - test can't decrypt message with incorrect CipherParam
      */
     it('single_send_encrypted_unhandled', function (done) {
       if (!Crypto) {
@@ -782,6 +887,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * - publish a message using a key, verifying correct receipt;
      * - publish with an updated key on the tx connection and verify that it is not decrypted by the rx connection;
      * - publish with an updated key on the rx connection and verify connect receipt
+     *
+     * @spec RTL7e
+     * @specpartial RSL5a - cipher is set via setOptions instead on channel instantiation
+     * @specpartial RSL6b - test can't decrypt message with incorrect CipherParam
      */
     it('set_cipher_params0', function (done) {
       if (!Crypto) {
