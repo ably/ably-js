@@ -8,6 +8,7 @@ define(['ably', 'chai'], function (Ably, chai) {
   var testHex = '74657374';
 
   describe('rest/bufferutils', function () {
+    /** @nospec */
     it('Basic encoding and decoding', function () {
       /* base64 */
       expect(BufferUtils.base64Encode(BufferUtils.utf8Encode(testString))).to.equal(testBase64);
@@ -26,9 +27,12 @@ define(['ably', 'chai'], function (Ably, chai) {
       ).to.not.equal(true);
     });
 
-    /* In node it's idiomatic for most methods dealing with binary data to
-     * return Buffers. In the browser it's more idiomatic to return
-     * ArrayBuffers */
+    /**
+     * In node it's idiomatic for most methods dealing with binary data to
+     * return Buffers. In the browser it's more idiomatic to return ArrayBuffers.
+     *
+     * @nospec
+     */
     it('BufferUtils return correct types', function () {
       if (typeof Buffer !== 'undefined') {
         /* node */
