@@ -45,6 +45,10 @@ define([
       return new SharedHelper({ ...this.context, helperStack: [helperFunctionName, ...this.context.helperStack] });
     }
 
+    withParameterisedTestTitle(title) {
+      return new SharedHelper({ ...this.context, parameterisedTestTitle: title });
+    }
+
     static createContext(data) {
       return {
         ...data,
@@ -67,6 +71,7 @@ define([
         file: thisInBeforeEach.currentTest.file,
         suite: this.extractSuiteHierarchy(thisInBeforeEach.currentTest.parent),
         title: thisInBeforeEach.currentTest.title,
+        parameterisedTestTitle: null,
       };
 
       return new this(this.createContext(context));
@@ -278,25 +283,29 @@ define([
     /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
     static testOnAllTransports(thisInDescribe, name, testFn, skip) {
       var itFn = skip ? it.skip : it;
-      itFn(name + '_with_binary_transport', testFn({ useBinaryProtocol: true }));
-      itFn(name + '_with_text_transport', testFn({ useBinaryProtocol: false }));
+
+      function createTest(options) {
+        return function (done) {
+          this.test.helper = this.test.helper.withParameterisedTestTitle(name);
+          return testFn(options).apply(this, [done]);
+        };
+      }
+
+      itFn(name + '_with_binary_transport', createTest({ useBinaryProtocol: true }));
+      itFn(name + '_with_text_transport', createTest({ useBinaryProtocol: false }));
     }
 
     static restTestOnJsonMsgpack(name, testFn, skip) {
       var itFn = skip ? it.skip : it;
       itFn(name + ' with binary protocol', async function () {
-        await testFn(
-          new clientModule.AblyRest(this.test.helper, { useBinaryProtocol: true }),
-          name + '_binary',
-          this.test.helper,
-        );
+        const helper = this.test.helper.withParameterisedTestTitle(name);
+
+        await testFn(new clientModule.AblyRest(helper, { useBinaryProtocol: true }), name + '_binary', helper);
       });
       itFn(name + ' with text protocol', async function () {
-        await testFn(
-          new clientModule.AblyRest(this.test.helper, { useBinaryProtocol: false }),
-          name + '_text',
-          this.test.helper,
-        );
+        const helper = this.test.helper.withParameterisedTestTitle(name);
+
+        await testFn(new clientModule.AblyRest(helper, { useBinaryProtocol: false }), name + '_text', helper);
       });
     }
 
