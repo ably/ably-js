@@ -5,8 +5,11 @@
 define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably, ablyGlobals, testAppHelper) {
   var utils = Ably.Realtime.Utils;
 
-  function ablyClientOptions(options) {
+  function ablyClientOptions(helper, options) {
+    helper = helper.addingHelperFunction('ablyClientOptions');
+    helper.recordPrivateApi('call.Utils.copy');
     var clientOptions = utils.copy(ablyGlobals);
+    helper.recordPrivateApi('call.Utils.mixin');
     utils.mixin(clientOptions, options);
     var authMethods = ['authUrl', 'authCallback', 'token', 'tokenDetails', 'key'];
 
@@ -22,12 +25,14 @@ define(['ably', 'globals', 'test/common/modules/testapp_module'], function (Ably
     return clientOptions;
   }
 
-  function ablyRest(options) {
-    return new Ably.Rest(ablyClientOptions(options));
+  function ablyRest(helper, options) {
+    helper = helper.addingHelperFunction('ablyRest');
+    return new Ably.Rest(ablyClientOptions(helper, options));
   }
 
-  function ablyRealtime(options) {
-    return new Ably.Realtime(ablyClientOptions(options));
+  function ablyRealtime(helper, options) {
+    helper = helper.addingHelperFunction('ablyRealtime');
+    return new Ably.Realtime(ablyClientOptions(helper, options));
   }
 
   return (module.exports = {

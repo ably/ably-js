@@ -1,15 +1,12 @@
 'use strict';
 
-define(['shared_helper', 'chai'], function (helper, chai) {
+define(['shared_helper', 'chai'], function (Helper, chai) {
   var expect = chai.expect;
-  var displayError = helper.displayError;
-  var utils = helper.Utils;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
 
   describe('realtime/event_emitter', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -24,6 +21,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
      * channel, detaching, and disconnecting are received once each
      */
     it('attachdetach0', function (done) {
+      const helper = this.test.helper;
       try {
         var realtime = helper.AblyRealtime(),
           index,
@@ -60,18 +58,19 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           });
           channel.attach(function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
     it('emitCallsAllCallbacksIgnoringExceptions', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = false,
         eventEmitter = realtime.connection;
 
@@ -85,18 +84,20 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         callbackCalled = true;
       });
 
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('custom');
       try {
         expect(callbackCalled, 'Last callback should have been called').to.be.ok;
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('onceCalledOnlyOnce', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         onCallbackCalled = 0,
         onceCallbackCalled = 0,
         eventEmitter = realtime.connection;
@@ -108,6 +109,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         onCallbackCalled += 1;
       });
 
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('custom');
       eventEmitter.emit('custom');
       eventEmitter.emit('custom');
@@ -116,15 +118,16 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         expect(onCallbackCalled).to.equal(3, 'On callback called every time');
         expect(onceCallbackCalled).to.equal(1, 'Once callback called once');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('onceCallbackDoesNotImpactOnCallback', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -136,21 +139,23 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       eventEmitter.once('custom', callback);
       eventEmitter.once('custom', callback);
 
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('custom');
       eventEmitter.emit('custom');
 
       try {
         expect(callbackCalled).to.equal(4, 'On callback called both times but once callbacks only called once');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('offRemovesAllMatchingListeners', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -163,23 +168,26 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.on('custom', callback);
         eventEmitter.on('custom', callback);
 
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(3, 'The same callback should have been called for every registration');
 
         callbackCalled = 0;
         eventEmitter.off(callback);
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('offRemovesAllListeners', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -192,23 +200,26 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.on('custom', callback);
         eventEmitter.on('custom', callback);
 
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(3, 'The same callback should have been called for every registration');
 
         callbackCalled = 0;
         eventEmitter.off();
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('offRemovesAllMatchingEventListeners', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -221,23 +232,26 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.on('custom', callback);
         eventEmitter.on('custom', callback);
 
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(3, 'The same callback should have been called for every registration');
 
         callbackCalled = 0;
         eventEmitter.off('custom', callback);
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('offRemovesAllMatchingEvents', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -250,19 +264,21 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.on('custom', callback);
         eventEmitter.on('custom', callback);
 
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(3, 'The same callback should have been called for every registration');
 
         callbackCalled = 0;
         eventEmitter.off('custom');
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('custom');
         expect(callbackCalled).to.equal(0, 'All callbacks should have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     /**
@@ -273,7 +289,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
      * for each previously registered event name
      */
     it('offRemovesEmptyEventNameListeners', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         eventEmitter = realtime.connection;
 
       var callback = function () {};
@@ -281,27 +298,32 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       try {
         eventEmitter.once('custom', callback);
         eventEmitter.on('custom', callback);
+        helper.recordPrivateApi('read.EventEmitter.events');
         expect('custom' in eventEmitter.events, 'custom event array exists').to.be.ok;
 
         eventEmitter.off('custom', callback);
+        helper.recordPrivateApi('read.EventEmitter.events');
         expect(!('custom' in eventEmitter.events), 'custom event listener array is removed from object').to.be.ok;
 
         eventEmitter.once('custom', callback);
         eventEmitter.on('custom', callback);
+        helper.recordPrivateApi('read.EventEmitter.events');
         expect('custom' in eventEmitter.events, 'custom event array exists').to.be.ok;
 
         eventEmitter.off(callback);
+        helper.recordPrivateApi('read.EventEmitter.events');
         expect(!('custom' in eventEmitter.events), 'event listener array is removed from object').to.be.ok;
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('arrayOfEvents', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -310,6 +332,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       };
 
       try {
+        helper.recordPrivateApi('call.EventEmitter.emit');
         callbackCalled = 0;
         eventEmitter.on(['a', 'b', 'c'], callback);
         eventEmitter.emit('a');
@@ -332,15 +355,16 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.emit('c');
         expect(callbackCalled).to.equal(2, 'callbacks b and c should not have been removed');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     it('arrayOfEventsWithOnce', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
         eventEmitter = realtime.connection;
 
@@ -352,22 +376,24 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       try {
         callbackCalled = 0;
         eventEmitter.once(['a', 'b', 'c'], callback);
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('a', 'expected');
         eventEmitter.emit('b', 'wrong');
         eventEmitter.emit('c', 'wrong');
         expect(callbackCalled).to.equal(1, 'listener called back only once, for the first event emitted');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     /* check that listeners added in a listener cb are not called during that
      * emit instance */
     it('listenerAddedInListenerCb', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         eventEmitter = realtime.connection,
         firstCbCalled = false,
         secondCbCalled = false;
@@ -378,23 +404,25 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           secondCbCalled = true;
         });
       });
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('a');
 
       try {
         expect(firstCbCalled, 'check first callback called').to.be.ok;
         expect(!secondCbCalled, 'check second callback not called').to.be.ok;
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     /* check that listeners removed in a listener cb are still called in that
      * emit instance (but only once) */
     it('listenerRemovedInListenerCb', function (done) {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         eventEmitter = realtime.connection,
         onCbCalledTimes = 0,
         onceCbCalledTimes = 0,
@@ -421,6 +449,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         eventEmitter.off();
       });
 
+      helper.recordPrivateApi('call.EventEmitter.emit');
       eventEmitter.emit('a');
 
       try {
@@ -429,65 +458,71 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         expect(anyCbCalledTimes).to.equal(1, 'check any callback called exactly once');
         expect(anyOnceCbCalledTimes).to.equal(1, 'check anyOnce callback called exactly once');
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
-      closeAndFinish(done, realtime);
+      helper.closeAndFinish(done, realtime);
     });
 
     describe('event_emitter_promise', function () {
       it('whenState', function (done) {
+        const helper = this.test.helper;
         var realtime = helper.AblyRealtime();
         var eventEmitter = realtime.connection;
 
         eventEmitter
           .whenState('connected')
           .then(function () {
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           })
           ['catch'](function (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           });
       });
 
       it('once', function (done) {
+        const helper = this.test.helper;
         var realtime = helper.AblyRealtime();
         var eventEmitter = realtime.connection;
 
         eventEmitter
           .once('connected')
           .then(function () {
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           })
           ['catch'](function (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           });
       });
 
       it('anyEventsWithOnce', function (done) {
-        var realtime = helper.AblyRealtime({ autoConnect: false }),
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime({ autoConnect: false }),
           eventEmitter = realtime.connection;
 
         const p = eventEmitter.once();
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('b');
         p.then(function () {
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         }).catch(function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         });
       });
 
       it('arrayOfEventsWithOnce', function (done) {
-        var realtime = helper.AblyRealtime({ autoConnect: false }),
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime({ autoConnect: false }),
           eventEmitter = realtime.connection;
 
         const p = eventEmitter.once(['a', 'b', 'c']);
+        helper.recordPrivateApi('call.EventEmitter.emit');
         eventEmitter.emit('b');
         p.then(function () {
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         }).catch(function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         });
       });
     });

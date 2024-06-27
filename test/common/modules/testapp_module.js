@@ -20,7 +20,7 @@ define(['test/common/modules/testapp_manager', 'globals'], function (testAppMana
 		 then no need to recreate a test app, unless forceSetup is true.
 		 If forceSetup is true and existing app exists, then the app will be torn down (deleted)
 		 first */
-  function setup(forceSetup, done) {
+  function setup(helper, forceSetup, done) {
     if (typeof forceSetup === 'function') {
       done = forceSetup;
       forceSetup = false;
@@ -48,7 +48,7 @@ define(['test/common/modules/testapp_manager', 'globals'], function (testAppMana
     };
 
     if (configuredTestApp() && forceSetup) {
-      tearDown(function (err) {
+      tearDown(helper, function (err) {
         if (err) {
           done(err);
         } else {
@@ -63,13 +63,13 @@ define(['test/common/modules/testapp_manager', 'globals'], function (testAppMana
   /* tearDown is typically called by an afterAll test suite block.
 		 If tearDown is called more than once i.e. across multiple suites,
 		 and other test suites are still to run, then we must not yet delete the test app */
-  function tearDown(done) {
+  function tearDown(helper, done) {
     if (!configuredTestApp()) {
       done();
       return;
     }
 
-    testAppManager.tearDown(configuredTestApp(), function (err) {
+    testAppManager.tearDown(helper, configuredTestApp(), function (err) {
       if (err) {
         done(new Error('Could not tear down Test App: ' + JSON.stringify(err)));
       } else {

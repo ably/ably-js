@@ -1,10 +1,8 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
-  var Utils = helper.Utils;
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var exports = {};
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
   var testDevice = {
     id: 'testId',
     clientId: 'testClientId',
@@ -34,12 +32,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function () {
         done();
       });
     });
 
     it('Get subscriptions', async function () {
+      const helper = this.test.helper;
       var subscribes = [];
       var deletes = [];
       var subsByChannel = {};
@@ -71,6 +71,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('Publish', async function () {
+      const helper = this.test.helper;
       try {
         var realtime = helper.AblyRealtime();
 
@@ -82,6 +83,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           data: { foo: 'bar' },
         };
 
+        helper.recordPrivateApi('read.realtime.options');
+        helper.recordPrivateApi('call.Defaults.getHost');
+        helper.recordPrivateApi('call.realtime.baseUri');
         var baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
         var pushRecipient = {
           transportType: 'ablyChannel',
@@ -108,6 +112,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('deviceRegistrations save', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest();
 
       var saved = await rest.push.admin.deviceRegistrations.save(testDevice);
@@ -122,6 +127,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('deviceRegistrations get and list', async function () {
+      const helper = this.test.helper;
       var registrations = [];
       var deletes = [];
       var devices = [];
@@ -195,6 +201,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('deviceRegistrations remove removeWhere', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest();
 
       await rest.push.admin.deviceRegistrations.save(testDevice);
@@ -219,6 +226,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('channelSubscriptions save', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
 
@@ -234,6 +242,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('channelSubscriptions get', async function () {
+      const helper = this.test.helper;
       var subscribes = [];
       var deletes = [];
       var subsByChannel = {};
@@ -269,6 +278,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('push_channelSubscriptions_remove', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
 
@@ -277,6 +287,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     it('channelSubscriptions listChannels', async function () {
+      const helper = this.test.helper;
       var subscribes = [];
       var deletes = [];
       for (var i = 0; i < 5; i++) {

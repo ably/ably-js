@@ -1,17 +1,15 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
   var expect = chai.expect;
   var clientId = 'testClientId';
   var rest;
-  var mixin = helper.Utils.mixin;
-  var displayError = helper.displayError;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/reauth', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -24,10 +22,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
     /* Waterfall helpers */
 
-    function getToken(tokenParams) {
+    function getToken(helper, tokenParams) {
       return function (state, callback) {
-        whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, token) {
-          callback(err, mixin(state, { token: token }));
+        Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, token) {
+          callback(err, helper.Utils.mixin(state, { token: token }));
         });
       };
     }
@@ -42,17 +40,17 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       };
     }
 
-    function connectWithToken() {
+    function connectWithToken(helper) {
       return function (state, callback) {
-        var realtime = helper.AblyRealtime(mixin({ token: state.token }, state.realtimeOpts));
+        var realtime = helper.AblyRealtime(helper.Utils.mixin({ token: state.token }, state.realtimeOpts));
         realtime.connection.once('connected', function () {
-          callback(null, mixin(state, { realtime: realtime }));
+          callback(null, helper.Utils.mixin(state, { realtime: realtime }));
         });
       };
     }
 
     /* For when connection should stay connected right through till it's closed */
-    function monitorConnectionContinuity() {
+    function monitorConnectionContinuity(helper) {
       return function (state, callback) {
         var listener = function () {
           if (this.event !== 'update') {
@@ -60,7 +58,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           }
         };
         state.realtime.connection.on(listener);
-        callback(null, mixin(state, { connectionMonitor: listener }));
+        callback(null, helper.Utils.mixin(state, { connectionMonitor: listener }));
       };
     }
 
@@ -73,7 +71,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         async.parallel(
           [
             function (cb) {
-              whenPromiseSettles(state.realtime.auth.authorize(null, { token: state.token }), cb);
+              Helper.whenPromiseSettles(state.realtime.auth.authorize(null, { token: state.token }), cb);
             },
             function (cb) {
               state.realtime.connection.on('update', function (stateChange) {
@@ -91,7 +89,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function attach(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           callback(err, state);
         });
       };
@@ -147,7 +145,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCantAttach(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err && err.code === 40160) {
             callback(null, state);
           } else {
@@ -160,7 +158,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCanPublish(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        whenPromiseSettles(channel.publish(null, null), function (err) {
+        Helper.whenPromiseSettles(channel.publish(null, null), function (err) {
           callback(err, state);
         });
       };
@@ -169,7 +167,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     function checkCantPublish(channelName) {
       return function (state, callback) {
         var channel = state.realtime.channels.get(channelName);
-        whenPromiseSettles(channel.publish(null, null), function (err) {
+        Helper.whenPromiseSettles(channel.publish(null, null), function (err) {
           if (err && err.code === 40160) {
             callback(null, state);
           } else {
@@ -179,16 +177,17 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       };
     }
 
-    function testCase(name, steps) {
-      helper.testOnAllTransports(name, function (realtimeOpts) {
+    function testCase(thisInDescribe, name, createSteps) {
+      Helper.testOnAllTransports(thisInDescribe, name, function (realtimeOpts) {
         return function (done) {
-          var _steps = steps.slice();
+          const helper = this.test.helper;
+          var _steps = createSteps(helper).slice();
           _steps.unshift(function (cb) {
             cb(null, { realtimeOpts: realtimeOpts });
           });
           async.waterfall(_steps, function (err) {
             try {
-              expect(!err, err && name + ': ' + displayError(err)).to.be.ok;
+              expect(!err, err && name + ': ' + helper.displayError(err)).to.be.ok;
             } catch (err) {
               done(err);
               return;
@@ -204,24 +203,24 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      ****************/
 
     /* RTC8a1 */
-    testCase('reauthCapabilityUpgradeNewChannel', [
-      getToken({ clientId: clientId, capability: { wrongchannel: ['*'] } }),
-      connectWithToken(),
-      monitorConnectionContinuity(),
+    testCase(this, 'reauthCapabilityUpgradeNewChannel', (helper) => [
+      getToken(helper, { clientId: clientId, capability: { wrongchannel: ['*'] } }),
+      connectWithToken(helper),
+      monitorConnectionContinuity(helper),
       checkCantAttach('rightchannel'),
-      getToken({ clientId: clientId, capability: { wrongchannel: ['*'], rightchannel: ['*'] } }),
+      getToken(helper, { clientId: clientId, capability: { wrongchannel: ['*'], rightchannel: ['*'] } }),
       reauthWithToken(),
       attach('rightchannel'),
       close(),
     ]);
 
     /* RTC8a1 */
-    testCase('reauthCapabilityDowngradeFullChannel', [
-      getToken({ clientId: clientId, capability: { channel: ['*'], another: ['*'] } }),
-      connectWithToken(),
-      monitorConnectionContinuity(),
+    testCase(this, 'reauthCapabilityDowngradeFullChannel', (helper) => [
+      getToken(helper, { clientId: clientId, capability: { channel: ['*'], another: ['*'] } }),
+      connectWithToken(helper),
+      monitorConnectionContinuity(helper),
       attach('channel'),
-      getToken({ clientId: clientId, capability: { another: ['*'] } }),
+      getToken(helper, { clientId: clientId, capability: { another: ['*'] } }),
       reauthWithToken(),
       waitChannelState('channel', 'failed'),
       checkChannelErrorCode('channel', 40160),
@@ -229,26 +228,26 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       close(),
     ]);
 
-    testCase('reauthCapabilityUpgradeAddPublish', [
-      getToken({ clientId: clientId, capability: { channel: ['subscribe'] } }),
-      connectWithToken(),
-      monitorConnectionContinuity(),
+    testCase(this, 'reauthCapabilityUpgradeAddPublish', (helper) => [
+      getToken(helper, { clientId: clientId, capability: { channel: ['subscribe'] } }),
+      connectWithToken(helper),
+      monitorConnectionContinuity(helper),
       attach('channel'),
       checkCantPublish('channel'),
-      getToken({ clientId: clientId, capability: { channel: ['subscribe', 'publish'] } }),
+      getToken(helper, { clientId: clientId, capability: { channel: ['subscribe', 'publish'] } }),
       reauthWithToken(),
       checkAttached('channel'),
       checkCanPublish('channel'),
       close(),
     ]);
 
-    testCase('reauthCapabilityDowngradePublish', [
-      getToken({ clientId: clientId, capability: { channel: ['subscribe', 'publish'] } }),
-      connectWithToken(),
-      monitorConnectionContinuity(),
+    testCase(this, 'reauthCapabilityDowngradePublish', (helper) => [
+      getToken(helper, { clientId: clientId, capability: { channel: ['subscribe', 'publish'] } }),
+      connectWithToken(helper),
+      monitorConnectionContinuity(helper),
       attach('channel'),
       checkCanPublish('channel'),
-      getToken({ clientId: clientId, capability: { channel: ['subscribe'] } }),
+      getToken(helper, { clientId: clientId, capability: { channel: ['subscribe'] } }),
       reauthWithToken(),
       attach('channel'),
       checkAttached('channel'),

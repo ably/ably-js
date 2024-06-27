@@ -1,12 +1,12 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
   var expect = chai.expect;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('browser/simple', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -20,7 +20,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       return transport in Ably.Realtime.ConnectionManager.supportedTransports(Ably.Realtime._transports);
     }
 
-    function realtimeConnection(transports) {
+    function realtimeConnection(helper, transports) {
       var options = {};
       if (transports) options.transports = transports;
       return helper.AblyRealtime(options);
@@ -39,9 +39,9 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       };
     }
 
-    function connectionWithTransport(done, transport) {
+    function connectionWithTransport(done, helper, transport) {
       try {
-        var ably = realtimeConnection(transport && [transport]),
+        var ably = realtimeConnection(helper, transport && [transport]),
           connectionTimeout = failWithin(10, done, ably, 'connect');
         ably.connection.on('connected', function () {
           connectionTimeout.stop();
@@ -63,16 +63,16 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     }
 
-    function heartbeatWithTransport(done, transport) {
+    function heartbeatWithTransport(done, helper, transport) {
       try {
-        var ably = realtimeConnection(transport && [transport]),
+        var ably = realtimeConnection(helper, transport && [transport]),
           connectionTimeout = failWithin(10, done, ably, 'connect'),
           heartbeatTimeout;
 
         ably.connection.on('connected', function () {
           connectionTimeout.stop();
           heartbeatTimeout = failWithin(25, done, ably, 'wait for heartbeat');
-          whenPromiseSettles(ably.connection.ping(), function (err) {
+          Helper.whenPromiseSettles(ably.connection.ping(), function (err) {
             heartbeatTimeout.stop();
             done(err);
             ably.close();
@@ -94,7 +94,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       }
     }
 
-    function publishWithTransport(done, transport) {
+    function publishWithTransport(done, helper, transport) {
       var count = 5;
       var sentCount = 0,
         receivedCount = 0,
@@ -107,7 +107,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
           ably.close();
         }
       };
-      var ably = realtimeConnection(transport && [transport]),
+      var ably = realtimeConnection(helper, transport && [transport]),
         connectionTimeout = failWithin(5, done, ably, 'connect'),
         receiveMessagesTimeout;
 
@@ -116,7 +116,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
         receiveMessagesTimeout = failWithin(15, done, ably, 'wait for published messages to be received');
 
         timer = setInterval(function () {
-          whenPromiseSettles(channel.publish('event0', 'Hello world at: ' + new Date()), function (err) {
+          Helper.whenPromiseSettles(channel.publish('event0', 'Hello world at: ' + new Date()), function (err) {
             sentCbCount++;
             checkFinish();
           });
@@ -134,8 +134,9 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     it('simpleInitBase0', function (done) {
       try {
-        var timeout,
-          ably = realtimeConnection();
+        var helper = this.test.helper,
+          timeout,
+          ably = realtimeConnection(helper);
 
         ably.connection.on('connected', function () {
           clearTimeout(timeout);
@@ -162,61 +163,61 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     var wsTransport = 'web_socket';
     if (isTransportAvailable(wsTransport)) {
       it('wsbase0', function (done) {
-        connectionWithTransport(done, wsTransport);
+        connectionWithTransport(done, this.test.helper, wsTransport);
       });
 
       /*
        * Publish and subscribe, json transport
        */
       it('wspublish0', function (done) {
-        publishWithTransport(done, wsTransport);
+        publishWithTransport(done, this.test.helper, wsTransport);
       });
 
       /*
        * Check heartbeat
        */
       it('wsheartbeat0', function (done) {
-        heartbeatWithTransport(done, wsTransport);
+        heartbeatWithTransport(done, this.test.helper, wsTransport);
       });
     }
 
     var xhrPollingTransport = 'xhr_polling';
     if (isTransportAvailable(xhrPollingTransport)) {
       it('xhrpollingbase0', function (done) {
-        connectionWithTransport(done, xhrPollingTransport);
+        connectionWithTransport(done, this.test.helper, xhrPollingTransport);
       });
 
       /*
        * Publish and subscribe, json transport
        */
       it('xhrpollingpublish0', function (done) {
-        publishWithTransport(done, xhrPollingTransport);
+        publishWithTransport(done, this.test.helper, xhrPollingTransport);
       });
 
       /*
        * Check heartbeat
        */
       it('xhrpollingheartbeat0', function (done) {
-        heartbeatWithTransport(done, xhrPollingTransport);
+        heartbeatWithTransport(done, this.test.helper, xhrPollingTransport);
       });
     }
 
     it('auto_transport_base0', function (done) {
-      connectionWithTransport(done);
+      connectionWithTransport(done, this.test.helper);
     });
 
     /*
      * Publish and subscribe
      */
     it('auto_transport_publish0', function (done) {
-      publishWithTransport(done);
+      publishWithTransport(done, this.test.helper);
     });
 
     /*
      * Check heartbeat
      */
     it('auto_transport_heartbeat0', function (done) {
-      heartbeatWithTransport(done);
+      heartbeatWithTransport(done, this.test.helper);
     });
   });
 });
