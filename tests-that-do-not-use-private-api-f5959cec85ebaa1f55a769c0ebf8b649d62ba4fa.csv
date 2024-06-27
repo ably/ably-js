@@ -1,0 +1,255 @@
+File,Suite (level 1),Suite (level 2),Description
+test/realtime/api.test.js,realtime/api,,Client constructors
+test/realtime/api.test.js,realtime/api,,constructor without any arguments
+test/realtime/api.test.js,realtime/api,,Crypto
+test/realtime/api.test.js,realtime/api,,Message
+test/realtime/api.test.js,realtime/api,,PresenceMessage
+test/realtime/auth.test.js,realtime/auth,,authbase0
+test/realtime/auth.test.js,realtime/auth,,auth_useAuthUrl_json
+test/realtime/auth.test.js,realtime/auth,,auth_useAuthUrl_post_json
+test/realtime/auth.test.js,realtime/auth,,auth_useAuthUrl_plainText
+test/realtime/auth.test.js,realtime/auth,,auth_useAuthUrl_mixed_authParams_qsParams
+test/realtime/auth.test.js,realtime/auth,,auth_clientid_inheritance
+test/realtime/auth.test.js,realtime/auth,,auth_clientid_inheritance2
+test/realtime/auth.test.js,realtime/auth,,auth_clientid_inheritance3
+test/realtime/auth.test.js,realtime/auth,,auth_clientid_inheritance4
+test/realtime/auth.test.js,realtime/auth,,auth_clientid_inheritance5
+test/realtime/auth.test.js,realtime/auth,,authCallback_error
+test/realtime/auth.test.js,realtime/auth,,authCallback_timeout
+test/realtime/auth.test.js,realtime/auth,,authCallback_nothing
+test/realtime/auth.test.js,realtime/auth,,authCallback_malformed
+test/realtime/auth.test.js,realtime/auth,,authCallback_too_long_string
+test/realtime/auth.test.js,realtime/auth,,authCallback_empty_string
+test/realtime/auth.test.js,realtime/auth,,authUrl_timeout
+test/realtime/auth.test.js,realtime/auth,,authUrl_404
+test/realtime/auth.test.js,realtime/auth,,authUrl_wrong_content_type
+test/realtime/auth.test.js,realtime/auth,,authUrl_401
+test/realtime/auth.test.js,realtime/auth,,authUrl_double_encoded
+test/realtime/auth.test.js,realtime/auth,,authUrl_403
+test/realtime/auth.test.js,realtime/auth,,authUrl_403_custom_error
+test/realtime/auth.test.js,realtime/auth,,authUrl_403_previously_active
+test/realtime/auth.test.js,realtime/auth,,auth_token_expires_with_binary_transport
+test/realtime/auth.test.js,realtime/auth,,auth_token_expires_with_text_transport
+test/realtime/auth.test.js,realtime/auth,,auth_tokenDetails_expiry_with_authcallback_with_binary_transport
+test/realtime/auth.test.js,realtime/auth,,auth_tokenDetails_expiry_with_authcallback_with_text_transport
+test/realtime/auth.test.js,realtime/auth,,auth_token_string_expiry_with_authcallback_with_binary_transport
+test/realtime/auth.test.js,realtime/auth,,auth_token_string_expiry_with_authcallback_with_text_transport
+test/realtime/auth.test.js,realtime/auth,,auth_token_string_expiry_with_token_with_binary_transport
+test/realtime/auth.test.js,realtime/auth,,auth_token_string_expiry_with_token_with_text_transport
+test/realtime/auth.test.js,realtime/auth,,auth_expired_token_string_with_binary_transport
+test/realtime/auth.test.js,realtime/auth,,auth_expired_token_string_with_text_transport
+test/realtime/auth.test.js,realtime/auth,,reauth_consistently_expired_token
+test/realtime/auth.test.js,realtime/auth,,expired_token_no_autoremove_when_dont_have_servertime
+test/realtime/auth.test.js,realtime/auth,,expired_token_autoremove_when_have_servertime
+test/realtime/auth.test.js,realtime/auth,,multiple_concurrent_authorize
+test/realtime/auth.test.js,realtime/auth,,authorize_immediately_after_init_with_binary_transport
+test/realtime/auth.test.js,realtime/auth,,authorize_immediately_after_init_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,channelattach0_with_binary_transport
+test/realtime/channel.test.js,realtime/channel,,channelattach0_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,channelattach2_with_binary_transport
+test/realtime/channel.test.js,realtime/channel,,channelattach2_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,channelattachempty_with_binary_transport
+test/realtime/channel.test.js,realtime/channel,,channelattachempty_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,channelattachinvalid_with_binary_transport
+test/realtime/channel.test.js,realtime/channel,,channelattachinvalid_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,publish_no_attach_with_binary_transport
+test/realtime/channel.test.js,realtime/channel,,publish_no_attach_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,channelattach_publish_invalid_with_binary_transport
+test/realtime/channel.test.js,realtime/channel,,channelattach_publish_invalid_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,channelattach_invalid_twice_with_binary_transport
+test/realtime/channel.test.js,realtime/channel,,channelattach_invalid_twice_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,channelattachWhenState
+test/realtime/channel.test.js,realtime/channel,,channelattachOnceOrIfBefore
+test/realtime/channel.test.js,realtime/channel,,subscribeAfterSetOptions_with_binary_transport
+test/realtime/channel.test.js,realtime/channel,,subscribeAfterSetOptions_with_text_transport
+test/realtime/channel.test.js,realtime/channel,,channelGetShouldThrowWhenWouldCauseReattach
+test/realtime/channel.test.js,realtime/channel,,attachWithInvalidChannelParams
+test/realtime/channel.test.js,realtime/channel,,channelsubscribe0
+test/realtime/channel.test.js,realtime/channel,,channelsubscribe1
+test/realtime/channel.test.js,realtime/channel,,publish_no_queueing
+test/realtime/channel.test.js,realtime/channel,,detaching from suspended channel transitions channel to detached state
+test/realtime/channel.test.js,realtime/channel,,detaching from failed channel results in error
+test/realtime/channel.test.js,realtime/channel,,rewind works on channel after reattaching
+test/realtime/channel.test.js,realtime/channel,,attach_returns_state_change
+test/realtime/channel.test.js,realtime/channel,,subscribe_returns_state_change
+test/realtime/channel.test.js,realtime/channel,,rewind_has_backlog_0
+test/realtime/channel.test.js,realtime/channel,,rewind_has_backlog_1
+test/realtime/channel.test.js,realtime/channel,,should not throw exception then run RealtimeChannels.get() with same options
+test/realtime/channel.test.js,realtime/channel,,whenState
+test/realtime/connection.test.js,realtime/connection,,connectionPing
+test/realtime/connection.test.js,realtime/connection,,connectionPingWithCallback
+test/realtime/connection.test.js,realtime/connection,,whenState
+test/realtime/crypto.test.js,realtime/crypto,,generateRandomKey0
+test/realtime/crypto.test.js,realtime/crypto,,generateRandomKey1
+test/realtime/crypto.test.js,realtime/crypto,,getDefaultParams_withResultOfGenerateRandomKey
+test/realtime/crypto.test.js,realtime/crypto,,getDefaultParams_ArrayBuffer_key
+test/realtime/crypto.test.js,realtime/crypto,,getDefaultParams_base64_key
+test/realtime/crypto.test.js,realtime/crypto,,getDefaultParams_check_keylength
+test/realtime/crypto.test.js,realtime/crypto,,getDefaultParams_preserves_custom_algorithms
+test/realtime/crypto.test.js,realtime/crypto,,fromEncoded_cipher_options
+test/realtime/crypto.test.js,realtime/crypto,,msgpack_256
+test/realtime/crypto.test.js,realtime/crypto,,publish_immediately
+test/realtime/crypto.test.js,realtime/crypto,,single_send_key_mismatch
+test/realtime/crypto.test.js,realtime/crypto,,single_send_unencrypted
+test/realtime/crypto.test.js,realtime/crypto,,single_send_encrypted_unhandled
+test/realtime/crypto.test.js,realtime/crypto,,set_cipher_params0
+test/realtime/delta.test.js,realtime/delta,,deltaPlugin
+test/realtime/delta.test.js,realtime/delta,,unusedPlugin
+test/realtime/delta.test.js,realtime/delta,,deltaDecodeFailureRecovery
+test/realtime/delta.test.js,realtime/delta,,noPlugin
+test/realtime/event_emitter.test.js,realtime/event_emitter,,attachdetach0
+test/realtime/event_emitter.test.js,realtime/event_emitter,event_emitter_promise,whenState
+test/realtime/event_emitter.test.js,realtime/event_emitter,event_emitter_promise,once
+test/realtime/failure.test.js,realtime/failure,,invalid_cred_failure
+test/realtime/failure.test.js,realtime/failure,,disconnected_backoff
+test/realtime/failure.test.js,realtime/failure,,failed_channel
+test/realtime/history.test.js,realtime/history,,history_until_attach
+test/realtime/init.test.js,realtime/init,,init_usetokenauth_defaulttokenparams_wildcard
+test/realtime/init.test.js,realtime/init,,init_defaulttokenparams_nonwildcard
+test/realtime/init.test.js,realtime/init,,init_conflicting_clientids
+test/realtime/init.test.js,realtime/init,,init_with_usetokenauth_false_and_a_clientid
+test/realtime/message.test.js,realtime/message,,publishonce
+test/realtime/message.test.js,realtime/message,,publishfast_with_binary_transport
+test/realtime/message.test.js,realtime/message,,publishfast_with_text_transport
+test/realtime/message.test.js,realtime/message,,publishQueued_with_binary_transport
+test/realtime/message.test.js,realtime/message,,publishQueued_with_text_transport
+test/realtime/message.test.js,realtime/message,,publishEcho
+test/realtime/message.test.js,realtime/message,,publishVariations
+test/realtime/message.test.js,realtime/message,,publishDisallowed
+test/realtime/message.test.js,realtime/message,,publishEncodings
+test/realtime/message.test.js,realtime/message,,restpublish
+test/realtime/message.test.js,realtime/message,,publish_with_binary_transport
+test/realtime/message.test.js,realtime/message,,publish_with_text_transport
+test/realtime/message.test.js,realtime/message,,extras_field
+test/realtime/message.test.js,realtime/message,,idempotentRealtimePublishing
+test/realtime/message.test.js,realtime/message,,subscribes to filtered channel
+test/realtime/presence.test.js,realtime/presence,,presenceEnterWithoutAttach
+test/realtime/presence.test.js,realtime/presence,,presenceEnterWithoutConnect
+test/realtime/presence.test.js,realtime/presence,,presenceEnterWithCallback
+test/realtime/presence.test.js,realtime/presence,,presenceEnterWithNothing
+test/realtime/presence.test.js,realtime/presence,,presenceEnterWithData
+test/realtime/presence.test.js,realtime/presence,,presenceMessageAction
+test/realtime/presence.test.js,realtime/presence,,presenceEnterDetachEnter
+test/realtime/presence.test.js,realtime/presence,,presenceEnterInvalid
+test/realtime/presence.test.js,realtime/presence,,presenceEnterAndLeave
+test/realtime/presence.test.js,realtime/presence,,presenceEnterUpdate
+test/realtime/presence.test.js,realtime/presence,,presenceEnterGet
+test/realtime/presence.test.js,realtime/presence,,presenceSubscribeUnattached
+test/realtime/presence.test.js,realtime/presence,,presenceGetUnattached
+test/realtime/presence.test.js,realtime/presence,,presenceEnterLeaveGet
+test/realtime/presence.test.js,realtime/presence,,presenceHistory
+test/realtime/presence.test.js,realtime/presence,,presenceSecondConnection
+test/realtime/presence.test.js,realtime/presence,,presenceTwoMembers
+test/realtime/presence.test.js,realtime/presence,,presenceEnterAfterClose
+test/realtime/presence.test.js,realtime/presence,,presenceEnterClosed
+test/realtime/presence.test.js,realtime/presence,,presence_enter_inherited_clientid
+test/realtime/presence.test.js,realtime/presence,,presence_enter_before_know_clientid
+test/realtime/presence.test.js,realtime/presence,,presence_refresh_on_detach
+test/realtime/presence.test.js,realtime/presence,,presence_detach_during_sync
+test/realtime/presence.test.js,realtime/presence,,presence_many_updates
+test/realtime/reauth.test.js,realtime/reauth,,reauthCapabilityUpgradeNewChannel_with_binary_transport
+test/realtime/reauth.test.js,realtime/reauth,,reauthCapabilityUpgradeNewChannel_with_text_transport
+test/realtime/reauth.test.js,realtime/reauth,,reauthCapabilityDowngradeFullChannel_with_binary_transport
+test/realtime/reauth.test.js,realtime/reauth,,reauthCapabilityDowngradeFullChannel_with_text_transport
+test/realtime/reauth.test.js,realtime/reauth,,reauthCapabilityUpgradeAddPublish_with_binary_transport
+test/realtime/reauth.test.js,realtime/reauth,,reauthCapabilityUpgradeAddPublish_with_text_transport
+test/realtime/reauth.test.js,realtime/reauth,,reauthCapabilityDowngradePublish_with_binary_transport
+test/realtime/reauth.test.js,realtime/reauth,,reauthCapabilityDowngradePublish_with_text_transport
+test/realtime/resume.test.js,realtime/resume,,recover multiple channels
+test/rest/api.test.js,rest/api,,Client constructors
+test/rest/api.test.js,rest/api,,constructor without any arguments
+test/rest/api.test.js,rest/api,,Crypto
+test/rest/api.test.js,rest/api,,Message
+test/rest/api.test.js,rest/api,,PresenceMessage
+test/rest/auth.test.js,rest/auth,,Base token generation case
+test/rest/auth.test.js,rest/auth,,Base token generation with options
+test/rest/auth.test.js,rest/auth,,Generate token and init library with it
+test/rest/auth.test.js,rest/auth,,Token generation with explicit timestamp
+test/rest/auth.test.js,rest/auth,,Token generation with invalid timestamp
+test/rest/auth.test.js,rest/auth,,Token generation with system timestamp
+test/rest/auth.test.js,rest/auth,,Token generation with duplicate nonce
+test/rest/auth.test.js,rest/auth,,Token generation with clientId
+test/rest/auth.test.js,rest/auth,,Token generation with empty string clientId should error
+test/rest/auth.test.js,rest/auth,,Token generation with capability that subsets key capability
+test/rest/auth.test.js,rest/auth,,Token generation with specified key
+test/rest/auth.test.js,rest/auth,,Token generation with invalid mac
+test/rest/auth.test.js,rest/auth,,Token generation with defaultTokenParams set and no tokenParams passed in
+test/rest/auth.test.js,rest/auth,,"Token generation: if tokenParams passed in, defaultTokenParams should be ignored altogether, not merged"
+test/rest/auth.test.js,rest/auth,,Authorize with different args
+test/rest/auth.test.js,rest/auth,,Specify non-default ttl
+test/rest/auth.test.js,rest/auth,,Should error with excessive ttl
+test/rest/auth.test.js,rest/auth,,Should error with negative ttl
+test/rest/auth.test.js,rest/auth,,Should error with invalid ttl
+test/rest/auth.test.js,rest/auth,,createTokenRequest without authOptions
+test/rest/auth.test.js,rest/auth,,"createTokenRequest uses the key it was initialized with if authOptions does not have a ""key"" key"
+test/rest/auth.test.js,rest/auth,,createTokenRequest should serialise capability object as JSON
+test/rest/auth.test.js,rest/auth,,Basic rest JWT
+test/rest/auth.test.js,rest/auth,,Rest JWT with return type 
+test/rest/auth.test.js,rest/auth,,Rest embedded JWT
+test/rest/auth.test.js,rest/auth,,Rest embedded JWT with encryption
+test/rest/auth.test.js,rest/auth,,JWT request with invalid key
+test/rest/auth.test.js,rest/auth,,Rest JWT with authCallback
+test/rest/auth.test.js,rest/auth,,Rest JWT with authCallback and invalid keys
+test/rest/auth.test.js,rest/auth,,authCallback is only invoked once on concurrent auth
+test/rest/batch.test.js,rest/batchPublish,when invoked with an array of specs,performs a batch publish and returns an array of results
+test/rest/batch.test.js,rest/batchPublish,when invoked with a single spec,performs a batch publish and returns a single result
+test/rest/batch.test.js,rest/batchPresence,,performs a batch presence fetch and returns a result
+test/rest/batch.test.js,rest/revokeTokens,,revokes tokens matching the given specifiers
+test/rest/batch.test.js,rest/revokeTokens,,accepts optional issuedBefore and allowReauthMargin parameters
+test/rest/batch.test.js,rest/revokeTokens,,throws an error when using token auth
+test/rest/capability.test.js,rest/capability,,Blanket intersection with specified key
+test/rest/capability.test.js,rest/capability,,Equal intersection with specified key
+test/rest/capability.test.js,rest/capability,,Empty ops intersection
+test/rest/capability.test.js,rest/capability,,Empty paths intersection
+test/rest/capability.test.js,rest/capability,,Ops intersection non-empty
+test/rest/capability.test.js,rest/capability,,Paths intersection non-empty
+test/rest/capability.test.js,rest/capability,,Wildcard token with publish and subscribe key
+test/rest/capability.test.js,rest/capability,,Publish and subscribe token with wildcard key
+test/rest/capability.test.js,rest/capability,,Resources wildcard matching 1
+test/rest/capability.test.js,rest/capability,,Resources wildcard matching 2
+test/rest/capability.test.js,rest/capability,,Resources wildcard matching 3
+test/rest/capability.test.js,rest/capability,,Invalid capabilities 1
+test/rest/capability.test.js,rest/capability,,Invalid capabilities 2
+test/rest/capability.test.js,rest/capability,,Invalid capabilities 3
+test/rest/fallbacks.test.js,rest/fallbacks,Max elapsed time for host retries,can timeout after default host
+test/rest/fallbacks.test.js,rest/fallbacks,Max elapsed time for host retries,can timeout after fallback host retries
+test/rest/history.test.js,rest/history,,history_simple with binary protocol
+test/rest/history.test.js,rest/history,,history_simple with text protocol
+test/rest/history.test.js,rest/history,,history_multiple with binary protocol
+test/rest/history.test.js,rest/history,,history_multiple with text protocol
+test/rest/history.test.js,rest/history,,history_simple_paginated_b with binary protocol
+test/rest/history.test.js,rest/history,,history_simple_paginated_b with text protocol
+test/rest/history.test.js,rest/history,,history_simple_paginated_f
+test/rest/history.test.js,rest/history,,history_multiple_paginated_b
+test/rest/history.test.js,rest/history,,history_multiple_paginated_f
+test/rest/history.test.js,rest/history,,history_encoding_errors with binary protocol
+test/rest/history.test.js,rest/history,,history_encoding_errors with text protocol
+test/rest/history.test.js,rest/history,,history_no_next_page with binary protocol
+test/rest/history.test.js,rest/history,,history_no_next_page with text protocol
+test/rest/init.test.js,rest/init,,Init with clientId set to '*' or anything other than a string or null should error
+test/rest/message.test.js,rest/message,,Should error when publishing message larger than maxMessageSize
+test/rest/message.test.js,rest/message,,Should send correct IDs when idempotentRestPublishing set to false
+test/rest/presence.test.js,rest/presence,,Presence message JSON serialisation
+test/rest/presence.test.js,rest/presence,,Presence get limits and filtering
+test/rest/push.test.js,rest/push,,Get subscriptions
+test/rest/push.test.js,rest/push,,deviceRegistrations save
+test/rest/push.test.js,rest/push,,deviceRegistrations get and list
+test/rest/push.test.js,rest/push,,deviceRegistrations remove removeWhere
+test/rest/push.test.js,rest/push,,channelSubscriptions save
+test/rest/push.test.js,rest/push,,channelSubscriptions get
+test/rest/push.test.js,rest/push,,push_channelSubscriptions_remove
+test/rest/push.test.js,rest/push,,channelSubscriptions listChannels
+test/rest/request.test.js,rest/request,,request_batch_api_success with binary protocol
+test/rest/request.test.js,rest/request,,request_batch_api_success with text protocol
+test/rest/stats.test.js,rest/stats,,contains expected fields
+test/rest/stats.test.js,rest/stats,,appstats_minute0
+test/rest/stats.test.js,rest/stats,,appstats_minute1
+test/rest/stats.test.js,rest/stats,,appstats_hour0
+test/rest/stats.test.js,rest/stats,,appstats_limit_backwards
+test/rest/stats.test.js,rest/stats,,appstats_limit_forwards
+test/rest/stats.test.js,rest/stats,,appstats_pagination_backwards
+test/rest/stats.test.js,rest/stats,,appstats_pagination_forwards
+test/rest/stats.test.js,rest/stats,,appstats_pagination_omitted
+test/rest/status.test.js,rest/status,,status0 with binary protocol
+test/rest/status.test.js,rest/status,,status0 with text protocol
+test/rest/time.test.js,rest/time,,time0

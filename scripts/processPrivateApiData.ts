@@ -52,9 +52,9 @@ type TestStartRecord = {
 
 type Record = PrivateApiUsageDto | TestStartRecord;
 
-let records = JSON.parse(
-  readFileSync('private-api-usage-f5959cec85ebaa1f55a769c0ebf8b649d62ba4fa.json').toString('utf-8'),
-) as Record[];
+const commitSha = 'f5959cec85ebaa1f55a769c0ebf8b649d62ba4fa';
+
+let records = JSON.parse(readFileSync(`private-api-usage-${commitSha}.json`).toString('utf-8')) as Record[];
 
 function stripFilePrefix(records: Record[]) {
   for (const record of records) {
@@ -273,7 +273,7 @@ function writePrivateAPIUsageCSV(contextGroups: ContextGroup[]) {
     .flat();
 
   const result = csvStringify([columnHeaders, ...csvRows]);
-  writeFileSync('private-api-data.csv', result);
+  writeFileSync(`private-api-per-test-usage-${commitSha}.csv`, result);
 }
 
 function extractTestsWithoutPrivateAPIUsage(testStartRecords: TestStartRecord[], groupedUsages: ContextGroup[]) {
@@ -302,7 +302,7 @@ function writeNoPrivateAPIUsageCSV(testStartRecords: TestStartRecord[]) {
   });
 
   const result = csvStringify([columnHeaders, ...csvRows]);
-  writeFileSync('no-private-api-data.csv', result);
+  writeFileSync(`tests-that-do-not-use-private-api-${commitSha}.csv`, result);
 }
 
 function percentageString(value: number, total: number) {
