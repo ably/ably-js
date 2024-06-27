@@ -31,6 +31,7 @@ interface WebPushRecipient {
   transportType: 'web';
   targetUrl: string;
   encryptionKey: WebPushEncryptionKey;
+  publicVapidKey: string;
 }
 
 interface PushChannelRecipient {

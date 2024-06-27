@@ -73,6 +73,7 @@ export async function getW3CPushDeviceDetails(machine: ActivationStateMachine) {
     device.push.recipient = {
       transportType: 'web',
       targetUrl: btoa(endpoint),
+      publicVapidKey: appServerKey,
       encryptionKey: {
         p256dh: toBase64Url(p256dh),
         auth: toBase64Url(auth),
