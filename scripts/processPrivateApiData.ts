@@ -52,7 +52,7 @@ type TestStartRecord = {
 
 type Record = PrivateApiUsageDto | TestStartRecord;
 
-const commitSha = 'f5959cec85ebaa1f55a769c0ebf8b649d62ba4fa';
+const commitSha = '512ffcb2c3cc3c36de5f2f9f4ccaaa17d1a96f94';
 
 let records = JSON.parse(readFileSync(`private-api-usage-${commitSha}.json`).toString('utf-8')) as Record[];
 
