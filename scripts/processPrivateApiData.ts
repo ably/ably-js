@@ -4,6 +4,7 @@ import { stringify as csvStringify } from 'csv-stringify/sync';
 type TestPrivateApiContextDto = {
   type: 'test';
   title: string;
+  parameterisedTestTitle: string;
   helperStack: string[];
   file: string;
   suite: string[];
@@ -235,8 +236,13 @@ function suitesHeaders(maxSuiteLevel: number) {
   return result;
 }
 
-function commonHeaders(maxSuiteLevel: number) {
-  return ['File', ...suitesHeaders(maxSuiteLevel), 'Description'];
+function commonHeaders(maxSuiteLevel: number, includeParameterisedTestTitle: boolean) {
+  return [
+    'File',
+    ...suitesHeaders(maxSuiteLevel),
+    includeParameterisedTestTitle ? 'Parameterised test title' : null,
+    'Description',
+  ].filter((val) => val !== null) as string[];
 }
 
 function writePrivateAPIUsageCSV(contextGroups: ContextGroup[]) {
@@ -245,7 +251,7 @@ function writePrivateAPIUsageCSV(contextGroups: ContextGroup[]) {
     .map((group) => (group.context.suite ?? []).length)
     .reduce((a, b) => Math.max(a, b), -Infinity);
 
-  const columnHeaders = ['Context', ...commonHeaders(maxSuiteLevel), 'Via helpers', 'Private API called'];
+  const columnHeaders = ['Context', ...commonHeaders(maxSuiteLevel, true), 'Via helpers', 'Private API called'];
 
   const csvRows = contextGroups
     .map((contextGroup) => {
@@ -254,6 +260,7 @@ function writePrivateAPIUsageCSV(contextGroups: ContextGroup[]) {
         context.type,
         context.file,
         ...suitesColumnsForCSV(context.suite, maxSuiteLevel),
+        context.type === 'test' ? context.parameterisedTestTitle : '',
         context.type === 'definition' ? context.label : context.title,
       ];
 
@@ -287,7 +294,7 @@ function writeNoPrivateAPIUsageCSV(testStartRecords: TestStartRecord[]) {
     .map((record) => record.context.suite.length)
     .reduce((a, b) => Math.max(a, b), -Infinity);
 
-  const columnHeaders = commonHeaders(maxSuiteLevel);
+  const columnHeaders = commonHeaders(maxSuiteLevel, false);
 
   const csvRows = testStartRecords.map((record) => {
     const context = record.context;
