@@ -248,27 +248,16 @@ define([
     }
 
     _callbackOnClose(realtime, callback) {
-      this.recordPrivateApi('read.connectionManager.activeProtocol');
-      if (!realtime.connection.connectionManager.activeProtocol) {
-        this.recordPrivateApi('call.Platform.nextTick');
-        platform.Config.nextTick(function () {
-          realtime.close();
-          callback();
-        });
+      if (realtime.connection.state === 'closed' || realtime.connection.state === 'failed') {
+        callback();
         return;
       }
-      this.recordPrivateApi('read.connectionManager.activeProtocol.transport');
-      this.recordPrivateApi('listen.transport.disposed');
-      realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function () {
+
+      realtime.connection.once(['closed', 'failed'], function () {
         callback();
       });
-      /* wait a tick before closing in order to avoid the final close
-       * happening synchronously in a publish/attach callback, which
-       * complicates channelattach_publish_invalid etc. */
-      this.recordPrivateApi('call.Platform.nextTick');
-      platform.Config.nextTick(function () {
-        realtime.close();
-      });
+
+      realtime.close();
     }
 
     closeAndFinishSeveral(done, realtimeArray, e) {
