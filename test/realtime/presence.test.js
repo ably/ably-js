@@ -141,7 +141,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter presence channel with data and await entered event
      */
     it.skip('presenceAttachAndEnter', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'attachAndEnter';
       var attachAndEnter = function (cb) {
         /* set up authenticated connection */
@@ -169,7 +169,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Enter presence channel without prior attach and await entered event
      */
     it('presenceEnterWithoutAttach', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterWithoutAttach';
       var enterWithoutAttach = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -193,7 +193,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Enter presence channel without prior connect and await entered event
      */
     it('presenceEnterWithoutConnect', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterWithoutConnect';
       var enterWithoutConnect = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -215,7 +215,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * from channel immediately in 'attached' callback
      */
     it.skip('presenceEnterDetachRace', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       // Can't use runTestWithEventListener helper as one of the successful
       // outcomes is an error in presence enter, in which case listenForEventOn
       // will not run its callback
@@ -279,7 +279,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter presence channel with a callback but no data and await entered event
      */
     it('presenceEnterWithCallback', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterWithCallback';
       var enterWithCallback = function (cb) {
         /* set up authenticated connection */
@@ -307,7 +307,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter presence channel with neither callback nor data and await entered event
      */
     it('presenceEnterWithNothing', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterWithNothing';
       var enterWithNothing = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -333,7 +333,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter presence channel with data but no callback and await entered event
      */
     it('presenceEnterWithData', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterWithData';
       var enterWithData = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -360,7 +360,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * has valid action string
      */
     it('presenceMessageAction', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var channelName = 'presenceMessageAction';
       var clientChannel = clientRealtime.channels.get(channelName);
@@ -391,7 +391,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * PresenceMessage has extras. Then do the same for leaving presence.
      */
     it('presenceMessageExtras', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var channelName = 'presenceEnterWithExtras';
       var clientChannel = clientRealtime.channels.get(channelName);
@@ -459,7 +459,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Enter presence channel (without attaching), detach, then enter again to reattach
      */
     it('presenceEnterDetachEnter', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterDetachEnter';
       var secondEventListener = function (channel, callback) {
         var presenceHandler = function (presenceMsg) {
@@ -504,7 +504,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Enter invalid presence channel (without attaching), check callback was called with error
      */
     it('presenceEnterInvalid', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var clientRealtime;
       try {
         clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -534,7 +534,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter+leave presence channel and await leave event
      */
     it('presenceEnterAndLeave', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterAndLeave';
       var enterAndLeave = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -567,7 +567,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter presence channel, update data, and await update event
      */
     it('presenceEnterUpdate', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var newData = 'New data';
       var channelName = 'enterUpdate';
       var eventListener = function (channel, callback) {
@@ -616,7 +616,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter presence channel and get presence
      */
     it('presenceEnterGet', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterGet';
       var testData = 'some data for presenceEnterGet';
       var eventListener = function (channel, callback) {
@@ -665,7 +665,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Realtime presence subscribe on an unattached channel should implicitly attach
      */
     it('presenceSubscribeUnattached', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'subscribeUnattached';
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var clientRealtime2;
@@ -694,7 +694,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Realtime presence GET on an unattached channel should attach and wait for sync
      */
     it('presenceGetUnattached', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'getUnattached';
       var testData = 'some data';
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
@@ -736,7 +736,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter+leave presence channel and get presence
      */
     it('presenceEnterLeaveGet', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterLeaveGet';
       var eventListener = function (channel, callback) {
         var presenceHandler = function () {
@@ -791,7 +791,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Attach to channel, enter+leave presence, detatch again, and get presence history
      */
     it('presenceHistory', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var clientRealtime;
       var channelName = 'history';
       var testClientData = 'Test client data (history0)';
@@ -864,7 +864,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * connection, seeing existing member in message subsequent to second attach response
      */
     it('presenceSecondConnection', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var clientRealtime1, clientRealtime2;
       var channelName = 'secondConnection';
       try {
@@ -945,7 +945,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Use get to filter by clientId and connectionId
      */
     it('presenceTwoMembers', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var clientRealtime1, clientRealtime2, clientChannel1, clientChannel2;
       var channelName = 'twoMembers';
       try {
@@ -1112,7 +1112,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * reconnect, then enter again to reattach
      */
     it('presenceEnterAfterClose', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enterAfterClose';
       var secondEnterListener = function (channel, callback) {
         var presenceHandler = function (presenceMsg) {
@@ -1155,7 +1155,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Try to enter presence channel on a closed connection and check error callback
      */
     it('presenceEnterClosed', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var clientRealtime;
       var channelName = 'enterClosed';
       try {
@@ -1184,7 +1184,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Client ID is implicit in the connection so should not be sent for current client operations
      */
     it('presenceClientIdIsImplicit', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         clientId = 'implicitClient',
         client = helper.AblyRealtime({ clientId: clientId });
 
@@ -1227,7 +1227,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Check that encodable presence messages are encoded correctly
      */
     it('presenceEncoding', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         data = { foo: 'bar' },
         encodedData = JSON.stringify(data),
         options = {
@@ -1291,7 +1291,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * and check that can enter presence with the clientId inherited from tokenDetails
      */
     it('presence_enter_inherited_clientid', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enter_inherited_clientid';
 
       var authCallback = function (tokenParams, callback) {
@@ -1330,7 +1330,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * before we're connected, so before we know our clientId
      */
     it('presence_enter_before_know_clientid', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'enter_before_know_clientid';
 
       var enterInheritedClientId = function (cb) {
@@ -1369,7 +1369,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * all members are emitted and map is in the correct state
      */
     it('presence_refresh_on_detach', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'presence_refresh_on_detach';
       var realtime = helper.AblyRealtime();
       var observer = helper.AblyRealtime();
@@ -1484,7 +1484,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('presence_detach_during_sync', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'presence_detach_during_sync';
       var enterer = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var detacher = helper.AblyRealtime();
@@ -1541,7 +1541,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * member to be sent to realtime and, with luck, make its way into the normal
      * presence set */
     it('presence_auto_reenter', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var channelName = 'presence_auto_reenter';
       var realtime = helper.AblyRealtime();
       var channel = realtime.channels.get(channelName);
@@ -1651,7 +1651,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /* RTP17e
      * Test failed presence auto-re-entering */
     it.skip('presence_failed_auto_reenter', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         channelName = 'presence_failed_auto_reenter',
         realtime,
         channel,
@@ -1747,7 +1747,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /* Enter ten clients while attaching, finish the attach, check they were all entered correctly */
     it('multiple_pending', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('multiple_pending'),
         originalAttachImpl = channel.attachImpl;
@@ -1800,7 +1800,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Check that a LEAVE message is published for anyone in the local presence
      * set but missing from a sync */
     it('leave_published_for_member_missing_from_sync', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
         continuousClientId = 'continuous',
         goneClientId = 'gone',
@@ -1916,7 +1916,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Check that a LEAVE message is published for anyone in the local presence
      * set if get an ATTACHED with no HAS_PRESENCE */
     it('leave_published_for_members_on_presenceless_attached', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         realtime = helper.AblyRealtime(),
         channelName = 'leave_published_for_members_on_presenceless_attached',
         channel = realtime.channels.get(channelName),
@@ -2009,7 +2009,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * and only members that changed between ATTACHED states should result in
      * presence events */
     it('suspended_preserves_presence', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         mainRealtime = helper.AblyRealtime({ clientId: 'main' }),
         continuousRealtime = helper.AblyRealtime({ clientId: 'continuous' }),
         leavesRealtime = helper.AblyRealtime({ clientId: 'leaves' }),
@@ -2148,7 +2148,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * comparisons.
      */
     it('presence_many_updates', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var client = helper.AblyRealtime({ clientId: testClientId });
 
       var channel = client.channels.get('presence_many_updates'),

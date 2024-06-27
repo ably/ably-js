@@ -83,7 +83,7 @@ function registerAblyModularTests(Helper) {
       for (const clientClass of [BaseRest, BaseRealtime]) {
         describe(clientClass.name, function () {
           it('throws an error due to the absence of an HTTP plugin', function () {
-            expect(() => new clientClass(this.helper.ablyClientOptions())).to.throw(
+            expect(() => new clientClass(this.test.helper.ablyClientOptions())).to.throw(
               'No HTTP request plugin provided. Provide at least one of the FetchRequest or XHRRequest plugins.',
             );
           });
@@ -142,7 +142,7 @@ function registerAblyModularTests(Helper) {
       describe('BaseRest without explicit Rest', () => {
         for (const scenario of restScenarios) {
           it(`allows you to ${scenario.description}`, async function () {
-            const helper = this.helper;
+            const helper = this.test.helper;
             const client = new BaseRest(
               helper.ablyClientOptions({ ...scenario.getAdditionalClientOptions?.(helper), plugins: { FetchRequest } }),
             );
@@ -162,7 +162,7 @@ function registerAblyModularTests(Helper) {
       describe('BaseRealtime with Rest', () => {
         for (const scenario of restScenarios) {
           it(`allows you to ${scenario.description}`, async function () {
-            const helper = this.helper;
+            const helper = this.test.helper;
             const client = new BaseRealtime(
               helper.ablyClientOptions({
                 autoConnect: false,
@@ -190,9 +190,9 @@ function registerAblyModularTests(Helper) {
 
       describe('BaseRealtime without Rest', () => {
         it('still allows publishing and subscribing', async function () {
-          const helper = this.helper;
+          const helper = this.test.helper;
           const client = new BaseRealtime(
-            this.helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
+            this.test.helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
           );
 
           await monitorConnectionThenCloseAndFinish(
@@ -218,7 +218,7 @@ function registerAblyModularTests(Helper) {
 
         it('allows `auth.createTokenRequest()` without `queryTime` option enabled', async function () {
           const client = new BaseRealtime(
-            this.helper.ablyClientOptions({ autoConnect: false, plugins: { WebSocketTransport, FetchRequest } }),
+            this.test.helper.ablyClientOptions({ autoConnect: false, plugins: { WebSocketTransport, FetchRequest } }),
           );
 
           const tokenRequest = await client.auth.createTokenRequest();
@@ -227,9 +227,9 @@ function registerAblyModularTests(Helper) {
 
         for (const scenario of restScenarios) {
           it(`throws an error when attempting to ${scenario.description}`, async function () {
-            const helper = this.helper;
+            const helper = this.test.helper;
             const client = new BaseRealtime(
-              this.helper.ablyClientOptions({
+              this.test.helper.ablyClientOptions({
                 autoConnect: false,
                 ...scenario.getAdditionalClientOptions?.(helper),
                 plugins: {
@@ -279,11 +279,11 @@ function registerAblyModularTests(Helper) {
 
       describe('decodeMessage', () => {
         it('decodes a message’s data', async function () {
-          testDecodesMessageData(this.helper, decodeMessage);
+          testDecodesMessageData(this.test.helper, decodeMessage);
         });
 
         it('throws an error when given channel options with a cipher', async function () {
-          const helper = this.helper;
+          const helper = this.test.helper;
           const testData = await loadTestData(helper, helper.testResourcesPath + 'crypto-data-128.json');
           const key = BufferUtils.base64Decode(testData.key);
           const iv = BufferUtils.base64Decode(testData.iv);
@@ -302,11 +302,11 @@ function registerAblyModularTests(Helper) {
 
       describe('decodeEncryptedMessage', async () => {
         it('decodes a message’s data', async function () {
-          testDecodesMessageData(this.helper, decodeEncryptedMessage);
+          testDecodesMessageData(this.test.helper, decodeEncryptedMessage);
         });
 
         it('decrypts a message', async function () {
-          const helper = this.helper;
+          const helper = this.test.helper;
           const testData = await loadTestData(helper, helper.testResourcesPath + 'crypto-data-128.json');
 
           const key = BufferUtils.base64Decode(testData.key);
@@ -318,7 +318,7 @@ function registerAblyModularTests(Helper) {
               decodeEncryptedMessage(item.encrypted, { cipher: { key, iv } }),
             ]);
 
-            this.helper.testMessageEquality(decodedFromEncoded, decodedFromEncrypted);
+            this.test.helper.testMessageEquality(decodedFromEncoded, decodedFromEncrypted);
           }
         });
       });
@@ -335,11 +335,11 @@ function registerAblyModularTests(Helper) {
 
       describe('decodeMessages', () => {
         it('decodes messages’ data', async function () {
-          testDecodesMessagesData(this.helper, decodeMessages);
+          testDecodesMessagesData(this.test.helper, decodeMessages);
         });
 
         it('throws an error when given channel options with a cipher', async function () {
-          const helper = this.helper;
+          const helper = this.test.helper;
           const testData = await loadTestData(helper, helper.testResourcesPath + 'crypto-data-128.json');
           const key = BufferUtils.base64Decode(testData.key);
           const iv = BufferUtils.base64Decode(testData.iv);
@@ -361,11 +361,11 @@ function registerAblyModularTests(Helper) {
 
       describe('decodeEncryptedMessages', () => {
         it('decodes messages’ data', async function () {
-          testDecodesMessagesData(this.helper, decodeEncryptedMessages);
+          testDecodesMessagesData(this.test.helper, decodeEncryptedMessages);
         });
 
         it('decrypts messages', async function () {
-          const helper = this.helper;
+          const helper = this.test.helper;
           const testData = await loadTestData(helper, helper.testResourcesPath + 'crypto-data-128.json');
 
           const key = BufferUtils.base64Decode(testData.key);
@@ -380,7 +380,7 @@ function registerAblyModularTests(Helper) {
           ]);
 
           for (let i = 0; i < decodedFromEncoded.length; i++) {
-            this.helper.testMessageEquality(decodedFromEncoded[i], decodedFromEncrypted[i]);
+            this.test.helper.testMessageEquality(decodedFromEncoded[i], decodedFromEncrypted[i]);
           }
         });
       });
@@ -412,7 +412,7 @@ function registerAblyModularTests(Helper) {
         ]) {
           describe(clientClassConfig.clientClass.name, () => {
             it('throws an error when given channel options with a cipher', async function () {
-              await testThrowsAnErrorWhenGivenChannelOptionsWithACipher(this.helper, clientClassConfig);
+              await testThrowsAnErrorWhenGivenChannelOptionsWithACipher(this.test.helper, clientClassConfig);
             });
           });
         }
@@ -482,7 +482,7 @@ function registerAblyModularTests(Helper) {
         ]) {
           describe(clientClassConfig.clientClass.name, () => {
             it('is able to publish encrypted messages', async function () {
-              await testIsAbleToPublishEncryptedMessages(this.helper, clientClassConfig);
+              await testIsAbleToPublishEncryptedMessages(this.test.helper, clientClassConfig);
             });
           });
         }
@@ -527,7 +527,7 @@ function registerAblyModularTests(Helper) {
           describe('BaseRest', () => {
             it('uses JSON', async function () {
               const client = new BaseRest(
-                this.helper.ablyClientOptions({ useBinaryProtocol: true, plugins: { FetchRequest } }),
+                this.test.helper.ablyClientOptions({ useBinaryProtocol: true, plugins: { FetchRequest } }),
               );
               await testRestUsesContentType(client, 'application/json');
             });
@@ -535,7 +535,7 @@ function registerAblyModularTests(Helper) {
 
           describe('BaseRealtime', () => {
             it('uses JSON', async function () {
-              const helper = this.helper;
+              const helper = this.test.helper;
               const client = new BaseRealtime(
                 helper.ablyClientOptions({
                   useBinaryProtocol: true,
@@ -562,7 +562,7 @@ function registerAblyModularTests(Helper) {
           describe('BaseRest', () => {
             it('uses MessagePack', async function () {
               const client = new BaseRest(
-                this.helper.ablyClientOptions({
+                this.test.helper.ablyClientOptions({
                   useBinaryProtocol: true,
                   plugins: {
                     FetchRequest,
@@ -576,7 +576,7 @@ function registerAblyModularTests(Helper) {
 
           describe('BaseRealtime', () => {
             it('uses MessagePack', async function () {
-              const helper = this.helper;
+              const helper = this.test.helper;
               const client = new BaseRealtime(
                 helper.ablyClientOptions({
                   useBinaryProtocol: true,
@@ -605,7 +605,7 @@ function registerAblyModularTests(Helper) {
     describe('RealtimePresence', () => {
       describe('BaseRealtime without RealtimePresence', () => {
         it('throws an error when attempting to access the `presence` property', async function () {
-          const helper = this.helper;
+          const helper = this.test.helper;
           const client = new BaseRealtime(helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
 
           await monitorConnectionThenCloseAndFinish(
@@ -620,7 +620,7 @@ function registerAblyModularTests(Helper) {
         });
 
         it('doesn’t break when it receives a PRESENCE ProtocolMessage', async function () {
-          const helper = this.helper;
+          const helper = this.test.helper;
           const rxClient = new BaseRealtime(
             helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
           );
@@ -635,7 +635,7 @@ function registerAblyModularTests(Helper) {
               const receivedMessagePromise = new Promise((resolve) => rxChannel.subscribe(resolve));
 
               const txClient = new BaseRealtime(
-                this.helper.ablyClientOptions({
+                this.test.helper.ablyClientOptions({
                   clientId: Helper.randomString(),
                   plugins: {
                     WebSocketTransport,
@@ -667,7 +667,7 @@ function registerAblyModularTests(Helper) {
 
       describe('BaseRealtime with RealtimePresence', () => {
         it('offers realtime presence functionality', async function () {
-          const helper = this.helper;
+          const helper = this.test.helper;
           const rxClient = new BaseRealtime(
             helper.ablyClientOptions({
               plugins: {
@@ -684,7 +684,7 @@ function registerAblyModularTests(Helper) {
             async () => {
               const txClientId = Helper.randomString();
               const txClient = new BaseRealtime(
-                this.helper.ablyClientOptions({
+                this.test.helper.ablyClientOptions({
                   clientId: txClientId,
                   plugins: {
                     WebSocketTransport,
@@ -765,7 +765,7 @@ function registerAblyModularTests(Helper) {
       describe('BaseRealtime', () => {
         describe('without a transport plugin', () => {
           it('throws an error due to absence of a transport plugin', function () {
-            expect(() => new BaseRealtime(this.helper.ablyClientOptions({ plugins: { FetchRequest } }))).to.throw(
+            expect(() => new BaseRealtime(this.test.helper.ablyClientOptions({ plugins: { FetchRequest } }))).to.throw(
               'no requested transports available',
             );
           });
@@ -777,7 +777,7 @@ function registerAblyModularTests(Helper) {
         ]) {
           describe(`with the ${scenario.pluginsKey} plugin`, () => {
             it(`is able to use the ${scenario.transportName} transport`, async function () {
-              const helper = this.helper;
+              const helper = this.test.helper;
               const realtime = new BaseRealtime(
                 helper.ablyClientOptions({
                   autoConnect: false,
@@ -828,7 +828,7 @@ function registerAblyModularTests(Helper) {
           };
 
           const rest = new BaseRest(
-            this.helper.ablyClientOptions({ plugins: { FetchRequest, XHRRequest: XHRRequestSpy } }),
+            this.test.helper.ablyClientOptions({ plugins: { FetchRequest, XHRRequest: XHRRequestSpy } }),
           );
           await rest.time();
 
@@ -841,7 +841,7 @@ function registerAblyModularTests(Helper) {
       describe('BaseRealtime', () => {
         describe('without MessageInteractions', () => {
           it('is able to subscribe to and unsubscribe from channel events, as long as a MessageFilter isn’t passed', async function () {
-            const helper = this.helper;
+            const helper = this.test.helper;
             const realtime = new BaseRealtime(
               helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
             );
@@ -864,7 +864,7 @@ function registerAblyModularTests(Helper) {
           });
 
           it('throws an error when attempting to subscribe to channel events using a MessageFilter', async function () {
-            const helper = this.helper;
+            const helper = this.test.helper;
             const realtime = new BaseRealtime(
               helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
             );
@@ -891,7 +891,7 @@ function registerAblyModularTests(Helper) {
 
         describe('with MessageInteractions', () => {
           it('can take a MessageFilter argument when subscribing to and unsubscribing from channel events', async function () {
-            const helper = this.helper;
+            const helper = this.test.helper;
             const realtime = new BaseRealtime(
               helper.ablyClientOptions({
                 plugins: {

@@ -220,10 +220,10 @@ define([
     static restTestOnJsonMsgpack(name, testFn, skip) {
       var itFn = skip ? it.skip : it;
       itFn(name + ' with binary protocol', async function () {
-        await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary', this.helper);
+        await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary', this.test.helper);
       });
       itFn(name + ' with text protocol', async function () {
-        await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text', this.helper);
+        await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text', this.test.helper);
       });
     }
 

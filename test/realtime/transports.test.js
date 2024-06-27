@@ -68,7 +68,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       }
 
       it('websocket_is_default', function (done) {
-        const helper = this.helper;
+        const helper = this.test.helper;
         const realtime = helper.AblyRealtime(options(helper));
 
         realtime.connection.on('connected', function () {
@@ -84,7 +84,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       });
 
       it('no_ws_connectivity', function (done) {
-        const helper = this.helper;
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
         const realtime = helper.AblyRealtime(
           options(helper, { webSocketSlowTimeout: 1000, webSocketConnectTimeout: 3000 }),
@@ -111,7 +111,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       });
 
       it('ws_primary_host_fails', function (done) {
-        const helper = this.helper;
+        const helper = this.test.helper;
         const goodHost = helper.AblyRest().options.realtimeHost;
         const realtime = helper.AblyRealtime(
           options(helper, { realtimeHost: helper.unroutableAddress, fallbackHosts: [goodHost] }),
@@ -126,7 +126,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       });
 
       it('no_internet_connectivity', function (done) {
-        const helper = this.helper;
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
         const realtime = helper.AblyRealtime(
           options(helper, { connectivityCheckUrl: failUrl, webSocketSlowTimeout: 1000 }),
@@ -139,7 +139,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       });
 
       it('no_websocket_or_base_transport', function (done) {
-        const helper = this.helper;
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
         const realtime = helper.AblyRealtime({
           transports: ['web_socket'],
@@ -154,7 +154,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
 
       if (localStorageSupported) {
         it('base_transport_preference', function (done) {
-          const helper = this.helper;
+          const helper = this.test.helper;
           window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
           const realtime = helper.AblyRealtime(options(helper));
 
@@ -183,7 +183,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
         });
 
         it('transport_preference_reset_while_connecting', function (done) {
-          const helper = this.helper;
+          const helper = this.test.helper;
           window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
           const realtime = helper.AblyRealtime(options(helper));
 
@@ -208,7 +208,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
         });
 
         it('transport_preference_reset_after_connected', function (done) {
-          const helper = this.helper;
+          const helper = this.test.helper;
           window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
           const realtime = helper.AblyRealtime(options(helper));
 

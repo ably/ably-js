@@ -12,18 +12,18 @@ define(['shared_helper'], function (Helper) {
   });
 
   afterEach(function () {
-    this.helper.closeActiveClients();
+    this.currentTest.helper.closeActiveClients();
   });
   afterEach(function () {
-    this.helper.logTestResults(this);
+    this.currentTest.helper.logTestResults(this);
   });
   afterEach(function () {
-    this.helper.flushTestLogs();
+    this.currentTest.helper.flushTestLogs();
   });
   beforeEach(function () {
-    this.helper = Helper.forTest(this);
+    this.currentTest.helper = Helper.forTest(this);
   });
   beforeEach(function () {
-    this.helper.clearTransportPreference();
+    this.currentTest.helper.clearTransportPreference();
   });
 });

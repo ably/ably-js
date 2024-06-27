@@ -210,7 +210,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('encrypt_message_128', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       testEachFixture(
         done,
         helper,
@@ -229,7 +229,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('encrypt_message_256', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       testEachFixture(
         done,
         helper,
@@ -248,7 +248,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('decrypt_message_128', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       testEachFixture(
         done,
         helper,
@@ -266,7 +266,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('decrypt_message_256', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       testEachFixture(
         done,
         helper,
@@ -289,7 +289,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         return;
       }
 
-      const helper = this.helper;
+      const helper = this.test.helper;
 
       helper.loadTestData(helper.testResourcesPath + 'crypto-data-256.json', async function (err, testData) {
         if (err) {
@@ -312,7 +312,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /* Tests require encryption and binary transport */
     if (typeof ArrayBuffer !== 'undefined') {
       it('msgpack_128', function (done) {
-        const helper = this.helper;
+        const helper = this.test.helper;
         testEachFixture(
           done,
           helper,
@@ -348,7 +348,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       it('msgpack_256', function (done) {
-        const helper = this.helper;
+        const helper = this.test.helper;
         testEachFixture(
           done,
           helper,
@@ -432,13 +432,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      */
     Helper.testOnAllTransports('single_send_128', function (realtimeOpts) {
       return function (done) {
-        single_send(done, this.helper, realtimeOpts, 128);
+        single_send(done, this.test.helper, realtimeOpts, 128);
       };
     });
 
     Helper.testOnAllTransports('single_send_256', function (realtimeOpts) {
       return function (done) {
-        single_send(done, this.helper, realtimeOpts, 256);
+        single_send(done, this.test.helper, realtimeOpts, 256);
       };
     });
 
@@ -499,27 +499,27 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     }
 
     it('multiple_send_binary_2_200', function (done) {
-      _multiple_send(done, this.helper, false, 2, 200);
+      _multiple_send(done, this.test.helper, false, 2, 200);
     });
 
     it('multiple_send_text_2_200', function (done) {
-      _multiple_send(done, this.helper, true, 2, 200);
+      _multiple_send(done, this.test.helper, true, 2, 200);
     });
 
     it('multiple_send_binary_20_100', function (done) {
-      _multiple_send(done, this.helper, false, 20, 100);
+      _multiple_send(done, this.test.helper, false, 20, 100);
     });
 
     it('multiple_send_text_20_100', function (done) {
-      _multiple_send(done, this.helper, true, 20, 100);
+      _multiple_send(done, this.test.helper, true, 20, 100);
     });
 
     it('multiple_send_binary_10_10', function (done) {
-      _multiple_send(done, this.helper, false, 10, 10);
+      _multiple_send(done, this.test.helper, false, 10, 10);
     });
 
     it('multiple_send_text_10_10', function (done) {
-      _multiple_send(done, this.helper, true, 10, 10);
+      _multiple_send(done, this.test.helper, true, 10, 10);
     });
 
     function _single_send_separate_realtimes(done, helper, txOpts, rxOpts) {
@@ -586,7 +586,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * the default cipher params and verify correct receipt.
      */
     it('single_send_binary_text', function (done) {
-      _single_send_separate_realtimes(done, this.helper, { useBinaryProtocol: true }, { useBinaryProtocol: false });
+      _single_send_separate_realtimes(
+        done,
+        this.test.helper,
+        { useBinaryProtocol: true },
+        { useBinaryProtocol: false },
+      );
     });
 
     /**
@@ -595,7 +600,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * the default cipher params and verify correct receipt.
      */
     it('single_send_text_binary', function (done) {
-      _single_send_separate_realtimes(done, this.helper, { useBinaryProtocol: false }, { useBinaryProtocol: true });
+      _single_send_separate_realtimes(
+        done,
+        this.test.helper,
+        { useBinaryProtocol: false },
+        { useBinaryProtocol: true },
+      );
     });
 
     it('publish_immediately', function (done) {
@@ -604,7 +614,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         return;
       }
 
-      var helper = this.helper,
+      var helper = this.test.helper,
         txRealtime = helper.AblyRealtime(),
         rxRealtime = helper.AblyRealtime(),
         channelName = 'publish_immediately',
@@ -646,7 +656,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         return;
       }
 
-      const helper = this.helper;
+      const helper = this.test.helper;
       var txRealtime = helper.AblyRealtime();
       var rxRealtime = helper.AblyRealtime();
       var channelName = 'single_send_key_mismatch',
@@ -713,7 +723,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         return;
       }
 
-      const helper = this.helper;
+      const helper = this.test.helper;
       var txRealtime = helper.AblyRealtime();
       var rxRealtime = helper.AblyRealtime();
       var channelName = 'single_send_unencrypted',
@@ -757,7 +767,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         return;
       }
 
-      const helper = this.helper;
+      const helper = this.test.helper;
       var txRealtime = helper.AblyRealtime();
       var rxRealtime = helper.AblyRealtime();
       var channelName = 'single_send_encrypted_unhandled',
@@ -802,7 +812,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         return;
       }
 
-      const helper = this.helper;
+      const helper = this.test.helper;
       var txRealtime = helper.AblyRealtime();
       var rxRealtime = helper.AblyRealtime();
       var channelName = 'set_cipher_params',

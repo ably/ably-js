@@ -114,7 +114,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     });
 
     it('history_simple_paginated_f', async function () {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var testchannel = rest.channels.get('persisted:history_simple_paginated_f');
 
       /* first, send a number of events to this channel */
@@ -188,7 +188,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     });
 
     it('history_multiple_paginated_f', async function () {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var testchannel = rest.channels.get('persisted:history_multiple_paginated_f');
 
       /* first, send a number of events to this channel */

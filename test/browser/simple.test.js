@@ -134,7 +134,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     it('simpleInitBase0', function (done) {
       try {
-        var helper = this.helper,
+        var helper = this.test.helper,
           timeout,
           ably = realtimeConnection(helper);
 
@@ -163,61 +163,61 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     var wsTransport = 'web_socket';
     if (isTransportAvailable(wsTransport)) {
       it('wsbase0', function (done) {
-        connectionWithTransport(done, this.helper, wsTransport);
+        connectionWithTransport(done, this.test.helper, wsTransport);
       });
 
       /*
        * Publish and subscribe, json transport
        */
       it('wspublish0', function (done) {
-        publishWithTransport(done, this.helper, wsTransport);
+        publishWithTransport(done, this.test.helper, wsTransport);
       });
 
       /*
        * Check heartbeat
        */
       it('wsheartbeat0', function (done) {
-        heartbeatWithTransport(done, this.helper, wsTransport);
+        heartbeatWithTransport(done, this.test.helper, wsTransport);
       });
     }
 
     var xhrPollingTransport = 'xhr_polling';
     if (isTransportAvailable(xhrPollingTransport)) {
       it('xhrpollingbase0', function (done) {
-        connectionWithTransport(done, this.helper, xhrPollingTransport);
+        connectionWithTransport(done, this.test.helper, xhrPollingTransport);
       });
 
       /*
        * Publish and subscribe, json transport
        */
       it('xhrpollingpublish0', function (done) {
-        publishWithTransport(done, this.helper, xhrPollingTransport);
+        publishWithTransport(done, this.test.helper, xhrPollingTransport);
       });
 
       /*
        * Check heartbeat
        */
       it('xhrpollingheartbeat0', function (done) {
-        heartbeatWithTransport(done, this.helper, xhrPollingTransport);
+        heartbeatWithTransport(done, this.test.helper, xhrPollingTransport);
       });
     }
 
     it('auto_transport_base0', function (done) {
-      connectionWithTransport(done, this.helper);
+      connectionWithTransport(done, this.test.helper);
     });
 
     /*
      * Publish and subscribe
      */
     it('auto_transport_publish0', function (done) {
-      publishWithTransport(done, this.helper);
+      publishWithTransport(done, this.test.helper);
     });
 
     /*
      * Check heartbeat
      */
     it('auto_transport_heartbeat0', function (done) {
-      heartbeatWithTransport(done, this.helper);
+      heartbeatWithTransport(done, this.test.helper);
     });
   });
 });

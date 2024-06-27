@@ -45,7 +45,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     });
 
     it('history_until_attach', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var rest = helper.AblyRest();
       var realtime = helper.AblyRealtime();
       var restChannel = rest.channels.get('persisted:history_until_attach');

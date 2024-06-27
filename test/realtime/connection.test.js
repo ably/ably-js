@@ -18,7 +18,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('connectionPing', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
@@ -37,7 +37,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('connectionPingWithCallback', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
@@ -63,7 +63,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('connectionAttributes', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
@@ -124,7 +124,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('unrecoverableConnection', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       var realtime;
       const fakeRecoveryKey = JSON.stringify({
         connectionKey: '_____!ablyjs_test_fake-key____',
@@ -168,7 +168,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * without being merged with new messages)
      */
     it('connectionQueuing', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channel = realtime.channels.get('connectionQueuing'),
         connectionManager = realtime.connection.connectionManager;
@@ -283,7 +283,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Inject a new CONNECTED with different connectionDetails; check they're used
      */
     it('connectionDetails', function (done) {
-      var helper = this.helper,
+      var helper = this.test.helper,
         realtime = helper.AblyRealtime(),
         connectionManager = realtime.connection.connectionManager;
       realtime.connection.once('connected', function () {
@@ -321,7 +321,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     it('whenState', async function () {
-      const helper = this.helper;
+      const helper = this.test.helper;
       const realtime = helper.AblyRealtime({ autoConnect: false });
 
       await helper.monitorConnectionAsync(async () => {

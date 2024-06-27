@@ -68,7 +68,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     /* With a network issue, should get an actual err, not an HttpPaginatedResponse with error members */
     it('request_network_error', async function () {
-      const helper = this.helper;
+      const helper = this.test.helper;
       rest = helper.AblyRest({ restHost: helper.unroutableAddress });
       try {
         var res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
@@ -169,7 +169,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     ['put', 'patch', 'delete'].forEach(function (method) {
       it('check' + method, async function () {
-        const helper = this.helper;
+        const helper = this.test.helper;
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
         var res = await restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {});
         expect(res.items[0] && res.items[0].method).to.equal(method);

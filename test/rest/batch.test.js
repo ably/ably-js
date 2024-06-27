@@ -18,7 +18,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     describe('when invoked with an array of specs', function () {
       it('performs a batch publish and returns an array of results', async function () {
-        const helper = this.helper;
+        const helper = this.test.helper;
         const testApp = helper.getTestApp();
         const rest = helper.AblyRest({
           promises: true,
@@ -95,7 +95,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
 
     describe('when invoked with a single spec', function () {
       it('performs a batch publish and returns a single result', async function () {
-        const helper = this.helper;
+        const helper = this.test.helper;
         const testApp = helper.getTestApp();
         const rest = helper.AblyRest({
           promises: true,
@@ -151,7 +151,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     it('performs a batch presence fetch and returns a result', async function () {
-      const helper = this.helper;
+      const helper = this.test.helper;
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
         promises: true,
@@ -214,7 +214,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     it('revokes tokens matching the given specifiers', async function () {
-      const helper = this.helper;
+      const helper = this.test.helper;
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
         promises: true,
@@ -302,7 +302,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     it('accepts optional issuedBefore and allowReauthMargin parameters', async function () {
-      const helper = this.helper;
+      const helper = this.test.helper;
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
         promises: true,
@@ -327,7 +327,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     it('throws an error when using token auth', async function () {
-      const helper = this.helper;
+      const helper = this.test.helper;
       const rest = helper.AblyRest({
         useTokenAuth: true,
       });

@@ -180,7 +180,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     function testCase(name, createSteps) {
       Helper.testOnAllTransports(name, function (realtimeOpts) {
         return function (done) {
-          const helper = this.helper;
+          const helper = this.test.helper;
           var _steps = createSteps(helper).slice();
           _steps.unshift(function (cb) {
             cb(null, { realtimeOpts: realtimeOpts });

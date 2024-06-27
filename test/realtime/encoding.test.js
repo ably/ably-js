@@ -27,7 +27,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * realtime, and check everything decodes correctly
      */
     it('message_decoding', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       helper.loadTestData(encodingFixturesPath(helper), function (err, testData) {
         if (err) {
           done(err);
@@ -129,7 +129,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * manually, and check everything was encoded correctly
      */
     it('message_encoding', function (done) {
-      const helper = this.helper;
+      const helper = this.test.helper;
       helper.loadTestData(encodingFixturesPath(helper), function (err, testData) {
         if (err) {
           done(new Error('Unable to get test assets; err = ' + helper.displayError(err)));
