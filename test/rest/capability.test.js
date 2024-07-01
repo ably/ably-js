@@ -35,6 +35,13 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
+    /**
+     * Related to TC1
+     *
+     * @spec TD5
+     * @specpartial RSA6 - test capability is supplied from the underlying key
+     * @specpartial TK2b - test omitted capability in TokenParams defaults to using capabilities of the underlying key
+     */
     it('Blanket intersection with specified key', async function () {
       var testKeyOpts = { key: testApp.keys[1].keyStr };
       var testCapability = JSON.parse(testApp.keys[1].capability);
@@ -42,6 +49,13 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
     });
 
+    /**
+     * Related to TC1
+     *
+     * @spec TD5
+     * @specpartial RSA6 - test capability can be passed in TokenParams
+     * @specpartial TK2b - test passing capability in TokenParams
+     */
     it('Equal intersection with specified key', async function () {
       var testKeyOpts = { key: testApp.keys[1].keyStr };
       var testCapability = JSON.parse(testApp.keys[1].capability);
@@ -49,6 +63,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Empty ops intersection', async function () {
       var testKeyOpts = { key: testApp.keys[1].keyStr };
       var testCapability = { 'canpublish:test': ['subscribe'] };
@@ -61,6 +79,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect.fail('Invalid capability, expected rejection');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Empty paths intersection', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = { channelx: ['publish'] };
@@ -73,6 +95,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect.fail('Invalid capability, expected rejection');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Ops intersection non-empty', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = { channel2: ['presence', 'subscribe'] };
@@ -81,6 +107,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Paths intersection non-empty', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = {
@@ -92,6 +122,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Wildcard token with publish and subscribe key', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = { channel2: ['*'] };
@@ -100,6 +134,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Publish and subscribe token with wildcard key', async function () {
       var testKeyOpts = { key: testApp.keys[2].keyStr };
       var testCapability = { channel6: ['publish', 'subscribe'] };
@@ -108,6 +146,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Resources wildcard matching 1', async function () {
       var testKeyOpts = { key: testApp.keys[3].keyStr };
       var testCapability = { cansubscribe: ['subscribe'] };
@@ -116,6 +158,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Resources wildcard matching 2', async function () {
       var testKeyOpts = { key: testApp.keys[1].keyStr };
       var testCapability = { 'canpublish:check': ['publish'] };
@@ -124,6 +170,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(expectedIntersection, 'Verify token capability');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Resources wildcard matching 3', async function () {
       var testKeyOpts = { key: testApp.keys[3].keyStr };
       var testCapability = { 'cansubscribe:*': ['subscribe'] };
@@ -133,6 +183,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
     });
 
     /* Invalid capabilities */
+
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Invalid capabilities 1', async function () {
       try {
         var tokenDetails = await rest.auth.requestToken({ capability: invalid0 });
@@ -143,6 +198,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect.fail('Invalid capability, expected rejection');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Invalid capabilities 2', async function () {
       try {
         var tokenDetails = await rest.auth.requestToken({ capability: invalid1 });
@@ -153,6 +212,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       expect.fail('Invalid capability, expected rejection');
     });
 
+    /**
+     * Related to TC1, RSA6
+     * @nospec
+     */
     it('Invalid capabilities 3', async function () {
       try {
         var tokenDetails = await rest.auth.requestToken({ capability: invalid2 });
