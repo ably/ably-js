@@ -26,6 +26,11 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       });
     });
 
+    /**
+     * @spec RSA8a
+     * @spec RSA5
+     * @specpartial TK2a - test default ttl 60 minutes
+     */
     it('Base token generation case', async function () {
       var tokenDetails = await rest.auth.requestToken();
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
@@ -35,6 +40,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal({ '*': ['*'] }, 'Verify token capability');
     });
 
+    /** @specpartial RSA8e - pass null for TokenParams */
     it('Base token generation with options', async function () {
       var tokenDetails = await rest.auth.requestToken(null);
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
@@ -43,12 +49,20 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal({ '*': ['*'] }, 'Verify token capability');
     });
 
+    /**
+     * Related to RSC1.
+     * @specpartial TO3j2 - test passing token in ClientOptions for Rest client
+     */
     it('Generate token and init library with it', async function () {
       var tokenDetails = await rest.auth.requestToken();
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
       helper.AblyRest({ token: tokenDetails.token });
     });
 
+    /**
+     * @spec TK2d
+     * @specpartial RSA8b - test accepts timestamp from TokenParams parameters
+     */
     it('Token generation with explicit timestamp', async function () {
       var serverTime = await rest.time();
       var tokenDetails = await rest.auth.requestToken({ timestamp: serverTime });
@@ -58,6 +72,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal({ '*': ['*'] }, 'Verify token capability');
     });
 
+    /**
+     * Related to TK2d, RSA8b
+     * @nospec
+     */
     it('Token generation with invalid timestamp', async function () {
       var badTime = Date.now() - 30 * 60 * 1000;
       try {
@@ -69,6 +87,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Invalid timestamp, expected rejection');
     });
 
+    /** @specpartial RSA9d - generate timestamp from current system time */
     it('Token generation with system timestamp', async function () {
       var tokenDetails = await rest.auth.requestToken();
       expect(tokenDetails.token, 'Verify token value').to.be.ok;
@@ -77,6 +96,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal({ '*': ['*'] }, 'Verify token capability');
     });
 
+    /**
+     * Spec item is missing to describe what happens when requesting a token with the same nonce.
+     * @spec TK2e
+     */
     it('Token generation with duplicate nonce', async function () {
       var serverTime = await rest.time();
       await rest.auth.requestToken({ timestamp: serverTime, nonce: '1234567890123456' });
@@ -89,6 +112,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Invalid nonce, expected rejection');
     });
 
+    /**
+     * @specpartial TD6 - test regular client id string
+     * @specpartial TK2c - test regular client id string
+     */
     it('Token generation with clientId', async function () {
       var testClientId = 'test client id';
       var tokenDetails = await rest.auth.requestToken({ clientId: testClientId });
@@ -99,6 +126,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal({ '*': ['*'] }, 'Verify token capability');
     });
 
+    /**
+     * Related to TD6, TK2c
+     * @nospec
+     */
     it('Token generation with empty string clientId should error', async function () {
       try {
         var tokenDetails = await rest.auth.requestToken({ clientId: '' });
@@ -109,6 +140,11 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Expected token generation to error with empty string clientId');
     });
 
+    /**
+     * @spec TD5
+     * @spec TK2b
+     * @specpartial RSA6 - test providing capability
+     */
     it('Token generation with capability that subsets key capability', async function () {
       var testCapability = { onlythischannel: ['subscribe'] };
       var tokenDetails = await rest.auth.requestToken({ capability: testCapability });
@@ -118,6 +154,12 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
     });
 
+    /**
+     * Related to TD5
+     * @spec AO2a
+     * @specpartial RSA8c3 - test passing AuthOptions
+     * @specpartial RSA6 - infer capability from provided key
+     */
     it('Token generation with specified key', async function () {
       var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
       var testCapability = JSON.parse(helper.getTestApp().keys[1].capability);
@@ -129,6 +171,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
     });
 
+    /** @nospec */
     it('Token generation with explicit auth', async function () {
       const authHeaders = await rest.auth.getAuthHeaders();
       rest.auth.authOptions.requestHeaders = authHeaders;
@@ -140,6 +183,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(tokenDetails.keyName).to.equal(helper.getTestApp().keys[0].keyName, 'Verify token key');
     });
 
+    /**
+     * Related to TD5, AO2a, RSA8c3, RSA6
+     * @nospec
+     */
     it('Token generation with explicit auth, different key', async function () {
       const authHeaders = await rest.auth.getAuthHeaders();
       var testKeyOpts = { key: helper.getTestApp().keys[1].keyStr };
@@ -152,6 +199,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(JSON.parse(tokenDetails.capability)).to.deep.equal(testCapability, 'Verify token capability');
     });
 
+    /**
+     * Related to TE2
+     * @nospec
+     */
     it('Token generation with invalid mac', async function () {
       try {
         var tokenDetails = await rest.auth.requestToken({ mac: '12345' });
@@ -162,6 +213,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Invalid mac, expected rejection');
     });
 
+    /** @spec TO3j11 */
     it('Token generation with defaultTokenParams set and no tokenParams passed in', async function () {
       var rest1 = helper.AblyRest({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
       var tokenDetails = await rest1.auth.requestToken();
@@ -170,6 +222,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(tokenDetails.expires - tokenDetails.issued).to.equal(123, 'Verify ttl from defaultTokenParams used');
     });
 
+    /**
+     * Related to TO3j11
+     * @specpartial RSA8e - test passing any options overrides library default
+     */
     it('Token generation: if tokenParams passed in, defaultTokenParams should be ignored altogether, not merged', async function () {
       var rest1 = helper.AblyRest({ defaultTokenParams: { ttl: 123, clientId: 'foo' } });
       var tokenDetails = await rest1.auth.requestToken({ clientId: 'bar' }, null);
@@ -183,8 +239,9 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       );
     });
 
-    /*
-     * authorize with different args
+    /**
+     * @specpartial RSA10f - test returns token object
+     * @specpartial RSA10j - test passing null for TokenParams and AuthOptions
      */
     it('Authorize with different args', async function () {
       var results = await Promise.all([
@@ -198,11 +255,19 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       });
     });
 
+    /**
+     * @spec TD3
+     * @specpartial TK2a - test passing in custom ttl
+     */
     it('Specify non-default ttl', async function () {
       var tokenDetails = await rest.auth.requestToken({ ttl: 100 * 1000 });
       expect(tokenDetails.expires).to.equal(100 * 1000 + tokenDetails.issued, 'Verify non-default expiry period');
     });
 
+    /**
+     * Related to TK2a, RSA5
+     * @nospec
+     */
     it('Should error with excessive ttl', async function () {
       try {
         var tokenDetails = await rest.auth.requestToken({ ttl: 365 * 24 * 60 * 60 * 1000 });
@@ -213,6 +278,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Excessive expiry, expected rejection');
     });
 
+    /**
+     * Related to TK2a, RSA5
+     * @nospec
+     */
     it('Should error with negative ttl', async function () {
       try {
         var tokenDetails = await rest.auth.requestToken({ ttl: -1 });
@@ -223,6 +292,9 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Negative expiry, expected rejection');
     });
 
+    /**
+     * @specpartial TK2a - test expected type for ttl
+     */
     it('Should error with invalid ttl', async function () {
       try {
         var tokenDetails = await rest.auth.requestToken({ ttl: 'notanumber' });
@@ -233,10 +305,18 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Invalid expiry, expected rejection');
     });
 
-    /*
+    /**
      * createTokenRequest uses the key it was initialized with if authOptions is null,
      * and the token request includes all the fields it should include, but
-     * doesn't include ttl or capability by default
+     * doesn't include ttl or capability by default.
+     *
+     * @spec RSA9c
+     * @spec RSA9g
+     * @specpartial TE2 - test keyName exists
+     * @specpartial RSA9d - tests only that timestamp is returned
+     * @specpartial RSA9e - test ttl is optional
+     * @specpartial RSA9f - test capability is optional
+     * @specpartial RSA9h - test passing null for TokenParams and AuthOptions
      */
     it('createTokenRequest without authOptions', async function () {
       var tokenRequest = await rest.auth.createTokenRequest(null, null);
@@ -248,11 +328,19 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       expect(tokenRequest.keyName).to.equal(helper.getTestApp().keys[0].keyName);
     });
 
+    /**
+     * Related to TE2, RSA11, RSA2
+     * @nospec
+     */
     it('createTokenRequest uses the key it was initialized with if authOptions does not have a "key" key', async function () {
       var tokenRequest = await rest.auth.createTokenRequest();
       expect(tokenRequest.keyName).to.equal(helper.getTestApp().keys[0].keyName);
     });
 
+    /**
+     * @spec TE3
+     * @specpartial RSA9f - can provide capability
+     */
     it('createTokenRequest should serialise capability object as JSON', async function () {
       var capability = { '*': ['*'] };
       var tokenRequest = await rest.auth.createTokenRequest({ capability: capability }, null);
@@ -268,6 +356,17 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
      * @param {object} params The authParams to be tested
      */
     function testJWTAuthParams(description, params) {
+      /**
+       * Related to RSC1
+       *
+       * @spec TN3
+       * @specpartial RSC1a - tests passing a JWT
+       * @specpartial RSC1c - tests passing a JWT
+       * @specpartial RSA4f - test correct JWT format
+       * @specpartial RSA8c - test returning JWT for authUrl
+       * @specpartial RSA8g - test using authUrl with JWT
+       * @specpartial RSA3d - test JWT is correctly passed in REST request
+       */
       it(description, async function () {
         var currentKey = helper.getTestApp().keys[0];
         var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
@@ -281,9 +380,8 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       });
     }
 
-    /* RSC1, RSC1a, RSC1c, RSA4f, RSA8c, RSA3d
-     * Tests the different combinations of authParams declared above, with valid keys
-     */
+    // Tests below test the different combinations of authParams for JWT declared above, with valid keys
+
     testJWTAuthParams('Basic rest JWT', {});
     testJWTAuthParams('Rest JWT with return type ', { returnType: 'jwt' });
     /* The embedded tests rely on the echoserver getting a token from realtime, so won't work against a local realtime */
@@ -296,6 +394,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       });
     }
 
+    /**
+     * Related to RSA8g, RSA4f
+     * @nospec
+     */
     it('JWT request with invalid key', async function () {
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
       var authUrl = echoServer + '/createJWT' + utils.toQueryString(keys);
@@ -313,9 +415,7 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Expected restClient.stats() to throw token error');
     });
 
-    /*
-     * RSA8g
-     */
+    /** @specpartial RSA8g - test using authCallback with JWT */
     it('Rest JWT with authCallback', async function () {
       var currentKey = helper.getTestApp().keys[0];
       var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
@@ -332,8 +432,9 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       var stats = await restClient.stats();
     });
 
-    /*
-     * RSA8g
+    /**
+     * Related to RSA8g, RSA4f, RSA8c, RSA8d
+     * @nospec
      */
     it('Rest JWT with authCallback and invalid keys', async function () {
       var keys = { keyName: 'invalid.invalid', keySecret: 'invalidinvalid' };
@@ -357,6 +458,10 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, helper, as
       throw new Error('Expected restClient.stats() to throw token error');
     });
 
+    /**
+     * Related to RSA8d, TO3j5, RSC9
+     * @nospec
+     */
     it('authCallback is only invoked once on concurrent auth', async function () {
       var authCallbackInvocations = 0;
       function authCallback(tokenParams, callback) {
