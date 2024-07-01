@@ -78,9 +78,6 @@ require([(baseUrl + '/test/common/globals/named_dependencies.js').replace('//', 
     callback: () => {
       // (For some reason things don’t work if you return a Promise from this callback, hence the nested async function)
       (async () => {
-        // Let modular.test.js register its tests before we run the test suite
-        await registerAblyModularTests();
-
         // we have to kickoff mocha
         mocha.run();
       })();

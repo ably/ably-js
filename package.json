@@ -71,6 +71,7 @@
     "chai": "^4.2.0",
     "cli-table": "^0.3.11",
     "cors": "^2.8.5",
+    "csv": "^6.3.9",
     "esbuild": "^0.18.10",
     "esbuild-plugin-umd-wrapper": "ably-forks/esbuild-plugin-umd-wrapper#1.0.7-optional-amd-named-module",
     "esbuild-runner": "^2.2.2",
@@ -149,6 +150,7 @@
     "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modular.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/**/*.md grunt",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
+    "process-private-api-data": "tsc --noEmit --esModuleInterop --strictNullChecks scripts/processPrivateApiData.ts && esr scripts/processPrivateApiData.ts",
     "docs": "typedoc"
   }
 }

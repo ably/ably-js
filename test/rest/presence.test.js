@@ -35,7 +35,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     function presence_simple(operation) {
       return async function () {
-        const helper = this.test.helper;
+        const helper = this.test.helper.withParameterisedTestTitle('presence_simple');
         var cipherParams = cipherParamsFromConfig(cipherConfig, helper);
         var channel = rest.channels.get('persisted:presence_fixtures', { cipher: cipherParams });
         var resultPage = await channel.presence[operation]();

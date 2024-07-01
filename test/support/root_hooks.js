@@ -23,6 +23,7 @@ define(['shared_helper'], function (Helper) {
   });
   beforeEach(function () {
     this.currentTest.helper = Helper.forTest(this);
+    this.currentTest.helper.recordTestStart();
   });
   beforeEach(function () {
     this.currentTest.helper.clearTransportPreference();

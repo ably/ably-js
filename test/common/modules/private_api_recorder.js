@@ -158,6 +158,10 @@ define([], function () {
           console.log(`(${loggingDescription}) Recorded private API: ${privateAPIIdentifier}`);
           this.privateAPIUsages.push({ context, privateAPIIdentifier });
         },
+        recordTestStart: () => {
+          console.log(`(${loggingDescription}) Recorded test start`);
+          this.privateAPIUsages.push({ context, privateAPIIdentifier: null });
+        },
       };
     }
 
