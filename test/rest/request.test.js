@@ -176,7 +176,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     ['put', 'patch', 'delete'].forEach(function (method) {
       it('check' + method, async function () {
-        const helper = this.test.helper;
+        const helper = this.test.helper.withParameterisedTestTitle('check');
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
         helper.recordPrivateApi('read.Defaults.protocolVersion');
         var res = await restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {});
