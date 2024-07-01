@@ -447,7 +447,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     function nack_on_connection_failure(failureFn, expectedRealtimeState, expectedNackCode) {
       return function (done) {
         /* Use one transport because stubbing out transport#onProtocolMesage */
-        var helper = this.test.helper,
+        var helper = this.test.helper.withParameterisedTestTitle('nack_on_connection_failure'),
           realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
           channel = realtime.channels.get('nack_on_connection_failure');
 
@@ -489,7 +489,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               });
               helper.recordPrivateApi('call.Platform.nextTick');
               Ably.Realtime.Platform.Config.nextTick(function () {
-                failureFn(realtime, helper);
+                failureFn(realtime, helper.withParameterisedTestTitle(null));
               });
             },
           ],

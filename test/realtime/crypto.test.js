@@ -408,6 +408,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     }
 
     function single_send(done, helper, realtimeOpts, keyLength) {
+      // the _128 and _256 variants both call this so it makes more sense for this to be the parameterisedTestTitle instead of that set by testOnAllTransports
+      helper = helper.withParameterisedTestTitle('single_send');
+
       if (!Crypto) {
         done(new Error('Encryption not supported'));
         return;
@@ -467,6 +470,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     function _multiple_send(done, helper, text, iterations, delay) {
+      helper = helper.withParameterisedTestTitle('multiple_send');
+
       if (!Crypto) {
         done(new Error('Encryption not supported'));
         return;
