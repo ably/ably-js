@@ -16,8 +16,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* Authenticate with a clientId and ensure that the clientId is not sent in the Message
-		 and is implicitly added when published */
+    /**
+     * Authenticate with a clientId and ensure that the clientId is not sent in the Message
+     * and is implicitly added when published.
+     *
+     * @spec RSL1m1
+     */
     it('Should implicitly send clientId when authenticated with clientId', async function () {
       var clientId = 'implicit_client_id_0',
         rest = helper.AblyRest({ clientId: clientId, useBinaryProtocol: false }),
@@ -38,8 +42,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(message.clientId == clientId, 'Client ID was added implicitly').to.be.ok;
     });
 
-    /* Authenticate with a clientId and explicitly provide the same clientId in the Message
-		 and ensure it is published */
+    /**
+     * Authenticate with a clientId and explicitly provide the same clientId in the Message
+     * and ensure it is published.
+     *
+     * @spec RSL1m2
+     */
     it('Should publish clientId when provided explicitly in message', async function () {
       var clientId = 'explicit_client_id_0',
         rest = helper.AblyRest({ clientId: clientId, useBinaryProtocol: false }),
@@ -62,8 +70,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(message.clientId == clientId, 'Client ID was retained').to.be.ok;
     });
 
-    /* Authenticate with a clientId and explicitly provide a different invalid clientId in the Message
-		 and expect it to not be published and be rejected */
+    /**
+     * Authenticate with a clientId and explicitly provide a different invalid clientId in the Message
+     * and expect it to not be published and be rejected.
+     *
+     * @spec RSL1m4
+     */
     it('Should error when clientId sent in message is different than authenticated clientId', async function () {
       var clientId = 'explicit_client_id_0',
         invalidClientId = 'invalid';
@@ -96,7 +108,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect.fail('Publish should have failed with invalid clientId');
     });
 
-    /* TO3l8; CD2C; RSL1i */
+    /**
+     * Related to CD2c
+     *
+     * @spec TO3l8
+     * @spec RSL1i
+     */
     it('Should error when publishing message larger than maxMessageSize', async function () {
       /* No connectionDetails mechanism for REST, so just pass the override into the constructor */
       var realtime = helper.AblyRest({ maxMessageSize: 64 }),
@@ -112,7 +129,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect.fail('Expected channel.publish() to throw error');
     });
 
-    /* Check ids are correctly sent */
+    /**
+     * Check ids are correctly sent.
+     * Related to RSL1k1.
+     *
+     * @spec TO3n
+     * @spec RSL1k2
+     * @spec RSL1k5
+     */
     it('Should send correct IDs when idempotentRestPublishing set to false', async function () {
       var rest = helper.AblyRest({ idempotentRestPublishing: false, useBinaryProtocol: false }),
         channel = rest.channels.get('idempotent_rest_publishing'),
@@ -125,7 +149,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(page.items[0].id).to.equal(message.id, 'Check message id preserved in history');
     });
 
-    /* Check ids are added when automatic idempotent rest publishing option enabled */
+    /**
+     * Check ids are added when automatic idempotent rest publishing option enabled
+     *
+     * @spec TO3n
+     * @spec RSL1k1
+     * @spec RSL1k4
+     */
     it('Should add IDs when automatic idempotent rest publishing option enabled', async function () {
       /* easiest way to get the host we're using for tests */
       var dummyRest = helper.AblyRest(),
@@ -178,6 +208,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(page.items[1].id).to.equal(idTwo, 'Check message id 1 preserved in history');
     });
 
+    /**
+     * Signature publish(name: string, data: any, options?: PublishOptions) is not documented in the spec (see RSL1l).
+     *
+     * @spec RSL1
+     * @spec RSL1a
+     * @spec RSL1h
+     * @spec RSL1l
+     * @specpartial RSL1e - test only passing null to the function
+     */
     it('Rest publish params', async function () {
       var rest = helper.AblyRest(),
         channel = rest.channels.get('publish_params');
