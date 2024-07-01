@@ -14,6 +14,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
    * Helper function to fetch JWT tokens from the echo server
    */
   function getJWT(params, helper, callback) {
+    helper = helper.addingHelperFunction('getJWT');
     var authUrl = echoServer + '/createJWT';
     helper.recordPrivateApi('call.http.doUri');
     Helper.whenPromiseSettles(http.doUri('get', authUrl, null, null, params), function (err, result) {
