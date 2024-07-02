@@ -75,6 +75,15 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
+    /**
+     * @spec TS12
+     * @spec TS12r
+     * @spec TS12s
+     * @spec TS12t
+     * @spec TS12q
+     * @spec TS12c
+     * @spec TS12a
+     */
     it('contains expected fields', async () => {
       // To provoke a non-undefined `inProgress` in the response, we publish a message and fetch stats for the current hour. (I wasn’t able to provoke a non-undefined `inProgress` using stats API fixtures.)
       const now = new Date(await rest.time());
@@ -98,7 +107,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Using an interval ID string format, check minute-level inbound and outbound stats match fixture data (forwards)
-     * @spec : (RSC6b4)
+     * @spec RSC6b4
      */
     it('appstats_minute0', async function () {
       var page = await rest.stats({
@@ -122,7 +131,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Using milliseconds since epoch, check minute-level inbound and outbound stats match fixture data (forwards)
-     * @spec : (RSC6b4)
+     * @spec RSC6b4
      */
     it('appstats_minute1', async function () {
       var page = await rest.stats({
@@ -146,7 +155,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Check hour-level inbound and outbound stats match fixture data (forwards)
-     * @spec : (RSC6b4)
+     * @spec RSC6b4
      */
     it('appstats_hour0', async function () {
       var page = await rest.stats({
@@ -171,7 +180,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Check day-level stats exist (forwards)
-     * @spec : (RSC6b4)
+     * @spec RSC6b4
+     * @specskip
      */
     it.skip('appstats_day0', async function () {
       var page = await rest.stats({
@@ -195,7 +205,8 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Check month-level stats exist (forwards)
-     * @spec : (RSC6b4)
+     * @spec RSC6b4
+     * @specskip
      */
     it.skip('appstats_month0', async function () {
       var page = await rest.stats({
@@ -219,7 +230,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Check limit query param (backwards)
-     * @spec : (RSC6b3)
+     * @spec RSC6b3
      */
     it('appstats_limit_backwards', async function () {
       var page = await rest.stats({
@@ -243,7 +254,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Check limit query param (forwards)
-     * @spec : (RSC6b3)
+     * @spec RSC6b3
      */
     it('appstats_limit_forwards', async function () {
       var page = await rest.stats({
@@ -267,7 +278,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Check query pagination (backwards)
-     * @spec : (RSC6b2)
+     * @spec RSC6b2
      */
     it('appstats_pagination_backwards', async function () {
       var page = await rest.stats({
@@ -311,7 +322,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Check query pagination (forwards)
-     * @spec : (RSC6b2)
+     * @spec RSC6b2
      */
     it('appstats_pagination_forwards', async function () {
       var page = await rest.stats({
@@ -355,7 +366,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
 
     /**
      * Check query pagination omitted (defaults to backwards)
-     * @spec : (RSC6b2)
+     * @spec RSC6b2
      */
     it('appstats_pagination_omitted', async function () {
       var page = await rest.stats({

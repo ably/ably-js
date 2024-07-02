@@ -6,6 +6,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var rest;
   var mixin = helper.Utils.mixin;
   var displayError = helper.displayError;
+  var testOnAllTransports = helper.testOnAllTransports;
   var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/reauth', function () {
@@ -180,7 +181,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     }
 
     function testCase(name, steps) {
-      helper.testOnAllTransports(name, function (realtimeOpts) {
+      testOnAllTransports(name, function (realtimeOpts) {
         return function (done) {
           var _steps = steps.slice();
           _steps.unshift(function (cb) {
@@ -203,7 +204,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      ***** Tests *****
      ****************/
 
-    /* RTC8a1 */
+    /** @specpartial RTC8a1 - change capability without loss of continuity */
     testCase('reauthCapabilityUpgradeNewChannel', [
       getToken({ clientId: clientId, capability: { wrongchannel: ['*'] } }),
       connectWithToken(),
@@ -215,7 +216,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       close(),
     ]);
 
-    /* RTC8a1 */
+    /** @specpartial RTC8a1 - capability downgrade leads to an error an failed channel state */
     testCase('reauthCapabilityDowngradeFullChannel', [
       getToken({ clientId: clientId, capability: { channel: ['*'], another: ['*'] } }),
       connectWithToken(),
@@ -229,6 +230,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       close(),
     ]);
 
+    /**
+     * Related to RTC8a1.
+     * @nospec
+     */
     testCase('reauthCapabilityUpgradeAddPublish', [
       getToken({ clientId: clientId, capability: { channel: ['subscribe'] } }),
       connectWithToken(),
@@ -242,6 +247,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       close(),
     ]);
 
+    /**
+     * Related to RTC8a1.
+     * @nospec
+     */
     testCase('reauthCapabilityDowngradePublish', [
       getToken({ clientId: clientId, capability: { channel: ['subscribe', 'publish'] } }),
       connectWithToken(),

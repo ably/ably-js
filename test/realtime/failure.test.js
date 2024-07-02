@@ -8,6 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var simulateDroppedConnection = helper.simulateDroppedConnection;
   var createPM = Ably.protocolMessageFromDeserialized;
   var availableTransports = helper.availableTransports;
+  var testOnAllTransports = helper.testOnAllTransports;
   var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/failure', function () {
@@ -22,8 +23,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Connect with invalid credentials on various transports; connection state should be 'failed'
+     *
+     * @spec RTN14a
      */
     it('invalid_cred_failure', function (done) {
       try {
@@ -70,9 +73,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Connect with various transports, forcibly break the transport, connection state
      * should be 'disconnected'
+     *
+     * @specpartial RTN14d - test only transition to DISCONNECTED
      */
     it('break_transport', function (done) {
       try {
@@ -108,9 +113,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /*
+    /**
      * Connect with various transports with a bad host, check that
-     * the connecting/disconnecting/suspended cycle works as expected
+     * the connecting/disconnecting/suspended cycle works as expected.
+     * Related to RTB1, DF1a, TO3l1, TO3l11, TO3l2.
+     *
+     * @spec RTN14e
+     * @spec RTN14f
+     * @specpartial RTN14d - doesn't test fallback hosts used
      */
     it('no_connection_lifecycle', function (done) {
       try {
@@ -192,6 +202,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     }
 
     availableTransports.forEach(function (transport) {
+      /**
+       * @spec RTB1a
+       * @spec RTB1b
+       * @spec TO3l1
+       * @specpartial RTB1 - test backoff for connection
+       * @specpartial RTN14d - retries and retryIn calculation
+       * @specpartial TA2 - retryIn passed in ConnectionStateChange
+       */
       it('disconnected_backoff_' + transport, function (done) {
         var disconnectedRetryTimeout = 150;
         var realtime = helper.AblyRealtime({
@@ -230,8 +248,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Check operations on a failed channel give the right errors
+     * Related to RTL11, RTL7, RTL4d.
+     *
+     * @specpartial RTL6b - error when called in FAILED state
+     * @specpartial RTP14b - error on enter presence
+     * @specpartial RTP15d - error on leave presence
      */
     it('failed_channel', function (done) {
       var realtime = helper.AblyRealtime();
@@ -339,6 +362,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
+    /**
+     * @spec RTL4f
+     * @specpartial RTL13b - tests re-attach attempt once
+     */
     it('attach_timeout', function (done) {
       var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000, channelRetryTimeout: 1000 }),
         channel = realtime.channels.get('failed_attach'),
@@ -374,6 +401,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     availableTransports.forEach(function (transport) {
+      /**
+       * @spec RTL13b
+       * @spec RTB1a
+       * @spec RTB1b
+       * @spec TO3l7
+       * @specpartial RTB1 - test backoff for channel
+       */
       it('channel_backoff_' + transport, function (done) {
         var channelRetryTimeout = 150;
         var realtime = helper.AblyRealtime({
@@ -491,6 +525,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     }
 
+    /** @specpartial RTN7c - test for SUSPENDED */
     it(
       'nack_on_connection_suspended',
       nack_on_connection_failure(
@@ -502,6 +537,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       ),
     );
 
+    /** @specpartial RTN7c - test for FAILED */
     it(
       'nack_on_connection_failed',
       nack_on_connection_failure(
@@ -516,6 +552,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       ),
     );
 
+    /** @specpartial RTN7c - test for CLOSED */
     it(
       'nack_on_connection_closed',
       nack_on_connection_failure(
@@ -527,6 +564,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       ),
     );
 
+    /** @spec RTN23a */
     it('idle_transport_timeout', function (done) {
       var realtime = helper.AblyRealtime({ realtimeRequestTimeout: 2000 }),
         originalOnProtocolMessage;
@@ -560,9 +598,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RTN14d last sentence: Check that if we received a 5xx disconnected, when
-     * we try again we use a fallback host */
-    helper.testOnAllTransports('try_fallback_hosts_on_placement_constraint', function (realtimeOpts) {
+    /** @specpartial RTN14d - last sentence: check that if we received a 5xx disconnected, when we try again we use a fallback host */
+    testOnAllTransports('try_fallback_hosts_on_placement_constraint', function (realtimeOpts) {
       return function (done) {
         /* Use the echoserver as a fallback host because it doesn't support
          * websockets, so it'll fail to connect, which we can detect */
@@ -599,7 +636,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    // RTL 17
+    /** @spec RTL17 */
     it('no_messages_if_not_attached', function (done) {
       var testName = 'no_messages_if_not_attached';
       var testMessage = { foo: 'bar', count: 1, status: 'active' };

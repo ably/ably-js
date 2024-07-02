@@ -5,6 +5,19 @@ define(['ably', 'chai'], function (Ably, chai) {
   var Defaults = Ably.Realtime.Platform.Defaults;
 
   describe('rest/defaults', function () {
+    /**
+     * @spec TO3k2
+     * @spec TO3k3
+     * @spec TO3k4
+     * @spec TO3k5
+     * @spec TO3k6
+     * @spec TO3d
+     * @spec RSC15h
+     * @specpartial RSC11 - test default value for restHost
+     * @specpartial RTN2 - test default value for realtimeHost
+     * @specpartial RSC15e - primary host for REST is restHost
+     * @specpartial RTN17a - primary host for realtime is realtimeHost
+     */
     it('Init with no endpoint-related options', function () {
       var normalisedOptions = Defaults.normaliseOptions({}, null, null);
 
@@ -23,6 +36,23 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
     });
 
+    /**
+     * @spec TO3k1
+     * @spec TO3k2
+     * @spec TO3k3
+     * @spec TO3k4
+     * @spec TO3k5
+     * @spec TO3k6
+     * @spec TO3d
+     * @spec RSC15h
+     * @specpartial RSC11 - test default value for restHost
+     * @specpartial RTN2 - test default value for realtimeHost
+     * @specpartial RSC15e - primary host for REST is restHost
+     * @specpartial RTN17a - primary host for realtime is realtimeHost
+     * @specpartial RSC11b - test with environment set to 'production'
+     * @specpartial RSC15g2 - test with environment set to 'production'
+     * @specpartial RTC1e - test with environment set to 'production'
+     */
     it('Init with production environment', function () {
       var normalisedOptions = Defaults.normaliseOptions({ environment: 'production' }, null, null);
 
@@ -41,6 +71,20 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
     });
 
+    /**
+     * @spec TO3k1
+     * @spec TO3k2
+     * @spec TO3k3
+     * @spec TO3k4
+     * @spec TO3k5
+     * @spec TO3k6
+     * @spec TO3d
+     * @spec RSC11b
+     * @spec RSC15i
+     * @specpartial RSC11 - test restHost is overridden by environment
+     * @specpartial RSC15g2 - test with environment set other than 'production'
+     * @specpartial RTC1e - test with environment set other than 'production'
+     */
     it('Init with given environment', function () {
       var normalisedOptions = Defaults.normaliseOptions({ environment: 'sandbox' }, null, null);
 
@@ -61,6 +105,20 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
     });
 
+    /**
+     * @spec TO3k1
+     * @spec TO3k2
+     * @spec TO3k3
+     * @spec TO3k4
+     * @spec TO3k5
+     * @spec TO3k6
+     * @spec TO3d
+     * @spec RSC11b
+     * @spec RSC15i
+     * @specpartial RSC11 - test restHost is overridden by environment
+     * @specpartial RSC15g2 - test with environment set other than 'production'
+     * @specpartial RTC1e - test with environment set other than 'production'
+     */
     it('Init with local environment and non-default ports', function () {
       var normalisedOptions = Defaults.normaliseOptions(
         { environment: 'local', port: 8080, tlsPort: 8081 },
@@ -82,6 +140,19 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getPort(normalisedOptions)).to.equal(8081);
     });
 
+    /**
+     * Missing spec point documenting that explicit restHost overrides realtimeHost too.
+     *
+     * @spec TO3k2
+     * @spec TO3k3
+     * @spec TO3k4
+     * @spec TO3k5
+     * @spec TO3k6
+     * @spec TO3d
+     * @spec RSC15h
+     * @spec RSC11a
+     * @specpartial RSC11 - test restHost is overridden by custom value
+     */
     it('Init with given host', function () {
       var normalisedOptions = Defaults.normaliseOptions({ restHost: 'test.org' }, null, null);
 
@@ -99,7 +170,18 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
     });
 
-    /* init with given restHost and realtimeHost */
+    /**
+     * @spec TO3k2
+     * @spec TO3k3
+     * @spec TO3k4
+     * @spec TO3k5
+     * @spec TO3k6
+     * @spec TO3d
+     * @spec RSC15h
+     * @spec RSC11a
+     * @specpartial RSC11 - test restHost is overridden by custom value
+     * @specpartial RTN17a - primary host for realtime can be overridden by realtimeHost
+     */
     it('Init with given restHost and realtimeHost', function () {
       var normalisedOptions = Defaults.normaliseOptions(
         { restHost: 'test.org', realtimeHost: 'ws.test.org' },
@@ -121,6 +203,18 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
     });
 
+    /**
+     * @spec TO3k2
+     * @spec TO3k3
+     * @spec TO3k4
+     * @spec TO3k5
+     * @spec TO3k6
+     * @spec TO3d
+     * @spec RSC11b
+     * @spec RSC15i
+     * @specpartial RSC11 - test restHost is overridden by environment
+     * @specpartial RSC15g2 - test with environment set other than 'production'
+     */
     it('Init with no endpoint-related options and given default environment', function () {
       Defaults.ENVIRONMENT = 'sandbox';
       var normalisedOptions = Defaults.normaliseOptions({}, null, null);
@@ -147,6 +241,7 @@ define(['ably', 'chai'], function (Ably, chai) {
     describe('normaliseOptions with useBinaryProtocol == true', () => {
       if (Ably.Realtime.Platform.Config.supportsBinary) {
         describe('given MsgPack implementation', () => {
+          /** @spec TO3f */
           it('maintains useBinaryProtocol as true', () => {
             const StubMsgPack = {};
             var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, StubMsgPack, null);
@@ -157,6 +252,7 @@ define(['ably', 'chai'], function (Ably, chai) {
       }
 
       describe('given no MsgPack implementation', () => {
+        /** @spec TO3f */
         it('changes useBinaryProtocol to false', () => {
           var normalisedOptions = Defaults.normaliseOptions({ useBinaryProtocol: true }, null, null);
 
@@ -165,6 +261,10 @@ define(['ably', 'chai'], function (Ably, chai) {
       });
     });
 
+    /**
+     * Related to RTC1c
+     * @nospec
+     */
     it('closeOnUnload', function () {
       var options;
 
