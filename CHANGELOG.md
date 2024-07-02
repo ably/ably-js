@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.2.1](https://github.com/ably/ably-js/tree/2.2.1) (2024-07-02)
+
+- Fix an occasion whereby a channel would attempt to automatically reattach from an inappropriate state [\#1802](https://github.com/ably/ably-js/pull/1802)
+- Update the type information so that `ErrorInfo` now extends the `Error` interface [\#1805](https://github.com/ably/ably-js/pull/1805)
+
 ## [2.2.0](https://github.com/ably/ably-js/tree/2.2.0) (2024-06-24)
 
 - Add passing a log level as a second parameter to `ClientOptions.logHandler` function [\#1787](https://github.com/ably/ably-js/pull/1787)
