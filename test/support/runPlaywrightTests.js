@@ -12,7 +12,8 @@ const mochaServer = new MochaServer(/* playwrightTest: */ true);
 const runTests = async (browserType) => {
   mochaServer.listen();
   const browser = await browserType.launch();
-  const page = await browser.newPage();
+  const context = await browser.newContext();
+  const page = await context.newPage();
   await page.goto(`http://${host}:${port}`);
 
   console.log(`\nrunning tests in ${browserType.name()}`);

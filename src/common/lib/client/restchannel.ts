@@ -18,6 +18,7 @@ import * as API from '../../../../ably';
 import Defaults, { normaliseChannelOptions } from '../util/defaults';
 import { RestHistoryParams } from './restchannelmixin';
 import { RequestBody } from 'common/types/http';
+import type { PushChannel } from 'plugins/push';
 
 const MSG_ID_ENTROPY_BYTES = 9;
 
@@ -32,6 +33,7 @@ class RestChannel {
   name: string;
   presence: RestPresence;
   channelOptions: ChannelOptions;
+  _push?: PushChannel;
 
   constructor(client: BaseRest, name: string, channelOptions?: ChannelOptions) {
     Logger.logAction(client.logger, Logger.LOG_MINOR, 'RestChannel()', 'started; name = ' + name);
@@ -39,6 +41,16 @@ class RestChannel {
     this.client = client;
     this.presence = new RestPresence(this);
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, this.logger, channelOptions);
+    if (client.options.plugins?.Push) {
+      this._push = new client.options.plugins.Push.PushChannel(this);
+    }
+  }
+
+  get push() {
+    if (!this._push) {
+      Utils.throwMissingPluginError('Push');
+    }
+    return this._push;
   }
 
   get logger(): Logger {

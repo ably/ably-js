@@ -488,6 +488,60 @@ const nextPage = await statsPage.next();        // retrieves the next page as Pa
 const time = await client.time(); // time is in ms since epoch
 ```
 
+### Push activation
+
+Push activation is supported for browser clients, via the Push plugin. In order to use push activation, you must pass in the plugin via client options.
+
+You also need to provide a path to a service worker which will be registered when the client is activated, and will handle receipt of push notifications.
+
+```javascript
+import * as Ably from 'ably';
+import Push from 'ably/push';
+
+const client = new Ably.Rest({
+    ...options,
+    pushServiceWorkerUrl: '/my_service_worker.js',
+    plugins: { Push }
+});
+```
+
+Example service worker:
+
+```javascript
+// my_service_worker.js
+self.addEventListener("push", async (event) => {
+  const { notification } = event.data.json();
+  self.registration.showNotification(notification.title, notification);
+});
+```
+
+To register the device to receive push notifications, you must call the `activate` method:
+
+```javascript
+await client.push.activate();
+```
+
+Once the client is activated, you can subscribe to receive push notifcations on a channel:
+
+```javascript
+const channel = client.channels.get('my_push_channel');
+
+// Subscribe the device to receive push notifcations for a channel...
+await channel.push.subscribeDevice();
+
+// ...or subscribe all devices associated with the client's cliendId to receive notifcations from the channel
+await channel.push.subscribeClient();
+
+// When you no longer need to be subscribed to push notifcations, you can remove the subscription:
+await channel.push.unsubscribeDevice();
+// Or:
+await channel.push.unsubscribeClient();
+```
+
+Push activation works with the [Modular variant](#modular-tree-shakable-variant) of the library, but requires you to be using the Rest plugin.
+
+For more information on publishing push notifcations over Ably, see the [Ably push documentation](https://ably.com/docs/push).
+
 ## Delta Plugin
 
 From version 1.2 this client library supports subscription to a stream of Vcdiff formatted delta messages from the Ably service. For certain applications this can bring significant data efficiency savings.
@@ -502,10 +556,6 @@ Please visit http://support.ably.com/ for access to our knowledgebase and to ask
 You can also view the [community reported Github issues](https://github.com/ably/ably-js/issues).
 
 To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
-
-## Known Limitations
-
-This library currently does not support being the [target of a push notification](https://www.ably.com/docs/general/push/activate-subscribe) (i.e. web push).
 
 #### Browser-specific issues
 

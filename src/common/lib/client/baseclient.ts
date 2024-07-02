@@ -7,6 +7,7 @@ import Stats from '../types/stats';
 import { Http, RequestParams } from '../../types/http';
 import ClientOptions, { NormalisedClientOptions } from '../../types/ClientOptions';
 import * as API from '../../../../ably';
+import * as Utils from '../util/utils';
 
 import Platform from '../../platform';
 import { Rest } from './rest';
@@ -15,6 +16,7 @@ import { throwMissingPluginError } from '../util/utils';
 import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
+import type { LocalDevice } from 'plugins/push/pushactivation';
 
 type BatchResult<T> = API.BatchResult<T>;
 type BatchPublishSpec = API.BatchPublishSpec;
@@ -45,6 +47,7 @@ class BaseClient {
   readonly _additionalHTTPRequestImplementations: HTTPRequestImplementations | null;
   private readonly __FilteredSubscriptions: typeof FilteredSubscriptions | null;
   readonly logger: Logger;
+  _device?: LocalDevice;
 
   constructor(options: ClientOptions) {
     this._additionalHTTPRequestImplementations = options.plugins ?? null;
@@ -119,6 +122,16 @@ class BaseClient {
     return this.rest.push;
   }
 
+  get device() {
+    if (!this.options.plugins?.Push || !this.push.LocalDevice) {
+      throwMissingPluginError('Push');
+    }
+    if (!this._device) {
+      this._device = this.push.LocalDevice.load(this);
+    }
+    return this._device;
+  }
+
   baseUri(host: string) {
     return Defaults.getHttpScheme(this.options) + host + ':' + Defaults.getPort(this.options, false);
   }
@@ -157,6 +170,15 @@ class BaseClient {
   }
 
   static Platform = Platform;
+
+  /**
+   * These exports are for use by UMD plugins; reason being so that constructors and static methods can be accessed by these plugins without needing to import the classes directly and result in the class existing in both the plugin and the core library.
+   */
+  Platform = Platform;
+  ErrorInfo = ErrorInfo;
+  Logger = Logger;
+  Defaults = Defaults;
+  Utils = Utils;
 }
 
 export default BaseClient;

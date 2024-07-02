@@ -28,6 +28,7 @@ import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
+import type { PushChannel } from 'plugins/push';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -97,6 +98,7 @@ class RealtimeChannel extends EventEmitter {
   stateTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
+  _push?: PushChannel;
 
   constructor(client: BaseRealtime, name: string, options?: API.ChannelOptions) {
     super(client.logger);
@@ -131,6 +133,17 @@ class RealtimeChannel extends EventEmitter {
     /* Only differences between this and the public event emitter is that this emits an
      * update event for all ATTACHEDs, whether resumed or not */
     this._allChannelChanges = new EventEmitter(this.logger);
+
+    if (client.options.plugins?.Push) {
+      this._push = new client.options.plugins.Push.PushChannel(this);
+    }
+  }
+
+  get push() {
+    if (!this._push) {
+      Utils.throwMissingPluginError('Push');
+    }
+    return this._push;
   }
 
   invalidStateError(): ErrorInfo {
