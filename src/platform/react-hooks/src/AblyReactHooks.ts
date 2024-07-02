@@ -12,7 +12,7 @@ export type ChannelNameAndOptions = {
 export type ChannelNameAndAblyId = Pick<ChannelNameAndOptions, 'channelName' | 'ablyId'>;
 export type ChannelParameters = string | ChannelNameAndOptions;
 
-export const version = '2.2.0';
+export const version = '2.2.1';
 
 export function channelOptionsWithAgent(options?: Ably.ChannelOptions) {
   return {
