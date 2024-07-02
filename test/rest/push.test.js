@@ -1,10 +1,27 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_transport', 'push'], function (
+  Ably,
+  helper,
+  async,
+  chai,
+  pushChannelTransport,
+  PushPlugin,
+) {
   var Utils = helper.Utils;
-  var exports = {};
   var expect = chai.expect;
   var closeAndFinish = helper.closeAndFinish;
+  var whenPromiseSettles = helper.whenPromiseSettles;
+  var originalPushConfig = Ably.Realtime.Platform.Config.push;
+
+  function PushRealtime(options) {
+    return helper.AblyRealtime({ ...options, plugins: { Push: PushPlugin } });
+  }
+
+  function PushRest(options) {
+    return helper.AblyRest({ ...options, plugins: { Push: PushPlugin } });
+  }
+
   var testDevice = {
     id: 'testId',
     clientId: 'testClientId',
@@ -34,9 +51,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     this.timeout(60 * 1000);
 
     before(function (done) {
-      helper.setupApp(function () {
+      Ably.Realtime.Platform.Config.push = pushChannelTransport;
+      helper.setupApp(function (err) {
+        if (err) {
+          done(err);
+          return;
+        }
         done();
       });
+    });
+
+    beforeEach(() => {
+      Ably.Realtime.Platform.Config.push.storage.clear();
+    });
+
+    after(() => {
+      Ably.Realtime.Platform.Config.push = originalPushConfig;
     });
 
     it('Get subscriptions', async function () {
@@ -301,6 +331,340 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       await Promise.all(deletes.map((x) => x()));
 
       testIncludesUnordered(['pushenabled:listChannels1', 'pushenabled:listChannels2'], result.items);
+    });
+
+    describe('push activation', function () {
+      /*
+       * RSH2a
+       */
+      it('push_activation_succeeds', async function () {
+        const rest = PushRealtime({ pushRecipientChannel: 'my_channel' });
+        await rest.push.activate();
+        expect(rest.device.deviceIdentityToken).to.be.ok;
+      });
+
+      // no spec item
+      it('device_push', function (done) {
+        const channelName = 'pushenabled:device_push';
+        const realtime = PushRealtime({ pushRecipientChannel: channelName });
+
+        const pushPayload = {
+          notification: { title: 'Test message', body: 'Test message body' },
+          data: { foo: 'bar' },
+        };
+
+        const channel = realtime.channels.get(channelName);
+
+        const baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
+
+        const pushRecipient = {
+          transportType: 'ablyChannel',
+          channel: channelName,
+          ablyKey: realtime.options.key,
+          ablyUrl: baseUri,
+        };
+
+        channel
+          .subscribe('__ably_push__', function (msg) {
+            try {
+              const receivedPushPayload = JSON.parse(msg.data);
+              expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
+              expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
+              expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
+              closeAndFinish(done, realtime);
+            } catch (err) {
+              closeAndFinish(done, realtime, err);
+            }
+          })
+          .then(() => {
+            whenPromiseSettles(realtime.push.admin.publish(pushRecipient, pushPayload), function (err) {
+              if (err) {
+                closeAndFinish(done, realtime, err);
+              }
+            });
+          });
+      });
+
+      /*
+       * RSH7b
+       */
+      it('subscribe_client', async function () {
+        const clientId = 'me';
+        const channelName = 'pushenabled:subscribe_client';
+        const rest = PushRest({ clientId, pushRecipientChannel: channelName });
+        const channel = rest.channels.get(channelName);
+
+        await rest.push.activate();
+
+        await channel.push.subscribeClient();
+
+        const result = await channel.push.listSubscriptions();
+
+        const subscription = result.items[0];
+        expect(subscription.channel).to.equal(channelName);
+        expect(subscription.clientId).to.equal(clientId);
+      });
+
+      /*
+       * RSH7b1
+       */
+      it('subscribe_client_without_clientId', async function () {
+        const channelName = 'pushenabled:subscribe_client_without_clientId';
+        const rest = PushRest({ pushRecipientChannel: 'hello' });
+        await rest.push.activate();
+        const channel = rest.channels.get(channelName);
+        try {
+          await channel.push.subscribeClient();
+        } catch (err) {
+          expect(err.code).to.equal(50000);
+          expect(err.statusCode).to.equal(500);
+          return;
+        }
+        expect.fail('expected channel.push.subscribeClient to throw exception');
+      });
+
+      /*
+       * RSH7d
+       */
+      it('unsubscribe_client', async function () {
+        const clientId = 'me';
+        const channelName = 'pushenabled:unsubscribe_client';
+        const rest = PushRest({ clientId, pushRecipientChannel: channelName });
+        const channel = rest.channels.get(channelName);
+
+        await rest.push.activate();
+
+        await channel.push.subscribeClient();
+        await channel.push.unsubscribeClient();
+
+        const result = await channel.push.listSubscriptions();
+
+        const subscriptions = result.items;
+        expect(subscriptions.length).to.equal(0);
+      });
+
+      // no spec item
+      it('direct_publish_client_id', async function () {
+        const clientId = 'me2';
+        const channelName = 'pushenabled:direct_publish_client_id';
+        const rest = PushRest({ clientId, pushRecipientChannel: channelName });
+        const realtime = PushRealtime();
+        const rtChannel = realtime.channels.get(channelName);
+        const channel = rest.channels.get(channelName);
+
+        await rest.push.activate();
+
+        const pushRecipient = {
+          clientId,
+        };
+
+        const pushPayload = {
+          notification: { title: 'Test message', body: 'Test message body' },
+          data: { foo: 'bar' },
+        };
+
+        await rtChannel.attach();
+        const msg = await new Promise((resolve, reject) => {
+          rtChannel.subscribe('__ably_push__', (msg) => {
+            resolve(msg);
+          });
+          rest.push.admin.publish(pushRecipient, pushPayload).catch(reject);
+        });
+
+        const receivedPushPayload = JSON.parse(msg.data);
+        expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
+        expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
+        expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
+
+        realtime.close();
+      });
+
+      /*
+       * RSH7a
+       */
+      it('subscribe_device', async function () {
+        const channelName = 'pushenabled:subscribe_device';
+        const rest = PushRest({ pushRecipientChannel: channelName });
+        const channel = rest.channels.get(channelName);
+
+        await rest.push.activate();
+
+        await channel.push.subscribeDevice();
+
+        const result = await channel.push.listSubscriptions();
+
+        const subscription = result.items[0];
+        expect(subscription.channel).to.equal(channelName);
+        expect(subscription.deviceId).to.equal(rest.device.id);
+      });
+
+      /*
+       * RSH7c
+       */
+      it('unsubscribe_device', async function () {
+        const channelName = 'pushenabled:unsubscribe_device';
+        const rest = PushRest({ pushRecipientChannel: channelName });
+        const channel = rest.channels.get(channelName);
+
+        await rest.push.activate();
+
+        await channel.push.subscribeDevice();
+        await channel.push.unsubscribeDevice();
+
+        const result = await channel.push.listSubscriptions();
+
+        const subscriptions = result.items;
+        expect(subscriptions.length).to.equal(0);
+      });
+
+      // no spec item
+      it('direct_publish_device_id', async function () {
+        const channelName = 'direct_publish_device_id';
+        const rest = PushRest({ pushRecipientChannel: channelName });
+        const realtime = PushRealtime();
+        const rtChannel = realtime.channels.get(channelName);
+        const channel = rest.channels.get(channelName);
+
+        await rest.push.activate();
+
+        const pushRecipient = {
+          deviceId: rest.device.id,
+        };
+
+        const pushPayload = {
+          notification: { title: 'Test message', body: 'Test message body' },
+          data: { foo: 'bar' },
+        };
+
+        await rtChannel.attach();
+        const msg = await new Promise((resolve, reject) => {
+          rtChannel.subscribe('__ably_push__', (msg) => {
+            resolve(msg);
+          });
+          rest.push.admin.publish(pushRecipient, pushPayload).catch(reject);
+        });
+
+        const receivedPushPayload = JSON.parse(msg.data);
+        expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
+        expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
+        expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
+
+        realtime.close();
+      });
+
+      // no spec item
+      it('push_channel_subscription_device_id', async function () {
+        const pushRecipientChannel = 'push_channel_subscription_device_id';
+        const channelName = 'pushenabled:push_channel_subscription_device_id';
+        const rest = PushRest({ pushRecipientChannel });
+        const realtime = PushRealtime();
+        const channel = rest.channels.get(channelName);
+        const rtChannel = realtime.channels.get(pushRecipientChannel);
+
+        await rest.push.activate();
+
+        await channel.push.subscribeDevice();
+
+        const pushPayload = {
+          notification: { title: 'Test message', body: 'Test message body' },
+          data: { foo: 'bar' },
+        };
+
+        const message = {
+          name: 'foo',
+          data: 'bar',
+          extras: {
+            push: pushPayload,
+          },
+        };
+
+        const msg = await new Promise((resolve, reject) => {
+          rtChannel.subscribe('__ably_push__', (msg) => {
+            resolve(msg);
+          });
+          channel.publish(message).catch(reject);
+        });
+
+        const receivedPushPayload = JSON.parse(msg.data);
+        expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
+        expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
+        expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
+
+        realtime.close();
+      });
+
+      // no spec item
+      it('push_channel_subscription_client_id', async function () {
+        const pushRecipientChannel = 'push_channel_subscription_client_id';
+        const channelName = 'pushenabled:push_channel_subscription_client_id';
+        const rest = PushRest({ clientId: 'me', pushRecipientChannel });
+        const realtime = PushRealtime();
+        const channel = rest.channels.get(channelName);
+        const rtChannel = realtime.channels.get(pushRecipientChannel);
+
+        await rest.push.activate();
+
+        await channel.push.subscribeClient();
+
+        const pushPayload = {
+          notification: { title: 'Test message', body: 'Test message body' },
+          data: { foo: 'bar' },
+        };
+
+        const message = {
+          name: 'foo',
+          data: 'bar',
+          extras: {
+            push: pushPayload,
+          },
+        };
+
+        const msg = await new Promise((resolve, reject) => {
+          rtChannel.subscribe('__ably_push__', (msg) => {
+            resolve(msg);
+          });
+          channel.publish(message).catch(reject);
+        });
+
+        const receivedPushPayload = JSON.parse(msg.data);
+        expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
+        expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
+        expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
+
+        realtime.close();
+      });
+
+      /*
+       * RSH8h
+       */
+      it('failed_getting_device_details', async function () {
+        const rest = PushRest();
+        try {
+          await rest.push.activate();
+        } catch (err) {
+          expect(err.code).to.equal(40000);
+          expect(err.statusCode).to.equal(400);
+          return;
+        }
+        expect.fail('expect rest.push.activate() to throw');
+      });
+
+      /*
+       * RSH3b3c
+       */
+      it('failed_registration', async function () {
+        const pushRecipientChannel = 'failed_registration';
+        const rest = PushRest({ pushRecipientChannel });
+        rest.device.platform = 'not_a_real_platform';
+        try {
+          await rest.push.activate();
+        } catch (err) {
+          expect(err.code).to.equal(40000);
+          expect(err.statusCode).to.equal(400);
+          return;
+        }
+        expect.fail('expect rest.push.activate() to throw');
+      });
     });
 
     function untyped(x) {

@@ -1,5 +1,7 @@
 import { IPlatformConfig } from '../../common/types/IPlatformConfig';
 import * as Utils from 'common/lib/util/utils';
+import { DeviceFormFactor, DevicePlatform } from 'common/lib/types/devicedetails';
+import webstorage from './lib/util/webstorage';
 
 // Workaround for salesforce lightning locker compat
 const globalObject = Utils.getGlobalObject();
@@ -79,6 +81,11 @@ const Config: IPlatformConfig = {
     return byteArray.buffer;
   },
   isWebworker: isWebWorkerContext(),
+  push: {
+    platform: DevicePlatform.Browser,
+    formFactor: DeviceFormFactor.Desktop,
+    storage: webstorage,
+  },
 };
 
 export default Config;

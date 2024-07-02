@@ -6,7 +6,7 @@ import { gzip } from 'zlib';
 import Table from 'cli-table';
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
-const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 96, gzip: 29 };
+const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 98, gzip: 30 };
 
 const baseClientNames = ['BaseRest', 'BaseRealtime'];
 
@@ -65,11 +65,17 @@ interface Output {
 }
 
 // Uses esbuild to create a bundle containing the named exports from 'ably/modular'
-function getBundleInfo(exports: string[]): BundleInfo {
-  const outfile = exports.join('');
+function getModularBundleInfo(exports: string[]): BundleInfo {
+  return getBundleInfo('./build/modular/index.mjs', exports);
+}
+
+// Uses esbuild to create a bundle containing the named exports from a given module
+function getBundleInfo(modulePath: string, exports?: string[]): BundleInfo {
+  const outfile = exports ? exports.join('') : 'all';
+  const exportTarget = exports ? `{ ${exports.join(', ')} }` : '*';
   const result = esbuild.buildSync({
     stdin: {
-      contents: `export { ${exports.join(', ')} } from './build/modular/index.mjs'`,
+      contents: `export ${exportTarget} from '${modulePath}'`,
       resolveDir: '.',
     },
     metafile: true,
@@ -78,6 +84,7 @@ function getBundleInfo(exports: string[]): BundleInfo {
     outfile,
     write: false,
     sourcemap: 'external',
+    external: ['ulid'],
   });
 
   const pathHasBase = (component: string) => {
@@ -97,8 +104,8 @@ function getBundleInfo(exports: string[]): BundleInfo {
 }
 
 // Gets the bundled size in bytes of an array of named exports from 'ably/modular'
-async function getImportSizes(exports: string[]): Promise<ByteSizes> {
-  const bundleInfo = getBundleInfo(exports);
+async function getModularImportSizes(exports: string[]): Promise<ByteSizes> {
+  const bundleInfo = getModularBundleInfo(exports);
 
   return {
     rawByteSize: bundleInfo.byteSize,
@@ -118,14 +125,14 @@ async function calculateAndCheckExportSizes(): Promise<Output> {
   const output: Output = { tableRows: [], errors: [] };
 
   for (const baseClient of baseClientNames) {
-    const baseClientSizes = await getImportSizes([baseClient]);
+    const baseClientSizes = await getModularImportSizes([baseClient]);
 
     // First output the size of the base client
     output.tableRows.push({ description: baseClient, sizes: baseClientSizes });
 
     // Then output the size of each export together with the base client
     for (const exportName of [...pluginNames, ...functions.map((functionData) => functionData.name)]) {
-      const sizes = await getImportSizes([baseClient, exportName]);
+      const sizes = await getModularImportSizes([baseClient, exportName]);
       output.tableRows.push({ description: `${baseClient} + ${exportName}`, sizes });
 
       if (!(baseClientSizes.rawByteSize < sizes.rawByteSize) && !(baseClient === 'BaseRest' && exportName === 'Rest')) {
@@ -146,13 +153,13 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
     const { name: functionName, transitiveImports } = functionData;
 
     // First output the size of the function
-    const standaloneSizes = await getImportSizes([functionName]);
+    const standaloneSizes = await getModularImportSizes([functionName]);
     output.tableRows.push({ description: functionName, sizes: standaloneSizes });
 
     // Then output the size of the function together with the plugin we expect
     // it to transitively import
     if (transitiveImports.length > 0) {
-      const withTransitiveImportsSizes = await getImportSizes([functionName, ...transitiveImports]);
+      const withTransitiveImportsSizes = await getModularImportSizes([functionName, ...transitiveImports]);
       output.tableRows.push({
         description: `${functionName} + ${transitiveImports.join(' + ')}`,
         sizes: withTransitiveImportsSizes,
@@ -176,11 +183,27 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
   return output;
 }
 
+async function calculatePushPluginSize(): Promise<Output> {
+  const output: Output = { tableRows: [], errors: [] };
+  const pushPluginBundleInfo = getBundleInfo('./build/push.js');
+  const sizes = {
+    rawByteSize: pushPluginBundleInfo.byteSize,
+    gzipEncodedByteSize: (await promisify(gzip)(pushPluginBundleInfo.code)).byteLength,
+  };
+
+  output.tableRows.push({
+    description: 'Push',
+    sizes: sizes,
+  });
+
+  return output;
+}
+
 async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Output> {
   const output: Output = { tableRows: [], errors: [] };
 
   const exports = ['BaseRealtime', 'FetchRequest', 'WebSocketTransport'];
-  const sizes = await getImportSizes(exports);
+  const sizes = await getModularImportSizes(exports);
 
   output.tableRows.push({ description: `Minimal useful Realtime (${exports.join(' + ')})`, sizes });
 
@@ -209,27 +232,19 @@ async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Outpu
 
 async function calculateAllExportsBundleSize(): Promise<Output> {
   const exports = [...baseClientNames, ...pluginNames, ...functions.map((val) => val.name)];
-  const sizes = await getImportSizes(exports);
+  const sizes = await getModularImportSizes(exports);
 
   return { tableRows: [{ description: 'All exports', sizes }], errors: [] };
 }
 
 // Performs a sense check that there are no unexpected files making a large contribution to the BaseRealtime bundle size.
 async function checkBaseRealtimeFiles() {
-  const baseRealtimeBundleInfo = getBundleInfo(['BaseRealtime']);
-  const exploreResult = await runSourceMapExplorer(baseRealtimeBundleInfo);
+  const baseRealtimeBundleInfo = getModularBundleInfo(['BaseRealtime']);
 
-  const files = exploreResult.bundles[0].files;
-  delete files['[sourceMappingURL]'];
-  delete files['[unmapped]'];
-  delete files['[EOLs]'];
-
+  // The threshold is chosen pretty arbitrarily. There are some files (e.g. presencemessage.ts) whose bulk should not be included in the BaseRealtime bundle, but which make a small contribution to the bundle (probably because we make use of one exported constant or something; I haven’t looked into it).
   const thresholdBytes = 100;
-  const filesAboveThreshold = Object.entries(files).filter((file) => file[1].size >= thresholdBytes);
 
   // These are the files that are allowed to contribute >= `threshold` bytes to the BaseRealtime bundle.
-  //
-  // The threshold is chosen pretty arbitrarily. There are some files (e.g. presencemessage.ts) whose bulk should not be included in the BaseRealtime bundle, but which make a small contribution to the bundle (probably because we make use of one exported constant or something; I haven’t looked into it).
   const allowedFiles = new Set([
     'src/common/constants/HttpStatusCodes.ts',
     'src/common/constants/XHRStates.ts',
@@ -264,6 +279,33 @@ async function checkBaseRealtimeFiles() {
     'src/platform/web/modular.ts',
   ]);
 
+  return checkBundleFiles(baseRealtimeBundleInfo, allowedFiles, thresholdBytes);
+}
+
+async function checkPushPluginFiles() {
+  const pushPluginBundleInfo = getBundleInfo('./build/push.js');
+
+  // These are the files that are allowed to contribute >= `threshold` bytes to the Push bundle.
+  const allowedFiles = new Set([
+    'src/plugins/push/index.ts',
+    'src/plugins/push/pushchannel.ts',
+    'src/plugins/push/getW3CDeviceDetails.ts',
+    'src/plugins/push/pushactivation.ts',
+  ]);
+
+  return checkBundleFiles(pushPluginBundleInfo, allowedFiles, 100);
+}
+
+async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string>, thresholdBytes: number) {
+  const exploreResult = await runSourceMapExplorer(bundleInfo);
+
+  const files = exploreResult.bundles[0].files;
+  delete files['[sourceMappingURL]'];
+  delete files['[unmapped]'];
+  delete files['[EOLs]'];
+
+  const filesAboveThreshold = Object.entries(files).filter((file) => file[1].size >= thresholdBytes);
+
   const errors: Error[] = [];
 
   // Check that no files other than those allowed above make a large contribution to the bundle size
@@ -271,7 +313,7 @@ async function checkBaseRealtimeFiles() {
     if (!allowedFiles.has(file[0])) {
       errors.push(
         new Error(
-          `Unexpected file ${file[0]}, contributes ${file[1].size}B to BaseRealtime, more than allowed ${thresholdBytes}B`,
+          `Unexpected file ${file[0]}, contributes ${file[1].size}B to bundle, more than allowed ${thresholdBytes}B`,
         ),
       );
     }
@@ -304,6 +346,7 @@ async function checkBaseRealtimeFiles() {
       calculateAllExportsBundleSize(),
       calculateAndCheckExportSizes(),
       calculateAndCheckFunctionSizes(),
+      calculatePushPluginSize(),
     ])
   ).reduce((accum, current) => ({
     tableRows: [...accum.tableRows, ...current.tableRows],
@@ -311,6 +354,7 @@ async function checkBaseRealtimeFiles() {
   }));
 
   output.errors.push(...(await checkBaseRealtimeFiles()));
+  output.errors.push(...(await checkPushPluginFiles()));
 
   const table = new Table({
     style: { head: ['green'] },

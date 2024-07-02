@@ -344,10 +344,11 @@ const contentTypes = {
   xml: 'application/xml',
   html: 'text/html',
   msgpack: 'application/x-msgpack',
+  text: 'text/plain',
 };
 
 export interface HeadersOptions {
-  format?: Utils.Format;
+  format?: Utils.Format | 'xml' | 'html' | 'text';
   protocolVersion?: number;
 }
 

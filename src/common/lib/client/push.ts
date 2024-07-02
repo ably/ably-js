@@ -6,14 +6,83 @@ import ErrorInfo from '../types/errorinfo';
 import PushChannelSubscription from '../types/pushchannelsubscription';
 import BaseClient from './baseclient';
 import Defaults from '../util/defaults';
+import type {
+  ActivationStateMachine,
+  DeregisterCallback,
+  LocalDeviceFactory,
+  RegisterCallback,
+} from 'plugins/push/pushactivation';
+import Platform from 'common/platform';
+import type { ErrCallback } from 'common/types/utils';
 
 class Push {
   client: BaseClient;
   admin: Admin;
+  stateMachine?: ActivationStateMachine;
+  LocalDevice?: LocalDeviceFactory;
 
   constructor(client: BaseClient) {
     this.client = client;
     this.admin = new Admin(client);
+    if (Platform.Config.push && client.options.plugins?.Push) {
+      this.stateMachine = new client.options.plugins.Push.ActivationStateMachine(client);
+      this.LocalDevice = client.options.plugins.Push.localDeviceFactory(DeviceDetails);
+    }
+  }
+
+  async activate(registerCallback?: RegisterCallback, updateFailedCallback?: ErrCallback) {
+    await new Promise<void>((resolve, reject) => {
+      if (!this.client.options.plugins?.Push) {
+        reject(Utils.createMissingPluginError('Push'));
+        return;
+      }
+      if (!this.stateMachine) {
+        reject(new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400));
+        return;
+      }
+      if (this.stateMachine.activatedCallback) {
+        reject(new ErrorInfo('Activation already in progress', 40000, 400));
+        return;
+      }
+      this.stateMachine.activatedCallback = (err: ErrorInfo) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      };
+      this.stateMachine.updateFailedCallback = updateFailedCallback;
+      this.stateMachine.handleEvent(
+        new this.client.options.plugins.Push.CalledActivate(this.stateMachine, registerCallback),
+      );
+    });
+  }
+
+  async deactivate(deregisterCallback: DeregisterCallback) {
+    await new Promise<void>((resolve, reject) => {
+      if (!this.client.options.plugins?.Push) {
+        reject(Utils.createMissingPluginError('Push'));
+        return;
+      }
+      if (!this.stateMachine) {
+        reject(new ErrorInfo('This platform is not supported as a target of push notifications', 40000, 400));
+        return;
+      }
+      if (this.stateMachine.deactivatedCallback) {
+        reject(new ErrorInfo('Deactivation already in progress', 40000, 400));
+        return;
+      }
+      this.stateMachine.deactivatedCallback = (err: ErrorInfo) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      };
+      this.stateMachine.handleEvent(
+        new this.client.options.plugins.Push.CalledDeactivate(this.stateMachine, deregisterCallback),
+      );
+    });
   }
 }
 

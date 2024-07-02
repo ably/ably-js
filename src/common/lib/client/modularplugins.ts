@@ -10,6 +10,7 @@ import {
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
 import { TransportCtor } from '../transport/transport';
+import * as PushPlugin from 'plugins/push';
 
 export interface PresenceMessagePlugin {
   presenceMessageFromValues: typeof presenceMessageFromValues;
@@ -30,6 +31,7 @@ export interface ModularPlugins {
   XHRRequest?: typeof XHRRequest;
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
+  Push?: typeof PushPlugin;
 }
 
 export const allCommonModularPlugins: ModularPlugins = { Rest };

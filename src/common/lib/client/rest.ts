@@ -16,6 +16,7 @@ import BaseClient from './baseclient';
 import { useTokenAuth } from './auth';
 import { RestChannelMixin } from './restchannelmixin';
 import { RestPresenceMixin } from './restpresencemixin';
+import DeviceDetails from '../types/devicedetails';
 
 type BatchResult<T> = API.BatchResult<T>;
 
@@ -40,6 +41,10 @@ export class Rest {
 
   readonly channelMixin = RestChannelMixin;
   readonly presenceMixin = RestPresenceMixin;
+
+  // exposed for plugins but shouldn't be bundled with minimal realtime
+  Resource = Resource;
+  DeviceDetails = DeviceDetails;
 
   constructor(client: BaseClient) {
     this.client = client;

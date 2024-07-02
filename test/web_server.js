@@ -1,5 +1,6 @@
 var express = require('express'),
-  cors = require('cors');
+  cors = require('cors'),
+  path = require('path');
 
 /**
  * Runs a simple web server that runs the mocha.html tests
@@ -31,6 +32,11 @@ class MochaServer {
       } else {
         res.redirect('/mocha.html');
       }
+    });
+
+    // service workers have limited scope if not served from the base path
+    app.get('/push_sw.js', (req, res) => {
+      res.sendFile(path.join(__dirname, 'support', 'push_sw.js'));
     });
 
     app.use('/node_modules', express.static(__dirname + '/../node_modules'));
