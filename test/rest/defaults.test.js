@@ -101,22 +101,24 @@ define(['ably', 'chai'], function (Ably, chai) {
       const helper = this.test.helper;
 
       helper.recordPrivateApi('call.Defaults.normaliseOptions');
-      var normalisedOptions = Defaults.normaliseOptions({ environment: 'sandbox' }, null, null);
+      var normalisedOptions = Defaults.normaliseOptions({ environment: 'lmars-dev' }, null, null);
 
-      expect(normalisedOptions.restHost).to.equal('sandbox-rest.ably.io');
-      expect(normalisedOptions.realtimeHost).to.equal('sandbox-realtime.ably.io');
+      expect(normalisedOptions.restHost).to.equal('lmars-dev-rest.ably.io');
+      expect(normalisedOptions.realtimeHost).to.equal('lmars-dev-realtime.ably.io');
       expect(normalisedOptions.port).to.equal(80);
       expect(normalisedOptions.tlsPort).to.equal(443);
-      expect(normalisedOptions.fallbackHosts.sort()).to.deep.equal(Defaults.environmentFallbackHosts('sandbox').sort());
+      expect(normalisedOptions.fallbackHosts.sort()).to.deep.equal(
+        Defaults.environmentFallbackHosts('lmars-dev').sort(),
+      );
       expect(normalisedOptions.tls).to.equal(true);
 
       helper.recordPrivateApi('call.Defaults.getHosts');
       expect(Defaults.getHosts(normalisedOptions).length).to.deep.equal(4);
       expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
       helper.recordPrivateApi('call.Defaults.getHost');
-      expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false)).to.deep.equal('sandbox-rest.ably.io');
-      expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true)).to.deep.equal(
-        'sandbox-realtime.ably.io',
+      expect(Defaults.getHost(normalisedOptions, 'lmars-dev-rest.ably.io', false)).to.deep.equal('lmars-dev-rest.ably.io');
+      expect(Defaults.getHost(normalisedOptions, 'lmars-dev-rest.ably.io', true)).to.deep.equal(
+        'lmars-dev-realtime.ably.io',
       );
 
       helper.recordPrivateApi('call.Defaults.getPort');
@@ -255,24 +257,26 @@ define(['ably', 'chai'], function (Ably, chai) {
       const helper = this.test.helper;
 
       helper.recordPrivateApi('write.Defaults.ENVIRONMENT');
-      Defaults.ENVIRONMENT = 'sandbox';
+      Defaults.ENVIRONMENT = 'lmars-dev';
       helper.recordPrivateApi('call.Defaults.normaliseOptions');
       var normalisedOptions = Defaults.normaliseOptions({}, null, null);
 
-      expect(normalisedOptions.restHost).to.equal('sandbox-rest.ably.io');
-      expect(normalisedOptions.realtimeHost).to.equal('sandbox-realtime.ably.io');
+      expect(normalisedOptions.restHost).to.equal('lmars-dev-rest.ably.io');
+      expect(normalisedOptions.realtimeHost).to.equal('lmars-dev-realtime.ably.io');
       expect(normalisedOptions.port).to.equal(80);
       expect(normalisedOptions.tlsPort).to.equal(443);
-      expect(normalisedOptions.fallbackHosts.sort()).to.deep.equal(Defaults.environmentFallbackHosts('sandbox').sort());
+      expect(normalisedOptions.fallbackHosts.sort()).to.deep.equal(
+        Defaults.environmentFallbackHosts('lmars-dev').sort(),
+      );
       expect(normalisedOptions.tls).to.equal(true);
 
       helper.recordPrivateApi('call.Defaults.getHosts');
       expect(Defaults.getHosts(normalisedOptions).length).to.equal(4);
       expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
       helper.recordPrivateApi('call.Defaults.getHost');
-      expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', false)).to.deep.equal('sandbox-rest.ably.io');
-      expect(Defaults.getHost(normalisedOptions, 'sandbox-rest.ably.io', true)).to.deep.equal(
-        'sandbox-realtime.ably.io',
+      expect(Defaults.getHost(normalisedOptions, 'lmars-dev-rest.ably.io', false)).to.deep.equal('lmars-dev-rest.ably.io');
+      expect(Defaults.getHost(normalisedOptions, 'lmars-dev-rest.ably.io', true)).to.deep.equal(
+        'lmars-dev-realtime.ably.io',
       );
 
       helper.recordPrivateApi('call.Defaults.getPort');

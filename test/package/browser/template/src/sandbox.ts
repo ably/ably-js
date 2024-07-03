@@ -1,7 +1,7 @@
 import testAppSetup from '../../../../common/ably-common/test-resources/test-app-setup.json';
 
 export async function createSandboxAblyAPIKey() {
-  const response = await fetch('https://sandbox-rest.ably.io/apps', {
+  const response = await fetch('https://lmars-dev-rest.ably.io/apps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(testAppSetup.post_apps),
