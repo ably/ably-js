@@ -69,6 +69,10 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       Ably.Realtime.Platform.Config.push = originalPushConfig;
     });
 
+    /**
+     * Supported filter parameters for channelSubscriptions.list operation at: https://ably.com/docs/api/rest-api#list-channel-subscriptions
+     * @specpartial RSH1c1 - tests only filtering by 'channel', should also tests other params
+     */
     it('Get subscriptions', async function () {
       var subscribes = [];
       var deletes = [];
@@ -100,6 +104,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       testIncludesUnordered(untyped(res2.items), untyped(subsByChannel['pushenabled:foo2']));
     });
 
+    /** @specpartial RSH1a - tests only valid recipient and payload data, should test empty and invalid data too */
     it('Publish', async function () {
       try {
         var realtime = helper.AblyRealtime();
@@ -137,6 +142,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       }
     });
 
+    /** @specpartial RSH1b3 - tests only successful save, should also test a successful subsequent save with an update, and a failed save operation */
     it('deviceRegistrations save', async function () {
       var rest = helper.AblyRest();
 
@@ -151,6 +157,12 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       testIncludesUnordered(untyped(saved), testDevice_withoutSecret);
     });
 
+    /**
+     * Supported REST API parameters for deviceRegistrations.list operation at: https://ably.com/docs/api/rest-api#list-device-registrations
+     *
+     * @specpartial RSH1b1 - tests .get only with existing deviceId, should also test with non-existing deviceId
+     * @specpartial RSH1b2 - tests .list only with no params and filtered by clientId, should also test with other supported parameters
+     */
     it('deviceRegistrations get and list', async function () {
       var registrations = [];
       var deletes = [];
@@ -224,6 +236,12 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       testIncludesUnordered(untyped(res4), untyped(devices[0]));
     });
 
+    /**
+     * Supported parameters for deviceRegistrations.removeWhere operation at: https://ably.com/docs/api/rest-api#delete-device-registrations
+     *
+     * @specpartial RSH1b4 - tests .remove only with existing deviceId, should also test with non-existing deviceId
+     * @specpartial RSH1b5 - tests .removeWhere only with filtering by deviceId, should also test with other supported params and with no matching params
+     */
     it('deviceRegistrations remove removeWhere', async function () {
       var rest = helper.AblyRest();
 
@@ -248,6 +266,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       }
     });
 
+    /** @specpartial RSH1c3 - tests only successful save, should also test a successful subsequent save with an update, and a failed save operation */
     it('channelSubscriptions save', async function () {
       var rest = helper.AblyRest({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
@@ -263,6 +282,12 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       expect(subscription.channel).to.equal(sub.channel);
     });
 
+    /**
+     * Supported filter parameters for channelSubscriptions.list operation at: https://ably.com/docs/api/rest-api#list-channel-subscriptions
+     * Note: this test seems to be the duplicate of 'Get subscriptions' test above
+     *
+     * @specpartial RSH1c1 - tests only filtering by 'channel', should also tests other params
+     */
     it('channelSubscriptions get', async function () {
       var subscribes = [];
       var deletes = [];
@@ -298,6 +323,10 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       testIncludesUnordered(untyped(res2.items), untyped(subsByChannel['pushenabled:foo2']));
     });
 
+    /**
+     * Supported parameters for channelSubscriptions.remove operation at: https://ably.com/docs/api/rest-api#delete-channel-subscription
+     * @specpartial RSH1c4 - tests .remove only with clientId and channel parameters, should also test other supported parameters and test non-matching parameters
+     */
     it('push_channelSubscriptions_remove', async function () {
       var rest = helper.AblyRest({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
@@ -306,6 +335,10 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
       await rest.push.admin.channelSubscriptions.remove(subscription);
     });
 
+    /**
+     * Supported parameters for channelSubscriptions.listChannels operation at: https://ably.com/docs/api/rest-api#list-channels
+     * @specpartial RSH1c2 - only tests .listChannels with no parameters
+     */
     it('channelSubscriptions listChannels', async function () {
       var subscribes = [];
       var deletes = [];
