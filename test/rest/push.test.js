@@ -367,16 +367,14 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     describe('push activation', function () {
-      /*
-       * RSH2a
-       */
+      /** @spec RSH2a */
       it('push_activation_succeeds', async function () {
         const rest = PushRealtime({ pushRecipientChannel: 'my_channel' });
         await rest.push.activate();
         expect(rest.device.deviceIdentityToken).to.be.ok;
       });
 
-      // no spec item
+      /** @nospec */
       it('device_push', function (done) {
         const channelName = 'pushenabled:device_push';
         const realtime = PushRealtime({ pushRecipientChannel: channelName });
@@ -418,9 +416,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
           });
       });
 
-      /*
-       * RSH7b
-       */
+      /** @spec RSH7b */
       it('subscribe_client', async function () {
         const clientId = 'me';
         const channelName = 'pushenabled:subscribe_client';
@@ -438,9 +434,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         expect(subscription.clientId).to.equal(clientId);
       });
 
-      /*
-       * RSH7b1
-       */
+      /** @spec RSH7b1 */
       it('subscribe_client_without_clientId', async function () {
         const channelName = 'pushenabled:subscribe_client_without_clientId';
         const rest = PushRest({ pushRecipientChannel: 'hello' });
@@ -456,9 +450,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         expect.fail('expected channel.push.subscribeClient to throw exception');
       });
 
-      /*
-       * RSH7d
-       */
+      /** @spec RSH7d */
       it('unsubscribe_client', async function () {
         const clientId = 'me';
         const channelName = 'pushenabled:unsubscribe_client';
@@ -476,7 +468,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         expect(subscriptions.length).to.equal(0);
       });
 
-      // no spec item
+      /** @nospec */
       it('direct_publish_client_id', async function () {
         const clientId = 'me2';
         const channelName = 'pushenabled:direct_publish_client_id';
@@ -512,9 +504,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         realtime.close();
       });
 
-      /*
-       * RSH7a
-       */
+      /** @spec RSH7a */
       it('subscribe_device', async function () {
         const channelName = 'pushenabled:subscribe_device';
         const rest = PushRest({ pushRecipientChannel: channelName });
@@ -531,9 +521,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         expect(subscription.deviceId).to.equal(rest.device.id);
       });
 
-      /*
-       * RSH7c
-       */
+      /** @spec RSH7c */
       it('unsubscribe_device', async function () {
         const channelName = 'pushenabled:unsubscribe_device';
         const rest = PushRest({ pushRecipientChannel: channelName });
@@ -550,7 +538,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         expect(subscriptions.length).to.equal(0);
       });
 
-      // no spec item
+      /** @nospec */
       it('direct_publish_device_id', async function () {
         const channelName = 'direct_publish_device_id';
         const rest = PushRest({ pushRecipientChannel: channelName });
@@ -585,7 +573,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         realtime.close();
       });
 
-      // no spec item
+      /** @nospec */
       it('push_channel_subscription_device_id', async function () {
         const pushRecipientChannel = 'push_channel_subscription_device_id';
         const channelName = 'pushenabled:push_channel_subscription_device_id';
@@ -626,7 +614,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         realtime.close();
       });
 
-      // no spec item
+      /** @nospec */
       it('push_channel_subscription_client_id', async function () {
         const pushRecipientChannel = 'push_channel_subscription_client_id';
         const channelName = 'pushenabled:push_channel_subscription_client_id';
@@ -667,9 +655,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         realtime.close();
       });
 
-      /*
-       * RSH8h
-       */
+      /** @spec RSH8h */
       it('failed_getting_device_details', async function () {
         const rest = PushRest();
         try {
@@ -682,9 +668,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         expect.fail('expect rest.push.activate() to throw');
       });
 
-      /*
-       * RSH3b3c
-       */
+      /** @spec RSH3b3c */
       it('failed_registration', async function () {
         const pushRecipientChannel = 'failed_registration';
         const rest = PushRest({ pushRecipientChannel });
