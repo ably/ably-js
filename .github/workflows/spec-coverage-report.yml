@@ -1,0 +1,25 @@
+name: Spec coverage report
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  spec-coverage-report:
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v2
+      - name: Reconfigure git to use HTTP authentication
+        run: >
+          git config --global url."https://github.com/".insteadOf
+          ssh://git@github.com/
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 20.x
+      - run: npm ci
+      - run: npm run speccoveragereport
