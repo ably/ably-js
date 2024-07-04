@@ -6,6 +6,7 @@ test.describe('NPM package', () => {
     { name: 'modular export', path: '/index-modular.html' },
   ]) {
     test.describe(scenario.name, () => {
+      /** @nospec */
       test('can be imported and provides access to Ably functionality', async ({ page }) => {
         const pageResultPromise = new Promise<void>((resolve, reject) => {
           page.exposeFunction('onResult', (error: Error | null) => {
