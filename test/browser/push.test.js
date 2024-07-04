@@ -53,15 +53,13 @@ define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, helper, chai, 
         await rest.push.deactivate();
       });
 
-      /*
-       * RSH2a
-       */
+      /** @spec RSH2a */
       it('push_activation_succeeds', async function () {
         await rest.push.activate();
         expect(rest.device.deviceIdentityToken).to.be.ok;
       });
 
-      // no spec item
+      /** @nospec */
       it('direct_publish_device_id', async function () {
         await rest.push.activate();
 
