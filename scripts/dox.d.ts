@@ -52,6 +52,8 @@ declare module 'dox' {
     otherMemberName?: string;
     /** from "@borrows" */
     thisMemberName?: string;
+    /** parsed tag name */
+    type: string;
     /** all parsed types from tags that support it, like "@param" */
     types?: string[];
     /** from "@description" */
