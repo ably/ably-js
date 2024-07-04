@@ -58,6 +58,14 @@ class SpecItemNode implements SpecItem {
     return this.childNodes.length === 0;
   }
 
+  public isFullyCovered(): boolean {
+    return this.getCoveragePercentage() === 1;
+  }
+
+  public isPartiallyCovered(): boolean {
+    return this.getCoveragePercentage() > 0 && this.getCoveragePercentage() < 1;
+  }
+
   public getCoveragePercentage(): number {
     // general rules for coverage:
     // if the spec item is covered by the test with @spec tag - it contributes a weigth of 1 (100%).
@@ -163,6 +171,10 @@ class SpecItemNodesCollection {
       }
     }
     return rootNodes;
+  }
+
+  public getNodesArray(): SpecItemNode[] {
+    return [...this.allNodesByKeyMap.values()];
   }
 
   public getSpecItemLinesView(): string[] {
@@ -402,22 +414,64 @@ function roundTo(num: number, digits: number): number {
   return res;
 }
 
+function printGeneralCoverageMetrics(collection: SpecItemNodesCollection): void {
+  const total = collection.allNodesByKeyMap.size;
+  const fullyCovered = collection.getNodesArray().filter((x) => x.isFullyCovered()).length;
+  const partiallyCovered = collection.getNodesArray().filter((x) => x.isPartiallyCovered()).length;
+  const anyTestCovered = fullyCovered + partiallyCovered;
+
+  console.log(
+    `Out of all ${total} spec items` +
+      ` ${fullyCovered} (${roundTo((fullyCovered / total) * 100, 2)}%) are fully covered by tests,` +
+      ` and ${partiallyCovered} (${roundTo((partiallyCovered / total) * 100, 2)}%) are partially covered by tests.` +
+      ` ${anyTestCovered} (${roundTo((anyTestCovered / total) * 100, 2)}%) spec items in total` +
+      ` are tested in some way by ably-js tests.`,
+  );
+
+  const leafNodes = collection.getNodesArray().filter((x) => x.isLeaf());
+  const totalLeaves = leafNodes.length;
+  const fullyCoveredLeaves = leafNodes.filter((x) => x.isFullyCovered()).length;
+  const partiallyCoveredLeaves = leafNodes.filter((x) => x.isPartiallyCovered()).length;
+  const anyTestCoveredLeaves = fullyCoveredLeaves + partiallyCoveredLeaves;
+
+  console.log(
+    `Out of ${totalLeaves} leaf spec items` +
+      ` ${fullyCoveredLeaves} (${roundTo((fullyCoveredLeaves / totalLeaves) * 100, 2)}%) are fully covered by tests,` +
+      ` and ${partiallyCoveredLeaves} (${roundTo((partiallyCoveredLeaves / totalLeaves) * 100, 2)}%)` +
+      ` are partially covered by tests.` +
+      ` ${anyTestCoveredLeaves} (${roundTo((anyTestCoveredLeaves / totalLeaves) * 100, 2)}%) leaf spec items in total` +
+      ` are tested in some way by ably-js tests.`,
+  );
+}
+
+function printNoSpecMetrics(specCoverages: TestSpecCoverage[]): void {
+  const nospecCount = specCoverages.filter((x) => x.coverageType === SpecCoverageType.nospec).length;
+
+  console.log(`Total of ${nospecCount} test cases are not associated with any spec item (marked with \`@nospec\`).`);
+}
+
+function printCoverageTableForAllSpecItems(collection: SpecItemNodesCollection): void {
+  const table = specItemsCollectionToTable(collection);
+  console.log(`Coverage table for all spec items:`);
+  console.log(table.toString());
+}
+
 (async function main() {
   try {
+    const paths = await getTestFilePaths();
+    const specCoverages = paths.flatMap((x) => {
+      const docstrings = parseDocstringsForFile(x);
+      return getSpecCoveragesFromDocstrings(docstrings);
+    });
+
     const specTextile = await loadSpecTextile();
     const specItems = specTextileToOrderedSpecItems(specTextile);
     const collection = new SpecItemNodesCollection(specItems);
-    const paths = await getTestFilePaths();
+    applySpecCoveragesToSpecItemsCollection(collection, specCoverages);
 
-    for (const path of paths) {
-      const docstrings = parseDocstringsForFile(path);
-      const specCoverages = getSpecCoveragesFromDocstrings(docstrings);
-      applySpecCoveragesToSpecItemsCollection(collection, specCoverages);
-    }
-
-    const table = specItemsCollectionToTable(collection);
-    console.log(`Overall spec items coverage:`);
-    console.log(table.toString());
+    printGeneralCoverageMetrics(collection);
+    printNoSpecMetrics(specCoverages);
+    printCoverageTableForAllSpecItems(collection);
   } catch (error) {
     console.error('Spec coverage report failed with error:', error);
   }
