@@ -62,9 +62,9 @@ var Ably = require('ably');
 
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
 
-#### Serverside usage with webpack
+#### Serverside usage with Webpack
 
-If you are using a version older than 1.2.5 you will need to add 'ably' to `externals` in your webpack config to exclude it from webpack processing, and require and use it in as a external module using require('ably') as above.
+If you are using a version older than 1.2.5 you will need to add 'ably' to `externals` in your Webpack config to exclude it from Webpack processing, and require and use it in as a external module using require('ably') as above.
 
 ### For browsers
 
@@ -78,13 +78,36 @@ The Ably client library follows [Semantic Versioning](http://semver.org/). To lo
 
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
 
-#### Using WebPack
+#### Using Webpack
 
-(This applies to using webpack to compile for a browser; for Node.js, see [Serverside usage with webpack](#serverside-usage-with-webpack))
+(This applies to using Webpack to compile for a browser; for Node.js, see [Serverside usage with Webpack](#serverside-usage-with-webpack))
 
-WebPack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require('ably')` (or if using typescript or ES6 modules, `import * as Ably from 'ably';`). If your webpack target is set to 'browser', this will automatically use the browser commonjs distribution.
+Webpack will search your `node_modules` folder by default, so if you include `ably` in your `package.json` file, when running Webpack the following will allow you to `require('ably')` (or if using typescript or ES6 modules, `import * as Ably from 'ably';`). If your Webpack target is set to 'browser', this will automatically use the browser commonjs distribution.
 
-If that doesn't work for some reason (e.g. you are using a custom webpack target), you can reference the `ably.js` static file directly: `require('ably/build/ably.js');` (or `import * as Ably from 'ably/build/ably.js'` for typescript / ES6 modules).
+If that doesn't work for some reason (e.g. you are using a custom Webpack target), you can use one of the solutions below depending on your Webpack version:
+
+- for Webpack 5: you can use alias setting in the Webpack config like this:
+
+  ```javascript
+  // webpack.config.js
+  const path = require('path');
+
+  module.exports = {
+    module: {
+      rules: [
+        {
+          resolve: {
+            alias: {
+              ably: path.resolve(__dirname, 'node_modules/ably/build/ably.js'),
+            },
+          },
+        },
+      ],
+    },
+  };
+  ```
+
+- for Webpack before 5: you can reference the `ably.js` static file directly: `require('ably/build/ably.js');` (or `import * as Ably from 'ably/build/ably.js'` for typescript / ES6 modules).
 
 #### Modular (tree-shakable) variant
 
