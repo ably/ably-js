@@ -35,6 +35,13 @@ interface TestSpecCoverage {
   testCode: string;
 }
 
+interface SpecItemCoverageStatus {
+  hasFullCoverage: boolean;
+  hasPartialCoverage: boolean;
+  testsContributingToFullCoverageCount: number;
+  testsContributingToPartialCoverageCount: number;
+}
+
 class SpecItemNode implements SpecItem {
   public level: number;
   public key: string;
@@ -42,7 +49,7 @@ class SpecItemNode implements SpecItem {
   public parentNode: SpecItemNode | null = null;
   public childNodes: SpecItemNode[] = [];
   public specCoverages: TestSpecCoverage[] = [];
-  private _coveragePercentage: number | null = null;
+  private _coverageStatus: SpecItemCoverageStatus | null = null;
 
   constructor(specItem: SpecItem) {
     this.level = specItem.level;
@@ -59,35 +66,41 @@ class SpecItemNode implements SpecItem {
   }
 
   public isFullyCovered(): boolean {
-    return this.getCoveragePercentage() === 1;
+    return this.getCoverageStatus().hasFullCoverage;
   }
 
   public isPartiallyCovered(): boolean {
-    return this.getCoveragePercentage() > 0 && this.getCoveragePercentage() < 1;
+    return this.getCoverageStatus().hasPartialCoverage;
   }
 
-  public getCoveragePercentage(): number {
-    // general rules for coverage:
-    // if the spec item is covered by the test with @spec tag - it contributes a weigth of 1 (100%).
-    // if the spec item is covered by the test with @specpartial tag - it contributes a weigth of 0.5 (50%).
-    // otherwise it contributes a weigth of 0 (0%).
-    // when multiple nodes are contributing to coverage calculation (like for parent nodes),
-    // then their coverage percentages are added and then divided by the number of nodes to calculate the average coverage for the node.
-
-    // memoize coverage percentage
-    if (this._coveragePercentage != null) {
-      return this._coveragePercentage;
+  public getCoverageStatus(): SpecItemCoverageStatus {
+    if (this._coverageStatus != null) {
+      return this._coverageStatus;
     }
 
-    // leaf nodes calculate coverage percentage only based on their own spec coverage
-    if (this.isLeaf()) {
-      this._coveragePercentage = this._getCoveragePercentageForLeaf();
-      return this._coveragePercentage;
-    }
+    // there is currently no indication in the spec document regarding which items should be explicitly tested or not,
+    // nor how we should infer test coverage for a parent spec item based on their sub-items.
+    // thus, for now, to calculate coverage for a spec item, we simply check the associated tests for it.
+    // The future alternative (and the better one) would be to have some metadata provided alongside the spec document,
+    // indicating which spec items are testable and which are purely informational or structural,
+    // as well as the rules for handling the coverage status for a parent item with its sub-items.
 
-    // parent nodes calculate coverage percentage based on their own and children's coverages
-    this._coveragePercentage = this._getCoveragePercentageForParent();
-    return this._coveragePercentage;
+    // spec item can be fully covered only by tests marked with `@spec` tag
+    const testsContributingToFullCoverageCount = this.specCoverages.filter(
+      (x) => x.coverageType === SpecCoverageType.spec,
+    ).length;
+    // spec item is at least partially covered if there are tests with either `@spec` or `@specpartial` tag
+    const testsContributingToPartialCoverageCount = this.specCoverages.filter(
+      (x) => x.coverageType === SpecCoverageType.spec || x.coverageType === SpecCoverageType.specpartial,
+    ).length;
+
+    this._coverageStatus = {
+      hasFullCoverage: testsContributingToFullCoverageCount > 0,
+      hasPartialCoverage: testsContributingToPartialCoverageCount > 0,
+      testsContributingToFullCoverageCount: testsContributingToFullCoverageCount,
+      testsContributingToPartialCoverageCount: testsContributingToPartialCoverageCount,
+    };
+    return this._coverageStatus;
   }
 
   public getLinkToSpecItem(): string {
@@ -119,40 +132,6 @@ class SpecItemNode implements SpecItem {
       childNodes: this.childNodes,
       specCoverages: this.specCoverages,
     };
-  }
-
-  private _getCoveragePercentageForLeaf(): number {
-    if (this.specCoverages.findIndex((x) => x.coverageType === SpecCoverageType.spec) !== -1) {
-      return 1;
-    }
-
-    if (this.specCoverages.findIndex((x) => x.coverageType === SpecCoverageType.specpartial) !== -1) {
-      return 0.5;
-    }
-
-    return 0;
-  }
-
-  private _getCoveragePercentageForParent(): number {
-    // here we use the next assumption:
-    // if all children spec items are covered by the test (average coverage is 1), then we can consider the parent covered too,
-    // even if there is no test covering this parent spec item specifically.
-    const childNodesCoveragePercentagesSum = this.childNodes.reduce((acc, v) => acc + v.getCoveragePercentage(), 0);
-    const childNodesCount = this.childNodes.length;
-    const childNodesAverageCoveragePercentage = childNodesCoveragePercentagesSum / childNodesCount;
-    if (childNodesAverageCoveragePercentage === 1) {
-      return childNodesAverageCoveragePercentage;
-    }
-
-    // otherwise (children spec items are not fully covered), we should also include parent's own
-    // spec item coverage contribution, but only if there tests covering parent spec item
-    if (this.specCoverages.length === 0) {
-      return childNodesAverageCoveragePercentage;
-    }
-
-    const averageCoveragePercentageWithParentContribution =
-      (childNodesCoveragePercentagesSum + this._getCoveragePercentageForLeaf()) / (childNodesCount + 1);
-    return averageCoveragePercentageWithParentContribution;
   }
 }
 
@@ -381,10 +360,10 @@ function applySpecCoveragesToSpecItemsCollection(
   }
 }
 
-function specItemsCollectionToTable(collection: SpecItemNodesCollection): Table {
+function specItemsCollectionToCoverageTable(collection: SpecItemNodesCollection): Table {
   const table = new Table({
     style: { head: ['green'] },
-    head: ['Spec', 'Coverage', 'Tests w/ full cvrg.', 'Tests w/ partial cvrg.', 'Spec Link'],
+    head: ['Spec', 'Coverage Status', 'Coverage (full)', 'Coverage (partial)', 'Spec Link'],
     rows: collection.getRootNodes().flatMap((node) => specItemNodeToTableRows(node, [])),
   });
   return table;
@@ -392,14 +371,20 @@ function specItemsCollectionToTable(collection: SpecItemNodesCollection): Table 
 
 function specItemNodeToTableRows(node: SpecItemNode, tableRows: [string, string, string, string, string][]) {
   const indentation = new Array(node.level - 1).fill('  ').join('');
-  const coveragePercentage = node.getCoveragePercentage();
-  const coveragePercentageEmoji = coveragePercentage === 1 ? '✔️' : coveragePercentage === 0 ? '🔴' : '🟡';
+  const {
+    hasFullCoverage,
+    hasPartialCoverage,
+    testsContributingToFullCoverageCount,
+    testsContributingToPartialCoverageCount,
+  } = node.getCoverageStatus();
+  const coverageStatusText = hasFullCoverage ? 'Full' : hasPartialCoverage ? 'Partial' : 'None';
+  const coverageStatusEmoji = hasFullCoverage ? '✔️' : hasPartialCoverage ? '🟡' : '🔴';
 
   tableRows.push([
     `${indentation}${node.key}`,
-    `${coveragePercentageEmoji} ${roundTo(coveragePercentage * 100, 2)}%`,
-    node.specCoverages.filter((x) => x.coverageType === SpecCoverageType.spec).length.toString(),
-    node.specCoverages.filter((x) => x.coverageType === SpecCoverageType.specpartial).length.toString(),
+    `${coverageStatusEmoji} ${coverageStatusText}`,
+    `${hasFullCoverage ? 'Yes' : 'No'} (${testsContributingToFullCoverageCount} tests)`,
+    `${hasPartialCoverage ? 'Yes' : 'No'} (${testsContributingToPartialCoverageCount} tests)`,
     node.getLinkToSpecItem(),
   ]);
   node.childNodes.forEach((x) => specItemNodeToTableRows(x, tableRows));
@@ -418,29 +403,30 @@ function printGeneralCoverageMetrics(collection: SpecItemNodesCollection): void 
   const total = collection.allNodesByKeyMap.size;
   const fullyCovered = collection.getNodesArray().filter((x) => x.isFullyCovered()).length;
   const partiallyCovered = collection.getNodesArray().filter((x) => x.isPartiallyCovered()).length;
-  const anyTestCovered = fullyCovered + partiallyCovered;
+  const notCovered = total - partiallyCovered;
 
   console.log(
     `Out of all ${total} spec items` +
       ` ${fullyCovered} (${roundTo((fullyCovered / total) * 100, 2)}%) are fully covered by tests,` +
-      ` and ${partiallyCovered} (${roundTo((partiallyCovered / total) * 100, 2)}%) are partially covered by tests.` +
-      ` ${anyTestCovered} (${roundTo((anyTestCovered / total) * 100, 2)}%) spec items in total` +
-      ` are tested in some way by ably-js tests.`,
+      ` and ${partiallyCovered} (${roundTo((partiallyCovered / total) * 100, 2)}%)` +
+      ` are at least partially covered by tests.` +
+      ` ${notCovered} (${roundTo((notCovered / total) * 100, 2)}%) spec items in total` +
+      ` do not have an associated test.`,
   );
 
   const leafNodes = collection.getNodesArray().filter((x) => x.isLeaf());
   const totalLeaves = leafNodes.length;
   const fullyCoveredLeaves = leafNodes.filter((x) => x.isFullyCovered()).length;
   const partiallyCoveredLeaves = leafNodes.filter((x) => x.isPartiallyCovered()).length;
-  const anyTestCoveredLeaves = fullyCoveredLeaves + partiallyCoveredLeaves;
+  const notCoveredLeaves = totalLeaves - partiallyCoveredLeaves;
 
   console.log(
     `Out of ${totalLeaves} leaf spec items` +
       ` ${fullyCoveredLeaves} (${roundTo((fullyCoveredLeaves / totalLeaves) * 100, 2)}%) are fully covered by tests,` +
       ` and ${partiallyCoveredLeaves} (${roundTo((partiallyCoveredLeaves / totalLeaves) * 100, 2)}%)` +
-      ` are partially covered by tests.` +
-      ` ${anyTestCoveredLeaves} (${roundTo((anyTestCoveredLeaves / totalLeaves) * 100, 2)}%) leaf spec items in total` +
-      ` are tested in some way by ably-js tests.`,
+      ` are at least partially covered by tests.` +
+      ` ${notCoveredLeaves} (${roundTo((notCoveredLeaves / totalLeaves) * 100, 2)}%) leaf spec items in total` +
+      ` do not have an associated test.`,
   );
 }
 
@@ -451,7 +437,7 @@ function printNoSpecMetrics(specCoverages: TestSpecCoverage[]): void {
 }
 
 function printCoverageTableForAllSpecItems(collection: SpecItemNodesCollection): void {
-  const table = specItemsCollectionToTable(collection);
+  const table = specItemsCollectionToCoverageTable(collection);
   console.log(`Coverage table for all spec items:`);
   console.log(table.toString());
 }
