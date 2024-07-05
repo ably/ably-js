@@ -65,6 +65,41 @@ Each test has a docstring explaining its relation to the [Ably features specific
 - `@nospec` - No corresponding spec item was found for the test.
 - `@specskip` - (only when using it.skip) The test case is skipped during CI, so spec items related to this test case should not be taken into account when deciding on metrics for the spec coverage/feature tracking.
 
+The `@nospec` and `@specskip` tags do not have any parameters. The `@spec` and `@specpartial` tags must provide a spec item ID from the [Ably features specification](https://sdk.ably.com/builds/ably/specification/main/features/) (such as `CSV2`) and may include an optional comment after the hyphen explaining the test's behavior in relation to the mentioned spec item.
+
+Here is how those tags are used in the codebase:
+```javascript
+/**
+ * @spec RSE2a
+ * @spec RSE2b - optional comment clarifying how the spec is tested
+ */
+it('test 1', function (done) { ... });
+
+/**
+ * @specpartial RTC8a1
+ * @specpartial RTC8a2 - optional comment clarifying how the spec is tested
+ */
+it('test 2', function (done) { ... });
+
+/**
+ * @spec RTN4a
+ * @specpartial RTN4b - optional comment clarifying how the spec is tested
+ */
+it('test 3', function (done) { ... });
+
+/**
+ * @nospec
+ */
+it('test 4', function (done) { ... });
+
+/**
+ * @spec RTN9a
+ * @specpartial RTN9b
+ * @specskip
+ */
+it.skip('test 5', function (done) { ... });
+```
+
 Additionally, docstrings may include references to other related spec items. These spec items are not tested directly by the test case but may provide additional context for the test.
 
 ### Adding new tests
