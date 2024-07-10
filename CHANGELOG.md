@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.3.0](https://github.com/ably/ably-js/tree/2.3.0) (2024-07-10)
+
+With this release, ably-js clients can now be activated as a target for push notifications. See our [official docs](https://ably.com/docs/push/configure/web) for instructions on how to start publishing web push notifications using Ably.
+
+- Add support for web push activation [\#1775](https://github.com/ably/ably-js/pull/1775)
+
 ## [2.2.1](https://github.com/ably/ably-js/tree/2.2.1) (2024-07-02)
 
 - Fix an occasion whereby a channel would attempt to automatically reattach from an inappropriate state [\#1802](https://github.com/ably/ably-js/pull/1802)
