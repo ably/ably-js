@@ -1,19 +1,21 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var rest;
   var cipherConfig;
   var expect = chai.expect;
   var Crypto = Ably.Realtime.Platform.Crypto;
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
 
-  function cipherParamsFromConfig(cipherConfig) {
+  function cipherParamsFromConfig(cipherConfig, helper) {
+    helper.recordPrivateApi('new.Crypto.CipherParams');
     var cipherParams = new Crypto.CipherParams();
     for (var prop in cipherConfig) {
       cipherParams[prop] = cipherConfig[prop];
     }
     cipherParams.keyLength = cipherConfig.keylength;
     delete cipherParams.keylength; // grr case differences
+    helper.recordPrivateApi('call.BufferUtils.base64Decode');
     cipherParams.key = BufferUtils.base64Decode(cipherParams.key);
     cipherParams.iv = BufferUtils.base64Decode(cipherParams.iv);
     return cipherParams;
@@ -23,6 +25,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function () {
         rest = helper.AblyRest();
         cipherConfig = helper.getTestApp().cipherConfig;
@@ -32,7 +35,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     function presence_simple(operation) {
       return async function () {
-        var cipherParams = cipherParamsFromConfig(cipherConfig);
+        const helper = this.test.helper.withParameterisedTestTitle('presence_simple');
+        var cipherParams = cipherParamsFromConfig(cipherConfig, helper);
         var channel = rest.channels.get('persisted:presence_fixtures', { cipher: cipherParams });
         var resultPage = await channel.presence[operation]();
         var presenceMessages = resultPage.items;

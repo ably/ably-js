@@ -10,299 +10,483 @@ define([
   'globals',
   'async',
   'chai',
-], function (testAppModule, clientModule, testAppManager, globals, async, chai) {
+  'private_api_recorder',
+], function (testAppModule, clientModule, testAppManager, globals, async, chai, privateApiRecorder) {
   var utils = clientModule.Ably.Realtime.Utils;
   var platform = clientModule.Ably.Realtime.Platform;
   var BufferUtils = platform.BufferUtils;
   var expect = chai.expect;
-  var availableTransports = utils.keysArray(
-      clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
-    ),
-    bestTransport = availableTransports[0],
-    /* IANA reserved; requests to it will hang forever */
-    unroutableHost = '10.255.255.1',
-    unroutableAddress = 'http://' + unroutableHost + '/';
+  /* IANA reserved; requests to it will hang forever */
+  var unroutableHost = '10.255.255.1';
+  var unroutableAddress = 'http://' + unroutableHost + '/';
 
-  function displayError(err) {
-    if (typeof err == 'string' || err == null) return err;
+  class SharedHelper {
+    getTestApp = testAppModule.getTestApp;
 
-    var result = '';
-    if (err.statusCode) result += err.statusCode + '; ';
-    if (typeof err.message == 'string') result += err.message;
-    if (typeof err.message == 'object') result += JSON.stringify(err.message);
+    Ably = clientModule.Ably;
+    Utils = utils;
 
-    return result;
-  }
+    loadTestData = testAppManager.loadJsonData;
+    testResourcesPath = testAppManager.testResourcesPath;
 
-  function monitorConnection(done, realtime, states) {
-    (states || ['failed', 'suspended']).forEach(function (state) {
-      realtime.connection.on(state, function () {
-        done(new Error('Connection monitoring: state changed to ' + state + ', aborting test'));
-        realtime.close();
-      });
-    });
-  }
+    unroutableHost = unroutableHost;
+    unroutableAddress = unroutableAddress;
+    flushTestLogs = globals.flushLogs;
 
-  async function monitorConnectionAsync(action, realtime, states) {
-    const monitoringResultPromise = new Promise((resolve, reject) => {
-      monitorConnection((err) => (err ? reject(err) : resolve()), realtime, states);
-    });
-    const actionResultPromise = Promise.resolve(action());
-
-    return Promise.race([monitoringResultPromise, actionResultPromise]);
-  }
-
-  function closeAndFinish(done, realtime, err) {
-    if (typeof realtime === 'undefined') {
-      // Likely called in a catch block for an exception
-      // that occured before realtime was initialized
-      done(err);
-      return;
+    constructor(context) {
+      if (!context) {
+        throw new Error('SharedHelper created without context');
+      }
+      this.context = context;
+      this.privateApiContext = privateApiRecorder.createContext(context);
     }
-    if (Object.prototype.toString.call(realtime) == '[object Array]') {
-      var realtimes = realtime.filter(function (rt) {
-        return rt !== undefined;
-      });
-      closeAndFinishSeveral(done, realtimes, err);
-      return;
+
+    addingHelperFunction(helperFunctionName) {
+      return new SharedHelper({ ...this.context, helperStack: [helperFunctionName, ...this.context.helperStack] });
     }
-    callbackOnClose(realtime, function () {
-      done(err);
-    });
-  }
 
-  async function closeAndFinishAsync(realtime, err) {
-    return new Promise((resolve, reject) => {
-      closeAndFinish((err) => (err ? reject(err) : resolve()), realtime, err);
-    });
-  }
+    withParameterisedTestTitle(title) {
+      return new SharedHelper({ ...this.context, parameterisedTestTitle: title });
+    }
 
-  /**
-   * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
-   */
-  function whenPromiseSettles(promise, callback) {
-    promise
-      .then((result) => {
-        callback(null, result);
-      })
-      .catch((err) => {
-        callback(err);
+    static createContext(data) {
+      return {
+        ...data,
+        helperStack: [],
+      };
+    }
+
+    static extractSuiteHierarchy(suite) {
+      const hierarchy = [];
+      while (suite.title) {
+        hierarchy.unshift(suite.title);
+        suite = suite.parent;
+      }
+      return hierarchy;
+    }
+
+    static forTest(thisInBeforeEach) {
+      const context = {
+        type: 'test',
+        file: thisInBeforeEach.currentTest.file,
+        suite: this.extractSuiteHierarchy(thisInBeforeEach.currentTest.parent),
+        title: thisInBeforeEach.currentTest.title,
+        parameterisedTestTitle: null,
+      };
+
+      return new this(this.createContext(context));
+    }
+
+    static forHook(thisInHook) {
+      /**
+       * Based on what I’ve observed (haven’t found good documentation about it), the value of `this` in a hook varies:
+       *
+       * - `before` hook in a test file: Context, with properties:
+       *    - test: Hook
+       *
+       * - `beforeEach` hook in a test file: Suite, which has a `ctx`: Context property with properties:
+       *   - test: Hook
+       *
+       * - global `after` hook: Context, with properties:
+       *   - test: Hook
+       *
+       *  For the test file hooks, the Hook has a `file` property, but for some reason the root hook doesn’t (i.e. doesn’t indicate which file the hook lives in)
+       */
+      const mochaContext = 'ctx' in thisInHook ? thisInHook.ctx : thisInHook;
+      const mochaHook = mochaContext.test;
+
+      const context = {
+        type: 'hook',
+        title: mochaHook.originalTitle,
+      };
+
+      if (!mochaHook.parent.root) {
+        // For some reason the root hook doesn’t contain file information
+        context.file = mochaHook.file;
+        context.suite = this.extractSuiteHierarchy(mochaHook.parent);
+      } else {
+        context.file = null;
+        context.suite = null;
+      }
+
+      return new this(this.createContext(context));
+    }
+
+    static forTestDefinition(thisInDescribe, label) {
+      if (!label) {
+        throw new Error('SharedHelper.forTestDefinition called without label');
+      }
+
+      const context = {
+        type: 'definition',
+        file: thisInDescribe.file,
+        suite: this.extractSuiteHierarchy(thisInDescribe),
+        label,
+      };
+
+      return new this(this.createContext(context));
+    }
+
+    recordTestStart() {
+      this.privateApiContext.recordTestStart();
+    }
+
+    recordPrivateApi(identifier) {
+      this.privateApiContext.record(identifier);
+    }
+
+    get availableTransports() {
+      const helper = this.addingHelperFunction('availableTransports');
+      return helper._availableTransports;
+    }
+
+    get _availableTransports() {
+      this.recordPrivateApi('call.Utils.keysArray');
+      this.recordPrivateApi('call.ConnectionManager.supportedTransports');
+      this.recordPrivateApi('read.Realtime._transports');
+      return utils.keysArray(
+        clientModule.Ably.Realtime.ConnectionManager.supportedTransports(clientModule.Ably.Realtime._transports),
+      );
+    }
+
+    get bestTransport() {
+      const helper = this.addingHelperFunction('bestTransport');
+      return helper._bestTransport;
+    }
+
+    get _bestTransport() {
+      return this.availableTransports[0];
+    }
+
+    displayError(err) {
+      if (typeof err == 'string' || err == null) return err;
+
+      var result = '';
+      if (err.statusCode) result += err.statusCode + '; ';
+      if (typeof err.message == 'string') result += err.message;
+      if (typeof err.message == 'object') result += JSON.stringify(err.message);
+
+      return result;
+    }
+
+    monitorConnection(done, realtime, states) {
+      (states || ['failed', 'suspended']).forEach(function (state) {
+        realtime.connection.on(state, function () {
+          done(new Error('Connection monitoring: state changed to ' + state + ', aborting test'));
+          realtime.close();
+        });
       });
-  }
+    }
 
-  function simulateDroppedConnection(realtime) {
-    // Go into the 'disconnected' state before actually disconnecting the transports
-    // to avoid the instantaneous reconnect attempt that would be triggered in
-    // notifyState by the active transport getting disconnected from a connected state
-    realtime.connection.once('disconnected', function () {
+    async monitorConnectionAsync(action, realtime, states) {
+      const monitoringResultPromise = new Promise((resolve, reject) => {
+        this.monitorConnection((err) => (err ? reject(err) : resolve()), realtime, states);
+      });
+      const actionResultPromise = Promise.resolve(action());
+
+      return Promise.race([monitoringResultPromise, actionResultPromise]);
+    }
+
+    closeAndFinish(done, realtime, err) {
+      const helper = this.addingHelperFunction('closeAndFinish');
+      helper._closeAndFinish(done, realtime, err);
+    }
+
+    _closeAndFinish(done, realtime, err) {
+      if (typeof realtime === 'undefined') {
+        // Likely called in a catch block for an exception
+        // that occured before realtime was initialized
+        done(err);
+        return;
+      }
+      if (Object.prototype.toString.call(realtime) == '[object Array]') {
+        var realtimes = realtime.filter(function (rt) {
+          return rt !== undefined;
+        });
+        this.closeAndFinishSeveral(done, realtimes, err);
+        return;
+      }
+      this.callbackOnClose(realtime, function () {
+        done(err);
+      });
+    }
+
+    async closeAndFinishAsync(realtime, err) {
+      const helper = this.addingHelperFunction('closeAndFinishAsync');
+      return helper._closeAndFinishAsync(realtime, err);
+    }
+
+    async closeAndFinishAsync(realtime, err) {
+      return new Promise((resolve, reject) => {
+        this.closeAndFinish((err) => (err ? reject(err) : resolve()), realtime, err);
+      });
+    }
+
+    /**
+     * Uses a callback to communicate the result of a `Promise`. The first argument passed to the callback will be either an error (when the promise is rejected) or `null` (when the promise is fulfilled). In the case where the promise is fulfilled, the resulting value will be passed to the callback as a second argument.
+     */
+    static whenPromiseSettles(promise, callback) {
+      promise
+        .then((result) => {
+          callback(null, result);
+        })
+        .catch((err) => {
+          callback(err);
+        });
+    }
+
+    simulateDroppedConnection(realtime) {
+      const helper = this.addingHelperFunction('simulateDroppedConnection');
+      helper._simulateDroppedConnection(realtime);
+    }
+
+    _simulateDroppedConnection(realtime) {
+      const self = this;
+      // Go into the 'disconnected' state before actually disconnecting the transports
+      // to avoid the instantaneous reconnect attempt that would be triggered in
+      // notifyState by the active transport getting disconnected from a connected state
+      realtime.connection.once('disconnected', function () {
+        self.recordPrivateApi('call.connectionManager.disconnectAllTransports');
+        realtime.connection.connectionManager.disconnectAllTransports();
+      });
+      this.recordPrivateApi('call.connectionManager.requestState');
+      realtime.connection.connectionManager.requestState({ state: 'disconnected' });
+    }
+
+    becomeSuspended(realtime, cb) {
+      const helper = this.addingHelperFunction('becomeSuspended');
+      helper._becomeSuspended(realtime, cb);
+    }
+
+    _becomeSuspended(realtime, cb) {
+      this.recordPrivateApi('call.connectionManager.disconnectAllTransports');
       realtime.connection.connectionManager.disconnectAllTransports();
-    });
-    realtime.connection.connectionManager.requestState({ state: 'disconnected' });
-  }
-
-  function becomeSuspended(realtime, cb) {
-    realtime.connection.connectionManager.disconnectAllTransports();
-    realtime.connection.once('disconnected', function () {
-      realtime.connection.connectionManager.notifyState({ state: 'suspended' });
-    });
-    if (cb)
-      realtime.connection.once('suspended', function () {
-        cb();
+      const self = this;
+      realtime.connection.once('disconnected', function () {
+        self.recordPrivateApi('call.connectionManager.notifyState');
+        realtime.connection.connectionManager.notifyState({ state: 'suspended' });
       });
-  }
+      if (cb)
+        realtime.connection.once('suspended', function () {
+          cb();
+        });
+    }
 
-  function callbackOnClose(realtime, callback) {
-    if (!realtime.connection.connectionManager.activeProtocol) {
-      platform.Config.nextTick(function () {
-        realtime.close();
+    callbackOnClose(realtime, callback) {
+      const helper = this.addingHelperFunction('callbackOnClose');
+      helper._callbackOnClose(realtime, callback);
+    }
+
+    _callbackOnClose(realtime, callback) {
+      this.recordPrivateApi('read.connectionManager.activeProtocol');
+      if (!realtime.connection.connectionManager.activeProtocol) {
+        this.recordPrivateApi('call.Platform.nextTick');
+        platform.Config.nextTick(function () {
+          realtime.close();
+          callback();
+        });
+        return;
+      }
+      this.recordPrivateApi('read.connectionManager.activeProtocol.transport');
+      this.recordPrivateApi('listen.transport.disposed');
+      realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function () {
         callback();
       });
-      return;
+      /* wait a tick before closing in order to avoid the final close
+       * happening synchronously in a publish/attach callback, which
+       * complicates channelattach_publish_invalid etc. */
+      this.recordPrivateApi('call.Platform.nextTick');
+      platform.Config.nextTick(function () {
+        realtime.close();
+      });
     }
-    realtime.connection.connectionManager.activeProtocol.transport.on('disposed', function () {
-      callback();
-    });
-    /* wait a tick before closing in order to avoid the final close
-     * happening synchronously in a publish/attach callback, which
-     * complicates channelattach_publish_invalid etc. */
-    platform.Config.nextTick(function () {
-      realtime.close();
-    });
-  }
 
-  function closeAndFinishSeveral(done, realtimeArray, e) {
-    async.map(
-      realtimeArray,
-      function (realtime, mapCb) {
-        var parallelItem = function (parallelCb) {
-          callbackOnClose(realtime, function () {
-            parallelCb();
+    closeAndFinishSeveral(done, realtimeArray, e) {
+      const helper = this.addingHelperFunction('closeAndFinishSeveral');
+      helper._closeAndFinishSeveral(done, realtimeArray, e);
+    }
+
+    _closeAndFinishSeveral(done, realtimeArray, e) {
+      async.map(
+        realtimeArray,
+        (realtime, mapCb) => {
+          var parallelItem = (parallelCb) => {
+            this.callbackOnClose(realtime, function () {
+              parallelCb();
+            });
+          };
+          mapCb(null, parallelItem);
+        },
+        function (err, parallelItems) {
+          async.parallel(parallelItems, function () {
+            if (err) {
+              done(err);
+              return;
+            }
+            done(e);
           });
+        },
+      );
+    }
+
+    /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
+    static testOnAllTransports(thisInDescribe, name, testFn, skip) {
+      const helper = this.forTestDefinition(thisInDescribe, name).addingHelperFunction('testOnAllTransports');
+      var itFn = skip ? it.skip : it;
+
+      function createTest(options) {
+        return function (done) {
+          this.test.helper = this.test.helper.withParameterisedTestTitle(name);
+          return testFn(options).apply(this, [done]);
         };
-        mapCb(null, parallelItem);
-      },
-      function (err, parallelItems) {
-        async.parallel(parallelItems, function () {
-          if (err) {
-            done(err);
-            return;
-          }
-          done(e);
-        });
-      },
-    );
-  }
+      }
 
-  /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
-  function testOnAllTransports(name, testFn, skip) {
-    var itFn = skip ? it.skip : it;
-    let transports = availableTransports;
-    transports.forEach(function (transport) {
-      itFn(
-        name + '_with_' + transport + '_binary_transport',
-        testFn({ transports: [transport], useBinaryProtocol: true }),
-      );
-      itFn(
-        name + '_with_' + transport + '_text_transport',
-        testFn({ transports: [transport], useBinaryProtocol: false }),
-      );
-    });
-    /* Plus one for no transport specified (ie use websocket/base mechanism if
-     * present).  (we explicitly specify all transports since node only does
-     * websocket+nodecomet if comet is explicitly requested)
-     * */
-    itFn(name + '_with_binary_transport', testFn({ transports, useBinaryProtocol: true }));
-    itFn(name + '_with_text_transport', testFn({ transports, useBinaryProtocol: false }));
-  }
-
-  testOnAllTransports.skip = function (name, testFn) {
-    testOnAllTransports(name, testFn, true);
-  };
-
-  function restTestOnJsonMsgpack(name, testFn, skip) {
-    var itFn = skip ? it.skip : it;
-    itFn(name + ' with binary protocol', async function () {
-      await testFn(new clientModule.AblyRest({ useBinaryProtocol: true }), name + '_binary');
-    });
-    itFn(name + ' with text protocol', async function () {
-      await testFn(new clientModule.AblyRest({ useBinaryProtocol: false }), name + '_text');
-    });
-  }
-
-  restTestOnJsonMsgpack.skip = function (name, testFn) {
-    restTestOnJsonMsgpack(name, testFn, true);
-  };
-
-  function clearTransportPreference() {
-    if (isBrowser && window.localStorage) {
-      window.localStorage.removeItem('ably-transport-preference');
-    }
-  }
-
-  function isComet(transport) {
-    return transport.toString().indexOf('/comet/') > -1;
-  }
-
-  function isWebsocket(transport) {
-    return !!transport.toString().match(/wss?\:/);
-  }
-
-  function randomString() {
-    return Math.random().toString().slice(2);
-  }
-
-  function testMessageEquality(one, two) {
-    // treat `null` same as `undefined` (using ==, rather than ===)
-    expect(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').").to.be
-      .ok;
-
-    if (typeof one.data === 'string' && typeof two.data === 'string') {
-      expect(one.data === two.data, 'String data contents mismatch.').to.be.ok;
-      return;
+      let transports = helper.availableTransports;
+      transports.forEach(function (transport) {
+        itFn(
+          name + '_with_' + transport + '_binary_transport',
+          createTest({ transports: [transport], useBinaryProtocol: true }),
+        );
+        itFn(
+          name + '_with_' + transport + '_text_transport',
+          createTest({ transports: [transport], useBinaryProtocol: false }),
+        );
+      });
+      /* Plus one for no transport specified (ie use websocket/base mechanism if
+       * present).  (we explicitly specify all transports since node only does
+       * websocket+nodecomet if comet is explicitly requested)
+       * */
+      itFn(name + '_with_binary_transport', createTest({ transports, useBinaryProtocol: true }));
+      itFn(name + '_with_text_transport', createTest({ transports, useBinaryProtocol: false }));
     }
 
-    if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
-      expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
-      return;
+    static restTestOnJsonMsgpack(name, testFn, skip) {
+      var itFn = skip ? it.skip : it;
+      itFn(name + ' with binary protocol', async function () {
+        const helper = this.test.helper.withParameterisedTestTitle(name);
+
+        await testFn(new clientModule.AblyRest(helper, { useBinaryProtocol: true }), name + '_binary', helper);
+      });
+      itFn(name + ' with text protocol', async function () {
+        const helper = this.test.helper.withParameterisedTestTitle(name);
+
+        await testFn(new clientModule.AblyRest(helper, { useBinaryProtocol: false }), name + '_text', helper);
+      });
     }
 
-    var json1 = JSON.stringify(one.data);
-    var json2 = JSON.stringify(two.data);
-    if (null === json1 || undefined === json1 || null === json2 || undefined === json2) {
-      expect(false, 'JSON stringify failed.').to.be.ok;
-      return;
-    }
-    expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
-  }
-
-  let activeClients = [];
-
-  function AblyRealtime(options) {
-    const client = clientModule.AblyRealtime(options);
-    activeClients.push(client);
-    return client;
-  }
-
-  /* Slightly crude catch-all hook to close any dangling realtime clients left open
-   * after a test fails without calling closeAndFinish */
-  function closeActiveClients() {
-    activeClients.forEach((client) => {
-      client.close();
-    });
-    activeClients = [];
-  }
-
-  function logTestResults() {
-    if (this.currentTest.isFailed()) {
-      const logs = globals.getLogs();
-      if (logs.length > 0) {
-        // empty console.logs are for vertical spacing
-        console.log();
-        console.log('Logs for failing test: \n');
-        logs.forEach(([timestamp, log]) => {
-          console.log(timestamp, log);
-        });
-        console.log();
+    clearTransportPreference() {
+      if (isBrowser && window.localStorage) {
+        window.localStorage.removeItem('ably-transport-preference');
       }
     }
+
+    isComet(transport) {
+      return transport.toString().indexOf('/comet/') > -1;
+    }
+
+    isWebsocket(transport) {
+      return !!transport.toString().match(/wss?\:/);
+    }
+
+    static randomString() {
+      return Math.random().toString().slice(2);
+    }
+
+    testMessageEquality(one, two) {
+      const helper = this.addingHelperFunction('testMessageEquality');
+      return helper._testMessageEquality(one, two);
+    }
+
+    _testMessageEquality(one, two) {
+      // treat `null` same as `undefined` (using ==, rather than ===)
+      expect(one.encoding == two.encoding, "Encoding mismatch ('" + one.encoding + "' != '" + two.encoding + "').").to
+        .be.ok;
+
+      if (typeof one.data === 'string' && typeof two.data === 'string') {
+        expect(one.data === two.data, 'String data contents mismatch.').to.be.ok;
+        return;
+      }
+
+      this.recordPrivateApi('call.BufferUtils.isBuffer');
+      if (BufferUtils.isBuffer(one.data) && BufferUtils.isBuffer(two.data)) {
+        this.recordPrivateApi('call.BufferUtils.areBuffersEqual');
+        expect(BufferUtils.areBuffersEqual(one.data, two.data), 'Buffer data contents mismatch.').to.equal(true);
+        return;
+      }
+
+      var json1 = JSON.stringify(one.data);
+      var json2 = JSON.stringify(two.data);
+      if (null === json1 || undefined === json1 || null === json2 || undefined === json2) {
+        expect(false, 'JSON stringify failed.').to.be.ok;
+        return;
+      }
+      expect(json1 === json2, 'JSON data contents mismatch.').to.be.ok;
+    }
+
+    ablyClientOptions(options) {
+      return clientModule.ablyClientOptions(this, options);
+    }
+
+    AblyRest(options) {
+      return clientModule.AblyRest(this, options);
+    }
+
+    static activeClients = [];
+
+    AblyRealtime(options) {
+      const client = clientModule.AblyRealtime(this, options);
+      SharedHelper.activeClients.push(client);
+      return client;
+    }
+
+    /* Slightly crude catch-all hook to close any dangling realtime clients left open
+     * after a test fails without calling closeAndFinish */
+    closeActiveClients() {
+      SharedHelper.activeClients.forEach((client) => {
+        client.close();
+      });
+      SharedHelper.activeClients = [];
+    }
+
+    logTestResults(afterEachThis) {
+      if (afterEachThis.currentTest.isFailed()) {
+        const logs = globals.getLogs();
+        if (logs.length > 0) {
+          // empty console.logs are for vertical spacing
+          console.log();
+          console.log('Logs for failing test: \n');
+          logs.forEach(([timestamp, log]) => {
+            console.log(timestamp, log);
+          });
+          console.log();
+        }
+      }
+    }
+
+    createStats(app, statsData, callback) {
+      testAppModule.createStatsFixtureData(this, app, statsData, callback);
+    }
+
+    setupApp(forceSetup, done) {
+      return testAppModule.setup(this, forceSetup, done);
+    }
+
+    tearDownApp(app, callback) {
+      testAppModule.tearDown(this, app, callback);
+    }
+
+    dumpPrivateApiUsage() {
+      privateApiRecorder.dump();
+    }
   }
 
-  return (module.exports = {
-    setupApp: testAppModule.setup,
-    tearDownApp: testAppModule.tearDown,
-    createStats: testAppModule.createStatsFixtureData,
-    getTestApp: testAppModule.getTestApp,
+  SharedHelper.testOnAllTransports.skip = function (thisInDescribe, name, testFn) {
+    SharedHelper.testOnAllTransports(thisInDescribe, name, testFn, true);
+  };
 
-    Ably: clientModule.Ably,
-    AblyRest: clientModule.AblyRest,
-    AblyRealtime: AblyRealtime,
-    ablyClientOptions: clientModule.ablyClientOptions,
-    Utils: utils,
+  SharedHelper.restTestOnJsonMsgpack.skip = function (name, testFn) {
+    SharedHelper.restTestOnJsonMsgpack(name, testFn, true);
+  };
 
-    loadTestData: testAppManager.loadJsonData,
-    testResourcesPath: testAppManager.testResourcesPath,
-
-    displayError: displayError,
-    monitorConnection: monitorConnection,
-    monitorConnectionAsync: monitorConnectionAsync,
-    closeAndFinish: closeAndFinish,
-    closeAndFinishAsync: closeAndFinishAsync,
-    simulateDroppedConnection: simulateDroppedConnection,
-    becomeSuspended: becomeSuspended,
-    testOnAllTransports: testOnAllTransports,
-    restTestOnJsonMsgpack: restTestOnJsonMsgpack,
-    availableTransports: availableTransports,
-    bestTransport: bestTransport,
-    clearTransportPreference: clearTransportPreference,
-    isComet: isComet,
-    isWebsocket: isWebsocket,
-    unroutableHost: unroutableHost,
-    unroutableAddress: unroutableAddress,
-    whenPromiseSettles: whenPromiseSettles,
-    randomString: randomString,
-    testMessageEquality: testMessageEquality,
-    closeActiveClients,
-    logTestResults,
-    flushTestLogs: globals.flushLogs,
-  });
+  return (module.exports = SharedHelper);
 });

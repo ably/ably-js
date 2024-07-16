@@ -2,23 +2,20 @@
 
 define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_transport', 'push'], function (
   Ably,
-  helper,
+  Helper,
   async,
   chai,
   pushChannelTransport,
   PushPlugin,
 ) {
-  var Utils = helper.Utils;
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var whenPromiseSettles = helper.whenPromiseSettles;
-  var originalPushConfig = Ably.Realtime.Platform.Config.push;
+  var originalPushConfig;
 
-  function PushRealtime(options) {
+  function PushRealtime(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { Push: PushPlugin } });
   }
 
-  function PushRest(options) {
+  function PushRest(helper, options) {
     return helper.AblyRest({ ...options, plugins: { Push: PushPlugin } });
   }
 
@@ -51,7 +48,13 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
+
+      helper.recordPrivateApi('read.Platform.Config.push');
+      originalPushConfig = Ably.Realtime.Platform.Config.push;
+      helper.recordPrivateApi('write.Platform.Config.push');
       Ably.Realtime.Platform.Config.push = pushChannelTransport;
+
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -62,14 +65,21 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     beforeEach(() => {
+      const helper = Helper.forHook(this);
+
+      helper.recordPrivateApi('call.Platform.Config.push.storage.clear');
       Ably.Realtime.Platform.Config.push.storage.clear();
     });
 
     after(() => {
+      const helper = Helper.forHook(this);
+
+      helper.recordPrivateApi('write.Platform.Config.push');
       Ably.Realtime.Platform.Config.push = originalPushConfig;
     });
 
     it('Get subscriptions', async function () {
+      const helper = this.test.helper;
       var subscribes = [];
       var deletes = [];
       var subsByChannel = {};
@@ -101,6 +111,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     it('Publish', async function () {
+      const helper = this.test.helper;
       try {
         var realtime = helper.AblyRealtime();
 
@@ -112,6 +123,9 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
           data: { foo: 'bar' },
         };
 
+        helper.recordPrivateApi('read.realtime.options');
+        helper.recordPrivateApi('call.Defaults.getHost');
+        helper.recordPrivateApi('call.realtime.baseUri');
         var baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
         var pushRecipient = {
           transportType: 'ablyChannel',
@@ -138,6 +152,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     it('deviceRegistrations save', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest();
 
       var saved = await rest.push.admin.deviceRegistrations.save(testDevice);
@@ -152,6 +167,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     it('deviceRegistrations get and list', async function () {
+      const helper = this.test.helper;
       var registrations = [];
       var deletes = [];
       var devices = [];
@@ -225,6 +241,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     it('deviceRegistrations remove removeWhere', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest();
 
       await rest.push.admin.deviceRegistrations.save(testDevice);
@@ -249,6 +266,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     it('channelSubscriptions save', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
 
@@ -264,6 +282,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     it('channelSubscriptions get', async function () {
+      const helper = this.test.helper;
       var subscribes = [];
       var deletes = [];
       var subsByChannel = {};
@@ -299,6 +318,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     it('push_channelSubscriptions_remove', async function () {
+      const helper = this.test.helper;
       var rest = helper.AblyRest({ clientId: 'testClient' });
       var subscription = { clientId: 'testClient', channel: 'pushenabled:foo' };
 
@@ -307,6 +327,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
     });
 
     it('channelSubscriptions listChannels', async function () {
+      const helper = this.test.helper;
       var subscribes = [];
       var deletes = [];
       for (var i = 0; i < 5; i++) {
@@ -338,15 +359,21 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
        * RSH2a
        */
       it('push_activation_succeeds', async function () {
-        const rest = PushRealtime({ pushRecipientChannel: 'my_channel' });
+        const helper = this.test.helper;
+
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRealtime(helper, { pushRecipientChannel: 'my_channel' });
         await rest.push.activate();
         expect(rest.device.deviceIdentityToken).to.be.ok;
       });
 
       // no spec item
       it('device_push', function (done) {
+        const helper = this.test.helper;
+
         const channelName = 'pushenabled:device_push';
-        const realtime = PushRealtime({ pushRecipientChannel: channelName });
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const realtime = PushRealtime(helper, { pushRecipientChannel: channelName });
 
         const pushPayload = {
           notification: { title: 'Test message', body: 'Test message body' },
@@ -355,8 +382,11 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
 
         const channel = realtime.channels.get(channelName);
 
+        helper.recordPrivateApi('call.Defaults.getHost');
+        helper.recordPrivateApi('read.realtime.options');
         const baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
 
+        helper.recordPrivateApi('read.realtime.options');
         const pushRecipient = {
           transportType: 'ablyChannel',
           channel: channelName,
@@ -371,15 +401,15 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
               expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
               expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
               expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           })
           .then(() => {
-            whenPromiseSettles(realtime.push.admin.publish(pushRecipient, pushPayload), function (err) {
+            Helper.whenPromiseSettles(realtime.push.admin.publish(pushRecipient, pushPayload), function (err) {
               if (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
               }
             });
           });
@@ -389,9 +419,12 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
        * RSH7b
        */
       it('subscribe_client', async function () {
+        const helper = this.test.helper;
+
         const clientId = 'me';
         const channelName = 'pushenabled:subscribe_client';
-        const rest = PushRest({ clientId, pushRecipientChannel: channelName });
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { clientId, pushRecipientChannel: channelName });
         const channel = rest.channels.get(channelName);
 
         await rest.push.activate();
@@ -409,8 +442,11 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
        * RSH7b1
        */
       it('subscribe_client_without_clientId', async function () {
+        const helper = this.test.helper;
+
         const channelName = 'pushenabled:subscribe_client_without_clientId';
-        const rest = PushRest({ pushRecipientChannel: 'hello' });
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { pushRecipientChannel: 'hello' });
         await rest.push.activate();
         const channel = rest.channels.get(channelName);
         try {
@@ -427,9 +463,12 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
        * RSH7d
        */
       it('unsubscribe_client', async function () {
+        const helper = this.test.helper;
+
         const clientId = 'me';
         const channelName = 'pushenabled:unsubscribe_client';
-        const rest = PushRest({ clientId, pushRecipientChannel: channelName });
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { clientId, pushRecipientChannel: channelName });
         const channel = rest.channels.get(channelName);
 
         await rest.push.activate();
@@ -445,10 +484,13 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
 
       // no spec item
       it('direct_publish_client_id', async function () {
+        const helper = this.test.helper;
+
         const clientId = 'me2';
         const channelName = 'pushenabled:direct_publish_client_id';
-        const rest = PushRest({ clientId, pushRecipientChannel: channelName });
-        const realtime = PushRealtime();
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { clientId, pushRecipientChannel: channelName });
+        const realtime = PushRealtime(helper);
         const rtChannel = realtime.channels.get(channelName);
         const channel = rest.channels.get(channelName);
 
@@ -483,8 +525,11 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
        * RSH7a
        */
       it('subscribe_device', async function () {
+        const helper = this.test.helper;
+
         const channelName = 'pushenabled:subscribe_device';
-        const rest = PushRest({ pushRecipientChannel: channelName });
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { pushRecipientChannel: channelName });
         const channel = rest.channels.get(channelName);
 
         await rest.push.activate();
@@ -502,8 +547,11 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
        * RSH7c
        */
       it('unsubscribe_device', async function () {
+        const helper = this.test.helper;
+
         const channelName = 'pushenabled:unsubscribe_device';
-        const rest = PushRest({ pushRecipientChannel: channelName });
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { pushRecipientChannel: channelName });
         const channel = rest.channels.get(channelName);
 
         await rest.push.activate();
@@ -519,9 +567,12 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
 
       // no spec item
       it('direct_publish_device_id', async function () {
+        const helper = this.test.helper;
+
         const channelName = 'direct_publish_device_id';
-        const rest = PushRest({ pushRecipientChannel: channelName });
-        const realtime = PushRealtime();
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { pushRecipientChannel: channelName });
+        const realtime = PushRealtime(helper);
         const rtChannel = realtime.channels.get(channelName);
         const channel = rest.channels.get(channelName);
 
@@ -554,10 +605,13 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
 
       // no spec item
       it('push_channel_subscription_device_id', async function () {
+        const helper = this.test.helper;
+
         const pushRecipientChannel = 'push_channel_subscription_device_id';
         const channelName = 'pushenabled:push_channel_subscription_device_id';
-        const rest = PushRest({ pushRecipientChannel });
-        const realtime = PushRealtime();
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { pushRecipientChannel });
+        const realtime = PushRealtime(helper);
         const channel = rest.channels.get(channelName);
         const rtChannel = realtime.channels.get(pushRecipientChannel);
 
@@ -595,10 +649,13 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
 
       // no spec item
       it('push_channel_subscription_client_id', async function () {
+        const helper = this.test.helper;
+
         const pushRecipientChannel = 'push_channel_subscription_client_id';
         const channelName = 'pushenabled:push_channel_subscription_client_id';
-        const rest = PushRest({ clientId: 'me', pushRecipientChannel });
-        const realtime = PushRealtime();
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { clientId: 'me', pushRecipientChannel });
+        const realtime = PushRealtime(helper);
         const channel = rest.channels.get(channelName);
         const rtChannel = realtime.channels.get(pushRecipientChannel);
 
@@ -638,7 +695,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
        * RSH8h
        */
       it('failed_getting_device_details', async function () {
-        const rest = PushRest();
+        const rest = PushRest(this.test.helper);
         try {
           await rest.push.activate();
         } catch (err) {
@@ -653,8 +710,11 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
        * RSH3b3c
        */
       it('failed_registration', async function () {
+        const helper = this.test.helper;
+
         const pushRecipientChannel = 'failed_registration';
-        const rest = PushRest({ pushRecipientChannel });
+        helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
+        const rest = PushRest(helper, { pushRecipientChannel });
         rest.device.platform = 'not_a_real_platform';
         try {
           await rest.push.activate();

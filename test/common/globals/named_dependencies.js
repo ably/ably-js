@@ -22,5 +22,9 @@ define(function () {
       browser: 'test/common/modules/interception_proxy_client',
       node: 'test/common/modules/interception_proxy_client',
     },
+    private_api_recorder: {
+      browser: 'test/common/modules/private_api_recorder',
+      node: 'test/common/modules/private_api_recorder',
+    },
   });
 });

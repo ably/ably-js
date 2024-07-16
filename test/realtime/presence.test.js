@@ -1,13 +1,9 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  var utils = helper.Utils;
   var createPM = Ably.protocolMessageFromDeserialized;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
   var PresenceMessage = Ably.Realtime.PresenceMessage;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   function extractClientIds(presenceSet) {
     return presenceSet
@@ -27,13 +23,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   var testClientId = 'testclient',
     testClientId2 = 'testclient2';
 
-  var createListenerChannel = function (channelName, callback) {
+  var createListenerChannel = function (helper, channelName, callback) {
     var channel, realtime;
     try {
       realtime = helper.AblyRealtime();
       realtime.connection.on('connected', function () {
         channel = realtime.channels.get(channelName);
-        whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           callback(err, realtime, channel);
         });
       });
@@ -57,11 +53,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     };
   };
 
-  var runTestWithEventListener = function (done, channel, eventListener, testRunner) {
+  var runTestWithEventListener = function (done, helper, channel, eventListener, testRunner) {
     try {
-      createListenerChannel(channel, function (err, listenerRealtime, presenceChannel) {
+      createListenerChannel(helper, channel, function (err, listenerRealtime, presenceChannel) {
         if (err) {
-          closeAndFinish(done, listenerRealtime, err);
+          helper.closeAndFinish(done, listenerRealtime, err);
           return;
         }
 
@@ -78,12 +74,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           ],
           function (err, res) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             // testRunner might or might not call back with an open realtime
             var openConnections = res[1] && res[1].close ? [listenerRealtime, res[1]] : listenerRealtime;
-            closeAndFinish(done, openConnections);
+            helper.closeAndFinish(done, openConnections);
           },
         );
       });
@@ -95,6 +91,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   describe('realtime/presence', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -103,7 +100,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         // Create authTokens associated with specific clientIds
         try {
           rest = helper.AblyRest();
-          whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
+          Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
             if (err) {
               done(err);
               return;
@@ -116,20 +113,23 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return;
             }
 
-            whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId2 }), function (err, tokenDetails) {
-              if (err) {
-                done(err);
-                return;
-              }
-              authToken2 = tokenDetails;
-              try {
-                expect(tokenDetails.clientId).to.equal(testClientId2, 'Verify client id (2)');
-              } catch (err) {
-                done(err);
-                return;
-              }
-              done();
-            });
+            Helper.whenPromiseSettles(
+              rest.auth.requestToken({ clientId: testClientId2 }),
+              function (err, tokenDetails) {
+                if (err) {
+                  done(err);
+                  return;
+                }
+                authToken2 = tokenDetails;
+                try {
+                  expect(tokenDetails.clientId).to.equal(testClientId2, 'Verify client id (2)');
+                } catch (err) {
+                  done(err);
+                  return;
+                }
+                done();
+              },
+            );
           });
         } catch (err) {
           done(err);
@@ -141,6 +141,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Attach to channel, enter presence channel with data and await entered event
      */
     it.skip('presenceAttachAndEnter', function (done) {
+      const helper = this.test.helper;
       var channelName = 'attachAndEnter';
       var attachAndEnter = function (cb) {
         /* set up authenticated connection */
@@ -148,57 +149,65 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
             }
-            whenPromiseSettles(clientChannel.presence.enter('Test client data (enter0)'), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.enter('Test client data (enter0)'), function (err) {
               cb(err, clientRealtime);
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), attachAndEnter);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), attachAndEnter);
     });
 
     /*
      * Enter presence channel without prior attach and await entered event
      */
     it('presenceEnterWithoutAttach', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithoutAttach';
       var enterWithoutAttach = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.presence.enter('Test client data (enterWithoutAttach)'), function (err) {
-            cb(err, clientRealtime);
-          });
+          Helper.whenPromiseSettles(
+            clientChannel.presence.enter('Test client data (enterWithoutAttach)'),
+            function (err) {
+              cb(err, clientRealtime);
+            },
+          );
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutAttach);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithoutAttach);
     });
 
     /*
      * Enter presence channel without prior connect and await entered event
      */
     it('presenceEnterWithoutConnect', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithoutConnect';
       var enterWithoutConnect = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
         var clientChannel = clientRealtime.channels.get(channelName);
-        whenPromiseSettles(clientChannel.presence.enter('Test client data (enterWithoutConnect)'), function (err) {
-          cb(err, clientRealtime);
-        });
-        monitorConnection(done, clientRealtime);
+        Helper.whenPromiseSettles(
+          clientChannel.presence.enter('Test client data (enterWithoutConnect)'),
+          function (err) {
+            cb(err, clientRealtime);
+          },
+        );
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithoutConnect);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithoutConnect);
     });
 
     /*
@@ -206,6 +215,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * from channel immediately in 'attached' callback
      */
     it.skip('presenceEnterDetachRace', function (done) {
+      const helper = this.test.helper;
       // Can't use runTestWithEventListener helper as one of the successful
       // outcomes is an error in presence enter, in which case listenForEventOn
       // will not run its callback
@@ -214,9 +224,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       try {
         /* listen for the enter event, test is complete when received */
 
-        createListenerChannel(channelName, function (err, listenerRealtime, presenceChannel) {
+        createListenerChannel(helper, channelName, function (err, listenerRealtime, presenceChannel) {
           if (err) {
-            closeAndFinish(done, listenerRealtime, err);
+            helper.closeAndFinish(done, listenerRealtime, err);
             return;
           }
 
@@ -225,40 +235,40 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           listenerFor('enter', testClientId)(presenceChannel, function () {
             if (!raceFinished) {
               raceFinished = true;
-              closeAndFinish(done, [listenerRealtime, clientRealtime]);
+              helper.closeAndFinish(done, [listenerRealtime, clientRealtime]);
             }
           });
 
           clientRealtime.connection.on('connected', function () {
             /* get channel, attach, and enter */
             var clientChannel = clientRealtime.channels.get(channelName);
-            whenPromiseSettles(clientChannel.attach(), function (err) {
+            Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
               if (err) {
-                closeAndFinish(done, [listenerRealtime, clientRealtime], err);
+                helper.closeAndFinish(done, [listenerRealtime, clientRealtime], err);
                 return;
               }
-              whenPromiseSettles(clientChannel.detach(), function (err) {
+              Helper.whenPromiseSettles(clientChannel.detach(), function (err) {
                 if (err) {
-                  closeAndFinish(done, [listenerRealtime, clientRealtime], err);
+                  helper.closeAndFinish(done, [listenerRealtime, clientRealtime], err);
                   return;
                 }
               });
             });
-            whenPromiseSettles(clientChannel.presence.enter('Test client data (enter3)'), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.enter('Test client data (enter3)'), function (err) {
               // Note: either an error (pending messages failed to send due to detach)
               //   or a success (pending messages were pushed out before the detach)
               //   is an acceptable result. Throwing an uncaught exception (the behaviour
               //   that we're testing for) isn't.
               if (err && !raceFinished) {
                 raceFinished = true;
-                closeAndFinish(done, [listenerRealtime, clientRealtime]);
+                helper.closeAndFinish(done, [listenerRealtime, clientRealtime]);
                 return;
               }
               /* if presence event gets sent successfully, second and third assertions happen and test
                * finishes in the presence event handler */
             });
           });
-          monitorConnection(done, clientRealtime);
+          helper.monitorConnection(done, clientRealtime);
         });
       } catch (err) {
         done(err);
@@ -269,6 +279,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Attach to channel, enter presence channel with a callback but no data and await entered event
      */
     it('presenceEnterWithCallback', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithCallback';
       var enterWithCallback = function (cb) {
         /* set up authenticated connection */
@@ -276,33 +287,34 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
             }
-            whenPromiseSettles(clientChannel.presence.enter(), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.enter(), function (err) {
               cb(err, clientRealtime);
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithCallback);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithCallback);
     });
 
     /*
      * Attach to channel, enter presence channel with neither callback nor data and await entered event
      */
     it('presenceEnterWithNothing', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithNothing';
       var enterWithNothing = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
@@ -311,23 +323,24 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             cb(null, clientRealtime);
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithNothing);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithNothing);
     });
 
     /*
      * Attach to channel, enter presence channel with data but no callback and await entered event
      */
     it('presenceEnterWithData', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterWithData';
       var enterWithData = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
@@ -336,10 +349,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             cb(null, clientRealtime);
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter'), enterWithData);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter'), enterWithData);
     });
 
     /*
@@ -347,29 +360,30 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * has valid action string
      */
     it('presenceMessageAction', function (done) {
+      const helper = this.test.helper;
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var channelName = 'presenceMessageAction';
       var clientChannel = clientRealtime.channels.get(channelName);
       var presence = clientChannel.presence;
-      whenPromiseSettles(
+      Helper.whenPromiseSettles(
         presence.subscribe(function (presenceMessage) {
           try {
             expect(presenceMessage.action).to.equal('enter', 'Action should contain string "enter"');
           } catch (err) {
-            closeAndFinish(done, clientRealtime, err);
+            helper.closeAndFinish(done, clientRealtime, err);
             return;
           }
-          closeAndFinish(done, clientRealtime);
+          helper.closeAndFinish(done, clientRealtime);
         }),
         function onPresenceSubscribe(err) {
           if (err) {
-            closeAndFinish(done, clientRealtime, err);
+            helper.closeAndFinish(done, clientRealtime, err);
             return;
           }
           clientChannel.presence.enter();
         },
       );
-      monitorConnection(done, clientRealtime);
+      helper.monitorConnection(done, clientRealtime);
     });
 
     /*
@@ -377,6 +391,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * PresenceMessage has extras. Then do the same for leaving presence.
      */
     it('presenceMessageExtras', function (done) {
+      const helper = this.test.helper;
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var channelName = 'presenceEnterWithExtras';
       var clientChannel = clientRealtime.channels.get(channelName);
@@ -385,7 +400,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       async.series(
         [
           function (cb) {
-            whenPromiseSettles(clientChannel.attach(), cb);
+            Helper.whenPromiseSettles(clientChannel.attach(), cb);
           },
           // Test entering with extras
           function (cb) {
@@ -401,6 +416,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               }
               cb();
             });
+
+            helper.recordPrivateApi('call.PresenceMessage.fromValues');
             presence.enter(
               PresenceMessage.fromValues({
                 extras: { headers: { key: 'value' } },
@@ -421,6 +438,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               }
               cb();
             });
+            helper.recordPrivateApi('call.PresenceMessage.fromValues');
             presence.leave(
               PresenceMessage.fromValues({
                 extras: { headers: { otherKey: 'otherValue' } },
@@ -430,20 +448,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
         function (err) {
           if (err) {
-            closeAndFinish(done, clientRealtime, err);
+            helper.closeAndFinish(done, clientRealtime, err);
             return;
           }
-          closeAndFinish(done, clientRealtime);
+          helper.closeAndFinish(done, clientRealtime);
         },
       );
 
-      monitorConnection(done, clientRealtime);
+      helper.monitorConnection(done, clientRealtime);
     });
 
     /*
      * Enter presence channel (without attaching), detach, then enter again to reattach
      */
     it('presenceEnterDetachEnter', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterDetachEnter';
       var secondEventListener = function (channel, callback) {
         var presenceHandler = function (presenceMsg) {
@@ -462,54 +481,55 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }); // NB remove besttransport in 1.1 spec, see attachdetach0
         var clientChannel = clientRealtime.channels.get(channelName);
         clientRealtime.connection.once('connected', function () {
-          whenPromiseSettles(clientChannel.presence.enter('first'), function (err) {
+          Helper.whenPromiseSettles(clientChannel.presence.enter('first'), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
             }
-            whenPromiseSettles(clientChannel.detach(), function (err) {
+            Helper.whenPromiseSettles(clientChannel.detach(), function (err) {
               if (err) {
                 cb(err, clientRealtime);
                 return;
               }
-              whenPromiseSettles(clientChannel.presence.enter('second'), function (err) {
+              Helper.whenPromiseSettles(clientChannel.presence.enter('second'), function (err) {
                 cb(err, clientRealtime);
               });
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, secondEventListener, enterDetachEnter);
+      runTestWithEventListener(done, helper, channelName, secondEventListener, enterDetachEnter);
     });
 
     /*
      * Enter invalid presence channel (without attaching), check callback was called with error
      */
     it('presenceEnterInvalid', function (done) {
+      const helper = this.test.helper;
       var clientRealtime;
       try {
         clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
         var clientChannel = clientRealtime.channels.get('');
         clientRealtime.connection.once('connected', function () {
-          whenPromiseSettles(clientChannel.presence.enter('clientId'), function (err) {
+          Helper.whenPromiseSettles(clientChannel.presence.enter('clientId'), function (err) {
             if (err) {
               try {
                 expect(err.code).to.equal(40010, 'Correct error code');
               } catch (err) {
-                closeAndFinish(done, clientRealtime, err);
+                helper.closeAndFinish(done, clientRealtime, err);
                 return;
               }
-              closeAndFinish(done, clientRealtime);
+              helper.closeAndFinish(done, clientRealtime);
               return;
             }
-            closeAndFinish(done, clientRealtime);
+            helper.closeAndFinish(done, clientRealtime);
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       } catch (err) {
-        closeAndFinish(done, clientRealtime, err);
+        helper.closeAndFinish(done, clientRealtime, err);
       }
     });
 
@@ -517,38 +537,40 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Attach to channel, enter+leave presence channel and await leave event
      */
     it('presenceEnterAndLeave', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterAndLeave';
       var enterAndLeave = function (cb) {
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
             }
-            whenPromiseSettles(clientChannel.presence.enter('Test client data (leave0)'), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.enter('Test client data (leave0)'), function (err) {
               if (err) {
                 cb(err, clientRealtime);
                 return;
               }
             });
-            whenPromiseSettles(clientChannel.presence.leave(), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.leave(), function (err) {
               cb(err, clientRealtime);
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('leave'), enterAndLeave);
+      runTestWithEventListener(done, helper, channelName, listenerFor('leave'), enterAndLeave);
     });
 
     /*
      * Attach to channel, enter presence channel, update data, and await update event
      */
     it('presenceEnterUpdate', function (done) {
+      const helper = this.test.helper;
       var newData = 'New data';
       var channelName = 'enterUpdate';
       var eventListener = function (channel, callback) {
@@ -571,38 +593,39 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
         clientRealtime.connection.on('connected', function () {
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
             }
-            whenPromiseSettles(clientChannel.presence.enter('Original data'), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.enter('Original data'), function (err) {
               if (err) {
                 cb(err, clientRealtime);
                 return;
               }
-              whenPromiseSettles(clientChannel.presence.update(newData), function (err) {
+              Helper.whenPromiseSettles(clientChannel.presence.update(newData), function (err) {
                 cb(err, clientRealtime);
               });
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterUpdate);
+      runTestWithEventListener(done, helper, channelName, eventListener, enterUpdate);
     });
 
     /*
      * Attach to channel, enter presence channel and get presence
      */
     it('presenceEnterGet', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterGet';
       var testData = 'some data for presenceEnterGet';
       var eventListener = function (channel, callback) {
         var presenceHandler = function () {
           /* Should be ENTER, but may be PRESENT in a race */
-          whenPromiseSettles(channel.presence.get(), function (err, presenceMembers) {
+          Helper.whenPromiseSettles(channel.presence.get(), function (err, presenceMembers) {
             if (err) {
               callback(err);
               return;
@@ -625,26 +648,27 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
             }
-            whenPromiseSettles(clientChannel.presence.enter(testData), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.enter(testData), function (err) {
               cb(err, clientRealtime);
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterGet);
+      runTestWithEventListener(done, helper, channelName, eventListener, enterGet);
     });
 
     /*
      * Realtime presence subscribe on an unattached channel should implicitly attach
      */
     it('presenceSubscribeUnattached', function (done) {
+      const helper = this.test.helper;
       var channelName = 'subscribeUnattached';
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var clientRealtime2;
@@ -654,10 +678,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           try {
             expect(presMsg.clientId).to.equal(testClientId2, 'verify clientId correct');
           } catch (err) {
-            closeAndFinish(done, [clientRealtime, clientRealtime2], err);
+            helper.closeAndFinish(done, [clientRealtime, clientRealtime2], err);
             return;
           }
-          closeAndFinish(done, [clientRealtime, clientRealtime2]);
+          helper.closeAndFinish(done, [clientRealtime, clientRealtime2]);
         });
         /* Technically a race, but c2 connecting and attaching should take longer than c1 attaching */
         clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, tokenDetails: authToken2 });
@@ -666,31 +690,32 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           clientChannel2.presence.enter('data');
         });
       });
-      monitorConnection(done, clientRealtime);
+      helper.monitorConnection(done, clientRealtime);
     });
 
     /*
      * Realtime presence GET on an unattached channel should attach and wait for sync
      */
     it('presenceGetUnattached', function (done) {
+      const helper = this.test.helper;
       var channelName = 'getUnattached';
       var testData = 'some data';
       var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       clientRealtime.connection.on('connected', function () {
         /* get channel, attach, and enter */
         var clientChannel = clientRealtime.channels.get(channelName);
-        whenPromiseSettles(clientChannel.presence.enter(testData), function (err) {
+        Helper.whenPromiseSettles(clientChannel.presence.enter(testData), function (err) {
           if (err) {
-            closeAndFinish(done, clientRealtime, err);
+            helper.closeAndFinish(done, clientRealtime, err);
             return;
           }
           var clientRealtime2 = helper.AblyRealtime({ clientId: testClientId2, tokenDetails: authToken2 });
           clientRealtime2.connection.on('connected', function () {
             var clientChannel2 = clientRealtime2.channels.get(channelName);
             /* GET without attaching */
-            whenPromiseSettles(clientChannel2.presence.get(), function (err, presenceMembers) {
+            Helper.whenPromiseSettles(clientChannel2.presence.get(), function (err, presenceMembers) {
               if (err) {
-                closeAndFinish(done, [clientRealtime, clientRealtime2], err);
+                helper.closeAndFinish(done, [clientRealtime, clientRealtime2], err);
                 return;
               }
               try {
@@ -699,27 +724,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 expect(presenceMembers.length).to.equal(1, 'Expect test client to be present');
                 expect(presenceMembers[0].clientId).to.equal(testClientId, 'Expected test clientId to be correct');
               } catch (err) {
-                closeAndFinish(done, [clientRealtime, clientRealtime2], err);
+                helper.closeAndFinish(done, [clientRealtime, clientRealtime2], err);
                 return;
               }
-              closeAndFinish(done, [clientRealtime, clientRealtime2]);
+              helper.closeAndFinish(done, [clientRealtime, clientRealtime2]);
             });
           });
         });
       });
-      monitorConnection(done, clientRealtime);
+      helper.monitorConnection(done, clientRealtime);
     });
 
     /*
      * Attach to channel, enter+leave presence channel and get presence
      */
     it('presenceEnterLeaveGet', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterLeaveGet';
       var eventListener = function (channel, callback) {
         var presenceHandler = function () {
           // Ignore the first (enter) event
           if (this.event == 'leave') {
-            whenPromiseSettles(channel.presence.get(), function (err, presenceMembers) {
+            Helper.whenPromiseSettles(channel.presence.get(), function (err, presenceMembers) {
               if (err) {
                 callback(err);
                 return;
@@ -742,39 +768,40 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
             }
-            whenPromiseSettles(clientChannel.presence.enter('testClientData'), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.enter('testClientData'), function (err) {
               if (err) {
                 cb(err, clientRealtime);
                 return;
               }
-              whenPromiseSettles(clientChannel.presence.leave(), function (err) {
+              Helper.whenPromiseSettles(clientChannel.presence.leave(), function (err) {
                 cb(err, clientRealtime);
               });
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, eventListener, enterLeaveGet);
+      runTestWithEventListener(done, helper, channelName, eventListener, enterLeaveGet);
     });
 
     /*
      * Attach to channel, enter+leave presence, detatch again, and get presence history
      */
     it('presenceHistory', function (done) {
+      const helper = this.test.helper;
       var clientRealtime;
       var channelName = 'history';
       var testClientData = 'Test client data (history0)';
       var queryPresenceHistory = function (channel) {
-        whenPromiseSettles(channel.presence.history(), function (err, resultPage) {
+        Helper.whenPromiseSettles(channel.presence.history(), function (err, resultPage) {
           if (err) {
-            closeAndFinish(done, clientRealtime, err);
+            helper.closeAndFinish(done, clientRealtime, err);
             return;
           }
 
@@ -790,7 +817,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             testClientData,
             'Verify correct data (from whichever message was the "enter")',
           );
-          closeAndFinish(done, clientRealtime);
+          helper.closeAndFinish(done, clientRealtime);
         });
       };
       try {
@@ -799,39 +826,39 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         clientRealtime.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel = clientRealtime.channels.get(channelName);
-          whenPromiseSettles(clientChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, clientRealtime, err);
+              helper.closeAndFinish(done, clientRealtime, err);
               return;
             }
-            whenPromiseSettles(clientChannel.presence.enter(testClientData), function (err) {
+            Helper.whenPromiseSettles(clientChannel.presence.enter(testClientData), function (err) {
               if (err) {
-                closeAndFinish(done, clientRealtime, err);
+                helper.closeAndFinish(done, clientRealtime, err);
                 return;
               }
-              whenPromiseSettles(clientChannel.presence.leave(), function (err) {
+              Helper.whenPromiseSettles(clientChannel.presence.leave(), function (err) {
                 if (err) {
-                  closeAndFinish(done, clientRealtime, err);
+                  helper.closeAndFinish(done, clientRealtime, err);
                   return;
                 }
-                whenPromiseSettles(clientChannel.detach(), function (err) {
+                Helper.whenPromiseSettles(clientChannel.detach(), function (err) {
                   if (err) {
-                    closeAndFinish(done, clientRealtime, err);
+                    helper.closeAndFinish(done, clientRealtime, err);
                     return;
                   }
                   try {
                     queryPresenceHistory(clientChannel);
                   } catch (err) {
-                    closeAndFinish(done, clientRealtime, err);
+                    helper.closeAndFinish(done, clientRealtime, err);
                   }
                 });
               });
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       } catch (err) {
-        closeAndFinish(done, clientRealtime, err);
+        helper.closeAndFinish(done, clientRealtime, err);
       }
     });
 
@@ -840,6 +867,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * connection, seeing existing member in message subsequent to second attach response
      */
     it('presenceSecondConnection', function (done) {
+      const helper = this.test.helper;
       var clientRealtime1, clientRealtime2;
       var channelName = 'secondConnection';
       try {
@@ -848,27 +876,27 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         clientRealtime1.connection.on('connected', function () {
           /* get channel, attach, and enter */
           var clientChannel1 = clientRealtime1.channels.get(channelName);
-          whenPromiseSettles(clientChannel1.attach(), function (err) {
+          Helper.whenPromiseSettles(clientChannel1.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, clientRealtime1, err);
+              helper.closeAndFinish(done, clientRealtime1, err);
               return;
             }
-            whenPromiseSettles(clientChannel1.presence.enter('Test client data (attach0)'), function (err) {
+            Helper.whenPromiseSettles(clientChannel1.presence.enter('Test client data (attach0)'), function (err) {
               if (err) {
-                closeAndFinish(done, clientRealtime1, err);
+                helper.closeAndFinish(done, clientRealtime1, err);
                 return;
               }
             });
             clientChannel1.presence.subscribe('enter', function () {
-              whenPromiseSettles(clientChannel1.presence.get(), function (err, presenceMembers1) {
+              Helper.whenPromiseSettles(clientChannel1.presence.get(), function (err, presenceMembers1) {
                 if (err) {
-                  closeAndFinish(done, clientRealtime1, err);
+                  helper.closeAndFinish(done, clientRealtime1, err);
                   return;
                 }
                 try {
                   expect(presenceMembers1.length).to.equal(1, 'Member present');
                 } catch (err) {
-                  closeAndFinish(done, clientRealtime1, err);
+                  helper.closeAndFinish(done, clientRealtime1, err);
                   return;
                 }
                 /* now set up second connection and attach */
@@ -877,16 +905,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 clientRealtime2.connection.on('connected', function () {
                   /* get channel, attach */
                   var clientChannel2 = clientRealtime2.channels.get(channelName);
-                  whenPromiseSettles(clientChannel2.attach(), function (err) {
+                  Helper.whenPromiseSettles(clientChannel2.attach(), function (err) {
                     if (err) {
-                      closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
+                      helper.closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
                       return;
                     }
                     clientChannel2.presence.subscribe('present', function () {
                       /* get the channel members and verify testclient is there */
-                      whenPromiseSettles(clientChannel2.presence.get(), function (err, presenceMembers2) {
+                      Helper.whenPromiseSettles(clientChannel2.presence.get(), function (err, presenceMembers2) {
                         if (err) {
-                          closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
+                          helper.closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
                           return;
                         }
                         try {
@@ -895,22 +923,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                             'Verify member presence is indicated after attach',
                           );
                         } catch (err) {
-                          closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
+                          helper.closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
                           return;
                         }
-                        closeAndFinish(done, [clientRealtime1, clientRealtime2]);
+                        helper.closeAndFinish(done, [clientRealtime1, clientRealtime2]);
                       });
                     });
                   });
                 });
-                monitorConnection(done, clientRealtime2);
+                helper.monitorConnection(done, clientRealtime2);
               });
             });
           });
         });
-        monitorConnection(done, clientRealtime1);
+        helper.monitorConnection(done, clientRealtime1);
       } catch (err) {
-        closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
+        helper.closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
       }
     });
 
@@ -920,6 +948,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Use get to filter by clientId and connectionId
      */
     it('presenceTwoMembers', function (done) {
+      const helper = this.test.helper;
       var clientRealtime1, clientRealtime2, clientChannel1, clientChannel2;
       var channelName = 'twoMembers';
       try {
@@ -932,12 +961,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               clientRealtime1.connection.on('connected', function () {
                 /* get channel, attach, and enter */
                 clientChannel1 = clientRealtime1.channels.get(channelName);
-                whenPromiseSettles(clientChannel1.attach(), function (err) {
+                Helper.whenPromiseSettles(clientChannel1.attach(), function (err) {
                   if (err) {
                     cb1(err);
                     return;
                   }
-                  whenPromiseSettles(clientChannel1.presence.enter(data), function (err) {
+                  Helper.whenPromiseSettles(clientChannel1.presence.enter(data), function (err) {
                     if (err) {
                       cb1(err);
                       return;
@@ -946,7 +975,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 });
               });
-              monitorConnection(done, clientRealtime1);
+              helper.monitorConnection(done, clientRealtime1);
             },
             function (cb2) {
               var data = 'Test client data (member0-2)';
@@ -954,13 +983,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               clientRealtime2.connection.on('connected', function () {
                 /* get channel, attach */
                 clientChannel2 = clientRealtime2.channels.get(channelName);
-                whenPromiseSettles(clientChannel2.attach(), function (err) {
+                Helper.whenPromiseSettles(clientChannel2.attach(), function (err) {
                   if (err) {
                     cb2(err);
                     return;
                   }
                   var enterPresence = function (onEnterCB) {
-                    whenPromiseSettles(clientChannel2.presence.enter(data), function (err) {
+                    Helper.whenPromiseSettles(clientChannel2.presence.enter(data), function (err) {
                       if (err) {
                         cb2(err);
                         return;
@@ -992,19 +1021,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   );
                 });
               });
-              monitorConnection(done, clientRealtime2);
+              helper.monitorConnection(done, clientRealtime2);
             },
           ],
           function (err) {
             if (err) {
-              closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
+              helper.closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
               return;
             }
             async.parallel(
               [
                 /* First test: no filters */
                 function (cb) {
-                  whenPromiseSettles(clientChannel2.presence.get(), function (err, members) {
+                  Helper.whenPromiseSettles(clientChannel2.presence.get(), function (err, members) {
                     if (err) {
                       return cb(err);
                     }
@@ -1023,23 +1052,26 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 },
                 /* Second test: filter by clientId */
                 function (cb) {
-                  whenPromiseSettles(clientChannel2.presence.get({ clientId: testClientId }), function (err, members) {
-                    if (err) {
-                      return cb(err);
-                    }
-                    try {
-                      expect(members.length).to.equal(1, 'Verify only one member present when filtered by clientId');
-                      expect(members[0].clientId).to.equal(testClientId, 'Verify clientId filter works');
-                    } catch (err) {
-                      cb(err);
-                      return;
-                    }
-                    cb();
-                  });
+                  Helper.whenPromiseSettles(
+                    clientChannel2.presence.get({ clientId: testClientId }),
+                    function (err, members) {
+                      if (err) {
+                        return cb(err);
+                      }
+                      try {
+                        expect(members.length).to.equal(1, 'Verify only one member present when filtered by clientId');
+                        expect(members[0].clientId).to.equal(testClientId, 'Verify clientId filter works');
+                      } catch (err) {
+                        cb(err);
+                        return;
+                      }
+                      cb();
+                    },
+                  );
                 },
                 /* Third test: filter by connectionId */
                 function (cb) {
-                  whenPromiseSettles(
+                  Helper.whenPromiseSettles(
                     clientChannel2.presence.get({ connectionId: clientRealtime1.connection.id }),
                     function (err, members) {
                       if (err) {
@@ -1065,16 +1097,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               ],
               function (err) {
                 if (err) {
-                  closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
+                  helper.closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
                   return;
                 }
-                closeAndFinish(done, [clientRealtime1, clientRealtime2]);
+                helper.closeAndFinish(done, [clientRealtime1, clientRealtime2]);
               },
             );
           },
         );
       } catch (err) {
-        closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
+        helper.closeAndFinish(done, [clientRealtime1, clientRealtime2], err);
       }
     });
 
@@ -1083,6 +1115,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * reconnect, then enter again to reattach
      */
     it('presenceEnterAfterClose', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enterAfterClose';
       var secondEnterListener = function (channel, callback) {
         var presenceHandler = function (presenceMsg) {
@@ -1098,16 +1131,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var clientChannel = clientRealtime.channels.get(channelName);
         clientRealtime.connection.once('connected', function () {
           /* get channel and enter (should automatically attach) */
-          whenPromiseSettles(clientChannel.presence.enter('first'), function (err) {
+          Helper.whenPromiseSettles(clientChannel.presence.enter('first'), function (err) {
             if (err) {
               cb(err, clientRealtime);
               return;
             }
             clientRealtime.close();
-            whenPromiseSettles(clientRealtime.connection.whenState('closed'), function () {
+            Helper.whenPromiseSettles(clientRealtime.connection.whenState('closed'), function () {
               clientRealtime.connection.once('connected', function () {
                 //Should automatically reattach
-                whenPromiseSettles(clientChannel.presence.enter('second'), function (err) {
+                Helper.whenPromiseSettles(clientChannel.presence.enter('second'), function (err) {
                   cb(err, clientRealtime);
                 });
               });
@@ -1115,16 +1148,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       };
 
-      runTestWithEventListener(done, channelName, secondEnterListener, enterAfterClose);
+      runTestWithEventListener(done, helper, channelName, secondEnterListener, enterAfterClose);
     });
 
     /*
      * Try to enter presence channel on a closed connection and check error callback
      */
     it('presenceEnterClosed', function (done) {
+      const helper = this.test.helper;
       var clientRealtime;
       var channelName = 'enterClosed';
       try {
@@ -1132,20 +1166,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var clientChannel = clientRealtime.channels.get(channelName);
         clientRealtime.connection.on('connected', function () {
           clientRealtime.close();
-          whenPromiseSettles(clientChannel.presence.enterClient('clientId'), function (err) {
+          Helper.whenPromiseSettles(clientChannel.presence.enterClient('clientId'), function (err) {
             try {
               expect(err.code).to.equal(80017, 'presence enter failed with correct code');
               expect(err.statusCode).to.equal(400, 'presence enter failed with correct statusCode');
             } catch (err) {
-              closeAndFinish(done, clientRealtime, err);
+              helper.closeAndFinish(done, clientRealtime, err);
               return;
             }
             done();
           });
         });
-        monitorConnection(done, clientRealtime);
+        helper.monitorConnection(done, clientRealtime);
       } catch (err) {
-        closeAndFinish(done, clientRealtime, err);
+        helper.closeAndFinish(done, clientRealtime, err);
       }
     });
 
@@ -1153,39 +1187,42 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Client ID is implicit in the connection so should not be sent for current client operations
      */
     it('presenceClientIdIsImplicit', function (done) {
-      var clientId = 'implicitClient',
+      var helper = this.test.helper,
+        clientId = 'implicitClient',
         client = helper.AblyRealtime({ clientId: clientId });
 
       var channel = client.channels.get('presenceClientIdIsImplicit'),
         presence = channel.presence;
 
+      helper.recordPrivateApi('replace.channel.sendPresence');
       var originalSendPresence = channel.sendPresence;
       channel.sendPresence = function (presence, callback) {
         try {
           expect(!presence.clientId, 'Client ID should not be present as it is implicit').to.be.ok;
         } catch (err) {
-          closeAndFinish(done, client, err);
+          helper.closeAndFinish(done, client, err);
           return;
         }
+        helper.recordPrivateApi('call.channel.sendPresence');
         originalSendPresence.apply(channel, arguments);
       };
 
-      whenPromiseSettles(presence.enter(null), function (err) {
+      Helper.whenPromiseSettles(presence.enter(null), function (err) {
         if (err) {
-          closeAndFinish(done, client, err);
+          helper.closeAndFinish(done, client, err);
           return;
         }
-        whenPromiseSettles(presence.update(null), function (err) {
+        Helper.whenPromiseSettles(presence.update(null), function (err) {
           if (err) {
-            closeAndFinish(done, client, err);
+            helper.closeAndFinish(done, client, err);
             return;
           }
-          whenPromiseSettles(presence.leave(null), function (err) {
+          Helper.whenPromiseSettles(presence.leave(null), function (err) {
             if (err) {
-              closeAndFinish(done, client, err);
+              helper.closeAndFinish(done, client, err);
               return;
             }
-            closeAndFinish(done, client);
+            helper.closeAndFinish(done, client);
           });
         });
       });
@@ -1195,7 +1232,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Check that encodable presence messages are encoded correctly
      */
     it('presenceEncoding', function (done) {
-      var data = { foo: 'bar' },
+      var helper = this.test.helper,
+        data = { foo: 'bar' },
         encodedData = JSON.stringify(data),
         options = {
           clientId: testClientId,
@@ -1204,13 +1242,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           transports: [helper.bestTransport],
         };
 
-      var realtimeBin = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: true }));
-      var realtimeJson = helper.AblyRealtime(utils.mixin(options, { useBinaryProtocol: false }));
+      helper.recordPrivateApi('call.Utils.mixin');
+      var realtimeBin = helper.AblyRealtime(helper.Utils.mixin(options, { useBinaryProtocol: true }));
+      var realtimeJson = helper.AblyRealtime(helper.Utils.mixin(options, { useBinaryProtocol: false }));
 
       var runTest = function (realtime, callback) {
+        helper.recordPrivateApi('listen.connectionManager.transport.active');
         realtime.connection.connectionManager.once('transport.active', function (transport) {
           var originalSend = transport.send;
 
+          helper.recordPrivateApi('replace.transport.send');
           transport.send = function (message) {
             if (message.action === 14) {
               /* Message is formatted for Ably by the toJSON method, so need to
@@ -1224,9 +1265,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 callback(err);
                 return;
               }
+              helper.recordPrivateApi('replace.transport.send');
               transport.send = originalSend;
               callback();
             }
+            helper.recordPrivateApi('call.transport.send');
             originalSend.apply(transport, arguments);
           };
 
@@ -1248,7 +1291,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, [realtimeBin, realtimeJson], err);
+          helper.closeAndFinish(done, [realtimeBin, realtimeJson], err);
         },
       );
     });
@@ -1258,10 +1301,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * and check that can enter presence with the clientId inherited from tokenDetails
      */
     it('presence_enter_inherited_clientid', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enter_inherited_clientid';
 
       var authCallback = function (tokenParams, callback) {
-        whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
+        Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
@@ -1280,14 +1324,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             cb(err);
             return;
           }
-          whenPromiseSettles(channel.presence.enter('test data'), function (err) {
+          Helper.whenPromiseSettles(channel.presence.enter('test data'), function (err) {
             cb(err, realtime);
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
     });
 
     /*
@@ -1296,10 +1340,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * before we're connected, so before we know our clientId
      */
     it('presence_enter_before_know_clientid', function (done) {
+      const helper = this.test.helper;
       var channelName = 'enter_before_know_clientid';
 
       var enterInheritedClientId = function (cb) {
-        whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
+        Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: testClientId }), function (err, tokenDetails) {
           if (err) {
             done(err);
             return;
@@ -1309,10 +1354,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           try {
             expect(realtime.auth.clientId).to.equal(undefined, 'no clientId when entering');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          whenPromiseSettles(channel.presence.enter('test data'), function (err) {
+          Helper.whenPromiseSettles(channel.presence.enter('test data'), function (err) {
             try {
               expect(realtime.auth.clientId).to.equal(testClientId, 'clientId has been set by the time we entered');
             } catch (err) {
@@ -1322,11 +1367,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             cb(err, realtime);
           });
           realtime.connect();
-          monitorConnection(done, realtime);
+          helper.monitorConnection(done, realtime);
         });
       };
 
-      runTestWithEventListener(done, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
+      runTestWithEventListener(done, helper, channelName, listenerFor('enter', testClientId), enterInheritedClientId);
     });
 
     /*
@@ -1334,6 +1379,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * all members are emitted and map is in the correct state
      */
     it('presence_refresh_on_detach', function (done) {
+      const helper = this.test.helper;
       var channelName = 'presence_refresh_on_detach';
       var realtime = helper.AblyRealtime();
       var observer = helper.AblyRealtime();
@@ -1360,10 +1406,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (enterCb) {
-              whenPromiseSettles(realtimeChannel.presence.enterClient('one'), enterCb);
+              Helper.whenPromiseSettles(realtimeChannel.presence.enterClient('one'), enterCb);
             },
             function (enterCb) {
-              whenPromiseSettles(realtimeChannel.presence.enterClient('two'), enterCb);
+              Helper.whenPromiseSettles(realtimeChannel.presence.enterClient('two'), enterCb);
             },
           ],
           cb,
@@ -1371,7 +1417,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
 
       function checkPresence(first, second, cb) {
-        whenPromiseSettles(observerChannel.presence.get(), function (err, presenceMembers) {
+        Helper.whenPromiseSettles(observerChannel.presence.get(), function (err, presenceMembers) {
           var clientIds = presenceMembers
             .map(function (msg) {
               return msg.clientId;
@@ -1393,10 +1439,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.parallel(
           [
             function (innerCb) {
-              whenPromiseSettles(realtimeChannel.presence.leaveClient('two'), innerCb);
+              Helper.whenPromiseSettles(realtimeChannel.presence.leaveClient('two'), innerCb);
             },
             function (innerCb) {
-              whenPromiseSettles(realtimeChannel.presence.enterClient('three'), innerCb);
+              Helper.whenPromiseSettles(realtimeChannel.presence.enterClient('three'), innerCb);
             },
           ],
           cb,
@@ -1423,17 +1469,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         [
           waitForBothConnect,
           function (cb) {
-            whenPromiseSettles(realtimeChannel.attach(), cb);
+            Helper.whenPromiseSettles(realtimeChannel.attach(), cb);
           },
           enterOneAndTwo,
           function (cb) {
-            whenPromiseSettles(observerChannel.attach(), cb);
+            Helper.whenPromiseSettles(observerChannel.attach(), cb);
           },
           function (cb) {
             checkPresence('one', 'two', cb);
           },
           function (cb) {
-            whenPromiseSettles(observerChannel.detach(), cb);
+            Helper.whenPromiseSettles(observerChannel.detach(), cb);
           },
           swapTwoForThree,
           attachAndListen,
@@ -1442,12 +1488,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, [realtime, observer], err);
+          helper.closeAndFinish(done, [realtime, observer], err);
         },
       );
     });
 
     it('presence_detach_during_sync', function (done) {
+      const helper = this.test.helper;
       var channelName = 'presence_detach_during_sync';
       var enterer = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
       var detacher = helper.AblyRealtime();
@@ -1474,13 +1521,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         [
           waitForBothConnect,
           function (cb) {
-            whenPromiseSettles(entererChannel.presence.enter(), cb);
+            Helper.whenPromiseSettles(entererChannel.presence.enter(), cb);
           },
           function (cb) {
-            whenPromiseSettles(detacherChannel.attach(), cb);
+            Helper.whenPromiseSettles(detacherChannel.attach(), cb);
           },
           function (cb) {
-            whenPromiseSettles(detacherChannel.detach(), cb);
+            Helper.whenPromiseSettles(detacherChannel.detach(), cb);
           },
           function (cb) {
             try {
@@ -1493,7 +1540,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, [enterer, detacher], err);
+          helper.closeAndFinish(done, [enterer, detacher], err);
         },
       );
     });
@@ -1504,6 +1551,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * member to be sent to realtime and, with luck, make its way into the normal
      * presence set */
     it('presence_auto_reenter', function (done) {
+      const helper = this.test.helper;
       var channelName = 'presence_auto_reenter';
       var realtime = helper.AblyRealtime();
       var channel = realtime.channels.get(channelName);
@@ -1516,10 +1564,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.attach(), cb);
+            Helper.whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             if (!channel.presence.syncComplete) {
+              helper.recordPrivateApi('call.presence.waitSync');
               channel.presence.members.waitSync(cb);
             } else {
               cb();
@@ -1534,7 +1583,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* inject an additional member into the myMember set, then force a suspended state */
+            helper.recordPrivateApi('read.connectionManager.connectionId');
             var connId = realtime.connection.connectionManager.connectionId;
+            helper.recordPrivateApi('call.presence._myMembers.put');
             channel.presence._myMembers.put({
               action: 'enter',
               clientId: 'two',
@@ -1562,8 +1613,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
              * that realtime will feel it necessary to do a sync - if it doesn't,
              * we request one */
             if (channel.presence.syncComplete) {
+              helper.recordPrivateApi('call.channel.sync');
               channel.sync();
             }
+            helper.recordPrivateApi('call.presence.waitSync');
             channel.presence.members.waitSync(cb);
           },
           function (cb) {
@@ -1585,7 +1638,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get(), function (err, results) {
+            Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
               if (err) {
                 cb(err);
                 return;
@@ -1605,7 +1658,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         },
       );
     });
@@ -1613,7 +1666,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     /* RTP17e
      * Test failed presence auto-re-entering */
     it.skip('presence_failed_auto_reenter', function (done) {
-      var channelName = 'presence_failed_auto_reenter',
+      var helper = this.test.helper,
+        channelName = 'presence_failed_auto_reenter',
         realtime,
         channel,
         token;
@@ -1624,7 +1678,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             /* Request a token without the capabilities to be in the presence set */
             var tokenParams = { clientId: 'me', capability: {} };
             tokenParams.capability[channelName] = ['publish', 'subscribe'];
-            whenPromiseSettles(rest.auth.requestToken(tokenParams), function (err, tokenDetails) {
+            Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams), function (err, tokenDetails) {
               token = tokenDetails;
               cb(err);
             });
@@ -1637,17 +1691,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.attach(), cb);
+            Helper.whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             if (!channel.presence.syncComplete) {
+              helper.recordPrivateApi('call.presence.waitSync');
               channel.presence.members.waitSync(cb);
             } else {
               cb();
             }
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get(), function (err, members) {
+            Helper.whenPromiseSettles(channel.presence.get(), function (err, members) {
               try {
                 expect(members.length).to.equal(0, 'Check no-one in presence set');
               } catch (err) {
@@ -1659,7 +1714,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* inject an additional member into the myMember set, then force a suspended state */
+            helper.recordPrivateApi('read.connectionManager.connectionId');
             var connId = realtime.connection.connectionManager.connectionId;
+            helper.recordPrivateApi('call.presence._myMembers.put');
             channel.presence._myMembers.put({
               action: 'enter',
               clientId: 'me',
@@ -1689,7 +1746,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get(), function (err, members) {
+            Helper.whenPromiseSettles(channel.presence.get(), function (err, members) {
               try {
                 expect(members.length).to.equal(0, 'Check no-one in presence set');
               } catch (err) {
@@ -1701,14 +1758,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         },
       );
     });
 
     /* Enter ten clients while attaching, finish the attach, check they were all entered correctly */
     it('multiple_pending', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('multiple_pending'),
         originalAttachImpl = channel.attachImpl;
 
@@ -1721,6 +1779,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* stub out attachimpl */
+            helper.recordPrivateApi('replace.channel.attachImpl');
             channel.attachImpl = function () {};
             channel.attach();
 
@@ -1728,18 +1787,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               channel.presence.enterClient('client_' + i.toString(), i.toString());
             }
 
+            helper.recordPrivateApi('replace.channel.attachImpl');
             channel.attachImpl = originalAttachImpl;
+
+            helper.recordPrivateApi('call.channel.checkPendingState');
             channel.checkPendingState();
 
             /* Now just wait for an enter. One enter implies all, they'll all be
              * sent in one protocol message */
             channel.presence.subscribe('enter', function () {
               channel.presence.unsubscribe('enter');
+              helper.recordPrivateApi('call.Platform.nextTick');
               Ably.Realtime.Platform.Config.nextTick(cb);
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get(), function (err, results) {
+            Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
               try {
                 expect(results.length).to.equal(10, 'Check all ten clients are there');
               } catch (err) {
@@ -1751,7 +1814,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         },
       );
     });
@@ -1760,39 +1823,40 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Check that a LEAVE message is published for anyone in the local presence
      * set but missing from a sync */
     it('leave_published_for_member_missing_from_sync', function (done) {
-      var realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ transports: helper.availableTransports }),
         continuousClientId = 'continuous',
         goneClientId = 'gone',
         continuousRealtime = helper.AblyRealtime({ clientId: continuousClientId }),
         channelName = 'leave_published_for_member_missing_from_sync',
         channel = realtime.channels.get(channelName),
         continuousChannel = continuousRealtime.channels.get(channelName);
-      monitorConnection(done, realtime);
-      monitorConnection(done, continuousRealtime);
+      helper.monitorConnection(done, realtime);
+      helper.monitorConnection(done, continuousRealtime);
 
       async.series(
         [
           function (cb) {
-            whenPromiseSettles(continuousRealtime.connection.whenState('connected'), function () {
+            Helper.whenPromiseSettles(continuousRealtime.connection.whenState('connected'), function () {
               cb();
             });
           },
           function (cb) {
-            whenPromiseSettles(continuousChannel.attach(), cb);
+            Helper.whenPromiseSettles(continuousChannel.attach(), cb);
           },
           function (cb) {
-            whenPromiseSettles(continuousChannel.presence.enter(), cb);
+            Helper.whenPromiseSettles(continuousChannel.presence.enter(), cb);
           },
           function (cb) {
-            whenPromiseSettles(realtime.connection.whenState('connected'), function () {
+            Helper.whenPromiseSettles(realtime.connection.whenState('connected'), function () {
               cb();
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.attach(), cb);
+            Helper.whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get({ waitForSync: true }), function (err, members) {
+            Helper.whenPromiseSettles(channel.presence.get({ waitForSync: true }), function (err, members) {
               try {
                 expect(members && members.length).to.equal(1, 'Check one member present');
               } catch (err) {
@@ -1804,6 +1868,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
           function (cb) {
             /* Inject an additional member locally */
+            helper.recordPrivateApi('call.channel.processMessage');
             channel
               .processMessage({
                 action: 14,
@@ -1825,7 +1890,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               });
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get(), function (err, members) {
+            Helper.whenPromiseSettles(channel.presence.get(), function (err, members) {
               try {
                 expect(members && members.length).to.equal(2, 'Check two members present');
               } catch (err) {
@@ -1847,10 +1912,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               }
               cb();
             });
+            helper.recordPrivateApi('call.channel.sync');
             channel.sync();
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get({ waitForSync: true }), function (err, members) {
+            Helper.whenPromiseSettles(channel.presence.get({ waitForSync: true }), function (err, members) {
               try {
                 expect(members && members.length).to.equal(1, 'Check back to one member present');
                 expect(members && members[0] && members[0].clientId).to.equal(
@@ -1866,7 +1932,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, [realtime, continuousRealtime], err);
+          helper.closeAndFinish(done, [realtime, continuousRealtime], err);
         },
       );
     });
@@ -1875,21 +1941,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Check that a LEAVE message is published for anyone in the local presence
      * set if get an ATTACHED with no HAS_PRESENCE */
     it('leave_published_for_members_on_presenceless_attached', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channelName = 'leave_published_for_members_on_presenceless_attached',
         channel = realtime.channels.get(channelName),
         fakeClientId = 'faker';
-      monitorConnection(done, realtime);
+      helper.monitorConnection(done, realtime);
 
       async.series(
         [
           function (cb) {
-            whenPromiseSettles(realtime.connection.whenState('connected'), function () {
+            Helper.whenPromiseSettles(realtime.connection.whenState('connected'), function () {
               cb();
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.attach(), cb);
+            Helper.whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             /* Inject a member locally */
@@ -1914,7 +1981,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               });
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get(), function (err, members) {
+            Helper.whenPromiseSettles(channel.presence.get(), function (err, members) {
               try {
                 expect(members && members.length).to.equal(1, 'Check one member present');
               } catch (err) {
@@ -1936,6 +2003,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               cb();
             });
             /* Inject an ATTACHED with RESUMED and HAS_PRESENCE both false */
+            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
             channel.processMessage(
               createPM({
                 action: 11,
@@ -1945,7 +2013,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             );
           },
           function (cb) {
-            whenPromiseSettles(channel.presence.get(), function (err, members) {
+            Helper.whenPromiseSettles(channel.presence.get(), function (err, members) {
               try {
                 expect(members && members.length).to.equal(0, 'Check no members present');
               } catch (err) {
@@ -1957,7 +2025,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         },
       );
     });
@@ -1967,29 +2035,30 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * and only members that changed between ATTACHED states should result in
      * presence events */
     it('suspended_preserves_presence', function (done) {
-      var mainRealtime = helper.AblyRealtime({ clientId: 'main' }),
+      var helper = this.test.helper,
+        mainRealtime = helper.AblyRealtime({ clientId: 'main' }),
         continuousRealtime = helper.AblyRealtime({ clientId: 'continuous' }),
         leavesRealtime = helper.AblyRealtime({ clientId: 'leaves' }),
         channelName = 'suspended_preserves_presence',
         mainChannel = mainRealtime.channels.get(channelName);
 
-      monitorConnection(done, continuousRealtime);
-      monitorConnection(done, leavesRealtime);
+      helper.monitorConnection(done, continuousRealtime);
+      helper.monitorConnection(done, leavesRealtime);
       var enter = function (rt) {
         return function (outerCb) {
           var channel = rt.channels.get(channelName);
           async.series(
             [
               function (cb) {
-                whenPromiseSettles(rt.connection.whenState('connected'), function () {
+                Helper.whenPromiseSettles(rt.connection.whenState('connected'), function () {
                   cb();
                 });
               },
               function (cb) {
-                whenPromiseSettles(channel.attach(), cb);
+                Helper.whenPromiseSettles(channel.attach(), cb);
               },
               function (cb) {
-                whenPromiseSettles(channel.presence.enter(), cb);
+                Helper.whenPromiseSettles(channel.presence.enter(), cb);
               },
             ],
             outerCb,
@@ -2018,7 +2087,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             async.parallel([waitFor('leaves'), enter(leavesRealtime)], cb);
           },
           function (cb) {
-            whenPromiseSettles(mainChannel.presence.get(), function (err, members) {
+            Helper.whenPromiseSettles(mainChannel.presence.get(), function (err, members) {
               try {
                 expect(members.length).to.equal(3, 'Check all three expected members here');
               } catch (err) {
@@ -2032,7 +2101,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             helper.becomeSuspended(mainRealtime, cb);
           },
           function (cb) {
-            whenPromiseSettles(mainChannel.presence.get(), function (err) {
+            Helper.whenPromiseSettles(mainChannel.presence.get(), function (err) {
               /* Check RTP11d: get() returns an error by default */
               try {
                 expect(err, 'Check error returned by get() while suspended').to.be.ok;
@@ -2045,7 +2114,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            whenPromiseSettles(mainChannel.presence.get({ waitForSync: false }), function (err, members) {
+            Helper.whenPromiseSettles(mainChannel.presence.get({ waitForSync: false }), function (err, members) {
               /* Check RTP11d: get() works while suspended if waitForSync: false */
               try {
                 expect(!err, 'Check no error returned by get() while suspended if waitForSync: false').to.be.ok;
@@ -2058,7 +2127,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            whenPromiseSettles(leavesRealtime.connection.whenState('closed'), function () {
+            Helper.whenPromiseSettles(leavesRealtime.connection.whenState('closed'), function () {
               cb();
             });
             leavesRealtime.close();
@@ -2082,7 +2151,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             setTimeout(cb, 1000);
           },
           function (cb) {
-            whenPromiseSettles(mainChannel.presence.get(), function (err, members) {
+            Helper.whenPromiseSettles(mainChannel.presence.get(), function (err, members) {
               try {
                 expect(members && members.length).to.equal(3, 'Check three expected members here');
               } catch (err) {
@@ -2094,7 +2163,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, [mainRealtime, continuousRealtime, leavesRealtime], err);
+          helper.closeAndFinish(done, [mainRealtime, continuousRealtime, leavesRealtime], err);
         },
       );
     });
@@ -2105,15 +2174,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * comparisons.
      */
     it('presence_many_updates', function (done) {
+      const helper = this.test.helper;
       var client = helper.AblyRealtime({ clientId: testClientId });
 
       var channel = client.channels.get('presence_many_updates'),
         presence = channel.presence,
         numUpdates = 0;
 
-      whenPromiseSettles(channel.attach(), function (err) {
+      Helper.whenPromiseSettles(channel.attach(), function (err) {
         if (err) {
-          closeAndFinish(done, client, err);
+          helper.closeAndFinish(done, client, err);
         }
         presence.subscribe(function (presMsg) {
           numUpdates++;
@@ -2122,7 +2192,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.timesSeries(
           15,
           function (i, cb) {
-            whenPromiseSettles(presence.update(i.toString()), cb);
+            Helper.whenPromiseSettles(presence.update(i.toString()), cb);
           },
           function (err) {
             if (err) {
@@ -2134,10 +2204,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               try {
                 expect(numUpdates).to.equal(15, 'Check got all the results');
               } catch (err) {
-                closeAndFinish(done, client, err);
+                helper.closeAndFinish(done, client, err);
                 return;
               }
-              closeAndFinish(done, client);
+              helper.closeAndFinish(done, client);
             }, 1000);
           },
         );

@@ -1,17 +1,16 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var rest;
   var expect = chai.expect;
-  var utils = helper.Utils;
   var echoServerHost = 'echo.ably.io';
-  var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
   var Defaults = Ably.Rest.Platform.Defaults;
 
   describe('rest/request', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -22,7 +21,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    restTestOnJsonMsgpack('request_version', function (rest) {
+    Helper.restTestOnJsonMsgpack('request_version', function (rest, _, helper) {
       const version = 150; // arbitrarily chosen
 
       async function testRequestHandler(_, __, headers) {
@@ -36,12 +35,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return new Promise(() => {});
       }
 
+      helper.recordPrivateApi('replace.rest.http.do');
       rest.http.do = testRequestHandler;
 
       rest.request('get', '/time' /* arbitrarily chosen */, version, null, null, null);
     });
 
-    restTestOnJsonMsgpack('request_time', async function (rest) {
+    Helper.restTestOnJsonMsgpack('request_time', async function (rest, _, helper) {
+      helper.recordPrivateApi('read.Defaults.protocolVersion');
       const res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
       expect(res.statusCode).to.equal(200, 'Check statusCode');
       expect(res.success).to.equal(true, 'Check success');
@@ -49,10 +50,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items.length).to.equal(1, 'Check array was of length 1');
     });
 
-    restTestOnJsonMsgpack('request_404', async function (rest) {
+    Helper.restTestOnJsonMsgpack('request_404', async function (rest, _, helper) {
       /* NB: can't just use /invalid or something as the CORS preflight will
        * fail. Need something superficially a valid path but where the actual
        * request fails */
+      helper.recordPrivateApi('read.Defaults.protocolVersion');
       const res = await rest.request(
         'get',
         '/keys/ablyjs.test/requestToken',
@@ -69,8 +71,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /* With a network issue, should get an actual err, not an HttpPaginatedResponse with error members */
     it('request_network_error', async function () {
+      const helper = this.test.helper;
       rest = helper.AblyRest({ restHost: helper.unroutableAddress });
       try {
+        helper.recordPrivateApi('read.Defaults.protocolVersion');
         var res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
       } catch (err) {
         expect(err, 'Check get an err').to.be.ok;
@@ -81,20 +85,23 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     /* Use the request feature to publish, then retrieve (one at a time), some messages */
-    restTestOnJsonMsgpack('request_post_get_messages', async function (rest, channelName) {
+    Helper.restTestOnJsonMsgpack('request_post_get_messages', async function (rest, channelName, helper) {
       var channelPath = '/channels/' + channelName + '/messages',
         msgone = { name: 'faye', data: 'whittaker' },
         msgtwo = { name: 'martin', data: 'reed' };
 
+      helper.recordPrivateApi('read.Defaults.protocolVersion');
       var res = await rest.request('post', channelPath, Defaults.protocolVersion, null, msgone, null);
       expect(res.statusCode).to.equal(201, 'Check statusCode is 201');
       expect(res.success).to.equal(true, 'Check post was a success');
       expect(res.items && res.items.length).to.equal(1, 'Check number of results is as expected');
 
+      helper.recordPrivateApi('read.Defaults.protocolVersion');
       res = await rest.request('post', channelPath, Defaults.protocolVersion, null, msgtwo, null);
       expect(res.statusCode).to.equal(201, 'Check statusCode is 201');
       expect(res.items && res.items.length).to.equal(1, 'Check number of results is as expected');
 
+      helper.recordPrivateApi('read.Defaults.protocolVersion');
       res = await rest.request(
         'get',
         channelPath,
@@ -123,7 +130,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items[0].data).to.equal(msgtwo.data, 'Check data is as expected');
     });
 
-    restTestOnJsonMsgpack('request_batch_api_success', async function (rest, name) {
+    Helper.restTestOnJsonMsgpack('request_batch_api_success', async function (rest, name) {
       var body = { channels: [name + '1', name + '2'], messages: { data: 'foo' } };
 
       const res = await rest.request('POST', '/messages', 2, {}, body, {});
@@ -143,7 +150,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items[1].channel).to.equal(name + '2', 'Verify channel2 response includes correct channel');
     });
 
-    restTestOnJsonMsgpack.skip('request_batch_api_partial_success', async function (rest, name) {
+    Helper.restTestOnJsonMsgpack.skip('request_batch_api_partial_success', async function (rest, name) {
       var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
 
       var res = await rest.request('POST', '/messages', 2, {}, body, {});
@@ -169,7 +176,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     ['put', 'patch', 'delete'].forEach(function (method) {
       it('check' + method, async function () {
+        const helper = this.test.helper.withParameterisedTestTitle('check');
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
+        helper.recordPrivateApi('read.Defaults.protocolVersion');
         var res = await restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {});
         expect(res.items[0] && res.items[0].method).to.equal(method);
       });

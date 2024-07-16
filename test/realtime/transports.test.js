@@ -1,10 +1,7 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai, Ably) {
+define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai, Ably) {
   const expect = chai.expect;
-  const closeAndFinish = helper.closeAndFinish;
-  const monitorConnection = helper.monitorConnection;
-  const whenPromiseSettles = helper.whenPromiseSettles;
   const Defaults = Ably.Rest.Platform.Defaults;
   const originialWsCheckUrl = Defaults.wsConnectivityUrl;
   const transportPreferenceName = 'ably-transport-preference';
@@ -12,12 +9,16 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
   const urlScheme = 'https://';
   const echoServer = 'echo.ably.io';
   const failUrl = urlScheme + echoServer + '/respondwith?status=500';
-  const availableTransports = helper.availableTransports;
   const defaultTransports = new Ably.Realtime({ key: 'xxx:yyy', autoConnect: false }).connection.connectionManager
     .transports;
-  const baseTransport = new Ably.Realtime({ key: 'xxx:yyy', autoConnect: false, transports: availableTransports })
-    .connection.connectionManager.baseTransport;
-  const mixin = helper.Utils.mixin;
+
+  function baseTransport(helper) {
+    return new Ably.Realtime({
+      key: 'xxx:yyy',
+      autoConnect: false,
+      transports: helper.availableTransports,
+    }).connection.connectionManager.baseTransport;
+  }
 
   function restoreWsConnectivityUrl() {
     Defaults.wsConnectivityUrl = originialWsCheckUrl;
@@ -39,6 +40,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -51,10 +53,13 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
     afterEach(restoreWsConnectivityUrl);
     afterEach(restoreWebSocketConstructor);
 
-    if (helper.availableTransports.length > 1) {
+    if (
+      Helper.forTestDefinition(this, 'tests that are run if there are multiple transports').availableTransports.length >
+      1
+    ) {
       // ensure comet transport is used for nodejs tests
-      function options(opts) {
-        return mixin(
+      function options(helper, opts) {
+        return helper.Utils.mixin(
           {
             transports: helper.availableTransports,
           },
@@ -63,67 +68,78 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
       }
 
       it('websocket_is_default', function (done) {
-        const realtime = helper.AblyRealtime(options());
+        const helper = this.test.helper;
+        const realtime = helper.AblyRealtime(options(helper));
 
         realtime.connection.on('connected', function () {
           try {
             expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal('web_socket');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       });
 
       it('no_ws_connectivity', function (done) {
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
-        const realtime = helper.AblyRealtime(options({ webSocketSlowTimeout: 1000, webSocketConnectTimeout: 3000 }));
+        const realtime = helper.AblyRealtime(
+          options(helper, { webSocketSlowTimeout: 1000, webSocketConnectTimeout: 3000 }),
+        );
 
         realtime.connection.on('connected', function () {
           try {
-            expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(baseTransport);
+            expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(
+              baseTransport(helper),
+            );
             // check that transport preference is set
             if (localStorageSupported) {
               expect(window.localStorage.getItem(transportPreferenceName)).to.equal(
-                JSON.stringify({ value: baseTransport }),
+                JSON.stringify({ value: baseTransport(helper) }),
               );
             }
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       });
 
       it('ws_primary_host_fails', function (done) {
+        const helper = this.test.helper;
         const goodHost = helper.AblyRest().options.realtimeHost;
         const realtime = helper.AblyRealtime(
-          options({ realtimeHost: helper.unroutableAddress, fallbackHosts: [goodHost] }),
+          options(helper, { realtimeHost: helper.unroutableAddress, fallbackHosts: [goodHost] }),
         );
 
         realtime.connection.on('connected', function () {
           expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal('web_socket');
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
 
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       });
 
       it('no_internet_connectivity', function (done) {
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
-        const realtime = helper.AblyRealtime(options({ connectivityCheckUrl: failUrl, webSocketSlowTimeout: 1000 }));
+        const realtime = helper.AblyRealtime(
+          options(helper, { connectivityCheckUrl: failUrl, webSocketSlowTimeout: 1000 }),
+        );
 
         // expect client to transition to disconnected rather than attempting base transport (which would succeed in this instance)
         realtime.connection.on('disconnected', function () {
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
 
       it('no_websocket_or_base_transport', function (done) {
+        const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
         const realtime = helper.AblyRealtime({
           transports: ['web_socket'],
@@ -132,14 +148,15 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
         });
 
         realtime.connection.on('disconnected', function () {
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
 
       if (localStorageSupported) {
         it('base_transport_preference', function (done) {
-          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport }));
-          const realtime = helper.AblyRealtime(options());
+          const helper = this.test.helper;
+          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
+          const realtime = helper.AblyRealtime(options(helper));
 
           // make ws connectivity check only resolve after connected with base transport.
           // prevents a race condition where the wsConnectivity check succeeds before base transport is activated;
@@ -154,18 +171,21 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
 
           realtime.connection.on('connected', function () {
             try {
-              expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(baseTransport);
+              expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(
+                baseTransport(helper),
+              );
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           });
-          monitorConnection(done, realtime);
+          helper.monitorConnection(done, realtime);
         });
 
         it('transport_preference_reset_while_connecting', function (done) {
-          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport }));
-          const realtime = helper.AblyRealtime(options());
+          const helper = this.test.helper;
+          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
+          const realtime = helper.AblyRealtime(options(helper));
 
           // make ws connectivity check fast so that it succeeds while base transport is still connecting
           realtime.connection.connectionManager.checkWsConnectivity = function () {
@@ -179,17 +199,18 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
               expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal('web_socket');
               expect(realtime.connection.connectionManager.getTransportPreference()).to.equal('web_socket');
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           });
-          monitorConnection(done, realtime);
+          helper.monitorConnection(done, realtime);
         });
 
         it('transport_preference_reset_after_connected', function (done) {
-          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport }));
-          const realtime = helper.AblyRealtime(options());
+          const helper = this.test.helper;
+          window.localStorage.setItem(transportPreferenceName, JSON.stringify({ value: baseTransport(helper) }));
+          const realtime = helper.AblyRealtime(options(helper));
 
           // make ws connectivity check only resolve after connected with base transport
           realtime.connection.connectionManager.checkWsConnectivity = function () {
@@ -197,11 +218,11 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
               realtime.connection.once('connected', () => {
                 try {
                   expect(realtime.connection.connectionManager.activeProtocol.transport.shortName).to.equal(
-                    baseTransport,
+                    baseTransport(helper),
                   );
                   resolve();
                 } catch (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                   return;
                 }
               });
@@ -216,13 +237,13 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (helper, async, chai
                 // ensure base transport preference is erased
                 expect(realtime.connection.connectionManager.getTransportPreference()).to.equal(null);
               } catch (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             }, 0);
           });
-          monitorConnection(done, realtime);
+          helper.monitorConnection(done, realtime);
         });
       }
     }

@@ -88,6 +88,15 @@ jobs:
           name: interception-proxy-logs-${{ matrix.browser }}
           path: interception-proxy-logs.txt
 
+      - name: Generate private API usage reports
+        run: npm run process-private-api-data private-api-usage/*.json
+      - name: Save private API usage data
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-api-usage-${{ matrix.browser }}
+          path: |
+            private-api-usage
+            private-api-usage-reports
       - name: Upload test results
         if: always()
         uses: ably/test-observability-action@v1

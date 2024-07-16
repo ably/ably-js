@@ -17,6 +17,7 @@ class CustomEventReporter extends Mocha.reporters.HTML {
   jUnitReporter;
   jUnitReport;
   testResultStats;
+  privateApiUsageData;
 
   constructor(runner) {
     super(runner);
@@ -53,6 +54,11 @@ class CustomEventReporter extends Mocha.reporters.HTML {
         this.testResultStats = runner.stats;
         this.gotResults();
       });
+
+    window.addEventListener('privateApiUsageData', ({ detail }) => {
+      this.privateApiUsageData = detail;
+      this.gotResults();
+    });
   }
 
   logToNodeConsole(text) {
@@ -72,7 +78,7 @@ class CustomEventReporter extends Mocha.reporters.HTML {
   }
 
   gotResults() {
-    if (!this.testResultStats || !this.jUnitReport) {
+    if (!this.testResultStats || !this.jUnitReport || !this.privateApiUsageData) {
       return;
     }
 
@@ -83,6 +89,7 @@ class CustomEventReporter extends Mocha.reporters.HTML {
           passes: this.testResultStats.passes,
           total: this.testResultStats.passes + this.testResultStats.failures,
           jUnitReport: this.jUnitReport,
+          privateApiUsageData: this.privateApiUsageData,
         },
       }),
     );

@@ -1,8 +1,7 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
   var expect = chai.expect;
-  var utils = helper.Utils;
   var indexes = [1, 2, 3, 4, 5];
   var preAttachMessages = indexes.map(function (i) {
     return { name: 'pre-attach-' + i, data: 'some data' };
@@ -10,14 +9,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
   var postAttachMessages = indexes.map(function (i) {
     return { name: 'post-attach-' + i, data: 'some data' };
   });
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   var parallelPublishMessages = function (done, channel, messages, callback) {
     var publishTasks = messages.map(function (event) {
       return function (publishCb) {
-        whenPromiseSettles(channel.publish(event.name, event.data), publishCb);
+        Helper.whenPromiseSettles(channel.publish(event.name, event.data), publishCb);
       };
     });
 
@@ -38,6 +34,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -48,6 +45,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
     });
 
     it('history_until_attach', function (done) {
+      const helper = this.test.helper;
       var rest = helper.AblyRest();
       var realtime = helper.AblyRealtime();
       var restChannel = rest.channels.get('persisted:history_until_attach');
@@ -56,11 +54,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       parallelPublishMessages(done, restChannel, preAttachMessages, function () {
         /* second, connect and attach to the channel */
         try {
-          whenPromiseSettles(realtime.connection.whenState('connected'), function () {
+          Helper.whenPromiseSettles(realtime.connection.whenState('connected'), function () {
             var rtChannel = realtime.channels.get('persisted:history_until_attach');
-            whenPromiseSettles(rtChannel.attach(), function (err) {
+            Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
               if (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
 
@@ -74,7 +72,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
                 var tests = [
                   function (callback) {
-                    whenPromiseSettles(rtChannel.history(), function (err, resultPage) {
+                    Helper.whenPromiseSettles(rtChannel.history(), function (err, resultPage) {
                       if (err) {
                         callback(err);
                       }
@@ -91,7 +89,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                     });
                   },
                   function (callback) {
-                    whenPromiseSettles(rtChannel.history({ untilAttach: false }), function (err, resultPage) {
+                    Helper.whenPromiseSettles(rtChannel.history({ untilAttach: false }), function (err, resultPage) {
                       if (err) {
                         callback(err);
                       }
@@ -108,7 +106,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                     });
                   },
                   function (callback) {
-                    whenPromiseSettles(rtChannel.history({ untilAttach: true }), function (err, resultPage) {
+                    Helper.whenPromiseSettles(rtChannel.history({ untilAttach: true }), function (err, resultPage) {
                       if (err) {
                         callback(err);
                       }
@@ -135,14 +133,14 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 ];
 
                 async.parallel(tests, function (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                 });
               });
             });
           });
-          monitorConnection(done, realtime);
+          helper.monitorConnection(done, realtime);
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         }
       });
     });

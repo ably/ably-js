@@ -1,8 +1,8 @@
 const path = require('path');
 const MochaServer = require('../web_server');
 const fs = require('fs');
-const jUnitDirectoryPath = require('./junit_directory_path');
 const { openPlaywrightBrowser } = require('./playwrightHelpers');
+const outputDirectoryPaths = require('./output_directory_paths');
 
 const port = process.env.PORT || 3000;
 const host = 'localhost';
@@ -31,13 +31,28 @@ const runTests = async () => {
       console.log(`${browserType.name()} tests complete: ${detail.passes}/${detail.total} passed`);
 
       try {
-        if (!fs.existsSync(jUnitDirectoryPath)) {
-          fs.mkdirSync(jUnitDirectoryPath);
+        if (!fs.existsSync(outputDirectoryPaths.jUnit)) {
+          fs.mkdirSync(outputDirectoryPaths.jUnit);
         }
         const filename = `playwright-${browserType.name()}.junit`;
-        fs.writeFileSync(path.join(jUnitDirectoryPath, filename), detail.jUnitReport, { encoding: 'utf-8' });
+        fs.writeFileSync(path.join(outputDirectoryPaths.jUnit, filename), detail.jUnitReport, { encoding: 'utf-8' });
       } catch (err) {
         console.log('Failed to write JUnit report, exiting with code 2: ', err);
+        process.exit(2);
+      }
+
+      try {
+        if (!fs.existsSync(outputDirectoryPaths.privateApiUsage)) {
+          fs.mkdirSync(outputDirectoryPaths.privateApiUsage);
+        }
+        const filename = `playwright-${browserType.name()}.json`;
+        fs.writeFileSync(
+          path.join(outputDirectoryPaths.privateApiUsage, filename),
+          JSON.stringify(detail.privateApiUsageData),
+          { encoding: 'utf-8' },
+        );
+      } catch (err) {
+        console.log('Failed to write private API usage data, exiting with code 2: ', err);
         process.exit(2);
       }
 

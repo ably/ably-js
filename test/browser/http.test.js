@@ -1,14 +1,14 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
   var rest;
   var expect = chai.expect;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('rest/http/fetch', function () {
     this.timeout(60 * 1000);
     let initialXhrSupported;
     before(function (done) {
+      const helper = Helper.forHook(this);
       initialXhrSupported = Ably.Rest.Platform.Config.xhrSupported;
       Ably.Rest.Platform.Config.xhrSupported = false;
       helper.setupApp(function () {
@@ -34,7 +34,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     it('Should succeed in using fetch to publish a message', function (done) {
       const channel = rest.channels.get('http_test_channel');
-      whenPromiseSettles(channel.publish('test', 'Testing fetch support'), (err) => {
+      Helper.whenPromiseSettles(channel.publish('test', 'Testing fetch support'), (err) => {
         expect(err).to.not.exist;
         done();
       });
@@ -42,7 +42,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     it('Should pass errors correctly', function (done) {
       const channel = rest.channels.get('');
-      whenPromiseSettles(channel.publish('test', 'Invalid message'), (err) => {
+      Helper.whenPromiseSettles(channel.publish('test', 'Invalid message'), (err) => {
         expect(err).to.exist;
         done();
       });

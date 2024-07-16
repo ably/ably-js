@@ -1,16 +1,17 @@
 'use strict';
 
-define(['shared_helper', 'chai'], function (helper, chai) {
-  var utils = helper.Utils;
+define(['shared_helper', 'chai'], function (Helper, chai) {
   var expect = chai.expect;
 
   // RTB1
   describe('incremental backoff and jitter', function () {
     it('should calculate retry timeouts using incremental backoff and jitter', function () {
+      const helper = this.test.helper;
       var retryAttempts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
       var initialTimeout = 15;
 
-      var retryTimeouts = retryAttempts.map((attempt) => utils.getRetryTime(initialTimeout, attempt));
+      helper.recordPrivateApi('call.Utils.getRetryTime');
+      var retryTimeouts = retryAttempts.map((attempt) => helper.Utils.getRetryTime(initialTimeout, attempt));
       expect(retryTimeouts.filter((timeout) => timeout >= 30).length).to.equal(0);
 
       function checkIsBetween(value, min, max) {
