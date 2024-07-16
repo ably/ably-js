@@ -101,7 +101,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                         realtime.request(
                           'post',
                           channelPath,
-                          Defaults.protocolVersion,
+                          3,
                           null,
                           { name: name, data: encodingSpec.data, encoding: encodingSpec.encoding },
                           null,
@@ -180,7 +180,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                       return;
                     }
                     whenPromiseSettles(
-                      realtime.request('get', channelPath, Defaults.protocolVersion, null, null, null),
+                      realtime.request('get', channelPath, 3, null, null, null),
                       function (err, resultPage) {
                         if (err) {
                           eachOfCb(err);

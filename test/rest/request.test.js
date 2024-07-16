@@ -42,7 +42,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     restTestOnJsonMsgpack('request_time', async function (rest) {
-      const res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
+      const res = await rest.request('get', '/time', 3, null, null, null);
       expect(res.statusCode).to.equal(200, 'Check statusCode');
       expect(res.success).to.equal(true, 'Check success');
       expect(Array.isArray(res.items), true, 'Check array returned').to.be.ok;
@@ -53,14 +53,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       /* NB: can't just use /invalid or something as the CORS preflight will
        * fail. Need something superficially a valid path but where the actual
        * request fails */
-      const res = await rest.request(
-        'get',
-        '/keys/ablyjs.test/requestToken',
-        Defaults.protocolVersion,
-        null,
-        null,
-        null,
-      );
+      const res = await rest.request('get', '/keys/ablyjs.test/requestToken', 3, null, null, null);
       expect(res.success).to.equal(false, 'Check res.success is false for a failure');
       expect(res.statusCode).to.equal(404, 'Check HPR.statusCode is 404');
       expect(res.errorCode).to.equal(40400, 'Check HPR.errorCode is 40400');
@@ -71,7 +64,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     it('request_network_error', async function () {
       rest = helper.AblyRest({ restHost: helper.unroutableAddress });
       try {
-        var res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
+        var res = await rest.request('get', '/time', 3, null, null, null);
       } catch (err) {
         expect(err, 'Check get an err').to.be.ok;
         expect(!res, 'Check do not get a res').to.be.ok;
@@ -86,23 +79,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         msgone = { name: 'faye', data: 'whittaker' },
         msgtwo = { name: 'martin', data: 'reed' };
 
-      var res = await rest.request('post', channelPath, Defaults.protocolVersion, null, msgone, null);
+      var res = await rest.request('post', channelPath, 3, null, msgone, null);
       expect(res.statusCode).to.equal(201, 'Check statusCode is 201');
       expect(res.success).to.equal(true, 'Check post was a success');
       expect(res.items && res.items.length).to.equal(1, 'Check number of results is as expected');
 
-      res = await rest.request('post', channelPath, Defaults.protocolVersion, null, msgtwo, null);
+      res = await rest.request('post', channelPath, 3, null, msgtwo, null);
       expect(res.statusCode).to.equal(201, 'Check statusCode is 201');
       expect(res.items && res.items.length).to.equal(1, 'Check number of results is as expected');
 
-      res = await rest.request(
-        'get',
-        channelPath,
-        Defaults.protocolVersion,
-        { limit: 1, direction: 'forwards' },
-        null,
-        null,
-      );
+      res = await rest.request('get', channelPath, 3, { limit: 1, direction: 'forwards' }, null, null);
       expect(res.statusCode).to.equal(200, 'Check statusCode is 200');
       expect(res.items.length).to.equal(1, 'Check only one msg returned');
       expect(res.items[0].name).to.equal(msgone.name, 'Check name is as expected');
@@ -170,7 +156,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     ['put', 'patch', 'delete'].forEach(function (method) {
       it('check' + method, async function () {
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
-        var res = await restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {});
+        var res = await restEcho.request(method, '/methods', 3, {}, {}, {});
         expect(res.items[0] && res.items[0].method).to.equal(method);
       });
     });
