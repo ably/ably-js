@@ -1,37 +1,41 @@
 'use strict';
 
-define(['ably', 'shared_helper'], function (Ably, helper) {
+define(['ably', 'shared_helper'], function (Ably, Helper) {
   // copied from crypto test
   var msgpack = typeof window == 'object' ? Ably.msgpack : require('@ably/msgpack-js');
   // similar approach
   var WebSocket = typeof window == 'object' ? window.WebSocket : require('ws');
   var BufferUtils = Ably.Realtime.Platform.BufferUtils;
 
+  function log(...args) {
+    console.log('Interception proxy client:', ...args);
+  }
+
   class InterceptionProxyClient {
     currentContext = null;
 
     // this expects the interception proxy to already be running (i.e. the test suite doesn't launch it)
-    // this method is called by test suite’s root hooks. test cases shouldn't call this method; rather, they should use
+    // this method is called by test suite’s root hooks. test cases shouldn't call this method; rather, they should use `intercept`
     async connect() {
       this.webSocket = new WebSocket('ws://localhost:8001');
 
       await new Promise((resolve, reject) => {
         this.webSocket.addEventListener('open', () => {
-          console.log('connected to interception proxy');
+          log('connected to interception proxy');
           resolve();
         });
         this.webSocket.addEventListener('error', (error) => {
-          console.log('failed to connect to interception proxy:', error);
+          log('failed to connect to interception proxy:', error);
           reject(error);
         });
         this.webSocket.addEventListener('message', (message) => {
-          console.log('interception proxy got message', message.data);
+          log('got control API message', message.data);
           this.handleJSONRPCMessage(JSON.parse(message.data));
         });
       });
 
       await this.startInterception();
-      console.log('startInterception completed');
+      log('startInterception completed');
 
       // TODO something if connection lost
     }
@@ -49,11 +53,11 @@ define(['ably', 'shared_helper'], function (Ably, helper) {
         jsonrpc: '2.0',
         method: 'startInterception',
         params,
-        id: helper.randomString(),
+        id: Helper.randomString(),
       };
       const requestData = JSON.stringify(request);
 
-      console.log('interception proxy sending startInterception request', request);
+      log('sending startInterception request', request);
       this.webSocket.send(requestData);
 
       return promise;
@@ -62,7 +66,7 @@ define(['ably', 'shared_helper'], function (Ably, helper) {
     async disconnect() {
       if (this.webSocket.readyState === 3) {
         // already closed
-        console.log('interception proxy client already disconnected');
+        log('already disconnected');
         return;
       }
 
@@ -70,7 +74,7 @@ define(['ably', 'shared_helper'], function (Ably, helper) {
 
       return new Promise((resolve) => {
         this.webSocket.addEventListener('close', () => {
-          console.log('interception proxy client disconnected');
+          log('disconnected');
           resolve();
         });
       });
@@ -135,17 +139,12 @@ define(['ably', 'shared_helper'], function (Ably, helper) {
           deserialized = JSON.parse(data);
         }
 
-        console.log(
-          'interception proxy awaiting response of transformInterceptedMessage for message',
-          message,
-          'deserialized to',
-          deserialized,
-        );
+        log('awaiting response of transformInterceptedMessage for message', message, 'deserialized to', deserialized);
 
         const messageForTransform = { id: message.params.id, connectionID: message.params.connectionID, deserialized };
 
         const noOpTransformInterceptedMessage = (message) => {
-          console.log(`default transformInterceptedMessage implementation passing message ${message.id} unaltered`);
+          log(`default transformInterceptedMessage implementation passing message ${message.id} unaltered`);
           return message.deserialized;
         };
 
@@ -156,7 +155,7 @@ define(['ably', 'shared_helper'], function (Ably, helper) {
 
         Promise.resolve(transformInterceptedMessage(messageForTransform)).then((result) => {
           try {
-            console.log(`interception proxy got result of transforming message ${messageForTransform.id}`, result);
+            log(`got result of transforming message ${messageForTransform.id}`, result);
 
             let responseResult;
 
@@ -176,13 +175,13 @@ define(['ably', 'shared_helper'], function (Ably, helper) {
             }
 
             const response = { jsonrpc: '2.0', id: message.id, result: responseResult };
-            console.log('interception proxy sending transformInterceptedMessage response', response);
+            log('sending transformInterceptedMessage response', response);
 
             const responseJSON = JSON.stringify(response);
             this.webSocket.send(responseJSON);
           } catch (err) {
             // TODO better error handling
-            console.log('interception proxy caught', err);
+            log('caught', err);
           }
         });
       } else {
