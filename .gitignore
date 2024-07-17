@@ -11,6 +11,7 @@ junit/
 private-api-usage/
 private-api-usage-reports/
 test/support/mocha_junit_reporter/build/
+test/support/json-rpc-2.0/build/
 tmp/
 
 # Python stuff (for interception proxy)

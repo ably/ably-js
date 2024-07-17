@@ -1,2 +1,3 @@
 test/common/ably-common/
 test/support/mocha_junit_reporter/build/
+test/support/json-rpc-2.0/build/

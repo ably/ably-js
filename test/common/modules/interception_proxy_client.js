@@ -1,6 +1,6 @@
 'use strict';
 
-define(['ably', 'shared_helper'], function (Ably, Helper) {
+define(['ably', 'json-rpc-2.0'], function (Ably, { JSONRPCClient, JSONRPCServer, JSONRPCServerAndClient }) {
   // copied from crypto test
   var msgpack = typeof window == 'object' ? Ably.msgpack : require('@ably/msgpack-js');
   // similar approach
@@ -13,6 +13,19 @@ define(['ably', 'shared_helper'], function (Ably, Helper) {
 
   class InterceptionProxyClient {
     currentContext = null;
+
+    constructor() {
+      this.jsonRPC = new JSONRPCServerAndClient(
+        new JSONRPCServer(),
+        new JSONRPCClient((request) => {
+          const data = JSON.stringify(request);
+          log('sending data to control server:', data);
+          this.webSocket.send(data);
+        }),
+      );
+
+      this.jsonRPC.addMethod('transformInterceptedMessage', (params) => this.transformInterceptedMessage(params));
+    }
 
     // this expects the interception proxy to already be running (i.e. the test suite doesn't launch it)
     // this method is called by test suite’s root hooks. test cases shouldn't call this method; rather, they should use `intercept`
@@ -28,9 +41,9 @@ define(['ably', 'shared_helper'], function (Ably, Helper) {
           log('failed to connect to interception proxy:', error);
           reject(error);
         });
-        this.webSocket.addEventListener('message', (message) => {
-          log('got control API message', message.data);
-          this.handleJSONRPCMessage(JSON.parse(message.data));
+        this.webSocket.addEventListener('message', ({ data }) => {
+          log('got control API message', data);
+          this.jsonRPC.receiveAndSend(JSON.parse(data));
         });
       });
 
@@ -41,26 +54,11 @@ define(['ably', 'shared_helper'], function (Ably, Helper) {
     }
 
     async startInterception() {
-      const promise = new Promise((resolve, reject) => {
-        this.onStartedInterception = resolve;
-        this.onFailedToStartInterception = reject;
-      });
-
       // i.e. for browser we use proxy, for Node we use local
       const params = typeof window == 'object' ? { mode: 'proxy' } : { mode: 'local', pid: process.pid };
 
-      const request = {
-        jsonrpc: '2.0',
-        method: 'startInterception',
-        params,
-        id: Helper.randomString(),
-      };
-      const requestData = JSON.stringify(request);
-
-      log('sending startInterception request', request);
-      this.webSocket.send(requestData);
-
-      return promise;
+      log('sending startInterception request with params', params);
+      await this.jsonRPC.request('startInterception', params);
     }
 
     async disconnect() {
@@ -128,69 +126,46 @@ define(['ably', 'shared_helper'], function (Ably, Helper) {
       action(newDone, this.currentContext);
     }
 
-    handleJSONRPCMessage(message) {
-      if (message.method === 'transformInterceptedMessage') {
-        let deserialized;
-        if (message.params.type === 'binary') {
-          const data = BufferUtils.base64Decode(message.params.data);
-          deserialized = msgpack.decode(data);
-        } else if (message.params.type === 'text') {
-          const data = message.params.data;
-          deserialized = JSON.parse(data);
-        }
+    async transformInterceptedMessage(paramsDTO) {
+      let deserialized;
+      if (paramsDTO.type === 'binary') {
+        const data = BufferUtils.base64Decode(paramsDTO.data);
+        deserialized = msgpack.decode(data);
+      } else if (paramsDTO.type === 'text') {
+        const data = paramsDTO.data;
+        deserialized = JSON.parse(data);
+      }
 
-        log('awaiting response of transformInterceptedMessage for message', message, 'deserialized to', deserialized);
+      log('awaiting response of transformInterceptedMessage for message', paramsDTO, 'deserialized to', deserialized);
 
-        const messageForTransform = { id: message.params.id, connectionID: message.params.connectionID, deserialized };
+      const message = { id: paramsDTO.id, connectionID: paramsDTO.connectionID, deserialized };
 
-        const noOpTransformInterceptedMessage = (message) => {
-          log(`default transformInterceptedMessage implementation passing message ${message.id} unaltered`);
-          return message.deserialized;
-        };
+      const noOpTransformInterceptedMessage = (message) => {
+        log(`default transformInterceptedMessage implementation passing message ${message.id} unaltered`);
+        return message.deserialized;
+      };
 
-        const transformInterceptedMessage =
-          (message.params.fromClient
-            ? this.currentContext?.transformClientMessage
-            : this.currentContext?.transformServerMessage) ?? noOpTransformInterceptedMessage;
+      const contextTransformInterceptedMessage =
+        (paramsDTO.fromClient
+          ? this.currentContext?.transformClientMessage
+          : this.currentContext?.transformServerMessage) ?? noOpTransformInterceptedMessage;
 
-        Promise.resolve(transformInterceptedMessage(messageForTransform)).then((result) => {
-          try {
-            log(`got result of transforming message ${messageForTransform.id}`, result);
+      const result = await contextTransformInterceptedMessage(message);
+      log(`got result of transforming message ${message.id}`, result);
 
-            let responseResult;
-
-            if (result === null) {
-              responseResult = { action: 'drop' };
-            } else {
-              let data;
-
-              if (message.params.type === 'binary') {
-                const serialized = msgpack.encode(result);
-                data = BufferUtils.base64Encode(serialized);
-              } else if (message.params.type === 'text') {
-                data = JSON.stringify(result);
-              }
-
-              responseResult = { action: 'replace', type: message.params.type, data };
-            }
-
-            const response = { jsonrpc: '2.0', id: message.id, result: responseResult };
-            log('sending transformInterceptedMessage response', response);
-
-            const responseJSON = JSON.stringify(response);
-            this.webSocket.send(responseJSON);
-          } catch (err) {
-            // TODO better error handling
-            log('caught', err);
-          }
-        });
+      if (result === null) {
+        return { action: 'drop' };
       } else {
-        // assume it's the response to our startInterception call; TODO sort this out
-        if ('error' in message) {
-          this.onFailedToStartInterception(new Error(message.error.message));
-        } else {
-          this.onStartedInterception();
+        let data;
+
+        if (paramsDTO.type === 'binary') {
+          const serialized = msgpack.encode(result);
+          data = BufferUtils.base64Encode(serialized);
+        } else if (paramsDTO.type === 'text') {
+          data = JSON.stringify(result);
         }
+
+        return { action: 'replace', type: paramsDTO.type, data };
       }
     }
   }

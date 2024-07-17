@@ -138,8 +138,28 @@ function createMochaJUnitReporterConfig() {
   };
 }
 
+/**
+ * Create an AMD version of the json-rpc-2.0 library so that we can use RequireJS to load it in the browser.
+ */
+function createJSONRPCConfig() {
+  const dir = path.join(__dirname, 'test', 'support', 'json-rpc-2.0');
+
+  return {
+    mode: 'development',
+    entry: path.join(dir, 'index.js'),
+    output: {
+      path: path.join(dir, 'build'),
+      filename: 'browser.js',
+      library: {
+        type: 'amd',
+      },
+    },
+  };
+}
+
 module.exports = {
   nativeScript: nativeScriptConfig,
   reactNative: reactNativeConfig,
   mochaJUnitReporterBrowser: createMochaJUnitReporterConfig(),
+  jsonRPC: createJSONRPCConfig(),
 };

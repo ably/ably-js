@@ -26,5 +26,8 @@ define(function () {
       browser: 'test/common/modules/private_api_recorder',
       node: 'test/common/modules/private_api_recorder',
     },
+    'json-rpc-2.0': {
+      browser: 'test/support/json-rpc-2.0/build/browser',
+    },
   });
 });
