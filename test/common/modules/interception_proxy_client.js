@@ -11,6 +11,19 @@ define(['ably', 'json-rpc-2.0'], function (Ably, { JSONRPCClient, JSONRPCServer,
     console.log('Interception proxy client:', ...args);
   }
 
+  function serialize(type, deserialized) {
+    let data;
+
+    if (type === 'binary') {
+      const serialized = msgpack.encode(deserialized);
+      data = BufferUtils.base64Encode(serialized);
+    } else if (type === 'text') {
+      data = JSON.stringify(deserialized);
+    }
+
+    return { type, data };
+  }
+
   class InterceptionProxyClient {
     currentContext = null;
 
@@ -78,7 +91,7 @@ define(['ably', 'json-rpc-2.0'], function (Ably, { JSONRPCClient, JSONRPCServer,
       });
     }
 
-    // TODO explain motivation for this API (so that a lingering test can’t accidentally override the interception in your test; of course, the interception in your test might accidentally _intercept_ messages sent by a lingering test but that’s a separate issue)
+    // TODO explain motivation for this API (so that a lingering test can’t accidentally override the interception in your test; of course, the interception in your test might accidentally _intercept_ messages sent by a lingering test but that’s a separate issue). More broadly it’s a way of ensuring a test case’s effects don’t outlive its execution; perhaps we could do this using hooks instead
     //
     // This is written as (done, action) for compatibility with the way our tests are currently written; a promise-based version would be good to have too
     //
@@ -113,10 +126,7 @@ define(['ably', 'json-rpc-2.0'], function (Ably, { JSONRPCClient, JSONRPCServer,
         );
       }
 
-      this.currentContext = {
-        transformClientMessage: null,
-        transformServerMessage: null,
-      };
+      this.currentContext = new InterceptionContext(this.jsonRPC);
 
       const newDone = (error) => {
         this.currentContext = null;
@@ -127,6 +137,8 @@ define(['ably', 'json-rpc-2.0'], function (Ably, { JSONRPCClient, JSONRPCServer,
     }
 
     async transformInterceptedMessage(paramsDTO) {
+      this.currentContext?._recordSeenConnection(paramsDTO);
+
       let deserialized;
       if (paramsDTO.type === 'binary') {
         const data = BufferUtils.base64Decode(paramsDTO.data);
@@ -156,17 +168,57 @@ define(['ably', 'json-rpc-2.0'], function (Ably, { JSONRPCClient, JSONRPCServer,
       if (result === null) {
         return { action: 'drop' };
       } else {
-        let data;
-
-        if (paramsDTO.type === 'binary') {
-          const serialized = msgpack.encode(result);
-          data = BufferUtils.base64Encode(serialized);
-        } else if (paramsDTO.type === 'text') {
-          data = JSON.stringify(result);
-        }
-
-        return { action: 'replace', type: paramsDTO.type, data };
+        return { action: 'replace', ...serialize(paramsDTO.type, result) };
       }
+    }
+  }
+
+  class InterceptionContext {
+    transformClientMessage = null;
+    transformServerMessage = null;
+    // TODO this is a temporary API until I figure out what the right thing to do is (probably to add an interception proxy notification when a new connection is intercepted, and then infer it from the query param), but document it anyway
+    // elements are { type: 'binary' | 'text' }
+    //
+    // keyed by connection ID, ordered oldest-to-newest connection
+    #seenConnections = new Map();
+
+    constructor(jsonRPC) {
+      this.jsonRPC = jsonRPC;
+    }
+
+    _recordSeenConnection(transformInterceptedMessageParamsDTO) {
+      const { connectionID, type } = transformInterceptedMessageParamsDTO;
+
+      if (this.#seenConnections.has(connectionID)) {
+        return;
+      }
+
+      this.#seenConnections.set(connectionID, { type });
+    }
+
+    // TODO the term "connection ID" is a bit overloaded (becuse it’s an Ably concept too)
+    get latestConnectionID() {
+      if (this.#seenConnections.size === 0) {
+        return null;
+      }
+
+      return Array.from(this.#seenConnections.keys()).pop();
+    }
+
+    async injectMessage(connectionID, deserialized, fromClient) {
+      const seenConnection = this.#seenConnections.get(connectionID);
+      if (!seenConnection) {
+        throw new Error(`Cannot inject message — have not seen a connection with ID ${connectionID}`);
+      }
+
+      const params = {
+        connectionID,
+        fromClient,
+        ...serialize(seenConnection.type, deserialized),
+      };
+
+      log('sending injectMessage request with params', params);
+      await this.jsonRPC.request('injectMessage', params);
     }
   }
 

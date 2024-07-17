@@ -3,6 +3,8 @@ import { WebSocketMessageData } from './WebSocketMessageData';
 
 export type ServerMethods = {
   startInterception(params: InterceptionModeDTO): {};
+  injectMessage(params: InjectMessageParamsDTO): InjectMessageResultDTO;
+
   // TODO how to represent a notification?
   mitmproxyReady(): void;
 };
@@ -87,3 +89,26 @@ export function createTransformInterceptedMessageResult(
 
   return { action };
 }
+
+export type InjectMessageParams = {
+  connectionID: string;
+  data: WebSocketMessageData;
+  fromClient: boolean;
+};
+
+export type InjectMessageParamsDTO = {
+  connectionID: string;
+  fromClient: boolean;
+} & WebSocketMessageDataDTO;
+
+export function createInjectMessageParams(dto: InjectMessageParamsDTO): InjectMessageParams {
+  return {
+    connectionID: dto.connectionID,
+    data: createWebSocketMessageData(dto),
+    fromClient: dto.fromClient,
+  };
+}
+
+export type InjectMessageResultDTO = {
+  id: string;
+};

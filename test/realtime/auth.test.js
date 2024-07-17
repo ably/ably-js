@@ -1,6 +1,12 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai', 'interception_proxy_client'], function (
+  Ably,
+  Helper,
+  async,
+  chai,
+  interceptionProxyClient,
+) {
   var currentTime;
   var exampleTokenDetails;
   var exports = {};
@@ -1169,42 +1175,51 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTN22
      */
     it('mocked_reauth', function (done) {
-      var helper = this.test.helper,
-        rest = helper.AblyRest(),
-        authCallback = function (tokenParams, callback) {
-          // Request a token (should happen twice)
-          Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
-            if (err) {
-              helper.closeAndFinish(done, realtime, err);
-              return;
-            }
-            callback(null, tokenDetails);
-          });
-        },
-        realtime = helper.AblyRealtime({ authCallback: authCallback, transports: [helper.bestTransport] });
+      interceptionProxyClient.intercept(done, (done, interceptionContext) => {
+        var helper = this.test.helper,
+          rest = helper.AblyRest(),
+          authCallback = function (tokenParams, callback) {
+            // Request a token (should happen twice)
+            Helper.whenPromiseSettles(rest.auth.requestToken(tokenParams, null), function (err, tokenDetails) {
+              if (err) {
+                helper.closeAndFinish(done, realtime, err);
+                return;
+              }
+              callback(null, tokenDetails);
+            });
+          },
+          realtime = helper.AblyRealtime({ authCallback: authCallback, transports: [helper.bestTransport] });
 
-      realtime.connection.once('connected', function () {
-        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
-        var transport = realtime.connection.connectionManager.activeProtocol.transport,
-          originalSend = transport.send;
-        helper.recordPrivateApi('replace.transport.send');
-        /* Spy on transport.send to detect the outgoing AUTH */
-        transport.send = function (message) {
-          if (message.action === 17) {
-            try {
-              expect(message.auth.accessToken, 'Check AUTH message structure is as expected').to.be.ok;
-              helper.closeAndFinish(done, realtime);
-            } catch (err) {
-              helper.closeAndFinish(done, realtime, err);
+        realtime.connection.once('connected', function () {
+          /* Spy on client messages to detect the outgoing AUTH */
+          interceptionContext.transformClientMessage = ({ deserialized: message }) => {
+            if (message.action === 17) {
+              // TODO return value? the original code didn’t call originalSend. We should either:
+              // - make sure that we always return something (i.e. force it on to callers)
+              // - make sure that if nothing is returned then the interception proxy client makes this very obvious
+              // - make sure to clean up outstanding messages when the `intercept`-created `done` is called
+              //
+              // I think this is what’s causing this in the logs:
+              // Interception proxy client: got result of transforming message d814955d-8a15-4c2f-b873-1bd0c3448635 undefined
+              // and what's hence causing Realtime to send
+              // message: 'Invalid websocket message (decode failure). (See https://help.ably.io/error/40000 for help.)',
+              //
+              // TODO
+              // should we have a separate "spy" interception proxy API that doesn’t require a return value?
+              try {
+                expect(message.auth.accessToken, 'Check AUTH message structure is as expected').to.be.ok;
+                helper.closeAndFinish(done, realtime);
+              } catch (err) {
+                helper.closeAndFinish(done, realtime, err);
+              }
+              return null;
+            } else {
+              return message;
             }
-          } else {
-            helper.recordPrivateApi('call.transport.send');
-            originalSend.call(this, message);
-          }
-        };
-        /* Inject a fake AUTH from realtime */
-        helper.recordPrivateApi('call.transport.onProtocolMessage');
-        transport.onProtocolMessage({ action: 17 });
+          };
+          /* Inject a fake AUTH from realtime */
+          interceptionContext.injectMessage(interceptionContext.latestConnectionID, { action: 17 }, false);
+        });
       });
     });
 

@@ -52,4 +52,8 @@ export class ProxyServer {
 
     console.log(`Started interception proxy server to receive traffic from mitmproxy on port ${port}`);
   }
+
+  getInterceptedConnection(id: string): InterceptedConnection | null {
+    return this.interceptedConnections.get(id) ?? null;
+  }
 }

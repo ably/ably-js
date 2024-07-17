@@ -1,7 +1,10 @@
 import {
   ClientMethods,
+  createInjectMessageParams,
   createTransformInterceptedMessageParamsDTO,
   createTransformInterceptedMessageResult,
+  InjectMessageParamsDTO,
+  InjectMessageResultDTO,
   InterceptionModeDTO,
   ServerMethods,
   TransformInterceptedMessageResult,
@@ -42,6 +45,7 @@ export class InterceptionContext {
     this.jsonRPC.addMethod('startInterception', (params, serverParams) =>
       this.startInterception(params, serverParams.controlServerConnection),
     );
+    this.jsonRPC.addMethod('injectMessage', (params) => this.injectMessage(params));
     this.jsonRPC.addMethod('mitmproxyReady', () => this.mitmproxyLauncher?.onMitmproxyReady());
   }
 
@@ -155,5 +159,27 @@ export class InterceptionContext {
         } pending messages`,
       );
     }
+  }
+
+  injectMessage(paramsDTO: InjectMessageParamsDTO): InjectMessageResultDTO {
+    const params = createInjectMessageParams(paramsDTO);
+    console.log('context received injectMessage with params', params);
+
+    const interceptedConnection = this.proxyServer!.getInterceptedConnection(params.connectionID);
+    if (!interceptedConnection) {
+      throw new Error(`No connection exists with ID ${params.connectionID}`);
+    }
+
+    // This ProxyMessage is a bit pointless; it’s just so I can generate an ID to return to clients for them to correlate with proxy logs
+    const message = new ProxyMessage(params.data, params.fromClient);
+    console.log(
+      `Injecting user-injected message ${message.id}, with type ${
+        message.data.type
+      } and data (${webSocketMessageDataLoggingDescription(message.data)})`,
+    );
+    // TODO consider whether injecting immediately is indeed the right thing to, or whether it should actually go at the end of the queue of messages awaiting a `transformInterceptedMessage` response
+    interceptedConnection.inject(message.fromClient, message.data);
+
+    return { id: message.id };
   }
 }
