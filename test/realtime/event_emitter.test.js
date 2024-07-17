@@ -19,9 +19,17 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
-    /*
+    /**
      * Check all eight events associated with connecting, attaching to a
-     * channel, detaching, and disconnecting are received once each
+     * channel, detaching, and disconnecting are received once each.
+     *
+     * @spec RTN4a
+     * @spec RTN4b
+     * @spec RTN4c
+     * @spec RTL2a
+     * @specpartial RTE3 - .on registers a callback
+     * @specpartial RTN4 - Connection implements EventEmitter
+     * @specpartial RTL2 - RealtimeChannel implements EventEmitter
      */
     it('attachdetach0', function (done) {
       try {
@@ -70,6 +78,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       }
     });
 
+    /** @specpartial RTE6 - test exceptions in callbacks do not propagate */
     it('emitCallsAllCallbacksIgnoringExceptions', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = false,
@@ -95,6 +104,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
+    /** @specpartial RTE4 - ensure that each registration is only invoked once */
     it('onceCalledOnlyOnce', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         onCallbackCalled = 0,
@@ -123,6 +133,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
+    /**
+     * No spec item regarding .on and .once registers do not impact each other
+     *
+     * @specpartial RTE4 - same listener is added multiple times listener registry
+     */
     it('onceCallbackDoesNotImpactOnCallback', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
@@ -149,6 +164,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
+    /** @specpartial RTE5 - test remove matching listeners */
     it('offRemovesAllMatchingListeners', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
@@ -178,6 +194,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
+    /** @specpartial RTE5 - test remove all listeners */
     it('offRemovesAllListeners', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
@@ -207,6 +224,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
+    /** @specpartial RTE5 - test remove matching both event and listener */
     it('offRemovesAllMatchingEventListeners', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
@@ -236,6 +254,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
+    /**
+     * Related to RTE5. This .off method overload is not available in public declaration files.
+     *
+     * @nospec
+     */
     it('offRemovesAllMatchingEvents', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
@@ -270,7 +293,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
      * are no more listeners for that event name,
      * the key is removed entirely from listeners to avoid the
      * listener object growing with unnecessary empty arrays
-     * for each previously registered event name
+     * for each previously registered event name.
+     * Related to RTE5.
+     *
+     * @nospec
      */
     it('offRemovesEmptyEventNameListeners', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
@@ -300,6 +326,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
+    /**
+     * Related to RTE3. This method overload is not documented in the spec
+     *
+     * @nospec
+     */
     it('arrayOfEvents', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
@@ -339,6 +370,11 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
+    /**
+     * Related to RTE4. This method overload is not documented in the spec and is not available in public declaration files.
+     *
+     * @nospec
+     */
     it('arrayOfEventsWithOnce', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         callbackCalled = 0,
@@ -364,8 +400,12 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
-    /* check that listeners added in a listener cb are not called during that
-     * emit instance */
+    /**
+     * Check that listeners added in a listener cb are not called during that emit instance.
+     * Related to RTE3.
+     *
+     * @nospec
+     */
     it('listenerAddedInListenerCb', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         eventEmitter = realtime.connection,
@@ -391,8 +431,12 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       closeAndFinish(done, realtime);
     });
 
-    /* check that listeners removed in a listener cb are still called in that
-     * emit instance (but only once) */
+    /**
+     * Check that listeners removed in a listener cb are still called in that emit instance (but only once).
+     * Related to RTE3, RTE5.
+     *
+     * @nospec
+     */
     it('listenerRemovedInListenerCb', function (done) {
       var realtime = helper.AblyRealtime({ autoConnect: false }),
         eventEmitter = realtime.connection,
@@ -437,6 +481,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
     });
 
     describe('event_emitter_promise', function () {
+      /** @specpartial RTN26b - tests only that listener was called, not the params */
       it('whenState', function (done) {
         var realtime = helper.AblyRealtime();
         var eventEmitter = realtime.connection;
@@ -446,11 +491,15 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           .then(function () {
             closeAndFinish(done, realtime);
           })
-          ['catch'](function (err) {
+          .catch(function (err) {
             closeAndFinish(done, realtime, err);
           });
       });
 
+      /**
+       * Related to RTN4i
+       * @nospec
+       */
       it('once', function (done) {
         var realtime = helper.AblyRealtime();
         var eventEmitter = realtime.connection;
@@ -460,11 +509,12 @@ define(['shared_helper', 'chai'], function (helper, chai) {
           .then(function () {
             closeAndFinish(done, realtime);
           })
-          ['catch'](function (err) {
+          .catch(function (err) {
             closeAndFinish(done, realtime, err);
           });
       });
 
+      /** @specpartial RTE4 - promise is resolved for the first event that is emitted when no event argument is provided */
       it('anyEventsWithOnce', function (done) {
         var realtime = helper.AblyRealtime({ autoConnect: false }),
           eventEmitter = realtime.connection;
@@ -478,6 +528,10 @@ define(['shared_helper', 'chai'], function (helper, chai) {
         });
       });
 
+      /**
+       * Related to RTE4. This method overload is not documented in the spec and is not available in public declaration files.
+       * @nospec
+       */
       it('arrayOfEventsWithOnce', function (done) {
         var realtime = helper.AblyRealtime({ autoConnect: false }),
           eventEmitter = realtime.connection;

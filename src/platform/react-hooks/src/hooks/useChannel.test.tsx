@@ -27,6 +27,7 @@ describe('useChannel', () => {
     otherClient = new FakeAblySdk().connectTo(channels);
   });
 
+  /** @nospec */
   it('component can useChannel and renders nothing by default', async () => {
     renderInCtxProvider(ablyClient, <UseChannelComponent></UseChannelComponent>);
     const messageUl = screen.getAllByRole('messages')[0];
@@ -34,6 +35,7 @@ describe('useChannel', () => {
     expect(messageUl.childElementCount).toBe(0);
   });
 
+  /** @nospec */
   it('component updates when message arrives', async () => {
     renderInCtxProvider(ablyClient, <UseChannelComponent></UseChannelComponent>);
 
@@ -46,6 +48,7 @@ describe('useChannel', () => {
     expect(messageUl.children[0].innerHTML).toBe('message text');
   });
 
+  /** @nospec */
   it('component updates when multiple messages arrive', async () => {
     renderInCtxProvider(ablyClient, <UseChannelComponent></UseChannelComponent>);
 
@@ -59,6 +62,7 @@ describe('useChannel', () => {
     expect(messageUl.children[1].innerHTML).toBe('message text2');
   });
 
+  /** @nospec */
   it('useChannel works with multiple clients', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -79,6 +83,7 @@ describe('useChannel', () => {
     expect(messageUl.children[1].innerHTML).toBe('message text2');
   });
 
+  /** @nospec */
   it('handles channel errors', async () => {
     const onChannelError = vi.fn();
     const reason = { message: 'foo' };
@@ -103,6 +108,7 @@ describe('useChannel', () => {
     expect(onChannelError).toHaveBeenCalledWith(reason);
   });
 
+  /** @nospec */
   it('handles connection errors', async () => {
     const onConnectionError = vi.fn();
     const reason = { message: 'foo' };
@@ -127,6 +133,7 @@ describe('useChannel', () => {
     expect(onConnectionError).toHaveBeenCalledWith(reason);
   });
 
+  /** @nospec */
   it('skip param', async () => {
     renderInCtxProvider(ablyClient, <UseChannelComponent skip={true}></UseChannelComponent>);
 
@@ -138,6 +145,7 @@ describe('useChannel', () => {
     expect(messageUl.childElementCount).toBe(0);
   });
 
+  /** @nospec */
   it('should use the latest version of the message callback', async () => {
     let callbackCount = 0;
 
@@ -158,6 +166,7 @@ describe('useChannel', () => {
     expect(callbackCount).toBe(2);
   });
 
+  /** @nospec */
   it('should re-subscribe if event name has changed', async () => {
     const channel = ablyClient.channels.get('blah');
     channel.subscribe = vi.fn();
@@ -193,6 +202,7 @@ describe('useChannel with deriveOptions', () => {
     yetAnotherClient = new FakeAblySdk().connectTo(channels);
   });
 
+  /** @nospec */
   it('component can use "useChannel" with "deriveOptions" and renders nothing by default', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -205,6 +215,7 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.childElementCount).toBe(0);
   });
 
+  /** @nospec */
   it('component can use "publish" for channel with "deriveOptions"', async () => {
     const { result } = renderHook(() => useChannel('blah'), {
       wrapper: ({ children }) => (
@@ -222,6 +233,7 @@ describe('useChannel with deriveOptions', () => {
     await publish('test', 'test');
   });
 
+  /** @nospec */
   it('component updates when new message arrives', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -244,6 +256,7 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.children[0].innerHTML).toBe('A new task for you');
   });
 
+  /** @nospec */
   it('component will not update if message filtered out', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -265,6 +278,7 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.childElementCount).toBe(0);
   });
 
+  /** @nospec */
   it('component will update with only those messages that qualify', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -302,6 +316,7 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.children[1].innerHTML).toBe('This one is also a domain-wide fan-out');
   });
 
+  /** @nospec */
   it('component can use "useChannel" with multiple clients', async () => {
     const cliendId = 'client';
     const anotherClientId = 'anotherClient';
@@ -353,6 +368,7 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.children[1].innerHTML).toBe('A company-wide alert');
   });
 
+  /** @nospec */
   it('handles channel errors', async () => {
     const onChannelError = vi.fn();
     const reason = { message: 'channel error occurred' };
@@ -378,6 +394,7 @@ describe('useChannel with deriveOptions', () => {
     expect(onChannelError).toHaveBeenCalledWith(reason);
   });
 
+  /** @nospec */
   it('handles connection errors', async () => {
     const onConnectionError = vi.fn();
     const reason = { message: 'failed to establish connection' };
@@ -403,6 +420,7 @@ describe('useChannel with deriveOptions', () => {
     expect(onConnectionError).toHaveBeenCalledWith(reason);
   });
 
+  /** @nospec */
   it('wildcard filter', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -420,6 +438,7 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.childElementCount).toBe(1);
   });
 
+  /** @nospec */
   it('skip param', async () => {
     renderInCtxProvider(
       ablyClient,
@@ -437,6 +456,7 @@ describe('useChannel with deriveOptions', () => {
     expect(messageUl.childElementCount).toBe(0);
   });
 
+  /** @nospec */
   it('should use the latest version of the message callback', async () => {
     let callbackCount = 0;
 
@@ -482,6 +502,7 @@ describe('useChannel with deriveOptions', () => {
     expect(screen.getByRole('counter').innerHTML).toEqual(`${callbackCount}`);
   });
 
+  /** @nospec */
   it('should re-subscribe if event name has changed', async () => {
     const channel = ablyClient.channels.get(Channels.alerts);
     channel.subscribe = vi.fn();

@@ -6,7 +6,6 @@ define(['shared_helper', 'chai'], function (helper, chai) {
   var expect = chai.expect;
   var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
 
-  // RSL8
   describe('rest/status', function () {
     this.timeout(30 * 1000);
 
@@ -21,6 +20,21 @@ define(['shared_helper', 'chai'], function (helper, chai) {
       });
     });
 
+    /**
+     * @spec RSL8
+     * @spec RSL8a
+     * @spec CHD2a
+     * @spec CHD2b
+     * @spec CHS2a
+     * @spec CHS2b
+     * @spec CHO2a
+     * @spec CHM2a
+     * @spec CHM2b
+     * @spec CHM2c
+     * @spec CHM2d
+     * @spec CHM2e
+     * @spec CHM2f
+     */
     restTestOnJsonMsgpack('status0', async function (rest) {
       var channel = rest.channels.get('status0');
       var channelDetails = await channel.status();

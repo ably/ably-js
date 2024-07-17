@@ -18,6 +18,20 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     describe('when invoked with an array of specs', function () {
+      /**
+       * @spec RSC22
+       * @spec BAR2a
+       * @spec BAR2b
+       * @spec BAR2c
+       * @spec BSP2a
+       * @spec BSP2b
+       * @spec BPR2a
+       * @spec BPR2b
+       * @spec BPF2a
+       * @spec BPF2b
+       * @specpartial RSC22c - test passing an array of BatchPublishSpec
+       * @specpartial RSC22b - test returns an array of BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>
+       */
       it('performs a batch publish and returns an array of results', async function () {
         const testApp = helper.getTestApp();
         const rest = helper.AblyRest({
@@ -94,6 +108,20 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     });
 
     describe('when invoked with a single spec', function () {
+      /**
+       * @spec RSC22
+       * @spec BAR2a
+       * @spec BAR2b
+       * @spec BAR2c
+       * @spec BSP2a
+       * @spec BSP2b
+       * @spec BPR2a
+       * @spec BPR2b
+       * @spec BPF2a
+       * @spec BPF2b
+       * @specpartial RSC22c - test passing a single BatchPublishSpec
+       * @specpartial RSC22b - test returns a single BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>
+       */
       it('performs a batch publish and returns a single result', async function () {
         const testApp = helper.getTestApp();
         const rest = helper.AblyRest({
@@ -148,6 +176,16 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
+    /**
+     * @spec RSC24
+     * @spec BAR2a
+     * @spec BAR2b
+     * @spec BAR2c
+     * @spec BGR2a
+     * @spec BGR2b
+     * @spec BGF2a
+     * @spec BGF2b
+     */
     it('performs a batch presence fetch and returns a result', async function () {
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
@@ -209,6 +247,21 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
+    /**
+     * @spec RSA17
+     * @spec RSA17c
+     * @spec TRT2a
+     * @spec TRT2b
+     * @spec BAR2a
+     * @spec BAR2b
+     * @spec BAR2c
+     * @spec TRS2a
+     * @spec TRS2b
+     * @spec TRS2c
+     * @spec TRF2a
+     * @spec TRF2b
+     * @specpartial RSA17g - test passing an array of TokenRevocationTargetSpecifier
+     */
     it('revokes tokens matching the given specifiers', async function () {
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
@@ -296,6 +349,15 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       );
     });
 
+    /**
+     * Spec is missing for documenting that allowReauthMargin will delay token revocation by 30 seconds.
+     *
+     * @spec RSA17
+     * @spec RSA17e
+     * @spec RSA17f
+     * @spec TRS2b
+     * @spec TRS2c
+     */
     it('accepts optional issuedBefore and allowReauthMargin parameters', async function () {
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
@@ -320,6 +382,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect(result.results[0].appliesAt).to.be.greaterThan(serverTimeThirtySecondsAfterStartOfTest);
     });
 
+    /**
+     * @spec RSA17
+     * @spec RSA17d
+     */
     it('throws an error when using token auth', async function () {
       const rest = helper.AblyRest({
         useTokenAuth: true,

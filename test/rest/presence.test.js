@@ -61,11 +61,23 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     }
 
+    /**
+     * @spec RSP3
+     * @spec RSP3a
+     */
     it('Presence get simple', presence_simple('get'));
+    /**
+     * @spec RSP4
+     * @spec RSP4a
+     */
     it('Presence history simple', presence_simple('history'));
 
-    /* Ensure that calling JSON strinfigy on the Presence object
-	   converts the action string value back to a numeric value which the API requires */
+    /**
+     * Ensure that calling JSON strinfigy on the Presence object
+     * converts the action string value back to a numeric value which the API requires
+     *
+     * @nospec
+     */
     it('Presence message JSON serialisation', async function () {
       var channel = rest.channels.get('persisted:presence_fixtures');
       var resultPage = await channel.presence.get();
@@ -78,6 +90,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(JSON.parse(JSON.stringify(presenceBool)).action).to.equal(3); // leave
     });
 
+    /**
+     * @spec RSP3a2
+     * @spec RSP3a3
+     * @specpartial RSP3a1 - should also test maximum supported limit of 1000
+     */
     it('Presence get limits and filtering', async function () {
       var channel = rest.channels.get('persisted:presence_fixtures');
 

@@ -22,6 +22,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /**
+     * Related to G1
+     *
+     * @spec RSC19f1
+     * @specpartial RSC7e - tests providing a version value in .request parameters
+     * @specpartial CSV2c - tests version is provided in http requests
+     */
     restTestOnJsonMsgpack('request_version', function (rest) {
       const version = 150; // arbitrarily chosen
 
@@ -41,6 +48,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       rest.request('get', '/time' /* arbitrarily chosen */, version, null, null, null);
     });
 
+    /**
+     * Related to G1
+     *
+     * @spec HP3
+     * @spec HP4
+     * @spec HP5
+     * @specpartial RSC19f - basic test for passing a http method, path and version parameters
+     */
     restTestOnJsonMsgpack('request_time', async function (rest) {
       const res = await rest.request('get', '/time', Defaults.protocolVersion, null, null, null);
       expect(res.statusCode).to.equal(200, 'Check statusCode');
@@ -49,6 +64,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items.length).to.equal(1, 'Check array was of length 1');
     });
 
+    /**
+     * Related to G1, RSC19
+     *
+     * @spec HP4
+     * @spec HP5
+     * @spec HP6
+     * @spec HP7
+     */
     restTestOnJsonMsgpack('request_404', async function (rest) {
       /* NB: can't just use /invalid or something as the CORS preflight will
        * fail. Need something superficially a valid path but where the actual
@@ -67,7 +90,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.errorMessage, 'Check have an HPR.errorMessage').to.be.ok;
     });
 
-    /* With a network issue, should get an actual err, not an HttpPaginatedResponse with error members */
+    /**
+     * With a network issue, should get an actual err, not an HttpPaginatedResponse with error members
+     * @spec RSC19e
+     */
     it('request_network_error', async function () {
       rest = helper.AblyRest({ restHost: helper.unroutableAddress });
       try {
@@ -80,7 +106,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect.fail('Expected rest.request to throw');
     });
 
-    /* Use the request feature to publish, then retrieve (one at a time), some messages */
+    /**
+     * Use the request feature to publish, then retrieve (one at a time), some messages
+     * Related to G1
+     *
+     * @spec HP3
+     * @spec HP4
+     * @spec HP5
+     * @specpartial HP2 - tests overriden .next method only
+     * @specpartial RSC19f - more tests with passing other methods, body and parameters
+     */
     restTestOnJsonMsgpack('request_post_get_messages', async function (rest, channelName) {
       var channelPath = '/channels/' + channelName + '/messages',
         msgone = { name: 'faye', data: 'whittaker' },
@@ -123,6 +158,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items[0].data).to.equal(msgtwo.data, 'Check data is as expected');
     });
 
+    /**
+     * Related to G1
+     *
+     * @spec HP3
+     * @spec HP4
+     * @spec HP5
+     * @spec HP6
+     * @spec HP7
+     * @specpartial RSC19f - more tests with POST method and passing body
+     */
     restTestOnJsonMsgpack('request_batch_api_success', async function (rest, name) {
       var body = { channels: [name + '1', name + '2'], messages: { data: 'foo' } };
 
@@ -143,6 +188,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       expect(res.items[1].channel).to.equal(name + '2', 'Verify channel2 response includes correct channel');
     });
 
+    /**
+     * Related to G1
+     *
+     * @spec HP3
+     * @spec HP4
+     * @spec HP5
+     * @spec HP6
+     * @spec HP7
+     * @specpartial RSC19f - more tests with POST method and passing body
+     * @specskip
+     */
     restTestOnJsonMsgpack.skip('request_batch_api_partial_success', async function (rest, name) {
       var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
 
@@ -168,6 +224,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     });
 
     ['put', 'patch', 'delete'].forEach(function (method) {
+      /** @specpartial RSC19f - tests put, patch, delete methods are supported */
       it('check' + method, async function () {
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
         var res = await restEcho.request(method, '/methods', Defaults.protocolVersion, {}, {}, {});

@@ -16,6 +16,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
+    /**
+     * @specpartial RSC1a - test with key string
+     * @specpartial RSC1c - test with key string
+     */
     it('Init with key string', function () {
       var keyStr = helper.getTestApp().keys[0].keyStr;
       var rest = new helper.Ably.Rest(keyStr);
@@ -23,6 +27,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect(rest.options.key).to.equal(keyStr);
     });
 
+    /**
+     * @specpartial RSC1a - test with token string
+     * @specpartial RSC1c - test with token string
+     */
     it('Init with token string', async function () {
       /* first generate a token ... */
       var rest = helper.AblyRest();
@@ -35,22 +43,45 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect(rest.options.token).to.equal(tokenStr);
     });
 
+    /**
+     * @spec RSC18
+     * @spec TO3d
+     * @spec TO3k4
+     * @spec TO3k5
+     */
     it('Init with tls: false', function () {
       var rest = helper.AblyRest({ tls: false, port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('http://example.com:123');
     });
 
+    /**
+     * @spec RSC18
+     * @spec TO3d
+     * @spec TO3k5
+     */
     it('Init with tls: true', function () {
       var rest = helper.AblyRest({ tls: true, port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('https://example.com:456');
     });
 
-    /* init without any tls key should enable tls */
+    /**
+     * Init without any tls key should enable tls.
+     *
+     * @spec RSC18
+     * @spec TO3d
+     * @spec TO3k5
+     */
+
     it('Init without any tls key should enable tls', function () {
       var rest = helper.AblyRest({ port: 123, tlsPort: 456 });
       expect(rest.baseUri('example.com')).to.equal('https://example.com:456');
     });
 
+    /**
+     * @spec RSC17
+     * @spec RSA15a
+     * @spec RSA15c
+     */
     it("Init with clientId set to '*' or anything other than a string or null should error", function () {
       expect(function () {
         var rest = helper.AblyRest({ clientId: '*' });

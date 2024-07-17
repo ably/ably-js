@@ -5,6 +5,7 @@ import { App } from '../../src/ReactApp';
 test.describe('NPM package', () => {
   for (const scenario of [{ name: 'react export' }]) {
     test.describe(scenario.name, () => {
+      /** @nospec */
       test('can be imported and provides access to Ably functionality', async ({ mount, page }) => {
         page.on('console', (message) => {
           if (['error', 'warning'].includes(message.type())) {

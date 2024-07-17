@@ -52,6 +52,7 @@ function registerAblyModularTests(helper) {
     describe('attempting to initialize with no client options', () => {
       for (const clientClass of [BaseRest, BaseRealtime]) {
         describe(clientClass.name, () => {
+          /** @nospec */
           it('throws an error', () => {
             expect(() => new clientClass()).to.throw('must be initialized with a client options object');
           });
@@ -62,6 +63,7 @@ function registerAblyModularTests(helper) {
     describe('attempting to initialize with just an API key', () => {
       for (const clientClass of [BaseRest, BaseRealtime]) {
         describe(clientClass.name, () => {
+          /** @nospec */
           it('throws an error', () => {
             expect(() => new clientClass('foo:bar')).to.throw(
               'cannot be initialized with just an Ably API key; you must provide a client options object with a `plugins` property',
@@ -74,6 +76,7 @@ function registerAblyModularTests(helper) {
     describe('attempting to initialize with just a token', () => {
       for (const clientClass of [BaseRest, BaseRealtime]) {
         describe(clientClass.name, () => {
+          /** @nospec */
           it('throws an error', () => {
             expect(() => new clientClass('foo')).to.throw(
               'cannot be initialized with just an Ably Token; you must provide a client options object with a `plugins` property',
@@ -86,6 +89,7 @@ function registerAblyModularTests(helper) {
     describe('without any plugins', () => {
       for (const clientClass of [BaseRest, BaseRealtime]) {
         describe(clientClass.name, () => {
+          /** @nospec */
           it('throws an error due to the absence of an HTTP plugin', () => {
             expect(() => new clientClass(ablyClientOptions())).to.throw(
               'No HTTP request plugin provided. Provide at least one of the FetchRequest or XHRRequest plugins.',
@@ -145,6 +149,7 @@ function registerAblyModularTests(helper) {
 
       describe('BaseRest without explicit Rest', () => {
         for (const scenario of restScenarios) {
+          /** @nospec */
           it(`allows you to ${scenario.description}`, async () => {
             const client = new BaseRest(
               ablyClientOptions({ ...scenario.getAdditionalClientOptions?.(), plugins: { FetchRequest } }),
@@ -164,6 +169,7 @@ function registerAblyModularTests(helper) {
 
       describe('BaseRealtime with Rest', () => {
         for (const scenario of restScenarios) {
+          /** @nospec */
           it(`allows you to ${scenario.description}`, async () => {
             const client = new BaseRealtime(
               ablyClientOptions({
@@ -191,6 +197,7 @@ function registerAblyModularTests(helper) {
       });
 
       describe('BaseRealtime without Rest', () => {
+        /** @nospec */
         it('still allows publishing and subscribing', async () => {
           const client = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
 
@@ -211,6 +218,7 @@ function registerAblyModularTests(helper) {
           }, client);
         });
 
+        /** @nospec */
         it('allows `auth.createTokenRequest()` without `queryTime` option enabled', async () => {
           const client = new BaseRealtime(
             ablyClientOptions({ autoConnect: false, plugins: { WebSocketTransport, FetchRequest } }),
@@ -221,6 +229,7 @@ function registerAblyModularTests(helper) {
         });
 
         for (const scenario of restScenarios) {
+          /** @nospec */
           it(`throws an error when attempting to ${scenario.description}`, async () => {
             const client = new BaseRealtime(
               ablyClientOptions({
@@ -249,11 +258,18 @@ function registerAblyModularTests(helper) {
     });
 
     describe('Crypto standalone functions', () => {
+      /**
+       * This test does a basic sanity check for RSE2b but for a function exposed in the modular bundle,
+       * so it's not really relevant to the spec item here.
+       *
+       * @nospec
+       */
       it('generateRandomKey', async () => {
         const key = await generateRandomKey();
         expect(key).to.be.an('ArrayBuffer');
       });
 
+      /** @nospec */
       it('getDefaultCryptoParams', async () => {
         const key = await generateRandomKey();
         const params = getDefaultCryptoParams({ key });
@@ -272,10 +288,17 @@ function registerAblyModularTests(helper) {
       }
 
       describe('decodeMessage', () => {
+        /**
+         * This tests TM3 (fromEncoded part) but for a function exposed in the modular bundle,
+         * so it's not really relevant to the spec item.
+         *
+         * @nospec
+         */
         it('decodes a message’s data', async () => {
           testDecodesMessageData(decodeMessage);
         });
 
+        /** @nospec */
         it('throws an error when given channel options with a cipher', async () => {
           const testData = await loadTestData(testResourcesPath + 'crypto-data-128.json');
           const key = BufferUtils.base64Decode(testData.key);
@@ -294,10 +317,12 @@ function registerAblyModularTests(helper) {
       });
 
       describe('decodeEncryptedMessage', async () => {
+        /** @nospec */
         it('decodes a message’s data', async () => {
           testDecodesMessageData(decodeEncryptedMessage);
         });
 
+        /** @nospec */
         it('decrypts a message', async () => {
           const testData = await loadTestData(testResourcesPath + 'crypto-data-128.json');
 
@@ -326,10 +351,17 @@ function registerAblyModularTests(helper) {
       }
 
       describe('decodeMessages', () => {
+        /**
+         * This tests TM3 (fromEncodedArray part) but for a function exposed in the modular bundle,
+         * so it's not really relevant to the spec item.
+         *
+         * @nospec
+         */
         it('decodes messages’ data', async () => {
           testDecodesMessagesData(decodeMessages);
         });
 
+        /** @nospec */
         it('throws an error when given channel options with a cipher', async () => {
           const testData = await loadTestData(testResourcesPath + 'crypto-data-128.json');
           const key = BufferUtils.base64Decode(testData.key);
@@ -351,10 +383,12 @@ function registerAblyModularTests(helper) {
       });
 
       describe('decodeEncryptedMessages', () => {
+        /** @nospec */
         it('decodes messages’ data', async () => {
           testDecodesMessagesData(decodeEncryptedMessages);
         });
 
+        /** @nospec */
         it('decrypts messages', async () => {
           const testData = await loadTestData(testResourcesPath + 'crypto-data-128.json');
 
@@ -401,6 +435,7 @@ function registerAblyModularTests(helper) {
           },
         ]) {
           describe(clientClassConfig.clientClass.name, () => {
+            /** @nospec */
             it('throws an error when given channel options with a cipher', async () => {
               await testThrowsAnErrorWhenGivenChannelOptionsWithACipher(clientClassConfig);
             });
@@ -464,6 +499,7 @@ function registerAblyModularTests(helper) {
           },
         ]) {
           describe(clientClassConfig.clientClass.name, () => {
+            /** @nospec */
             it('is able to publish encrypted messages', async () => {
               await testIsAbleToPublishEncryptedMessages(clientClassConfig);
             });
@@ -508,6 +544,7 @@ function registerAblyModularTests(helper) {
       describe('with useBinaryProtocol client option', () => {
         describe('without MsgPack', () => {
           describe('BaseRest', () => {
+            /** @nospec */
             it('uses JSON', async () => {
               const client = new BaseRest(ablyClientOptions({ useBinaryProtocol: true, plugins: { FetchRequest } }));
               await testRestUsesContentType(client, 'application/json');
@@ -515,6 +552,7 @@ function registerAblyModularTests(helper) {
           });
 
           describe('BaseRealtime', () => {
+            /** @nospec */
             it('uses JSON', async () => {
               const client = new BaseRealtime(
                 ablyClientOptions({
@@ -536,6 +574,7 @@ function registerAblyModularTests(helper) {
 
         describe('with MsgPack', () => {
           describe('BaseRest', () => {
+            /** @nospec */
             it('uses MessagePack', async () => {
               const client = new BaseRest(
                 ablyClientOptions({
@@ -551,6 +590,7 @@ function registerAblyModularTests(helper) {
           });
 
           describe('BaseRealtime', () => {
+            /** @nospec */
             it('uses MessagePack', async () => {
               const client = new BaseRealtime(
                 ablyClientOptions({
@@ -575,6 +615,7 @@ function registerAblyModularTests(helper) {
 
     describe('RealtimePresence', () => {
       describe('BaseRealtime without RealtimePresence', () => {
+        /** @nospec */
         it('throws an error when attempting to access the `presence` property', async () => {
           const client = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
 
@@ -585,6 +626,7 @@ function registerAblyModularTests(helper) {
           }, client);
         });
 
+        /** @nospec */
         it('doesn’t break when it receives a PRESENCE ProtocolMessage', async () => {
           const rxClient = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
 
@@ -621,6 +663,12 @@ function registerAblyModularTests(helper) {
       });
 
       describe('BaseRealtime with RealtimePresence', () => {
+        /**
+         * Tests RTP6b and RTP8a but for a RealtimePresence plugin with modular BaseRealtime,
+         * so it's not explictly related to any spec item.
+         *
+         * @nospec
+         */
         it('offers realtime presence functionality', async () => {
           const rxClient = new BaseRealtime(
             ablyClientOptions({
@@ -666,6 +714,12 @@ function registerAblyModularTests(helper) {
 
     describe('PresenceMessage standalone functions', () => {
       describe('decodePresenceMessage', () => {
+        /**
+         * Tests TP4 (fromEncoded part) but for a function exposed in the modular bundle,
+         * so it's not really relevant to the spec item.
+         *
+         * @nospec
+         */
         it('decodes a presence message’s data', async () => {
           const buffer = BufferUtils.utf8Encode('foo');
           const encodedMessage = { data: BufferUtils.base64Encode(buffer), encoding: 'base64' };
@@ -678,6 +732,12 @@ function registerAblyModularTests(helper) {
       });
 
       describe('decodeMessages', () => {
+        /**
+         * Tests TP4 (fromEncodedArray part) but for a function exposed in the modular bundle,
+         * so it's not really relevant to the spec item.
+         *
+         * @nospec
+         */
         it('decodes presence messages’ data', async () => {
           const buffers = ['foo', 'bar'].map((data) => BufferUtils.utf8Encode(data));
           const encodedMessages = buffers.map((buffer) => ({
@@ -697,6 +757,7 @@ function registerAblyModularTests(helper) {
       });
 
       describe('constructPresenceMessage', () => {
+        /** @nospec */
         it('creates a PresenceMessage instance', async () => {
           const extras = { foo: 'bar' };
           const presenceMessage = constructPresenceMessage({ extras });
@@ -710,6 +771,7 @@ function registerAblyModularTests(helper) {
     describe('Transports', () => {
       describe('BaseRealtime', () => {
         describe('without a transport plugin', () => {
+          /** @nospec */
           it('throws an error due to absence of a transport plugin', () => {
             expect(() => new BaseRealtime(ablyClientOptions({ plugins: { FetchRequest } }))).to.throw(
               'no requested transports available',
@@ -722,6 +784,10 @@ function registerAblyModularTests(helper) {
           { pluginsKey: 'XHRPolling', transportPlugin: XHRPolling, transportName: 'xhr_polling' },
         ]) {
           describe(`with the ${scenario.pluginsKey} plugin`, () => {
+            /**
+             * Tests RTN1 support for modular bundle.
+             * @nospec
+             */
             it(`is able to use the ${scenario.transportName} transport`, async () => {
               const realtime = new BaseRealtime(
                 ablyClientOptions({
@@ -758,6 +824,7 @@ function registerAblyModularTests(helper) {
 
     describe('HTTP request implementations', () => {
       describe('with multiple HTTP request implementations', () => {
+        /** @nospec */
         it('prefers XHR', async () => {
           let usedXHR = false;
 
@@ -779,6 +846,7 @@ function registerAblyModularTests(helper) {
     describe('MessageInteractions', () => {
       describe('BaseRealtime', () => {
         describe('without MessageInteractions', () => {
+          /** @nospec */
           it('is able to subscribe to and unsubscribe from channel events, as long as a MessageFilter isn’t passed', async () => {
             const realtime = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
 
@@ -795,6 +863,7 @@ function registerAblyModularTests(helper) {
             }, realtime);
           });
 
+          /** @nospec */
           it('throws an error when attempting to subscribe to channel events using a MessageFilter', async () => {
             const realtime = new BaseRealtime(ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
 
@@ -815,6 +884,10 @@ function registerAblyModularTests(helper) {
         });
 
         describe('with MessageInteractions', () => {
+          /**
+           * Tests RTL22d, MFI2e but for a MessageInteractions plugin with modular BaseRealtime.
+           * @nospec
+           */
           it('can take a MessageFilter argument when subscribing to and unsubscribing from channel events', async () => {
             const realtime = new BaseRealtime(
               ablyClientOptions({

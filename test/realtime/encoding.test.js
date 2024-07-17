@@ -23,8 +23,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* Publish each fixture manually; subscribe with both a json and msgpack
+    /**
+     * Publish each fixture manually; subscribe with both a json and msgpack
      * realtime, and check everything decodes correctly
+     *
+     * @specpartial RSL6a1 - publish through REST API, receive via realtime for all transports
      */
     it('message_decoding', function (done) {
       loadTestData(encodingFixturesPath, function (err, testData) {
@@ -124,8 +127,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* Publish each fixture with both a json and msgpack realtime, get history
+    /**
+     * Publish each fixture with both a json and msgpack realtime, get history
      * manually, and check everything was encoded correctly
+     *
+     * @specpartial RSL6a1 - publish through realtime, receive via rest (history) for all transports
      */
     it('message_encoding', function (done) {
       loadTestData(encodingFixturesPath, function (err, testData) {

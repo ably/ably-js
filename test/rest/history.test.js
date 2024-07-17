@@ -27,6 +27,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     });
 
+    /**
+     * Related to G1.
+     * @spec RSL2
+     * @spec RSL2a
+     */
     restTestOnJsonMsgpack('history_simple', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
@@ -53,6 +58,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
+    /**
+     * Related to G1.
+     * @spec RSL2
+     * @spec RSL2a
+     */
     restTestOnJsonMsgpack('history_multiple', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
@@ -76,6 +86,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
+    /**
+     * Related to G1.
+     * @spec RSL2b2
+     * @specpartial RSL2b3 - should also test maximum supported limit of 1000
+     */
     restTestOnJsonMsgpack('history_simple_paginated_b', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
 
@@ -114,6 +129,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
+    /**
+     * @spec RSL2b2
+     * @specpartial RSL2b3 - should also test maximum supported limit of 1000
+     */
     it('history_simple_paginated_f', async function () {
       var testchannel = rest.channels.get('persisted:history_simple_paginated_f');
 
@@ -153,6 +172,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
+    /**
+     * @spec RSL2b2
+     * @specpartial RSL2b3 - should also test maximum supported limit of 1000
+     */
     it('history_multiple_paginated_b', async function () {
       var testchannel = rest.channels.get('persisted:history_multiple_paginated_b');
 
@@ -187,6 +210,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       }
     });
 
+    /**
+     * @spec RSL2b2
+     * @specpartial RSL2b3 - should also test maximum supported limit of 1000
+     */
     it('history_multiple_paginated_f', async function () {
       var testchannel = rest.channels.get('persisted:history_multiple_paginated_f');
 
@@ -225,6 +252,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
+    /** @nospec */
     restTestOnJsonMsgpack('history_encoding_errors', async function (rest, channelName) {
       var testchannel = rest.channels.get('persisted:' + channelName);
       var badMessage = { name: 'jsonUtf8string', encoding: 'json/utf-8', data: '{"foo":"bar"}' };
@@ -237,6 +265,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       expect(message.encoding).to.equal(badMessage.encoding, 'Verify encoding preserved');
     });
 
+    /** @specpartial TG4 - in the context of RestChannel#history */
     restTestOnJsonMsgpack('history_no_next_page', async function (rest, channelName) {
       const channel = rest.channels.get(channelName);
 

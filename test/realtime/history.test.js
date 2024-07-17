@@ -47,6 +47,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     });
 
+    /**
+     * @spec RTL10c
+     * @spec RTL10d
+     * @specpartial RTL10b - tests only messages prior to the moment that the channel was attached
+     */
     it('history_until_attach', function (done) {
       var rest = helper.AblyRest();
       var realtime = helper.AblyRealtime();

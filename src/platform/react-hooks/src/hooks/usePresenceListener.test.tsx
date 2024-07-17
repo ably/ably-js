@@ -39,6 +39,7 @@ describe('usePresenceListener', () => {
     otherClient = new FakeAblySdk().connectTo(channels);
   });
 
+  /** @nospec */
   it('presence data is not visible on first render as it runs in an effect', async () => {
     // enter presence before rendering the component
     ablyClient.channels.get(testChannelName).presence.enter('bar');
@@ -54,6 +55,7 @@ describe('usePresenceListener', () => {
     });
   });
 
+  /** @nospec */
   it('presence data available after effect runs', async () => {
     // enter presence before rendering the component
     ablyClient.channels.get(testChannelName).presence.enter('bar');
@@ -68,6 +70,7 @@ describe('usePresenceListener', () => {
     expect(values).toContain(`"bar"`);
   });
 
+  /** @nospec */
   it('presence data in component updates when presence was updated', async () => {
     ablyClient.channels.get(testChannelName).presence.enter('bar');
 
@@ -81,6 +84,7 @@ describe('usePresenceListener', () => {
     expect(values).toContain(`"baz"`);
   });
 
+  /** @nospec */
   it('presence data respects updates made by other clients', async () => {
     ablyClient.channels.get(testChannelName).presence.enter('bar');
 
@@ -97,6 +101,7 @@ describe('usePresenceListener', () => {
     expect(values).toContain(`"baz"`);
   });
 
+  /** @nospec */
   it('presence API works with type information provided', async () => {
     const data: MyPresenceType = { foo: 'bar' };
     ablyClient.channels.get(testChannelName).presence.enter(data);
@@ -111,6 +116,7 @@ describe('usePresenceListener', () => {
     expect(values).toContain(`"data":${JSON.stringify(data)}`);
   });
 
+  /** @nospec */
   it('`skip` param prevents mounting and subscribing to presence events', async () => {
     // can't really test 'leave' event, since if 'skip' works as expected then we won't have any data available to check that it's gone
     ablyClient.channels.get(testChannelName).presence.enter('bar');
@@ -127,6 +133,7 @@ describe('usePresenceListener', () => {
     expect(values).to.not.contain(`"baz"`);
   });
 
+  /** @nospec */
   it('usePresenceListener works with multiple clients', async () => {
     ablyClient.channels.get(testChannelName).presence.enter('bar1');
     otherClient.channels.get(testChannelName).presence.enter('bar2');
@@ -154,6 +161,7 @@ describe('usePresenceListener', () => {
     expect(values2).toContain(`"data":"baz2"`);
   });
 
+  /** @nospec */
   it('calls onPresenceMessageReceived callback on new messages', async () => {
     const onPresenceMessageReceived = vi.fn();
     ablyClient.channels.get(testChannelName).presence.enter('bar');
@@ -180,6 +188,7 @@ describe('usePresenceListener', () => {
     expect(onPresenceMessageReceived).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz' }));
   });
 
+  /** @nospec */
   it('reacts to onPresenceMessageReceived callback changes', async () => {
     let onPresenceMessageReceived = vi.fn();
     ablyClient.channels.get(testChannelName).presence.enter('foo');
@@ -215,6 +224,7 @@ describe('usePresenceListener', () => {
     expect(onPresenceMessageReceived).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz' }));
   });
 
+  /** @nospec */
   it('handles channel errors', async () => {
     const onChannelError = vi.fn();
     const reason = { message: 'foo' };
@@ -243,6 +253,7 @@ describe('usePresenceListener', () => {
     expect(onChannelError).toHaveBeenCalledWith(reason);
   });
 
+  /** @nospec */
   it('handles connection errors', async () => {
     const onConnectionError = vi.fn();
     const reason = { message: 'foo' };
@@ -271,6 +282,7 @@ describe('usePresenceListener', () => {
     expect(onConnectionError).toHaveBeenCalledWith(reason);
   });
 
+  /** @nospec */
   it('should not affect existing presence listeners when hook unmounts', async () => {
     const enterListener = vi.fn();
     ablyClient.channels.get(testChannelName).presence.subscribe('enter', enterListener);

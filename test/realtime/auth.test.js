@@ -60,8 +60,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Base token generation case
+     *
+     * @spec RSA8a
      */
     it('authbase0', function (done) {
       var realtime = helper.AblyRealtime({ queryTime: true });
@@ -83,8 +85,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Use authUrl for authentication with JSON TokenDetails response
+     *
+     * @spec TO3j6
+     * @specpartial RSA8c - expect JSON TokenDetails
      */
     it('auth_useAuthUrl_json', function (done) {
       var realtime,
@@ -108,8 +113,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Use authUrl for authentication with JSON TokenDetails response, with authMethod=POST
+     *
+     * @spec TO3j6
+     * @spec TO3j7
+     * @spec TO3j9
+     * @specpartial RSA8c - expect JSON TokenDetails from a POST request
      */
     it('auth_useAuthUrl_post_json', function (done) {
       var realtime,
@@ -133,8 +143,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Use authUrl for authentication with plain text token response
+     *
+     * @spec TO3j6
+     * @specpartial RSA8c - expect a token string from plain text response
+     * @specpartial RSA8g - test authURL returned ably token string
      */
     it('auth_useAuthUrl_plainText', function (done) {
       var realtime,
@@ -158,8 +172,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Use authCallback for authentication with tokenRequest response
+     *
+     * @specpartial RSA4 - token auth is used due to authCallback
+     * @specpartial RSA8d - TokenRequest is returned
+     * @specpartial TO3j5 - can pass authCallback property
      */
     it('auth_useAuthCallback_tokenRequestResponse', function (done) {
       var realtime,
@@ -193,10 +211,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, realtime);
     });
 
-    /*
+    /**
      * Use authCallback for authentication with tokenDetails response,
      * also check that clientId lib is initialized with is passed through
      * to the auth callback
+     *
+     * @specpartial RSA4 - token auth is used due to authCallback
+     * @specpartial RSA8d - TokenDetails is returned
+     * @specpartial TO3j5 - can pass authCallback property
      */
     it('auth_useAuthCallback_tokenDetailsResponse', function (done) {
       var realtime,
@@ -232,8 +254,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, realtime);
     });
 
-    /*
+    /**
      * Use authCallback for authentication with token string response
+     *
+     * @specpartial RSA4 - token auth is used due to authCallback
+     * @specpartial RSA8d - token string is returned
+     * @specpartial TO3j5 - can pass authCallback property
+     * @specpartial RSA8g - authCallback returned ably token string
      */
     it('auth_useAuthCallback_tokenStringResponse', function (done) {
       var realtime,
@@ -267,11 +294,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       monitorConnection(done, realtime);
     });
 
-    /*
-     * RSA8c1c -- If the given authUrl includes any querystring params, they
+    /**
+     * If the given authUrl includes any querystring params, they
      * should be preserved, and in the GET case, authParams/tokenParams should be
      * merged with them. If a name conflict occurs, authParams/tokenParams should
      * take precedence
+     *
+     * @spec RSA8c1c
      */
     it('auth_useAuthUrl_mixed_authParams_qsParams', function (done) {
       var realtime,
@@ -305,9 +334,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Request a token using clientId, then initialize a connection without one,
      * and check that the connection inherits the clientId from the tokenDetails
+     *
+     * @spec RSA7b2
      */
     it('auth_clientid_inheritance', function (done) {
       var rest = helper.AblyRest(),
@@ -342,10 +373,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Rest token generation with clientId, then connecting with a
      * different clientId, should fail with a library-generated message
-     * (RSA15a, RSA15c)
+     *
+     * @spec RSA15a
+     * @spec RSA15c
      */
     it('auth_clientid_inheritance2', function (done) {
       var clientRealtime,
@@ -369,9 +402,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Rest token generation with clientId '*', then connecting with just the
      * token string and a different clientId, should succeed (RSA15b)
+     *
+     * @spec RSA15b
      */
     it('auth_clientid_inheritance3', function (done) {
       var realtime,
@@ -397,9 +432,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Rest token generation with clientId '*', then connecting with
      * tokenDetails and a clientId, should succeed (RSA15b)
+     *
+     * @spec RSA15b
      */
     it('auth_clientid_inheritance4', function (done) {
       var realtime,
@@ -425,9 +462,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Request a token using clientId, then initialize a connection using just the token string,
      * and check that the connection inherits the clientId from the connectionDetails
+     *
+     * @spec RSA7b3
      */
     it('auth_clientid_inheritance5', function (done) {
       var clientRealtime,
@@ -452,7 +491,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RSA4c, RSA4e
+    /**
+     * RSA4c, RSA4e
      * Try to connect with an authCallback that fails in various ways (calling back with an error, calling back with nothing, timing out, etc) should go to disconnected, not failed, and wrapped in a 80019 error code
      */
     function authCallback_failures(realtimeOptions, expectFailure) {
@@ -484,6 +524,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     }
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authCallback results in an error
+     */
     it(
       'authCallback_error',
       authCallback_failures({
@@ -493,6 +538,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authCallback times out after realtimeRequestTimeout
+     */
     it(
       'authCallback_timeout',
       authCallback_failures({
@@ -503,6 +553,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authCallback times out
+     */
     it(
       'authCallback_nothing',
       authCallback_failures({
@@ -512,6 +567,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authCallback provided token that is in an invalid format
+     * @specpartial RSA4f - invalid object
+     */
     it(
       'authCallback_malformed',
       authCallback_failures({
@@ -521,6 +582,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authCallback provided token that is in an invalid format
+     * @specpartial RSA4f - token is greater than 128KiB
+     */
     it(
       'authCallback_too_long_string',
       authCallback_failures({
@@ -534,6 +601,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authCallback provided token that is in an invalid format
+     */
     it(
       'authCallback_empty_string',
       authCallback_failures({
@@ -543,6 +615,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authUrl times out after realtimeRequestTimeout
+     */
     it(
       'authUrl_timeout',
       authCallback_failures({
@@ -551,6 +628,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - request to authUrl fails
+     */
     it(
       'authUrl_404',
       authCallback_failures({
@@ -558,6 +640,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authUrl provided token that is in an invalid format
+     * @specpartial RSA4f - invalid authUrl response content type
+     */
     it(
       'authUrl_wrong_content_type',
       authCallback_failures({
@@ -565,6 +653,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - request to authUrl fails
+     */
     it(
       'authUrl_401',
       authCallback_failures({
@@ -572,6 +665,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
+    /**
+     * @spec RSA4c1
+     * @spec RSA4c2
+     * @specpartial RSA4c - authUrl provided token that is in an invalid format
+     */
     it(
       'authUrl_double_encoded',
       authCallback_failures({
@@ -580,7 +678,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }),
     );
 
-    /* 403 should cause the connection to go to failed, unlike the others */
+    /**
+     * 403 should cause the connection to go to failed, unlike the others
+     *
+     * @specpartial RSA4d - authUrl results in an HTTP 403 response
+     */
     it(
       'authUrl_403',
       authCallback_failures(
@@ -591,7 +693,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       ),
     ); /* expectFailed: */
 
-    /* 403 should cause connection to fail even with an external error response */
+    /**
+     * 403 should cause connection to fail even with an external error response
+     *
+     * @specpartial RSA4d - authUrl results in an HTTP 403 response
+     */
     it(
       'authUrl_403_custom_error',
       authCallback_failures(
@@ -605,6 +711,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       ),
     );
 
+    /**
+     * @specpartial RSA4d - authUrl results in an HTTP 403 response
+     * @specpartial RSA4d1 - explicit authorize() call
+     */
     it('authUrl_403_previously_active', function (done) {
       var realtime,
         rest = helper.AblyRest();
@@ -642,9 +752,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Check state change reason is propogated during a disconnect
      * (when connecting with a token that expires while connected)
+     *
+     * @spec RSA4b1
+     * @specpartial RSA4b - token expired
      */
     testOnAllTransports('auth_token_expires', function (realtimeOpts) {
       return function (done) {
@@ -677,10 +790,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Check that when the queryTime option is provided
      * that the time from the server is only requested once
      * and all subsequent requests use the time offset
+     *
+     * @spec RSA10k
+     * @spec TO3j10
      */
     it('auth_query_time_once', function (done) {
       var rest = helper.AblyRest({ queryTime: true }),
@@ -734,9 +850,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * If using authcallback when a token expires, should automatically request a
      * new token
+     *
+     * @spec RSA4b1
+     * @specpartial RTN15a - attempt to reconnect and restore the connection state on token expire
+     * @specpartial RSA10e - obtain new token from authcallback when previous expires
      */
     testOnAllTransports('auth_tokenDetails_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
@@ -775,9 +895,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Same as previous but with just a token, so ably-js doesn't know that the
      * token's expired
+     *
+     * @spec RTC8a4
+     * @specpartial RTN15a - attempt to reconnect and restore the connection state on token expire
+     * @specpartial RSA10e - obtain new token from authcallback when previous expires
      */
     testOnAllTransports('auth_token_string_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
@@ -816,8 +940,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Same as previous but with no way to generate a new token
+     *
+     * @spec RSA4a
+     * @spec RSA4a2
      */
     testOnAllTransports('auth_token_string_expiry_with_token', function (realtimeOpts) {
       return function (done) {
@@ -857,8 +984,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
+    /**
      * Try to connect with an expired token string
+     *
+     * @spec RSA4a
+     * @spec RSA4a2
      */
     testOnAllTransports('auth_expired_token_string', function (realtimeOpts) {
       return function (done) {
@@ -896,8 +1026,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /*
-     * use authorize() to force a reauth using an existing authCallback
+    /**
+     * Use authorize() to force a reauth using an existing authCallback
+     *
+     * @spec RSA10a
+     * @spec RTC8
+     * @specskip
      */
     testOnAllTransports.skip('reauth_authCallback', function (realtimeOpts) {
       return function (done) {
@@ -952,7 +1086,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       };
     });
 
-    /* RSA10j */
+    /** @spec RSA10j */
     it('authorize_updates_stored_details', function (done) {
       var realtime = helper.AblyRealtime({
         autoConnect: false,
@@ -981,8 +1115,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       }
     });
 
-    /* RTN22
+    /**
      * Inject a fake AUTH message from realtime, check that we reauth and send our own in reply
+     *
+     * @spec RTN22
      */
     it('mocked_reauth', function (done) {
       var rest = helper.AblyRest(),
@@ -1019,9 +1155,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Request a token specifying a clientId and verify that the returned token
      * has the requested clientId.
+     *
+     * @spec RSA7b3
+     * @specpartial RSA8g - authCallback returned JWT token string
      */
     it('auth_jwt_with_clientid', function (done) {
       var currentKey = helper.getTestApp().keys[0];
@@ -1052,9 +1191,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Request a token specifying a clientId and verify that the returned token
      * has the requested clientId. Token will be returned with content-type application/jwt.
+     *
+     * There is no spec item to test content-type application/jwt with authCallback.
+     *
+     * @spec RSA7b3
+     * @specpartial RSA8g - authCallback returned JWT token string
      */
     it('auth_jwt_with_clientid_application_jwt', function (done) {
       var currentKey = helper.getTestApp().keys[0];
@@ -1085,9 +1229,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Request a token specifying subscribe-only capabilities and verify that posting
      * to a channel fails.
+     *
+     * @nospec
      */
     it('auth_jwt_with_subscribe_only_capability', function (done) {
       var currentKey = helper.getTestApp().keys[3]; // get subscribe-only keys { "*":["subscribe"] }
@@ -1112,9 +1258,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RSA8c
+    /**
      * Request a token with publish capabilities and verify that posting
      * to a channel succeeds.
+     *
+     * @nospec
      */
     it('auth_jwt_with_publish_capability', function (done) {
       var currentKey = helper.getTestApp().keys[0];
@@ -1141,9 +1289,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /*
+    /**
      * Request a JWT token that is about to expire, check that the client disconnects
      * and receives the expected reason in the state change.
+     *
+     * @spec RSA4b
      */
     it('auth_jwt_with_token_that_expires', function (done) {
       var currentKey = helper.getTestApp().keys[0];
@@ -1166,9 +1316,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RTC8a4
+    /**
      * Request a JWT token that is about to be renewed, check that the client reauths
      * without going through a disconnected state.
+     *
+     * @spec RTC8a4
+     * @specpartial RSA10e - obtain new token from authcallback when previous expires
      */
     it('auth_jwt_with_token_that_renews', function (done) {
       var currentKey = helper.getTestApp().keys[0];
@@ -1194,9 +1347,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RSC1
+    /**
      * Request a JWT token, initialize a realtime client with it and
      * verify it can make authenticated calls.
+     *
+     * @spec TN3
      */
     it('init_client_with_simple_jwt_token', function (done) {
       var currentKey = helper.getTestApp().keys[0];
@@ -1219,7 +1374,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RTN14b */
+    /** @spec RTN14b */
     it('reauth_consistently_expired_token', function (done) {
       var realtime,
         rest = helper.AblyRest();
@@ -1252,7 +1407,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RSA4b1 - only autoremove expired tokens if have a server time offset set */
+    /** @specpartial RSA4b1 - only autoremove expired tokens if have a server time offset set */
     it('expired_token_no_autoremove_when_dont_have_servertime', function (done) {
       var realtime,
         rest = helper.AblyRest();
@@ -1280,7 +1435,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* RSA4b1 second case */
+    /** @specpartial RSA4b1 - second case */
     it('expired_token_autoremove_when_have_servertime', function (done) {
       var realtime,
         rest = helper.AblyRest();
@@ -1315,7 +1470,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
-    /* Check that only the last authorize matters */
+    /**
+     * Check that only the last authorize matters
+     *
+     * @nospec
+     */
     it('multiple_concurrent_authorize', function (done) {
       var realtime = helper.AblyRealtime({
         useTokenAuth: true,
@@ -1359,6 +1518,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
     });
 
+    /** @nospec */
     testOnAllTransports('authorize_immediately_after_init', function (realtimeOpts) {
       return function (done) {
         var realtime = helper.AblyRealtime({

@@ -138,6 +138,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     }
 
+    /**
+     * Related to RTN15b, RTN15c.
+     * @nospec
+     */
     testOnAllTransports('resume_inactive', function (realtimeOpts) {
       return function (done) {
         resume_inactive(done, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
@@ -255,14 +259,19 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     }
 
+    /**
+     * Related to RTN15b, RTN15c.
+     * @nospec
+     */
     testOnAllTransports('resume_active', function (realtimeOpts) {
       return function (done) {
         resume_active(done, 'resume_active' + String(Math.random()), {}, realtimeOpts);
       };
     });
 
-    /* RTN15c3
+    /**
      * Resume with loss of continuity
+     * @spec RTN15c7
      */
     testOnAllTransports(
       'resume_lost_continuity',
@@ -327,8 +336,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       true /* Use a fixed transport as attaches are resent when the transport changes */,
     );
 
-    /* RTN15c5
+    /**
      * Resume with token error
+     * @spec RTN15c5
      */
     testOnAllTransports(
       'resume_token_error',
@@ -380,8 +390,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       true,
     );
 
-    /* RTN15c4
+    /**
      * Resume with fatal error
+     * @spec RTN15c4
      */
     testOnAllTransports(
       'resume_fatal_error',
@@ -432,9 +443,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       true,
     );
 
-    /* RTL2f
+    /**
      * Check channel resumed flag
      * TODO: enable once realtime supports this
+     *
+     * @spec RTL2f
      */
     it('channel_resumed_flag', function (done) {
       var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
@@ -497,8 +510,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
-    /*
-     * Check the library doesn't try to resume once the connectionStateTtl has expired
+    /**
+     * Check the library doesn't try to resume once the connectionStateTtl has expired.
+     * Related to RTN14f.
+     *
+     * @nospec
      */
     it('no_resume_once_suspended', function (done) {
       var realtime = helper.AblyRealtime(),
@@ -534,9 +550,11 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       );
     });
 
-    /*
+    /**
      * Check the library doesn't try to resume if the last known activity on the
      * connection was > connectionStateTtl ago
+     *
+     * @spec RTN15g
      */
     it('no_resume_last_activity', function (done) {
       var realtime = helper.AblyRealtime(),
@@ -561,6 +579,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       });
     });
 
+    /** @spec RTL4j2 */
     it('resume_rewind_1', function (done) {
       var testName = 'resume_rewind_1';
       var testMessage = { foo: 'bar', count: 1, status: 'active' };
@@ -576,7 +595,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             try {
               expect(
                 JSON.stringify(testMessage) === JSON.stringify(message.data),
-                'Check rewound message.data',
+                'Check rewind message.data',
               ).to.be.ok;
             } catch (err) {
               closeAndFinish(done, [sender_realtime, receiver_realtime], err);
@@ -599,7 +618,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               closeAndFinish(
                 done,
                 [sender_realtime, receiver_realtime, resumed_receiver_realtime],
-                new Error('Rewound message arrived on attach resume'),
+                new Error('rewind message arrived on attach resume'),
               );
             });
 
@@ -617,7 +636,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       }
     });
 
-    // Tests recovering multiple channels only receives the expected messages.
+    /**
+     * Tests recovering multiple channels only receives the expected messages.
+     *
+     * @spec RTN16d
+     * @spec RTC1c
+     * @spec RTN15a
+     */
     it('recover multiple channels', function (done) {
       const NUM_MSGS = 5;
 
