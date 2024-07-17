@@ -60,7 +60,6 @@ export class InterceptionContext {
 
         // TODO this is currently written on the assumption that darwin means running locally and linux means running in GitHub action; sort out so that you can run (locally or on CI) on (macOS or Linux)
         switch (process.platform) {
-          // currently this actually means "
           case 'darwin':
             mitmdumpBinary = 'mitmdump';
             switch (request.mode.mode) {
@@ -191,7 +190,7 @@ export class InterceptionContext {
     }
 
     if (this.interceptedMessagesQueue.hasMessages(predicate)) {
-      this.broadcastNextMessage(predicate);
+      this.transformNextMessage(predicate);
     } else {
       // We’re not waiting to forward any more messages, so tell the proxy that it can propagate any pending connection close and propagate any future connection close
       predicate.interceptedConnection.setKeepConnectionAlive(
@@ -201,22 +200,19 @@ export class InterceptionContext {
     }
   }
 
-  private broadcastJSONRPCRequest(request: JSONRPCRequest) {
+  private sendJSONRPCRequestToActiveConnection(request: JSONRPCRequest) {
     const data = JSON.stringify(request.createDTO());
 
-    console.log(`Broadcasting request JSON ${data}`);
+    console.log(`Sending request JSON to active connection: ${data}`);
     this.controlServer?.sendToActiveConnection(data);
   }
 
-  private broadcastNextMessage(predicate: InterceptedMessagePredicate) {
+  private transformNextMessage(predicate: InterceptedMessagePredicate) {
     const interceptedMessage = this.interceptedMessagesQueue.getHead(predicate);
 
     const jsonRPCRequestID = randomUUID();
     const handle = new InterceptedMessageHandle(predicate, interceptedMessage.id);
     this.jsonRPCRequestIDsToHandles[jsonRPCRequestID] = handle;
-
-    // Broadcast to everyone connected to the control server.
-    // TODO I think would be better for there to be one client who sends an explicit message to become the active client, or to only allow a single connection at a time; not important now though
 
     const jsonRPCRequest = new TransformInterceptedMessageJSONRPCRequest(
       jsonRPCRequestID,
@@ -226,7 +222,7 @@ export class InterceptionContext {
       interceptedMessage.message.fromClient,
     );
 
-    this.broadcastJSONRPCRequest(jsonRPCRequest);
+    this.sendJSONRPCRequestToActiveConnection(jsonRPCRequest);
   }
 
   enqueueMessage(message: ProxyMessage, interceptedConnection: InterceptedConnection) {
@@ -244,7 +240,7 @@ export class InterceptionContext {
     this.interceptedMessagesQueue.append(interceptedMessage, predicate);
 
     if (this.interceptedMessagesQueue.count(predicate) === 1) {
-      this.broadcastNextMessage(predicate);
+      this.transformNextMessage(predicate);
     } else {
       console.log(
         `Enqueued message ${interceptedMessage.id} since there are ${

@@ -1,5 +1,3 @@
-// TODO implement the proxy! These types are placeholders
-
 import { randomUUID } from 'crypto';
 import { WebSocketMessageData, webSocketMessageDataLoggingDescription } from './WebSocketMessageData';
 
