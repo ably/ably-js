@@ -79,6 +79,7 @@
     "chai": "^4.2.0",
     "cli-table": "^0.3.11",
     "cors": "^2.8.5",
+    "dox": "^1.0.0",
     "esbuild": "^0.18.10",
     "esbuild-plugin-umd-wrapper": "ably-forks/esbuild-plugin-umd-wrapper#1.0.7-optional-amd-named-module",
     "esbuild-runner": "^2.2.2",
@@ -89,7 +90,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-security": "^1.4.0",
     "express": "^4.17.1",
-    "glob": "~4.4",
+    "glob": "^10.4.2",
     "grunt": "^1.6.1",
     "grunt-cli": "~1.2.0",
     "grunt-shell": "~1.1",
@@ -158,6 +159,7 @@
     "format:check": "prettier --check --ignore-path .gitignore --ignore-path .prettierignore src test ably.d.ts modular.d.ts webpack.config.js Gruntfile.js scripts/*.[jt]s docs/**/*.md grunt",
     "sourcemap": "source-map-explorer build/ably.min.js",
     "modulereport": "tsc --noEmit --esModuleInterop scripts/moduleReport.ts && esr scripts/moduleReport.ts",
+    "speccoveragereport": "tsc --noEmit --esModuleInterop --target ES2017 --moduleResolution node scripts/specCoverageReport.ts && esr scripts/specCoverageReport.ts",
     "docs": "typedoc"
   }
 }
