@@ -24,6 +24,9 @@ class BaseRealtime extends BaseClient {
   _channels: any;
   connection: Connection;
 
+  // internal API to make EventEmitter usable in other SDKs
+  static readonly EventEmitter = EventEmitter;
+
   /*
    * The public typings declare that this only accepts an object, but since we want to emit a good error message in the case where a non-TypeScript user does one of these things:
    *
