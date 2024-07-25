@@ -97,6 +97,7 @@
     "grunt-shell": "~1.1",
     "grunt-webpack": "^5.0.0",
     "hexy": "~0.2",
+    "interception-proxy": "github:ably-labs/interception-proxy",
     "jmespath": "^0.16.0",
     "jsdom": "^20.0.0",
     "json-rpc-2.0": "^1.7.0",

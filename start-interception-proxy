@@ -14,7 +14,7 @@ Description=Ably SDK Test Proxy
 
 [Service]
 WorkingDirectory=$(pwd)
-ExecStart=npm run test:proxy
+ExecStart=npx interception-proxy
 User=$USER
 
 [Install]
@@ -42,9 +42,8 @@ start_launchd_daemon () {
     <string>$(pwd)</string>
     <key>ProgramArguments</key>
     <array>
-        <string>npm</string>
-        <string>run</string>
-        <string>test:proxy</string>
+        <string>npx</string>
+        <string>interception-proxy</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
