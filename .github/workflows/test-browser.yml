@@ -49,7 +49,7 @@ jobs:
         run: mitmdump -s test/mitmproxy_addon_generate_certs_and_exit.py
 
       - name: Start interception proxy server
-        run: ./start-interception-proxy
+        run: npx --package interception-proxy interception-proxy-ci
 
       - name: Install Playwright browsers and dependencies
         run: npx playwright install --with-deps

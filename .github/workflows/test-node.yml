@@ -121,7 +121,7 @@ jobs:
         # 4. the WebSocket connections for which interception proxy is a client (not an issue for Linux or macOS with our current setup since we don’t intercept any traffic from interception proxy)
 
       - name: Start interception proxy server
-        run: ./start-interception-proxy
+        run: npx --package interception-proxy interception-proxy-ci
 
       - name: Run the tests
         run: sudo -u ably-test-user NODE_EXTRA_CA_CERTS=~/.mitmproxy/mitmproxy-ca-cert.pem npm run test:node
