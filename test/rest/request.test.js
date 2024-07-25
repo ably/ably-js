@@ -1,17 +1,16 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var rest;
   var expect = chai.expect;
-  var utils = helper.Utils;
   var echoServerHost = 'echo.ably.io';
-  var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
   var Defaults = Ably.Rest.Platform.Defaults;
 
   describe('rest/request', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -29,7 +28,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSC7e - tests providing a version value in .request parameters
      * @specpartial CSV2c - tests version is provided in http requests
      */
-    restTestOnJsonMsgpack('request_version', function (rest) {
+    Helper.restTestOnJsonMsgpack('request_version', function (rest, _, helper) {
       const version = 150; // arbitrarily chosen
 
       async function testRequestHandler(_, __, headers) {
@@ -43,6 +42,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         return new Promise(() => {});
       }
 
+      helper.recordPrivateApi('replace.rest.http.do');
       rest.http.do = testRequestHandler;
 
       rest.request('get', '/time' /* arbitrarily chosen */, version, null, null, null);
@@ -56,7 +56,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec HP5
      * @specpartial RSC19f - basic test for passing a http method, path and version parameters
      */
-    restTestOnJsonMsgpack('request_time', async function (rest) {
+    Helper.restTestOnJsonMsgpack('request_time', async function (rest) {
       const res = await rest.request('get', '/time', 3, null, null, null);
       expect(res.statusCode).to.equal(200, 'Check statusCode');
       expect(res.success).to.equal(true, 'Check success');
@@ -72,7 +72,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec HP6
      * @spec HP7
      */
-    restTestOnJsonMsgpack('request_404', async function (rest) {
+    Helper.restTestOnJsonMsgpack('request_404', async function (rest) {
       /* NB: can't just use /invalid or something as the CORS preflight will
        * fail. Need something superficially a valid path but where the actual
        * request fails */
@@ -88,6 +88,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RSC19e
      */
     it('request_network_error', async function () {
+      const helper = this.test.helper;
       rest = helper.AblyRest({ restHost: helper.unroutableAddress });
       try {
         var res = await rest.request('get', '/time', 3, null, null, null);
@@ -109,7 +110,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial HP2 - tests overriden .next method only
      * @specpartial RSC19f - more tests with passing other methods, body and parameters
      */
-    restTestOnJsonMsgpack('request_post_get_messages', async function (rest, channelName) {
+    Helper.restTestOnJsonMsgpack('request_post_get_messages', async function (rest, channelName) {
       var channelPath = '/channels/' + channelName + '/messages',
         msgone = { name: 'faye', data: 'whittaker' },
         msgtwo = { name: 'martin', data: 'reed' };
@@ -154,7 +155,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec HP7
      * @specpartial RSC19f - more tests with POST method and passing body
      */
-    restTestOnJsonMsgpack('request_batch_api_success', async function (rest, name) {
+    Helper.restTestOnJsonMsgpack('request_batch_api_success', async function (rest, name) {
       var body = { channels: [name + '1', name + '2'], messages: { data: 'foo' } };
 
       const res = await rest.request('POST', '/messages', 2, {}, body, {});
@@ -185,7 +186,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSC19f - more tests with POST method and passing body
      * @specskip
      */
-    restTestOnJsonMsgpack.skip('request_batch_api_partial_success', async function (rest, name) {
+    Helper.restTestOnJsonMsgpack.skip('request_batch_api_partial_success', async function (rest, name) {
       var body = { channels: [name, '[invalid', ''], messages: { data: 'foo' } };
 
       var res = await rest.request('POST', '/messages', 2, {}, body, {});
@@ -212,6 +213,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     ['put', 'patch', 'delete'].forEach(function (method) {
       /** @specpartial RSC19f - tests put, patch, delete methods are supported */
       it('check' + method, async function () {
+        const helper = this.test.helper.withParameterisedTestTitle('check');
         var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
         var res = await restEcho.request(method, '/methods', 3, {}, {}, {});
         expect(res.items[0] && res.items[0].method).to.equal(method);

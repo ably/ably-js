@@ -31,9 +31,12 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
     }
   }
 
-  function toBase64(str) {
+  function toBase64(helper, str) {
+    helper = helper.addingHelperFunction('toBase64');
     var bufferUtils = ably.Realtime.Platform.BufferUtils;
+    helper.recordPrivateApi('call.BufferUtils.utf8Encode');
     var buffer = bufferUtils.utf8Encode(str);
+    helper.recordPrivateApi('call.BufferUtils.base64Encode');
     return bufferUtils.base64Encode(buffer);
   }
 
@@ -164,11 +167,12 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
     });
   }
 
-  function createStatsFixtureData(app, statsData, callback) {
+  function createStatsFixtureData(helper, app, statsData, callback) {
+    helper = helper.addingHelperFunction('createStatsFixtureData');
     var postData = JSON.stringify(statsData);
 
     var authKey = app.keys[0].keyStr;
-    var authHeader = toBase64(authKey);
+    var authHeader = toBase64(helper, authKey);
 
     var postOptions = {
       host: restHost,
@@ -195,9 +199,10 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
     });
   }
 
-  function deleteApp(app, callback) {
+  function deleteApp(helper, app, callback) {
+    helper = helper.addingHelperFunction('deleteApp');
     var authKey = app.keys[0].keyStr,
-      authHeader = toBase64(authKey);
+      authHeader = toBase64(helper, authKey);
 
     var delOptions = {
       host: restHost,

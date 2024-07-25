@@ -1,17 +1,13 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  var displayError = helper.displayError;
-  var utils = helper.Utils;
-  var closeAndFinish = helper.closeAndFinish;
   var createPM = Ably.protocolMessageFromDeserialized;
-  var monitorConnection = helper.monitorConnection;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/sync', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -49,10 +45,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RTP19
      */
     it('sync_existing_set', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'syncexistingset',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -69,6 +68,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         async.series(
           [
             function (cb) {
+              helper.recordPrivateApi('call.channel.processMessage');
               channel
                 .processMessage({
                   action: 16,
@@ -98,7 +98,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
             },
             function (cb) {
-              whenPromiseSettles(channel.presence.get(), function (err, results) {
+              Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
                 try {
                   expect(results.length).to.equal(2, 'Check correct number of results');
                   expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
@@ -112,6 +112,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             },
             function (cb) {
               /* Trigger another sync. Two has gone without so much as a `leave` message! */
+              helper.recordPrivateApi('call.channel.processMessage');
               channel
                 .processMessage({
                   action: 16,
@@ -141,7 +142,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
             },
             function (cb) {
-              whenPromiseSettles(channel.presence.get(), function (err, results) {
+              Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
                 try {
                   expect(results.length).to.equal(2, 'Check correct number of results');
                   expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
@@ -158,7 +159,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             },
           ],
           function (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           },
         );
       });
@@ -173,10 +174,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @nospec
      */
     it('sync_member_arrives_in_middle', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_in_middle',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -186,6 +190,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
 
       /* First sync */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -201,6 +206,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* A second sync, this time in multiple parts, with a presence message in the middle */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -216,6 +222,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -230,6 +237,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -250,9 +258,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        whenPromiseSettles(channel.presence.get(), function (err, results) {
+        Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           try {
@@ -263,10 +271,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               'check expected presence members',
             );
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -278,10 +286,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @nospec
      */
     it('sync_member_arrives_normally_after_came_in_sync', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_normally_after_came_in_sync',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -290,6 +301,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }),
       );
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -305,6 +317,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -319,6 +332,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -339,9 +353,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        whenPromiseSettles(channel.presence.get(), function (err, results) {
+        Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           try {
@@ -349,10 +363,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
             expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -364,10 +378,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @nospec
      */
     it('sync_member_arrives_normally_before_comes_in_sync', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_member_arrives_normally_before_comes_in_sync',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -376,6 +393,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         }),
       );
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -391,6 +409,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -405,6 +424,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         ],
       });
 
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 16,
         channel: channelName,
@@ -425,9 +445,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           err ? reject(err) : resolve();
         };
 
-        whenPromiseSettles(channel.presence.get(), function (err, results) {
+        Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           try {
@@ -435,10 +455,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
             expect(extractClientIds(results)).to.deep.equal(['one', 'two'], 'check expected presence members');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -454,10 +474,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RTP2c
      */
     it('presence_ordering', async function () {
-      var realtime = helper.AblyRealtime({ autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ autoConnect: false }),
         channelName = 'sync_ordering',
         channel = realtime.channels.get(channelName);
 
+      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
           action: 11,
@@ -466,6 +489,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       );
 
       /* One enters */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -481,6 +505,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* An earlier leave from one (should be ignored) */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -496,6 +521,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* One adds some data in a newer msgSerial */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -512,6 +538,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Two enters */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -527,6 +554,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Two updates twice in the same message */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -548,6 +576,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       });
 
       /* Three enters */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -564,6 +593,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
       /* Synthesized leave for three (with earlier msgSerial, incompatible id,
        * and later timestamp) */
+      helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage({
         action: 14,
         channel: channelName,
@@ -583,9 +613,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var done = function (err) {
           err ? reject(err) : resolve();
         };
-        whenPromiseSettles(channel.presence.get(), function (err, results) {
+        Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
           try {
@@ -595,10 +625,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(extractMember(results, 'one').data).to.equal('onedata', 'check correct data on one');
             expect(extractMember(results, 'two').data).to.equal('twodata', 'check correct data on two');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
       });
     });
@@ -610,6 +640,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RTP4 - not enough members tested, should be 250
      */
     it('presence_sync_interruptus', function (done) {
+      const helper = this.test.helper;
       var channelName = 'presence_sync_interruptus';
       var interrupterClientId = 'dark_horse';
       var enterer = helper.AblyRealtime();
@@ -637,24 +668,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         [
           waitForBothConnect,
           function (cb) {
-            whenPromiseSettles(entererChannel.attach(), cb);
+            Helper.whenPromiseSettles(entererChannel.attach(), cb);
           },
           function (cb) {
             async.times(
               110,
               function (i, presCb) {
-                whenPromiseSettles(entererChannel.presence.enterClient(i.toString(), null), presCb);
+                Helper.whenPromiseSettles(entererChannel.presence.enterClient(i.toString(), null), presCb);
               },
               cb,
             );
           },
           function (cb) {
             var originalProcessMessage = syncerChannel.processMessage;
+            helper.recordPrivateApi('replace.channel.processMessage');
             syncerChannel.processMessage = async function (message) {
+              helper.recordPrivateApi('call.channel.processMessage');
               await originalProcessMessage.apply(this, arguments);
               /* Inject an additional presence message after the first sync */
               if (message.action === 16) {
+                helper.recordPrivateApi('replace.channel.processMessage');
                 syncerChannel.processMessage = originalProcessMessage;
+                helper.recordPrivateApi('call.channel.processMessage');
                 await syncerChannel.processMessage({
                   action: 14,
                   id: 'messageid:0',
@@ -669,10 +704,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               }
             };
-            whenPromiseSettles(syncerChannel.attach(), cb);
+            Helper.whenPromiseSettles(syncerChannel.attach(), cb);
           },
           function (cb) {
-            whenPromiseSettles(syncerChannel.presence.get(), function (err, presenceSet) {
+            Helper.whenPromiseSettles(syncerChannel.presence.get(), function (err, presenceSet) {
               try {
                 expect(presenceSet && presenceSet.length).to.equal(111, 'Check everyone’s in presence set');
               } catch (err) {
@@ -684,7 +719,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, [enterer, syncer], err);
+          helper.closeAndFinish(done, [enterer, syncer], err);
         },
       );
     });

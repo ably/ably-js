@@ -1,16 +1,13 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var monitorConnection = helper.monitorConnection;
-  var utils = helper.Utils;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/connectivity', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -25,9 +22,15 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      * @nospec
      */
     it('http_connectivity_check', function (done) {
-      whenPromiseSettles(new Ably.Realtime._Http().checkConnectivity(), function (err, res) {
+      const helper = this.test.helper;
+      helper.recordPrivateApi('call.http.checkConnectivity');
+      Helper.whenPromiseSettles(new Ably.Realtime._Http().checkConnectivity(), function (err, res) {
         try {
-          expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+          expect(
+            res && !err,
+            'Connectivity check completed ' +
+              (err && (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(err))),
+          ).to.be.ok;
         } catch (err) {
           done(err);
           return;
@@ -36,7 +39,9 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       });
     });
 
-    function options(connectivityCheckUrl, disableConnectivityCheck) {
+    function options(helper, connectivityCheckUrl, disableConnectivityCheck) {
+      helper.recordPrivateApi('pass.clientOption.connectivityCheckUrl');
+      helper.recordPrivateApi('pass.clientOption.disableConnectivityCheck');
       return {
         connectivityCheckUrl,
         disableConnectivityCheck,
@@ -52,11 +57,17 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
       /** @nospec */
       it('succeeds with scheme', function (done) {
-        whenPromiseSettles(
-          new helper.AblyRealtime(options(urlScheme + successUrl)).http.checkConnectivity(),
+        const helper = this.test.helper;
+        helper.recordPrivateApi('call.http.checkConnectivity');
+        Helper.whenPromiseSettles(
+          helper.AblyRealtime(options(helper, urlScheme + successUrl)).http.checkConnectivity(),
           function (err, res) {
             try {
-              expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+              expect(
+                res && !err,
+                'Connectivity check completed ' +
+                  (err && (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(err))),
+              ).to.be.ok;
             } catch (err) {
               done(err);
               return;
@@ -68,8 +79,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
       /** @nospec */
       it('fails with scheme', function (done) {
-        whenPromiseSettles(
-          new helper.AblyRealtime(options(urlScheme + failUrl)).http.checkConnectivity(),
+        const helper = this.test.helper;
+        helper.recordPrivateApi('call.http.checkConnectivity');
+        Helper.whenPromiseSettles(
+          helper.AblyRealtime(options(helper, urlScheme + failUrl)).http.checkConnectivity(),
           function (err, res) {
             try {
               expect(!res, 'Connectivity check expected to return false').to.be.ok;
@@ -83,35 +96,54 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
       /** @nospec */
       it('succeeds with querystring', function (done) {
-        whenPromiseSettles(new helper.AblyRealtime(options(successUrl)).http.checkConnectivity(), function (err, res) {
-          try {
-            expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
-            done();
-          } catch (err) {
-            done(err);
-          }
-        });
+        const helper = this.test.helper;
+        helper.recordPrivateApi('call.http.checkConnectivity');
+        Helper.whenPromiseSettles(
+          helper.AblyRealtime(options(helper, successUrl)).http.checkConnectivity(),
+          function (err, res) {
+            try {
+              expect(
+                res && !err,
+                'Connectivity check completed ' +
+                  (err && (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(err))),
+              ).to.be.ok;
+              done();
+            } catch (err) {
+              done(err);
+            }
+          },
+        );
       });
 
       /** @nospec */
       it('fails with querystring', function (done) {
-        whenPromiseSettles(new helper.AblyRealtime(options(failUrl)).http.checkConnectivity(), function (err, res) {
-          try {
-            expect(!res, 'Connectivity check expected to return false').to.be.ok;
-            done();
-          } catch (err) {
-            done(err);
-          }
-        });
+        const helper = this.test.helper;
+        helper.recordPrivateApi('call.http.checkConnectivity');
+        Helper.whenPromiseSettles(
+          helper.AblyRealtime(options(helper, failUrl)).http.checkConnectivity(),
+          function (err, res) {
+            try {
+              expect(!res, 'Connectivity check expected to return false').to.be.ok;
+              done();
+            } catch (err) {
+              done(err);
+            }
+          },
+        );
       });
 
       /** @nospec */
       it('succeeds with plain url', function (done) {
-        whenPromiseSettles(
-          new helper.AblyRealtime(options('sandbox-rest.ably.io/time')).http.checkConnectivity(),
+        const helper = this.test.helper;
+        Helper.whenPromiseSettles(
+          helper.AblyRealtime(options(helper, 'sandbox-rest.ably.io/time')).http.checkConnectivity(),
           function (err, res) {
             try {
-              expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+              expect(
+                res && !err,
+                'Connectivity check completed ' +
+                  (err && (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(err))),
+              ).to.be.ok;
               done();
             } catch (err) {
               done(err);
@@ -122,8 +154,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
       /** @nospec */
       it('fails with plain url', function (done) {
-        whenPromiseSettles(
-          new helper.AblyRealtime(options('echo.ably.io')).http.checkConnectivity(),
+        const helper = this.test.helper;
+        helper.recordPrivateApi('call.http.checkConnectivity');
+        Helper.whenPromiseSettles(
+          helper.AblyRealtime(options(helper, 'echo.ably.io')).http.checkConnectivity(),
           function (err, res) {
             try {
               expect(!res, 'Connectivity check expected to return false').to.be.ok;
@@ -138,11 +172,17 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
 
     /** @nospec */
     it('disable_connectivity_check', function (done) {
-      whenPromiseSettles(
-        new helper.AblyRealtime(options('notarealhost', true)).http.checkConnectivity(),
+      const helper = this.test.helper;
+      helper.recordPrivateApi('call.http.checkConnectivity');
+      Helper.whenPromiseSettles(
+        helper.AblyRealtime(options(helper, 'notarealhost', true)).http.checkConnectivity(),
         function (err, res) {
           try {
-            expect(res && !err, 'Connectivity check completed ' + (err && utils.inspectError(err))).to.be.ok;
+            expect(
+              res && !err,
+              'Connectivity check completed ' +
+                (err && (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(err))),
+            ).to.be.ok;
             done();
           } catch (err) {
             done(err);

@@ -1,6 +1,6 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
   var noop = function () {};
 
@@ -8,6 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -23,15 +24,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RSL1m1
      */
     it('Should implicitly send clientId when authenticated with clientId', async function () {
-      var clientId = 'implicit_client_id_0',
+      var helper = this.test.helper,
+        clientId = 'implicit_client_id_0',
         rest = helper.AblyRest({ clientId: clientId, useBinaryProtocol: false }),
         channel = rest.channels.get('rest_implicit_client_id_0');
 
       var originalPublish = channel._publish;
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
         expect(!message.clientId, 'client ID is not added by the client library as it is implicit').to.be.ok;
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 
@@ -49,11 +53,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RSL1m2
      */
     it('Should publish clientId when provided explicitly in message', async function () {
-      var clientId = 'explicit_client_id_0',
+      var helper = this.test.helper,
+        clientId = 'explicit_client_id_0',
         rest = helper.AblyRest({ clientId: clientId, useBinaryProtocol: false }),
         channel = rest.channels.get('rest_explicit_client_id_0');
 
       var originalPublish = channel._publish;
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
@@ -61,6 +67,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           message.clientId == clientId,
           'client ID is added by the client library as it is explicit in the publish',
         ).to.be.ok;
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 
@@ -77,7 +84,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RSL1m4
      */
     it('Should error when clientId sent in message is different than authenticated clientId', async function () {
-      var clientId = 'explicit_client_id_0',
+      var helper = this.test.helper,
+        clientId = 'explicit_client_id_0',
         invalidClientId = 'invalid';
 
       var token = await helper.AblyRest().auth.requestToken({ clientId: clientId });
@@ -88,6 +96,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         channel = rest.channels.get('rest_explicit_client_id_1');
 
       var originalPublish = channel._publish;
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody) {
         var message = JSON.parse(requestBody)[0];
         expect(message.name === 'event0', 'Outgoing message interecepted').to.be.ok;
@@ -95,6 +104,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           message.clientId == invalidClientId,
           'invalid client ID is added by the client library as it is explicit in the publish',
         ).to.be.ok;
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 
@@ -116,7 +126,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('Should error when publishing message larger than maxMessageSize', async function () {
       /* No connectionDetails mechanism for REST, so just pass the override into the constructor */
-      var realtime = helper.AblyRest({ maxMessageSize: 64 }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRest({ maxMessageSize: 64 }),
         channel = realtime.channels.get('maxMessageSize');
 
       try {
@@ -138,7 +149,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RSL1k5
      */
     it('Should send correct IDs when idempotentRestPublishing set to false', async function () {
-      var rest = helper.AblyRest({ idempotentRestPublishing: false, useBinaryProtocol: false }),
+      var helper = this.test.helper,
+        rest = helper.AblyRest({ idempotentRestPublishing: false, useBinaryProtocol: false }),
         channel = rest.channels.get('idempotent_rest_publishing'),
         message = { name: 'test', id: 'idempotent-msg-id:0' };
 
@@ -158,7 +170,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('Should add IDs when automatic idempotent rest publishing option enabled', async function () {
       /* easiest way to get the host we're using for tests */
-      var dummyRest = helper.AblyRest(),
+      var helper = this.test.helper,
+        dummyRest = helper.AblyRest(),
         host = dummyRest.options.restHost,
         /* Add the same host as a bunch of fallback hosts, so after the first
          * request 'fails' we retry on the same host using the fallback mechanism */
@@ -173,6 +186,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         originalPublish = channel._publish,
         originalDoUri = Ably.Realtime._Http.doUri;
 
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody) {
         var messageOne = JSON.parse(requestBody)[0];
         var messageTwo = JSON.parse(requestBody)[1];
@@ -184,11 +198,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         expect(idTwo, 'id set on message 2').to.be.ok;
         expect(idOne && idOne.split(':')[1]).to.equal('0', 'check zero-based index');
         expect(idTwo && idTwo.split(':')[1]).to.equal('1', 'check zero-based index');
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 
+      helper.recordPrivateApi('replace.http.doUri');
       Ably.Rest._Http.doUri = async function (method, uri, headers, body, params) {
+        helper.recordPrivateApi('call.http.doUri');
         const resultPromise = originalDoUri(method, uri, headers, body, params);
+        helper.recordPrivateApi('replace.http.doUri');
         Ably.Rest._Http.doUri = originalDoUri;
         const result = await resultPromise;
         if (result.error) {
@@ -218,14 +236,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSL1e - test only passing null to the function
      */
     it('Rest publish params', async function () {
-      var rest = helper.AblyRest(),
+      var helper = this.test.helper,
+        rest = helper.AblyRest(),
         channel = rest.channels.get('publish_params');
 
       var originalPublish = channel._publish;
 
       /* Stub out _publish to check params */
+      helper.recordPrivateApi('replace.restChannel._publish');
       channel._publish = async function (requestBody, headers, params) {
         expect(params && params.testParam).to.equal('testParamValue');
+        helper.recordPrivateApi('call.restChannel._publish');
         return originalPublish.apply(channel, arguments);
       };
 

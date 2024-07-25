@@ -8,4 +8,6 @@ build/
 react/
 typedoc/generated/
 junit/
+private-api-usage/
+private-api-usage-reports/
 test/support/mocha_junit_reporter/build/

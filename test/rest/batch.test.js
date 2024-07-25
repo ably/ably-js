@@ -1,14 +1,13 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var randomString = helper.randomString;
 
   describe('rest/batchPublish', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -33,6 +32,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
        * @specpartial RSC22b - test returns an array of BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>
        */
       it('performs a batch publish and returns an array of results', async function () {
+        const helper = this.test.helper;
         const testApp = helper.getTestApp();
         const rest = helper.AblyRest({
           promises: true,
@@ -123,6 +123,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
        * @specpartial RSC22b - test returns a single BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>
        */
       it('performs a batch publish and returns a single result', async function () {
+        const helper = this.test.helper;
         const testApp = helper.getTestApp();
         const rest = helper.AblyRest({
           promises: true,
@@ -168,6 +169,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -187,6 +189,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      * @spec BGF2b
      */
     it('performs a batch presence fetch and returns a result', async function () {
+      const helper = this.test.helper;
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
         promises: true,
@@ -228,7 +231,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       expect('error' in batchResult.results[1]).to.be.false;
 
       await new Promise((resolve, reject) => {
-        closeAndFinish((err) => {
+        helper.closeAndFinish((err) => {
           err ? reject(err) : resolve();
         }, presenceEnterRealtime);
       });
@@ -239,6 +242,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -263,14 +267,15 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      * @specpartial RSA17g - test passing an array of TokenRevocationTargetSpecifier
      */
     it('revokes tokens matching the given specifiers', async function () {
+      const helper = this.test.helper;
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
         promises: true,
         key: testApp.keys[4].keyStr /* this key has revocableTokens enabled */,
       });
 
-      const clientId1 = `clientId1-${randomString()}`;
-      const clientId2 = `clientId2-${randomString()}`;
+      const clientId1 = `clientId1-${Helper.randomString()}`;
+      const clientId2 = `clientId2-${Helper.randomString()}`;
 
       // First, we fetch tokens for a couple of different clientIds...
       const [clientId1TokenDetails, clientId2TokenDetails] = await Promise.all([
@@ -341,7 +346,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
       await Promise.all(
         [clientId1Realtime, clientId2Realtime].map((realtime) => {
           new Promise((resolve, reject) => {
-            closeAndFinish((err) => {
+            helper.closeAndFinish((err) => {
               err ? reject(err) : resolve();
             }, realtime);
           });
@@ -359,13 +364,14 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      * @spec TRS2c
      */
     it('accepts optional issuedBefore and allowReauthMargin parameters', async function () {
+      const helper = this.test.helper;
       const testApp = helper.getTestApp();
       const rest = helper.AblyRest({
         promises: true,
         key: testApp.keys[4].keyStr /* this key has revocableTokens enabled */,
       });
 
-      const clientId = `clientId-${randomString()}`;
+      const clientId = `clientId-${Helper.randomString()}`;
 
       const serverTimeAtStartOfTest = await rest.time();
       const issuedBefore = serverTimeAtStartOfTest - 20 * 60 * 1000; // i.e. ~20 minutes ago (arbitrarily chosen)
@@ -387,6 +393,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, helper, chai) {
      * @spec RSA17d
      */
     it('throws an error when using token auth', async function () {
+      const helper = this.test.helper;
       const rest = helper.AblyRest({
         useTokenAuth: true,
       });

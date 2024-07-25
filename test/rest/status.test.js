@@ -1,15 +1,14 @@
 'use strict';
 
-define(['shared_helper', 'chai'], function (helper, chai) {
+define(['shared_helper', 'chai'], function (Helper, chai) {
   var rest;
-  var utils = helper.Utils;
   var expect = chai.expect;
-  var restTestOnJsonMsgpack = helper.restTestOnJsonMsgpack;
 
   describe('rest/status', function () {
     this.timeout(30 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -35,7 +34,7 @@ define(['shared_helper', 'chai'], function (helper, chai) {
      * @spec CHM2e
      * @spec CHM2f
      */
-    restTestOnJsonMsgpack('status0', async function (rest) {
+    Helper.restTestOnJsonMsgpack('status0', async function (rest) {
       var channel = rest.channels.get('status0');
       var channelDetails = await channel.status();
       expect(channelDetails.channelId).to.equal('status0');

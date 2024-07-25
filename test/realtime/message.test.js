@@ -1,19 +1,13 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  var displayError = helper.displayError;
-  var utils = helper.Utils;
   let config = Ably.Realtime.Platform.Config;
-  var closeAndFinish = helper.closeAndFinish;
   var createPM = Ably.protocolMessageFromDeserialized;
-  var monitorConnection = helper.monitorConnection;
-  var testOnAllTransports = helper.testOnAllTransports;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   var publishIntervalHelper = function (currentMessageNum, channel, dataFn, onPublish) {
     return function () {
-      whenPromiseSettles(channel.publish('event0', dataFn()), function () {
+      Helper.whenPromiseSettles(channel.publish('event0', dataFn()), function () {
         onPublish();
       });
     };
@@ -28,6 +22,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
   describe('realtime/message', function () {
     this.timeout(60 * 1000);
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -41,6 +36,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RTL7b
      */
     it('publishonce', function (done) {
+      const helper = this.test.helper;
       try {
         /* set up realtime */
         var realtime = helper.AblyRealtime();
@@ -50,9 +46,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         realtime.connection.on('connected', function () {
           var testMsg = 'Hello world';
           var rtChannel = realtime.channels.get('publishonce');
-          whenPromiseSettles(rtChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
 
@@ -61,10 +57,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               try {
                 expect(msg.data).to.equal(testMsg, 'Unexpected msg text received');
               } catch (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             });
 
             /* publish event */
@@ -72,9 +68,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             restChannel.publish('event0', testMsg);
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -82,15 +78,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * Test publishes in quick succession (on successive ticks of the event loop)
      * @spec RTL6b
      */
-    testOnAllTransports('publishfast', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'publishfast', function (realtimeOpts) {
       return function (done) {
+        const helper = this.test.helper;
         try {
           var realtime = helper.AblyRealtime(realtimeOpts);
           realtime.connection.once('connected', function () {
             var channel = realtime.channels.get('publishfast_' + String(Math.random()).substr(2));
-            whenPromiseSettles(channel.attach(), function (err) {
+            Helper.whenPromiseSettles(channel.attach(), function (err) {
               if (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
 
@@ -106,11 +103,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   function (cb) {
                     var ackd = 0;
                     var publish = function (i) {
-                      whenPromiseSettles(channel.publish('event', i.toString()), function (err) {
+                      Helper.whenPromiseSettles(channel.publish('event', i.toString()), function (err) {
                         try {
                           expect(
                             !err,
-                            'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''),
+                            'successfully published ' + i + (err ? ' err was ' + helper.displayError(err) : ''),
                           ).to.be.ok;
                         } catch (err) {
                           cb(err);
@@ -129,14 +126,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   },
                 ],
                 function (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                 },
               );
             });
           });
-          monitorConnection(done, realtime);
+          helper.monitorConnection(done, realtime);
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         }
       };
     });
@@ -148,11 +145,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RTL6c2
      * @specpartial RTL3d - test processing queued messages
      */
-    testOnAllTransports('publishQueued', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'publishQueued', function (realtimeOpts) {
       return function (done) {
-        var txRealtime, rxRealtime;
+        var helper = this.test.helper,
+          txRealtime,
+          rxRealtime;
         try {
-          txRealtime = helper.AblyRealtime(utils.mixin(realtimeOpts, { autoConnect: false }));
+          helper.recordPrivateApi('call.Utils.mixin');
+          txRealtime = helper.AblyRealtime(helper.Utils.mixin(realtimeOpts, { autoConnect: false }));
           rxRealtime = helper.AblyRealtime();
           var txChannel = txRealtime.channels.get('publishQueued_' + String(Math.random()).substr(2));
           var rxChannel = rxRealtime.channels.get(txChannel.name);
@@ -165,7 +165,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               },
               function (cb) {
-                whenPromiseSettles(rxChannel.attach(), function (err) {
+                Helper.whenPromiseSettles(rxChannel.attach(), function (err) {
                   cb(err);
                 });
               },
@@ -189,11 +189,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     function (parCb) {
                       var ackd = 0;
                       var publish = function (i) {
-                        whenPromiseSettles(txChannel.publish('event', { num: i }), function (err) {
+                        Helper.whenPromiseSettles(txChannel.publish('event', { num: i }), function (err) {
                           try {
                             expect(
                               !err,
-                              'successfully published ' + i + (err ? ' err was ' + displayError(err) : ''),
+                              'successfully published ' + i + (err ? ' err was ' + helper.displayError(err) : ''),
                             ).to.be.ok;
                           } catch (err) {
                             parCb(err);
@@ -222,11 +222,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               },
             ],
             function (err) {
-              closeAndFinish(done, [rxRealtime, txRealtime], err);
+              helper.closeAndFinish(done, [rxRealtime, txRealtime], err);
             },
           );
         } catch (err) {
-          closeAndFinish(done, [rxRealtime, txRealtime], err);
+          helper.closeAndFinish(done, [rxRealtime, txRealtime], err);
         }
       };
     });
@@ -243,7 +243,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      */
     it('publishEcho', function (done) {
       // set up two realtimes
-      var rtNoEcho = helper.AblyRealtime({ echoMessages: false }),
+      var helper = this.test.helper,
+        rtNoEcho = helper.AblyRealtime({ echoMessages: false }),
         rtEcho = helper.AblyRealtime({ echoMessages: true }),
         rtNoEchoChannel = rtNoEcho.channels.get('publishecho'),
         rtEchoChannel = rtEcho.channels.get('publishecho'),
@@ -263,22 +264,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             expect(receivedMessagesEcho[0]).to.equal(testMsg1, 'Received testMsg1 on rtEcho first');
             expect(receivedMessagesEcho[1]).to.equal(testMsg2, 'Received testMsg2 on rtEcho second');
           } catch (err) {
-            closeAndFinish(done, [rtNoEcho, rtEcho], err);
+            helper.closeAndFinish(done, [rtNoEcho, rtEcho], err);
             return;
           }
-          closeAndFinish(done, [rtNoEcho, rtEcho]);
+          helper.closeAndFinish(done, [rtNoEcho, rtEcho]);
         }
       };
 
       // attach rtNoEchoChannel
-      whenPromiseSettles(rtNoEchoChannel.attach(), function (err) {
+      Helper.whenPromiseSettles(rtNoEchoChannel.attach(), function (err) {
         try {
           expect(!err, 'Attached to rtNoEchoChannel with no error').to.be.ok;
         } catch (err) {
-          closeAndFinish(done, [rtNoEcho, rtEcho], err);
+          helper.closeAndFinish(done, [rtNoEcho, rtEcho], err);
           return;
         }
-        monitorConnection(done, rtNoEcho);
+        helper.monitorConnection(done, rtNoEcho);
 
         // once rtNoEchoChannel attached, subscribe to event0
         rtNoEchoChannel.subscribe('event0', function (msg) {
@@ -287,14 +288,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         });
 
         // attach rtEchoChannel
-        whenPromiseSettles(rtEchoChannel.attach(), function (err) {
+        Helper.whenPromiseSettles(rtEchoChannel.attach(), function (err) {
           try {
             expect(!err, 'Attached to rtEchoChannel with no error').to.be.ok;
           } catch (err) {
-            closeAndFinish(done, [rtNoEcho, rtEcho], err);
+            helper.closeAndFinish(done, [rtNoEcho, rtEcho], err);
             return;
           }
-          monitorConnection(done, rtEcho);
+          helper.monitorConnection(done, rtEcho);
 
           // once rtEchoChannel attached, subscribe to event0
           rtEchoChannel.subscribe('event0', function (msg) {
@@ -303,7 +304,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           });
 
           // publish testMsg1 via rtNoEcho
-          whenPromiseSettles(rtNoEchoChannel.publish('event0', testMsg1), function () {
+          Helper.whenPromiseSettles(rtNoEchoChannel.publish('event0', testMsg1), function () {
             // publish testMsg2 via rtEcho
             rtEchoChannel.publish('event0', testMsg2);
           });
@@ -319,6 +320,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSL1a - doesn't test array of Message objects
      */
     it('publishVariations', function (done) {
+      const helper = this.test.helper;
       var testData = 'Some data';
       var testArguments = [
         [{ name: 'objectWithName' }],
@@ -347,9 +349,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         /* connect and attach */
         realtime.connection.on('connected', function () {
           var rtChannel = realtime.channels.get('publishVariations');
-          whenPromiseSettles(rtChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
 
@@ -397,17 +399,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     }
                     break;
                   default:
-                    closeAndFinish(done, realtime, new Error('Unexpected message ' + msg.name + 'received'));
+                    helper.closeAndFinish(done, realtime, new Error('Unexpected message ' + msg.name + 'received'));
                     return;
                 }
               } catch (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
 
               if (messagesReceived == testArguments.length) {
                 setTimeout(function () {
-                  closeAndFinish(done, realtime);
+                  helper.closeAndFinish(done, realtime);
                 }, 2000);
               }
             });
@@ -417,25 +419,26 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             async.eachSeries(
               testArguments,
               function iterator(args, callback) {
-                whenPromiseSettles(restChannel.publish.apply(restChannel, args), callback);
+                Helper.whenPromiseSettles(restChannel.publish.apply(restChannel, args), callback);
               },
               function (err) {
                 if (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                   return;
                 }
               },
             );
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
     /** @spec RSL4a */
     it('publishDisallowed', function (done) {
+      const helper = this.test.helper;
       var testArguments = [
         [{ name: 'objectAndBoolData', data: false }],
         ['nameAndBoolData', false],
@@ -453,9 +456,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         /* connect and attach */
         realtime.connection.on('connected', function () {
           var rtChannel = realtime.channels.get('publishDisallowed');
-          whenPromiseSettles(rtChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
 
@@ -465,24 +468,24 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               for (var i = 0; i < testArguments.length; i++) {
                 try {
                   await restChannel.publish.apply(restChannel, testArguments[i]);
-                  closeAndFinish(done, realtime, new Error('Exception was not raised'));
+                  helper.closeAndFinish(done, realtime, new Error('Exception was not raised'));
                 } catch (err) {
                   try {
                     expect(err.code).to.equal(40013, 'Invalid data type exception raised');
                   } catch (err) {
-                    closeAndFinish(done, realtime, err);
+                    helper.closeAndFinish(done, realtime, err);
                     return;
                   }
                 }
               }
             })().then(() => {
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             });
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -493,6 +496,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSL6b
      */
     it('publishEncodings', function (done) {
+      const helper = this.test.helper;
       var testData = 'testData';
       var testArguments = [
         // valid
@@ -513,9 +517,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         /* connect and attach */
         realtime.connection.on('connected', function () {
           var rtChannel = realtime.channels.get('publishEncodings');
-          whenPromiseSettles(rtChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtChannel.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
 
@@ -560,7 +564,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 testArguments,
                 function iterator(item, callback) {
                   try {
-                    whenPromiseSettles(restChannel.publish(item), function (err) {
+                    Helper.whenPromiseSettles(restChannel.publish(item), function (err) {
                       try {
                         expect(!err, 'Successfully published').to.be.ok;
                       } catch (err) {
@@ -577,13 +581,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             };
 
             async.parallel([subscribefn, publishfn], function (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             });
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -592,6 +596,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RTL7b
      */
     it('restpublish', function (done) {
+      const helper = this.test.helper;
       var count = 10;
       var rest = helper.AblyRest();
       var realtime = helper.AblyRealtime();
@@ -603,12 +608,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         try {
           expect(-1).to.not.equal(messagesSent.indexOf(msg.data), 'Received unexpected message text');
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
           return;
         }
         if (!--count) {
           clearInterval(timer);
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         }
       });
       var timer = setInterval(function () {
@@ -623,13 +628,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RTL6
      * @spec RTL6b
      */
-    testOnAllTransports('publish', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'publish', function (realtimeOpts) {
       return function (done) {
+        const helper = this.test.helper;
         var count = 10;
         var cbCount = 10;
         var checkFinish = function () {
           if (count <= 0 && cbCount <= 0) {
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           }
         };
         var onPublish = function () {
@@ -639,7 +645,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         var realtime = helper.AblyRealtime(realtimeOpts);
         var channel = realtime.channels.get('publish ' + JSON.stringify(realtimeOpts));
         /* subscribe to event */
-        whenPromiseSettles(
+        Helper.whenPromiseSettles(
           channel.subscribe('event0', function () {
             --count;
             checkFinish();
@@ -661,13 +667,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSL1m1 - in the context of RealtimeChannel
      */
     it('implicit_client_id_0', function (done) {
-      var clientId = 'implicit_client_id_0',
+      var helper = this.test.helper,
+        clientId = 'implicit_client_id_0',
         realtime = helper.AblyRealtime({ clientId: clientId });
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
         var transport = realtime.connection.connectionManager.activeProtocol.transport,
           originalSend = transport.send;
 
+        helper.recordPrivateApi('replace.transport.send');
         transport.send = function (message) {
           try {
             if (message.action === 15) {
@@ -675,9 +684,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               expect(!message.messages[0].clientId, 'client ID is not added by the client library as it is implicit').to
                 .be.ok;
             }
+            helper.recordPrivateApi('call.transport.send');
             originalSend.apply(transport, arguments);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
         };
 
@@ -687,10 +697,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           try {
             expect(message.clientId == clientId, 'Client ID was added implicitly').to.be.ok;
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             returnl;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
         channel.publish('event0', null);
       });
@@ -703,37 +713,41 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSL1m2 - in the context of RealtimeChannel
      */
     it('explicit_client_id_0', function (done) {
-      var clientId = 'explicit_client_id_0',
+      var helper = this.test.helper,
+        clientId = 'explicit_client_id_0',
         /* Use a fixed transport as intercepting transport.send */
         realtime = helper.AblyRealtime({ clientId: clientId, transports: [helper.bestTransport] });
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
         var transport = realtime.connection.connectionManager.activeProtocol.transport,
           originalSend = transport.send;
 
+        helper.recordPrivateApi('replace.transport.send');
         transport.send = function (message) {
           try {
             if (message.action === 15) {
               expect(message.messages[0].name === 'event0', 'Outgoing message interecepted').to.be.ok;
               expect(message.messages[0].clientId === clientId, 'client ID is present when published to Ably').to.be.ok;
             }
+            helper.recordPrivateApi('call.transport.send');
             originalSend.apply(transport, arguments);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
         };
 
         var channel = realtime.channels.get('explicit_client_id_0');
         /* subscribe to event */
-        whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
             try {
               expect(!err, err && helper.displayError(err)).to.be.ok;
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           }
           async.parallel(
             [
@@ -749,13 +763,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 });
               },
               function (cb) {
-                whenPromiseSettles(channel.publish({ name: 'event0', clientId: clientId }), function (err) {
+                Helper.whenPromiseSettles(channel.publish({ name: 'event0', clientId: clientId }), function (err) {
                   cb(err);
                 });
               },
             ],
             function (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             },
           );
         });
@@ -769,11 +783,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RSL1m4 - in the context of RealtimeChannel
      */
     it('explicit_client_id_1', function (done) {
-      var clientId = 'explicit_client_id_1',
+      var helper = this.test.helper,
+        clientId = 'explicit_client_id_1',
         invalidClientId = 'invalid',
         rest = helper.AblyRest();
 
-      whenPromiseSettles(rest.auth.requestToken({ clientId: clientId }), function (err, token) {
+      Helper.whenPromiseSettles(rest.auth.requestToken({ clientId: clientId }), function (err, token) {
         if (err) {
           done(err);
           return;
@@ -790,20 +805,22 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           channel = realtime.channels.get('explicit_client_id_1');
 
         // Publish before authentication to ensure the client library does not reject the message as the clientId is not known
-        whenPromiseSettles(channel.publish({ name: 'event0', clientId: invalidClientId }), function (err) {
+        Helper.whenPromiseSettles(channel.publish({ name: 'event0', clientId: invalidClientId }), function (err) {
           try {
             expect(err, 'Message was not published').to.be.ok;
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
           setTimeout(function () {
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           }, 500); // ensure that the message is not published
         });
 
+        helper.recordPrivateApi('listen.connectionManager.transport.pending');
         realtime.connection.connectionManager.on('transport.pending', function (transport) {
           var originalSend = transport.send;
 
+          helper.recordPrivateApi('replace.transport.send');
           transport.send = function (message) {
             try {
               if (message.action === 15) {
@@ -811,15 +828,16 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 expect(message.messages[0].clientId === invalidClientId, 'client ID is present when published to Ably')
                   .to.be.ok;
               }
+              helper.recordPrivateApi('call.transport.send');
               originalSend.apply(transport, arguments);
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           };
 
           /* subscribe to event */
           channel.subscribe('event0', function (message) {
-            closeAndFinish(done, realtime, new Error('Message should never have been received'));
+            helper.closeAndFinish(done, realtime, new Error('Message should never have been received'));
           });
         });
       });
@@ -830,7 +848,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @nospec
      */
     it('subscribe_with_event_array', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('subscribe_with_event_array');
 
       async.series(
@@ -841,7 +860,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.attach(), function (err) {
+            Helper.whenPromiseSettles(channel.attach(), function (err) {
               cb(err);
             });
           },
@@ -860,6 +879,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     ++received;
                     if (received === 2) {
                       /* wait a tick to make sure no more messages come in */
+                      helper.recordPrivateApi('call.Platform.nextTick');
                       config.nextTick(function () {
                         innercb();
                       });
@@ -867,7 +887,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
                 function (innercb) {
-                  whenPromiseSettles(
+                  Helper.whenPromiseSettles(
                     channel.publish([{ name: 'a' }, { name: 'b' }, { name: 'c' }, { name: 'd' }]),
                     function (err) {
                       innercb(err);
@@ -880,7 +900,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         },
       );
     });
@@ -896,11 +916,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RTL22a - doesn't test for name
      */
     it('subscribe_with_filter_object', function (done) {
+      const helper = this.test.helper;
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('subscribe_with_filter_object');
 
       function send(cb) {
-        whenPromiseSettles(
+        Helper.whenPromiseSettles(
           channel.publish([
             {
               name: 'correct',
@@ -950,6 +971,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               return cb(e);
             }
             // Wait for any errant messages to arrive before continuing
+            helper.recordPrivateApi('call.Platform.nextTick');
             config.nextTick(cb);
           },
         );
@@ -963,14 +985,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            return whenPromiseSettles(channel.attach(), cb);
+            return Helper.whenPromiseSettles(channel.attach(), cb);
           },
           function (cb) {
             return async.parallel([subscribe, send], cb);
           },
         ],
         function (err) {
-          return closeAndFinish(done, realtime, err);
+          return helper.closeAndFinish(done, realtime, err);
         },
       );
     });
@@ -986,11 +1008,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RTL22a - doesn't test for name
      */
     it('unsubscribe_with_filter_object', function (done) {
+      const helper = this.test.helper;
       const realtime = helper.AblyRealtime();
       const channel = realtime.channels.get('unsubscribe_with_filter_object');
 
       function send(cb) {
-        whenPromiseSettles(
+        Helper.whenPromiseSettles(
           channel.publish([
             {
               name: 'incorrect',
@@ -1012,12 +1035,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             return expect.fail('Listener should not fire');
           };
           channel.subscribe({ refType: 'com.ably.test', refTimeserial: '0123456789' }, listener);
+          helper.recordPrivateApi('call.filteredSubscriptions.has');
           expect(channel.filteredSubscriptions.has(listener), 'Listener should initially be present').to.be.true;
           channel.unsubscribe(listener);
           expect(
             channel.filteredSubscriptions.has(listener),
             'Listener should no longer be present after unsubscribing',
           ).to.be.false;
+          helper.recordPrivateApi('call.Platform.nextTick');
           config.nextTick(cb);
         } catch (e) {
           cb(e);
@@ -1032,20 +1057,21 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            return whenPromiseSettles(channel.attach(), cb);
+            return Helper.whenPromiseSettles(channel.attach(), cb);
           },
           unsubscribe,
           send,
         ],
         function (err) {
-          return closeAndFinish(done, realtime, err);
+          return helper.closeAndFinish(done, realtime, err);
         },
       );
     });
 
     /** @spec RSL6a2 */
     it('extras_field', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('extras_field'),
         extras = { headers: { some: 'metadata' } };
 
@@ -1057,7 +1083,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
             });
           },
           function (cb) {
-            whenPromiseSettles(channel.attach(), cb);
+            Helper.whenPromiseSettles(channel.attach(), cb);
           },
           function (outercb) {
             async.parallel(
@@ -1075,7 +1101,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   });
                 },
                 function (innercb) {
-                  whenPromiseSettles(channel.publish([{ name: 'a', extras: extras }]), innercb);
+                  Helper.whenPromiseSettles(channel.publish([{ name: 'a', extras: extras }]), innercb);
                 },
               ],
               outercb,
@@ -1083,7 +1109,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           },
         ],
         function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         },
       );
     });
@@ -1094,28 +1120,34 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RSL1i
      */
     it('maxMessageSize', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         connectionManager = realtime.connection.connectionManager,
         channel = realtime.channels.get('maxMessageSize');
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('listen.connectionManager.connectiondetails');
         connectionManager.once('connectiondetails', function (details) {
-          whenPromiseSettles(
+          Helper.whenPromiseSettles(
             channel.publish('foo', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
             function (err) {
               try {
                 expect(err, 'Check publish refused').to.be.ok;
                 expect(err.code).to.equal(40009);
               } catch (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             },
           );
         });
         var connectionDetails = connectionManager.connectionDetails;
+        helper.recordPrivateApi('write.connectionManager.connectionDetails.maxMessageSize');
         connectionDetails.maxMessageSize = 64;
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+        helper.recordPrivateApi('call.transport.onProtocolMessage');
         connectionManager.activeProtocol.getTransport().onProtocolMessage(
           createPM({
             action: 4,
@@ -1138,7 +1170,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specskip
      */
     it.skip('bundling', function (done) {
-      var realtime = helper.AblyRealtime({ maxMessageSize: 256, autoConnect: false }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ maxMessageSize: 256, autoConnect: false }),
         channelOne = realtime.channels.get('bundlingOne'),
         channelTwo = realtime.channels.get('bundlingTwo');
 
@@ -1169,6 +1202,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
       channelOne.publish({ name: 'm', id: 'bundle_m', data: { expectedBundle: 9 } });
       channelOne.publish('z_last', { expectedBundle: 10 });
 
+      helper.recordPrivateApi('call.transport.onProtocolMessage');
       var queue = realtime.connection.connectionManager.queuedMessages;
       var messages;
       try {
@@ -1179,7 +1213,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }
         }
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
         return;
       }
 
@@ -1189,11 +1223,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         try {
           expect(currentName < msg.name, 'Check final ordering preserved').to.be.ok;
         } catch (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         }
         currentName = msg.name;
         if (currentName === 'z_last') {
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         }
       });
       realtime.connect();
@@ -1204,12 +1238,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RSL1k5
      */
     it('idempotentRealtimePublishing', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         channel = realtime.channels.get('idempotentRealtimePublishing');
 
-      whenPromiseSettles(channel.attach(), function (err) {
+      Helper.whenPromiseSettles(channel.attach(), function (err) {
         if (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
           return;
         }
 
@@ -1223,10 +1258,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           try {
             expect(event0Msgs.length).to.equal(1, 'Expect only one event0 message to be received');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
 
         /* publish event */
@@ -1245,6 +1280,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec DO2a
      */
     it('subscribes to filtered channel', function (done) {
+      const helper = this.test.helper;
+
       var testData = [
         {
           name: 'filtered',
@@ -1309,9 +1346,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           var filteredMessages = [];
           var unFilteredMessages = [];
           /* subscribe to event */
-          whenPromiseSettles(rtFilteredChannel.attach(), function (err) {
+          Helper.whenPromiseSettles(rtFilteredChannel.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             rtFilteredChannel.subscribe(function (msg) {
@@ -1319,14 +1356,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 // Push received filtered messages into an array
                 filteredMessages.push(msg);
               } catch (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
             });
 
-            whenPromiseSettles(rtUnfilteredChannel.attach(), function (err) {
+            Helper.whenPromiseSettles(rtUnfilteredChannel.attach(), function (err) {
               if (err) {
-                closeAndFinish(done, realtime, err);
+                helper.closeAndFinish(done, realtime, err);
                 return;
               }
 
@@ -1335,7 +1372,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                   // Push received unfiltered messages into an array
                   unFilteredMessages.push(msg);
                 } catch (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                   return;
                 }
               });
@@ -1368,19 +1405,19 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     expect(unFilteredMessages[i].data).to.equal(testData[i].data, 'Unexpected data received');
                   }
                 } catch (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                   return;
                 }
-                closeAndFinish(done, realtime);
+                helper.closeAndFinish(done, realtime);
               });
               var restChannel = rest.channels.get('chan');
               restChannel.publish(testData);
             });
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
   });

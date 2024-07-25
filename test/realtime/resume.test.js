@@ -1,17 +1,13 @@
 'use strict';
 
-define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
+define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var simulateDroppedConnection = helper.simulateDroppedConnection;
-  var testOnAllTransports = helper.testOnAllTransports;
-  var bestTransport = helper.bestTransport;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/resume', function () {
     this.timeout(120 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -32,7 +28,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         receivingChannel.unsubscribe(event);
         callback();
       });
-      whenPromiseSettles(sendingChannel.publish(event, message), function (err) {
+      Helper.whenPromiseSettles(sendingChannel.publish(event, message), function (err) {
         if (err) callback(err);
       });
     }
@@ -41,7 +37,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Empty resume case
      * Send 5 messages; disconnect; reconnect; send 5 messages
      */
-    function resume_inactive(done, channelName, txOpts, rxOpts) {
+    function resume_inactive(done, helper, channelName, txOpts, rxOpts) {
       var count = 5;
 
       var txRest = helper.AblyRest(mixin(txOpts));
@@ -52,7 +48,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       var rxCount = 0;
 
       function phase0(callback) {
-        whenPromiseSettles(rxChannel.attach(), callback);
+        Helper.whenPromiseSettles(rxChannel.attach(), callback);
       }
 
       function phase1(callback) {
@@ -70,7 +66,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       }
 
       function phase2(callback) {
-        simulateDroppedConnection(rxRealtime);
+        helper.simulateDroppedConnection(rxRealtime);
         /* continue in 5 seconds */
         setTimeout(callback, 5000);
       }
@@ -79,8 +75,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         /* re-open the connection, verify resume mode */
         rxRealtime.connection.connect();
         var connectionManager = rxRealtime.connection.connectionManager;
+        helper.recordPrivateApi('listen.connectionManager.transport.active');
         connectionManager.once('transport.active', function (transport) {
           try {
+            helper.recordPrivateApi('read.transport.params.mode');
             expect(transport.params.mode).to.equal('resume', 'Verify reconnect is resume mode');
           } catch (err) {
             callback(err);
@@ -107,30 +105,30 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
       phase0(function (err) {
         if (err) {
-          closeAndFinish(done, rxRealtime, err);
+          helper.closeAndFinish(done, rxRealtime, err);
           return;
         }
         phase1(function (err) {
           if (err) {
-            closeAndFinish(done, rxRealtime, err);
+            helper.closeAndFinish(done, rxRealtime, err);
             return;
           }
           phase2(function (err) {
             if (err) {
-              closeAndFinish(done, rxRealtime, err);
+              helper.closeAndFinish(done, rxRealtime, err);
               return;
             }
             phase3(function (err) {
               if (err) {
-                closeAndFinish(done, rxRealtime, err);
+                helper.closeAndFinish(done, rxRealtime, err);
                 return;
               }
               phase4(function (err) {
                 if (err) {
-                  closeAndFinish(done, rxRealtime, err);
+                  helper.closeAndFinish(done, rxRealtime, err);
                   return;
                 }
-                closeAndFinish(done, rxRealtime);
+                helper.closeAndFinish(done, rxRealtime);
               });
             });
           });
@@ -142,9 +140,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Related to RTN15b, RTN15c.
      * @nospec
      */
-    testOnAllTransports('resume_inactive', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'resume_inactive', function (realtimeOpts) {
       return function (done) {
-        resume_inactive(done, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
+        resume_inactive(done, this.test.helper, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
       };
     });
 
@@ -152,7 +150,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Simple resume case
      * Send 5 messages; disconnect; send 5 messages; reconnect
      */
-    function resume_active(done, channelName, txOpts, rxOpts) {
+    function resume_active(done, helper, channelName, txOpts, rxOpts) {
       var count = 5;
 
       var txRest = helper.AblyRest(mixin(txOpts));
@@ -163,7 +161,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       var rxCount = 0;
 
       function phase0(callback) {
-        whenPromiseSettles(rxChannel.attach(), callback);
+        Helper.whenPromiseSettles(rxChannel.attach(), callback);
       }
 
       function phase1(callback) {
@@ -185,13 +183,16 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
          * NOTE: this uses knowledge of the internal operation
          * of the client library to simulate a dropped connection
          * without explicitly closing the connection */
-        simulateDroppedConnection(rxRealtime);
+        helper.simulateDroppedConnection(rxRealtime);
         var txCount = 0;
 
         function ph2TxOnce() {
-          whenPromiseSettles(txChannel.publish('sentWhileDisconnected', 'phase 2, message ' + txCount), function (err) {
-            if (err) callback(err);
-          });
+          Helper.whenPromiseSettles(
+            txChannel.publish('sentWhileDisconnected', 'phase 2, message ' + txCount),
+            function (err) {
+              if (err) callback(err);
+            },
+          );
           if (++txCount == count) {
             /* sent all messages */
             setTimeout(function () {
@@ -213,8 +214,10 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
         rxCount = 0;
         rxRealtime.connection.connect();
         var connectionManager = rxRealtime.connection.connectionManager;
+        helper.recordPrivateApi('listen.connectionManager.transport.active');
         connectionManager.on('transport.active', function (transport) {
           try {
+            helper.recordPrivateApi('read.transport.params.mode');
             expect(transport.params.mode).to.equal('resume', 'Verify reconnect is resume mode');
           } catch (err) {
             callback(err);
@@ -234,25 +237,25 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
       phase0(function (err) {
         if (err) {
-          closeAndFinish(done, rxRealtime, err);
+          helper.closeAndFinish(done, rxRealtime, err);
           return;
         }
         phase1(function (err) {
           if (err) {
-            closeAndFinish(done, rxRealtime, err);
+            helper.closeAndFinish(done, rxRealtime, err);
             return;
           }
           phase2(function (err) {
             if (err) {
-              closeAndFinish(done, rxRealtime, err);
+              helper.closeAndFinish(done, rxRealtime, err);
               return;
             }
             phase3(function (err) {
               if (err) {
-                closeAndFinish(done, rxRealtime, err);
+                helper.closeAndFinish(done, rxRealtime, err);
                 return;
               }
-              closeAndFinish(done, rxRealtime);
+              helper.closeAndFinish(done, rxRealtime);
             });
           });
         });
@@ -263,9 +266,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Related to RTN15b, RTN15c.
      * @nospec
      */
-    testOnAllTransports('resume_active', function (realtimeOpts) {
+    Helper.testOnAllTransports(this, 'resume_active', function (realtimeOpts) {
       return function (done) {
-        resume_active(done, 'resume_active' + String(Math.random()), {}, realtimeOpts);
+        resume_active(done, this.test.helper, 'resume_active' + String(Math.random()), {}, realtimeOpts);
       };
     });
 
@@ -273,11 +276,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Resume with loss of continuity
      * @spec RTN15c7
      */
-    testOnAllTransports(
+    Helper.testOnAllTransports(
+      this,
       'resume_lost_continuity',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtime(realtimeOpts),
+          var helper = this.test.helper,
+            realtime = helper.AblyRealtime(realtimeOpts),
             connection = realtime.connection,
             attachedChannelName = 'resume_lost_continuity_attached',
             suspendedChannelName = 'resume_lost_continuity_suspended',
@@ -292,17 +297,23 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 });
               },
               function (cb) {
+                helper.recordPrivateApi('write.channel.state');
                 suspendedChannel.state = 'suspended';
-                whenPromiseSettles(attachedChannel.attach(), cb);
+                Helper.whenPromiseSettles(attachedChannel.attach(), cb);
               },
               function (cb) {
                 /* Sabotage the resume */
-                (connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____'),
+                helper.recordPrivateApi('write.connectionManager.connectionKey');
+                helper.recordPrivateApi('write.connectionManager.connectionId');
+                helper.recordPrivateApi('write.connectionManager.msgSerial')(
+                  (connection.connectionManager.connectionKey = '_____!ablyjs_test_fake-key____'),
+                ),
                   (connection.connectionManager.connectionId = 'ablyjs_tes');
                 connection.connectionManager.msgSerial = 15;
                 connection.once('disconnected', function () {
                   cb();
                 });
+                helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
                 connection.connectionManager.disconnectAllTransports();
               },
               function (cb) {
@@ -314,7 +325,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                     );
                     expect(attachedChannel.state).to.equal('attaching', 'Attached channel went into attaching');
                     expect(suspendedChannel.state).to.equal('attaching', 'Suspended channel went into attaching');
+                    helper.recordPrivateApi('read.connectionManager.msgSerial');
                     expect(connection.connectionManager.msgSerial).to.equal(0, 'Check msgSerial is reset to 0');
+                    helper.recordPrivateApi('read.connectionManager.connectionId');
                     expect(
                       connection.connectionManager.connectionId !== 'ablyjs_tes',
                       'Check connectionId is set by the new CONNECTED',
@@ -328,7 +341,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               },
             ],
             function (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             },
           );
         };
@@ -340,11 +353,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Resume with token error
      * @spec RTN15c5
      */
-    testOnAllTransports(
+    Helper.testOnAllTransports(
+      this,
       'resume_token_error',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtime(mixin(realtimeOpts, { useTokenAuth: true })),
+          var helper = this.test.helper,
+            realtime = helper.AblyRealtime(mixin(realtimeOpts, { useTokenAuth: true })),
             badtoken,
             connection = realtime.connection;
 
@@ -356,13 +371,14 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 });
               },
               function (cb) {
-                whenPromiseSettles(realtime.auth.requestToken({ ttl: 1 }, null), function (err, token) {
+                Helper.whenPromiseSettles(realtime.auth.requestToken({ ttl: 1 }, null), function (err, token) {
                   badtoken = token;
                   cb(err);
                 });
               },
               function (cb) {
                 /* Sabotage the resume - use a valid but now-expired token */
+                helper.recordPrivateApi('write.auth.tokenDetails.token');
                 realtime.auth.tokenDetails.token = badtoken.token;
                 connection.once(function (stateChange) {
                   try {
@@ -373,6 +389,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                   }
                   cb();
                 });
+                helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
                 connection.connectionManager.disconnectAllTransports();
               },
               function (cb) {
@@ -382,7 +399,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               },
             ],
             function (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             },
           );
         };
@@ -394,11 +411,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * Resume with fatal error
      * @spec RTN15c4
      */
-    testOnAllTransports(
+    Helper.testOnAllTransports(
+      this,
       'resume_fatal_error',
       function (realtimeOpts) {
         return function (done) {
-          var realtime = helper.AblyRealtime(realtimeOpts),
+          var helper = this.test.helper,
+            realtime = helper.AblyRealtime(realtimeOpts),
             connection = realtime.connection;
 
           async.series(
@@ -409,7 +428,9 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 });
               },
               function (cb) {
+                helper.recordPrivateApi('read.auth.key');
                 var keyName = realtime.auth.key.split(':')[0];
+                helper.recordPrivateApi('write.auth.key');
                 realtime.auth.key = keyName + ':wrong';
                 connection.once(function (stateChange) {
                   try {
@@ -420,6 +441,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                   }
                   cb();
                 });
+                helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
+
                 connection.connectionManager.disconnectAllTransports();
               },
               function (cb) {
@@ -435,7 +458,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               },
             ],
             function (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             },
           );
         };
@@ -450,7 +473,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * @spec RTL2f
      */
     it('channel_resumed_flag', function (done) {
-      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         realtimeTwo,
         recoveryKey,
         connection = realtime.connection,
@@ -505,7 +529,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           },
         ],
         function (err) {
-          closeAndFinish(done, [realtime, realtimeTwo], err);
+          helper.closeAndFinish(done, [realtime, realtimeTwo], err);
         },
       );
     });
@@ -517,7 +541,8 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * @nospec
      */
     it('no_resume_once_suspended', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         connection = realtime.connection,
         channelName = 'no_resume_once_suspended';
 
@@ -532,6 +557,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             helper.becomeSuspended(realtime, cb);
           },
           function (cb) {
+            helper.recordPrivateApi('replace.connectionManager.tryATransport');
             realtime.connection.connectionManager.tryATransport = function (transportParams) {
               try {
                 expect(transportParams.mode).to.equal('clean', 'Check library didn’t try to resume');
@@ -545,7 +571,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           },
         ],
         function (err) {
-          closeAndFinish(done, realtime, err);
+          helper.closeAndFinish(done, realtime, err);
         },
       );
     });
@@ -557,30 +583,37 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * @spec RTN15g
      */
     it('no_resume_last_activity', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         connection = realtime.connection,
         connectionManager = connection.connectionManager;
 
       connection.once('connected', function () {
+        helper.recordPrivateApi('write.connectionManager.lastActivity');
         connectionManager.lastActivity = Date.now() - 10000000;
         /* noop-out onProtocolMessage so that a DISCONNECTED message doesn't
          * reset the last activity timer */
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
         connectionManager.activeProtocol.getTransport().onProtocolMessage = function () {};
+        helper.recordPrivateApi('replace.connectionManager.tryATransport');
         connectionManager.tryATransport = function (transportParams) {
           try {
             expect(transportParams.mode).to.equal('clean', 'Check library didn’t try to resume');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         };
+        helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
         connectionManager.disconnectAllTransports();
       });
     });
 
     /** @spec RTL4j2 */
     it('resume_rewind_1', function (done) {
+      const helper = this.test.helper;
       var testName = 'resume_rewind_1';
       var testMessage = { foo: 'bar', count: 1, status: 'active' };
       try {
@@ -598,16 +631,19 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
                 'Check rewind message.data',
               ).to.be.ok;
             } catch (err) {
-              closeAndFinish(done, [sender_realtime, receiver_realtime], err);
+              helper.closeAndFinish(done, [sender_realtime, receiver_realtime], err);
               return;
             }
 
             var resumed_receiver_realtime = helper.AblyRealtime();
             var connectionManager = resumed_receiver_realtime.connection.connectionManager;
 
+            helper.recordPrivateApi('replace.connectionManager.send');
             var sendOrig = connectionManager.send;
             connectionManager.send = function (msg, queueEvent, callback) {
+              helper.recordPrivateApi('call.ProtocolMessage.setFlag');
               msg.setFlag('ATTACH_RESUME');
+              helper.recordPrivateApi('call.connectionManager.send');
               sendOrig.call(connectionManager, msg, queueEvent, callback);
             };
 
@@ -615,7 +651,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
             resumed_receiver_channel.subscribe(function (message) {
               clearTimeout(success);
-              closeAndFinish(
+              helper.closeAndFinish(
                 done,
                 [sender_realtime, receiver_realtime, resumed_receiver_realtime],
                 new Error('rewind message arrived on attach resume'),
@@ -623,7 +659,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
             });
 
             var success = setTimeout(function () {
-              closeAndFinish(done, [sender_realtime, receiver_realtime, resumed_receiver_realtime]);
+              helper.closeAndFinish(done, [sender_realtime, receiver_realtime, resumed_receiver_realtime]);
             }, 7000);
           });
         });
@@ -632,7 +668,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           sender_channel.publish('0', testMessage);
         });
       } catch (err) {
-        closeAndFinish(done, [sender_realtime, receiver_realtime, resumed_receiver_realtime], err);
+        helper.closeAndFinish(done, [sender_realtime, receiver_realtime, resumed_receiver_realtime], err);
       }
     });
 
@@ -644,6 +680,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
      * @spec RTN15a
      */
     it('recover multiple channels', function (done) {
+      const helper = this.test.helper;
       const NUM_MSGS = 5;
 
       const txRest = helper.AblyRest();
@@ -660,7 +697,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
       const rxChannels = channelNames.map((name) => rxRealtime.channels.get(name));
 
       function attachChannels(callback) {
-        async.each(rxChannels, (channel, cb) => whenPromiseSettles(channel.attach(), cb), callback);
+        async.each(rxChannels, (channel, cb) => Helper.whenPromiseSettles(channel.attach(), cb), callback);
       }
 
       function publishSubscribeWhileConnectedOnce(callback) {
@@ -690,7 +727,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
           channelNames,
           (name, cb) => {
             const tx = txRest.channels.get(name);
-            whenPromiseSettles(tx.publish('sentWhileDisconnected', null), cb);
+            Helper.whenPromiseSettles(tx.publish('sentWhileDisconnected', null), cb);
           },
           callback,
         );
@@ -735,13 +772,13 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
       attachChannels(function (err) {
         if (err) {
-          closeAndFinish(done, rxRealtime, err);
+          helper.closeAndFinish(done, rxRealtime, err);
           return;
         }
 
         publishSubscribeWhileConnected(function (err) {
           if (err) {
-            closeAndFinish(done, rxRealtime, err);
+            helper.closeAndFinish(done, rxRealtime, err);
             return;
           }
 
@@ -751,7 +788,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
           publishSubscribeWhileDisconnected(function (err) {
             if (err) {
-              closeAndFinish(done, rxRealtime, err);
+              helper.closeAndFinish(done, rxRealtime, err);
               return;
             }
 
@@ -760,7 +797,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
 
             subscribeRecoveredMessages(function (err) {
               if (err) {
-                closeAndFinish(done, [rxRealtime, rxRealtimeRecover], err);
+                helper.closeAndFinish(done, [rxRealtime, rxRealtimeRecover], err);
                 return;
               }
 
@@ -769,7 +806,7 @@ define(['shared_helper', 'async', 'chai'], function (helper, async, chai) {
               expect(rxRealtimeRecover.connection.id).to.equal(connectionId);
               expect(rxRealtimeRecover.connection.key).to.not.equal(connectionKey);
 
-              closeAndFinish(done, [rxRealtime, rxRealtimeRecover]);
+              helper.closeAndFinish(done, [rxRealtime, rxRealtimeRecover]);
             });
           });
         });

@@ -1,5 +1,6 @@
-define(['shared_helper'], function (helper) {
+define(['shared_helper'], function (Helper) {
   after(function (done) {
+    const helper = Helper.forHook(this);
     this.timeout(10 * 1000);
     helper.tearDownApp(function (err) {
       if (err) {
@@ -8,10 +9,23 @@ define(['shared_helper'], function (helper) {
       }
       done();
     });
+    helper.dumpPrivateApiUsage();
   });
 
-  afterEach(helper.closeActiveClients);
-  afterEach(helper.logTestResults);
-  afterEach(helper.flushTestLogs);
-  beforeEach(helper.clearTransportPreference);
+  afterEach(function () {
+    this.currentTest.helper.closeActiveClients();
+  });
+  afterEach(function () {
+    this.currentTest.helper.logTestResults(this);
+  });
+  afterEach(function () {
+    this.currentTest.helper.flushTestLogs();
+  });
+  beforeEach(function () {
+    this.currentTest.helper = Helper.forTest(this);
+    this.currentTest.helper.recordTestStart();
+  });
+  beforeEach(function () {
+    this.currentTest.helper.clearTransportPreference();
+  });
 });

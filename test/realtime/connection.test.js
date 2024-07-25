@@ -1,19 +1,14 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  var closeAndFinish = helper.closeAndFinish;
-  var closeAndFinishAsync = helper.closeAndFinishAsync;
   var createPM = Ably.protocolMessageFromDeserialized;
-  var displayError = helper.displayError;
-  var monitorConnection = helper.monitorConnection;
-  var monitorConnectionAsync = helper.monitorConnectionAsync;
-  var whenPromiseSettles = helper.whenPromiseSettles;
 
   describe('realtime/connection', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
+      const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
         if (err) {
           done(err);
@@ -24,46 +19,48 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
 
     /** @spec RTN13 */
     it('connectionPing', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
           try {
             realtime.connection.ping();
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
     /** @specpartial RTN13a - callback is called with response time */
     it('connectionPingWithCallback', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
-          whenPromiseSettles(realtime.connection.ping(), function (err, responseTime) {
+          Helper.whenPromiseSettles(realtime.connection.ping(), function (err, responseTime) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             try {
               expect(typeof responseTime).to.equal('number', 'check that a responseTime returned');
               expect(responseTime > 0, 'check that responseTime was +ve').to.be.ok;
-              closeAndFinish(done, realtime);
+              helper.closeAndFinish(done, realtime);
             } catch (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             }
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -72,23 +69,26 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial RTN16g - connectionKey, the current msgSerial
      */
     it('connectionAttributes', function (done) {
+      const helper = this.test.helper;
       var realtime;
       try {
         realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
           try {
+            helper.recordPrivateApi('deserialize.recoveryKey');
             const recoveryContext = JSON.parse(realtime.connection.recoveryKey);
             expect(recoveryContext.connectionKey).to.equal(realtime.connection.key);
+            helper.recordPrivateApi('read.connectionManager.msgSerial');
             expect(recoveryContext.msgSerial).to.equal(realtime.connection.connectionManager.msgSerial);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
 
           var channel = realtime.channels.get('connectionattributes');
-          whenPromiseSettles(channel.attach(), function (err) {
+          Helper.whenPromiseSettles(channel.attach(), function (err) {
             if (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
               return;
             }
             async.parallel(
@@ -96,44 +96,48 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 function (cb) {
                   channel.subscribe(function () {
                     setTimeout(function () {
+                      helper.recordPrivateApi('deserialize.recoveryKey');
                       const recoveryContext = JSON.parse(realtime.connection.recoveryKey);
                       expect(recoveryContext.connectionKey).to.equal(realtime.connection.key);
+                      helper.recordPrivateApi('read.connectionManager.msgSerial');
                       expect(recoveryContext.msgSerial).to.equal(realtime.connection.connectionManager.msgSerial);
                       cb();
                     }, 0);
                   });
                 },
                 function (cb) {
-                  whenPromiseSettles(channel.publish('name', 'data'), cb);
+                  Helper.whenPromiseSettles(channel.publish('name', 'data'), cb);
                 },
               ],
               function (err) {
                 if (err) {
-                  closeAndFinish(done, realtime, err);
+                  helper.closeAndFinish(done, realtime, err);
                   return;
                 }
                 realtime.connection.close();
-                whenPromiseSettles(realtime.connection.whenState('closed'), function () {
+                Helper.whenPromiseSettles(realtime.connection.whenState('closed'), function () {
                   try {
                     expect(realtime.connection.recoveryKey).to.equal(null, 'verify recovery key null after close');
-                    closeAndFinish(done, realtime);
+                    helper.closeAndFinish(done, realtime);
                   } catch (err) {
-                    closeAndFinish(done, realtime, err);
+                    helper.closeAndFinish(done, realtime, err);
                   }
                 });
               },
             );
           });
         });
-        monitorConnection(done, realtime);
+        helper.monitorConnection(done, realtime);
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
     /** @spec RTN15c7 */
     it('unrecoverableConnection', function (done) {
+      const helper = this.test.helper;
       var realtime;
+      helper.recordPrivateApi('serialize.recoveryKey');
       const fakeRecoveryKey = JSON.stringify({
         connectionKey: '_____!ablyjs_test_fake-key____',
         msgSerial: 3,
@@ -151,6 +155,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               80018,
               'verify unrecoverable-connection error set in connection.errorReason',
             );
+            helper.recordPrivateApi('read.connectionManager.msgSerial');
             expect(realtime.connection.connectionManager.msgSerial).to.equal(
               0,
               'verify msgSerial is 0 (new connection), not 3',
@@ -159,13 +164,13 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               -1,
               'verify connection using a new connectionkey',
             );
-            closeAndFinish(done, realtime);
+            helper.closeAndFinish(done, realtime);
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
           }
         });
       } catch (err) {
-        closeAndFinish(done, realtime, err);
+        helper.closeAndFinish(done, realtime, err);
       }
     });
 
@@ -180,20 +185,23 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @spec RTN19a2
      */
     it('connectionQueuing', function (done) {
-      var realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
         channel = realtime.channels.get('connectionQueuing'),
         connectionManager = realtime.connection.connectionManager;
 
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
         var transport = connectionManager.activeProtocol.transport;
-        whenPromiseSettles(channel.attach(), function (err) {
+        Helper.whenPromiseSettles(channel.attach(), function (err) {
           if (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
 
           let transportSendCallback;
 
+          helper.recordPrivateApi('replace.transport.send');
           /* Sabotage sending the message */
           transport.send = function (msg) {
             if (msg.action == 15) {
@@ -215,7 +223,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                 transportSendCallback = cb;
 
                 /* Sabotaged publish */
-                whenPromiseSettles(channel.publish('first', null), function (err) {
+                Helper.whenPromiseSettles(channel.publish('first', null), function (err) {
                   if (!publishCallback) {
                     done(new Error('publish completed before publishCallback populated'));
                   }
@@ -243,9 +251,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                     },
                     function (cb) {
                       /* After the disconnect, on reconnect, spy on transport.send again */
+                      helper.recordPrivateApi('listen.connectionManager.transport.pending');
                       connectionManager.once('transport.pending', function (transport) {
                         var oldSend = transport.send;
 
+                        helper.recordPrivateApi('replace.transport.send');
                         transport.send = function (msg, msgCb) {
                           if (msg.action === 15) {
                             if (msg.messages[0].name === 'first') {
@@ -269,12 +279,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
                               cb();
                             }
                           }
+                          helper.recordPrivateApi('call.transport.send');
                           oldSend.call(transport, msg, msgCb);
                         };
                         channel.publish('second', null);
                       });
 
                       /* Disconnect the transport (will automatically reconnect and resume) () */
+                      helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
                       connectionManager.disconnectAllTransports();
                     },
                   ],
@@ -283,7 +295,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
               },
             ],
             function (err) {
-              closeAndFinish(done, realtime, err);
+              helper.closeAndFinish(done, realtime, err);
             },
           );
         });
@@ -299,25 +311,32 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
      * @specpartial TO3l8 - default can be overridden by the maxMessageSize in the connectionDetails
      */
     it('connectionDetails', function (done) {
-      var realtime = helper.AblyRealtime(),
+      var helper = this.test.helper,
+        realtime = helper.AblyRealtime(),
         connectionManager = realtime.connection.connectionManager;
       realtime.connection.once('connected', function () {
+        helper.recordPrivateApi('listen.connectionManager.connectiondetails');
         connectionManager.once('connectiondetails', function (details) {
           try {
             expect(details.connectionStateTtl).to.equal(12345, 'Check connectionStateTtl in event');
+            helper.recordPrivateApi('read.connectionManager.connectionStateTtl');
             expect(connectionManager.connectionStateTtl).to.equal(
               12345,
               'Check connectionStateTtl set in connectionManager',
             );
             expect(details.clientId).to.equal('foo', 'Check clientId in event');
             expect(realtime.auth.clientId).to.equal('foo', 'Check clientId set in auth');
+            helper.recordPrivateApi('read.realtime.options.maxMessageSize');
             expect(realtime.options.maxMessageSize).to.equal(98765, 'Check maxMessageSize set');
           } catch (err) {
-            closeAndFinish(done, realtime, err);
+            helper.closeAndFinish(done, realtime, err);
             return;
           }
-          closeAndFinish(done, realtime);
+          helper.closeAndFinish(done, realtime);
         });
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        helper.recordPrivateApi('call.protocolMessageFromDeserialized');
         connectionManager.activeProtocol.getTransport().onProtocolMessage(
           createPM({
             action: 4,
@@ -332,17 +351,18 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
           }),
         );
       });
-      monitorConnection(done, realtime);
+      helper.monitorConnection(done, realtime);
     });
 
     /**
      * @spec RTN26a
      * @spec RTN26b
      */
-    it('whenState', async () => {
+    it('whenState', async function () {
+      const helper = this.test.helper;
       const realtime = helper.AblyRealtime({ autoConnect: false });
 
-      await monitorConnectionAsync(async () => {
+      await helper.monitorConnectionAsync(async () => {
         // RTN26a - when already in given state, returns null
         const initializedStateChange = await realtime.connection.whenState('initialized');
         expect(initializedStateChange).to.be.null;
@@ -356,7 +376,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, helper, async
         expect(connectedStateChange.current).to.equal('connected');
       }, realtime);
 
-      await closeAndFinishAsync(realtime);
+      await helper.closeAndFinishAsync(realtime);
     });
   });
 });
