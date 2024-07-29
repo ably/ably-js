@@ -211,34 +211,42 @@ This release adds a new experimental `channels.getDerived` method which allows y
 - fix nodejs encryption of `ArrayBuffer` plaintext [\#1280](https://github.com/ably/ably-js/pull/1280)
 
 ## [1.2.39](https://github.com/ably/ably-js/tree/1.2.39) (2023-04-13)
+
 - bump got dependency to `^11.8.5` [\#1189](https://github.com/ably/ably-js/pull/1189)
 
 ## [1.2.38](https://github.com/ably/ably-js/tree/1.2.38) (2023-04-04)
+
 - retry connection attempt if 'online' event received whilst connecting [\#1171](https://github.com/ably/ably-js/pull/1171)
 - populate invalid state `ErrorInfo.cause` with the current `errorReason`, if set [\#1169](https://github.com/ably/ably-js/pull/1169)
 - fix: align exposed type of `ErrorInfo` with internal type, extending `Error` [\#1142](https://github.com/ably/ably-js/pull/1142)
 - fix: avoid global scope `TextEncoder` access [\#1157](https://github.com/ably/ably-js/pull/1157)
 
 ## [1.2.37](https://github.com/ably/ably-js/tree/1.2.37) (2023-02-27)
+
 - make ErrorInfo extend Error [\#1129](https://github.com/ably/ably-js/pull/1129)
 - improve error message for clientId mismatch from user auth provider [\#1128](https://github.com/ably/ably-js/pull/1128)
 - fix: don't send credentials in webworker FetchInit [\#1132](https://github.com/ably/ably-js/pull/1132)
 
 ## [1.2.36](https://github.com/ably/ably-js/tree/1.2.36) (2023-02-10)
+
 - fix(Node/http): prevent got from using its own retry mechanism [\#1122](https://github.com/ably/ably-js/pull/1122)
 - deps: update `http-cache-semantics` dependency [\#1123](https://github.com/ably/ably-js/pull/1123)
 
 ## [1.2.35](https://github.com/ably/ably-js/tree/1.2.35) (2023-01-30)
+
 - Implement ably-js protocol v2 [\#1110](https://github.com/ably/ably-js/pull/1110)
 - Add global HTTP agent pool (fixes memory leak when creating several rest clients) [\#1113](https://github.com/ably/ably-js/pull/1113)
 
 ## [1.2.34](https://github.com/ably/ably-js/tree/1.2.34) (2022-12-13)
+
 - fix incorrect sync event signature in base Transport class (fixes an issue with react-native realtime connections) [\#1094](https://github.com/ably/ably-js/pull/1094)
 
 ## [1.2.33](https://github.com/ably/ably-js/tree/1.2.33) (2022-11-11)
+
 - Fix some callback typings [\#1075](https://github.com/ably/ably-js/pull/1075)
 
 ## [1.2.32](https://github.com/ably/ably-js/tree/1.2.32) (2022-11-09)
+
 - fix: add EventEmitter.off signature with no args [\#1073](https://github.com/ably/ably-js/pull/1073)
 
 ## [1.2.31](https://github.com/ably/ably-js/tree/1.2.31) (2022-11-08)
@@ -258,50 +266,59 @@ This docs update and further planned changes are based on feedback from customer
 - Add missing/undocumented docstrings [\#1064](https://github.com/ably/ably-js/pull/1064)
 - fix: stop mutating `Defaults.agent` on client init [\#1068](https://github.com/ably/ably-js/pull/1068)
 
-
 ## [1.2.30](https://github.com/ably/ably-js/tree/1.2.30) (2022-10-05)
+
 - Add `connectivityCheckUrl` and `disableConnectivityCheck` client options [\#1051](https://github.com/ably/ably-js/pull/1051)
 - Fix EventEmitter.once when using array with promises [\#1046](https://github.com/ably/ably-js/pull/1046)
 - Allow null arguments in authCallback [\#1052](https://github.com/ably/ably-js/pull/1052)
 - Move channel state to attaching on new transport reattach when using promises [\#1053](https://github.com/ably/ably-js/pull/1053)
 
 ## [1.2.29](https://github.com/ably/ably-js/tree/1.2.29) (2022-08-08)
+
 - Fix upgrade bug that could lead to an indefinitely sync-pending transport [\#1041](https://github.com/ably/ably-js/pull/1041)
 - Always allow event queueing while connecting [\#1039](https://github.com/ably/ably-js/pull/1039)
 
 ## [1.2.28](https://github.com/ably/ably-js/tree/1.2.28) (2022-07-28)
+
 - Add clientId to MessageFilter [\#1032](https://github.com/ably/ably-js/pull/1032)
 - Transports: implement timeouts in tryConnect() [\#1035](https://github.com/ably/ably-js/pull/1035)
 - Only log connectionSerial mismatch from channel messages [\#1036](https://github.com/ably/ably-js/pull/1036)
 
 ## [1.2.27](https://github.com/ably/ably-js/tree/1.2.27) (2022-07-06)
+
 - Add filtered subscription type to RealtimeChannel [\#1003](https://github.com/ably/ably-js/pull/1003)
 
 ## [1.2.26](https://github.com/ably/ably-js/tree/1.2.26) (2022-06-30)
+
 - Improve global object fallback logic (fixes an issue when using the library in some service worker contexts) [\#1016](https://github.com/ably/ably-js/pull/1016)
 - Add backoff and jitter to channel and connection retry strategies [\#1008](https://github.com/ably/ably-js/pull/1008)
 - Bump versions for some underlying dependencies [\#1010](https://github.com/ably/ably-js/pull/1010)
 - Fix a bug with xhr transports for react-native [\#1007](https://github.com/ably/ably-js/pull/1007)
 
 ## [1.2.25](https://github.com/ably/ably-js/tree/1.2.25) (2022-06-10)
+
 - Fix a bug in 1.2.23 where Message and PresenceMessage were removed from the public API [\#1004](https://github.com/ably/ably-js/pull/1004)
 
 ## [1.2.24](https://github.com/ably/ably-js/tree/1.2.24) (2022-06-09)
+
 - Revert a bug in 1.2.23 where the Crypto interface was removed from the public API
 - Revert change to package.json typings field
 - Remove sourcemap links from CDN uploads
 
 ## [1.2.23](https://github.com/ably/ably-js/tree/1.2.23) (2022-06-09)
+
 - Add `Channel.status` method to get channel lifecycle status [\#985](https://github.com/ably/ably-js/pull/985)
 - Fix bug in compatibility with Salesforce Lightning Components [\#993](https://github.com/ably/ably-js/pull/993)
 - Revert uploading sourcemaps to the CDN [\#998](https://github.com/ably/ably-js/pull/998)
 
 ## [1.2.22](https://github.com/ably/ably-js/tree/1.2.22) (2022-05-18)
+
 - Fix bug in RealtimeChannel.subscribe promisify when second argument is
   undefined [\#984](https://github.com/ably/ably-js/issue/984)
 - Update deprecated NativeScript application settings import [\#980](https://github.com/ably/ably-js/issue/980)
 
 ## [1.2.21](https://github.com/ably/ably-js/tree/1.2.21) (2022-05-05)
+
 - Make `Connection.id` and `Connection.key` optional [\#952](https://github.com/ably/ably-js/issue/952)
 - Remove support for MozWebSocket [\#954](https://github.com/ably/ably-js/issue/954)
 - Fix a bug with promisified `EventEmitter.whenState` [\#962](https://github.com/ably/ably-js/pull/962)
@@ -310,15 +327,18 @@ This docs update and further planned changes are based on feedback from customer
 - Fix nativescript bundle [\#971](https://github.com/ably/ably-js/pull/971)
 
 ## [1.2.20](https://github.com/ably/ably-js/tree/1.2.20) (2022-04-06)
+
 - Fix error where calling realtime presence update caused call stack errors [\#949](https://github.com/ably/ably-js/issue/949)
 - Fix an issue where Ably-Agent headers were encoded incorrectly [\#950](https://github.com/ably/ably-js/pull/950)
 
 ## [1.2.19](https://github.com/ably/ably-js/tree/1.2.19) (2022-04-05)
+
 - Fix error where some promisified REST methods caused call stack errors [\#943](https://github.com/ably/ably-js/issue/943)
 - Fix wasClean implementation for reactnative websocket transport [\#946](https://github.com/ably/ably-js/pull/946)
 - Ensure that Ably-Agent is always URI encoded [\#947](https://github.com/ably/ably-js/pull/947)
 
 ## [1.2.18](https://github.com/ably/ably-js/tree/1.2.18) (2022-03-31)
+
 - Convert library source code to TypeScript [\#762](https://github.com/ably/ably-js/pull/762)
 - Add `realtimeRequestTimeout` to ClientOptions type [\#934](https://github.com/ably/ably-js/pull/934)
 - Override toJSON for HttpPaginatedResponse [\#913](https://github.com/ably/ably-js/pull/913)
@@ -327,32 +347,40 @@ This docs update and further planned changes are based on feedback from customer
 - Fix nonsensical error in RealtimePresence.leaveClient when channel state is invalid [\#911](https://github.com/ably/ably-js/pull/911)
 
 ## [1.2.17](https://github.com/ably/ably-js/tree/1.2.17) (2022-01-14)
+
 - Remove NPM preinstall script (this was breaking NPM installs when outside a git repository) [\#876](https://github.com/ably/ably-js/pull/876)
 
 ## [1.2.16](https://github.com/ably/ably-js/tree/1.2.16) (2022-01-14)
+
 - Fix bug where channel rewind would ignore messages after reattaching [\#873](https://github.com/ably/ably-js/pull/873)
 
 ## [1.2.15](https://github.com/ably/ably-js/tree/1.2.15) (2021-11-22)
+
 - Replace deprecated request HTTP module with got [\#846](https://github.com/ably/ably-js/pull/846)
 - Improve checks for XHRRequest error responses [\#804](https://github.com/ably/ably-js/pull/804)
 
 ## [1.2.14](https://github.com/ably/ably-js/tree/1.2.14) (2021-09-22)
+
 - Add TypeScript support for REST publish parameters [\#785](https://github.com/ably/ably-js/pull/785)
 - Fix a bug with parsing of authUrl responses [\#793](https://github.com/ably/ably-js/pull/793)
 
 ## [1.2.13](https://github.com/ably/ably-js/tree/1.2.13) (2021-08-03)
+
 - Implement RTL5b and RTL5j cases for detaching from channels in suspended/failed states [\#784](https://github.com/ably/ably-js/pull/784)
 
 ## [1.2.12](https://github.com/ably/ably-js/tree/1.2.12) (2021-08-02)
+
 - Fix channel names as object prototype keys [\#777](https://github.com/ably/ably-js/pull/777)
 - Add .once method to EventEmitter [\#779](https://github.com/ably/ably-js/pull/779)
 - Bump ws from 5.2.2 to 5.2.3 [\#781](https://github.com/ably/ably-js/pull/781)
 - Implement Ably-Agent connection param for ably-js and NodeJS versions [\#740](https://github.com/ably/ably-js/pull/740)
 
 ## [1.2.11](https://github.com/ably/ably-js/tree/1.2.11) (2021-07-20)
+
 - Bind setImmediate to global object in browsers [\#774](https://github.com/ably/ably-js/pull/774)
 
 ## [1.2.10](https://github.com/ably/ably-js/tree/1.2.10) (2021-05-28)
+
 - Add Playwright tests [\#738](https://github.com/ably/ably-js/pull/738)
 - Improve Mocha tests [\#739](https://github.com/ably/ably-js/pull/739)
 - Bump grunt from 0.4.5 to 1.3.0 [\#744](https://github.com/ably/ably-js/pull/744)
@@ -365,33 +393,41 @@ This docs update and further planned changes are based on feedback from customer
 - Improve api typings [\#761](https://github.com/ably/ably-js/pull/761)
 
 ## [1.2.9](https://github.com/ably/ably-js/tree/1.2.9) (2021-04-12)
+
 - Fix bugs in disconnection error filtering [\#734](https://github.com/ably/ably-js/pull/734)
 - Replace fury badges with shields.io [\#716](https://github.com/ably/ably-js/pull/716)
 
 ## [1.2.8](https://github.com/ably/ably-js/tree/1.2.8) (2021-03-26)
+
 - Fix imports for callbacks.js, promises.js, typings. [\#730](https://github.com/ably/ably-js/pull/730)
 - Fix request typings [\#731](https://github.com/ably/ably-js/pull/731)
 - Deprecate bower [\#733](https://github.com/ably/ably-js/pull/733)
 
 ## [1.2.7](https://github.com/ably/ably-js/tree/1.2.7) (2021-03-25)
+
 - Fix faulty import of JSONP transport to React Native and NativeScript [\#726](https://github.com/ably/ably-js/pull/726)
 - Comet: Raise preconnect event if the server responds with a protocol message [\#719](https://github.com/ably/ably-js/pull/719)
 
 ## [1.2.6](https://github.com/ably/ably-js/tree/1.2.6) (2021-03-04)
+
 - Move null-loader to dev dependencies (note: this release will only affect NPM users so will not be available on cdn.ably.io) [\#718](https://github.com/ably/ably-js/pull/718)
 
 ## [1.2.5](https://github.com/ably/ably-js/tree/1.2.5) (2020-11-04)
+
 - Convert library to ES6 modules [\#704](https://github.com/ably/ably-js/pull/704/files)
 
 ## [1.2.4](https://github.com/ably/ably-js/tree/1.2.4) (2020-11-04)
+
 - Typings: all ChannelOptions are now optional and other minor improvements [\#695](https://github.com/ably/ably-js/pull/695/files)
 
 ## [1.2.3](https://github.com/ably/ably-js/tree/1.2.3) (2020-09-30)
+
 - Use environment-specific fallback hosts by default unless overridden (https://github.com/ably/ably-js/pull/682)
 - Rest: use channels.all not channels.attached; "attached" made no sense for rest channels and was never documented
 - Add state check for channels.release() to prevent putting the lib into an inconsistent state
 
 ## [1.2.2](https://github.com/ably/ably-js/tree/1.2.2) (2020-09-03)
+
 - Auth: fail connection immediately if auth server returns a 403 as a result of an authorize() call or online reauth
 
 ## [1.2.1](https://github.com/ably/ably-js/tree/1.2.1) (2020-06-09)
@@ -416,6 +452,7 @@ Subscribing to a channel in delta mode enables [delta compression](https://www.a
 ---
 
 ## [1.1.25](https://github.com/ably/ably-js/tree/1.1.25) (2020-05-19)
+
 - EventEmitter.whenState: fix for promises [\#630](https://github.com/ably/ably-js/pull/630)
 - Typings: re-export Types namespace in 'ably/promises' sub-package [\#634](https://github.com/ably/ably-js/pull/634)
 - Support promises with PaginatedResult#next() etc. [\#635](https://github.com/ably/ably-js/pull/635)
@@ -423,92 +460,115 @@ Subscribing to a channel in delta mode enables [delta compression](https://www.a
 - Update msgpack dependency to version explicitly Apache-2.0 licensed [\#650](https://github.com/ably/ably-js/pull/650)
 
 ## [1.1.24](https://github.com/ably/ably-js/tree/1.1.24) (2020-01-24)
+
 - Minor bug fix to comet transport
 - Update ably-common submodule for errors.json parsing fix
 
 ## [1.1.23](https://github.com/ably/ably-js/tree/1.1.23) (2020-01-08)
+
 - Disable bundling for messages with user-set ids
 
 ## [1.1.22](https://github.com/ably/ably-js/tree/1.1.22) (2019-10-28)
+
 - Add some missing ClientOptions to typescript type definition file
 
 ## [1.1.21](https://github.com/ably/ably-js/tree/1.1.21) (2019-10-22)
+
 - BufferUtils overhaul (consistent return type on browsers (ArrayBuffer vs WordArray), hexDecode, support typed arrays, and more
 - Add error reporting mechanism
 
 ## [1.1.20](https://github.com/ably/ably-js/tree/1.1.20) (2019-10-05)
+
 - Fix channel.history with promises bug when using the realtime client
 - Auth no way to renew warning: upgrade to error
 
 ## [1.1.19](https://github.com/ably/ably-js/tree/1.1.19) (2019-10-03)
+
 - Fix EventEmitter.once typings https://github.com/ably/ably-js/pull/610
 
 ## [1.1.18](https://github.com/ably/ably-js/tree/1.1.18) (2019-09-18)
+
 - Fix typings for channel.presence.unsubscribe https://github.com/ably/ably-js/pull/608
 - Tweak connection code for generic connection issues (80000 -> 80003)
 - Make promisified rest.request() easier to use correctly
 
 ## [1.1.17](https://github.com/ably/ably-js/tree/1.1.17) (2019-09-03)
+
 - Fix TS1036 tslint warning when importing ably/promises
 - Add delta generation stats infrastructure
 
 ## [1.1.16](https://github.com/ably/ably-js/tree/1.1.16) (2019-07-24)
+
 - Fix regression for browser commonjs distribution
 - Allow non-ascii clientIds for REST requests
 
 ## [1.1.15](https://github.com/ably/ably-js/tree/1.1.15) (2019-07-02)
+
 - Fix type definition for realtime presence.get() with the Promise API
 
 ## [1.1.14](https://github.com/ably/ably-js/tree/1.1.14) (2019-06-25)
+
 - Add check for double-encoded tokens
 - Reinstate message suppression based on connectionSerial to ensure no duplicate messages during transport upgrades
 - Support running in a webworker context that uses `self` as the global object (thanks to Clifton Hensley for that contribution!)
 
 ## [1.1.13](https://github.com/ably/ably-js/tree/1.1.13) (2019-06-19)
+
 - Log the content-type of an authUrl response
 
 ## [1.1.12](https://github.com/ably/ably-js/tree/1.1.12) (2019-06-10)
+
 - Only ever deduplicate messages on the same channel
 - Support uncompressed data stats
 
 ## [1.1.11](https://github.com/ably/ably-js/tree/1.1.11) (2019-05-22)
+
 - Allow token strings (including JWT tokens) up to 128kB
 
 ## [1.1.10](https://github.com/ably/ably-js/tree/1.1.10) (2019-05-16)
+
 - Fix channel#unsubscribe() throwing an error if called on a failed channel
-(also removes the optional callback argument to subscribe(), which was
-undocumented and almost useless anyway since it was only called in the
-event of a failed channel)
+  (also removes the optional callback argument to subscribe(), which was
+  undocumented and almost useless anyway since it was only called in the
+  event of a failed channel)
 
 ## [1.1.9](https://github.com/ably/ably-js/tree/1.1.9) (2019-05-08)
+
 - Auth: fix tokenParams missing from token requests in the event that no authParams are specified
 
 ## [1.1.8](https://github.com/ably/ably-js/tree/1.1.8) (2019-04-30)
+
 - Auth: if you do multiple concurrent authorize()s, make sure the token from last one wins
 - If fallback hosts are enabled and a connection is abruptly disconnected with a 5xx error, retry immediately to a fallback rather than waiting the usual 15s disconnectedRetryTimeout
 
 ## [1.1.7](https://github.com/ably/ably-js/tree/1.1.7) (2019-03-27)
+
 - Catch common failure mode with poorly-implemented authCallback
 - Fix typings of TokenParams.capability
 
 ## [1.1.6](https://github.com/ably/ably-js/tree/1.1.6) (2019-03-19)
+
 - Improve handling of responso to active traffic management placement constraint error for smooth cluster handover
 - Normalise statuscode for 40170-failure to obtain token from client auth callback to 401 per spec
 
 ## [1.1.5](https://github.com/ably/ably-js/tree/1.1.5) (2019-02-27)
+
 - Only autoremove an expired token if we know the local offset from server time
 - Fix tokenParams not being correctly mixed in to authParams in some circumstances
 
 ## [1.1.4](https://github.com/ably/ably-js/tree/1.1.4) (2019-02-25)
+
 - Support PUSH, PATCH, and DELETE in Rest#request()
 - Support arbitrary params for REST publishes
 - Fix scope leak issue when using the minified version of the library
 
 ## [1.1.3](https://github.com/ably/ably-js/tree/1.1.3) (2019-02-11)
+
 - Rewrite typescript typings to satisfy `tsc --strict`
 - PNRG changes needed for newer versions of react-native
 
 ## [1.1](https://github.com/ably/ably-js/tree/1.1.0) (2019-02-06)
+
 - Promises support
 - Admin api for push notifications
 - Many minor bugfixes
@@ -516,11 +576,13 @@ event of a failed channel)
 ---
 
 ## [1.0.23](https://github.com/ably/ably-js/tree/1.0.23) (2019-01-21)
+
 - Only make a single token request at a time
 - Fix crash with react-native on some Android versions when making REST requests
 - Tweak fallback host logic for connected realtime clients making REST requests
 
 ## [1.0.21](https://github.com/ably/ably-js/tree/1.0.21) (2019-01-07)
+
 - Reinstate 'stop clientId forcing token auth' change (https://github.com/ably/ably-js/issues/542)
 - Prioritise a tokenParam over an authParam of the same name
 - Fix behaviour with multiple concurrent pings in-flight
@@ -529,6 +591,7 @@ event of a failed channel)
 - Deduce streaming response from lack of content-length header even if no transfer-encoding
 
 ## [1.0.20](https://github.com/ably/ably-js/tree/1.0.20) (2018-12-02)
+
 - Temporarily back out of clientId change due to CORS issue
 
 ## [1.0.19](https://github.com/ably/ably-js/tree/1.0.19) (2018-11-22)
@@ -581,7 +644,6 @@ event of a failed channel)
 - Fix encryption on IE9 and IE10 (https://github.com/ably/ably-js/pull/453)
 - Fix crash on `Logger.LOG_ERROR` (https://github.com/ably/ably-js/pull/439/files)
 - The `closeOnUnload` option now defaults to true (https://github.com/ably/ably-js/commit/293aed15d7ecaa001a3f834871b78d0403b195d7)
-
 
 ## [1.0.11](https://github.com/ably/ably-js/tree/1.0.11) (2017-12-11)
 
@@ -659,7 +721,7 @@ event of a failed channel)
 
 ## [0.8.42](https://github.com/ably/ably-js/tree/0.8.42) (2017-02-27)
 
-- Fix presence issue when receive >9 presence updates from the same connection by backporting 0.9 presence newness algorithm  5ce4fa8
+- Fix presence issue when receive >9 presence updates from the same connection by backporting 0.9 presence newness algorithm 5ce4fa8
 
 - Fix on('attached') registration in an on('attached') block firing immediately [\#364](https://github.com/ably/ably-js/issues/364)
 
@@ -736,6 +798,7 @@ event of a failed channel)
 - Fix an issue where a server-sent channel detached message could cause the channel to go into the failed state [\#313](https://github.com/ably/ably-js/pull/313)
 
 ## [0.8.26](https://github.com/ably/ably-js/tree/0.8.26) (2016-07-11)
+
 ## [0.8.25](https://github.com/ably/ably-js/tree/0.8.25) (2016-07-06)
 
 No net changes. 0.8.25 reverted a new header addition due to Ably not yet sending the correct `access-control-allow-headers` CORS headers for it; 0.8.26 re-adds it.
@@ -810,7 +873,7 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 
 - Fix connection state race condition when one transport drops while another is pending [\#274](https://github.com/ably/ably-js/pull/274)
 
-- Make LOG\_MAJOR log level (i.e. level 3) much more friendly [\#275](https://github.com/ably/ably-js/pull/275)
+- Make LOG_MAJOR log level (i.e. level 3) much more friendly [\#275](https://github.com/ably/ably-js/pull/275)
 
 - A few minor fixes to ErrorInfo [\#276](https://github.com/ably/ably-js/pull/276)
 
@@ -820,7 +883,7 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 
 **Biggest changes:**
 
-- Change default log level to LOG\_ERROR [c122a1f](https://github.com/ably/ably-js/commit/c122a1f)
+- Change default log level to LOG_ERROR [c122a1f](https://github.com/ably/ably-js/commit/c122a1f)
 
 - Add channel#errorReason [\#267](https://github.com/ably/ably-js/pull/267)
 
@@ -1036,7 +1099,7 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 
 - Switch arity of auth methods [\#137](https://github.com/ably/ably-js/issues/137)
 
-- connection.close does not always free up resources  [\#136](https://github.com/ably/ably-js/issues/136)
+- connection.close does not always free up resources [\#136](https://github.com/ably/ably-js/issues/136)
 
 - XHR requests timing out leads to connection going into failed state [\#134](https://github.com/ably/ably-js/issues/134)
 
@@ -1288,9 +1351,9 @@ No net changes. 0.8.25 reverted a new header addition due to Ably not yet sendin
 
 **Implemented enhancements:**
 
-- Register  ably-js as ably in the npm directory [\#29](https://github.com/ably/ably-js/issues/29)
+- Register ably-js as ably in the npm directory [\#29](https://github.com/ably/ably-js/issues/29)
 
-- Sparse stat support  [\#22](https://github.com/ably/ably-js/issues/22)
+- Sparse stat support [\#22](https://github.com/ably/ably-js/issues/22)
 
 - Travis.CI support [\#3](https://github.com/ably/ably-js/issues/3)
 

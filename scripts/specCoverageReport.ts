@@ -161,10 +161,13 @@ class SpecItemNodesCollection {
   }
 
   public toJSON(): Record<string, SpecItemNode> {
-    return [...this.allNodesByKeyMap.entries()].reduce((acc, [key, node]) => {
-      acc[key] = node;
-      return acc;
-    }, {} as Record<string, SpecItemNode>);
+    return [...this.allNodesByKeyMap.entries()].reduce(
+      (acc, [key, node]) => {
+        acc[key] = node;
+        return acc;
+      },
+      {} as Record<string, SpecItemNode>,
+    );
   }
 
   private _createNodesCollection(specItems: SpecItem[]): void {

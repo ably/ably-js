@@ -9,9 +9,9 @@ jobs:
   test-browser:
     runs-on: ubuntu-20.04
     strategy:
-        fail-fast: false
-        matrix:
-            browser: [chromium, firefox, webkit]
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     steps:
       - uses: actions/checkout@v2
         with:

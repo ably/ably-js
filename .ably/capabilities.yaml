@@ -29,12 +29,12 @@ compliance:
       Mode:
       Presence:
         Enter:
-            Client:
+          Client:
         Get:
         History:
         Subscribe:
         Update:
-            Client:
+          Client:
       Publish:
       Retry Timeout:
       State Events:
@@ -113,4 +113,3 @@ compliance:
     HTTP/2:
       .caveats: 'Supported in browser'
     Maximum Frame Size:
-

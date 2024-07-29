@@ -290,7 +290,7 @@ await channel.presence.enter('my status');
 await channel.presence.update('new status');
 // my presence data is updated
 
-await channel.presence.leave()
+await channel.presence.leave();
 // I've left the presence set
 ```
 
@@ -353,7 +353,11 @@ Example emoji reaction to a message:
 
 ```javascript
 function sendReaction(emoji) {
-    channel.publish({ name: 'event_name', data: emoji, extras: { ref: { type: "com.ably.reaction", timeserial: "1656424960320-1" } } })
+  channel.publish({
+    name: 'event_name',
+    data: emoji,
+    extras: { ref: { type: 'com.ably.reaction', timeserial: '1656424960320-1' } },
+  });
 }
 ```
 
@@ -425,13 +429,13 @@ await channel.history({start: ..., end: ..., limit: ..., direction: ...});
 ### Presence on a channel
 
 ```javascript
-const presencePage = await channel.presence.get() // PaginatedResult
-presencePage.items                                // array of PresenceMessage
-presencePage.items[0].data                        // payload for first message
-presencePage.items.length                         // number of messages in the current page of members
-presencePage.hasNext()                            // true if there are further pages
-presencePage.isLast()                             // true if this page is the last page
-const nextPage = await presencePage.next();       // retrieves the next page as PaginatedResult
+const presencePage = await channel.presence.get(); // PaginatedResult
+presencePage.items; // array of PresenceMessage
+presencePage.items[0].data; // payload for first message
+presencePage.items.length; // number of messages in the current page of members
+presencePage.hasNext(); // true if there are further pages
+presencePage.isLast(); // true if this page is the last page
+const nextPage = await presencePage.next(); // retrieves the next page as PaginatedResult
 ```
 
 ### Querying the Presence History
@@ -453,9 +457,9 @@ const messagesPage = channel.history({start: ..., end: ..., limit: ..., directio
 
 ```javascript
 const channelDetails = await channel.status();
-channelDetails.channelId        // The name of the channel
-channelDetails.status.isActive  // A boolean indicating whether the channel is active
-channelDetails.status.occupancy // Contains metadata relating to the occupants of the channel
+channelDetails.channelId; // The name of the channel
+channelDetails.status.isActive; // A boolean indicating whether the channel is active
+channelDetails.status.occupancy; // Contains metadata relating to the occupants of the channel
 ```
 
 ### Generate Token and Token Request
@@ -496,13 +500,13 @@ const tokenRequest = await client.auth.createTokenRequest(tokenParams, authOptio
 ### Fetching your application's stats
 
 ```javascript
-const statsPage = await client.stats()          // statsPage as PaginatedResult
-statsPage.items                                 // array of Stats
+const statsPage = await client.stats(); // statsPage as PaginatedResult
+statsPage.items; // array of Stats
 statsPage.items[0].inbound.rest.messages.count; // total messages published over REST
-statsPage.items.length;                         // number of stats in the current page of history
-statsPage.hasNext()                             // true if there are further pages
-statsPage.isLast()                              // true if this page is the last page
-const nextPage = await statsPage.next();        // retrieves the next page as PaginatedResult
+statsPage.items.length; // number of stats in the current page of history
+statsPage.hasNext(); // true if there are further pages
+statsPage.isLast(); // true if this page is the last page
+const nextPage = await statsPage.next(); // retrieves the next page as PaginatedResult
 ```
 
 ### Fetching the Ably service time
@@ -522,9 +526,9 @@ import * as Ably from 'ably';
 import Push from 'ably/push';
 
 const client = new Ably.Rest({
-    ...options,
-    pushServiceWorkerUrl: '/my_service_worker.js',
-    plugins: { Push }
+  ...options,
+  pushServiceWorkerUrl: '/my_service_worker.js',
+  plugins: { Push },
 });
 ```
 
@@ -532,7 +536,7 @@ Example service worker:
 
 ```javascript
 // my_service_worker.js
-self.addEventListener("push", async (event) => {
+self.addEventListener('push', async (event) => {
   const { notification } = event.data.json();
   self.registration.showNotification(notification.title, notification);
 });
@@ -585,6 +589,7 @@ To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
 - ["Unable to parse request body" error when publishing large messages from old versions of Internet Explorer](https://support.ably.com/solution/articles/3000062360-ably-js-unable-to-parse-request-body-error-when-publishing-large-messages-from-old-browsers).
 
 #### Chrome Extensions
+
 ably-js works out-of-the-box in background scripts for Chrome extensions using manifest v2. However, since manifest v3 background pages are no longer supported so you will need to run ably-js inside a service worker.
 If you are using an ably-js realtime client in a service worker, note that in versions of Chrome before 116, active WebSockets would not reset the 30s service worker idle timer, resulting in the client being closed prematurely, however, in versions 116 and above, service workers will stay active as long as a client is connected.
 You can ensure that your extension only runs in versions 116 and above by adding the following to your `manifest.json`:
