@@ -483,9 +483,9 @@ function registerAblyModularTests(Helper) {
                 },
               });
 
-              await (clientClassConfig.isRealtime
-                ? monitorConnectionThenCloseAndFinish
-                : async (helper, op) => await op())(
+              await (
+                clientClassConfig.isRealtime ? monitorConnectionThenCloseAndFinish : async (helper, op) => await op()
+              )(
                 helper,
                 async () => {
                   const txChannel = txClient.channels.get('channel', encryptionChannelOptions);

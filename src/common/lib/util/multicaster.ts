@@ -23,7 +23,10 @@ class Multicaster<T> {
   members: Array<StandardCallback<T>>;
 
   // Private constructor; use static Multicaster.create instead
-  private constructor(private readonly logger: Logger, members?: Array<StandardCallback<T> | undefined>) {
+  private constructor(
+    private readonly logger: Logger,
+    members?: Array<StandardCallback<T> | undefined>,
+  ) {
     this.members = (members as Array<StandardCallback<T>>) || [];
   }
 
