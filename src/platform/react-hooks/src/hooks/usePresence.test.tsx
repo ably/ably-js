@@ -129,6 +129,30 @@ describe('usePresence', () => {
   });
 
   /** @nospec */
+  it('usePresence works without default client', async () => {
+    const updateListener = vi.fn();
+    ablyClient.channels.get(testChannelName).presence.subscribe('update', updateListener);
+
+    render(
+      <AblyProvider ablyId="otherClient" client={otherClient as unknown as Ably.RealtimeClient}>
+        <ChannelProvider channelName={testChannelName} ablyId="otherClient">
+          <UsePresenceComponentWithOtherClient />
+        </ChannelProvider>
+      </AblyProvider>,
+    );
+
+    await act(async () => {
+      const button = screen.getByText(/Update/i);
+      button.click();
+      await wait(2);
+    });
+
+    await waitFor(() => {
+      expect(updateListener).toHaveBeenCalledWith(expect.objectContaining({ data: 'baz' }));
+    });
+  });
+
+  /** @nospec */
   it('handles channel errors', async () => {
     const onChannelError = vi.fn();
     const reason = { message: 'foo' };
@@ -238,6 +262,22 @@ const UsePresenceComponentMultipleClients = () => {
         onClick={() => {
           update1('baz1');
           update2('baz2');
+        }}
+      >
+        Update
+      </button>
+    </>
+  );
+};
+
+const UsePresenceComponentWithOtherClient = () => {
+  const { updateStatus } = usePresence({ channelName: testChannelName, ablyId: 'otherClient' }, 'bar');
+
+  return (
+    <>
+      <button
+        onClick={() => {
+          updateStatus('baz');
         }}
       >
         Update

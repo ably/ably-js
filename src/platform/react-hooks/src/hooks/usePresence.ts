@@ -48,7 +48,7 @@ export function usePresence<T = any>(
   const [connectionState, setConnectionState] = useState(ably.connection.state);
   useConnectionStateListener((stateChange) => {
     setConnectionState(stateChange.current);
-  });
+  }, params.ablyId);
 
   // similar to connection states, we should only attempt to enter presence when in certain
   // channel states.
