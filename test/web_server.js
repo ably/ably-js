@@ -48,7 +48,7 @@ class MochaServer {
     const port = process.env.PORT || 3000;
     this.server = app.listen(port);
 
-    console.log('Mocha test server listening on http://localhost:3000/');
+    console.log(`Mocha test server listening on http://localhost:${port}/`);
   }
 
   close() {
