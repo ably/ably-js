@@ -16,47 +16,43 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       });
     });
 
-    /* Restrict to websocket or xhr polling for the v= test as if stream=false the
-     * recvRequest may not be the connectRequest by the time we check it. */
-    ((testDefinitionHelper) => {
-      if (testDefinitionHelper.bestTransport === 'web_socket' || testDefinitionHelper.bestTransport === 'xhr_polling') {
-        /*
-         * Base init case.
-         * @spec RTN2f
-         */
-        it('initbase0', function (done) {
-          const helper = this.test.helper;
-          var realtime;
+    /*
+     * Base init case.
+     * @spec RTN2f
+     */
+    it('initbase0', function (done) {
+      const helper = this.test.helper;
+      var realtime;
+      try {
+        /* Restrict to websocket or xhr polling for the v= test as if stream=false the
+         * recvRequest may not be the connectRequest by the time we check it. */
+        realtime = helper.AblyRealtime({ transports: ['web_socket', 'xhr_polling'] });
+        realtime.connection.on('connected', function () {
+          /* check api version */
+          helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
+          var transport = realtime.connection.connectionManager.activeProtocol.transport;
+          var connectUri = helper.isWebsocket(transport)
+            ? (() => {
+                helper.recordPrivateApi('read.transport.uri');
+                return transport.uri;
+              })()
+            : (() => {
+                helper.recordPrivateApi('read.transport.recvRequest.recvUri');
+                return transport.recvRequest.recvUri;
+              })();
           try {
-            realtime = helper.AblyRealtime({ transports: ['web_socket', 'xhr_polling'] });
-            realtime.connection.on('connected', function () {
-              /* check api version */
-              helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
-              var transport = realtime.connection.connectionManager.activeProtocol.transport;
-              var connectUri = helper.isWebsocket(transport)
-                ? (() => {
-                    helper.recordPrivateApi('read.transport.uri');
-                    return transport.uri;
-                  })()
-                : (() => {
-                    helper.recordPrivateApi('read.transport.recvRequest.recvUri');
-                    return transport.recvRequest.recvUri;
-                  })();
-              try {
-                expect(connectUri.indexOf('v=3') > -1, 'Check uri includes v=3').to.be.ok;
-              } catch (err) {
-                helper.closeAndFinish(done, realtime, err);
-                return;
-              }
-              helper.closeAndFinish(done, realtime);
-            });
-            helper.monitorConnection(done, realtime);
+            expect(connectUri.indexOf('v=3') > -1, 'Check uri includes v=3').to.be.ok;
           } catch (err) {
             helper.closeAndFinish(done, realtime, err);
+            return;
           }
+          helper.closeAndFinish(done, realtime);
         });
+        helper.monitorConnection(done, realtime);
+      } catch (err) {
+        helper.closeAndFinish(done, realtime, err);
       }
-    })(Helper.forTestDefinition(this, 'initbase0'));
+    });
 
     /**
      * Init with key string.
@@ -407,7 +403,8 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         try {
           realtime = helper.AblyRealtime({ transports: helper.availableTransports });
           helper.recordPrivateApi('read.connectionManager.baseTransport');
-          expect(realtime.connection.connectionManager.baseTransport).to.equal('comet');
+          // There’s no base transport now that we’re only specifiying web_socket
+          //expect(realtime.connection.connectionManager.baseTransport).to.equal('comet');
           helper.recordPrivateApi('read.connectionManager.webSocketTransportAvailable');
           expect(realtime.connection.connectionManager.webSocketTransportAvailable).to.be.ok;
           helper.closeAndFinish(done, realtime);
