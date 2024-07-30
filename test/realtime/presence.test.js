@@ -2052,6 +2052,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
           function (cb) {
             /* Inject a member locally */
+            helper.recordPrivateApi('call.channel.processMessage');
             channel
               .processMessage({
                 action: 14,
