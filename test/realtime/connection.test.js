@@ -335,7 +335,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           helper.closeAndFinish(done, realtime);
         });
         helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-        helper.recordPrivateApi('replace.transport.onProtocolMessage');
+        helper.recordPrivateApi('call.transport.onProtocolMessage');
         helper.recordPrivateApi('call.protocolMessageFromDeserialized');
         connectionManager.activeProtocol.getTransport().onProtocolMessage(
           createPM({
