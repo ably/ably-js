@@ -46,13 +46,16 @@ class MochaServer {
     app.use(express.static(__dirname));
 
     const port = process.env.PORT || 3000;
-    this.server = app.listen(port);
+    await new Promise((resolve, reject) => {
+      this.server = app.listen(port, resolve);
+      this.server.once('error', reject);
+    });
 
     console.log(`Mocha test server listening on http://localhost:${port}/`);
   }
 
   close() {
-    this.server.close();
+    this.server?.close();
   }
 }
 
