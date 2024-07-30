@@ -13,6 +13,8 @@ var express = require('express'),
  */
 
 class MochaServer {
+  servers = [];
+
   constructor(playwrightTest) {
     this.playwrightTest = playwrightTest;
   }
@@ -46,16 +48,28 @@ class MochaServer {
     app.use(express.static(__dirname));
 
     const port = process.env.PORT || 3000;
-    await new Promise((resolve, reject) => {
-      this.server = app.listen(port, resolve);
-      this.server.once('error', reject);
-    });
+    // Explicitly listen on the IPv4 and IPv6 loopback interfaces. If you don’t
+    // pass an address to `app.listen`, then it will bind in a manner that
+    // succeeds even if the IPv4 socket address is already in use, as long as
+    // the IPv6 socket address is free. This can lead to confusion.
+    await this.startServer(app, '127.0.0.1', port);
+    await this.startServer(app, '::1', port);
 
     console.log(`Mocha test server listening on http://localhost:${port}/`);
   }
 
+  async startServer(app, address, port) {
+    await new Promise((resolve, reject) => {
+      const server = app.listen(port, address, resolve);
+      this.servers.push(server);
+      server.once('error', reject);
+    });
+  }
+
   close() {
-    this.server?.close();
+    for (const server of this.servers) {
+      server.close();
+    }
   }
 }
 
