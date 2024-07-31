@@ -6,13 +6,13 @@ Deploys correctly versioned code and source maps to the CDN.
 
 Arguments:
 
-* **--bucket**: The S3 bucket name to deploy to, defaults to `prod-cdn.ably.com`.
-* **--root**: The base directory inside the bucket to deploy to, defaults to `lib`.
-* **--path**: The local path to retrieve source files from. Defaults to `.`.
-* **--includeDirs**: A comma separated list of directories to include. Defaults to `.`.
-* **--excludeDirs**: A comma separated list of directories to exclude. Defaults to `node_modules,.git`.
-* **--fileRegex**: A regular expression to test file names against for upload. Defaults to `^(?!\.).*\.(map|js|html)$`.
-* **--skipCheckout**: Optional. Skip checking out the branch before running.
+- **--bucket**: The S3 bucket name to deploy to, defaults to `prod-cdn.ably.com`.
+- **--root**: The base directory inside the bucket to deploy to, defaults to `lib`.
+- **--path**: The local path to retrieve source files from. Defaults to `.`.
+- **--includeDirs**: A comma separated list of directories to include. Defaults to `.`.
+- **--excludeDirs**: A comma separated list of directories to exclude. Defaults to `node_modules,.git`.
+- **--fileRegex**: A regular expression to test file names against for upload. Defaults to `^(?!\.).*\.(map|js|html)$`.
+- **--skipCheckout**: Optional. Skip checking out the branch before running.
 
 #### AWS Access
 

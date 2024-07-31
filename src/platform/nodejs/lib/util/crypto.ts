@@ -207,7 +207,11 @@ var createCryptoClass = function (bufferUtils: typeof BufferUtils) {
     iv: Buffer | null;
     encryptCipher: NodeCipher | null = null;
 
-    constructor(params: CipherParams, iv: Buffer | null, private readonly logger: Logger) {
+    constructor(
+      params: CipherParams,
+      iv: Buffer | null,
+      private readonly logger: Logger,
+    ) {
       this.algorithm = params.algorithm + '-' + String(params.keyLength) + '-' + params.mode;
       this.key = params.key;
       this.iv = iv;

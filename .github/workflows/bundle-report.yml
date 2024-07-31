@@ -24,13 +24,13 @@ jobs:
       - run: npm ci
       - name: Build bundle reports
         run: |
-            mkdir bundle-reports
-            npm run sourcemap -- --html bundle-reports/index.html
+          mkdir bundle-reports
+          npm run sourcemap -- --html bundle-reports/index.html
       - uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: eu-west-2
           role-to-assume: arn:aws:iam::${{ secrets.ABLY_AWS_ACCOUNT_ID_SDK }}:role/ably-sdk-builds-ably-js
-          role-session-name: "${{ github.run_id }}-${{ github.run_number }}"
+          role-session-name: '${{ github.run_id }}-${{ github.run_number }}'
       - uses: ably/sdk-upload-action@v1
         with:
           sourcePath: bundle-reports

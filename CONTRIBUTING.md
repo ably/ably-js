@@ -68,6 +68,7 @@ Each test has a docstring explaining its relation to the [Ably features specific
 The `@nospec` and `@specskip` tags do not have any parameters. The `@spec` and `@specpartial` tags must provide a spec item ID from the [Ably features specification](https://sdk.ably.com/builds/ably/specification/main/features/) (such as `CSV2`) and may include an optional comment after the hyphen explaining the test's behavior in relation to the mentioned spec item.
 
 Here is how those tags are used in the codebase:
+
 ```javascript
 /**
  * @spec RSE2a

@@ -769,10 +769,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                        * channelUpdated listener or the setOptions listener first */
                       helper.recordPrivateApi('call.Platform.nextTick');
                       Ably.Realtime.Platform.Config.nextTick(function () {
-                        expect(
-                          channelUpdated,
-                          'Check channel went to the server to update the channel params',
-                        ).to.be.ok;
+                        expect(channelUpdated, 'Check channel went to the server to update the channel params').to.be
+                          .ok;
                         cb();
                       });
                     },

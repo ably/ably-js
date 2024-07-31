@@ -170,7 +170,11 @@ var createCryptoClass = function (config: IPlatformConfig, bufferUtils: typeof B
     key: ArrayBuffer;
     iv: ArrayBuffer | null;
 
-    constructor(params: CipherParams, iv: IV | null, private readonly logger: Logger) {
+    constructor(
+      params: CipherParams,
+      iv: IV | null,
+      private readonly logger: Logger,
+    ) {
       if (!crypto.subtle) {
         if (isSecureContext) {
           throw new Error(

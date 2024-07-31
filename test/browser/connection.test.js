@@ -363,10 +363,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           var newRealtime = helper.AblyRealtime({ recover: recoveryKey });
           newRealtime.connection.once('connected', function () {
             try {
-              expect(
-                sameConnection(connectionKey, newRealtime.connection.key),
-                'Check new realtime recovered the old',
-              ).to.be.ok;
+              expect(sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime recovered the old')
+                .to.be.ok;
             } catch (err) {
               helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;

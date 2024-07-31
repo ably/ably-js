@@ -849,10 +849,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               return callback(err);
             }
             helper.recordPrivateApi('read.rest.serverTimeOffset');
-            expect(
-              !isNaN(parseInt(rest.serverTimeOffset)),
-              'Server time offset is configured when time is requested',
-            ).to.be.ok;
+            expect(!isNaN(parseInt(rest.serverTimeOffset)), 'Server time offset is configured when time is requested')
+              .to.be.ok;
             callback();
           });
         });

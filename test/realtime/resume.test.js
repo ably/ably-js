@@ -626,10 +626,8 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
 
           receiver_channel.subscribe(function (message) {
             try {
-              expect(
-                JSON.stringify(testMessage) === JSON.stringify(message.data),
-                'Check rewind message.data',
-              ).to.be.ok;
+              expect(JSON.stringify(testMessage) === JSON.stringify(message.data), 'Check rewind message.data').to.be
+                .ok;
             } catch (err) {
               helper.closeAndFinish(done, [sender_realtime, receiver_realtime], err);
               return;
