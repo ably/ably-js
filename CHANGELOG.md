@@ -4,8 +4,8 @@ This contains only the most important and/or user-facing changes; for a full cha
 
 ## [2.3.1](https://github.com/ably/ably-js/tree/2.3.1) (2024-07-29)
 
-* Export EventEmitter so we can use it in other SDKs [\#1819](https://github.com/ably/ably-js/pull/1819)
-* Fix missing `ablyId` argument to  `useConnectionStateListener` [\#1821](https://github.com/ably/ably-js/pull/1821)
+- Export EventEmitter so we can use it in other SDKs [\#1819](https://github.com/ably/ably-js/pull/1819)
+- Fix missing `ablyId` argument to `useConnectionStateListener` [\#1821](https://github.com/ably/ably-js/pull/1821)
 
 ## [2.3.0](https://github.com/ably/ably-js/tree/2.3.0) (2024-07-10)
 
