@@ -8,6 +8,7 @@ window.__testFiles__.files = {
   'browser/lib/util/base64.js': true,
   'node_modules/async/lib/async.js': true,
   'node_modules/@ably/vcdiff-decoder/dist/vcdiff-decoder.js': true,
+  'test/support/json-rpc-2.0/build/index.js': true,
   'test/common/globals/environment.js': true,
   'test/common/globals/named_dependencies.js': true,
   'test/common/modules/client_module.js': true,
