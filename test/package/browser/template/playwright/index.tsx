@@ -9,7 +9,7 @@ beforeMount(async ({ App }) => {
 
   const client = new Ably.Realtime({
     key,
-    environment: 'sandbox',
+    environment: 'lmars-dev',
   });
 
   return (

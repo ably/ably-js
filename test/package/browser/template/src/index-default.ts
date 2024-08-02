@@ -9,7 +9,7 @@ async function attachChannel(channel: Ably.RealtimeChannel) {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new Ably.Realtime({ key, environment: 'sandbox' });
+  const realtime = new Ably.Realtime({ key, environment: 'lmars-dev' });
 
   const channel = realtime.channels.get('channel');
   await attachChannel(channel);
