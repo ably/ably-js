@@ -1101,7 +1101,8 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager WebSocket slow timer',
         'checking connectivity',
       );
-      if (this.wsCheckResult === null) {
+      if (!this.wsCheckResult) {
+        this.wsCheckResult = null;
         this.checkWsConnectivity()
           .then(() => {
             Logger.logAction(
