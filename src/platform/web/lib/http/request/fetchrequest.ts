@@ -65,7 +65,10 @@ export default async function fetchRequest(
 
   const resultPromise = (async (): Promise<RequestResult> => {
     try {
-      const res = await Utils.getGlobalObject().fetch(uri + '?' + new URLSearchParams(params || {}), requestInit);
+      const urlParams = new URLSearchParams(params || {});
+      urlParams.set('rnd', Utils.cheapRandStr());
+      const preparedURI = uri + '?' + urlParams;
+      const res = await Utils.getGlobalObject().fetch(preparedURI, requestInit);
 
       clearTimeout(timeout!);
 
