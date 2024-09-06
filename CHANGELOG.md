@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.3.2](https://github.com/ably/ably-js/tree/2.3.2) (2024-09-06)
+
+- Fix websocket reconnection can get stuck in a disconnected/connecting loop under specific network conditions [\#1855](https://github.com/ably/ably-js/pull/1855)
+- Fix `fetchRequest` implementation didn't work with `checkConnectivity` [\#1856](https://github.com/ably/ably-js/pull/1856)
+
 ## [2.3.1](https://github.com/ably/ably-js/tree/2.3.1) (2024-07-29)
 
 - Export EventEmitter so we can use it in other SDKs [\#1819](https://github.com/ably/ably-js/pull/1819)
