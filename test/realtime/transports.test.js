@@ -157,6 +157,81 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
         });
       });
 
+      /** @nospec */
+      it('ws_can_reconnect_after_ws_connectivity_fail', function (done) {
+        const helper = this.test.helper;
+        helper.recordPrivateApi('read.realtime.options.realtimeHost');
+        const goodHost = helper.AblyRest().options.realtimeHost;
+
+        // use unroutable host ws connectivity check to simulate no internet
+        helper.recordPrivateApi('write.Defaults.wsConnectivityUrl');
+        Defaults.wsConnectivityUrl = `wss://${helper.unroutableAddress}`;
+
+        helper.recordPrivateApi('pass.clientOption.webSocketSlowTimeout');
+        const realtime = helper.AblyRealtime(
+          options(helper, {
+            realtimeHost: helper.unroutableAddress,
+            // ensure ws slow timeout procs and performs ws connectivity check, which would fail due to unroutable host
+            webSocketSlowTimeout: 1,
+            // give up trying to connect fairly quickly
+            realtimeRequestTimeout: 2000,
+            // try to reconnect quickly
+            disconnectedRetryTimeout: 2000,
+          }),
+        );
+        const connection = realtime.connection;
+
+        // simulate the internet being failed by stubbing out tryATransport to foil
+        // the initial connection
+        helper.recordPrivateApi('replace.connectionManager.tryATransport');
+        const tryATransportOriginal = connection.connectionManager.tryATransport;
+        connection.connectionManager.tryATransport = function () {};
+
+        async.series(
+          [
+            function (cb) {
+              realtime.connection.once('disconnected', function () {
+                cb();
+              });
+            },
+            function (cb) {
+              // restore original settings
+              helper.recordPrivateApi('replace.connectionManager.tryATransport');
+              connection.connectionManager.tryATransport = tryATransportOriginal;
+              helper.recordPrivateApi('write.Defaults.wsConnectivityUrl');
+              Defaults.wsConnectivityUrl = originialWsCheckUrl;
+              helper.recordPrivateApi('write.realtime.options.realtimeHost');
+              realtime.options.realtimeHost = goodHost;
+              helper.recordPrivateApi('write.connectionManager.wsHosts');
+              realtime.connection.connectionManager.wsHosts = [goodHost];
+
+              cb();
+            },
+            function (cb) {
+              // should reconnect successfully
+              realtime.connection.once('connected', function () {
+                cb();
+              });
+
+              realtime.connection.once('disconnected', function () {
+                try {
+                  // fast fail if we end up in the disconnected state again
+                  expect(
+                    connection.state !== 'disconnected',
+                    'Connection should not remain disconnected after websocket reconnection attempt even after failed ws connectivity check from previous connection attempt',
+                  ).to.be.ok;
+                } catch (err) {
+                  cb(err);
+                }
+              });
+            },
+          ],
+          function (err) {
+            helper.closeAndFinish(done, realtime, err);
+          },
+        );
+      });
+
       if (localStorageSupported) {
         /** @nospec */
         it('base_transport_preference', function (done) {

@@ -1101,27 +1101,25 @@ class ConnectionManager extends EventEmitter {
         'ConnectionManager WebSocket slow timer',
         'checking connectivity',
       );
-      if (this.wsCheckResult === null) {
-        this.checkWsConnectivity()
-          .then(() => {
-            Logger.logAction(
-              this.logger,
-              Logger.LOG_MINOR,
-              'ConnectionManager WebSocket slow timer',
-              'ws connectivity check succeeded',
-            );
-            this.wsCheckResult = true;
-          })
-          .catch(() => {
-            Logger.logAction(
-              this.logger,
-              Logger.LOG_MAJOR,
-              'ConnectionManager WebSocket slow timer',
-              'ws connectivity check failed',
-            );
-            this.wsCheckResult = false;
-          });
-      }
+      this.checkWsConnectivity()
+        .then(() => {
+          Logger.logAction(
+            this.logger,
+            Logger.LOG_MINOR,
+            'ConnectionManager WebSocket slow timer',
+            'ws connectivity check succeeded',
+          );
+          this.wsCheckResult = true;
+        })
+        .catch(() => {
+          Logger.logAction(
+            this.logger,
+            Logger.LOG_MAJOR,
+            'ConnectionManager WebSocket slow timer',
+            'ws connectivity check failed',
+          );
+          this.wsCheckResult = false;
+        });
       if (this.realtime.http.checkConnectivity) {
         Utils.whenPromiseSettles(this.realtime.http.checkConnectivity(), (err, connectivity) => {
           if (err || !connectivity) {
@@ -1450,8 +1448,6 @@ class ConnectionManager extends EventEmitter {
     if (transportPreference && transportPreference === this.baseTransport && this.webSocketTransportAvailable) {
       this.checkWsConnectivity()
         .then(() => {
-          this.wsCheckResult = true;
-          this.abandonedWebSocket = false;
           this.unpersistTransportPreference();
           if (this.state === this.states.connecting) {
             Logger.logAction(
@@ -1493,6 +1489,8 @@ class ConnectionManager extends EventEmitter {
    */
   connectWs(transportParams: TransportParams, connectCount: number) {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'ConnectionManager.connectWs()');
+    this.wsCheckResult = null;
+    this.abandonedWebSocket = false;
     this.startWebSocketSlowTimer();
     this.startWebSocketGiveUpTimer(transportParams);
 
