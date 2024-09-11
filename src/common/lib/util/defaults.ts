@@ -311,6 +311,11 @@ export function normaliseOptions(
     connectivityCheckUrl = uri;
   }
 
+  let wsConnectivityCheckUrl = options.wsConnectivityCheckUrl;
+  if (wsConnectivityCheckUrl && wsConnectivityCheckUrl.indexOf('://') === -1) {
+    wsConnectivityCheckUrl = 'wss://' + wsConnectivityCheckUrl;
+  }
+
   return {
     ...options,
     realtimeHost,
@@ -319,6 +324,7 @@ export function normaliseOptions(
     timeouts,
     connectivityCheckParams,
     connectivityCheckUrl,
+    wsConnectivityCheckUrl,
     headers,
   };
 }

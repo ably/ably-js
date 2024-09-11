@@ -19,6 +19,7 @@ define([
   /* IANA reserved; requests to it will hang forever */
   var unroutableHost = '10.255.255.1';
   var unroutableAddress = 'http://' + unroutableHost + '/';
+  var unroutableWssAddress = 'wss://' + unroutableHost + '/';
 
   class SharedHelper {
     getTestApp = testAppModule.getTestApp;
@@ -31,6 +32,7 @@ define([
 
     unroutableHost = unroutableHost;
     unroutableAddress = unroutableAddress;
+    unroutableWssAddress = unroutableWssAddress;
     flushTestLogs = globals.flushLogs;
 
     constructor(context) {
