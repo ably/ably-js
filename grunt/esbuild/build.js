@@ -62,10 +62,18 @@ const pushPluginConfig = {
   external: ['ulid'],
 };
 
+const pushPluginCdnConfig = {
+  ...createBaseConfig(),
+  entryPoints: ['src/plugins/push/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyPushPlugin', amdNamedModule: false })],
+  outfile: 'build/push.umd.js',
+};
+
 module.exports = {
   webConfig,
   minifiedWebConfig,
   modularConfig,
   nodeConfig,
   pushPluginConfig,
+  pushPluginCdnConfig,
 };

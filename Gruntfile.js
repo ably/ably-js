@@ -125,8 +125,7 @@ module.exports = function (grunt) {
   grunt.registerTask('build:push', function () {
     var done = this.async();
 
-    esbuild
-      .build(esbuildConfig.pushPluginConfig)
+    Promise.all([esbuild.build(esbuildConfig.pushPluginConfig), esbuild.build(esbuildConfig.pushPluginCdnConfig)])
       .then(() => {
         done(true);
       })
