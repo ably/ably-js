@@ -2023,7 +2023,8 @@ class ConnectionManager extends EventEmitter {
   }
 
   checkWsConnectivity() {
-    const ws = new Platform.Config.WebSocket(Defaults.wsConnectivityUrl);
+    const wsConnectivityCheckUrl = this.options.wsConnectivityCheckUrl || Defaults.wsConnectivityCheckUrl;
+    const ws = new Platform.Config.WebSocket(wsConnectivityCheckUrl);
     return new Promise<void>((resolve, reject) => {
       let finished = false;
       ws.onopen = () => {

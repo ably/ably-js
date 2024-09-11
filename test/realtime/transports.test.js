@@ -3,7 +3,7 @@
 define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai, Ably) {
   const expect = chai.expect;
   const Defaults = Ably.Rest.Platform.Defaults;
-  const originialWsCheckUrl = Defaults.wsConnectivityUrl;
+  const originialWsCheckUrl = Defaults.wsConnectivityCheckUrl;
   const transportPreferenceName = 'ably-transport-preference';
   const localStorageSupported = globalThis.localStorage;
   const urlScheme = 'https://';
@@ -20,8 +20,9 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
     }).connection.connectionManager.baseTransport;
   }
 
-  function restoreWsConnectivityUrl() {
-    Defaults.wsConnectivityUrl = originialWsCheckUrl;
+  function restoreWsConnectivityCheckUrl() {
+    Helper.forHook(this).recordPrivateApi('write.Defaults.wsConnectivityCheckUrl');
+    Defaults.wsConnectivityCheckUrl = originialWsCheckUrl;
   }
 
   const Config = Ably.Rest.Platform.Config;
@@ -50,7 +51,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       });
     });
 
-    afterEach(restoreWsConnectivityUrl);
+    afterEach(restoreWsConnectivityCheckUrl);
     afterEach(restoreWebSocketConstructor);
 
     if (
@@ -163,14 +164,13 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
         helper.recordPrivateApi('read.realtime.options.realtimeHost');
         const goodHost = helper.AblyRest().options.realtimeHost;
 
-        // use unroutable host ws connectivity check to simulate no internet
-        helper.recordPrivateApi('write.Defaults.wsConnectivityUrl');
-        Defaults.wsConnectivityUrl = `wss://${helper.unroutableAddress}`;
-
         helper.recordPrivateApi('pass.clientOption.webSocketSlowTimeout');
+        helper.recordPrivateApi('pass.clientOption.wsConnectivityCheckUrl');
         const realtime = helper.AblyRealtime(
           options(helper, {
             realtimeHost: helper.unroutableAddress,
+            // use unroutable host ws connectivity check to simulate no internet
+            wsConnectivityCheckUrl: helper.unroutableWssAddress,
             // ensure ws slow timeout procs and performs ws connectivity check, which would fail due to unroutable host
             webSocketSlowTimeout: 1,
             // give up trying to connect fairly quickly
@@ -198,8 +198,8 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
               // restore original settings
               helper.recordPrivateApi('replace.connectionManager.tryATransport');
               connection.connectionManager.tryATransport = tryATransportOriginal;
-              helper.recordPrivateApi('write.Defaults.wsConnectivityUrl');
-              Defaults.wsConnectivityUrl = originialWsCheckUrl;
+              helper.recordPrivateApi('write.realtime.options.wsConnectivityCheckUrl');
+              realtime.options.wsConnectivityCheckUrl = originialWsCheckUrl;
               helper.recordPrivateApi('write.realtime.options.realtimeHost');
               realtime.options.realtimeHost = goodHost;
               helper.recordPrivateApi('write.connectionManager.wsHosts');

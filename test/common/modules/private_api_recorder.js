@@ -69,6 +69,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'pass.clientOption.pushRecipientChannel',
     'pass.clientOption.webSocketConnectTimeout',
     'pass.clientOption.webSocketSlowTimeout',
+    'pass.clientOption.wsConnectivityCheckUrl', // actually ably-js public API (i.e. it’s in the TypeScript typings) but no other SDK has it. At the same time it's not entirely clear if websocket connectivity check should be considered an ably-js-specific functionality (as for other params above), so for the time being we consider it as private API
     'read.Defaults.version',
     'read.EventEmitter.events',
     'read.Platform.Config.push',
@@ -125,7 +126,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'replace.transport.send',
     'serialize.recoveryKey',
     'write.Defaults.ENVIRONMENT',
-    'write.Defaults.wsConnectivityUrl',
+    'write.Defaults.wsConnectivityCheckUrl',
     'write.Platform.Config.push', // This implies using a mock implementation of the internal IPlatformPushConfig interface. Our mock (in push_channel_transport.js) then interacts with internal objects and private APIs of public objects to implement this interface; I haven’t added annotations for that private API usage, since there wasn’t an easy way to pass test context information into the mock. I think that for now we can just say that if we wanted to get rid of this private API usage, then we’d need to remove this mock entirely.
     'write.auth.authOptions.requestHeaders',
     'write.auth.key',
@@ -139,6 +140,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'write.connectionManager.msgSerial',
     'write.connectionManager.wsHosts',
     'write.realtime.options.realtimeHost',
+    'write.realtime.options.wsConnectivityCheckUrl',
     'write.realtime.options.timeouts.realtimeRequestTimeout',
     'write.rest._currentFallback.validUntil',
   ];

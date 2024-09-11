@@ -507,6 +507,15 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   connectivityCheckUrl?: string;
 
   /**
+   * Override the URL used by the realtime client to check if WebSocket connections are available.
+   *
+   * If the client suspects that WebSocket connections are unavailable on the current network,
+   * it will attempt to open a WebSocket connection to this URL to check WebSocket connectivity.
+   * If this fails, the client will attempt to connect to Ably systems using fallback transports, if available.
+   */
+  wsConnectivityCheckUrl?: string;
+
+  /**
    * Disable the check used by the realtime client to check if the internet
    * is available before connecting to a fallback host.
    */
