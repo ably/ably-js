@@ -69,6 +69,14 @@ const pushPluginCdnConfig = {
   outfile: 'build/push.umd.js',
 };
 
+const minifiedPushPluginCdnConfig = {
+  ...createBaseConfig(),
+  entryPoints: ['src/plugins/push/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyPushPlugin', amdNamedModule: false })],
+  outfile: 'build/push.umd.min.js',
+  minify: true,
+};
+
 module.exports = {
   webConfig,
   minifiedWebConfig,
@@ -76,4 +84,5 @@ module.exports = {
   nodeConfig,
   pushPluginConfig,
   pushPluginCdnConfig,
+  minifiedPushPluginCdnConfig,
 };
