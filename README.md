@@ -74,7 +74,7 @@ Include the Ably library in your HTML:
 <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.com/lib/ably.min-1.js for all v1._ versions, or https://cdn.ably.com/lib/ably.min-1.0.js for all v1.0._ versions, or you can lock into a single release with https://cdn.ably.com/lib/ably.min-1.0.9.js. Note you can load the non-minified version by omitting `min-` from the URL such as https://cdn.ably.com/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.com/lib/ably.min-1.js for all v1._ versions, or https://cdn.ably.com/lib/ably.min-1.0.js for all v1.0._ versions, or you can lock into a single release with https://cdn.ably.com/lib/ably.min-1.0.9.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
 
@@ -566,6 +566,23 @@ await channel.push.unsubscribeClient();
 ```
 
 Push activation works with the [Modular variant](#modular-tree-shakable-variant) of the library, but requires you to be using the Rest plugin.
+
+Alternatively, you can load the Push plugin directly in your HTML using `script` tag (in case you can't use a package manager):
+
+```html
+<script src="https://cdn.ably.com/lib/push.umd.min-2.js"></script>
+```
+
+When loaded this way, the Push plugin will be available on the global object via the `AblyPushPlugin` property, so you will need to pass it to the Ably instance as follows:
+
+```javascript
+const client = new Ably.Rest({
+  ...options,
+  plugins: { Push: AblyPushPlugin },
+});
+```
+
+The Push plugin is developed as part of the Ably client library, so it is available for the same versions as the Ably client library itself. It also means that it follows the same semantic versioning rules as they were defined for [the Ably client library](#for-browsers). For example, to lock into a major or minor version of the Push plugin, you can specify a specific version number such as https://cdn.ably.com/lib/push.umd.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/push.umd.min-2.3.js for all v2.3._ versions, or you can lock into a single release with https://cdn.ably.com/lib/push.umd.min-2.3.2.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/push.umd-2.js.
 
 For more information on publishing push notifcations over Ably, see the [Ably push documentation](https://ably.com/docs/push).
 
