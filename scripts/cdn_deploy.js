@@ -12,7 +12,7 @@ async function run() {
   let config = {
     // The S3 Bucket to upload into
     bucket: S3_DEFAULT_BUCKET,
-    // The root folder inside the S3 bucket where the files should be places
+    // The root folder inside the S3 bucket where the files should be placed
     root: S3_DEFAULT_ROOT,
     // Local path to start from
     path: '.',
@@ -21,7 +21,7 @@ async function run() {
     // Comma separated directories (relative to `path`) to exclude from upload
     excludeDirs: 'node_modules,.git',
     // Regex to match files against for upload
-    fileRegex: '^ably?(\\.min)?\\.js$',
+    fileRegex: '^(ably|push\\.umd)?(\\.min)?\\.js$',
     ...argv,
   };
 
