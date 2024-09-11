@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.4.0](https://github.com/ably/ably-js/tree/2.4.0) (2024-09-11)
+
+- Add `wsConnectivityCheckUrl` client option [\#1862](https://github.com/ably/ably-js/pull/1862)
+- Push plugin is now available to be loaded via a CDN link [\#1861](https://github.com/ably/ably-js/pull/1861)
+
 ## [2.3.2](https://github.com/ably/ably-js/tree/2.3.2) (2024-09-06)
 
 - Fix websocket reconnection can get stuck in a disconnected/connecting loop under specific network conditions [\#1855](https://github.com/ably/ably-js/pull/1855)
