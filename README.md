@@ -582,7 +582,7 @@ const client = new Ably.Rest({
 });
 ```
 
-The Push plugin is developed as part of the Ably client library, so it is available for the same versions as the Ably client library itself. It also means that it follows the same semantic versioning rules as they were defined for [the Ably client library](#for-browsers). For example, to lock into a major or minor version of the Push plugin, you can specify a specific version number such as https://cdn.ably.com/lib/push.umd.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/push.umd.min-2.3.js for all v2.3._ versions, or you can lock into a single release with https://cdn.ably.com/lib/push.umd.min-2.3.2.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/push.umd-2.js.
+The Push plugin is developed as part of the Ably client library, so it is available for the same versions as the Ably client library itself. It also means that it follows the same semantic versioning rules as they were defined for [the Ably client library](#for-browsers). For example, to lock into a major or minor version of the Push plugin, you can specify a specific version number such as https://cdn.ably.com/lib/push.umd.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/push.umd.min-2.4.js for all v2.4._ versions, or you can lock into a single release with https://cdn.ably.com/lib/push.umd.min-2.4.0.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/push.umd-2.js.
 
 For more information on publishing push notifcations over Ably, see the [Ably push documentation](https://ably.com/docs/push).
 
