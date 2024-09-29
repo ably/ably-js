@@ -213,10 +213,24 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         });
       });
 
+      // strip instanceID and handleID from connectionKey */
+      function connectionHmac(key) {
+        /* connectionKey has the form <instanceID>!<hmac>-<handleID> */
+
+        /* remove the handleID from the end of key */
+        let k = key.split('-')[0];
+
+        /* skip the server instanceID if present, as reconnects may be routed to different frontends */
+        if (k.includes('!')) {
+          k = k.split('!')[1];
+        }
+        return k;
+      }
+
       /* uses internal realtime knowledge of the format of the connection key to
        * check if a connection key is the result of a successful recovery of another */
       function sameConnection(keyA, keyB) {
-        return keyA.split('-')[0] === keyB.split('-')[0];
+        return connectionHmac(keyA) === connectionHmac(keyB);
       }
 
       /**
