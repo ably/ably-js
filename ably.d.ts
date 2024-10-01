@@ -623,6 +623,11 @@ export interface CorePlugins {
    * A plugin which allows the client to be the target of push notifications.
    */
   Push?: unknown;
+
+  /**
+   * A plugin which allows the client to use LiveObjects functionality at {@link RealtimeChannel.liveObjects}.
+   */
+  LiveObjects?: unknown;
 }
 
 /**
@@ -2011,6 +2016,11 @@ export declare interface PushChannel {
 }
 
 /**
+ * Enables the LiveObjects state to be subscribed to for a channel.
+ */
+export declare interface LiveObjects {}
+
+/**
  * Enables messages to be published and historic messages to be retrieved for a channel.
  */
 export declare interface Channel {
@@ -2139,6 +2149,10 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * A {@link RealtimePresence} object.
    */
   presence: RealtimePresence;
+  /**
+   * A {@link LiveObjects} object.
+   */
+  liveObjects: LiveObjects;
   /**
    * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel.
    *

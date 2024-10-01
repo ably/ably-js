@@ -586,6 +586,41 @@ The Push plugin is developed as part of the Ably client library, so it is availa
 
 For more information on publishing push notifcations over Ably, see the [Ably push documentation](https://ably.com/docs/push).
 
+### Live Objects functionality
+
+Live Objects functionality is supported for Realtime clients via the LiveObjects plugin. In order to use Live Objects, you must pass in the plugin via client options.
+
+```javascript
+import * as Ably from 'ably';
+import LiveObjects from 'ably/liveobjects';
+
+const client = new Ably.Realtime({
+  ...options,
+  plugins: { LiveObjects },
+});
+```
+
+LiveObjects plugin also works with the [Modular variant](#modular-tree-shakable-variant) of the library.
+
+Alternatively, you can load the LiveObjects plugin directly in your HTML using `script` tag (in case you can't use a package manager):
+
+```html
+<script src="https://cdn.ably.com/lib/liveobjects.umd.min-2.js"></script>
+```
+
+When loaded this way, the LiveObjects plugin will be available on the global object via the `AblyLiveObjectsPlugin` property, so you will need to pass it to the Ably instance as follows:
+
+```javascript
+const client = new Ably.Realtime({
+  ...options,
+  plugins: { LiveObjects: AblyLiveObjectsPlugin },
+});
+```
+
+The LiveObjects plugin is developed as part of the Ably client library, so it is available for the same versions as the Ably client library itself. It also means that it follows the same semantic versioning rules as they were defined for [the Ably client library](#for-browsers). For example, to lock into a major or minor version of the LiveObjects plugin, you can specify a specific version number such as https://cdn.ably.com/lib/liveobjects.umd.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/liveobjects.umd.min-2.4.js for all v2.4._ versions, or you can lock into a single release with https://cdn.ably.com/lib/liveobjects.umd.min-2.4.0.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/liveobjects.umd-2.js.
+
+For more information about Live Objects product, see the [Ably Live Objects documentation](https://ably.com/docs/products/liveobjects).
+
 ## Delta Plugin
 
 From version 1.2 this client library supports subscription to a stream of Vcdiff formatted delta messages from the Ably service. For certain applications this can bring significant data efficiency savings.

@@ -29,13 +29,18 @@
     "./push": {
       "types": "./push.d.ts",
       "import": "./build/push.js"
+    },
+    "./liveobjects": {
+      "types": "./liveobjects.d.ts",
+      "import": "./build/liveobjects.js"
     }
   },
   "files": [
     "build/**",
     "ably.d.ts",
-    "push.d.ts",
+    "liveobjects.d.ts",
     "modular.d.ts",
+    "push.d.ts",
     "resources/**",
     "src/**",
     "react/**"
@@ -138,7 +143,7 @@
     "start:react": "npx vite serve",
     "grunt": "grunt",
     "test": "npm run test:node",
-    "test:node": "npm run build:node && npm run build:push && mocha",
+    "test:node": "npm run build:node && npm run build:push && npm run build:liveobjects && mocha",
     "test:node:skip-build": "mocha",
     "test:webserver": "grunt test:webserver",
     "test:playwright": "node test/support/runPlaywrightTests.js",
@@ -152,6 +157,7 @@
     "build:react:mjs": "tsc --project src/platform/react-hooks/tsconfig.mjs.json && cp src/platform/react-hooks/res/package.mjs.json react/mjs/package.json",
     "build:react:cjs": "tsc --project src/platform/react-hooks/tsconfig.cjs.json && cp src/platform/react-hooks/res/package.cjs.json react/cjs/package.json",
     "build:push": "grunt build:push",
+    "build:liveobjects": "grunt build:liveobjects",
     "requirejs": "grunt requirejs",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
