@@ -18,4 +18,11 @@ export class LiveObjects {
     // TODO: wait for SYNC sequence to finish to return root
     return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap;
   }
+
+  /**
+   * @internal
+   */
+  getPool(): LiveObjectsPool {
+    return this._liveObjectsPool;
+  }
 }
