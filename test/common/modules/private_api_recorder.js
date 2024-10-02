@@ -44,6 +44,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'call.http._getHosts',
     'call.http.checkConnectivity',
     'call.http.doUri',
+    'call.LiveObject.getObjectId',
     'call.msgpack.decode',
     'call.msgpack.encode',
     'call.presence._myMembers.put',
