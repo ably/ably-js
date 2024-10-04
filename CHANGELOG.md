@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.4.1](https://github.com/ably/ably-js/tree/2.4.1) (2024-10-04)
+
+- Fix `usePresence` hook wasn't leaving presence if component unmounted during channel attaching state [\#1884](https://github.com/ably/ably-js/pull/1884)
+
 ## [2.4.0](https://github.com/ably/ably-js/tree/2.4.0) (2024-09-11)
 
 - Add `wsConnectivityCheckUrl` client option [\#1862](https://github.com/ably/ably-js/pull/1862)
