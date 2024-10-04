@@ -14,14 +14,6 @@ define(['ably', 'shared_helper', 'async', 'chai', 'live_objects'], function (
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
   }
 
-  async function monitorConnectionThenCloseAndFinish(helper, action, realtime, states) {
-    try {
-      await helper.monitorConnectionAsync(action, realtime, states);
-    } finally {
-      await helper.closeAndFinishAsync(realtime);
-    }
-  }
-
   describe('realtime/live_objects', function () {
     this.timeout(60 * 1000);
 
