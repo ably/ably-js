@@ -47,7 +47,12 @@ module.exports = function (grunt) {
     dirs: dirs,
     webpack: {
       all: Object.values(webpackConfig),
-      browser: [webpackConfig.browser, webpackConfig.browserMin, webpackConfig.mochaJUnitReporterBrowser],
+      browser: [
+        webpackConfig.browser,
+        webpackConfig.browserMin,
+        webpackConfig.mochaJUnitReporterBrowser,
+        webpackConfig.jsonRPC,
+      ],
     },
   };
 
