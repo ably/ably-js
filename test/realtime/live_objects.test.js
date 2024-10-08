@@ -47,6 +47,37 @@ define(['ably', 'shared_helper', 'async', 'chai', 'live_objects'], function (
         const channel = client.channels.get('channel');
         expect(channel.liveObjects.constructor.name).to.equal('LiveObjects');
       });
+
+      describe('LiveObjects instance', () => {
+        /** @nospec */
+        it('getRoot() returns LiveMap instance', async function () {
+          const helper = this.test.helper;
+          const client = LiveObjectsRealtime(helper);
+
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const channel = client.channels.get('channel');
+            const liveObjects = channel.liveObjects;
+            const root = await liveObjects.getRoot();
+
+            expect(root.constructor.name).to.equal('LiveMap');
+          }, client);
+        });
+
+        /** @nospec */
+        it('getRoot() returns live object with id "root"', async function () {
+          const helper = this.test.helper;
+          const client = LiveObjectsRealtime(helper);
+
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const channel = client.channels.get('channel');
+            const liveObjects = channel.liveObjects;
+            const root = await liveObjects.getRoot();
+
+            helper.recordPrivateApi('call.LiveObject.getObjectId');
+            expect(root.getObjectId()).to.equal('root');
+          }, client);
+        });
+      });
     });
   });
 });

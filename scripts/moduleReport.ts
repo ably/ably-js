@@ -308,7 +308,12 @@ async function checkLiveObjectsPluginFiles() {
   const pluginBundleInfo = getBundleInfo('./build/liveobjects.js');
 
   // These are the files that are allowed to contribute >= `threshold` bytes to the LiveObjects bundle.
-  const allowedFiles = new Set(['src/plugins/liveobjects/index.ts']);
+  const allowedFiles = new Set([
+    'src/plugins/liveobjects/index.ts',
+    'src/plugins/liveobjects/liveobject.ts',
+    'src/plugins/liveobjects/liveobjects.ts',
+    'src/plugins/liveobjects/liveobjectspool.ts',
+  ]);
 
   return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);
 }
