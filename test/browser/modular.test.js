@@ -32,14 +32,6 @@ function registerAblyModularTests(Helper) {
       });
     };
 
-    async function monitorConnectionThenCloseAndFinish(helper, action, realtime, states) {
-      try {
-        await helper.monitorConnectionAsync(action, realtime, states);
-      } finally {
-        await helper.closeAndFinishAsync(realtime);
-      }
-    }
-
     before(function (done) {
       const helper = Helper.forHook(this);
       helper.setupApp(done);
@@ -202,25 +194,21 @@ function registerAblyModularTests(Helper) {
             this.test.helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
           );
 
-          await monitorConnectionThenCloseAndFinish(
-            helper,
-            async () => {
-              const channel = client.channels.get('channel');
-              await channel.attach();
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const channel = client.channels.get('channel');
+            await channel.attach();
 
-              const recievedMessagePromise = new Promise((resolve) => {
-                channel.subscribe((message) => {
-                  resolve(message);
-                });
+            const recievedMessagePromise = new Promise((resolve) => {
+              channel.subscribe((message) => {
+                resolve(message);
               });
+            });
 
-              await channel.publish({ data: { foo: 'bar' } });
+            await channel.publish({ data: { foo: 'bar' } });
 
-              const receivedMessage = await recievedMessagePromise;
-              expect(receivedMessage.data).to.eql({ foo: 'bar' });
-            },
-            client,
-          );
+            const receivedMessage = await recievedMessagePromise;
+            expect(receivedMessage.data).to.eql({ foo: 'bar' });
+          }, client);
         });
 
         /** @nospec */
@@ -463,48 +451,44 @@ function registerAblyModularTests(Helper) {
 
           const rxClient = new BaseRealtime({ ...clientOptions, plugins: { WebSocketTransport, FetchRequest } });
 
-          await monitorConnectionThenCloseAndFinish(
-            helper,
-            async () => {
-              const rxChannel = rxClient.channels.get('channel');
-              await rxChannel.attach();
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const rxChannel = rxClient.channels.get('channel');
+            await rxChannel.attach();
 
-              const rxMessagePromise = new Promise((resolve, _) => rxChannel.subscribe((message) => resolve(message)));
+            const rxMessagePromise = new Promise((resolve, _) => rxChannel.subscribe((message) => resolve(message)));
 
-              const encryptionChannelOptions = { cipher: { key } };
+            const encryptionChannelOptions = { cipher: { key } };
 
-              const txMessage = { name: 'message', data: 'data' };
-              const txClient = new clientClassConfig.clientClass({
-                ...clientOptions,
-                plugins: {
-                  ...clientClassConfig.additionalPlugins,
-                  FetchRequest,
-                  Crypto,
-                },
-              });
+            const txMessage = { name: 'message', data: 'data' };
+            const txClient = new clientClassConfig.clientClass({
+              ...clientOptions,
+              plugins: {
+                ...clientClassConfig.additionalPlugins,
+                FetchRequest,
+                Crypto,
+              },
+            });
 
-              await (
-                clientClassConfig.isRealtime ? monitorConnectionThenCloseAndFinish : async (helper, op) => await op()
-              )(
-                helper,
-                async () => {
-                  const txChannel = txClient.channels.get('channel', encryptionChannelOptions);
-                  await txChannel.publish(txMessage);
+            const action = async () => {
+              const txChannel = txClient.channels.get('channel', encryptionChannelOptions);
+              await txChannel.publish(txMessage);
 
-                  const rxMessage = await rxMessagePromise;
+              const rxMessage = await rxMessagePromise;
 
-                  // Verify that the message was published with encryption
-                  expect(rxMessage.encoding).to.equal('utf-8/cipher+aes-256-cbc');
+              // Verify that the message was published with encryption
+              expect(rxMessage.encoding).to.equal('utf-8/cipher+aes-256-cbc');
 
-                  // Verify that the message was correctly encrypted
-                  const rxMessageDecrypted = await decodeEncryptedMessage(rxMessage, encryptionChannelOptions);
-                  helper.testMessageEquality(rxMessageDecrypted, txMessage);
-                },
-                txClient,
-              );
-            },
-            rxClient,
-          );
+              // Verify that the message was correctly encrypted
+              const rxMessageDecrypted = await decodeEncryptedMessage(rxMessage, encryptionChannelOptions);
+              helper.testMessageEquality(rxMessageDecrypted, txMessage);
+            };
+
+            if (clientClassConfig.isRealtime) {
+              await helper.monitorConnectionThenCloseAndFinish(action, txClient);
+            } else {
+              await action();
+            }
+          }, rxClient);
         }
 
         for (const clientClassConfig of [
@@ -585,13 +569,9 @@ function registerAblyModularTests(Helper) {
                 }),
               );
 
-              await monitorConnectionThenCloseAndFinish(
-                helper,
-                async () => {
-                  await testRealtimeUsesFormat(client, 'json');
-                },
-                client,
-              );
+              await helper.monitorConnectionThenCloseAndFinish(async () => {
+                await testRealtimeUsesFormat(client, 'json');
+              }, client);
             });
           });
         });
@@ -629,13 +609,9 @@ function registerAblyModularTests(Helper) {
                 }),
               );
 
-              await monitorConnectionThenCloseAndFinish(
-                helper,
-                async () => {
-                  await testRealtimeUsesFormat(client, 'msgpack');
-                },
-                client,
-              );
+              await helper.monitorConnectionThenCloseAndFinish(async () => {
+                await testRealtimeUsesFormat(client, 'msgpack');
+              }, client);
             });
           });
         });
@@ -649,15 +625,11 @@ function registerAblyModularTests(Helper) {
           const helper = this.test.helper;
           const client = new BaseRealtime(helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
 
-          await monitorConnectionThenCloseAndFinish(
-            helper,
-            async () => {
-              const channel = client.channels.get('channel');
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const channel = client.channels.get('channel');
 
-              expect(() => channel.presence).to.throw('RealtimePresence plugin not provided');
-            },
-            client,
-          );
+            expect(() => channel.presence).to.throw('RealtimePresence plugin not provided');
+          }, client);
         });
 
         /** @nospec */
@@ -667,43 +639,35 @@ function registerAblyModularTests(Helper) {
             helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
           );
 
-          await monitorConnectionThenCloseAndFinish(
-            helper,
-            async () => {
-              const rxChannel = rxClient.channels.get('channel');
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const rxChannel = rxClient.channels.get('channel');
 
-              await rxChannel.attach();
+            await rxChannel.attach();
 
-              const receivedMessagePromise = new Promise((resolve) => rxChannel.subscribe(resolve));
+            const receivedMessagePromise = new Promise((resolve) => rxChannel.subscribe(resolve));
 
-              const txClient = new BaseRealtime(
-                this.test.helper.ablyClientOptions({
-                  clientId: Helper.randomString(),
-                  plugins: {
-                    WebSocketTransport,
-                    FetchRequest,
-                    RealtimePresence,
-                  },
-                }),
-              );
-
-              await monitorConnectionThenCloseAndFinish(
-                helper,
-                async () => {
-                  const txChannel = txClient.channels.get('channel');
-
-                  await txChannel.publish('message', 'body');
-                  await txChannel.presence.enter();
-
-                  // The idea being here that in order for receivedMessagePromise to resolve, rxClient must have first processed the PRESENCE ProtocolMessage that resulted from txChannel.presence.enter()
-
-                  await receivedMessagePromise;
+            const txClient = new BaseRealtime(
+              this.test.helper.ablyClientOptions({
+                clientId: Helper.randomString(),
+                plugins: {
+                  WebSocketTransport,
+                  FetchRequest,
+                  RealtimePresence,
                 },
-                txClient,
-              );
-            },
-            rxClient,
-          );
+              }),
+            );
+
+            await helper.monitorConnectionThenCloseAndFinish(async () => {
+              const txChannel = txClient.channels.get('channel');
+
+              await txChannel.publish('message', 'body');
+              await txChannel.presence.enter();
+
+              // The idea being here that in order for receivedMessagePromise to resolve, rxClient must have first processed the PRESENCE ProtocolMessage that resulted from txChannel.presence.enter()
+
+              await receivedMessagePromise;
+            }, txClient);
+          }, rxClient);
         });
       });
 
@@ -727,41 +691,33 @@ function registerAblyModularTests(Helper) {
           );
           const rxChannel = rxClient.channels.get('channel');
 
-          await monitorConnectionThenCloseAndFinish(
-            helper,
-            async () => {
-              const txClientId = Helper.randomString();
-              const txClient = new BaseRealtime(
-                this.test.helper.ablyClientOptions({
-                  clientId: txClientId,
-                  plugins: {
-                    WebSocketTransport,
-                    FetchRequest,
-                    RealtimePresence,
-                  },
-                }),
-              );
-
-              await monitorConnectionThenCloseAndFinish(
-                helper,
-                async () => {
-                  const txChannel = txClient.channels.get('channel');
-
-                  let resolveRxPresenceMessagePromise;
-                  const rxPresenceMessagePromise = new Promise((resolve, reject) => {
-                    resolveRxPresenceMessagePromise = resolve;
-                  });
-                  await rxChannel.presence.subscribe('enter', resolveRxPresenceMessagePromise);
-                  await txChannel.presence.enter();
-
-                  const rxPresenceMessage = await rxPresenceMessagePromise;
-                  expect(rxPresenceMessage.clientId).to.equal(txClientId);
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const txClientId = Helper.randomString();
+            const txClient = new BaseRealtime(
+              this.test.helper.ablyClientOptions({
+                clientId: txClientId,
+                plugins: {
+                  WebSocketTransport,
+                  FetchRequest,
+                  RealtimePresence,
                 },
-                txClient,
-              );
-            },
-            rxClient,
-          );
+              }),
+            );
+
+            await helper.monitorConnectionThenCloseAndFinish(async () => {
+              const txChannel = txClient.channels.get('channel');
+
+              let resolveRxPresenceMessagePromise;
+              const rxPresenceMessagePromise = new Promise((resolve, reject) => {
+                resolveRxPresenceMessagePromise = resolve;
+              });
+              await rxChannel.presence.subscribe('enter', resolveRxPresenceMessagePromise);
+              await txChannel.presence.enter();
+
+              const rxPresenceMessage = await rxPresenceMessagePromise;
+              expect(rxPresenceMessage.clientId).to.equal(txClientId);
+            }, txClient);
+          }, rxClient);
         });
       });
     });
@@ -855,26 +811,22 @@ function registerAblyModularTests(Helper) {
                 }),
               );
 
-              await monitorConnectionThenCloseAndFinish(
-                helper,
-                async () => {
-                  let firstTransportCandidate;
-                  const connectionManager = realtime.connection.connectionManager;
-                  const originalTryATransport = connectionManager.tryATransport;
-                  realtime.connection.connectionManager.tryATransport = (transportParams, candidate, callback) => {
-                    if (!firstTransportCandidate) {
-                      firstTransportCandidate = candidate;
-                    }
-                    originalTryATransport.bind(connectionManager)(transportParams, candidate, callback);
-                  };
+              await helper.monitorConnectionThenCloseAndFinish(async () => {
+                let firstTransportCandidate;
+                const connectionManager = realtime.connection.connectionManager;
+                const originalTryATransport = connectionManager.tryATransport;
+                realtime.connection.connectionManager.tryATransport = (transportParams, candidate, callback) => {
+                  if (!firstTransportCandidate) {
+                    firstTransportCandidate = candidate;
+                  }
+                  originalTryATransport.bind(connectionManager)(transportParams, candidate, callback);
+                };
 
-                  realtime.connect();
+                realtime.connect();
 
-                  await realtime.connection.once('connected');
-                  expect(firstTransportCandidate).to.equal(scenario.transportName);
-                },
-                realtime,
-              );
+                await realtime.connection.once('connected');
+                expect(firstTransportCandidate).to.equal(scenario.transportName);
+              }, realtime);
             });
           });
         }
@@ -914,21 +866,17 @@ function registerAblyModularTests(Helper) {
               helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
             );
 
-            await monitorConnectionThenCloseAndFinish(
-              helper,
-              async () => {
-                const channel = realtime.channels.get('channel');
-                await channel.attach();
+            await helper.monitorConnectionThenCloseAndFinish(async () => {
+              const channel = realtime.channels.get('channel');
+              await channel.attach();
 
-                const subscribeReceivedMessagePromise = new Promise((resolve) => channel.subscribe(resolve));
+              const subscribeReceivedMessagePromise = new Promise((resolve) => channel.subscribe(resolve));
 
-                await channel.publish('message', 'body');
+              await channel.publish('message', 'body');
 
-                const subscribeReceivedMessage = await subscribeReceivedMessagePromise;
-                expect(subscribeReceivedMessage.data).to.equal('body');
-              },
-              realtime,
-            );
+              const subscribeReceivedMessage = await subscribeReceivedMessagePromise;
+              expect(subscribeReceivedMessage.data).to.equal('body');
+            }, realtime);
           });
 
           /** @nospec */
@@ -938,23 +886,19 @@ function registerAblyModularTests(Helper) {
               helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
             );
 
-            await monitorConnectionThenCloseAndFinish(
-              helper,
-              async () => {
-                const channel = realtime.channels.get('channel');
+            await helper.monitorConnectionThenCloseAndFinish(async () => {
+              const channel = realtime.channels.get('channel');
 
-                let thrownError = null;
-                try {
-                  await channel.subscribe({ clientId: 'someClientId' }, () => {});
-                } catch (error) {
-                  thrownError = error;
-                }
+              let thrownError = null;
+              try {
+                await channel.subscribe({ clientId: 'someClientId' }, () => {});
+              } catch (error) {
+                thrownError = error;
+              }
 
-                expect(thrownError).not.to.be.null;
-                expect(thrownError.message).to.equal('MessageInteractions plugin not provided');
-              },
-              realtime,
-            );
+              expect(thrownError).not.to.be.null;
+              expect(thrownError.message).to.equal('MessageInteractions plugin not provided');
+            }, realtime);
           });
         });
 
@@ -975,56 +919,52 @@ function registerAblyModularTests(Helper) {
               }),
             );
 
-            await monitorConnectionThenCloseAndFinish(
-              helper,
-              async () => {
-                const channel = realtime.channels.get('channel');
+            await helper.monitorConnectionThenCloseAndFinish(async () => {
+              const channel = realtime.channels.get('channel');
 
-                await channel.attach();
+              await channel.attach();
 
-                // Test `subscribe` with a filter: send two messages with different clientIds, and check that unfiltered subscription receives both messages but clientId-filtered subscription only receives the matching one.
-                const messageFilter = { clientId: 'someClientId' }; // note that `unsubscribe` compares filter by reference, I found that a bit surprising
+              // Test `subscribe` with a filter: send two messages with different clientIds, and check that unfiltered subscription receives both messages but clientId-filtered subscription only receives the matching one.
+              const messageFilter = { clientId: 'someClientId' }; // note that `unsubscribe` compares filter by reference, I found that a bit surprising
 
-                const filteredSubscriptionReceivedMessages = [];
-                channel.subscribe(messageFilter, (message) => {
-                  filteredSubscriptionReceivedMessages.push(message);
-                });
+              const filteredSubscriptionReceivedMessages = [];
+              channel.subscribe(messageFilter, (message) => {
+                filteredSubscriptionReceivedMessages.push(message);
+              });
 
-                const unfilteredSubscriptionReceivedFirstTwoMessagesPromise = new Promise((resolve) => {
-                  const receivedMessages = [];
-                  channel.subscribe(function listener(message) {
-                    receivedMessages.push(message);
-                    if (receivedMessages.length === 2) {
-                      channel.unsubscribe(listener);
-                      resolve();
-                    }
-                  });
-                });
-
-                await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
-                await channel.publish(await decodeMessage({ clientId: 'someOtherClientId' }));
-                await unfilteredSubscriptionReceivedFirstTwoMessagesPromise;
-
-                expect(filteredSubscriptionReceivedMessages.length).to.equal(1);
-                expect(filteredSubscriptionReceivedMessages[0].clientId).to.equal('someClientId');
-
-                // Test `unsubscribe` with a filter: call `unsubscribe` with the clientId filter, publish a message matching the filter, check that only the unfiltered listener recieves it
-                channel.unsubscribe(messageFilter);
-
-                const unfilteredSubscriptionReceivedNextMessagePromise = new Promise((resolve) => {
-                  channel.subscribe(function listener() {
+              const unfilteredSubscriptionReceivedFirstTwoMessagesPromise = new Promise((resolve) => {
+                const receivedMessages = [];
+                channel.subscribe(function listener(message) {
+                  receivedMessages.push(message);
+                  if (receivedMessages.length === 2) {
                     channel.unsubscribe(listener);
                     resolve();
-                  });
+                  }
                 });
+              });
 
-                await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
-                await unfilteredSubscriptionReceivedNextMessagePromise;
+              await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
+              await channel.publish(await decodeMessage({ clientId: 'someOtherClientId' }));
+              await unfilteredSubscriptionReceivedFirstTwoMessagesPromise;
 
-                expect(filteredSubscriptionReceivedMessages.length).to./* (still) */ equal(1);
-              },
-              realtime,
-            );
+              expect(filteredSubscriptionReceivedMessages.length).to.equal(1);
+              expect(filteredSubscriptionReceivedMessages[0].clientId).to.equal('someClientId');
+
+              // Test `unsubscribe` with a filter: call `unsubscribe` with the clientId filter, publish a message matching the filter, check that only the unfiltered listener recieves it
+              channel.unsubscribe(messageFilter);
+
+              const unfilteredSubscriptionReceivedNextMessagePromise = new Promise((resolve) => {
+                channel.subscribe(function listener() {
+                  channel.unsubscribe(listener);
+                  resolve();
+                });
+              });
+
+              await channel.publish(await decodeMessage({ clientId: 'someClientId' }));
+              await unfilteredSubscriptionReceivedNextMessagePromise;
+
+              expect(filteredSubscriptionReceivedMessages.length).to./* (still) */ equal(1);
+            }, realtime);
           });
         });
       });

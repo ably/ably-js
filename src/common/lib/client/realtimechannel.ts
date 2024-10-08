@@ -29,6 +29,7 @@ import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
+import type { LiveObjects } from 'plugins/liveobjects';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -99,6 +100,7 @@ class RealtimeChannel extends EventEmitter {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
   _push?: PushChannel;
+  _liveObjects?: LiveObjects;
 
   constructor(client: BaseRealtime, name: string, options?: API.ChannelOptions) {
     super(client.logger);
@@ -137,6 +139,10 @@ class RealtimeChannel extends EventEmitter {
     if (client.options.plugins?.Push) {
       this._push = new client.options.plugins.Push.PushChannel(this);
     }
+
+    if (client.options.plugins?.LiveObjects) {
+      this._liveObjects = new client.options.plugins.LiveObjects.LiveObjects(this);
+    }
   }
 
   get push() {
@@ -144,6 +150,13 @@ class RealtimeChannel extends EventEmitter {
       Utils.throwMissingPluginError('Push');
     }
     return this._push;
+  }
+
+  get liveObjects() {
+    if (!this._liveObjects) {
+      Utils.throwMissingPluginError('LiveObjects');
+    }
+    return this._liveObjects;
   }
 
   invalidStateError(): ErrorInfo {

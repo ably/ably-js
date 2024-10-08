@@ -171,6 +171,14 @@ define([
       return result;
     }
 
+    async monitorConnectionThenCloseAndFinish(action, realtime, states) {
+      try {
+        await this.monitorConnectionAsync(action, realtime, states);
+      } finally {
+        await this.closeAndFinishAsync(realtime);
+      }
+    }
+
     monitorConnection(done, realtime, states) {
       (states || ['failed', 'suspended']).forEach(function (state) {
         realtime.connection.on(state, function () {

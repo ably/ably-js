@@ -6,7 +6,7 @@ import { gzip } from 'zlib';
 import Table from 'cli-table';
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
-const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 98, gzip: 30 };
+const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 99, gzip: 30 };
 
 const baseClientNames = ['BaseRest', 'BaseRealtime'];
 
@@ -183,20 +183,28 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
   return output;
 }
 
-async function calculatePushPluginSize(): Promise<Output> {
+async function calculatePluginSize(options: { path: string; description: string }): Promise<Output> {
   const output: Output = { tableRows: [], errors: [] };
-  const pushPluginBundleInfo = getBundleInfo('./build/push.js');
+  const pluginBundleInfo = getBundleInfo(options.path);
   const sizes = {
-    rawByteSize: pushPluginBundleInfo.byteSize,
-    gzipEncodedByteSize: (await promisify(gzip)(pushPluginBundleInfo.code)).byteLength,
+    rawByteSize: pluginBundleInfo.byteSize,
+    gzipEncodedByteSize: (await promisify(gzip)(pluginBundleInfo.code)).byteLength,
   };
 
   output.tableRows.push({
-    description: 'Push',
+    description: options.description,
     sizes: sizes,
   });
 
   return output;
+}
+
+async function calculatePushPluginSize(): Promise<Output> {
+  return calculatePluginSize({ path: './build/push.js', description: 'Push' });
+}
+
+async function calculateLiveObjectsPluginSize(): Promise<Output> {
+  return calculatePluginSize({ path: './build/liveobjects.js', description: 'LiveObjects' });
 }
 
 async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Output> {
@@ -296,6 +304,15 @@ async function checkPushPluginFiles() {
   return checkBundleFiles(pushPluginBundleInfo, allowedFiles, 100);
 }
 
+async function checkLiveObjectsPluginFiles() {
+  const pluginBundleInfo = getBundleInfo('./build/liveobjects.js');
+
+  // These are the files that are allowed to contribute >= `threshold` bytes to the LiveObjects bundle.
+  const allowedFiles = new Set(['src/plugins/liveobjects/index.ts']);
+
+  return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);
+}
+
 async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string>, thresholdBytes: number) {
   const exploreResult = await runSourceMapExplorer(bundleInfo);
 
@@ -347,6 +364,7 @@ async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string
       calculateAndCheckExportSizes(),
       calculateAndCheckFunctionSizes(),
       calculatePushPluginSize(),
+      calculateLiveObjectsPluginSize(),
     ])
   ).reduce((accum, current) => ({
     tableRows: [...accum.tableRows, ...current.tableRows],
@@ -355,6 +373,7 @@ async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string
 
   output.errors.push(...(await checkBaseRealtimeFiles()));
   output.errors.push(...(await checkPushPluginFiles()));
+  output.errors.push(...(await checkLiveObjectsPluginFiles()));
 
   const table = new Table({
     style: { head: ['green'] },

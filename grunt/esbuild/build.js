@@ -77,6 +77,28 @@ const minifiedPushPluginCdnConfig = {
   minify: true,
 };
 
+const liveObjectsPluginConfig = {
+  ...createBaseConfig(),
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.js',
+};
+
+const liveObjectsPluginCdnConfig = {
+  ...createBaseConfig(),
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.umd.js',
+};
+
+const minifiedLiveObjectsPluginCdnConfig = {
+  ...createBaseConfig(),
+  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
+  outfile: 'build/liveobjects.umd.min.js',
+  minify: true,
+};
+
 module.exports = {
   webConfig,
   minifiedWebConfig,
@@ -85,4 +107,7 @@ module.exports = {
   pushPluginConfig,
   pushPluginCdnConfig,
   minifiedPushPluginCdnConfig,
+  liveObjectsPluginConfig,
+  liveObjectsPluginCdnConfig,
+  minifiedLiveObjectsPluginCdnConfig,
 };

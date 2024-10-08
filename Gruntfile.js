@@ -73,7 +73,14 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all', 'build:browser', 'build:node', 'build:push']);
+  grunt.registerTask('build', [
+    'checkGitSubmodules',
+    'webpack:all',
+    'build:browser',
+    'build:node',
+    'build:push',
+    'build:liveobjects',
+  ]);
 
   grunt.registerTask('all', ['build', 'requirejs']);
 
@@ -138,9 +145,26 @@ module.exports = function (grunt) {
       });
   });
 
+  grunt.registerTask('build:liveobjects', function () {
+    var done = this.async();
+
+    Promise.all([
+      esbuild.build(esbuildConfig.liveObjectsPluginConfig),
+      esbuild.build(esbuildConfig.liveObjectsPluginCdnConfig),
+      esbuild.build(esbuildConfig.minifiedLiveObjectsPluginCdnConfig),
+    ])
+      .then(() => {
+        done(true);
+      })
+      .catch((err) => {
+        done(err);
+      });
+  });
+
   grunt.registerTask('test:webserver', 'Launch the Mocha test web server on http://localhost:3000/', [
     'build:browser',
     'build:push',
+    'build:liveobjects',
     'checkGitSubmodules',
     'mocha:webserver',
   ]);

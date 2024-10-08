@@ -11,6 +11,10 @@ define(function () {
       browser: 'build/push',
       node: 'build/push',
     },
+    live_objects: {
+      browser: 'build/liveobjects',
+      node: 'build/liveobjects',
+    },
 
     // test modules
     globals: { browser: 'test/common/globals/environment', node: 'test/common/globals/environment' },
