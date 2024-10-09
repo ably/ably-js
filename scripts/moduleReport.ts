@@ -314,6 +314,7 @@ async function checkLiveObjectsPluginFiles() {
     'src/plugins/liveobjects/liveobject.ts',
     'src/plugins/liveobjects/liveobjects.ts',
     'src/plugins/liveobjects/liveobjectspool.ts',
+    'src/plugins/liveobjects/statemessage.ts',
   ]);
 
   return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);
