@@ -30,6 +30,8 @@ export const actions = {
   SYNC: 16,
   AUTH: 17,
   ACTIVATE: 18,
+  STATE: 19,
+  STATE_SYNC: 20,
 };
 
 export const ActionName: string[] = [];
