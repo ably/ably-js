@@ -8,6 +8,7 @@ import PresenceMessage, {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from './presencemessage';
+import type * as LiveObjectsPlugin from 'plugins/liveobjects';
 
 export const actions = {
   HEARTBEAT: 0,
@@ -110,10 +111,17 @@ export function fromDeserialized(
 }
 
 /**
- * Used by the tests.
+ * Used internally by the tests.
+ *
+ * LiveObjectsPlugin code can't be included as part of the core library to prevent size growth,
+ * so if a test needs to build Live Object state messages, then it must provide LiveObjectsPlugin.
  */
-export function fromDeserializedIncludingDependencies(deserialized: Record<string, unknown>): ProtocolMessage {
-  return fromDeserialized(deserialized, { presenceMessageFromValues, presenceMessagesFromValuesArray });
+export function makeFromDeserializedWithDependencies(dependencies?: {
+  LiveObjectsPlugin: typeof LiveObjectsPlugin | null;
+}) {
+  return (deserialized: Record<string, unknown>): ProtocolMessage => {
+    return fromDeserialized(deserialized, { presenceMessageFromValues, presenceMessagesFromValuesArray });
+  };
 }
 
 export function fromValues(values: unknown): ProtocolMessage {

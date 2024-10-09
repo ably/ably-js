@@ -4,7 +4,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   var exports = {};
   var _exports = {};
   var expect = chai.expect;
-  var createPM = Ably.protocolMessageFromDeserialized;
+  var createPM = Ably.makeProtocolMessageFromDeserialized();
 
   function checkCanSubscribe(channel, testChannel) {
     return function (callback) {
@@ -1259,7 +1259,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             });
             helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
             var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
             helper.recordPrivateApi('call.transport.onProtocolMessage');
             transport.onProtocolMessage(
               createPM({
@@ -1309,7 +1309,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           }
           helper.recordPrivateApi('call.Platform.nextTick');
           Ably.Realtime.Platform.Config.nextTick(function () {
-            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
             helper.recordPrivateApi('call.transport.onProtocolMessage');
             transport.onProtocolMessage(
               createPM({
@@ -1360,7 +1360,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
           helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
           var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-          helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
           helper.recordPrivateApi('call.transport.onProtocolMessage');
           transport.onProtocolMessage(
             createPM({
@@ -1408,7 +1408,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             });
             helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
             var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
             helper.recordPrivateApi('call.transport.onProtocolMessage');
             transport.onProtocolMessage(
               createPM({
@@ -1614,7 +1614,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             setTimeout(function () {
               helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
               var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-              helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+              helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
               helper.recordPrivateApi('call.transport.onProtocolMessage');
               transport.onProtocolMessage(createPM({ action: 11, channel: channelName }));
             }, 0);

@@ -3,7 +3,7 @@
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
   let config = Ably.Realtime.Platform.Config;
-  var createPM = Ably.protocolMessageFromDeserialized;
+  var createPM = Ably.makeProtocolMessageFromDeserialized();
 
   var publishIntervalHelper = function (currentMessageNum, channel, dataFn, onPublish) {
     return function () {
@@ -1146,7 +1146,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.recordPrivateApi('write.connectionManager.connectionDetails.maxMessageSize');
         connectionDetails.maxMessageSize = 64;
         helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
-        helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+        helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
         helper.recordPrivateApi('call.transport.onProtocolMessage');
         connectionManager.activeProtocol.getTransport().onProtocolMessage(
           createPM({

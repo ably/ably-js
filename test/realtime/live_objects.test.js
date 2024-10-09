@@ -8,7 +8,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'live_objects'], function (
   LiveObjectsPlugin,
 ) {
   var expect = chai.expect;
-  var createPM = Ably.protocolMessageFromDeserialized;
+  var createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
 
   function LiveObjectsRealtime(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
