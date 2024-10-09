@@ -205,6 +205,25 @@ export class StateMessage {
     };
   }
 
+  toString(): string {
+    let result = '[StateMessage';
+
+    if (this.id) result += '; id=' + this.id;
+    if (this.timestamp) result += '; timestamp=' + this.timestamp;
+    if (this.clientId) result += '; clientId=' + this.clientId;
+    if (this.connectionId) result += '; connectionId=' + this.connectionId;
+    // TODO: prettify output for operation and object and encode buffers.
+    // see examples for data in Message and PresenceMessage
+    if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
+    if (this.object) result += '; object=' + JSON.stringify(this.object);
+    if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
+    if (this.serial) result += '; serial=' + this.serial;
+
+    result += ']';
+
+    return result;
+  }
+
   private _encodeStateData(data: StateData, withBase64Encoding: boolean): StateData {
     const { value, encoding } = this._encodeStateValue(data?.value, data?.encoding, withBase64Encoding);
     return {
