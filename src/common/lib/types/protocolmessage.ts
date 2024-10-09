@@ -9,6 +9,7 @@ import PresenceMessage, {
   fromValuesArray as presenceMessagesFromValuesArray,
 } from './presencemessage';
 import type * as LiveObjectsPlugin from 'plugins/liveobjects';
+import Platform from '../../platform';
 
 export const actions = {
   HEARTBEAT: 0,
@@ -118,7 +119,7 @@ export function fromDeserialized(
     state = deserialized.state as LiveObjectsPlugin.StateMessage[];
     if (state) {
       for (let i = 0; i < state.length; i++) {
-        state[i] = liveObjectsPlugin.StateMessage.fromValues(state[i]);
+        state[i] = liveObjectsPlugin.StateMessage.fromValues(state[i], Platform);
       }
     }
   }
@@ -167,7 +168,7 @@ export function stringify(
   if (msg.presence && presenceMessagePlugin)
     result += '; presence=' + toStringArray(presenceMessagePlugin.presenceMessagesFromValuesArray(msg.presence));
   if (msg.state && liveObjectsPlugin) {
-    result += '; state=' + toStringArray(liveObjectsPlugin.StateMessage.fromValuesArray(msg.state));
+    result += '; state=' + toStringArray(liveObjectsPlugin.StateMessage.fromValuesArray(msg.state, Platform));
   }
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
