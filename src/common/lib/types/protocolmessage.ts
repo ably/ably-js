@@ -53,6 +53,7 @@ const flags: { [key: string]: number } = {
   PRESENCE_SUBSCRIBE: 1 << 19,
   STATE_SUBSCRIBE: 1 << 24,
   STATE_PUBLISH: 1 << 25,
+  HAS_STATE: 1 << 26,
 };
 const flagNames = Object.keys(flags);
 flags.MODE_ALL =
