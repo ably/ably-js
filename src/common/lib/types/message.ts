@@ -154,17 +154,36 @@ export async function decode(
   message: Message | PresenceMessage,
   inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions,
 ): Promise<void> {
-  const context = normaliseContext(inputContext);
+  const { data, encoding, error } = await decodeData(message.data, message.encoding, inputContext);
+  message.data = data;
+  message.encoding = encoding;
 
-  let lastPayload = message.data;
-  const encoding = message.encoding;
+  if (error) {
+    throw error;
+  }
+}
+
+export async function decodeData(
+  data: any,
+  encoding: string | null | undefined,
+  inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions,
+): Promise<{
+  error?: ErrorInfo;
+  data: any;
+  encoding: string | null | undefined;
+}> {
+  const context = normaliseContext(inputContext);
+  let lastPayload = data;
+  let decodedData = data;
+  let finalEncoding: string | null | undefined = encoding;
+  let decodingError: ErrorInfo | undefined = undefined;
+
   if (encoding) {
     const xforms = encoding.split('/');
-    let lastProcessedEncodingIndex,
-      encodingsToProcess = xforms.length,
-      data = message.data;
-
+    let lastProcessedEncodingIndex;
+    let encodingsToProcess = xforms.length;
     let xform = '';
+
     try {
       while ((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
         // eslint-disable-next-line security/detect-unsafe-regex
@@ -173,16 +192,16 @@ export async function decode(
         xform = match[1];
         switch (xform) {
           case 'base64':
-            data = Platform.BufferUtils.base64Decode(String(data));
+            decodedData = Platform.BufferUtils.base64Decode(String(decodedData));
             if (lastProcessedEncodingIndex == xforms.length) {
-              lastPayload = data;
+              lastPayload = decodedData;
             }
             continue;
           case 'utf-8':
-            data = Platform.BufferUtils.utf8Decode(data);
+            decodedData = Platform.BufferUtils.utf8Decode(decodedData);
             continue;
           case 'json':
-            data = JSON.parse(data);
+            decodedData = JSON.parse(decodedData);
             continue;
           case 'cipher':
             if (
@@ -196,7 +215,7 @@ export async function decode(
               if (xformAlgorithm != cipher.algorithm) {
                 throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
               }
-              data = await cipher.decrypt(data);
+              decodedData = await cipher.decrypt(decodedData);
               continue;
             } else {
               throw new Error('Unable to decrypt message; not an encrypted channel');
@@ -220,10 +239,12 @@ export async function decode(
 
               // vcdiff expects Uint8Arrays, can't copy with ArrayBuffers.
               const deltaBaseBuffer = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
-              data = Platform.BufferUtils.toBuffer(data);
+              decodedData = Platform.BufferUtils.toBuffer(decodedData);
 
-              data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBaseBuffer));
-              lastPayload = data;
+              decodedData = Platform.BufferUtils.arrayBufferViewToBuffer(
+                context.plugins.vcdiff.decode(decodedData, deltaBaseBuffer),
+              );
+              lastPayload = decodedData;
             } catch (e) {
               throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
             }
@@ -234,18 +255,30 @@ export async function decode(
       }
     } catch (e) {
       const err = e as ErrorInfo;
-      throw new ErrorInfo(
-        'Error processing the ' + xform + ' encoding, decoder returned ‘' + err.message + '’',
+      decodingError = new ErrorInfo(
+        `Error processing the ${xform} encoding, decoder returned ‘${err.message}’`,
         err.code || 40013,
         400,
       );
     } finally {
-      message.encoding =
+      finalEncoding =
         (lastProcessedEncodingIndex as number) <= 0 ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
-      message.data = data;
     }
   }
+
+  if (decodingError) {
+    return {
+      error: decodingError,
+      data: decodedData,
+      encoding: finalEncoding,
+    };
+  }
+
   context.baseEncodedPreviousPayload = lastPayload;
+  return {
+    data: decodedData,
+    encoding: finalEncoding,
+  };
 }
 
 export async function fromResponseBody(
