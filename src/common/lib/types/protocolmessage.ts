@@ -48,9 +48,17 @@ const flags: { [key: string]: number } = {
   PUBLISH: 1 << 17,
   SUBSCRIBE: 1 << 18,
   PRESENCE_SUBSCRIBE: 1 << 19,
+  STATE_SUBSCRIBE: 1 << 24,
+  STATE_PUBLISH: 1 << 25,
 };
 const flagNames = Object.keys(flags);
-flags.MODE_ALL = flags.PRESENCE | flags.PUBLISH | flags.SUBSCRIBE | flags.PRESENCE_SUBSCRIBE;
+flags.MODE_ALL =
+  flags.PRESENCE |
+  flags.PUBLISH |
+  flags.SUBSCRIBE |
+  flags.PRESENCE_SUBSCRIBE |
+  flags.STATE_SUBSCRIBE |
+  flags.STATE_PUBLISH;
 
 function toStringArray(array?: any[]): string {
   const result = [];
@@ -62,7 +70,14 @@ function toStringArray(array?: any[]): string {
   return '[ ' + result.join(', ') + ' ]';
 }
 
-export const channelModes = ['PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE'];
+export const channelModes = [
+  'PRESENCE',
+  'PUBLISH',
+  'SUBSCRIBE',
+  'PRESENCE_SUBSCRIBE',
+  'STATE_SUBSCRIBE',
+  'STATE_PUBLISH',
+];
 
 export const serialize = Utils.encodeBody;
 
