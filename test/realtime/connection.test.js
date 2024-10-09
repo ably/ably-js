@@ -2,7 +2,7 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  var createPM = Ably.protocolMessageFromDeserialized;
+  var createPM = Ably.makeProtocolMessageFromDeserialized();
 
   describe('realtime/connection', function () {
     this.timeout(60 * 1000);
@@ -336,7 +336,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         });
         helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
         helper.recordPrivateApi('call.transport.onProtocolMessage');
-        helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+        helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
         connectionManager.activeProtocol.getTransport().onProtocolMessage(
           createPM({
             action: 4,

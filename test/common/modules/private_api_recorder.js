@@ -49,7 +49,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'call.msgpack.encode',
     'call.presence._myMembers.put',
     'call.presence.waitSync',
-    'call.protocolMessageFromDeserialized',
+    'call.makeProtocolMessageFromDeserialized',
     'call.realtime.baseUri',
     'call.rest.baseUri',
     'call.rest.http.do',
