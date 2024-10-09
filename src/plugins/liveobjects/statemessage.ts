@@ -1,4 +1,6 @@
+import type { decodeData } from 'common/lib/types/message';
 import type Platform from 'common/platform';
+import type { ChannelOptions } from 'common/types/channel';
 
 export enum StateOperationAction {
   MAP_CREATE = 0,
@@ -129,6 +131,51 @@ export class StateMessage {
   serial?: string;
 
   constructor(private _platform: typeof Platform) {}
+
+  static async decode(
+    message: StateMessage,
+    inputContext: ChannelOptions,
+    decodeDataFn: typeof decodeData,
+  ): Promise<void> {
+    // TODO: decide how to handle individual errors from decoding values. currently we throw first ever error we get
+
+    const decodeMapEntry = async (
+      entry: StateMapEntry,
+      ctx: ChannelOptions,
+      decode: typeof decodeData,
+    ): Promise<void> => {
+      const { data, encoding, error } = await decode(entry.data.value, entry.data.encoding, ctx);
+      entry.data.value = data;
+      entry.data.encoding = encoding ?? undefined;
+
+      if (error) {
+        throw error;
+      }
+    };
+
+    if (message.object?.map?.entries) {
+      for (const entry of Object.values(message.object.map.entries)) {
+        decodeMapEntry(entry, inputContext, decodeDataFn);
+      }
+    }
+
+    if (message.operation?.map) {
+      for (const entry of Object.values(message.operation.map)) {
+        decodeMapEntry(entry, inputContext, decodeDataFn);
+      }
+    }
+
+    if (message.operation?.mapOp?.data && 'value' in message.operation?.mapOp?.data) {
+      const mapOpData = message.operation.mapOp.data;
+      const { data, encoding, error } = await decodeDataFn(mapOpData.value, mapOpData.encoding, inputContext);
+      mapOpData.value = data;
+      mapOpData.encoding = encoding ?? undefined;
+
+      if (error) {
+        throw error;
+      }
+    }
+  }
 
   static fromValues(values: StateMessage | Record<string, unknown>, platform: typeof Platform): StateMessage {
     return Object.assign(new StateMessage(platform), values);
