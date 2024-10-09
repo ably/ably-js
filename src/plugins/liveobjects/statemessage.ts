@@ -1,3 +1,5 @@
+import type Platform from 'common/platform';
+
 export enum StateOperationAction {
   MAP_CREATE = 0,
   MAP_SET = 1,
@@ -126,18 +128,116 @@ export class StateMessage {
   /** Timeserial format */
   serial?: string;
 
-  static fromValues(values: StateMessage | Record<string, unknown>): StateMessage {
-    return Object.assign(new StateMessage(), values);
+  constructor(private _platform: typeof Platform) {}
+
+  static fromValues(values: StateMessage | Record<string, unknown>, platform: typeof Platform): StateMessage {
+    return Object.assign(new StateMessage(platform), values);
   }
 
-  static fromValuesArray(values: unknown[]): StateMessage[] {
+  static fromValuesArray(values: unknown[], platform: typeof Platform): StateMessage[] {
     const count = values.length;
     const result = new Array(count);
 
     for (let i = 0; i < count; i++) {
-      result[i] = this.fromValues(values[i] as Record<string, unknown>);
+      result[i] = this.fromValues(values[i] as Record<string, unknown>, platform);
     }
 
     return result;
+  }
+
+  /**
+   * Overload toJSON() to intercept JSON.stringify()
+   * @return {*}
+   */
+  toJSON(): {
+    id?: string;
+    clientId?: string;
+    operation?: StateOperation;
+    object?: StateObject;
+    extras?: any;
+  } {
+    // need to encode buffer data to base64 if present and if we're returning a real JSON.
+    // although msgpack also calls toJSON() directly,
+    // we know it is a JSON.stringify() call if we have a non-empty arguments list.
+    // if withBase64Encoding = true - JSON.stringify() call
+    // if withBase64Encoding = false - we were called by msgpack
+    const withBase64Encoding = arguments.length > 0;
+
+    let operationCopy: StateOperation | undefined = undefined;
+    if (this.operation) {
+      // deep copy "operation" prop so we can modify it here.
+      // buffer values won't be correctly copied, so we will need to set them again explictly
+      operationCopy = JSON.parse(JSON.stringify(this.operation)) as StateOperation;
+
+      if (operationCopy.mapOp?.data && 'value' in operationCopy.mapOp.data) {
+        // use original "operation" prop when encoding values, so we have access to original buffer values.
+        operationCopy.mapOp.data = this._encodeStateData(this.operation.mapOp?.data!, withBase64Encoding);
+      }
+
+      if (operationCopy.map?.entries) {
+        Object.entries(operationCopy.map.entries).forEach(([key, entry]) => {
+          // use original "operation" prop when encoding values, so we have access to original buffer values.
+          entry.data = this._encodeStateData(this.operation?.map?.entries?.[key].data!, withBase64Encoding);
+        });
+      }
+    }
+
+    let object: StateObject | undefined = undefined;
+    if (this.object) {
+      // deep copy "object" prop so we can modify it here.
+      // buffer values won't be correctly copied, so we will need to set them again explictly
+      object = JSON.parse(JSON.stringify(this.object)) as StateObject;
+
+      if (object.map?.entries) {
+        Object.entries(object.map.entries).forEach(([key, entry]) => {
+          // use original "object" prop when encoding values, so we have access to original buffer values.
+          entry.data = this._encodeStateData(this.object?.map?.entries?.[key].data!, withBase64Encoding);
+        });
+      }
+    }
+
+    return {
+      id: this.id,
+      clientId: this.clientId,
+      operation: operationCopy,
+      object: object,
+      extras: this.extras,
+    };
+  }
+
+  private _encodeStateData(data: StateData, withBase64Encoding: boolean): StateData {
+    const { value, encoding } = this._encodeStateValue(data?.value, data?.encoding, withBase64Encoding);
+    return {
+      ...data,
+      value,
+      encoding,
+    };
+  }
+
+  private _encodeStateValue(
+    value: StateValue | undefined,
+    encoding: string | undefined,
+    withBase64Encoding: boolean,
+  ): {
+    value: StateValue | undefined;
+    encoding: string | undefined;
+  } {
+    if (!value || !this._platform.BufferUtils.isBuffer(value)) {
+      return { value, encoding };
+    }
+
+    if (withBase64Encoding) {
+      return {
+        value: this._platform.BufferUtils.base64Encode(value),
+        encoding: encoding ? encoding + '/base64' : 'base64',
+      };
+    }
+
+    // toBuffer returns a datatype understandable by
+    // that platform's msgpack implementation (Buffer in node, Uint8Array in browsers)
+    return {
+      value: this._platform.BufferUtils.toBuffer(value),
+      encoding,
+    };
   }
 }
