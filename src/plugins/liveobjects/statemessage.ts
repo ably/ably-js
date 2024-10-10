@@ -60,6 +60,7 @@ export interface StateMap {
   semantics: MapSemantics;
   // The map entries, indexed by key.
   entries: Record<string, StateMapEntry>;
+  // TODO: should here also be 'created' field like for StateCounter?
 }
 
 /** A Counter object represents an incrementable and decrementable value */
