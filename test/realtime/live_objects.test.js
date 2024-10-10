@@ -57,6 +57,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'live_objects'], function (
           await helper.monitorConnectionThenCloseAndFinish(async () => {
             const channel = client.channels.get('channel');
             const liveObjects = channel.liveObjects;
+            await channel.attach();
             const root = await liveObjects.getRoot();
 
             expect(root.constructor.name).to.equal('LiveMap');
@@ -71,6 +72,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'live_objects'], function (
           await helper.monitorConnectionThenCloseAndFinish(async () => {
             const channel = client.channels.get('channel');
             const liveObjects = channel.liveObjects;
+            await channel.attach();
             const root = await liveObjects.getRoot();
 
             helper.recordPrivateApi('call.LiveObject.getObjectId');
