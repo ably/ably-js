@@ -40,6 +40,13 @@ export class LiveObjects {
   /**
    * @internal
    */
+  getChannel(): RealtimeChannel {
+    return this._channel;
+  }
+
+  /**
+   * @internal
+   */
   getClient(): BaseClient {
     return this._client;
   }
@@ -53,7 +60,7 @@ export class LiveObjects {
       this._startNewSync(syncId, syncCursor);
     }
 
-    // TODO: delegate state messages to _syncLiveObjectsDataPool and create new live and data objects
+    this._syncLiveObjectsDataPool.applyStateMessages(stateMessages);
 
     // if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
