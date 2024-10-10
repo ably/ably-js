@@ -10,8 +10,8 @@ import {
   fromValuesArray as presenceMessagesFromValuesArray,
 } from '../types/presencemessage';
 import { TransportCtor } from '../transport/transport';
-import * as PushPlugin from 'plugins/push';
-import * as LiveObjectsPlugin from 'plugins/liveobjects';
+import type * as PushPlugin from 'plugins/push';
+import type * as LiveObjectsPlugin from 'plugins/liveobjects';
 
 export interface PresenceMessagePlugin {
   presenceMessageFromValues: typeof presenceMessageFromValues;
