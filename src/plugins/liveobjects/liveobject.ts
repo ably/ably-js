@@ -1,12 +1,13 @@
 import { LiveObjects } from './liveobjects';
 
-interface LiveObjectData {
+export interface LiveObjectData {
   data: any;
 }
 
 export abstract class LiveObject<T extends LiveObjectData = LiveObjectData> {
   protected _dataRef: T;
   protected _objectId: string;
+  protected _regionalTimeserial?: string;
 
   constructor(
     protected _liveObjects: LiveObjects,
@@ -22,6 +23,27 @@ export abstract class LiveObject<T extends LiveObjectData = LiveObjectData> {
    */
   getObjectId(): string {
     return this._objectId;
+  }
+
+  /**
+   * @internal
+   */
+  getRegionalTimeserial(): string | undefined {
+    return this._regionalTimeserial;
+  }
+
+  /**
+   * @internal
+   */
+  setData(newDataRef: T): void {
+    this._dataRef = newDataRef;
+  }
+
+  /**
+   * @internal
+   */
+  setRegionalTimeserial(regionalTimeserial: string): void {
+    this._regionalTimeserial = regionalTimeserial;
   }
 
   private _createObjectId(): string {
