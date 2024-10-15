@@ -133,6 +133,7 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
         callback(err);
         return;
       }
+      testData.post_apps.featureFlags = ['enableChannelState'];
       var postData = JSON.stringify(testData.post_apps);
       var postOptions = {
         host: restHost,
