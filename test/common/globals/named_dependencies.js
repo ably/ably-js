@@ -26,5 +26,9 @@ define(function () {
       browser: 'test/common/modules/private_api_recorder',
       node: 'test/common/modules/private_api_recorder',
     },
+    live_objects_helper: {
+      browser: 'test/common/modules/live_objects_helper',
+      node: 'test/common/modules/live_objects_helper',
+    },
   });
 });
