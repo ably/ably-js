@@ -1,6 +1,5 @@
-import { LiveObject } from './liveobject';
-
-export type StateValue = string | number | boolean | Uint8Array;
+import { LiveObject, LiveObjectData } from './liveobject';
+import { StateValue } from './statemessage';
 
 export interface ObjectIdStateData {
   /**
@@ -23,7 +22,7 @@ export interface MapEntry {
   data: StateData;
 }
 
-export interface LiveMapData {
+export interface LiveMapData extends LiveObjectData {
   data: Map<string, MapEntry>;
 }
 

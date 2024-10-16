@@ -872,6 +872,14 @@ declare namespace ChannelModes {
    */
   type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
   /**
+   * The client can publish LiveObjects state messages.
+   */
+  type STATE_PUBLISH = 'STATE_PUBLISH';
+  /**
+   * The client can receive LiveObjects state messages.
+   */
+  type STATE_SUBSCRIBE = 'STATE_SUBSCRIBE';
+  /**
    * The client is resuming an existing connection.
    */
   type ATTACH_RESUME = 'ATTACH_RESUME';
@@ -885,6 +893,8 @@ export type ChannelMode =
   | ChannelModes.SUBSCRIBE
   | ChannelModes.PRESENCE
   | ChannelModes.PRESENCE_SUBSCRIBE
+  | ChannelModes.STATE_PUBLISH
+  | ChannelModes.STATE_SUBSCRIBE
   | ChannelModes.ATTACH_RESUME;
 
 /**

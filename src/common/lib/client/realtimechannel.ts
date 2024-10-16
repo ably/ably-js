@@ -12,6 +12,7 @@ import Message, {
   fromValuesArray as messagesFromValuesArray,
   encodeArray as encodeMessagesArray,
   decode as decodeMessage,
+  decodeData,
   getMessagesSize,
   CipherOptions,
   EncodingDecodingContext,
@@ -533,11 +534,17 @@ class RealtimeChannel extends EventEmitter {
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         const hasBacklog = message.hasFlag('HAS_BACKLOG');
+        const hasState = message.hasFlag('HAS_STATE');
         if (this.state === 'attached') {
           if (!resumed) {
-            /* On a loss of continuity, the presence set needs to be re-synced */
+            // we have lost continuity.
+            // the presence set needs to be re-synced
             if (this._presence) {
               this._presence.onAttached(hasPresence);
+            }
+            // the Live Objects state needs to be re-synced
+            if (this._liveObjects) {
+              this._liveObjects.onAttached(hasState);
             }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
@@ -549,7 +556,7 @@ class RealtimeChannel extends EventEmitter {
           /* RTL5i: re-send DETACH and remain in the 'detaching' state */
           this.checkPendingState();
         } else {
-          this.notifyState('attached', message.error, resumed, hasPresence, hasBacklog);
+          this.notifyState('attached', message.error, resumed, hasPresence, hasBacklog, hasState);
         }
         break;
       }
@@ -613,6 +620,40 @@ class RealtimeChannel extends EventEmitter {
         }
         break;
       }
+
+      case actions.STATE_SYNC: {
+        if (!this._liveObjects) {
+          return;
+        }
+
+        const { id, connectionId, timestamp } = message;
+        const options = this.channelOptions;
+
+        const stateMessages = message.state ?? [];
+        for (let i = 0; i < stateMessages.length; i++) {
+          try {
+            const stateMessage = stateMessages[i];
+
+            await this.client._LiveObjectsPlugin?.StateMessage.decode(stateMessage, options, decodeData);
+
+            if (!stateMessage.connectionId) stateMessage.connectionId = connectionId;
+            if (!stateMessage.timestamp) stateMessage.timestamp = timestamp;
+            if (!stateMessage.id) stateMessage.id = id + ':' + i;
+          } catch (e) {
+            Logger.logAction(
+              this.logger,
+              Logger.LOG_ERROR,
+              'RealtimeChannel.processMessage()',
+              (e as Error).toString(),
+            );
+          }
+        }
+
+        this._liveObjects.handleStateSyncMessage(stateMessages, message.channelSerial);
+
+        break;
+      }
+
       case actions.MESSAGE: {
         //RTL17
         if (this.state !== 'attached') {
@@ -743,6 +784,7 @@ class RealtimeChannel extends EventEmitter {
     resumed?: boolean,
     hasPresence?: boolean,
     hasBacklog?: boolean,
+    hasState?: boolean,
   ): void {
     Logger.logAction(
       this.logger,
@@ -762,6 +804,9 @@ class RealtimeChannel extends EventEmitter {
     }
     if (this._presence) {
       this._presence.actOnChannelState(state, hasPresence, reason);
+    }
+    if (this._liveObjects) {
+      this._liveObjects.actOnChannelState(state, hasState);
     }
     if (state === 'suspended' && this.connectionManager.state.sendEvents) {
       this.startRetryTimer();

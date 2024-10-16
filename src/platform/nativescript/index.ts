@@ -3,7 +3,7 @@ import { DefaultRest } from '../../common/lib/client/defaultrest';
 import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
 import ErrorInfo from '../../common/lib/types/errorinfo';
-import { fromDeserializedIncludingDependencies as protocolMessageFromDeserialized } from '../../common/lib/types/protocolmessage';
+import { makeFromDeserializedWithDependencies as makeProtocolMessageFromDeserialized } from '../../common/lib/types/protocolmessage';
 
 // Platform Specific
 import BufferUtils from '../web/lib/util/bufferutils';
@@ -52,5 +52,5 @@ export default {
   Rest: DefaultRest,
   Realtime: DefaultRealtime,
   msgpack,
-  protocolMessageFromDeserialized,
+  makeProtocolMessageFromDeserialized,
 };

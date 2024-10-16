@@ -1,6 +1,6 @@
-import { LiveObject } from './liveobject';
+import { LiveObject, LiveObjectData } from './liveobject';
 
-export interface LiveCounterData {
+export interface LiveCounterData extends LiveObjectData {
   data: number;
 }
 
