@@ -1,24 +1,27 @@
 import { LiveObject, LiveObjectData } from './liveobject';
-import { StateValue } from './statemessage';
+import { LiveObjects } from './liveobjects';
+import { MapSemantics, StateValue } from './statemessage';
 
 export interface ObjectIdStateData {
-  /**
-   * A reference to another state object, used to support composable state objects.
-   */
+  /** A reference to another state object, used to support composable state objects. */
   objectId: string;
 }
 
 export interface ValueStateData {
   /**
-   * A concrete leaf value in the state object graph.
+   * The encoding the client should use to interpret the value.
+   * Analogous to the `encoding` field on the `Message` and `PresenceMessage` types.
    */
+  encoding?: string;
+  /** A concrete leaf value in the state object graph. */
   value: StateValue;
 }
 
 export type StateData = ObjectIdStateData | ValueStateData;
 
 export interface MapEntry {
-  // TODO: add tombstone, timeserial
+  tombstone: boolean;
+  timeserial: string;
   data: StateData;
 }
 
@@ -27,6 +30,15 @@ export interface LiveMapData extends LiveObjectData {
 }
 
 export class LiveMap extends LiveObject<LiveMapData> {
+  constructor(
+    liveObjects: LiveObjects,
+    private _semantics: MapSemantics,
+    initialData?: LiveMapData | null,
+    objectId?: string,
+  ) {
+    super(liveObjects, initialData, objectId);
+  }
+
   /**
    * Returns the value associated with the specified key in the underlying Map object.
    * If no element is associated with the specified key, undefined is returned.

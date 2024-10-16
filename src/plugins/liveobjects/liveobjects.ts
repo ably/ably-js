@@ -40,6 +40,13 @@ export class LiveObjects {
   /**
    * @internal
    */
+  getChannel(): RealtimeChannel {
+    return this._channel;
+  }
+
+  /**
+   * @internal
+   */
   getClient(): BaseClient {
     return this._client;
   }
@@ -53,7 +60,7 @@ export class LiveObjects {
       this._startNewSync(syncId, syncCursor);
     }
 
-    // TODO: delegate state messages to _syncLiveObjectsDataPool and create new live and data objects
+    this._syncLiveObjectsDataPool.applyStateMessages(stateMessages);
 
     // if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
@@ -154,17 +161,19 @@ export class LiveObjects {
       }
 
       let newObject: LiveObject;
-      switch (entry.objectType) {
+      // assign to a variable so TS doesn't complain about 'never' type in the default case
+      const objectType = entry.objectType;
+      switch (objectType) {
         case 'LiveCounter':
           newObject = new LiveCounter(this, entry.objectData, objectId);
           break;
 
         case 'LiveMap':
-          newObject = new LiveMap(this, entry.objectData, objectId);
+          newObject = new LiveMap(this, entry.semantics, entry.objectData, objectId);
           break;
 
         default:
-          throw new this._client.ErrorInfo(`Unknown live object type: ${entry.objectType}`, 40000, 400);
+          throw new this._client.ErrorInfo(`Unknown live object type: ${objectType}`, 40000, 400);
       }
       newObject.setRegionalTimeserial(entry.regionalTimeserial);
 
