@@ -1,6 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type * as API from '../../../ably';
+import type EventEmitter from 'common/lib/util/eventemitter';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
@@ -8,9 +9,16 @@ import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
 import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
 
+enum LiveObjectsEvents {
+  SyncCompleted = 'SyncCompleted',
+}
+
 export class LiveObjects {
   private _client: BaseClient;
   private _channel: RealtimeChannel;
+  // composition over inheritance since we cannot import class directly into plugin code.
+  // instead we obtain a class type from the client
+  private _eventEmitter: EventEmitter;
   private _liveObjectsPool: LiveObjectsPool;
   private _syncLiveObjectsDataPool: SyncLiveObjectsDataPool;
   private _syncInProgress: boolean;
@@ -20,14 +28,24 @@ export class LiveObjects {
   constructor(channel: RealtimeChannel) {
     this._channel = channel;
     this._client = channel.client;
+    this._eventEmitter = new this._client.EventEmitter(this._client.logger);
     this._liveObjectsPool = new LiveObjectsPool(this);
     this._syncLiveObjectsDataPool = new SyncLiveObjectsDataPool(this);
     this._syncInProgress = true;
   }
 
   async getRoot(): Promise<LiveMap> {
-    // TODO: wait for SYNC sequence to finish to return root
-    return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap;
+    if (!this._syncInProgress) {
+      // SYNC is finished, can return immediately root object from pool
+      return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap;
+    }
+
+    // otherwise wait for SYNC sequence to finish
+    return new Promise((res) => {
+      this._eventEmitter.once(LiveObjectsEvents.SyncCompleted, () => {
+        res(this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap);
+      });
+    });
   }
 
   /**
@@ -123,6 +141,7 @@ export class LiveObjects {
     this._currentSyncId = undefined;
     this._currentSyncCursor = undefined;
     this._syncInProgress = false;
+    this._eventEmitter.emit(LiveObjectsEvents.SyncCompleted);
   }
 
   private _parseSyncChannelSerial(syncChannelSerial: string | null | undefined): {
