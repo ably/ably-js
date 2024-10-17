@@ -22,7 +22,7 @@ define(['shared_helper'], function (Helper) {
      *
      * root "emptyMap" -> Map#1 {} -- empty map
      * root "referencedMap" -> Map#2 { "counterKey": <object id Counter#3> }
-     * root "valuesMap" -> Map#3 { "stringKey": "stringValue", "bytesKey": <byte array for "{"productId": "001", "productName": "car"}", encoded in base64>, "numberKey": 1, "trueKey": true, "falseKey": true, "mapKey": <objectId of Map#2> }
+     * root "valuesMap" -> Map#3 { "stringKey": "stringValue", "emptyStringKey": "", "bytesKey": <byte array for "{"productId": "001", "productName": "car"}", encoded in base64>, "emptyBytesKey": <empty byte array>, "numberKey": 1, "zeroKey": 0, "trueKey": true, "falseKey": false, "mapKey": <objectId of Map#2> }
      * root "emptyCounter" -> Counter#1 -- no initial value counter, should be 0
      * root "initialValueCounter" -> Counter#2 count=10
      * root "referencedCounter" -> Counter#3 count=20
@@ -62,10 +62,13 @@ define(['shared_helper'], function (Helper) {
         createOp: this._mapCreateOp({
           entries: {
             stringKey: { data: { value: 'stringValue' } },
+            emptyStringKey: { data: { value: '' } },
             bytesKey: {
               data: { value: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9', encoding: 'base64' },
             },
+            emptyBytesKey: { data: { value: '', encoding: 'base64' } },
             numberKey: { data: { value: 1 } },
+            zeroKey: { data: { value: 0 } },
             trueKey: { data: { value: true } },
             falseKey: { data: { value: false } },
             mapKey: { data: { objectId: referencedMap.objectId } },
