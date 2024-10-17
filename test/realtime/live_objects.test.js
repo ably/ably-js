@@ -8,6 +8,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
   LiveObjectsHelper,
 ) {
   const expect = chai.expect;
+  const BufferUtils = Ably.Realtime.Platform.BufferUtils;
   const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
   const liveObjectsFixturesChannel = 'liveobjects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
@@ -175,6 +176,167 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           await new Promise((res) => nextTick(res));
 
           expect(resolvedImmediately, 'Check getRoot() is resolved on next tick').to.be.true;
+        }, client);
+      });
+
+      it('builds state object tree from STATE_SYNC sequence on channel attachment', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          const counterKeys = ['emptyCounter', 'initialValueCounter', 'referencedCounter'];
+          const mapKeys = ['emptyMap', 'referencedMap', 'valuesMap'];
+          const rootKeysCount = counterKeys.length + mapKeys.length;
+
+          expect(root, 'Check getRoot() is resolved when STATE_SYNC sequence ends').to.exist;
+          expect(root.size()).to.equal(rootKeysCount, 'Check root has correct number of keys');
+
+          counterKeys.forEach((key) => {
+            const counter = root.get(key);
+            expect(counter, `Check counter at key="${key}" in root exists`).to.exist;
+            expect(counter.constructor.name).to.equal(
+              'LiveCounter',
+              `Check counter at key="${key}" in root is of type LiveCounter`,
+            );
+          });
+
+          mapKeys.forEach((key) => {
+            const map = root.get(key);
+            expect(map, `Check map at key="${key}" in root exists`).to.exist;
+            expect(map.constructor.name).to.equal('LiveMap', `Check map at key="${key}" in root is of type LiveMap`);
+          });
+
+          const valuesMap = root.get('valuesMap');
+          const valueMapKeys = [
+            'stringKey',
+            'emptyStringKey',
+            'bytesKey',
+            'emptyBytesKey',
+            'numberKey',
+            'zeroKey',
+            'trueKey',
+            'falseKey',
+            'mapKey',
+          ];
+          expect(valuesMap.size()).to.equal(valueMapKeys.length, 'Check nested map has correct number of keys');
+          valueMapKeys.forEach((key) => {
+            const value = valuesMap.get(key);
+            expect(value, `Check value at key="${key}" in nested map exists`).to.exist;
+          });
+        }, client);
+      });
+
+      it('LiveCounter is initialized with initial value from STATE_SYNC sequence', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          const counters = [
+            { key: 'emptyCounter', value: 0 },
+            { key: 'initialValueCounter', value: 10 },
+            { key: 'referencedCounter', value: 20 },
+          ];
+
+          counters.forEach((x) => {
+            const counter = root.get(x.key);
+            expect(counter.value()).to.equal(x.value, `Check counter at key="${x.key}" in root has correct value`);
+          });
+        }, client);
+      });
+
+      it('LiveMap is initialized with initial value from STATE_SYNC sequence', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          const emptyMap = root.get('emptyMap');
+          expect(emptyMap.size()).to.equal(0, 'Check empty map in root has no keys');
+
+          const referencedMap = root.get('referencedMap');
+          expect(referencedMap.size()).to.equal(1, 'Check referenced map in root has correct number of keys');
+
+          const counterFromReferencedMap = referencedMap.get('counterKey');
+          expect(counterFromReferencedMap.value()).to.equal(20, 'Check nested counter has correct value');
+
+          const valuesMap = root.get('valuesMap');
+          expect(valuesMap.size()).to.equal(9, 'Check values map in root has correct number of keys');
+
+          expect(valuesMap.get('stringKey')).to.equal('stringValue', 'Check values map has correct string value key');
+          expect(valuesMap.get('emptyStringKey')).to.equal('', 'Check values map has correct empty string value key');
+          expect(
+            BufferUtils.areBuffersEqual(
+              valuesMap.get('bytesKey'),
+              BufferUtils.base64Decode('eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9'),
+            ),
+            'Check values map has correct bytes value key',
+          ).to.be.true;
+          expect(
+            BufferUtils.areBuffersEqual(valuesMap.get('emptyBytesKey'), BufferUtils.base64Decode('')),
+            'Check values map has correct empty bytes value key',
+          ).to.be.true;
+          expect(valuesMap.get('numberKey')).to.equal(1, 'Check values map has correct number value key');
+          expect(valuesMap.get('zeroKey')).to.equal(0, 'Check values map has correct zero number value key');
+          expect(valuesMap.get('trueKey')).to.equal(true, `Check values map has correct 'true' value key`);
+          expect(valuesMap.get('falseKey')).to.equal(false, `Check values map has correct 'false' value key`);
+
+          const mapFromValuesMap = valuesMap.get('mapKey');
+          expect(mapFromValuesMap.size()).to.equal(1, 'Check nested map has correct number of keys');
+        }, client);
+      });
+
+      it('LiveMaps can reference the same object in their keys', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          const referencedCounter = root.get('referencedCounter');
+          const referencedMap = root.get('referencedMap');
+          const valuesMap = root.get('valuesMap');
+
+          const counterFromReferencedMap = referencedMap.get('counterKey');
+          expect(counterFromReferencedMap, 'Check nested counter exists at a key in a map').to.exist;
+          expect(counterFromReferencedMap.constructor.name).to.equal(
+            'LiveCounter',
+            'Check nested counter is of type LiveCounter',
+          );
+          expect(counterFromReferencedMap).to.equal(
+            referencedCounter,
+            'Check nested counter is the same object instance as counter on the root',
+          );
+          expect(counterFromReferencedMap.value()).to.equal(20, 'Check nested counter has correct value');
+
+          const mapFromValuesMap = valuesMap.get('mapKey');
+          expect(mapFromValuesMap, 'Check nested map exists at a key in a map').to.exist;
+          expect(mapFromValuesMap.constructor.name).to.equal('LiveMap', 'Check nested map is of type LiveMap');
+          expect(mapFromValuesMap.size()).to.equal(1, 'Check nested map has correct number of keys');
+          expect(mapFromValuesMap).to.equal(
+            referencedMap,
+            'Check nested map is the same object instance as map on the root',
+          );
         }, client);
       });
     });
