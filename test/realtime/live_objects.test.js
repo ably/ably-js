@@ -1,13 +1,15 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai', 'live_objects'], function (
+define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'], function (
   Ably,
   Helper,
   chai,
   LiveObjectsPlugin,
+  LiveObjectsHelper,
 ) {
   const expect = chai.expect;
   const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
+  const liveObjectsFixturesChannel = 'liveobjects_fixtures';
 
   function RealtimeWithLiveObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
@@ -24,7 +26,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects'], function (
           done(err);
           return;
         }
-        done();
+
+        LiveObjectsHelper.initForChannel(helper, liveObjectsFixturesChannel)
+          .then(done)
+          .catch((err) => done(err));
       });
     });
 
