@@ -49,6 +49,49 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         const channel = client.channels.get('channel');
         expect(() => channel.liveObjects).to.throw('LiveObjects plugin not provided');
       });
+
+      /** @nospec */
+      it('doesn’t break when it receives a STATE_SYNC ProtocolMessage', async function () {
+        const helper = this.test.helper;
+        const testClient = helper.AblyRealtime();
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const testChannel = testClient.channels.get('channel');
+          await testChannel.attach();
+
+          const receivedMessagePromise = new Promise((resolve) => testChannel.subscribe(resolve));
+
+          const publishClient = helper.AblyRealtime();
+
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            // inject STATE_SYNC message that should be ignored and not break anything without LiveObjects plugin
+            helper.recordPrivateApi('call.channel.processMessage');
+            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+            await testChannel.processMessage(
+              createPM({
+                action: 20,
+                channel: 'channel',
+                channelSerial: 'serial:',
+                state: [
+                  {
+                    object: {
+                      objectId: 'root',
+                      regionalTimeserial: '@0-0',
+                      map: {},
+                    },
+                  },
+                ],
+              }),
+            );
+
+            const publishChannel = publishClient.channels.get('channel');
+            await publishChannel.publish(null, 'test');
+
+            // regular message subscriptions should still work after processing STATE_SYNC message without LiveObjects plugin
+            await receivedMessagePromise;
+          }, publishClient);
+        }, testClient);
+      });
     });
 
     describe('Realtime with LiveObjects plugin', () => {
