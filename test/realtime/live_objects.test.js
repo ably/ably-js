@@ -105,22 +105,6 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       });
 
       /** @nospec */
-      it('getRoot() returns empty root when no state exist on a channel', async function () {
-        const helper = this.test.helper;
-        const client = RealtimeWithLiveObjects(helper);
-
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
-
-          await channel.attach();
-          const root = await liveObjects.getRoot();
-
-          expect(root.size()).to.equal(0, 'Check root has no keys');
-        }, client);
-      });
-
-      /** @nospec */
       it('getRoot() returns LiveMap instance', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithLiveObjects(helper);
@@ -154,6 +138,50 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       });
 
       /** @nospec */
+      it('getRoot() returns empty root when no state exist on a channel', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          expect(root.size()).to.equal(0, 'Check root has no keys');
+        }, client);
+      });
+
+      /** @nospec */
+      it('getRoot() waits for initial STATE_SYNC to be completed before resolving', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          const getRootPromise = liveObjects.getRoot();
+
+          let getRootResolved = false;
+          getRootPromise.then(() => {
+            getRootResolved = true;
+          });
+
+          // give a chance for getRoot() to resolve and proc its handler. it should not
+          helper.recordPrivateApi('call.Platform.nextTick');
+          await new Promise((res) => nextTick(res));
+          expect(getRootResolved, 'Check getRoot() is not resolved until STATE_SYNC sequence is completed').to.be.false;
+
+          await channel.attach();
+
+          // should resolve eventually after attach
+          await getRootPromise;
+        }, client);
+      });
+
+      /** @nospec */
       it('getRoot() resolves immediately when STATE_SYNC sequence is completed', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithLiveObjects(helper);
@@ -176,6 +204,84 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           await new Promise((res) => nextTick(res));
 
           expect(resolvedImmediately, 'Check getRoot() is resolved on next tick').to.be.true;
+        }, client);
+      });
+
+      /** @nospec */
+      it('getRoot() waits for subsequent STATE_SYNC to finish before resolving', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          // wait for initial STATE_SYNC sequence to complete
+          await liveObjects.getRoot();
+
+          // inject STATE_SYNC message to emulate start of new sequence
+          helper.recordPrivateApi('call.channel.processMessage');
+          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+          await channel.processMessage(
+            createPM({
+              action: 20,
+              channel: 'channel',
+              // have cursor so client awaits for additional STATE_SYNC messages
+              channelSerial: 'serial:cursor',
+              state: [],
+            }),
+          );
+
+          let getRootResolved = false;
+          let newRoot;
+          liveObjects.getRoot().then((value) => {
+            getRootResolved = true;
+            newRoot = value;
+          });
+
+          // wait for next tick to check that getRoot() promise handler didn't proc
+          helper.recordPrivateApi('call.Platform.nextTick');
+          await new Promise((res) => nextTick(res));
+
+          expect(getRootResolved, 'Check getRoot() is not resolved while STATE_SYNC is in progress').to.be.false;
+
+          // inject next STATE_SYNC message
+          helper.recordPrivateApi('call.channel.processMessage');
+          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+          await channel.processMessage(
+            createPM({
+              action: 20,
+              channel: 'channel',
+              // no cursor to indicate the end of STATE_SYNC messages
+              channelSerial: 'serial:',
+              state: [
+                {
+                  object: {
+                    objectId: 'root',
+                    regionalTimeserial: '@0-0',
+                    map: {
+                      entries: {
+                        key: {
+                          timeserial: '@0-0',
+                          data: {
+                            value: 1,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            }),
+          );
+
+          // wait for next tick for getRoot() handler to process
+          helper.recordPrivateApi('call.Platform.nextTick');
+          await new Promise((res) => nextTick(res));
+
+          expect(getRootResolved, 'Check getRoot() is resolved when STATE_SYNC sequence has ended').to.be.true;
+          expect(newRoot.get('key')).to.equal(1, 'Check new root after STATE_SYNC sequence has expected key');
         }, client);
       });
 
