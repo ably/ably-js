@@ -139,6 +139,7 @@
     "grunt": "grunt",
     "test": "npm run test:node",
     "test:node": "npm run build:node && npm run build:push && mocha",
+    "test:grep": "npm run build:node && npm run build:push && mocha --grep",
     "test:node:skip-build": "mocha",
     "test:webserver": "grunt test:webserver",
     "test:playwright": "node test/support/runPlaywrightTests.js",

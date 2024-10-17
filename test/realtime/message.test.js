@@ -4,6 +4,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   var expect = chai.expect;
   let config = Ably.Realtime.Platform.Config;
   var createPM = Ably.protocolMessageFromDeserialized;
+  var Message = Ably.Realtime.Message;
 
   var publishIntervalHelper = function (currentMessageNum, channel, dataFn, onPublish) {
     return function () {
@@ -1269,6 +1270,56 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channel.publish({ name: 'event0', id: 'some_msg_id' });
         channel.publish({ name: 'event0', id: 'some_msg_id' });
         channel.publish('end', null);
+      });
+    });
+    /**
+     * @spec TM2j
+     */
+    describe('DefaultMessage.fromValues stringify action', function () {
+      const testCases = [
+        {
+          description: 'should stringify the numeric action',
+          action: 1,
+          options: { stringifyAction: true },
+          expectedString: '[Message; action=message.create]',
+          expectedJSON: { action: 1 },
+        },
+        {
+          description: 'should not stringify the numeric action',
+          action: 1,
+          options: { stringifyAction: false },
+          expectedString: '[Message; action=1]',
+          expectedJSON: { action: 1 },
+        },
+        {
+          description: 'should accept an already stringified action',
+          action: 'message.update',
+          options: { stringifyAction: true },
+          expectedString: '[Message; action=message.update]',
+          expectedJSON: { action: 2 },
+        },
+        {
+          description: 'should handle no action provided',
+          action: undefined,
+          options: { stringifyAction: true },
+          expectedString: '[Message]',
+          expectedJSON: { action: undefined },
+        },
+        {
+          description: 'should handle unknown action provided',
+          action: 10,
+          options: { stringifyAction: true },
+          expectedString: '[Message; action=10]',
+          expectedJSON: { action: 10 },
+        },
+      ];
+      testCases.forEach(({ description, action, options, expectedString, expectedJSON }) => {
+        it(description, function () {
+          const values = { action };
+          const message = Message.fromValues(values, options);
+          expect(message.toString()).to.equal(expectedString);
+          expect(message.toJSON()).to.deep.contains(expectedJSON);
+        });
       });
     });
 

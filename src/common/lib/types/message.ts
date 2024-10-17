@@ -9,6 +9,30 @@ import * as API from '../../../../ably';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import { MsgPack } from 'common/types/msgpack';
 
+const MessageActionArray: API.MessageAction[] = [
+  'message.unset',
+  'message.create',
+  'message.update',
+  'message.delete',
+  'annotation.create',
+  'annotation.delete',
+  'meta.occupancy',
+];
+
+const MessageActionMap = new Map<API.MessageAction, number>(MessageActionArray.map((action, index) => [action, index]));
+
+const ReverseMessageActionMap = new Map<number, API.MessageAction>(
+  MessageActionArray.map((action, index) => [index, action]),
+);
+
+function toMessageActionString(actionNumber: number): API.MessageAction | undefined {
+  return ReverseMessageActionMap.get(actionNumber);
+}
+
+function toMessageActionNumber(messageAction?: API.MessageAction): number | undefined {
+  return messageAction ? MessageActionMap.get(messageAction) : undefined;
+}
+
 export type CipherOptions = {
   channelCipher: {
     encrypt: Function;
@@ -82,7 +106,7 @@ export async function fromEncoded(
   encoded: unknown,
   inputOptions?: API.ChannelOptions,
 ): Promise<Message> {
-  const msg = fromValues(encoded);
+  const msg = fromValues(encoded as Message | Record<string, unknown>, { stringifyAction: true });
   const options = normalizeCipherOptions(Crypto, logger, inputOptions ?? null);
   /* if decoding fails at any point, catch and return the message decoded to
    * the fullest extent possible */
@@ -260,7 +284,7 @@ export async function fromResponseBody(
   }
 
   for (let i = 0; i < body.length; i++) {
-    const msg = (body[i] = fromValues(body[i]));
+    const msg = (body[i] = fromValues(body[i], { stringifyAction: true }));
     try {
       await decode(msg, options);
     } catch (e) {
@@ -270,14 +294,22 @@ export async function fromResponseBody(
   return body;
 }
 
-export function fromValues(values: unknown): Message {
+export function fromValues(
+  values: Message | Record<string, unknown>,
+  options?: { stringifyAction?: boolean },
+): Message {
+  const stringifyAction = options?.stringifyAction;
+  if (stringifyAction) {
+    const action = toMessageActionString(values.action as number) || values.action;
+    return Object.assign(new Message(), { ...values, action });
+  }
   return Object.assign(new Message(), values);
 }
 
 export function fromValuesArray(values: unknown[]): Message[] {
   const count = values.length,
     result = new Array(count);
-  for (let i = 0; i < count; i++) result[i] = fromValues(values[i]);
+  for (let i = 0; i < count; i++) result[i] = fromValues(values[i] as Record<string, unknown>);
   return result;
 }
 
@@ -304,6 +336,13 @@ class Message {
   encoding?: string | null;
   extras?: any;
   size?: number;
+  action?: API.MessageAction | number;
+  serial?: string;
+  refSerial?: string;
+  refType?: string;
+  updatedAt?: number;
+  deletedAt?: number;
+  operation?: API.Operation;
 
   /**
    * Overload toJSON() to intercept JSON.stringify()
@@ -334,6 +373,13 @@ class Message {
       connectionId: this.connectionId,
       connectionKey: this.connectionKey,
       extras: this.extras,
+      serial: this.serial,
+      action: toMessageActionNumber(this.action as API.MessageAction) || this.action,
+      refSerial: this.refSerial,
+      refType: this.refType,
+      updatedAt: this.updatedAt,
+      deletedAt: this.deletedAt,
+      operation: this.operation,
       encoding,
       data,
     };
@@ -355,6 +401,14 @@ class Message {
       else result += '; data (json)=' + JSON.stringify(this.data);
     }
     if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
+
+    if (this.action) result += '; action=' + this.action;
+    if (this.serial) result += '; serial=' + this.serial;
+    if (this.refSerial) result += '; refSerial=' + this.refSerial;
+    if (this.refType) result += '; refType=' + this.refType;
+    if (this.updatedAt) result += '; updatedAt=' + this.updatedAt;
+    if (this.deletedAt) result += '; deletedAt=' + this.deletedAt;
+    if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
     result += ']';
     return result;
   }
