@@ -60,6 +60,10 @@ export class LiveMap extends LiveObject<LiveMapData> {
     }
   }
 
+  size(): number {
+    return this._dataRef.data.size;
+  }
+
   protected _getZeroValueData(): LiveMapData {
     return { data: new Map<string, MapEntry>() };
   }
