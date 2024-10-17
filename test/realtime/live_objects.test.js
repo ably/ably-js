@@ -446,5 +446,22 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         }, client);
       });
     });
+
+    it('can attach to channel with LiveObjects state modes', async function () {
+      const helper = this.test.helper;
+      const client = helper.AblyRealtime();
+
+      await helper.monitorConnectionThenCloseAndFinish(async () => {
+        const liveObjectsModes = ['state_subscribe', 'state_publish'];
+        const channelOptions = { modes: liveObjectsModes };
+        const channel = client.channels.get('channel', channelOptions);
+
+        await channel.attach();
+
+        helper.recordPrivateApi('read.channel.channelOptions');
+        expect(channel.channelOptions).to.deep.equal(channelOptions, 'Check expected channel options');
+        expect(channel.modes).to.deep.equal(liveObjectsModes, 'Check expected modes');
+      }, client);
+    });
   });
 });
