@@ -9,6 +9,40 @@ import * as API from '../../../../ably';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
 import { MsgPack } from 'common/types/msgpack';
 
+const MessageActionArray: API.MessageAction[] = [
+  'message_unset',
+  'message_create',
+  'message_update',
+  'message_delete',
+  'message_annotation_create',
+  'message_annotation_delete',
+  'message_meta_occupancy',
+];
+
+function toMessageActionString(actionNumber?: number): API.MessageAction {
+  if (actionNumber === undefined) {
+    // Allow for the case where the action is not set
+    return 'message_unset';
+  }
+  if (actionNumber in MessageActionArray) {
+    return MessageActionArray[actionNumber];
+  }
+  throw new ErrorInfo('Unknown message action number: ' + actionNumber, 40000, 400);
+}
+
+function toMessageActionNumber(messageAction?: API.MessageAction): number {
+  if (messageAction === undefined) {
+    // Allow for the case where the action is not set
+    return 0;
+  }
+  for (const [index, value] of MessageActionArray.entries()) {
+    if (value === messageAction) {
+      return index;
+    }
+  }
+  throw new ErrorInfo('Unknown message action: ' + messageAction, 40000, 400);
+}
+
 export type CipherOptions = {
   channelCipher: {
     encrypt: Function;
@@ -82,7 +116,7 @@ export async function fromEncoded(
   encoded: unknown,
   inputOptions?: API.ChannelOptions,
 ): Promise<Message> {
-  const msg = fromValues(encoded);
+  const msg = fromValues(encoded as Message | Record<string, unknown>, { stringifyAction: true });
   const options = normalizeCipherOptions(Crypto, logger, inputOptions ?? null);
   /* if decoding fails at any point, catch and return the message decoded to
    * the fullest extent possible */
@@ -260,7 +294,7 @@ export async function fromResponseBody(
   }
 
   for (let i = 0; i < body.length; i++) {
-    const msg = (body[i] = fromValues(body[i]));
+    const msg = (body[i] = fromValues(body[i], { stringifyAction: true }));
     try {
       await decode(msg, options);
     } catch (e) {
@@ -270,14 +304,48 @@ export async function fromResponseBody(
   return body;
 }
 
-export function fromValues(values: unknown): Message {
+/**
+ * This is used to return a new message with a given action type set.
+ * @param values - This is a message-like object, with the values to be set on the new message object.
+ * @param action - This is the action type that will be applied to the message
+ * @returns {Message} - This is a new message, with the provided action type set.
+ */
+export function messageFromValuesWithAction(
+  values: Message | Record<string, unknown>,
+  action: API.MessageAction,
+): Message {
+  return fromValues({ ...values, action: action });
+}
+
+/**
+ * This is used to return an array of new messages, each set with the provided action type.
+ * It will apply the same action type to ALL messages.
+ * @param values - This is the array of message-like objects, with the values to be set on the new messages.
+ * @param action - This is the action type, applied to each message in the array.
+ * @returns {Message[]} - This is an array of new messages, each with the provided action type set.
+ */
+export function messageFromValuesArrayWithAction(values: unknown[], action: API.MessageAction): Message[] {
+  const count = values.length,
+    result = new Array(count);
+  for (let i = 0; i < count; i++) result[i] = messageFromValuesWithAction(values[i] as Record<string, unknown>, action);
+  return result;
+}
+
+export function fromValues(
+  values: Message | Record<string, unknown>,
+  options?: { stringifyAction?: boolean },
+): Message {
+  const stringifyAction = options?.stringifyAction;
+  if (stringifyAction) {
+    return Object.assign(new Message(), { ...values, action: toMessageActionString(values.action as number) });
+  }
   return Object.assign(new Message(), values);
 }
 
 export function fromValuesArray(values: unknown[]): Message[] {
   const count = values.length,
     result = new Array(count);
-  for (let i = 0; i < count; i++) result[i] = fromValues(values[i]);
+  for (let i = 0; i < count; i++) result[i] = fromValues(values[i] as Record<string, unknown>);
   return result;
 }
 
@@ -304,6 +372,13 @@ class Message {
   encoding?: string | null;
   extras?: any;
   size?: number;
+  action?: API.MessageAction | number | undefined;
+  serial?: string;
+  refSerial?: string;
+  refType?: string;
+  updatedAt?: number;
+  deletedAt?: number;
+  operation?: API.Operation;
 
   /**
    * Overload toJSON() to intercept JSON.stringify()
@@ -334,6 +409,13 @@ class Message {
       connectionId: this.connectionId,
       connectionKey: this.connectionKey,
       extras: this.extras,
+      serial: this.serial,
+      action: toMessageActionNumber(this.action as API.MessageAction),
+      refSerial: this.refSerial,
+      refType: this.refType,
+      updatedAt: this.updatedAt,
+      deletedAt: this.deletedAt,
+      operation: this.operation,
       encoding,
       data,
     };
@@ -355,6 +437,14 @@ class Message {
       else result += '; data (json)=' + JSON.stringify(this.data);
     }
     if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
+
+    if (this.action) result += '; action=' + this.action;
+    if (this.serial) result += '; serial=' + this.serial;
+    if (this.refSerial) result += '; refSerial=' + this.refSerial;
+    if (this.refType) result += '; refType=' + this.refType;
+    if (this.updatedAt) result += '; updatedAt=' + this.updatedAt;
+    if (this.deletedAt) result += '; deletedAt=' + this.deletedAt;
+    if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
     result += ']';
     return result;
   }

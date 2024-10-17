@@ -8,13 +8,13 @@ import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import RealtimePresence from './realtimepresence';
 import Message, {
-  fromValues as messageFromValues,
-  fromValuesArray as messagesFromValuesArray,
   encodeArray as encodeMessagesArray,
   decode as decodeMessage,
   getMessagesSize,
   CipherOptions,
   EncodingDecodingContext,
+  messageFromValuesArrayWithAction,
+  messageFromValuesWithAction,
 } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
@@ -234,8 +234,9 @@ class RealtimeChannel extends EventEmitter {
       throw this.connectionManager.getError();
     }
     if (argCount == 1) {
-      if (Utils.isObject(messages)) messages = [messageFromValues(messages)];
-      else if (Array.isArray(messages)) messages = messagesFromValuesArray(messages);
+      // setting the action to `message_create` because this is a standard publish
+      if (Utils.isObject(messages)) messages = [messageFromValuesWithAction(messages, 'message_create')];
+      else if (Array.isArray(messages)) messages = messageFromValuesArrayWithAction(messages, 'message_create');
       else
         throw new ErrorInfo(
           'The single-argument form of publish() expects a message object or an array of message objects',
@@ -243,7 +244,7 @@ class RealtimeChannel extends EventEmitter {
           400,
         );
     } else {
-      messages = [messageFromValues({ name: args[0], data: args[1] })];
+      messages = [messageFromValuesWithAction({ name: args[0], data: args[1] }, 'message_create')];
     }
     const maxMessageSize = this.client.options.maxMessageSize;
     await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
