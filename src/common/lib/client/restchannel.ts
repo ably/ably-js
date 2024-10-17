@@ -2,12 +2,12 @@ import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import RestPresence from './restpresence';
 import Message, {
-  fromValues as messageFromValues,
-  fromValuesArray as messagesFromValuesArray,
   encodeArray as encodeMessagesArray,
   serialize as serializeMessage,
   getMessagesSize,
   CipherOptions,
+  messageFromValuesWithAction,
+  messageFromValuesArrayWithAction,
 } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
@@ -74,13 +74,13 @@ class RestChannel {
 
     if (typeof first === 'string' || first === null) {
       /* (name, data, ...) */
-      messages = [messageFromValues({ name: first, data: second })];
+      messages = [messageFromValuesWithAction({ name: first, data: second }, 'message_create')];
       params = args[2];
     } else if (Utils.isObject(first)) {
-      messages = [messageFromValues(first)];
+      messages = [messageFromValuesWithAction(first, 'message_create')];
       params = args[1];
     } else if (Array.isArray(first)) {
-      messages = messagesFromValuesArray(first);
+      messages = messageFromValuesArrayWithAction(first, 'message_create');
       params = args[1];
     } else {
       throw new ErrorInfo(

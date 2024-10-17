@@ -83,7 +83,7 @@ export function fromDeserialized(
   const error = deserialized.error;
   if (error) deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
   const messages = deserialized.messages as Message[];
-  if (messages) for (let i = 0; i < messages.length; i++) messages[i] = messageFromValues(messages[i]);
+  if (messages) for (let i = 0; i < messages.length; i++) messages[i] = messageFromValues(messages[i], true);
 
   const presence = presenceMessagePlugin ? (deserialized.presence as PresenceMessage[]) : undefined;
   if (presenceMessagePlugin) {
