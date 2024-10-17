@@ -1,16 +1,15 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai', 'live_objects'], function (
+define(['ably', 'shared_helper', 'chai', 'live_objects'], function (
   Ably,
   Helper,
-  async,
   chai,
   LiveObjectsPlugin,
 ) {
-  var expect = chai.expect;
-  var createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
+  const expect = chai.expect;
+  const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
 
-  function LiveObjectsRealtime(helper, options) {
+  function RealtimeWithLiveObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
   }
 
@@ -41,44 +40,44 @@ define(['ably', 'shared_helper', 'async', 'chai', 'live_objects'], function (
 
     describe('Realtime with LiveObjects plugin', () => {
       /** @nospec */
-      it("returns LiveObjects instance when accessing channel's `liveObjects` property", async function () {
+      it("returns LiveObjects class instance when accessing channel's `liveObjects` property", async function () {
         const helper = this.test.helper;
-        const client = LiveObjectsRealtime(helper, { autoConnect: false });
+        const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
         const channel = client.channels.get('channel');
         expect(channel.liveObjects.constructor.name).to.equal('LiveObjects');
       });
 
-      describe('LiveObjects instance', () => {
-        /** @nospec */
-        it('getRoot() returns LiveMap instance', async function () {
-          const helper = this.test.helper;
-          const client = LiveObjectsRealtime(helper);
+      /** @nospec */
+      it('getRoot() returns LiveMap instance', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
-            const channel = client.channels.get('channel');
-            const liveObjects = channel.liveObjects;
-            await channel.attach();
-            const root = await liveObjects.getRoot();
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get('channel');
+          const liveObjects = channel.liveObjects;
 
-            expect(root.constructor.name).to.equal('LiveMap');
-          }, client);
-        });
+          await channel.attach();
+          const root = await liveObjects.getRoot();
 
-        /** @nospec */
-        it('getRoot() returns live object with id "root"', async function () {
-          const helper = this.test.helper;
-          const client = LiveObjectsRealtime(helper);
+          expect(root.constructor.name).to.equal('LiveMap');
+        }, client);
+      });
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
-            const channel = client.channels.get('channel');
-            const liveObjects = channel.liveObjects;
-            await channel.attach();
-            const root = await liveObjects.getRoot();
+      /** @nospec */
+      it('getRoot() returns live object with id "root"', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
 
-            helper.recordPrivateApi('call.LiveObject.getObjectId');
-            expect(root.getObjectId()).to.equal('root');
-          }, client);
-        });
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get('channel');
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          helper.recordPrivateApi('call.LiveObject.getObjectId');
+          expect(root.getObjectId()).to.equal('root');
+        }, client);
       });
     });
   });
