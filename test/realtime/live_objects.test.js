@@ -10,9 +10,17 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
   const expect = chai.expect;
   const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
   const liveObjectsFixturesChannel = 'liveobjects_fixtures';
+  const nextTick = Ably.Realtime.Platform.Config.nextTick;
 
   function RealtimeWithLiveObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
+  }
+
+  function channelOptionsWithLiveObjects(options) {
+    return {
+      ...options,
+      modes: ['STATE_SUBSCRIBE', 'STATE_PUBLISH'],
+    };
   }
 
   describe('realtime/live_objects', function () {
@@ -53,12 +61,28 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       });
 
       /** @nospec */
+      it('getRoot() returns empty root when no state exist on a channel', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          expect(root.size()).to.equal(0, 'Check root has no keys');
+        }, client);
+      });
+
+      /** @nospec */
       it('getRoot() returns LiveMap instance', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel');
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
           const liveObjects = channel.liveObjects;
 
           await channel.attach();
@@ -74,7 +98,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel');
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
           const liveObjects = channel.liveObjects;
 
           await channel.attach();
@@ -82,6 +106,32 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           helper.recordPrivateApi('call.LiveObject.getObjectId');
           expect(root.getObjectId()).to.equal('root');
+        }, client);
+      });
+
+      /** @nospec */
+      it('getRoot() resolves immediately when STATE_SYNC sequence is completed', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          // wait for STATE_SYNC sequence to complete by accessing root for the first time
+          await liveObjects.getRoot();
+
+          let resolvedImmediately = false;
+          liveObjects.getRoot().then(() => {
+            resolvedImmediately = true;
+          });
+
+          // wait for next tick for getRoot() handler to process
+          helper.recordPrivateApi('call.Platform.nextTick');
+          await new Promise((res) => nextTick(res));
+
+          expect(resolvedImmediately, 'Check getRoot() is resolved on next tick').to.be.true;
         }, client);
       });
     });
