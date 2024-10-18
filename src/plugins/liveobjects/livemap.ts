@@ -1,6 +1,7 @@
 import { LiveObject, LiveObjectData } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import { MapSemantics, StateValue } from './statemessage';
+import { Timeserial } from './timeserial';
 
 export interface ObjectIdStateData {
   /** A reference to another state object, used to support composable state objects. */
@@ -21,8 +22,8 @@ export type StateData = ObjectIdStateData | ValueStateData;
 
 export interface MapEntry {
   tombstone: boolean;
-  timeserial: string;
-  data: StateData;
+  timeserial: Timeserial;
+  data: StateData | undefined;
 }
 
 export interface LiveMapData extends LiveObjectData {
@@ -53,15 +54,32 @@ export class LiveMap extends LiveObject<LiveMapData> {
       return undefined;
     }
 
-    if ('value' in element.data) {
-      return element.data.value;
+    if (element.tombstone === true) {
+      return undefined;
+    }
+
+    // data exists for non-tombstoned elements
+    const data = element.data!;
+
+    if ('value' in data) {
+      return data.value;
     } else {
-      return this._liveObjects.getPool().get(element.data.objectId);
+      return this._liveObjects.getPool().get(data.objectId);
     }
   }
 
   size(): number {
-    return this._dataRef.data.size;
+    let size = 0;
+    for (const value of this._dataRef.data.values()) {
+      if (value.tombstone === true) {
+        // should not count deleted entries
+        continue;
+      }
+
+      size++;
+    }
+
+    return size;
   }
 
   protected _getZeroValueData(): LiveMapData {
