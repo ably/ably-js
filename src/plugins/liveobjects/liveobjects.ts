@@ -7,7 +7,7 @@ import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
-import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
+import { LiveCounterDataEntry, SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
 
 enum LiveObjectsEvents {
   SyncCompleted = 'SyncCompleted',
@@ -171,6 +171,9 @@ export class LiveObjects {
       if (existingObject) {
         existingObject.setData(entry.objectData);
         existingObject.setRegionalTimeserial(entry.regionalTimeserial);
+        if (existingObject instanceof LiveCounter) {
+          existingObject.setCreated((entry as LiveCounterDataEntry).created);
+        }
         continue;
       }
 
@@ -179,7 +182,7 @@ export class LiveObjects {
       const objectType = entry.objectType;
       switch (objectType) {
         case 'LiveCounter':
-          newObject = new LiveCounter(this, entry.objectData, objectId);
+          newObject = new LiveCounter(this, entry.created, entry.objectData, objectId);
           break;
 
         case 'LiveMap':

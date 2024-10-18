@@ -5,6 +5,7 @@ import { LiveMapData, MapEntry, ObjectIdStateData, StateData, ValueStateData } f
 import { LiveObjectData } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import { MapSemantics, StateMessage, StateObject } from './statemessage';
+import { DefaultTimeserial } from './timeserial';
 
 export interface LiveObjectDataEntry {
   objectData: LiveObjectData;
@@ -90,10 +91,10 @@ export class SyncLiveObjectsDataPool {
       data: counter.count ?? 0,
     };
     const newEntry: LiveCounterDataEntry = {
-      created: counter.created,
       objectData,
       objectType: 'LiveCounter',
       regionalTimeserial: stateObject.regionalTimeserial,
+      created: counter.created,
     };
 
     return newEntry;
@@ -116,6 +117,7 @@ export class SyncLiveObjectsDataPool {
 
       const liveDataEntry: MapEntry = {
         ...entryFromMessage,
+        timeserial: DefaultTimeserial.calculateTimeserial(this._client, entryFromMessage.timeserial),
         // true only if we received explicit true. otherwise always false
         tombstone: entryFromMessage.tombstone === true,
         data: liveData,
