@@ -1,7 +1,9 @@
 import type BaseClient from 'common/lib/client/baseclient';
+import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { LiveObjects } from './liveobjects';
+import { ObjectId } from './objectid';
 import { MapSemantics } from './statemessage';
 
 export const ROOT_OBJECT_ID = 'root';
@@ -38,6 +40,27 @@ export class LiveObjectsPool {
 
   reset(): void {
     this._pool = this._getInitialPool();
+  }
+
+  createZeroValueObjectIfNotExists(objectId: string): void {
+    if (this.get(objectId)) {
+      return;
+    }
+
+    const parsedObjectId = ObjectId.fromString(this._client, objectId);
+    let zeroValueObject: LiveObject;
+    switch (parsedObjectId.type) {
+      case 'map': {
+        zeroValueObject = new LiveMap(this._liveObjects, MapSemantics.LWW, null, objectId);
+        break;
+      }
+
+      case 'counter':
+        zeroValueObject = new LiveCounter(this._liveObjects, false, null, objectId);
+        break;
+    }
+
+    this.set(objectId, zeroValueObject);
   }
 
   private _getInitialPool(): Map<string, LiveObject> {
