@@ -1,8 +1,10 @@
+import type BaseClient from 'common/lib/client/baseclient';
 import { LiveObject, LiveObjectData } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import {
   MapSemantics,
   StateMap,
+  StateMapEntry,
   StateMapOp,
   StateMessage,
   StateOperation,
@@ -46,6 +48,34 @@ export class LiveMap extends LiveObject<LiveMapData> {
     objectId?: string,
   ) {
     super(liveObjects, initialData, objectId);
+  }
+
+  static liveMapDataFromMapEntries(client: BaseClient, entries: Record<string, StateMapEntry>): LiveMapData {
+    const liveMapData: LiveMapData = {
+      data: new Map<string, MapEntry>(),
+    };
+
+    // need to iterate over entries manually to work around optional parameters from state object entries type
+    Object.entries(entries ?? {}).forEach(([key, entry]) => {
+      let liveData: StateData;
+      if (typeof entry.data.objectId !== 'undefined') {
+        liveData = { objectId: entry.data.objectId } as ObjectIdStateData;
+      } else {
+        liveData = { encoding: entry.data.encoding, value: entry.data.value } as ValueStateData;
+      }
+
+      const liveDataEntry: MapEntry = {
+        ...entry,
+        timeserial: DefaultTimeserial.calculateTimeserial(client, entry.timeserial),
+        // true only if we received explicit true. otherwise always false
+        tombstone: entry.tombstone === true,
+        data: liveData,
+      };
+
+      liveMapData.data.set(key, liveDataEntry);
+    });
+
+    return liveMapData;
   }
 
   /**

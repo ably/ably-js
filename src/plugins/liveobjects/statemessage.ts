@@ -127,7 +127,7 @@ export class StateMessage {
   operation?: StateOperation;
   /** Describes the instantaneous state of an object. */
   object?: StateObject;
-  /** Timeserial format */
+  /** Timeserial format. Contains the origin timeserial for this state message. */
   serial?: string;
 
   constructor(private _platform: typeof Platform) {}

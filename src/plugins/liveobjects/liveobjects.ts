@@ -67,13 +67,13 @@ export class LiveObjects {
   /**
    * @internal
    */
-  handleStateSyncMessage(stateMessages: StateMessage[], syncChannelSerial: string | null | undefined): void {
+  handleStateSyncMessages(stateMessages: StateMessage[], syncChannelSerial: string | null | undefined): void {
     const { syncId, syncCursor } = this._parseSyncChannelSerial(syncChannelSerial);
     if (this._currentSyncId !== syncId) {
       this._startNewSync(syncId, syncCursor);
     }
 
-    this._syncLiveObjectsDataPool.applyStateMessages(stateMessages);
+    this._syncLiveObjectsDataPool.applyStateSyncMessages(stateMessages);
 
     // if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
@@ -93,7 +93,7 @@ export class LiveObjects {
     );
 
     if (hasState) {
-      this._startNewSync(undefined);
+      this._startNewSync();
     } else {
       // no HAS_STATE flag received on attach, can end SYNC sequence immediately
       // and treat it as no state on a channel
@@ -190,7 +190,7 @@ export class LiveObjects {
           break;
 
         default:
-          throw new this._client.ErrorInfo(`Unknown live object type: ${objectType}`, 40000, 400);
+          throw new this._client.ErrorInfo(`Unknown live object type: ${objectType}`, 50000, 500);
       }
       newObject.setRegionalTimeserial(entry.regionalTimeserial);
 

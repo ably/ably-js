@@ -649,7 +649,7 @@ class RealtimeChannel extends EventEmitter {
           }
         }
 
-        this._liveObjects.handleStateSyncMessage(stateMessages, message.channelSerial);
+        this._liveObjects.handleStateSyncMessages(stateMessages, message.channelSerial);
 
         break;
       }
