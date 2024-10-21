@@ -17,6 +17,10 @@ define(['shared_helper'], function (Helper) {
   }
 
   class LiveObjectsHelper {
+    constructor(helper) {
+      this._rest = helper.AblyRest({ useBinaryProtocol: false });
+    }
+
     /**
      * Creates next LiveObjects state tree on a provided channel name:
      *
@@ -27,39 +31,37 @@ define(['shared_helper'], function (Helper) {
      * root "initialValueCounter" -> Counter#2 count=10
      * root "referencedCounter" -> Counter#3 count=20
      */
-    async initForChannel(helper, channelName) {
-      const rest = helper.AblyRest({ useBinaryProtocol: false });
-
-      const emptyCounter = await this._createAndSetOnMap(rest, channelName, {
+    async initForChannel(channelName) {
+      const emptyCounter = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'emptyCounter',
-        createOp: this._counterCreateOp(),
+        createOp: this.counterCreateOp(),
       });
-      const initialValueCounter = await this._createAndSetOnMap(rest, channelName, {
+      const initialValueCounter = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'initialValueCounter',
-        createOp: this._counterCreateOp({ count: 10 }),
+        createOp: this.counterCreateOp({ count: 10 }),
       });
-      const referencedCounter = await this._createAndSetOnMap(rest, channelName, {
+      const referencedCounter = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'referencedCounter',
-        createOp: this._counterCreateOp({ count: 20 }),
+        createOp: this.counterCreateOp({ count: 20 }),
       });
 
-      const emptyMap = await this._createAndSetOnMap(rest, channelName, {
+      const emptyMap = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'emptyMap',
-        createOp: this._mapCreateOp(),
+        createOp: this.mapCreateOp(),
       });
-      const referencedMap = await this._createAndSetOnMap(rest, channelName, {
+      const referencedMap = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'referencedMap',
-        createOp: this._mapCreateOp({ entries: { counterKey: { data: { objectId: referencedCounter.objectId } } } }),
+        createOp: this.mapCreateOp({ entries: { counterKey: { data: { objectId: referencedCounter.objectId } } } }),
       });
-      const valuesMap = await this._createAndSetOnMap(rest, channelName, {
+      const valuesMap = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'valuesMap',
-        createOp: this._mapCreateOp({
+        createOp: this.mapCreateOp({
           entries: {
             stringKey: { data: { value: 'stringValue' } },
             emptyStringKey: { data: { value: '' } },
@@ -77,20 +79,19 @@ define(['shared_helper'], function (Helper) {
       });
     }
 
-    async _createAndSetOnMap(rest, channelName, opts) {
+    async createAndSetOnMap(channelName, opts) {
       const { mapObjectId, key, createOp } = opts;
 
-      const createResult = await this._stateRequest(rest, channelName, createOp);
-      await this._stateRequest(
-        rest,
+      const createResult = await this.stateRequest(channelName, createOp);
+      await this.stateRequest(
         channelName,
-        this._mapSetOp({ objectId: mapObjectId, key, data: { objectId: createResult.objectId } }),
+        this.mapSetOp({ objectId: mapObjectId, key, data: { objectId: createResult.objectId } }),
       );
 
       return createResult;
     }
 
-    _mapCreateOp(opts) {
+    mapCreateOp(opts) {
       const { objectId, entries } = opts ?? {};
       const op = {
         operation: {
@@ -107,26 +108,38 @@ define(['shared_helper'], function (Helper) {
       return op;
     }
 
-    _mapSetOp(opts) {
+    mapSetOp(opts) {
       const { objectId, key, data } = opts ?? {};
       const op = {
         operation: {
           action: ACTIONS.MAP_SET,
           objectId,
+          mapOp: {
+            key,
+            data,
+          },
         },
       };
-
-      if (key && data) {
-        op.operation.mapOp = {
-          key,
-          data,
-        };
-      }
 
       return op;
     }
 
-    _counterCreateOp(opts) {
+    mapRemoveOp(opts) {
+      const { objectId, key } = opts ?? {};
+      const op = {
+        operation: {
+          action: ACTIONS.MAP_REMOVE,
+          objectId,
+          mapOp: {
+            key,
+          },
+        },
+      };
+
+      return op;
+    }
+
+    counterCreateOp(opts) {
       const { objectId, count } = opts ?? {};
       const op = {
         operation: {
@@ -143,7 +156,22 @@ define(['shared_helper'], function (Helper) {
       return op;
     }
 
-    async _stateRequest(rest, channelName, opBody) {
+    counterIncOp(opts) {
+      const { objectId, amount } = opts ?? {};
+      const op = {
+        operation: {
+          action: ACTIONS.COUNTER_INC,
+          objectId,
+          counterOp: {
+            amount,
+          },
+        },
+      };
+
+      return op;
+    }
+
+    async stateRequest(channelName, opBody) {
       if (Array.isArray(opBody)) {
         throw new Error(`Only single object state requests are supported`);
       }
@@ -151,7 +179,7 @@ define(['shared_helper'], function (Helper) {
       const method = 'post';
       const path = `/channels/${channelName}/state`;
 
-      const response = await rest.request(method, path, 3, null, opBody, null);
+      const response = await this._rest.request(method, path, 3, null, opBody, null);
 
       if (response.success) {
         // only one operation in request, so need only first item.
@@ -167,5 +195,5 @@ define(['shared_helper'], function (Helper) {
     }
   }
 
-  return (module.exports = new LiveObjectsHelper());
+  return (module.exports = LiveObjectsHelper);
 });

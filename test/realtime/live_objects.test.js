@@ -36,7 +36,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           return;
         }
 
-        LiveObjectsHelper.initForChannel(helper, liveObjectsFixturesChannel)
+        new LiveObjectsHelper(helper)
+          .initForChannel(liveObjectsFixturesChannel)
           .then(done)
           .catch((err) => done(err));
       });
@@ -77,7 +78,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   {
                     object: {
                       objectId: 'root',
-                      regionalTimeserial: '@0-0',
+                      regionalTimeserial: 'a@0-0',
                       map: {},
                     },
                   },
@@ -220,7 +221,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           // wait for initial STATE_SYNC sequence to complete
           await liveObjects.getRoot();
 
-          // inject STATE_SYNC message to emulate start of new sequence
+          // inject STATE_SYNC message to emulate start of a new sequence
           helper.recordPrivateApi('call.channel.processMessage');
           helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
           await channel.processMessage(
@@ -259,11 +260,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                 {
                   object: {
                     objectId: 'root',
-                    regionalTimeserial: '@0-0',
+                    regionalTimeserial: 'a@0-0',
                     map: {
                       entries: {
                         key: {
-                          timeserial: '@0-0',
+                          timeserial: 'a@0-0',
                           data: {
                             value: 1,
                           },
@@ -285,6 +286,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         }, client);
       });
 
+      /** @nospec */
       it('builds state object tree from STATE_SYNC sequence on channel attachment', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithLiveObjects(helper);
@@ -338,6 +340,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         }, client);
       });
 
+      /** @nospec */
       it('LiveCounter is initialized with initial value from STATE_SYNC sequence', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithLiveObjects(helper);
@@ -362,6 +365,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         }, client);
       });
 
+      /** @nospec */
       it('LiveMap is initialized with initial value from STATE_SYNC sequence', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithLiveObjects(helper);
@@ -408,6 +412,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         }, client);
       });
 
+      /** @nospec */
       it('LiveMaps can reference the same object in their keys', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithLiveObjects(helper);
@@ -447,6 +452,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       });
     });
 
+    /** @nospec */
     it('can attach to channel with LiveObjects state modes', async function () {
       const helper = this.test.helper;
       const client = helper.AblyRealtime();
