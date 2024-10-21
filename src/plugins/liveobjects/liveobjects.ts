@@ -1,7 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
-import type * as API from '../../../ably';
 import type EventEmitter from 'common/lib/util/eventemitter';
+import type * as API from '../../../ably';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
@@ -84,6 +84,17 @@ export class LiveObjects {
   /**
    * @internal
    */
+  handleStateMessages(stateMessages: StateMessage[]): void {
+    if (this._syncInProgress) {
+      // TODO: handle buffering of state messages during SYNC
+    }
+
+    this._liveObjectsPool.applyStateMessages(stateMessages);
+  }
+
+  /**
+   * @internal
+   */
   onAttached(hasState?: boolean): void {
     this._client.Logger.logAction(
       this._client.logger,
@@ -131,6 +142,8 @@ export class LiveObjects {
   }
 
   private _endSync(): void {
+    // TODO: handle applying buffered state messages when SYNC is finished
+
     this._applySync();
     this._syncLiveObjectsDataPool.reset();
     this._currentSyncId = undefined;
