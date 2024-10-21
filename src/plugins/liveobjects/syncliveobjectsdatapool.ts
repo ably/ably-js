@@ -1,11 +1,10 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import RealtimeChannel from 'common/lib/client/realtimechannel';
+import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import { LiveCounterData } from './livecounter';
-import { LiveMapData, MapEntry, ObjectIdStateData, StateData, ValueStateData } from './livemap';
+import { LiveMap } from './livemap';
 import { LiveObjectData } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import { MapSemantics, StateMessage, StateObject } from './statemessage';
-import { DefaultTimeserial } from './timeserial';
 
 export interface LiveObjectDataEntry {
   objectData: LiveObjectData;
@@ -55,14 +54,14 @@ export class SyncLiveObjectsDataPool {
     this._pool.clear();
   }
 
-  applyStateMessages(stateMessages: StateMessage[]): void {
+  applyStateSyncMessages(stateMessages: StateMessage[]): void {
     for (const stateMessage of stateMessages) {
       if (!stateMessage.object) {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'LiveObjects.SyncLiveObjectsDataPool.applyStateMessages()',
-          `state message is received during SYNC without 'object' field, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+          'LiveObjects.SyncLiveObjectsDataPool.applyStateSyncMessages()',
+          `state object message is received during SYNC without 'object' field, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
       }
@@ -76,9 +75,9 @@ export class SyncLiveObjectsDataPool {
       } else {
         this._client.Logger.logAction(
           this._client.logger,
-          this._client.Logger.LOG_MINOR,
-          'LiveObjects.SyncLiveObjectsDataPool.applyStateMessages()',
-          `received unsupported state object message during SYNC, expected 'counter' or 'map' to be present; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+          this._client.Logger.LOG_MAJOR,
+          'LiveObjects.SyncLiveObjectsDataPool.applyStateSyncMessages()',
+          `received unsupported state object message during SYNC, expected 'counter' or 'map' to be present, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
         );
       }
     }
@@ -102,29 +101,7 @@ export class SyncLiveObjectsDataPool {
 
   private _createLiveMapDataEntry(stateObject: StateObject): LiveMapDataEntry {
     const map = stateObject.map!;
-
-    const objectData: LiveMapData = {
-      data: new Map<string, MapEntry>(),
-    };
-    // need to iterate over entries manually to work around optional parameters from state object entries type
-    Object.entries(map.entries ?? {}).forEach(([key, entryFromMessage]) => {
-      let liveData: StateData;
-      if (typeof entryFromMessage.data.objectId !== 'undefined') {
-        liveData = { objectId: entryFromMessage.data.objectId } as ObjectIdStateData;
-      } else {
-        liveData = { encoding: entryFromMessage.data.encoding, value: entryFromMessage.data.value } as ValueStateData;
-      }
-
-      const liveDataEntry: MapEntry = {
-        ...entryFromMessage,
-        timeserial: DefaultTimeserial.calculateTimeserial(this._client, entryFromMessage.timeserial),
-        // true only if we received explicit true. otherwise always false
-        tombstone: entryFromMessage.tombstone === true,
-        data: liveData,
-      };
-
-      objectData.data.set(key, liveDataEntry);
-    });
+    const objectData = LiveMap.liveMapDataFromMapEntries(this._client, map.entries ?? {});
 
     const newEntry: LiveMapDataEntry = {
       objectData,
