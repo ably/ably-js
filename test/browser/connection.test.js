@@ -237,7 +237,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
        * @specpartial RTN16 test
        * @specpartial RTN16d
        */
-      it.only('page_refresh_with_recovery', function (done) {
+      it('page_refresh_with_recovery', function (done) {
         const helper = this.test.helper;
 
         var realtimeOpts = {
@@ -351,7 +351,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
        * @specpartial RTN16
        * @specpartial RTN16d
        */
-      it.only('page_refresh_with_manual_recovery', function (done) {
+      it('page_refresh_with_manual_recovery', function (done) {
         const helper = this.test.helper;
 
         var realtime = helper.AblyRealtime({ closeOnUnload: false, transportParams: { _forceHandleBy: 'frontend' } }),
