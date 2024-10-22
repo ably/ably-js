@@ -17,6 +17,7 @@ import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import type { LocalDevice } from 'plugins/push/pushactivation';
+import EventEmitter from '../util/eventemitter';
 
 type BatchResult<T> = API.BatchResult<T>;
 type BatchPublishSpec = API.BatchPublishSpec;
@@ -179,6 +180,7 @@ class BaseClient {
   Logger = Logger;
   Defaults = Defaults;
   Utils = Utils;
+  EventEmitter = EventEmitter;
 }
 
 export default BaseClient;
