@@ -35,17 +35,12 @@ export class LiveObjects {
   }
 
   async getRoot(): Promise<LiveMap> {
-    if (!this._syncInProgress) {
-      // SYNC is finished, can return immediately root object from pool
-      return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap;
+    // SYNC is currently in progress, wait for SYNC sequence to finish
+    if (this._syncInProgress) {
+      await this._eventEmitter.once(LiveObjectsEvents.SyncCompleted);
     }
 
-    // otherwise wait for SYNC sequence to finish
-    return new Promise((res) => {
-      this._eventEmitter.once(LiveObjectsEvents.SyncCompleted, () => {
-        res(this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap);
-      });
-    });
+    return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap;
   }
 
   /**
