@@ -218,13 +218,16 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         /* connectionKey has the form <instanceID>!<hmac>-<handleID> */
 
         /* remove the handleID from the end of key */
-        let k = key.split('-')[0];
+        const lastIndex = key.lastIndexOf('-');
+        if (lastIndex !== -1) {
+          key = key.slice(0, lastIndex);
+        }
 
         /* skip the server instanceID if present, as reconnects may be routed to different frontends */
-        if (k.includes('!')) {
-          k = k.split('!')[1];
+        if (key.includes('!')) {
+          key = key.split('!')[1];
         }
-        return k;
+        return key;
       }
 
       /* uses internal realtime knowledge of the format of the connection key to
