@@ -27,7 +27,7 @@ export class LiveObjectsPool {
    */
   deleteExtraObjectIds(objectIds: string[]): void {
     const poolObjectIds = [...this._pool.keys()];
-    const extraObjectIds = this._client.Utils.arrSubtract(poolObjectIds, objectIds);
+    const extraObjectIds = poolObjectIds.filter((x) => !objectIds.includes(x));
 
     extraObjectIds.forEach((x) => this._pool.delete(x));
   }

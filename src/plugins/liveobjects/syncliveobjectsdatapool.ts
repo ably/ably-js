@@ -47,11 +47,11 @@ export class SyncLiveObjectsDataPool {
   }
 
   isEmpty(): boolean {
-    return this.size() === 0;
+    return this._pool.size === 0;
   }
 
   reset(): void {
-    this._pool = new Map<string, AnyDataEntry>();
+    this._pool.clear();
   }
 
   applyStateMessages(stateMessages: StateMessage[]): void {
