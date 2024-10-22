@@ -241,6 +241,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         const helper = this.test.helper;
 
         var realtimeOpts = {
+            transportParams: { _forceHandleBy: 'frontend' },
             recover: function (lastConnectionDetails, cb) {
               cb(true);
             },
@@ -353,7 +354,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
       it('page_refresh_with_manual_recovery', function (done) {
         const helper = this.test.helper;
 
-        var realtime = helper.AblyRealtime({ closeOnUnload: false }),
+        var realtime = helper.AblyRealtime({ closeOnUnload: false, transportParams: { _forceHandleBy: 'frontend' } }),
           refreshEvent = new Event('beforeunload', { bubbles: true });
 
         helper.monitorConnection(done, realtime);
@@ -374,7 +375,10 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
             return;
           }
 
-          var newRealtime = helper.AblyRealtime({ recover: recoveryKey });
+          var newRealtime = helper.AblyRealtime({
+            recover: recoveryKey,
+            transportParams: { _forceHandleBy: 'frontend' },
+          });
           newRealtime.connection.once('connected', function () {
             try {
               expect(sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime recovered the old')
