@@ -77,7 +77,11 @@ class Protocol extends EventEmitter {
         Logger.LOG_MICRO,
         'Protocol.send()',
         'sending msg; ' +
-          stringifyProtocolMessage(pendingMessage.message, this.transport.connectionManager.realtime._RealtimePresence),
+          stringifyProtocolMessage(
+            pendingMessage.message,
+            this.transport.connectionManager.realtime._RealtimePresence,
+            this.transport.connectionManager.realtime._LiveObjectsPlugin,
+          ),
       );
     }
     pendingMessage.sendAttempted = true;

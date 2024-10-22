@@ -3,7 +3,7 @@ import { DefaultRest } from '../../common/lib/client/defaultrest';
 import { DefaultRealtime } from '../../common/lib/client/defaultrealtime';
 import Platform from '../../common/platform';
 import ErrorInfo from '../../common/lib/types/errorinfo';
-import { fromDeserializedIncludingDependencies as protocolMessageFromDeserialized } from '../../common/lib/types/protocolmessage';
+import { makeFromDeserializedWithDependencies as makeProtocolMessageFromDeserialized } from '../../common/lib/types/protocolmessage';
 
 // Platform Specific
 import BufferUtils from './lib/util/bufferutils';
@@ -45,11 +45,12 @@ if (Platform.Config.agent) {
   Platform.Defaults.agent += ' ' + Platform.Config.agent;
 }
 
-export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack, protocolMessageFromDeserialized, ErrorInfo };
+export { DefaultRest as Rest, DefaultRealtime as Realtime, msgpack, makeProtocolMessageFromDeserialized, ErrorInfo };
 
 export default {
   ErrorInfo,
   Rest: DefaultRest,
   Realtime: DefaultRealtime,
   msgpack,
+  makeProtocolMessageFromDeserialized,
 };
