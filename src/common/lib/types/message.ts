@@ -19,28 +19,18 @@ const MessageActionArray: API.MessageAction[] = [
   'message_meta_occupancy',
 ];
 
-function toMessageActionString(actionNumber?: number): API.MessageAction {
-  if (actionNumber === undefined) {
-    // Allow for the case where the action is not set
-    return 'message_unset';
-  }
+function toMessageActionString(actionNumber: number): API.MessageAction | undefined {
   if (actionNumber in MessageActionArray) {
     return MessageActionArray[actionNumber];
   }
-  throw new ErrorInfo('Unknown message action number: ' + actionNumber, 40000, 400);
 }
 
-function toMessageActionNumber(messageAction?: API.MessageAction): number {
-  if (messageAction === undefined) {
-    // Allow for the case where the action is not set
-    return 0;
-  }
+function toMessageActionNumber(messageAction?: API.MessageAction): number | undefined {
   for (const [index, value] of MessageActionArray.entries()) {
     if (value === messageAction) {
       return index;
     }
   }
-  throw new ErrorInfo('Unknown message action: ' + messageAction, 40000, 400);
 }
 
 export type CipherOptions = {
@@ -337,7 +327,8 @@ export function fromValues(
 ): Message {
   const stringifyAction = options?.stringifyAction;
   if (stringifyAction) {
-    return Object.assign(new Message(), { ...values, action: toMessageActionString(values.action as number) });
+    const action = toMessageActionString(values.action as number) || values.action;
+    return Object.assign(new Message(), { ...values, action });
   }
   return Object.assign(new Message(), values);
 }
@@ -410,7 +401,7 @@ class Message {
       connectionKey: this.connectionKey,
       extras: this.extras,
       serial: this.serial,
-      action: toMessageActionNumber(this.action as API.MessageAction),
+      action: toMessageActionNumber(this.action as API.MessageAction) || this.action,
       refSerial: this.refSerial,
       refType: this.refType,
       updatedAt: this.updatedAt,
