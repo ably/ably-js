@@ -1,13 +1,13 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
-import type * as API from '../../../ably';
 import type EventEmitter from 'common/lib/util/eventemitter';
+import type * as API from '../../../ably';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
-import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
+import { LiveCounterDataEntry, SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
 
 enum LiveObjectsEvents {
   SyncCompleted = 'SyncCompleted',
@@ -67,18 +67,29 @@ export class LiveObjects {
   /**
    * @internal
    */
-  handleStateSyncMessage(stateMessages: StateMessage[], syncChannelSerial: string | null | undefined): void {
+  handleStateSyncMessages(stateMessages: StateMessage[], syncChannelSerial: string | null | undefined): void {
     const { syncId, syncCursor } = this._parseSyncChannelSerial(syncChannelSerial);
     if (this._currentSyncId !== syncId) {
       this._startNewSync(syncId, syncCursor);
     }
 
-    this._syncLiveObjectsDataPool.applyStateMessages(stateMessages);
+    this._syncLiveObjectsDataPool.applyStateSyncMessages(stateMessages);
 
     // if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
       this._endSync();
     }
+  }
+
+  /**
+   * @internal
+   */
+  handleStateMessages(stateMessages: StateMessage[]): void {
+    if (this._syncInProgress) {
+      // TODO: handle buffering of state messages during SYNC
+    }
+
+    this._liveObjectsPool.applyStateMessages(stateMessages);
   }
 
   /**
@@ -93,7 +104,7 @@ export class LiveObjects {
     );
 
     if (hasState) {
-      this._startNewSync(undefined);
+      this._startNewSync();
     } else {
       // no HAS_STATE flag received on attach, can end SYNC sequence immediately
       // and treat it as no state on a channel
@@ -131,6 +142,8 @@ export class LiveObjects {
   }
 
   private _endSync(): void {
+    // TODO: handle applying buffered state messages when SYNC is finished
+
     this._applySync();
     this._syncLiveObjectsDataPool.reset();
     this._currentSyncId = undefined;
@@ -171,6 +184,9 @@ export class LiveObjects {
       if (existingObject) {
         existingObject.setData(entry.objectData);
         existingObject.setRegionalTimeserial(entry.regionalTimeserial);
+        if (existingObject instanceof LiveCounter) {
+          existingObject.setCreated((entry as LiveCounterDataEntry).created);
+        }
         continue;
       }
 
@@ -179,7 +195,7 @@ export class LiveObjects {
       const objectType = entry.objectType;
       switch (objectType) {
         case 'LiveCounter':
-          newObject = new LiveCounter(this, entry.objectData, objectId);
+          newObject = new LiveCounter(this, entry.created, entry.objectData, objectId);
           break;
 
         case 'LiveMap':
@@ -187,7 +203,7 @@ export class LiveObjects {
           break;
 
         default:
-          throw new this._client.ErrorInfo(`Unknown live object type: ${objectType}`, 40000, 400);
+          throw new this._client.ErrorInfo(`Unknown live object type: ${objectType}`, 50000, 500);
       }
       newObject.setRegionalTimeserial(entry.regionalTimeserial);
 
