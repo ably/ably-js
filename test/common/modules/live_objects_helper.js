@@ -182,6 +182,7 @@ define(['shared_helper'], function (Helper) {
       const response = await this._rest.request(method, path, 3, null, opBody, null);
 
       if (response.success) {
+        console.log(`${method}: ${path} SUCCESS; operation = ${JSON.stringify(opBody)}; items =`, response.items);
         // only one operation in request, so need only first item.
         const result = response.items[0];
         // extract object id if present
