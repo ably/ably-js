@@ -36,6 +36,7 @@ The hooks are compatible with all versions of React above 16.8.0
 Start by connecting your app to Ably using the `AblyProvider` component. See the [`ClientOptions` documentation](https://ably.com/docs/api/realtime-sdk/types?lang=javascript) for information about what options are available when creating an Ably client. If you want to use the `usePresence` or `usePresenceListener` hooks, you'll need to explicitly provide a `clientId`.
 
 The `AblyProvider` should be high in your component tree, wrapping every component which needs to access Ably.
+Also, ensure that the `Ably.Realtime` instance is created outside of components to prevent it from being recreated on component re-renders. This will help avoid opening extra unnecessary connections to the Ably servers and potentially reaching the maximum connections limit on your account.
 
 ```jsx
 import { AblyProvider } from 'ably/react';
