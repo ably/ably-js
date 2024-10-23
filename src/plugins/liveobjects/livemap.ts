@@ -66,7 +66,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
 
       const liveDataEntry: MapEntry = {
         ...entry,
-        timeserial: DefaultTimeserial.calculateTimeserial(client, entry.timeserial),
+        timeserial: DefaultTimeserial.calculateTimeserial(client, entry.timeserial ?? 'a@0-0'),
         // true only if we received explicit true. otherwise always false
         tombstone: entry.tombstone === true,
         data: liveData,

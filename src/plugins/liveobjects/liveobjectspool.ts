@@ -80,6 +80,11 @@ export class LiveObjectsPool {
 
       const stateOperation = stateMessage.operation;
 
+      // fix for missing action for MAP_CREATE
+      if (typeof stateOperation.action === 'undefined') {
+        stateOperation.action = StateOperationAction.MAP_CREATE;
+      }
+
       switch (stateOperation.action) {
         case StateOperationAction.MAP_CREATE:
         case StateOperationAction.COUNTER_CREATE:

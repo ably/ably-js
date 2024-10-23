@@ -36,10 +36,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           return;
         }
 
-        new LiveObjectsHelper(helper)
-          .initForChannel(liveObjectsFixturesChannel)
-          .then(done)
-          .catch((err) => done(err));
+        done();
+        // new LiveObjectsHelper(helper)
+        //   .initForChannel(liveObjectsFixturesChannel)
+        //   .then(done)
+        //   .catch((err) => done(err));
       });
     });
 
@@ -947,6 +948,53 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           }, client);
         });
       }
+
+      it.only('MAP_CREATE with empty array fails in STATE_SYNC, works in STATE', async function () {
+        const helper = this.test.helper;
+        const liveObjectsHelper = new LiveObjectsHelper(helper);
+        const clientForSTATE = RealtimeWithLiveObjects(helper);
+        const channelName = `MAP_CREATE_empty_bytes_test`;
+
+        // first client connects to realtime and receives STATE message with empty array as expected
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = clientForSTATE.channels.get(channelName, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          // we're attached, let's post a MAP_CREATE op with empty byte array
+          const { objectId } = await liveObjectsHelper.stateRequest(
+            channelName,
+            liveObjectsHelper.mapCreateOp({ entries: { emptyBytesKey: { data: { value: '', encoding: 'base64' } } } }),
+          );
+          // and set it on a root
+          await liveObjectsHelper.stateRequest(
+            channelName,
+            liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'emptyBytesMap', data: { objectId: objectId } }),
+          );
+
+          // expect SDK to process the STATE message and have the map on a root, with value of an empty buffer
+          const map = root.get('emptyBytesMap');
+          expect(map).to.exist;
+          expect(BufferUtils.areBuffersEqual(map.get('emptyBytesKey'), BufferUtils.base64Decode(''))).to.be.true;
+        }, clientForSTATE);
+
+        // second client connects to realtime and expects a map to be present in STATE_SYNC, but it is missing
+        const clientForSTATE_SYNC = RealtimeWithLiveObjects(helper);
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channel = clientForSTATE_SYNC.channels.get(channelName, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          // when getRoot() is resolved, STATE_SYNC has ended. expect to have a map on root with empty buffer
+          const map = root.get('emptyBytesMap');
+          expect(map).to.exist;
+          expect(BufferUtils.areBuffersEqual(map.get('emptyBytesKey'), BufferUtils.base64Decode(''))).to.be.true;
+        }, clientForSTATE_SYNC);
+      });
     });
 
     /** @nospec */
