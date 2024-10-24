@@ -125,20 +125,14 @@ export class DefaultTimeserial implements Timeserial {
       return counterDiff;
     }
 
-    // Compare the seriesId
-    // An empty seriesId is considered less than a non-empty one
-    if (!this.seriesId && secondTimeserial.seriesId) {
-      return -1;
-    }
-    if (this.seriesId && !secondTimeserial.seriesId) {
-      return 1;
-    }
-    // Otherwise compare seriesId lexicographically
-    const seriesIdDiff =
-      this.seriesId === secondTimeserial.seriesId ? 0 : this.seriesId < secondTimeserial.seriesId ? -1 : 1;
-
-    if (seriesIdDiff) {
-      return seriesIdDiff;
+    // Compare the seriesId lexicographically, but only if both seriesId exist
+    const seriesComparison =
+      this.seriesId &&
+      secondTimeserial.seriesId &&
+      this.seriesId !== secondTimeserial.seriesId &&
+      (this.seriesId > secondTimeserial.seriesId ? 1 : -1);
+    if (seriesComparison) {
+      return seriesComparison;
     }
 
     // Compare the index, if present
