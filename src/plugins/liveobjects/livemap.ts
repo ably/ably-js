@@ -75,7 +75,9 @@ export class LiveMap extends LiveObject<LiveMapData> {
 
       const liveDataEntry: MapEntry = {
         ...entry,
-        timeserial: DefaultTimeserial.calculateTimeserial(client, entry.timeserial),
+        timeserial: entry.timeserial
+          ? DefaultTimeserial.calculateTimeserial(client, entry.timeserial)
+          : DefaultTimeserial.zeroValueTimeserial(client),
         // true only if we received explicit true. otherwise always false
         tombstone: entry.tombstone === true,
         data: liveData,
@@ -150,7 +152,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
         if (this._client.Utils.isNil(op.mapOp)) {
           this._throwNoPayloadError(op);
         } else {
-          this._applyMapSet(op.mapOp, msg.serial);
+          this._applyMapSet(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
         }
         break;
 
@@ -158,7 +160,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
         if (this._client.Utils.isNil(op.mapOp)) {
           this._throwNoPayloadError(op);
         } else {
-          this._applyMapRemove(op.mapOp, msg.serial);
+          this._applyMapRemove(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
         }
         break;
 
@@ -202,7 +204,9 @@ export class LiveMap extends LiveObject<LiveMapData> {
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
     Object.entries(op.entries ?? {}).forEach(([key, entry]) => {
       // for MAP_CREATE op we must use dedicated timeserial field available on an entry, instead of a timeserial on a message
-      const opOriginTimeserial = entry.timeserial;
+      const opOriginTimeserial = entry.timeserial
+        ? DefaultTimeserial.calculateTimeserial(this._client, entry.timeserial)
+        : DefaultTimeserial.zeroValueTimeserial(this._client);
       if (entry.tombstone === true) {
         // entry in MAP_CREATE op is deleted, try to apply MAP_REMOVE op
         this._applyMapRemove({ key }, opOriginTimeserial);
@@ -213,18 +217,17 @@ export class LiveMap extends LiveObject<LiveMapData> {
     });
   }
 
-  private _applyMapSet(op: StateMapOp, opOriginTimeserialStr: string | undefined): void {
+  private _applyMapSet(op: StateMapOp, opOriginTimeserial: Timeserial): void {
     const { ErrorInfo, Utils } = this._client;
 
-    const opTimeserial = DefaultTimeserial.calculateTimeserial(this._client, opOriginTimeserialStr);
     const existingEntry = this._dataRef.data.get(op.key);
-    if (existingEntry && opTimeserial.before(existingEntry.timeserial)) {
+    if (existingEntry && opOriginTimeserial.before(existingEntry.timeserial)) {
       // the operation's origin timeserial < the entry's timeserial, ignore the operation.
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapSet()',
-        `skipping updating key="${op.key}" as existing key entry has greater timeserial: ${existingEntry.timeserial.toString()}, than the op: ${opOriginTimeserialStr}; objectId=${this._objectId}`,
+        `skipping updating key="${op.key}" as existing key entry has greater timeserial: ${existingEntry.timeserial.toString()}, than the op: ${opOriginTimeserial.toString()}; objectId=${this._objectId}`,
       );
       return;
     }
@@ -251,40 +254,39 @@ export class LiveMap extends LiveObject<LiveMapData> {
 
     if (existingEntry) {
       existingEntry.tombstone = false;
-      existingEntry.timeserial = opTimeserial;
+      existingEntry.timeserial = opOriginTimeserial;
       existingEntry.data = liveData;
     } else {
       const newEntry: MapEntry = {
         tombstone: false,
-        timeserial: opTimeserial,
+        timeserial: opOriginTimeserial,
         data: liveData,
       };
       this._dataRef.data.set(op.key, newEntry);
     }
   }
 
-  private _applyMapRemove(op: StateMapOp, opOriginTimeserialStr: string | undefined): void {
-    const opTimeserial = DefaultTimeserial.calculateTimeserial(this._client, opOriginTimeserialStr);
+  private _applyMapRemove(op: StateMapOp, opOriginTimeserial: Timeserial): void {
     const existingEntry = this._dataRef.data.get(op.key);
-    if (existingEntry && opTimeserial.before(existingEntry.timeserial)) {
+    if (existingEntry && opOriginTimeserial.before(existingEntry.timeserial)) {
       // the operation's origin timeserial < the entry's timeserial, ignore the operation.
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapRemove()',
-        `skipping removing key="${op.key}" as existing key entry has greater timeserial: ${existingEntry.timeserial.toString()}, than the op: ${opOriginTimeserialStr}; objectId=${this._objectId}`,
+        `skipping removing key="${op.key}" as existing key entry has greater timeserial: ${existingEntry.timeserial.toString()}, than the op: ${opOriginTimeserial.toString()}; objectId=${this._objectId}`,
       );
       return;
     }
 
     if (existingEntry) {
       existingEntry.tombstone = true;
-      existingEntry.timeserial = opTimeserial;
+      existingEntry.timeserial = opOriginTimeserial;
       existingEntry.data = undefined;
     } else {
       const newEntry: MapEntry = {
         tombstone: true,
-        timeserial: opTimeserial,
+        timeserial: opOriginTimeserial,
         data: undefined,
       };
       this._dataRef.data.set(op.key, newEntry);
