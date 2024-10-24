@@ -8,10 +8,15 @@ import { LiveObject } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
 import { LiveCounterDataEntry, SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
-import { DefaultTimeserial } from './timeserial';
+import { DefaultTimeserial, Timeserial } from './timeserial';
 
 enum LiveObjectsEvents {
   SyncCompleted = 'SyncCompleted',
+}
+
+export interface BufferedStateMessage {
+  stateMessage: StateMessage;
+  regionalTimeserial: Timeserial;
 }
 
 export class LiveObjects {
@@ -25,6 +30,7 @@ export class LiveObjects {
   private _syncInProgress: boolean;
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
+  private _bufferedStateOperations: BufferedStateMessage[];
 
   constructor(channel: RealtimeChannel) {
     this._channel = channel;
@@ -33,6 +39,7 @@ export class LiveObjects {
     this._liveObjectsPool = new LiveObjectsPool(this);
     this._syncLiveObjectsDataPool = new SyncLiveObjectsDataPool(this);
     this._syncInProgress = true;
+    this._bufferedStateOperations = [];
   }
 
   async getRoot(): Promise<LiveMap> {
@@ -87,8 +94,16 @@ export class LiveObjects {
    */
   handleStateMessages(stateMessages: StateMessage[], msgRegionalTimeserial: string | null | undefined): void {
     const timeserial = DefaultTimeserial.calculateTimeserial(this._client, msgRegionalTimeserial);
+
     if (this._syncInProgress) {
-      // TODO: handle buffering of state messages during SYNC
+      // the client receives state messages in realtime over the channel concurrently with the SYNC sequence,
+      // which means that some of the state messages may already be applied by the realtime in the SYNC sequence once it's ended.
+      // to avoid re-applying those state messages (for example double counting COUNTER_INC operation),
+      // we buffer incoming state operation messsages while SYNC is in progress, and apply them once SYNC has ended.
+      stateMessages.forEach((x) =>
+        this._bufferedStateOperations.push({ stateMessage: x, regionalTimeserial: timeserial }),
+      );
+      return;
     }
 
     this._liveObjectsPool.applyStateMessages(stateMessages, timeserial);
@@ -102,7 +117,7 @@ export class LiveObjects {
       this._client.logger,
       this._client.Logger.LOG_MINOR,
       'LiveObjects.onAttached()',
-      'channel = ' + this._channel.name + ', hasState = ' + hasState,
+      `channel=${this._channel.name}, hasState=${hasState}`,
     );
 
     if (hasState) {
@@ -137,6 +152,8 @@ export class LiveObjects {
   }
 
   private _startNewSync(syncId?: string, syncCursor?: string): void {
+    // need to discard all buffered state operation messages on new sync start
+    this._bufferedStateOperations = [];
     this._syncLiveObjectsDataPool.reset();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
@@ -144,9 +161,11 @@ export class LiveObjects {
   }
 
   private _endSync(): void {
-    // TODO: handle applying buffered state messages when SYNC is finished
-
     this._applySync();
+    // should apply buffered state operations after we applied the SYNC data
+    this._liveObjectsPool.applyBufferedStateMessages(this._bufferedStateOperations);
+
+    this._bufferedStateOperations = [];
     this._syncLiveObjectsDataPool.reset();
     this._currentSyncId = undefined;
     this._currentSyncCursor = undefined;
