@@ -102,6 +102,15 @@ export class DefaultTimeserial implements Timeserial {
   }
 
   /**
+   * Returns a zero-value Timeserial `@0-0` - "earliest possible" timeserial.
+   *
+   * @returns The timeserial object.
+   */
+  static zeroValueTimeserial(client: BaseClient): Timeserial {
+    return new DefaultTimeserial(client, '', 0, 0); // @0-0
+  }
+
+  /**
    * Compares this timeserial to the supplied timeserial, returning a number indicating their relative order.
    * @param timeserialToCompare The timeserial to compare against. Can be a string or a Timeserial object.
    * @returns 0 if the timeserials are equal, <0 if the first timeserial is less than the second, >0 if the first timeserial is greater than the second.
