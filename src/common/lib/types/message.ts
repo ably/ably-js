@@ -294,33 +294,6 @@ export async function fromResponseBody(
   return body;
 }
 
-/**
- * This is used to return a new message with a given action type set.
- * @param values - This is a message-like object, with the values to be set on the new message object.
- * @param action - This is the action type that will be applied to the message
- * @returns {Message} - This is a new message, with the provided action type set.
- */
-export function messageFromValuesWithAction(
-  values: Message | Record<string, unknown>,
-  action: API.MessageAction,
-): Message {
-  return fromValues({ ...values, action: action });
-}
-
-/**
- * This is used to return an array of new messages, each set with the provided action type.
- * It will apply the same action type to ALL messages.
- * @param values - This is the array of message-like objects, with the values to be set on the new messages.
- * @param action - This is the action type, applied to each message in the array.
- * @returns {Message[]} - This is an array of new messages, each with the provided action type set.
- */
-export function messageFromValuesArrayWithAction(values: unknown[], action: API.MessageAction): Message[] {
-  const count = values.length,
-    result = new Array(count);
-  for (let i = 0; i < count; i++) result[i] = messageFromValuesWithAction(values[i] as Record<string, unknown>, action);
-  return result;
-}
-
 export function fromValues(
   values: Message | Record<string, unknown>,
   options?: { stringifyAction?: boolean },

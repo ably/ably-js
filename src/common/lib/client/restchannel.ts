@@ -6,8 +6,8 @@ import Message, {
   serialize as serializeMessage,
   getMessagesSize,
   CipherOptions,
-  messageFromValuesWithAction,
-  messageFromValuesArrayWithAction,
+  fromValues as messageFromValues,
+  fromValuesArray as messagesFromValuesArray,
 } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
@@ -74,13 +74,13 @@ class RestChannel {
 
     if (typeof first === 'string' || first === null) {
       /* (name, data, ...) */
-      messages = [messageFromValuesWithAction({ name: first, data: second }, 'message_create')];
+      messages = [messageFromValues({ name: first, data: second })];
       params = args[2];
     } else if (Utils.isObject(first)) {
-      messages = [messageFromValuesWithAction(first, 'message_create')];
+      messages = [messageFromValues(first)];
       params = args[1];
     } else if (Array.isArray(first)) {
-      messages = messageFromValuesArrayWithAction(first, 'message_create');
+      messages = messagesFromValuesArray(first);
       params = args[1];
     } else {
       throw new ErrorInfo(
