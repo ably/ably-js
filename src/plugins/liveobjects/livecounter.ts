@@ -1,6 +1,7 @@
 import { LiveObject, LiveObjectData } from './liveobject';
 import { LiveObjects } from './liveobjects';
-import { StateCounter, StateCounterOp, StateOperation, StateOperationAction } from './statemessage';
+import { StateCounter, StateCounterOp, StateMessage, StateOperation, StateOperationAction } from './statemessage';
+import { Timeserial } from './timeserial';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number;
@@ -12,8 +13,9 @@ export class LiveCounter extends LiveObject<LiveCounterData> {
     private _created: boolean,
     initialData?: LiveCounterData | null,
     objectId?: string,
+    regionalTimeserial?: Timeserial,
   ) {
-    super(liveObjects, initialData, objectId);
+    super(liveObjects, initialData, objectId, regionalTimeserial);
   }
 
   /**
@@ -21,8 +23,13 @@ export class LiveCounter extends LiveObject<LiveCounterData> {
    *
    * @internal
    */
-  static zeroValue(liveobjects: LiveObjects, isCreated: boolean, objectId?: string): LiveCounter {
-    return new LiveCounter(liveobjects, isCreated, null, objectId);
+  static zeroValue(
+    liveobjects: LiveObjects,
+    isCreated: boolean,
+    objectId?: string,
+    regionalTimeserial?: Timeserial,
+  ): LiveCounter {
+    return new LiveCounter(liveobjects, isCreated, null, objectId, regionalTimeserial);
   }
 
   value(): number {
@@ -46,7 +53,7 @@ export class LiveCounter extends LiveObject<LiveCounterData> {
   /**
    * @internal
    */
-  applyOperation(op: StateOperation): void {
+  applyOperation(op: StateOperation, msg: StateMessage, opRegionalTimeserial: Timeserial): void {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply state operation with objectId=${op.objectId}, to this LiveCounter with objectId=${this.getObjectId()}`,
@@ -75,6 +82,8 @@ export class LiveCounter extends LiveObject<LiveCounterData> {
           500,
         );
     }
+
+    this.setRegionalTimeserial(opRegionalTimeserial);
   }
 
   protected _getZeroValueData(): LiveCounterData {

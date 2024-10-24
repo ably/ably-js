@@ -46,8 +46,9 @@ export class LiveMap extends LiveObject<LiveMapData> {
     private _semantics: MapSemantics,
     initialData?: LiveMapData | null,
     objectId?: string,
+    regionalTimeserial?: Timeserial,
   ) {
-    super(liveObjects, initialData, objectId);
+    super(liveObjects, initialData, objectId, regionalTimeserial);
   }
 
   /**
@@ -55,8 +56,8 @@ export class LiveMap extends LiveObject<LiveMapData> {
    *
    * @internal
    */
-  static zeroValue(liveobjects: LiveObjects, objectId?: string): LiveMap {
-    return new LiveMap(liveobjects, MapSemantics.LWW, null, objectId);
+  static zeroValue(liveobjects: LiveObjects, objectId?: string, regionalTimeserial?: Timeserial): LiveMap {
+    return new LiveMap(liveobjects, MapSemantics.LWW, null, objectId, regionalTimeserial);
   }
 
   static liveMapDataFromMapEntries(client: BaseClient, entries: Record<string, StateMapEntry>): LiveMapData {
@@ -134,7 +135,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
   /**
    * @internal
    */
-  applyOperation(op: StateOperation, msg: StateMessage): void {
+  applyOperation(op: StateOperation, msg: StateMessage, opRegionalTimeserial: Timeserial): void {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply state operation with objectId=${op.objectId}, to this LiveMap with objectId=${this.getObjectId()}`,
@@ -171,6 +172,8 @@ export class LiveMap extends LiveObject<LiveMapData> {
           500,
         );
     }
+
+    this.setRegionalTimeserial(opRegionalTimeserial);
   }
 
   protected _getZeroValueData(): LiveMapData {
