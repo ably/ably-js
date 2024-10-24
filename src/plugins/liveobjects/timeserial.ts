@@ -78,7 +78,7 @@ export class DefaultTimeserial implements Timeserial {
     }
 
     const [seriesId, rest] = timeserial.split('@');
-    if (!seriesId || !rest) {
+    if (!rest) {
       throw new client.ErrorInfo(`Invalid timeserial: ${timeserial}`, 50000, 500);
     }
 
