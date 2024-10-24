@@ -78,7 +78,7 @@ export class DefaultTimeserial implements Timeserial {
     }
 
     const [seriesId, rest] = timeserial.split('@');
-    if (!seriesId || !rest) {
+    if (!rest) {
       throw new client.ErrorInfo(`Invalid timeserial: ${timeserial}`, 50000, 500);
     }
 
@@ -99,6 +99,15 @@ export class DefaultTimeserial implements Timeserial {
       Number(counter),
       index ? Number(index) : undefined,
     );
+  }
+
+  /**
+   * Returns a zero-value Timeserial `@0-0` - "earliest possible" timeserial.
+   *
+   * @returns The timeserial object.
+   */
+  static zeroValueTimeserial(client: BaseClient): Timeserial {
+    return new DefaultTimeserial(client, '', 0, 0); // @0-0
   }
 
   /**
@@ -125,20 +134,14 @@ export class DefaultTimeserial implements Timeserial {
       return counterDiff;
     }
 
-    // Compare the seriesId
-    // An empty seriesId is considered less than a non-empty one
-    if (!this.seriesId && secondTimeserial.seriesId) {
-      return -1;
-    }
-    if (this.seriesId && !secondTimeserial.seriesId) {
-      return 1;
-    }
-    // Otherwise compare seriesId lexicographically
-    const seriesIdDiff =
-      this.seriesId === secondTimeserial.seriesId ? 0 : this.seriesId < secondTimeserial.seriesId ? -1 : 1;
-
-    if (seriesIdDiff) {
-      return seriesIdDiff;
+    // Compare the seriesId lexicographically, but only if both seriesId exist
+    const seriesComparison =
+      this.seriesId &&
+      secondTimeserial.seriesId &&
+      this.seriesId !== secondTimeserial.seriesId &&
+      (this.seriesId > secondTimeserial.seriesId ? 1 : -1);
+    if (seriesComparison) {
+      return seriesComparison;
     }
 
     // Compare the index, if present

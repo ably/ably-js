@@ -48,8 +48,13 @@ export interface StateCounterOp {
 export interface StateMapEntry {
   /** Indicates whether the map entry has been removed. */
   tombstone?: boolean;
-  /** The *origin* timeserial of the last operation that was applied to the map entry. */
-  timeserial: string;
+  /**
+   * The *origin* timeserial of the last operation that was applied to the map entry.
+   *
+   * It is optional in a MAP_CREATE operation and might be missing, in which case the client should default to using zero-value timeserial,
+   * which is the "earliest possible" timeserial. This will allow any other operation to update the field based on a timeserial comparison.
+   */
+  timeserial?: string;
   /** The data that represents the value of the map entry. */
   data: StateData;
 }
