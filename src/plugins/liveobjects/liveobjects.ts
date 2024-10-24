@@ -8,6 +8,7 @@ import { LiveObject } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
 import { LiveCounterDataEntry, SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
+import { DefaultTimeserial } from './timeserial';
 
 enum LiveObjectsEvents {
   SyncCompleted = 'SyncCompleted',
@@ -84,12 +85,13 @@ export class LiveObjects {
   /**
    * @internal
    */
-  handleStateMessages(stateMessages: StateMessage[]): void {
+  handleStateMessages(stateMessages: StateMessage[], msgRegionalTimeserial: string | null | undefined): void {
+    const timeserial = DefaultTimeserial.calculateTimeserial(this._client, msgRegionalTimeserial);
     if (this._syncInProgress) {
       // TODO: handle buffering of state messages during SYNC
     }
 
-    this._liveObjectsPool.applyStateMessages(stateMessages);
+    this._liveObjectsPool.applyStateMessages(stateMessages, timeserial);
   }
 
   /**
@@ -180,10 +182,11 @@ export class LiveObjects {
     for (const [objectId, entry] of this._syncLiveObjectsDataPool.entries()) {
       receivedObjectIds.add(objectId);
       const existingObject = this._liveObjectsPool.get(objectId);
+      const regionalTimeserialObj = DefaultTimeserial.calculateTimeserial(this._client, entry.regionalTimeserial);
 
       if (existingObject) {
         existingObject.setData(entry.objectData);
-        existingObject.setRegionalTimeserial(entry.regionalTimeserial);
+        existingObject.setRegionalTimeserial(regionalTimeserialObj);
         if (existingObject instanceof LiveCounter) {
           existingObject.setCreated((entry as LiveCounterDataEntry).created);
         }
@@ -195,17 +198,16 @@ export class LiveObjects {
       const objectType = entry.objectType;
       switch (objectType) {
         case 'LiveCounter':
-          newObject = new LiveCounter(this, entry.created, entry.objectData, objectId);
+          newObject = new LiveCounter(this, entry.created, entry.objectData, objectId, regionalTimeserialObj);
           break;
 
         case 'LiveMap':
-          newObject = new LiveMap(this, entry.semantics, entry.objectData, objectId);
+          newObject = new LiveMap(this, entry.semantics, entry.objectData, objectId, regionalTimeserialObj);
           break;
 
         default:
           throw new this._client.ErrorInfo(`Unknown live object type: ${objectType}`, 50000, 500);
       }
-      newObject.setRegionalTimeserial(entry.regionalTimeserial);
 
       this._liveObjectsPool.set(objectId, newObject);
     }
