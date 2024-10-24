@@ -336,7 +336,7 @@ class Message {
   encoding?: string | null;
   extras?: any;
   size?: number;
-  action?: API.MessageAction | number | undefined;
+  action?: API.MessageAction | number;
   serial?: string;
   refSerial?: string;
   refType?: string;
