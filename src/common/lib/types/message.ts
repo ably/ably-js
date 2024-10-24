@@ -19,18 +19,18 @@ const MessageActionArray: API.MessageAction[] = [
   'message_meta_occupancy',
 ];
 
+const MessageActionMap = new Map<API.MessageAction, number>(MessageActionArray.map((action, index) => [action, index]));
+
+const ReverseMessageActionMap = new Map<number, API.MessageAction>(
+  MessageActionArray.map((action, index) => [index, action]),
+);
+
 function toMessageActionString(actionNumber: number): API.MessageAction | undefined {
-  if (actionNumber in MessageActionArray) {
-    return MessageActionArray[actionNumber];
-  }
+  return ReverseMessageActionMap.get(actionNumber);
 }
 
 function toMessageActionNumber(messageAction?: API.MessageAction): number | undefined {
-  for (const [index, value] of MessageActionArray.entries()) {
-    if (value === messageAction) {
-      return index;
-    }
-  }
+  return messageAction ? MessageActionMap.get(messageAction) : undefined;
 }
 
 export type CipherOptions = {
