@@ -61,6 +61,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it(`doesn't break when it receives a STATE ProtocolMessage`, async function () {
         const helper = this.test.helper;
+        const liveObjectsHelper = new LiveObjectsHelper(helper);
         const testClient = helper.AblyRealtime();
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
@@ -73,25 +74,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
             // inject STATE message that should be ignored and not break anything without LiveObjects plugin
-            helper.recordPrivateApi('call.channel.processMessage');
-            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
-            await testChannel.processMessage(
-              createPM({
-                action: 19,
-                channel: 'channel',
-                channelSerial: 'serial:',
-                state: [
-                  {
-                    operation: {
-                      action: 1,
-                      objectId: 'root',
-                      mapOp: { key: 'stringKey', data: { value: 'stringValue' } },
-                    },
-                    serial: 'a@0-0',
-                  },
-                ],
-              }),
-            );
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel: testChannel,
+              serial: '@0-0',
+              state: [
+                liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'stringKey', data: { value: 'stringValue' } }),
+              ],
+            });
 
             const publishChannel = publishClient.channels.get('channel');
             await publishChannel.publish(null, 'test');
@@ -105,6 +94,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it(`doesn't break when it receives a STATE_SYNC ProtocolMessage`, async function () {
         const helper = this.test.helper;
+        const liveObjectsHelper = new LiveObjectsHelper(helper);
         const testClient = helper.AblyRealtime();
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
@@ -117,24 +107,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
             // inject STATE_SYNC message that should be ignored and not break anything without LiveObjects plugin
-            helper.recordPrivateApi('call.channel.processMessage');
-            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
-            await testChannel.processMessage(
-              createPM({
-                action: 20,
-                channel: 'channel',
-                channelSerial: 'serial:',
-                state: [
-                  {
-                    object: {
-                      objectId: 'root',
-                      regionalTimeserial: 'a@0-0',
-                      map: {},
-                    },
-                  },
-                ],
-              }),
-            );
+            await liveObjectsHelper.processStateObjectMessageOnChannel({
+              channel: testChannel,
+              syncSerial: 'serial:',
+              state: [liveObjectsHelper.mapObject({ objectId: 'root', regionalTimeserial: '@0-0' })],
+            });
 
             const publishChannel = publishClient.channels.get('channel');
             await publishChannel.publish(null, 'test');
@@ -261,6 +238,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it('getRoot() waits for subsequent STATE_SYNC to finish before resolving', async function () {
         const helper = this.test.helper;
+        const liveObjectsHelper = new LiveObjectsHelper(helper);
         const client = RealtimeWithLiveObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
@@ -272,23 +250,17 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           await liveObjects.getRoot();
 
           // inject STATE_SYNC message to emulate start of a new sequence
-          helper.recordPrivateApi('call.channel.processMessage');
-          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
-          await channel.processMessage(
-            createPM({
-              action: 20,
-              channel: 'channel',
-              // have cursor so client awaits for additional STATE_SYNC messages
-              channelSerial: 'serial:cursor',
-              state: [],
-            }),
-          );
+          await liveObjectsHelper.processStateObjectMessageOnChannel({
+            channel,
+            // have cursor so client awaits for additional STATE_SYNC messages
+            syncSerial: 'serial:cursor',
+          });
 
           let getRootResolved = false;
-          let newRoot;
+          let root;
           liveObjects.getRoot().then((value) => {
             getRootResolved = true;
-            newRoot = value;
+            root = value;
           });
 
           // wait for next tick to check that getRoot() promise handler didn't proc
@@ -297,42 +269,26 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           expect(getRootResolved, 'Check getRoot() is not resolved while STATE_SYNC is in progress').to.be.false;
 
-          // inject next STATE_SYNC message
-          helper.recordPrivateApi('call.channel.processMessage');
-          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
-          await channel.processMessage(
-            createPM({
-              action: 20,
-              channel: 'channel',
-              // no cursor to indicate the end of STATE_SYNC messages
-              channelSerial: 'serial:',
-              state: [
-                {
-                  object: {
-                    objectId: 'root',
-                    regionalTimeserial: 'a@0-0',
-                    map: {
-                      entries: {
-                        key: {
-                          timeserial: 'a@0-0',
-                          data: {
-                            value: 1,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              ],
-            }),
-          );
+          // inject final STATE_SYNC message
+          await liveObjectsHelper.processStateObjectMessageOnChannel({
+            channel,
+            // no cursor to indicate the end of STATE_SYNC messages
+            syncSerial: 'serial:',
+            state: [
+              liveObjectsHelper.mapObject({
+                objectId: 'root',
+                regionalTimeserial: '@0-0',
+                entries: { key: { timeserial: '@0-0', data: { value: 1 } } },
+              }),
+            ],
+          });
 
           // wait for next tick for getRoot() handler to process
           helper.recordPrivateApi('call.Platform.nextTick');
           await new Promise((res) => nextTick(res));
 
           expect(getRootResolved, 'Check getRoot() is resolved when STATE_SYNC sequence has ended').to.be.true;
-          expect(newRoot.get('key')).to.equal(1, 'Check new root after STATE_SYNC sequence has expected key');
+          expect(root.get('key')).to.equal(1, 'Check new root after STATE_SYNC sequence has expected key');
         }, client);
       });
 
