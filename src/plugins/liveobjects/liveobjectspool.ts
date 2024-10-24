@@ -3,7 +3,7 @@ import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
-import { LiveObjects } from './liveobjects';
+import { BufferedStateMessage, LiveObjects } from './liveobjects';
 import { ObjectId } from './objectid';
 import { MapSemantics, StateMessage, StateOperation, StateOperationAction } from './statemessage';
 import { DefaultTimeserial, Timeserial } from './timeserial';
@@ -123,6 +123,46 @@ export class LiveObjectsPool {
             `received unsupported action in state operation message: ${stateOperation.action}, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
           );
       }
+    }
+  }
+
+  applyBufferedStateMessages(bufferedStateMessages: BufferedStateMessage[]): void {
+    // since we receive state operation messages concurrently with the SYNC sequence,
+    // we must determine which operation messages should be applied to the now local copy of the object pool, and the rest will be skipped.
+    // since messages are delivered in regional order to the client, we can inspect the regional timeserial
+    // of each state operation message to know whether it has reached a point in the message stream
+    // that is no longer included in the state object snapshot we received from SYNC sequence.
+    for (const { regionalTimeserial, stateMessage } of bufferedStateMessages) {
+      if (!stateMessage.operation) {
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MAJOR,
+          'LiveObjects.LiveObjectsPool.applyBufferedStateMessages()',
+          `state operation message is received without 'operation' field, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+        );
+        continue;
+      }
+
+      const existingObject = this.get(stateMessage.operation.objectId);
+      if (!existingObject) {
+        // for object ids we haven't seen yet we can apply operation immediately
+        this.applyStateMessages([stateMessage], regionalTimeserial);
+        continue;
+      }
+
+      // otherwise we need to compare regional timeserials
+      if (regionalTimeserial.before(existingObject.getRegionalTimeserial())) {
+        // the operation's regional timeserial < the object's timeserial, ignore the operation.
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MICRO,
+          'LiveObjects.LiveObjectsPool.applyBufferedStateMessages()',
+          `skipping applying buffered state operation message as existing object has greater regional timeserial: ${existingObject.getRegionalTimeserial().toString()}, than the op: ${regionalTimeserial.toString()}; objectId=${stateMessage.operation.objectId}, message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+        );
+        continue;
+      }
+
+      this.applyStateMessages([stateMessage], regionalTimeserial);
     }
   }
 
