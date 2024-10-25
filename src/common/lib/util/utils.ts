@@ -165,15 +165,6 @@ export function arrIntersectOb<K extends string>(arr: Array<K>, ob: Partial<Reco
   return result;
 }
 
-export function arrSubtract<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
-  const result = [];
-  for (let i = 0; i < arr1.length; i++) {
-    const element = arr1[i];
-    if (arr2.indexOf(element) == -1) result.push(element);
-  }
-  return result;
-}
-
 export function arrDeleteValue<T>(arr: Array<T>, val: T): boolean {
   const idx = arr.indexOf(val);
   const res = idx != -1;
