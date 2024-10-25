@@ -54,12 +54,12 @@ export class LiveObjectsPool {
     let zeroValueObject: LiveObject;
     switch (parsedObjectId.type) {
       case 'map': {
-        zeroValueObject = new LiveMap(this._liveObjects, MapSemantics.LWW, null, objectId);
+        zeroValueObject = LiveMap.zeroValue(this._liveObjects, objectId);
         break;
       }
 
       case 'counter':
-        zeroValueObject = new LiveCounter(this._liveObjects, false, null, objectId);
+        zeroValueObject = LiveCounter.zeroValue(this._liveObjects, false, objectId);
         break;
     }
 
@@ -125,7 +125,7 @@ export class LiveObjectsPool {
 
   private _getInitialPool(): Map<string, LiveObject> {
     const pool = new Map<string, LiveObject>();
-    const root = new LiveMap(this._liveObjects, MapSemantics.LWW, null, ROOT_OBJECT_ID);
+    const root = LiveMap.zeroValue(this._liveObjects, ROOT_OBJECT_ID);
     pool.set(root.getObjectId(), root);
     return pool;
   }
@@ -133,8 +133,8 @@ export class LiveObjectsPool {
   private _handleCounterCreate(stateOperation: StateOperation): void {
     let counter: LiveCounter;
     if (this._client.Utils.isNil(stateOperation.counter)) {
-      // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
-      counter = new LiveCounter(this._liveObjects, true, { data: 0 }, stateOperation.objectId);
+      // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly a zero-value counter.
+      counter = LiveCounter.zeroValue(this._liveObjects, true, stateOperation.objectId);
     } else {
       counter = new LiveCounter(
         this._liveObjects,
@@ -150,8 +150,8 @@ export class LiveObjectsPool {
   private _handleMapCreate(stateOperation: StateOperation): void {
     let map: LiveMap;
     if (this._client.Utils.isNil(stateOperation.map)) {
-      // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
-      map = new LiveMap(this._liveObjects, MapSemantics.LWW, null, stateOperation.objectId);
+      // if a map object is missing for the MAP_CREATE op, the initial value is implicitly a zero-value map.
+      map = LiveMap.zeroValue(this._liveObjects, stateOperation.objectId);
     } else {
       const objectData = LiveMap.liveMapDataFromMapEntries(this._client, stateOperation.map.entries ?? {});
       map = new LiveMap(

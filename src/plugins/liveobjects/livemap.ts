@@ -50,6 +50,15 @@ export class LiveMap extends LiveObject<LiveMapData> {
     super(liveObjects, initialData, objectId);
   }
 
+  /**
+   * Returns a {@link LiveMap} instance with an empty map data.
+   *
+   * @internal
+   */
+  static zeroValue(liveobjects: LiveObjects, objectId?: string): LiveMap {
+    return new LiveMap(liveobjects, MapSemantics.LWW, null, objectId);
+  }
+
   static liveMapDataFromMapEntries(client: BaseClient, entries: Record<string, StateMapEntry>): LiveMapData {
     const liveMapData: LiveMapData = {
       data: new Map<string, MapEntry>(),

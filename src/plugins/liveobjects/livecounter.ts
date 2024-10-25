@@ -16,6 +16,15 @@ export class LiveCounter extends LiveObject<LiveCounterData> {
     super(liveObjects, initialData, objectId);
   }
 
+  /**
+   * Returns a {@link LiveCounter} instance with a 0 value.
+   *
+   * @internal
+   */
+  static zeroValue(liveobjects: LiveObjects, isCreated: boolean, objectId?: string): LiveCounter {
+    return new LiveCounter(liveobjects, isCreated, null, objectId);
+  }
+
   value(): number {
     return this._dataRef.data;
   }
