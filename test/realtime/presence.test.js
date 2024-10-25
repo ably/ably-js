@@ -1627,117 +1627,78 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTP17g
      * @specpartial RTP17i - tests simple re-entry, no RESUMED flag test
      */
-    it('presence_auto_reenter', function (done) {
+    it('presence_auto_reenter', async function () {
       const helper = this.test.helper;
-      var channelName = 'presence_auto_reenter';
-      var realtime = helper.AblyRealtime();
-      var channel = realtime.channels.get(channelName);
+      const channelName = 'presence_auto_reenter';
+      const realtime = helper.AblyRealtime();
+      const channel = realtime.channels.get(channelName);
 
-      async.series(
-        [
-          function (cb) {
-            realtime.connection.once('connected', function () {
-              cb();
-            });
-          },
-          function (cb) {
-            Helper.whenPromiseSettles(channel.attach(), cb);
-          },
-          function (cb) {
-            if (!channel.presence.syncComplete) {
-              helper.recordPrivateApi('call.presence.waitSync');
-              channel.presence.members.waitSync(cb);
-            } else {
-              cb();
-            }
-          },
-          function (cb) {
-            channel.presence.enterClient('one', 'onedata');
-            channel.presence.subscribe('enter', function () {
-              channel.presence.unsubscribe('enter');
-              cb();
-            });
-          },
-          function (cb) {
-            /* inject an additional member into the myMember set, then force a suspended state */
-            helper.recordPrivateApi('read.connectionManager.connectionId');
-            var connId = realtime.connection.connectionManager.connectionId;
-            helper.recordPrivateApi('call.presence._myMembers.put');
-            channel.presence._myMembers.put({
-              action: 'enter',
-              clientId: 'two',
-              connectionId: connId,
-              id: connId + ':0:0',
-              data: 'twodata',
-            });
-            helper.becomeSuspended(realtime, cb);
-          },
-          function (cb) {
+      await realtime.connection.once('connected');
+      await channel.attach();
+      // presence.get will wait for a sync if needed
+      await channel.presence.get()
+
+      const pOnPresence = channel.presence.subscriptions.once('enter');
+      await channel.presence.enterClient('one', 'onedata');
+      await pOnPresence;
+
+      /* inject an additional member into the myMember set, then force a suspended state */
+      helper.recordPrivateApi('read.connectionManager.connectionId');
+      const connId = realtime.connection.connectionManager.connectionId;
+
+      helper.recordPrivateApi('call.presence._myMembers.put');
+      channel.presence._myMembers.put({
+        action: 'enter',
+        clientId: 'two',
+        connectionId: connId,
+        id: connId + ':0:0',
+        data: 'twodata',
+      });
+
+      await helper.becomeSuspended(realtime);
+
+      expect(channel.state).to.equal('suspended', 'sanity-check channel state');
+
+      /* Reconnect */
+      const pOnceAttached = channel.once('attached');
+      realtime.connection.connect();
+      await pOnceAttached;
+
+      /* Since we haven't been gone for two minutes, we don't know for sure
+       * that realtime will feel it necessary to do a sync - if it doesn't,
+       * we request one */
+      if (channel.presence.syncComplete) {
+        helper.recordPrivateApi('call.channel.sync');
+        channel.sync();
+      }
+      await channel.presence.get();
+
+      /* Now just wait for an enter! */
+      const enteredMembers = new Set();
+      await new Promise((resolve, reject) => {
+        channel.presence.subscribe('enter', (presmsg) => {
+          enteredMembers.add(presmsg.clientId);
+          if (enteredMembers.size === 2) {
             try {
-              expect(channel.state).to.equal('suspended', 'sanity-check channel state');
+              expect(enteredMembers.has('one')).to.equal(true, 'Check client one entered');
+              expect(enteredMembers.has('two')).to.equal(true, 'Check client two entered');
+              channel.presence.unsubscribe('enter');
+              resolve();
             } catch (err) {
-              cb(err);
+              reject(err);
               return;
             }
-            /* Reconnect */
-            realtime.connection.connect();
-            channel.once('attached', function () {
-              cb();
-            });
-          },
-          function (cb) {
-            /* Since we haven't been gone for two minutes, we don't know for sure
-             * that realtime will feel it necessary to do a sync - if it doesn't,
-             * we request one */
-            if (channel.presence.syncComplete) {
-              helper.recordPrivateApi('call.channel.sync');
-              channel.sync();
-            }
-            helper.recordPrivateApi('call.presence.waitSync');
-            channel.presence.members.waitSync(cb);
-          },
-          function (cb) {
-            /* Now just wait for an enter! */
-            let enteredMembers = new Set();
-            channel.presence.subscribe('enter', function (presmsg) {
-              enteredMembers.add(presmsg.clientId);
-              if (enteredMembers.size === 2) {
-                try {
-                  expect(enteredMembers.has('one')).to.equal(true, 'Check client one entered');
-                  expect(enteredMembers.has('two')).to.equal(true, 'Check client two entered');
-                  channel.presence.unsubscribe('enter');
-                  cb();
-                } catch (err) {
-                  cb(err);
-                  return;
-                }
-              }
-            });
-          },
-          function (cb) {
-            Helper.whenPromiseSettles(channel.presence.get(), function (err, results) {
-              if (err) {
-                cb(err);
-                return;
-              }
-              try {
-                expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
-                expect(results.length).to.equal(3, 'Check correct number of results');
-                expect(extractClientIds(results)).deep.to.equal(['one', 'one', 'two'], 'check correct members');
-                expect(extractMember(results, 'one').data).to.equal('onedata', 'check correct data on one');
-                expect(extractMember(results, 'two').data).to.equal('twodata', 'check correct data on two');
-              } catch (err) {
-                cb(err);
-                return;
-              }
-              cb();
-            });
-          },
-        ],
-        function (err) {
-          helper.closeAndFinish(done, realtime, err);
-        },
-      );
+          }
+        });
+      });
+
+      const results = await channel.presence.get();
+      expect(channel.presence.syncComplete, 'Check in sync').to.be.ok;
+      expect(results.length).to.equal(3, 'Check correct number of results');
+      expect(extractClientIds(results)).deep.to.equal(['one', 'one', 'two'], 'check correct members');
+      expect(extractMember(results, 'one').data).to.equal('onedata', 'check correct data on one');
+      expect(extractMember(results, 'two').data).to.equal('twodata', 'check correct data on two');
+      realtime.close();
     });
 
     /**
