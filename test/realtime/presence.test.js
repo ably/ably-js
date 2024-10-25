@@ -1,7 +1,7 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
-  var expect = chai.expect;
+  const { expect, assert }  = chai;
   var createPM = Ably.protocolMessageFromDeserialized;
   var PresenceMessage = Ably.Realtime.PresenceMessage;
 
@@ -1698,6 +1698,48 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       expect(extractClientIds(results)).deep.to.equal(['one', 'one', 'two'], 'check correct members');
       expect(extractMember(results, 'one').data).to.equal('onedata', 'check correct data on one');
       expect(extractMember(results, 'two').data).to.equal('twodata', 'check correct data on two');
+      realtime.close();
+    });
+
+    /**
+     * Test the auto-re-enter functionality with a resume failure resulting in a different
+     * connectionId (the re-entry should not have a message id)
+     *
+     * @spec RTP17g
+     * @spec RTP17g1
+     */
+    it('presence_auto_reenter_different_connid', async function () {
+      const helper = this.test.helper;
+      const channelName = 'presence_auto_reenter_different_connid';
+      const realtime = helper.AblyRealtime({transportParams: {remainPresentFor: 5000}});
+      const channel = realtime.channels.get(channelName);
+
+      await realtime.connection.once('connected');
+      const firstConnId = realtime.connection.id;
+      await channel.attach();
+      // presence.get will wait for a sync if needed
+      await channel.presence.get()
+
+      const pOnPresence = channel.presence.subscriptions.once('enter');
+      await channel.presence.enterClient('one', 'onedata');
+      const member1 = await pOnPresence;
+
+      await helper.becomeSuspended(realtime);
+      assert.equal(channel.state, 'suspended', 'sanity-check channel state');
+
+      /* Reconnect. Since we were suspended, we will get a different connection id */
+      const pOnceAttached = channel.once('attached');
+      const pOnEnter = channel.presence.subscriptions.once('enter');
+      const pOnLeave = channel.presence.subscriptions.once('leave');
+      realtime.connection.connect();
+      await pOnceAttached;
+      const secondConnId = realtime.connection.id;
+      assert.notEqual(firstConnId, secondConnId, 'sanity-check connection id changed post-suspend');
+      const [enter, leave] = await Promise.all([pOnEnter, pOnLeave]);
+      assert.equal(leave.connectionId, firstConnId, 'Check the leave for the old connid');
+      assert.equal(enter.connectionId, secondConnId, 'Check enter for new connid');
+      assert.notEqual(enter.id, member1.id, 'Check the new enter did not have the msgId of the original');
+
       realtime.close();
     });
 
