@@ -224,13 +224,16 @@ export class LiveMap extends LiveObject<LiveMapData> {
     const { ErrorInfo, Utils } = this._client;
 
     const existingEntry = this._dataRef.data.get(op.key);
-    if (existingEntry && opOriginTimeserial.before(existingEntry.timeserial)) {
-      // the operation's origin timeserial < the entry's timeserial, ignore the operation.
+    if (
+      existingEntry &&
+      (opOriginTimeserial.before(existingEntry.timeserial) || opOriginTimeserial.equal(existingEntry.timeserial))
+    ) {
+      // the operation's origin timeserial <= the entry's timeserial, ignore the operation.
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapSet()',
-        `skipping updating key="${op.key}" as existing key entry has greater timeserial: ${existingEntry.timeserial.toString()}, than the op: ${opOriginTimeserial.toString()}; objectId=${this._objectId}`,
+        `skipping update for key="${op.key}": op timeserial ${opOriginTimeserial.toString()} <= entry timeserial ${existingEntry.timeserial.toString()}; objectId=${this._objectId}`,
       );
       return;
     }
@@ -271,13 +274,16 @@ export class LiveMap extends LiveObject<LiveMapData> {
 
   private _applyMapRemove(op: StateMapOp, opOriginTimeserial: Timeserial): void {
     const existingEntry = this._dataRef.data.get(op.key);
-    if (existingEntry && opOriginTimeserial.before(existingEntry.timeserial)) {
-      // the operation's origin timeserial < the entry's timeserial, ignore the operation.
+    if (
+      existingEntry &&
+      (opOriginTimeserial.before(existingEntry.timeserial) || opOriginTimeserial.equal(existingEntry.timeserial))
+    ) {
+      // the operation's origin timeserial <= the entry's timeserial, ignore the operation.
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapRemove()',
-        `skipping removing key="${op.key}" as existing key entry has greater timeserial: ${existingEntry.timeserial.toString()}, than the op: ${opOriginTimeserial.toString()}; objectId=${this._objectId}`,
+        `skipping remove for key="${op.key}": op timeserial ${opOriginTimeserial.toString()} <= entry timeserial ${existingEntry.timeserial.toString()}; objectId=${this._objectId}`,
       );
       return;
     }
