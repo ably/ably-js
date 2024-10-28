@@ -101,6 +101,8 @@ export class Rest {
     params: RequestParams,
     body: unknown,
     customHeaders: Record<string, string>,
+    // TODO we'd then actually insert these agents into the request, by modifying the call to default{Get, Post}Headers below
+    agents: string[],
   ): Promise<HttpPaginatedResponse<unknown>> {
     const [encoder, decoder, format] = (() => {
       if (this.client.options.useBinaryProtocol) {

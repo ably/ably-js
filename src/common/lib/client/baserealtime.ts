@@ -13,6 +13,7 @@ import { ModularPlugins, RealtimePresencePlugin } from './modularplugins';
 import { TransportNames } from 'common/constants/TransportName';
 import { TransportImplementations } from 'common/platform';
 import Defaults from '../util/defaults';
+import { DerivedRealtimeClient } from './derivedrealtime';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
@@ -88,6 +89,12 @@ class BaseRealtime extends BaseClient {
   close(): void {
     Logger.logAction(this.logger, Logger.LOG_MINOR, 'Realtime.close()', '');
     this.connection.close();
+  }
+
+  createDerivedClient(
+    options: API.DerivedClientOptions,
+  ): DerivedRealtimeClient /* API.RealtimeClient is what we want to write but can't due to ably-js private interface not matching public; see corresponding note in DerivedRealtimeClient */ {
+    return new DerivedRealtimeClient(this, options);
   }
 }
 

@@ -367,6 +367,10 @@ export interface ChannelMetrics {
   subscribers: number;
 }
 
+export declare interface DerivedClientOptions {
+  agent: string;
+}
+
 /**
  * Passes additional client-specific properties to the REST constructor or the Realtime constructor.
  */
@@ -1788,6 +1792,8 @@ export declare interface RealtimeClient {
    * A {@link Push} object.
    */
   push: Push;
+
+  createDerivedClient(options: DerivedClientOptions): RealtimeClient;
 }
 
 /**
@@ -2284,7 +2290,6 @@ export declare interface Channels<T> {
    * This experimental method allows you to create custom realtime data feeds by selectively subscribing
    * to receive only part of the data from the channel.
    * See the [announcement post](https://pages.ably.com/subscription-filters-preview) for more information.
-   *
    * @param name - The channel name.
    * @param deriveOptions - A {@link DeriveOptions} object.
    * @param channelOptions - A {@link ChannelOptions} object.

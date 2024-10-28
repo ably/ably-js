@@ -152,7 +152,19 @@ class BaseClient {
     body: unknown,
     customHeaders: Record<string, string>,
   ): Promise<HttpPaginatedResponse<unknown>> {
-    return this.rest.request(method, path, version, params, body, customHeaders);
+    return this._request(method, path, version, params, body, customHeaders, []);
+  }
+
+  async _request(
+    method: string,
+    path: string,
+    version: number,
+    params: RequestParams,
+    body: unknown,
+    customHeaders: Record<string, string>,
+    agents: string[],
+  ): Promise<HttpPaginatedResponse<unknown>> {
+    return this.rest.request(method, path, version, params, body, customHeaders, agents);
   }
 
   batchPublish<T extends BatchPublishSpec | BatchPublishSpec[]>(

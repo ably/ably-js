@@ -30,7 +30,7 @@ import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
 
-interface RealtimeHistoryParams {
+export interface RealtimeHistoryParams {
   start?: number;
   end?: number;
   direction?: string;
@@ -905,6 +905,15 @@ class RealtimeChannel extends EventEmitter {
   history = async function (
     this: RealtimeChannel,
     params: RealtimeHistoryParams | null,
+  ): Promise<PaginatedResult<Message>> {
+    return this._history(params, []);
+  } as any;
+
+  _history = async function (
+    this: RealtimeChannel,
+    params: RealtimeHistoryParams | null,
+    // TODO we'd then actually insert these agents into the request, by passing them through to the call to restMixin.history below and making that method make use of them
+    agents: string[],
   ): Promise<PaginatedResult<Message>> {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.history()', 'channel = ' + this.name);
 
