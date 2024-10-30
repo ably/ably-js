@@ -1,10 +1,11 @@
 import Message, {
   CipherOptions,
+  decode,
+  encode,
+  EncodingDecodingContext,
   fromEncoded,
   fromEncodedArray,
-  encode,
-  decode,
-  EncodingDecodingContext,
+  fromValues,
 } from './message';
 import * as API from '../../../../ably';
 import Platform from 'common/platform';
@@ -25,8 +26,8 @@ export class DefaultMessage extends Message {
   }
 
   // Used by tests
-  static fromValues(values: unknown): Message {
-    return Object.assign(new Message(), values);
+  static fromValues(values: Message | Record<string, unknown>, options?: { stringifyAction?: boolean }): Message {
+    return fromValues(values, options);
   }
 
   // Used by tests

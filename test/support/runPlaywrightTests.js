@@ -68,14 +68,20 @@ const runTests = async (browserType) => {
 
     // Use page.evaluate to add these functions as event listeners to the 'testLog' and 'testResult' Custom Events.
     // These events are fired by the custom mocha reporter in playwrightSetup.js
-    page.evaluate(() => {
+    const grep = process.env.MOCHA_GREP;
+    page.evaluate((grep) => {
       window.addEventListener('testLog', ({ type, detail }) => {
         onTestLog({ type, detail });
       });
       window.addEventListener('testResult', ({ type, detail }) => {
         onTestResult({ type, detail });
       });
-    });
+      // Set grep pattern in the browser context
+      // allows easy filtering of tests.
+      if (grep) {
+        window.mocha.grep(new RegExp(grep));
+      }
+    }, grep);
   });
 };
 
