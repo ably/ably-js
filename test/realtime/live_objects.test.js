@@ -24,6 +24,12 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
     };
   }
 
+  function expectInstanceOf(object, className, msg) {
+    // esbuild changes the name for classes with static method to include an underscore as prefix.
+    // so LiveMap becomes _LiveMap. we account for it here.
+    expect(object.constructor.name).to.match(new RegExp(`_?${className}`), msg);
+  }
+
   describe('realtime/live_objects', function () {
     this.timeout(60 * 1000);
 
@@ -146,7 +152,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         const helper = this.test.helper;
         const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
         const channel = client.channels.get('channel');
-        expect(channel.liveObjects.constructor.name).to.equal('LiveObjects');
+        expectInstanceOf(channel.liveObjects, 'LiveObjects');
       });
 
       /** @nospec */
@@ -161,7 +167,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           await channel.attach();
           const root = await liveObjects.getRoot();
 
-          expect(root.constructor.name).to.equal('LiveMap');
+          expectInstanceOf(root, 'LiveMap', 'root object should be of LiveMap type');
         }, client);
       });
 
@@ -178,7 +184,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           const root = await liveObjects.getRoot();
 
           helper.recordPrivateApi('call.LiveObject.getObjectId');
-          expect(root.getObjectId()).to.equal('root');
+          expect(root.getObjectId()).to.equal('root', 'root object should have an object id "root"');
         }, client);
       });
 
@@ -352,16 +358,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           counterKeys.forEach((key) => {
             const counter = root.get(key);
             expect(counter, `Check counter at key="${key}" in root exists`).to.exist;
-            expect(counter.constructor.name).to.equal(
-              'LiveCounter',
-              `Check counter at key="${key}" in root is of type LiveCounter`,
-            );
+            expectInstanceOf(counter, 'LiveCounter', `Check counter at key="${key}" in root is of type LiveCounter`);
           });
 
           mapKeys.forEach((key) => {
             const map = root.get(key);
             expect(map, `Check map at key="${key}" in root exists`).to.exist;
-            expect(map.constructor.name).to.equal('LiveMap', `Check map at key="${key}" in root is of type LiveMap`);
+            expectInstanceOf(map, 'LiveMap', `Check map at key="${key}" in root is of type LiveMap`);
           });
 
           const valuesMap = root.get('valuesMap');
@@ -474,10 +477,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           const counterFromReferencedMap = referencedMap.get('counterKey');
           expect(counterFromReferencedMap, 'Check nested counter exists at a key in a map').to.exist;
-          expect(counterFromReferencedMap.constructor.name).to.equal(
-            'LiveCounter',
-            'Check nested counter is of type LiveCounter',
-          );
+          expectInstanceOf(counterFromReferencedMap, 'LiveCounter', 'Check nested counter is of type LiveCounter');
           expect(counterFromReferencedMap).to.equal(
             referencedCounter,
             'Check nested counter is the same object instance as counter on the root',
@@ -486,7 +486,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           const mapFromValuesMap = valuesMap.get('mapKey');
           expect(mapFromValuesMap, 'Check nested map exists at a key in a map').to.exist;
-          expect(mapFromValuesMap.constructor.name).to.equal('LiveMap', 'Check nested map is of type LiveMap');
+          expectInstanceOf(mapFromValuesMap, 'LiveMap', 'Check nested map is of type LiveMap');
           expect(mapFromValuesMap.size()).to.equal(1, 'Check nested map has correct number of keys');
           expect(mapFromValuesMap).to.equal(
             referencedMap,
@@ -561,10 +561,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
               // check all maps exist on root
               expect(mapObj, `Check map at "${key}" key in root exists`).to.exist;
-              expect(mapObj.constructor.name).to.equal(
-                'LiveMap',
-                `Check map at "${key}" key in root is of type LiveMap`,
-              );
+              expectInstanceOf(mapObj, 'LiveMap', `Check map at "${key}" key in root is of type LiveMap`);
 
               // check primitive maps have correct values
               expect(mapObj.size()).to.equal(
@@ -630,7 +627,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check map with references exist on root
             const withReferencesMap = root.get(withReferencesMapKey);
             expect(withReferencesMap, `Check map at "${withReferencesMapKey}" key in root exists`).to.exist;
-            expect(withReferencesMap.constructor.name).to.equal(
+            expectInstanceOf(
+              withReferencesMap,
               'LiveMap',
               `Check map at "${withReferencesMapKey}" key in root is of type LiveMap`,
             );
@@ -645,17 +643,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const referencedMap = withReferencesMap.get('mapReference');
 
             expect(referencedCounter, `Check counter at "counterReference" exists`).to.exist;
-            expect(referencedCounter.constructor.name).to.equal(
+            expectInstanceOf(
+              referencedCounter,
               'LiveCounter',
               `Check counter at "counterReference" key is of type LiveCounter`,
             );
             expect(referencedCounter.value()).to.equal(1, 'Check counter at "counterReference" key has correct value');
 
             expect(referencedMap, `Check map at "mapReference" key exists`).to.exist;
-            expect(referencedMap.constructor.name).to.equal(
-              'LiveMap',
-              `Check map at "mapReference" key is of type LiveMap`,
-            );
+            expectInstanceOf(referencedMap, 'LiveMap', `Check map at "mapReference" key is of type LiveMap`);
+
             expect(referencedMap.size()).to.equal(1, 'Check map at "mapReference" key has correct number of keys');
             expect(referencedMap.get('stringKey')).to.equal(
               'stringValue',
@@ -741,14 +738,15 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const map = root.get('keyToMap');
 
             expect(counter, 'Check counter at "keyToCounter" key in root exists').to.exist;
-            expect(counter.constructor.name).to.equal(
+            expectInstanceOf(
+              counter,
               'LiveCounter',
               'Check counter at "keyToCounter" key in root is of type LiveCounter',
             );
             expect(counter.value()).to.equal(1, 'Check counter at "keyToCounter" key in root has correct value');
 
             expect(map, 'Check map at "keyToMap" key in root exists').to.exist;
-            expect(map.constructor.name).to.equal('LiveMap', 'Check map at "keyToMap" key in root is of type LiveMap');
+            expectInstanceOf(map, 'LiveMap', 'Check map at "keyToMap" key in root is of type LiveMap');
             expect(map.size()).to.equal(1, 'Check map at "keyToMap" key in root has correct number of keys');
             expect(map.get('stringKey')).to.equal(
               'stringValue',
@@ -849,7 +847,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
               // check all counters exist on root
               expect(counterObj, `Check counter at "${key}" key in root exists`).to.exist;
-              expect(counterObj.constructor.name).to.equal(
+              expectInstanceOf(
+                counterObj,
                 'LiveCounter',
                 `Check counter at "${key}" key in root is of type LiveCounter`,
               );
