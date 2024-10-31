@@ -341,7 +341,7 @@ class Message {
   refSerial?: string;
   refType?: string;
   updatedAt?: number;
-  deletedAt?: number;
+  updateSerial?: string;
   operation?: API.Operation;
 
   /**
@@ -378,7 +378,7 @@ class Message {
       refSerial: this.refSerial,
       refType: this.refType,
       updatedAt: this.updatedAt,
-      deletedAt: this.deletedAt,
+      updateSerial: this.updateSerial,
       operation: this.operation,
       encoding,
       data,
@@ -407,7 +407,7 @@ class Message {
     if (this.refSerial) result += '; refSerial=' + this.refSerial;
     if (this.refType) result += '; refType=' + this.refType;
     if (this.updatedAt) result += '; updatedAt=' + this.updatedAt;
-    if (this.deletedAt) result += '; deletedAt=' + this.deletedAt;
+    if (this.updateSerial) result += '; updateSerial=' + this.updateSerial;
     if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
     result += ']';
     return result;
