@@ -71,6 +71,10 @@ export abstract class LiveObject<
     this._eventEmitter.off(LiveObjectEvents.Updated, listener);
   }
 
+  unsubscribeAll(): void {
+    this._eventEmitter.off(LiveObjectEvents.Updated);
+  }
+
   /**
    * @internal
    */
