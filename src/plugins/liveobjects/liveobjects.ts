@@ -4,7 +4,7 @@ import type EventEmitter from 'common/lib/util/eventemitter';
 import type * as API from '../../../ably';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { LiveObject } from './liveobject';
+import { LiveObject, LiveObjectUpdate } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
 import { LiveCounterDataEntry, SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
@@ -199,6 +199,7 @@ export class LiveObjects {
     }
 
     const receivedObjectIds = new Set<string>();
+    const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate }[] = [];
 
     for (const [objectId, entry] of this._syncLiveObjectsDataPool.entries()) {
       receivedObjectIds.add(objectId);
@@ -206,11 +207,14 @@ export class LiveObjects {
       const regionalTimeserialObj = DefaultTimeserial.calculateTimeserial(this._client, entry.regionalTimeserial);
 
       if (existingObject) {
-        existingObject.setData(entry.objectData);
+        const update = existingObject.setData(entry.objectData);
         existingObject.setRegionalTimeserial(regionalTimeserialObj);
         if (existingObject instanceof LiveCounter) {
           existingObject.setCreated((entry as LiveCounterDataEntry).created);
         }
+        // store updates for existing objects to call subscription callbacks for all of them once the SYNC sequence is completed.
+        // this will ensure that clients get notified about changes only once everything was applied.
+        existingObjectUpdates.push({ object: existingObject, update });
         continue;
       }
 
@@ -235,5 +239,8 @@ export class LiveObjects {
 
     // need to remove LiveObject instances from the LiveObjectsPool for which objectIds were not received during the SYNC sequence
     this._liveObjectsPool.deleteExtraObjectIds([...receivedObjectIds]);
+
+    // call subscription callbacks for all updated existing objects
+    existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
   }
 }

@@ -89,7 +89,6 @@ export class LiveObjectsPool {
           if (this.get(stateOperation.objectId)) {
             // object wich such id already exists (we may have created a zero-value object before, or this is a duplicate *_CREATE op),
             // so delegate application of the op to that object
-            // TODO: invoke subscription callbacks for an object when applied
             this.get(stateOperation.objectId)!.applyOperation(stateOperation, stateMessage, regionalTimeserial);
             break;
           }
@@ -111,7 +110,6 @@ export class LiveObjectsPool {
           // we create a zero-value object for the provided object id, and apply operation for that zero-value object.
           // when we eventually receive a corresponding *_CREATE op for that object, its application will be handled by that zero-value object.
           this.createZeroValueObjectIfNotExists(stateOperation.objectId);
-          // TODO: invoke subscription callbacks for an object when applied
           this.get(stateOperation.objectId)!.applyOperation(stateOperation, stateMessage, regionalTimeserial);
           break;
 

@@ -1,5 +1,7 @@
+import deepEqual from 'deep-equal';
+
 import type BaseClient from 'common/lib/client/baseclient';
-import { LiveObject, LiveObjectData } from './liveobject';
+import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import {
   MapSemantics,
@@ -40,7 +42,11 @@ export interface LiveMapData extends LiveObjectData {
   data: Map<string, MapEntry>;
 }
 
-export class LiveMap extends LiveObject<LiveMapData> {
+export interface LiveMapUpdate extends LiveObjectUpdate {
+  update: { [keyName: string]: 'updated' | 'removed' };
+}
+
+export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
   constructor(
     liveObjects: LiveObjects,
     private _semantics: MapSemantics,
@@ -60,6 +66,9 @@ export class LiveMap extends LiveObject<LiveMapData> {
     return new LiveMap(liveobjects, MapSemantics.LWW, null, objectId, regionalTimeserial);
   }
 
+  /**
+   * @internal
+   */
   static liveMapDataFromMapEntries(client: BaseClient, entries: Record<string, StateMapEntry>): LiveMapData {
     const liveMapData: LiveMapData = {
       data: new Map<string, MapEntry>(),
@@ -122,7 +131,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
     let size = 0;
     for (const value of this._dataRef.data.values()) {
       if (value.tombstone === true) {
-        // should not count deleted entries
+        // should not count removed entries
         continue;
       }
 
@@ -144,24 +153,29 @@ export class LiveMap extends LiveObject<LiveMapData> {
       );
     }
 
+    let update: LiveMapUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
       case StateOperationAction.MAP_CREATE:
-        this._applyMapCreate(op.map);
+        update = this._applyMapCreate(op.map);
         break;
 
       case StateOperationAction.MAP_SET:
         if (this._client.Utils.isNil(op.mapOp)) {
           this._throwNoPayloadError(op);
+          // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
+          return;
         } else {
-          this._applyMapSet(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
+          update = this._applyMapSet(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
         }
         break;
 
       case StateOperationAction.MAP_REMOVE:
         if (this._client.Utils.isNil(op.mapOp)) {
           this._throwNoPayloadError(op);
+          // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
+          return;
         } else {
-          this._applyMapRemove(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
+          update = this._applyMapRemove(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
         }
         break;
 
@@ -174,10 +188,65 @@ export class LiveMap extends LiveObject<LiveMapData> {
     }
 
     this.setRegionalTimeserial(opRegionalTimeserial);
+    this.notifyUpdated(update);
   }
 
   protected _getZeroValueData(): LiveMapData {
     return { data: new Map<string, MapEntry>() };
+  }
+
+  protected _updateFromDataDiff(currentDataRef: LiveMapData, newDataRef: LiveMapData): LiveMapUpdate {
+    const update: LiveMapUpdate = { update: {} };
+
+    for (const [key, currentEntry] of currentDataRef.data.entries()) {
+      // any non-tombstoned properties that exist on a current map, but not in the new data - got removed
+      if (currentEntry.tombstone === false && !newDataRef.data.has(key)) {
+        update.update[key] = 'removed';
+      }
+    }
+
+    for (const [key, newEntry] of newDataRef.data.entries()) {
+      if (!currentDataRef.data.has(key)) {
+        // if property does not exist in the current map, but new data has it as a non-tombstoned property - got updated
+        if (newEntry.tombstone === false) {
+          update.update[key] = 'updated';
+          continue;
+        }
+
+        // otherwise, if new data has this prop tombstoned - do nothing, as property didn't exist anyway
+        if (newEntry.tombstone === true) {
+          continue;
+        }
+      }
+
+      // properties that exist both in current and new map data need to have their values compared to decide on the update type
+      const currentEntry = currentDataRef.data.get(key)!;
+
+      // compare tombstones first
+      if (currentEntry.tombstone === true && newEntry.tombstone === false) {
+        // current prop is tombstoned, but new is not. it means prop was updated to a meaningful value
+        update.update[key] = 'updated';
+        continue;
+      }
+      if (currentEntry.tombstone === false && newEntry.tombstone === true) {
+        // current prop is not tombstoned, but new is. it means prop was removed
+        update.update[key] = 'removed';
+        continue;
+      }
+      if (currentEntry.tombstone === true && newEntry.tombstone === true) {
+        // both props are tombstoned - treat as noop, as there is no data to compare.
+        continue;
+      }
+
+      // both props exist and are not tombstoned, need to compare values with deep equals to see if it was changed
+      const valueChanged = !deepEqual(currentEntry.data, newEntry.data, { strict: true });
+      if (valueChanged) {
+        update.update[key] = 'updated';
+        continue;
+      }
+    }
+
+    return update;
   }
 
   private _throwNoPayloadError(op: StateOperation): void {
@@ -188,11 +257,11 @@ export class LiveMap extends LiveObject<LiveMapData> {
     );
   }
 
-  private _applyMapCreate(op: StateMap | undefined): void {
+  private _applyMapCreate(op: StateMap | undefined): LiveMapUpdate | LiveObjectUpdateNoop {
     if (this._client.Utils.isNil(op)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
-      return;
+      return { update: {} };
     }
 
     if (this._semantics !== op.semantics) {
@@ -203,6 +272,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
       );
     }
 
+    const aggregatedUpdate: LiveMapUpdate | LiveObjectUpdateNoop = { update: {} };
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
     Object.entries(op.entries ?? {}).forEach(([key, entry]) => {
@@ -210,17 +280,28 @@ export class LiveMap extends LiveObject<LiveMapData> {
       const opOriginTimeserial = entry.timeserial
         ? DefaultTimeserial.calculateTimeserial(this._client, entry.timeserial)
         : DefaultTimeserial.zeroValueTimeserial(this._client);
+      let update: LiveMapUpdate | LiveObjectUpdateNoop;
       if (entry.tombstone === true) {
-        // entry in MAP_CREATE op is deleted, try to apply MAP_REMOVE op
-        this._applyMapRemove({ key }, opOriginTimeserial);
+        // entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
+        update = this._applyMapRemove({ key }, opOriginTimeserial);
       } else {
-        // entry in MAP_CREATE op is not deleted, try to set it via MAP_SET op
-        this._applyMapSet({ key, data: entry.data }, opOriginTimeserial);
+        // entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
+        update = this._applyMapSet({ key, data: entry.data }, opOriginTimeserial);
       }
+
+      // skip noop updates
+      if ((update as LiveObjectUpdateNoop).noop) {
+        return;
+      }
+
+      // otherwise copy update data to aggregated update
+      Object.assign(aggregatedUpdate.update, update.update);
     });
+
+    return aggregatedUpdate;
   }
 
-  private _applyMapSet(op: StateMapOp, opOriginTimeserial: Timeserial): void {
+  private _applyMapSet(op: StateMapOp, opOriginTimeserial: Timeserial): LiveMapUpdate | LiveObjectUpdateNoop {
     const { ErrorInfo, Utils } = this._client;
 
     const existingEntry = this._dataRef.data.get(op.key);
@@ -235,7 +316,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
         'LiveMap._applyMapSet()',
         `skipping update for key="${op.key}": op timeserial ${opOriginTimeserial.toString()} <= entry timeserial ${existingEntry.timeserial.toString()}; objectId=${this._objectId}`,
       );
-      return;
+      return { noop: true };
     }
 
     if (Utils.isNil(op.data) || (Utils.isNil(op.data.value) && Utils.isNil(op.data.objectId))) {
@@ -270,9 +351,10 @@ export class LiveMap extends LiveObject<LiveMapData> {
       };
       this._dataRef.data.set(op.key, newEntry);
     }
+    return { update: { [op.key]: 'updated' } };
   }
 
-  private _applyMapRemove(op: StateMapOp, opOriginTimeserial: Timeserial): void {
+  private _applyMapRemove(op: StateMapOp, opOriginTimeserial: Timeserial): LiveMapUpdate | LiveObjectUpdateNoop {
     const existingEntry = this._dataRef.data.get(op.key);
     if (
       existingEntry &&
@@ -285,7 +367,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
         'LiveMap._applyMapRemove()',
         `skipping remove for key="${op.key}": op timeserial ${opOriginTimeserial.toString()} <= entry timeserial ${existingEntry.timeserial.toString()}; objectId=${this._objectId}`,
       );
-      return;
+      return { noop: true };
     }
 
     if (existingEntry) {
@@ -300,5 +382,7 @@ export class LiveMap extends LiveObject<LiveMapData> {
       };
       this._dataRef.data.set(op.key, newEntry);
     }
+
+    return { update: { [op.key]: 'removed' } };
   }
 }
