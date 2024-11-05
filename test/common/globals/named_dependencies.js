@@ -22,6 +22,7 @@ define(function () {
     async: { browser: 'node_modules/async/lib/async' },
     chai: { browser: 'node_modules/chai/chai', node: 'node_modules/chai/chai' },
     ulid: { browser: 'node_modules/ulid/dist/index.umd', node: 'node_modules/ulid/dist/index.umd' },
+    'deep-equal': { browser: 'node_modules/deep-equal/index', node: 'node_modules/deep-equal/index' },
     private_api_recorder: {
       browser: 'test/common/modules/private_api_recorder',
       node: 'test/common/modules/private_api_recorder',
