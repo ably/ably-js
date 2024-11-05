@@ -37,6 +37,18 @@ const functions = [
   { name: 'constructPresenceMessage', transitiveImports: [] },
 ];
 
+// List of all buildable plugins available as a separate export
+interface PluginInfo {
+  description: string;
+  path: string;
+  external?: string[];
+}
+
+const buildablePlugins: Record<'push' | 'liveObjects', PluginInfo> = {
+  push: { description: 'Push', path: './build/push.js', external: ['ulid'] },
+  liveObjects: { description: 'LiveObjects', path: './build/liveobjects.js', external: ['deep-equal'] },
+};
+
 function formatBytes(bytes: number) {
   const kibibytes = bytes / 1024;
   const formatted = kibibytes.toFixed(2);
@@ -70,7 +82,7 @@ function getModularBundleInfo(exports: string[]): BundleInfo {
 }
 
 // Uses esbuild to create a bundle containing the named exports from a given module
-function getBundleInfo(modulePath: string, exports?: string[]): BundleInfo {
+function getBundleInfo(modulePath: string, exports?: string[], external?: string[]): BundleInfo {
   const outfile = exports ? exports.join('') : 'all';
   const exportTarget = exports ? `{ ${exports.join(', ')} }` : '*';
   const result = esbuild.buildSync({
@@ -84,7 +96,7 @@ function getBundleInfo(modulePath: string, exports?: string[]): BundleInfo {
     outfile,
     write: false,
     sourcemap: 'external',
-    external: ['ulid'],
+    external,
   });
 
   const pathHasBase = (component: string) => {
@@ -183,9 +195,9 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
   return output;
 }
 
-async function calculatePluginSize(options: { path: string; description: string }): Promise<Output> {
+async function calculatePluginSize(options: PluginInfo): Promise<Output> {
   const output: Output = { tableRows: [], errors: [] };
-  const pluginBundleInfo = getBundleInfo(options.path);
+  const pluginBundleInfo = getBundleInfo(options.path, undefined, options.external);
   const sizes = {
     rawByteSize: pluginBundleInfo.byteSize,
     gzipEncodedByteSize: (await promisify(gzip)(pluginBundleInfo.code)).byteLength,
@@ -200,11 +212,11 @@ async function calculatePluginSize(options: { path: string; description: string 
 }
 
 async function calculatePushPluginSize(): Promise<Output> {
-  return calculatePluginSize({ path: './build/push.js', description: 'Push' });
+  return calculatePluginSize(buildablePlugins.push);
 }
 
 async function calculateLiveObjectsPluginSize(): Promise<Output> {
-  return calculatePluginSize({ path: './build/liveobjects.js', description: 'LiveObjects' });
+  return calculatePluginSize(buildablePlugins.liveObjects);
 }
 
 async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Output> {
@@ -291,7 +303,8 @@ async function checkBaseRealtimeFiles() {
 }
 
 async function checkPushPluginFiles() {
-  const pushPluginBundleInfo = getBundleInfo('./build/push.js');
+  const { path, external } = buildablePlugins.push;
+  const pushPluginBundleInfo = getBundleInfo(path, undefined, external);
 
   // These are the files that are allowed to contribute >= `threshold` bytes to the Push bundle.
   const allowedFiles = new Set([
@@ -305,7 +318,8 @@ async function checkPushPluginFiles() {
 }
 
 async function checkLiveObjectsPluginFiles() {
-  const pluginBundleInfo = getBundleInfo('./build/liveobjects.js');
+  const { path, external } = buildablePlugins.liveObjects;
+  const pluginBundleInfo = getBundleInfo(path, undefined, external);
 
   // These are the files that are allowed to contribute >= `threshold` bytes to the LiveObjects bundle.
   const allowedFiles = new Set([
