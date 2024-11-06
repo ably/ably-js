@@ -2356,9 +2356,9 @@ export interface Message {
    */
   updatedAt?: number;
   /**
-   * If a `deletion` operation was applied to this message, this will be the timestamp the deletion occurred.
+   * The serial of the operation that updated this message.
    */
-  deletedAt?: number;
+  updateSerial?: string;
   /**
    * If this message resulted from an operation, this will contain the operation details.
    */
