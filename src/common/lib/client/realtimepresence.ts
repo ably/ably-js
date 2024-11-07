@@ -439,10 +439,15 @@ class RealtimePresence extends EventEmitter {
       // RTP17g: Send ENTER containing the member id, clientId and data
       // attributes.
       // RTP17g1: suppress id if the connId has changed
-      const id = (entry.connectionId === connId) ? entry.id : undefined;
+      const id = entry.connectionId === connId ? entry.id : undefined;
       this._enterOrUpdateClient(id, entry.clientId, entry.data, 'enter').catch((err) => {
         const wrappedErr = new ErrorInfo('Presence auto re-enter failed', 91004, 400, err);
-        Logger.logAction(this.logger, Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', 'Presence auto re-enter failed; reason = ' + Utils.inspectError(err));
+        Logger.logAction(
+          this.logger,
+          Logger.LOG_ERROR,
+          'RealtimePresence._ensureMyMembersPresent()',
+          'Presence auto re-enter failed; reason = ' + Utils.inspectError(err),
+        );
         const change = new ChannelStateChange(this.channel.state, this.channel.state, true, false, wrappedErr);
         this.channel.emit('update', change);
       });

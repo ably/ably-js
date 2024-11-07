@@ -1,7 +1,7 @@
 'use strict';
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
-  const { expect, assert }  = chai;
+  const { expect, assert } = chai;
   var createPM = Ably.protocolMessageFromDeserialized;
   var PresenceMessage = Ably.Realtime.PresenceMessage;
 
@@ -1636,7 +1636,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       await realtime.connection.once('connected');
       await channel.attach();
       // presence.get will wait for a sync if needed
-      await channel.presence.get()
+      await channel.presence.get();
 
       const pOnPresence = channel.presence.subscriptions.once('enter');
       await channel.presence.enterClient('one', 'onedata');
@@ -1711,14 +1711,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     it('presence_auto_reenter_different_connid', async function () {
       const helper = this.test.helper;
       const channelName = 'presence_auto_reenter_different_connid';
-      const realtime = helper.AblyRealtime({transportParams: {remainPresentFor: 5000}});
+      const realtime = helper.AblyRealtime({ transportParams: { remainPresentFor: 5000 } });
       const channel = realtime.channels.get(channelName);
 
       await realtime.connection.once('connected');
       const firstConnId = realtime.connection.id;
       await channel.attach();
       // presence.get will wait for a sync if needed
-      await channel.presence.get()
+      await channel.presence.get();
 
       const pOnPresence = channel.presence.subscriptions.once('enter');
       await channel.presence.enterClient('one', 'onedata');
