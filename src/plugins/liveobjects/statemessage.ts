@@ -155,13 +155,13 @@ export class StateMessage {
 
     if (message.object?.map?.entries) {
       for (const entry of Object.values(message.object.map.entries)) {
-        decodeMapEntry(entry, inputContext, decodeDataFn);
+        await decodeMapEntry(entry, inputContext, decodeDataFn);
       }
     }
 
     if (message.operation?.map) {
       for (const entry of Object.values(message.operation.map)) {
-        decodeMapEntry(entry, inputContext, decodeDataFn);
+        await decodeMapEntry(entry, inputContext, decodeDataFn);
       }
     }
 
