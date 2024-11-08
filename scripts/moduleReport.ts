@@ -6,7 +6,7 @@ import { gzip } from 'zlib';
 import Table from 'cli-table';
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
-const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 100, gzip: 31 };
+const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 101, gzip: 31 };
 
 const baseClientNames = ['BaseRest', 'BaseRealtime'];
 
@@ -310,12 +310,15 @@ async function checkLiveObjectsPluginFiles() {
   // These are the files that are allowed to contribute >= `threshold` bytes to the LiveObjects bundle.
   const allowedFiles = new Set([
     'src/plugins/liveobjects/index.ts',
+    'src/plugins/liveobjects/livecounter.ts',
     'src/plugins/liveobjects/livemap.ts',
     'src/plugins/liveobjects/liveobject.ts',
     'src/plugins/liveobjects/liveobjects.ts',
     'src/plugins/liveobjects/liveobjectspool.ts',
+    'src/plugins/liveobjects/objectid.ts',
     'src/plugins/liveobjects/statemessage.ts',
     'src/plugins/liveobjects/syncliveobjectsdatapool.ts',
+    'src/plugins/liveobjects/timeserial.ts',
   ]);
 
   return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);

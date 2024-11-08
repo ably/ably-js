@@ -621,6 +621,39 @@ class RealtimeChannel extends EventEmitter {
         break;
       }
 
+      case actions.STATE: {
+        if (!this._liveObjects) {
+          return;
+        }
+
+        const { id, connectionId, timestamp } = message;
+        const options = this.channelOptions;
+
+        const stateMessages = message.state ?? [];
+        for (let i = 0; i < stateMessages.length; i++) {
+          try {
+            const stateMessage = stateMessages[i];
+
+            await this.client._LiveObjectsPlugin?.StateMessage.decode(stateMessage, options, decodeData);
+
+            if (!stateMessage.connectionId) stateMessage.connectionId = connectionId;
+            if (!stateMessage.timestamp) stateMessage.timestamp = timestamp;
+            if (!stateMessage.id) stateMessage.id = id + ':' + i;
+          } catch (e) {
+            Logger.logAction(
+              this.logger,
+              Logger.LOG_ERROR,
+              'RealtimeChannel.processMessage()',
+              (e as Error).toString(),
+            );
+          }
+        }
+
+        this._liveObjects.handleStateMessages(stateMessages);
+
+        break;
+      }
+
       case actions.STATE_SYNC: {
         if (!this._liveObjects) {
           return;
@@ -649,7 +682,7 @@ class RealtimeChannel extends EventEmitter {
           }
         }
 
-        this._liveObjects.handleStateSyncMessage(stateMessages, message.channelSerial);
+        this._liveObjects.handleStateSyncMessages(stateMessages, message.channelSerial);
 
         break;
       }
