@@ -125,7 +125,7 @@ export class PresenceMap extends EventEmitter {
       delete map[key];
     }
 
-    return true;
+    return !!existingItem;
   }
 
   startSync() {
