@@ -568,34 +568,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTP10
      */
-    it('presenceEnterAndLeave', function (done) {
+    it('presenceEnterAndLeave', async function () {
       const helper = this.test.helper;
-      var channelName = 'enterAndLeave';
-      var enterAndLeave = function (cb) {
-        var clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
-        clientRealtime.connection.on('connected', function () {
-          /* get channel, attach, and enter */
-          var clientChannel = clientRealtime.channels.get(channelName);
-          Helper.whenPromiseSettles(clientChannel.attach(), function (err) {
-            if (err) {
-              cb(err, clientRealtime);
-              return;
-            }
-            Helper.whenPromiseSettles(clientChannel.presence.enter('Test client data (leave0)'), function (err) {
-              if (err) {
-                cb(err, clientRealtime);
-                return;
-              }
-            });
-            Helper.whenPromiseSettles(clientChannel.presence.leave(), function (err) {
-              cb(err, clientRealtime);
-            });
-          });
-        });
-        helper.monitorConnection(done, clientRealtime);
-      };
-
-      runTestWithEventListener(done, helper, channelName, listenerFor('leave'), enterAndLeave);
+      const channelName = 'enterAndLeave';
+      const clientRealtime = helper.AblyRealtime({ clientId: testClientId, tokenDetails: authToken });
+      await clientRealtime.connection.whenState('connected');
+      /* get channel, attach, and enter */
+      const clientChannel = clientRealtime.channels.get(channelName);
+      await clientChannel.attach();
+      await Promise.all([
+        clientChannel.presence.enter('Test client data (leave0)'),
+        clientChannel.presence.subscriptions.once('enter'),
+      ]);
+      await Promise.all([clientChannel.presence.leave(), clientChannel.presence.subscriptions.once('leave')]);
+      clientRealtime.close();
     });
 
     /**
