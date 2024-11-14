@@ -82,6 +82,7 @@ const liveObjectsPluginConfig = {
   entryPoints: ['src/plugins/liveobjects/index.ts'],
   plugins: [umdWrapper.default({ libraryName: 'AblyLiveObjectsPlugin', amdNamedModule: false })],
   outfile: 'build/liveobjects.js',
+  external: ['deep-equal'],
 };
 
 const liveObjectsPluginCdnConfig = {
