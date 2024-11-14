@@ -151,13 +151,16 @@ export class LiveObjectsPool {
       }
 
       // otherwise we need to compare regional timeserials
-      if (regionalTimeserial.before(existingObject.getRegionalTimeserial())) {
-        // the operation's regional timeserial < the object's timeserial, ignore the operation.
+      if (
+        regionalTimeserial.before(existingObject.getRegionalTimeserial()) ||
+        regionalTimeserial.equal(existingObject.getRegionalTimeserial())
+      ) {
+        // the operation's regional timeserial <= the object's timeserial, ignore the operation.
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MICRO,
           'LiveObjects.LiveObjectsPool.applyBufferedStateMessages()',
-          `skipping applying buffered state operation message as existing object has greater regional timeserial: ${existingObject.getRegionalTimeserial().toString()}, than the op: ${regionalTimeserial.toString()}; objectId=${stateMessage.operation.objectId}, message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+          `skipping buffered state operation message: op regional timeserial ${regionalTimeserial.toString()} <= object regional timeserial ${existingObject.getRegionalTimeserial().toString()}; objectId=${stateMessage.operation.objectId}, message id: ${stateMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
       }

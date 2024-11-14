@@ -1070,23 +1070,27 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               ],
             });
 
-            // inject operations with older regional timeserial, expect them not to be applied when sync ends
+            // inject operations with older or equal regional timeserial, expect them not to be applied when sync ends
             await Promise.all(
-              ['root', mapId].flatMap((objectId) =>
-                primitiveKeyData.map((keyData) =>
-                  liveObjectsHelper.processStateOperationMessageOnChannel({
-                    channel,
-                    serial: '@0-0',
-                    state: [liveObjectsHelper.mapSetOp({ objectId, key: keyData.key, data: keyData.data })],
-                  }),
-                ),
-              ),
+              ['@0-0', '@1-0'].map(async (serial) => {
+                await Promise.all(
+                  ['root', mapId].flatMap((objectId) =>
+                    primitiveKeyData.map((keyData) =>
+                      liveObjectsHelper.processStateOperationMessageOnChannel({
+                        channel,
+                        serial,
+                        state: [liveObjectsHelper.mapSetOp({ objectId, key: keyData.key, data: keyData.data })],
+                      }),
+                    ),
+                  ),
+                );
+                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                  channel,
+                  serial,
+                  state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
+                });
+              }),
             );
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
-              channel,
-              serial: '@0-0',
-              state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
-            });
 
             // inject operations with greater regional timeserial, expect them to be applied when sync ends
             await Promise.all(
@@ -1110,7 +1114,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               syncSerial: 'serial:',
             });
 
-            // check operations with older regional timeserial are not applied
+            // check operations with older or equal regional timeserial are not applied
             // counter will be checked to match an expected value explicitly, so no need to check that it doesn't equal a sum of operations
             primitiveKeyData.forEach((keyData) => {
               expect(
