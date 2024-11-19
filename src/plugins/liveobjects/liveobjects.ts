@@ -8,7 +8,6 @@ import { LiveObject, LiveObjectUpdate } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
 import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
-import { DefaultRoot, LiveMapType } from './typings';
 
 enum LiveObjectsEvents {
   SyncCompleted = 'SyncCompleted',
@@ -42,7 +41,7 @@ export class LiveObjects {
    * A user can provide an explicit type for the getRoot method to explicitly set the LiveObjects type structure on this particular channel.
    * This is useful when working with LiveObjects on multiple channels with different underlying data.
    */
-  async getRoot<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>> {
+  async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
     // SYNC is currently in progress, wait for SYNC sequence to finish
     if (this._syncInProgress) {
       await this._eventEmitter.once(LiveObjectsEvents.SyncCompleted);

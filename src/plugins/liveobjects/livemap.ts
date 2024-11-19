@@ -1,5 +1,6 @@
 import deepEqual from 'deep-equal';
 
+import type * as API from '../../../ably';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import {
@@ -13,7 +14,6 @@ import {
   StateValue,
 } from './statemessage';
 import { DefaultTimeserial, Timeserial } from './timeserial';
-import { LiveMapType } from './typings';
 
 export interface ObjectIdStateData {
   /** A reference to another state object, used to support composable state objects. */
@@ -46,7 +46,7 @@ export interface LiveMapUpdate extends LiveObjectUpdate {
   update: { [keyName: string]: 'updated' | 'removed' };
 }
 
-export class LiveMap<T extends LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate> {
+export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate> {
   constructor(
     liveObjects: LiveObjects,
     private _semantics: MapSemantics,
@@ -60,7 +60,7 @@ export class LiveMap<T extends LiveMapType> extends LiveObject<LiveMapData, Live
    *
    * @internal
    */
-  static zeroValue<T extends LiveMapType>(liveobjects: LiveObjects, objectId: string): LiveMap<T> {
+  static zeroValue<T extends API.LiveMapType>(liveobjects: LiveObjects, objectId: string): LiveMap<T> {
     return new LiveMap<T>(liveobjects, MapSemantics.LWW, objectId);
   }
 
@@ -70,7 +70,7 @@ export class LiveMap<T extends LiveMapType> extends LiveObject<LiveMapData, Live
    *
    * @internal
    */
-  static fromStateObject<T extends LiveMapType>(liveobjects: LiveObjects, stateObject: StateObject): LiveMap<T> {
+  static fromStateObject<T extends API.LiveMapType>(liveobjects: LiveObjects, stateObject: StateObject): LiveMap<T> {
     const obj = new LiveMap<T>(liveobjects, stateObject.map?.semantics!, stateObject.objectId);
     obj.overrideWithStateObject(stateObject);
     return obj;
