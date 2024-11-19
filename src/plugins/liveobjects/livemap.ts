@@ -13,6 +13,7 @@ import {
   StateValue,
 } from './statemessage';
 import { DefaultTimeserial, Timeserial } from './timeserial';
+import { LiveMapType } from './typings';
 
 export interface ObjectIdStateData {
   /** A reference to another state object, used to support composable state objects. */
@@ -45,7 +46,7 @@ export interface LiveMapUpdate extends LiveObjectUpdate {
   update: { [keyName: string]: 'updated' | 'removed' };
 }
 
-export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
+export class LiveMap<T extends LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate> {
   constructor(
     liveObjects: LiveObjects,
     private _semantics: MapSemantics,
@@ -59,8 +60,8 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
    *
    * @internal
    */
-  static zeroValue(liveobjects: LiveObjects, objectId: string): LiveMap {
-    return new LiveMap(liveobjects, MapSemantics.LWW, objectId);
+  static zeroValue<T extends LiveMapType>(liveobjects: LiveObjects, objectId: string): LiveMap<T> {
+    return new LiveMap<T>(liveobjects, MapSemantics.LWW, objectId);
   }
 
   /**
@@ -69,8 +70,8 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
    *
    * @internal
    */
-  static fromStateObject(liveobjects: LiveObjects, stateObject: StateObject): LiveMap {
-    const obj = new LiveMap(liveobjects, stateObject.map?.semantics!, stateObject.objectId);
+  static fromStateObject<T extends LiveMapType>(liveobjects: LiveObjects, stateObject: StateObject): LiveMap<T> {
+    const obj = new LiveMap<T>(liveobjects, stateObject.map?.semantics!, stateObject.objectId);
     obj.overrideWithStateObject(stateObject);
     return obj;
   }
@@ -82,24 +83,25 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
    * then you will get a reference to that Live Object if it exists in the local pool, or undefined otherwise.
    * If the value is not an objectId, then you will get that value.
    */
-  get(key: string): LiveObject | StateValue | undefined {
+  // force the key to be of type string as we only allow strings as key in a map
+  get<TKey extends keyof T & string>(key: TKey): T[TKey] {
     const element = this._dataRef.data.get(key);
 
     if (element === undefined) {
-      return undefined;
+      return undefined as T[TKey];
     }
 
     if (element.tombstone === true) {
-      return undefined;
+      return undefined as T[TKey];
     }
 
     // data exists for non-tombstoned elements
     const data = element.data!;
 
     if ('value' in data) {
-      return data.value;
+      return data.value as T[TKey];
     } else {
-      return this._liveObjects.getPool().get(data.objectId);
+      return this._liveObjects.getPool().get(data.objectId) as T[TKey];
     }
   }
 
