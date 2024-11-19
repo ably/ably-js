@@ -1559,6 +1559,13 @@ export type DeregisterCallback = (device: DeviceDetails, callback: StandardCallb
  */
 export type ErrorCallback = (error: ErrorInfo | null) => void;
 
+/**
+ * A callback used in {@link LiveObject} to listen for updates to the Live Object.
+ *
+ * @param update - The update object describing the changes made to the Live Object.
+ */
+export type LiveObjectUpdateCallback<T> = (update: T) => void;
+
 // Internal Interfaces
 
 // To allow a uniform (callback) interface between on and once even in the
@@ -2028,7 +2035,124 @@ export declare interface PushChannel {
 /**
  * Enables the LiveObjects state to be subscribed to for a channel.
  */
-export declare interface LiveObjects {}
+export declare interface LiveObjects {
+  /**
+   * Retrieves the root {@link LiveMap} object for state on a channel.
+   *
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  getRoot(): Promise<LiveMap>;
+}
+
+/**
+ * The `LiveMap` class represents a synchronized key/value storage, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
+ * Conflict-free resolution for updates follows Last Write Wins (LWW) semantics, meaning that if two clients update the same key in the map, the last change wins.
+ *
+ * Keys must be strings. Values can be another Live Object, or a primitive type, such as a string, number, boolean, or binary data (see {@link StateValue}).
+ */
+export declare interface LiveMap extends LiveObject<LiveMapUpdate> {
+  /**
+   * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map.
+   *
+   * @param key - The key to retrieve the value for.
+   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map.
+   */
+  get(key: string): LiveObject | StateValue | undefined;
+
+  /**
+   * Returns the number of key/value pairs in the map.
+   */
+  size(): number;
+}
+
+/**
+ * Represents an update to a {@link LiveMap} object, describing the keys that were updated or removed.
+ */
+export declare interface LiveMapUpdate extends LiveObjectUpdate {
+  /**
+   * An object containing keys from a `LiveMap` that have changed, along with their change status:
+   * - `updated` - the value of a key in the map was updated.
+   * - `removed` - the key was removed from the map.
+   */
+  update: { [keyName: string]: 'updated' | 'removed' };
+}
+
+/**
+ * Represents a primitive value that can be stored in a {@link LiveMap}.
+ *
+ * For binary data, the resulting type depends on the platform (`Buffer` in Node.js, `ArrayBuffer` elsewhere).
+ */
+export type StateValue = string | number | boolean | Buffer | ArrayBuffer;
+
+/**
+ * The `LiveCounter` class represents a synchronized counter that can be incremented or decremented and is synchronized across clients in realtime.
+ */
+export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
+  /**
+   * Returns the current value of the counter.
+   */
+  value(): number;
+}
+
+/**
+ * Represents an update to a {@link LiveCounter} object.
+ */
+export declare interface LiveCounterUpdate extends LiveObjectUpdate {
+  /**
+   * Holds the numerical change to the counter value.
+   */
+  update: {
+    /**
+     * The value by which the counter was incremented or decremented.
+     */
+    inc: number;
+  };
+}
+
+/**
+ * Describes the common interface for all conflict-free data structures supported by the `LiveObjects`.
+ */
+export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjectUpdate> {
+  /**
+   * Registers a listener that is called each time this Live Object is updated.
+   *
+   * @param listener - An event listener function that is called with an update object whenever this Live Object is updated.
+   * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
+   */
+  subscribe(listener: LiveObjectUpdateCallback<TUpdate>): SubscribeResponse;
+
+  /**
+   * Deregisters the given listener from updates for this Live Object.
+   *
+   * @param listener - An event listener function.
+   */
+  unsubscribe(listener: LiveObjectUpdateCallback<TUpdate>): void;
+
+  /**
+   * Deregisters all listeners from updates for this Live Object.
+   */
+  unsubscribeAll(): void;
+}
+
+/**
+ * Represents a generic update object describing the changes that occurred on a Live Object.
+ */
+export declare interface LiveObjectUpdate {
+  /**
+   * Holds an update object which describe changes applied to the object.
+   */
+  update: any;
+}
+
+/**
+ * Object returned from a `subscribe` call, allowing the listener provided in that call to be deregistered.
+ */
+export declare interface SubscribeResponse {
+  /**
+   * Deregisters the listener passed to the `subscribe` call.
+   */
+  unsubscribe(): void;
+}
 
 /**
  * Enables messages to be published and historic messages to be retrieved for a channel.
