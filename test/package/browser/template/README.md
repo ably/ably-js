@@ -8,6 +8,7 @@ This directory is intended to be used for testing the following aspects of the a
 It contains three files, each of which import ably-js in different manners, and provide a way to briefly exercise its functionality:
 
 - `src/index-default.ts` imports the default ably-js package (`import { Realtime } from 'ably'`).
+- `src/index-liveobjects.ts` imports the LiveObjects ably-js plugin (`import LiveObjects from 'ably/liveobjects'`).
 - `src/index-modular.ts` imports the tree-shakable ably-js package (`import { BaseRealtime, WebSocketTransport, FetchRequest } from 'ably/modular'`).
 - `src/ReactApp.tsx` imports React hooks from the ably-js package (`import { useChannel } from 'ably/react'`).
 
@@ -25,6 +26,7 @@ This directory exposes three package scripts that are to be used for testing:
 
 - `build`: Uses esbuild to create:
   1. a bundle containing `src/index-default.ts` and ably-js;
-  2. a bundle containing `src/index-modular.ts` and ably-js.
+  2. a bundle containing `src/index-liveobjects.ts` and ably-js.
+  3. a bundle containing `src/index-modular.ts` and ably-js.
 - `test`: Using the bundles created by `build` and playwright components setup, tests that the code that exercises ably-js’s functionality is working correctly in a browser.
 - `typecheck`: Type-checks the code that imports ably-js.
