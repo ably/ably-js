@@ -622,6 +622,7 @@ class RealtimeChannel extends EventEmitter {
           firstMessage = messages[0],
           lastMessage = messages[messages.length - 1],
           id = message.id,
+          channelSerial = message.channelSerial,
           connectionId = message.connectionId,
           timestamp = message.timestamp;
 
@@ -670,9 +671,14 @@ class RealtimeChannel extends EventEmitter {
           if (!msg.connectionId) msg.connectionId = connectionId;
           if (!msg.timestamp) msg.timestamp = timestamp;
           if (!msg.id) msg.id = id + ':' + i;
+          if (!msg.version) msg.version = channelSerial + ':' + i.toString().padStart(3, '0');
+
+          // already done in fromWireProtocol -- but for realtime messages the source
+          // fields might be copied from the protocolmessage, so need to do it again
+          msg.expandFields();
         }
         this._lastPayload.messageId = lastMessage.id;
-        this._lastPayload.protocolMessageChannelSerial = message.channelSerial;
+        this._lastPayload.protocolMessageChannelSerial = channelSerial;
         this.onEvent(messages);
         break;
       }
