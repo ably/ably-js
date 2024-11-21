@@ -52,9 +52,9 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
     private _semantics: MapSemantics,
     initialData?: LiveMapData | null,
     objectId?: string,
-    regionalTimeserial?: Timeserial,
+    siteTimeserials?: Record<string, Timeserial>,
   ) {
-    super(liveObjects, initialData, objectId, regionalTimeserial);
+    super(liveObjects, initialData, objectId, siteTimeserials);
   }
 
   /**
@@ -62,8 +62,8 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
    *
    * @internal
    */
-  static zeroValue(liveobjects: LiveObjects, objectId?: string, regionalTimeserial?: Timeserial): LiveMap {
-    return new LiveMap(liveobjects, MapSemantics.LWW, null, objectId, regionalTimeserial);
+  static zeroValue(liveobjects: LiveObjects, objectId?: string, siteTimeserials?: Record<string, Timeserial>): LiveMap {
+    return new LiveMap(liveobjects, MapSemantics.LWW, null, objectId, siteTimeserials);
   }
 
   /**
@@ -144,7 +144,7 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
   /**
    * @internal
    */
-  applyOperation(op: StateOperation, msg: StateMessage, opRegionalTimeserial: Timeserial): void {
+  applyOperation(op: StateOperation, msg: StateMessage): void {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply state operation with objectId=${op.objectId}, to this LiveMap with objectId=${this.getObjectId()}`,
@@ -152,6 +152,20 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
         500,
       );
     }
+
+    const opOriginTimeserial = DefaultTimeserial.calculateTimeserial(this._client, msg.serial);
+    if (!this._canApplyOperation(opOriginTimeserial)) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MICRO,
+        'LiveMap.applyOperation()',
+        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opOriginTimeserial.siteCode].toString()}; objectId=${this._objectId}`,
+      );
+      return;
+    }
+    // should update stored site timeserial immediately. doesn't matter if we successfully apply the op,
+    // as it's important to mark that the op was processed by the object
+    this._siteTimeserials[opOriginTimeserial.siteCode] = opOriginTimeserial;
 
     let update: LiveMapUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
@@ -165,7 +179,7 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyMapSet(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
+          update = this._applyMapSet(op.mapOp, opOriginTimeserial);
         }
         break;
 
@@ -175,7 +189,7 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyMapRemove(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
+          update = this._applyMapRemove(op.mapOp, opOriginTimeserial);
         }
         break;
 
@@ -187,7 +201,6 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
         );
     }
 
-    this.setRegionalTimeserial(opRegionalTimeserial);
     this.notifyUpdated(update);
   }
 

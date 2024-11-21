@@ -5,10 +5,11 @@ import { LiveMap } from './livemap';
 import { LiveObjectData } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import { MapSemantics, StateMessage, StateObject } from './statemessage';
+import { DefaultTimeserial, Timeserial } from './timeserial';
 
 export interface LiveObjectDataEntry {
   objectData: LiveObjectData;
-  regionalTimeserial: string;
+  siteTimeserials: Record<string, Timeserial>;
   objectType: 'LiveMap' | 'LiveCounter';
 }
 
@@ -92,7 +93,7 @@ export class SyncLiveObjectsDataPool {
     const newEntry: LiveCounterDataEntry = {
       objectData,
       objectType: 'LiveCounter',
-      regionalTimeserial: stateObject.regionalTimeserial,
+      siteTimeserials: this._timeserialMapFromStringMap(stateObject.siteTimeserials),
       created: counter.created,
     };
 
@@ -106,10 +107,23 @@ export class SyncLiveObjectsDataPool {
     const newEntry: LiveMapDataEntry = {
       objectData,
       objectType: 'LiveMap',
-      regionalTimeserial: stateObject.regionalTimeserial,
+      siteTimeserials: this._timeserialMapFromStringMap(stateObject.siteTimeserials),
       semantics: map.semantics ?? MapSemantics.LWW,
     };
 
     return newEntry;
+  }
+
+  private _timeserialMapFromStringMap(stringTimeserialsMap: Record<string, string>): Record<string, Timeserial> {
+    const objTimeserialsMap = Object.entries(stringTimeserialsMap).reduce(
+      (acc, v) => {
+        const [key, timeserialString] = v;
+        acc[key] = DefaultTimeserial.calculateTimeserial(this._client, timeserialString);
+        return acc;
+      },
+      {} as Record<string, Timeserial>,
+    );
+
+    return objTimeserialsMap;
   }
 }

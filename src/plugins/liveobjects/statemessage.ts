@@ -110,8 +110,8 @@ export interface StateOperation {
 export interface StateObject {
   /** The identifier of the state object. */
   objectId: string;
-  /** The *regional* timeserial of the last operation that was applied to this state object. */
-  regionalTimeserial: string;
+  /** A vector of origin timeserials keyed by site code of the last operation that was applied to this state object. */
+  siteTimeserials: Record<string, string>;
   /** The data that represents the state of the object if it is a Map object type. */
   map?: StateMap;
   /** The data that represents the state of the object if it is a Counter object type. */

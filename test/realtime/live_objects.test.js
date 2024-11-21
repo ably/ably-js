@@ -125,7 +125,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             await liveObjectsHelper.processStateObjectMessageOnChannel({
               channel: testChannel,
               syncSerial: 'serial:',
-              state: [liveObjectsHelper.mapObject({ objectId: 'root', regionalTimeserial: '@0-0' })],
+              state: [liveObjectsHelper.mapObject({ objectId: 'root', siteTimeserials: { '000': '000@0-0' } })],
             });
 
             const publishChannel = publishClient.channels.get('channel');
@@ -292,8 +292,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             state: [
               liveObjectsHelper.mapObject({
                 objectId: 'root',
-                regionalTimeserial: '@0-0',
-                entries: { key: { timeserial: '@0-0', data: { value: 1 } } },
+                siteTimeserials: { '000': '000@0-0' },
+                entries: { key: { timeserial: '000@0-0', data: { value: 1 } } },
               }),
             ],
           });
@@ -501,7 +501,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       ];
       const applyOperationsScenarios = [
         {
-          description: 'MAP_CREATE with primitives',
+          description: 'can apply MAP_CREATE with primitives state operation messages',
           action: async (ctx) => {
             const { root, liveObjectsHelper, channelName } = ctx;
 
@@ -560,7 +560,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'MAP_CREATE with object ids',
+          description: 'can apply MAP_CREATE with object ids state operation messages',
           action: async (ctx) => {
             const { root, liveObjectsHelper, channelName } = ctx;
             const withReferencesMapKey = 'withReferencesMap';
@@ -635,7 +635,86 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'MAP_SET with primitives',
+          description:
+            'MAP_CREATE state operation messages are applied based on the site timeserials vector of the object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            // need to use multiple maps as MAP_CREATE op can only be applied once to a map object
+            const mapIds = [
+              liveObjectsHelper.fakeMapObjectId(),
+              liveObjectsHelper.fakeMapObjectId(),
+              liveObjectsHelper.fakeMapObjectId(),
+              liveObjectsHelper.fakeMapObjectId(),
+              liveObjectsHelper.fakeMapObjectId(),
+            ];
+            await Promise.all(
+              mapIds.map(async (mapId, i) => {
+                // send a MAP_SET op first to create a zero-value map with forged site timeserials vector (from the op), and set it on a root.
+                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                  channel,
+                  serial: 'bbb@1-0',
+                  state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: 'foo', data: { value: 'bar' } })],
+                });
+                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                  channel,
+                  serial: `aaa@${i}-0`,
+                  state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: mapId, data: { objectId: mapId } })],
+                });
+              }),
+            );
+
+            // inject operations with various timeserial values
+            for (const [i, serial] of [
+              'bbb@0-0', // existing site, earlier CGO, not applied
+              'bbb@1-0', // existing site, same CGO, not applied
+              'bbb@2-0', // existing site, later CGO, applied
+              'aaa@0-0', // different site, earlier CGO, applied
+              'ccc@9-0', // different site, later CGO, applied
+            ].entries()) {
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial,
+                state: [
+                  liveObjectsHelper.mapCreateOp({
+                    objectId: mapIds[i],
+                    entries: {
+                      baz: { timeserial: serial, data: { value: 'qux' } },
+                    },
+                  }),
+                ],
+              });
+            }
+
+            // check only operations with correct timeserials were applied
+            const expectedMapValues = [
+              { foo: 'bar' },
+              { foo: 'bar' },
+              { foo: 'bar', baz: 'qux' }, // applied MAP_CREATE
+              { foo: 'bar', baz: 'qux' }, // applied MAP_CREATE
+              { foo: 'bar', baz: 'qux' }, // applied MAP_CREATE
+            ];
+
+            for (const [i, mapId] of mapIds.entries()) {
+              const expectedMapValue = expectedMapValues[i];
+              const expectedKeysCount = Object.keys(expectedMapValue).length;
+
+              expect(root.get(mapId).size()).to.equal(
+                expectedKeysCount,
+                `Check map #${i + 1} has expected number of keys after MAP_CREATE ops`,
+              );
+              Object.entries(expectedMapValue).forEach(([key, value]) => {
+                expect(root.get(mapId).get(key)).to.equal(
+                  value,
+                  `Check map #${i + 1} has expected value for "${key}" key after MAP_CREATE ops`,
+                );
+              });
+            }
+          },
+        },
+
+        {
+          description: 'can apply MAP_SET with primitives state operation messages',
           action: async (ctx) => {
             const { root, liveObjectsHelper, channelName } = ctx;
 
@@ -678,7 +757,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'MAP_SET with object ids',
+          description: 'can apply MAP_SET with object ids state operation messages',
           action: async (ctx) => {
             const { root, liveObjectsHelper, channelName } = ctx;
 
@@ -729,7 +808,73 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'MAP_REMOVE',
+          description:
+            'MAP_SET state operation messages are applied based on the site timeserials vector of the object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            // create new map and set it on a root with forged timeserials
+            const mapId = liveObjectsHelper.fakeMapObjectId();
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: 'bbb@1-0',
+              state: [
+                liveObjectsHelper.mapCreateOp({
+                  objectId: mapId,
+                  entries: {
+                    foo1: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo2: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo3: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo4: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo5: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo6: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                  },
+                }),
+              ],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: 'aaa@0-0',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
+            });
+
+            // inject operations with various timeserial values
+            for (const [i, serial] of [
+              'bbb@0-0', // existing site, earlier site CGO, not applied
+              'bbb@1-0', // existing site, same site CGO, not applied
+              'bbb@2-0', // existing site, later site CGO, applied, site timeserials updated
+              'bbb@2-0', // existing site, same site CGO (updated from last op), not applied
+              'aaa@0-0', // different site, earlier entry CGO, not applied
+              'ccc@9-0', // different site, later entry CGO, applied
+            ].entries()) {
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial,
+                state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
+              });
+            }
+
+            // check only operations with correct timeserials were applied
+            const expectedMapKeys = [
+              { key: 'foo1', value: 'bar' },
+              { key: 'foo2', value: 'bar' },
+              { key: 'foo3', value: 'baz' }, // updated
+              { key: 'foo4', value: 'bar' },
+              { key: 'foo5', value: 'bar' },
+              { key: 'foo6', value: 'baz' }, // updated
+            ];
+
+            expectedMapKeys.forEach(({ key, value }) => {
+              expect(root.get('map').get(key)).to.equal(
+                value,
+                `Check "${key}" key on map has expected value after MAP_SET ops`,
+              );
+            });
+          },
+        },
+
+        {
+          description: 'can apply MAP_REMOVE state operation messages',
           action: async (ctx) => {
             const { root, liveObjectsHelper, channelName } = ctx;
             const mapKey = 'map';
@@ -787,7 +932,76 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'COUNTER_CREATE',
+          description:
+            'MAP_REMOVE state operation messages are applied based on the site timeserials vector of the object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            // create new map and set it on a root with forged timeserials
+            const mapId = liveObjectsHelper.fakeMapObjectId();
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: 'bbb@1-0',
+              state: [
+                liveObjectsHelper.mapCreateOp({
+                  objectId: mapId,
+                  entries: {
+                    foo1: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo2: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo3: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo4: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo5: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo6: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                  },
+                }),
+              ],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: 'aaa@0-0',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
+            });
+
+            // inject operations with various timeserial values
+            for (const [i, serial] of [
+              'bbb@0-0', // existing site, earlier site CGO, not applied
+              'bbb@1-0', // existing site, same site CGO, not applied
+              'bbb@2-0', // existing site, later site CGO, applied, site timeserials updated
+              'bbb@2-0', // existing site, same site CGO (updated from last op), not applied
+              'aaa@0-0', // different site, earlier entry CGO, not applied
+              'ccc@9-0', // different site, later entry CGO, applied
+            ].entries()) {
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial,
+                state: [liveObjectsHelper.mapRemoveOp({ objectId: mapId, key: `foo${i + 1}` })],
+              });
+            }
+
+            // check only operations with correct timeserials were applied
+            const expectedMapKeys = [
+              { key: 'foo1', exists: true },
+              { key: 'foo2', exists: true },
+              { key: 'foo3', exists: false }, // removed
+              { key: 'foo4', exists: true },
+              { key: 'foo5', exists: true },
+              { key: 'foo6', exists: false }, // removed
+            ];
+
+            expectedMapKeys.forEach(({ key, exists }) => {
+              if (exists) {
+                expect(root.get('map').get(key), `Check "${key}" key on map still exists after MAP_REMOVE ops`).to
+                  .exist;
+              } else {
+                expect(root.get('map').get(key), `Check "${key}" key on map does not exist after MAP_REMOVE ops`).to.not
+                  .exist;
+              }
+            });
+          },
+        },
+
+        {
+          description: 'can apply COUNTER_CREATE state operation messages',
           action: async (ctx) => {
             const { root, liveObjectsHelper, channelName } = ctx;
 
@@ -837,7 +1051,74 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'COUNTER_INC',
+          description:
+            'COUNTER_CREATE state operation messages are applied based on the site timeserials vector of the object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            // need to use multiple counters as COUNTER_CREATE op can only be applied once to a counter object
+            const counterIds = [
+              liveObjectsHelper.fakeCounterObjectId(),
+              liveObjectsHelper.fakeCounterObjectId(),
+              liveObjectsHelper.fakeCounterObjectId(),
+              liveObjectsHelper.fakeCounterObjectId(),
+              liveObjectsHelper.fakeCounterObjectId(),
+            ];
+            await Promise.all(
+              counterIds.map(async (counterId, i) => {
+                // send a COUNTER_INC op first to create a zero-value counter with forged site timeserials vector (from the op), and set it on a root.
+                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                  channel,
+                  serial: 'bbb@1-0',
+                  state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
+                });
+                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                  channel,
+                  serial: `aaa@${i}-0`,
+                  state: [
+                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: counterId, data: { objectId: counterId } }),
+                  ],
+                });
+              }),
+            );
+
+            // inject operations with various timeserial values
+            for (const [i, serial] of [
+              'bbb@0-0', // existing site, earlier CGO, not applied
+              'bbb@1-0', // existing site, same CGO, not applied
+              'bbb@2-0', // existing site, later CGO, applied
+              'aaa@0-0', // different site, earlier CGO, applied
+              'ccc@9-0', // different site, later CGO, applied
+            ].entries()) {
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial,
+                state: [liveObjectsHelper.counterCreateOp({ objectId: counterIds[i], count: 10 })],
+              });
+            }
+
+            // check only operations with correct timeserials were applied
+            const expectedCounterValues = [
+              1,
+              1,
+              11, // applied COUNTER_CREATE
+              11, // applied COUNTER_CREATE
+              11, // applied COUNTER_CREATE
+            ];
+
+            for (const [i, counterId] of counterIds.entries()) {
+              const expectedValue = expectedCounterValues[i];
+
+              expect(root.get(counterId).value()).to.equal(
+                expectedValue,
+                `Check counter #${i + 1} has expected value after COUNTER_CREATE ops`,
+              );
+            }
+          },
+        },
+
+        {
+          description: 'can apply COUNTER_INC state operation messages',
           action: async (ctx) => {
             const { root, liveObjectsHelper, channelName } = ctx;
             const counterKey = 'counter';
@@ -894,24 +1175,67 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             }
           },
         },
+
+        {
+          description:
+            'COUNTER_INC state operation messages are applied based on the site timeserials vector of the object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            // create new counter and set it on a root with forged timeserials
+            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: 'bbb@1-0',
+              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId, count: 1 })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: 'aaa@0-0',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
+            });
+
+            // inject operations with various timeserial values
+            for (const [i, serial] of [
+              'bbb@0-0', // +10       existing site, earlier CGO, not applied
+              'bbb@1-0', // +100      existing site, same CGO, not applied
+              'bbb@2-0', // +1000     existing site, later CGO, applied, site timeserials updated
+              'bbb@2-0', // +10000    existing site, same CGO (updated from last op), not applied
+              'aaa@0-0', // +100000   different site, earlier CGO, applied
+              'ccc@9-0', // +1000000  different site, later CGO, applied
+            ].entries()) {
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial,
+                state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: Math.pow(10, i + 1) })],
+              });
+            }
+
+            // check only operations with correct timeserials were applied
+            expect(root.get('counter').value()).to.equal(
+              1 + 1000 + 100000 + 1000000, // sum of passing operations and the initial value
+              `Check counter has expected value after COUNTER_INC ops`,
+            );
+          },
+        },
       ];
 
       forScenarios(applyOperationsScenarios, (scenario) =>
         /** @nospec */
-        it(`can apply ${scenario.description} state operation messages`, async function () {
+        it(scenario.description, async function () {
           const helper = this.test.helper;
           const liveObjectsHelper = new LiveObjectsHelper(helper);
           const client = RealtimeWithLiveObjects(helper);
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
-            const channelName = `channel_can_apply_${scenario.description}`;
+            const channelName = scenario.description;
             const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
             const liveObjects = channel.liveObjects;
 
             await channel.attach();
             const root = await liveObjects.getRoot();
 
-            await scenario.action({ root, liveObjectsHelper, channelName });
+            await scenario.action({ root, liveObjectsHelper, channelName, channel });
           }, client);
         }),
       );
@@ -960,10 +1284,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             // inject operations, they should be applied when sync ends
             await Promise.all(
-              primitiveKeyData.map((keyData) =>
+              primitiveKeyData.map((keyData, i) =>
                 liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: '@0-0',
+                  serial: `aaa@${i}-0`,
                   state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
                 }),
               ),
@@ -1050,7 +1374,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'buffered state operation messages are applied based on regional timeserial of the object',
+          description:
+            'buffered state operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
             const { root, liveObjectsHelper, channel } = ctx;
 
@@ -1060,64 +1385,81 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             await liveObjectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
-              // add state object messages with non-zero regional timeserials
+              // add state object messages with non-empty site timeserials
               state: [
-                liveObjectsHelper.mapObject({
-                  objectId: 'root',
-                  regionalTimeserial: '@1-0',
-                  entries: {
-                    map: { timeserial: '@0-0', data: { objectId: mapId } },
-                    counter: { timeserial: '@0-0', data: { objectId: counterId } },
-                  },
-                }),
+                // next map and counter objects will be checked to have correct operations applied on them based on site timeserials
                 liveObjectsHelper.mapObject({
                   objectId: mapId,
-                  regionalTimeserial: '@1-0',
+                  siteTimeserials: {
+                    bbb: 'bbb@2-0',
+                    ccc: 'ccc@5-0',
+                  },
+                  entries: {
+                    foo1: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo2: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo3: { timeserial: 'ccc@5-0', data: { value: 'bar' } },
+                    foo4: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo5: { timeserial: 'bbb@2-0', data: { value: 'bar' } },
+                    foo6: { timeserial: 'ccc@2-0', data: { value: 'bar' } },
+                    foo7: { timeserial: 'ccc@0-0', data: { value: 'bar' } },
+                    foo8: { timeserial: 'ccc@0-0', data: { value: 'bar' } },
+                  },
                 }),
                 liveObjectsHelper.counterObject({
                   objectId: counterId,
-                  regionalTimeserial: '@1-0',
+                  siteTimeserials: {
+                    bbb: 'bbb@1-0',
+                  },
+                  count: 1,
+                }),
+                // add objects to the root so they're discoverable in the state tree
+                liveObjectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { '000': '000@0-0' },
+                  entries: {
+                    map: { timeserial: '000@0-0', data: { objectId: mapId } },
+                    counter: { timeserial: '000@0-0', data: { objectId: counterId } },
+                  },
                 }),
               ],
             });
 
-            // inject operations with older or equal regional timeserial, expect them not to be applied when sync ends
-            await Promise.all(
-              ['@0-0', '@1-0'].map(async (serial) => {
-                await Promise.all(
-                  ['root', mapId].flatMap((objectId) =>
-                    primitiveKeyData.map((keyData) =>
-                      liveObjectsHelper.processStateOperationMessageOnChannel({
-                        channel,
-                        serial,
-                        state: [liveObjectsHelper.mapSetOp({ objectId, key: keyData.key, data: keyData.data })],
-                      }),
-                    ),
-                  ),
-                );
-                await liveObjectsHelper.processStateOperationMessageOnChannel({
-                  channel,
-                  serial,
-                  state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
-                });
-              }),
-            );
+            // inject operations with various timeserial values
+            // Map:
+            for (const [i, serial] of [
+              'bbb@1-0', // existing site, earlier site CGO, not applied
+              'bbb@2-0', // existing site, same site CGO, not applied
+              'bbb@3-0', // existing site, later site CGO, earlier entry CGO, not applied but site timeserial updated
+              // message with later site CGO, same entry CGO case is not possible, as timeserial from entry would be set for the corresponding site code or be less than that
+              'bbb@3-0', // existing site, same site CGO (updated from last op), later entry CGO, not applied
+              'bbb@4-0', // existing site, later site CGO, later entry CGO, applied
+              'aaa@1-0', // different site, earlier entry CGO, not applied but site timeserial updated
+              'aaa@1-0', // different site, same site CGO (updated from last op), later entry CGO, not applied
+              // different site with matching entry CGO case is not possible, as matching entry timeserial means that that timeserial is in the site timeserials vector
+              'ddd@1-0', // different site, later entry CGO, applied
+            ].entries()) {
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial,
+                state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
+              });
+            }
 
-            // inject operations with greater regional timeserial, expect them to be applied when sync ends
-            await Promise.all(
-              ['root', mapId].map((objectId) =>
-                liveObjectsHelper.processStateOperationMessageOnChannel({
-                  channel,
-                  serial: '@2-0',
-                  state: [liveObjectsHelper.mapSetOp({ objectId, key: 'foo', data: { value: 'bar' } })],
-                }),
-              ),
-            );
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
-              channel,
-              serial: '@2-0',
-              state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
-            });
+            // Counter:
+            for (const [i, serial] of [
+              'bbb@0-0', // +10       existing site, earlier CGO, not applied
+              'bbb@1-0', // +100      existing site, same CGO, not applied
+              'bbb@2-0', // +1000     existing site, later CGO, applied, site timeserials updated
+              'bbb@2-0', // +10000    existing site, same CGO (updated from last op), not applied
+              'aaa@0-0', // +100000   different site, earlier CGO, applied
+              'ccc@9-0', // +1000000  different site, later CGO, applied
+            ].entries()) {
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial,
+                state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: Math.pow(10, i + 1) })],
+              });
+            }
 
             // end sync
             await liveObjectsHelper.processStateObjectMessageOnChannel({
@@ -1125,33 +1467,28 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               syncSerial: 'serial:',
             });
 
-            // check operations with older or equal regional timeserial are not applied
-            // counter will be checked to match an expected value explicitly, so no need to check that it doesn't equal a sum of operations
-            primitiveKeyData.forEach((keyData) => {
-              expect(
-                root.get(keyData.key),
-                `Check "${keyData.key}" key doesn't exist on root when STATE_SYNC has ended`,
-              ).to.not.exist;
-            });
-            primitiveKeyData.forEach((keyData) => {
-              expect(
-                root.get('map').get(keyData.key),
-                `Check "${keyData.key}" key doesn't exist on inner map when STATE_SYNC has ended`,
-              ).to.not.exist;
+            // check only operations with correct timeserials were applied
+            const expectedMapKeys = [
+              { key: 'foo1', value: 'bar' },
+              { key: 'foo2', value: 'bar' },
+              { key: 'foo3', value: 'bar' },
+              { key: 'foo4', value: 'bar' },
+              { key: 'foo5', value: 'baz' }, // updated
+              { key: 'foo6', value: 'bar' },
+              { key: 'foo7', value: 'bar' },
+              { key: 'foo8', value: 'baz' }, // updated
+            ];
+
+            expectedMapKeys.forEach(({ key, value }) => {
+              expect(root.get('map').get(key)).to.equal(
+                value,
+                `Check "${key}" key on map has expected value after STATE_SYNC has ended`,
+              );
             });
 
-            // check operations with greater regional timeserial are applied
-            expect(root.get('foo')).to.equal(
-              'bar',
-              'Check only data from operations with greater regional timeserial exists on root after STATE_SYNC',
-            );
-            expect(root.get('map').get('foo')).to.equal(
-              'bar',
-              'Check only data from operations with greater regional timeserial exists on inner map after STATE_SYNC',
-            );
             expect(root.get('counter').value()).to.equal(
-              1,
-              'Check only increment operations with greater regional timeserial were applied to counter after STATE_SYNC',
+              1 + 1000 + 100000 + 1000000, // sum of passing operations and the initial value
+              `Check counter has expected value after STATE_SYNC has ended`,
             );
           },
         },
@@ -1170,10 +1507,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             // inject operations, they should be applied when sync ends
             await Promise.all(
-              primitiveKeyData.map((keyData) =>
+              primitiveKeyData.map((keyData, i) =>
                 liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: '@0-0',
+                  serial: `aaa@${i}-0`,
                   state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
                 }),
               ),

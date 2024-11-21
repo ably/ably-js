@@ -175,11 +175,11 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     }
 
     mapObject(opts) {
-      const { objectId, regionalTimeserial, entries } = opts;
+      const { objectId, siteTimeserials, entries } = opts;
       const obj = {
         object: {
           objectId,
-          regionalTimeserial,
+          siteTimeserials,
           map: { entries },
         },
       };
@@ -188,11 +188,11 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     }
 
     counterObject(opts) {
-      const { objectId, regionalTimeserial, count } = opts;
+      const { objectId, siteTimeserials, count } = opts;
       const obj = {
         object: {
           objectId,
-          regionalTimeserial,
+          siteTimeserials,
           counter: {
             created: true,
             count,

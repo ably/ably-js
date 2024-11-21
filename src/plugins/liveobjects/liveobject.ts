@@ -2,7 +2,7 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import { LiveObjects } from './liveobjects';
 import { StateMessage, StateOperation } from './statemessage';
-import { DefaultTimeserial, Timeserial } from './timeserial';
+import { Timeserial } from './timeserial';
 
 enum LiveObjectEvents {
   Updated = 'Updated',
@@ -34,20 +34,20 @@ export abstract class LiveObject<
   protected _eventEmitter: EventEmitter;
   protected _dataRef: TData;
   protected _objectId: string;
-  protected _regionalTimeserial: Timeserial;
+  protected _siteTimeserials: Record<string, Timeserial>;
 
   constructor(
     protected _liveObjects: LiveObjects,
     initialData?: TData | null,
     objectId?: string,
-    regionalTimeserial?: Timeserial,
+    siteTimeserials?: Record<string, Timeserial>,
   ) {
     this._client = this._liveObjects.getClient();
     this._eventEmitter = new this._client.EventEmitter(this._client.logger);
     this._dataRef = initialData ?? this._getZeroValueData();
     this._objectId = objectId ?? this._createObjectId();
-    // use zero value timeserial by default, so any future operation can be applied for this object
-    this._regionalTimeserial = regionalTimeserial ?? DefaultTimeserial.zeroValueTimeserial(this._client);
+    // use empty timeserials vector by default, so any future operation can be applied to this object
+    this._siteTimeserials = siteTimeserials ?? {};
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
@@ -83,13 +83,6 @@ export abstract class LiveObject<
   }
 
   /**
-   * @internal
-   */
-  getRegionalTimeserial(): Timeserial {
-    return this._regionalTimeserial;
-  }
-
-  /**
    * Sets a new data reference for the LiveObject and returns an update object that describes the changes applied based on the object's previous value.
    *
    * @internal
@@ -103,8 +96,8 @@ export abstract class LiveObject<
   /**
    * @internal
    */
-  setRegionalTimeserial(regionalTimeserial: Timeserial): void {
-    this._regionalTimeserial = regionalTimeserial;
+  setSiteTimeserials(siteTimeserials: Record<string, Timeserial>): void {
+    this._siteTimeserials = siteTimeserials;
   }
 
   /**
@@ -119,6 +112,17 @@ export abstract class LiveObject<
     this._eventEmitter.emit(LiveObjectEvents.Updated, update);
   }
 
+  /**
+   * Returns true if the given origin timeserial indicates that the operation to which it belongs should be applied to the object.
+   *
+   * An operation should be applied if the origin timeserial is strictly greater than the timeserial in the site timeserials for the same site.
+   * If the site timeserials do not contain a timeserial for the site of the origin timeserial, the operation should be applied.
+   */
+  protected _canApplyOperation(opOriginTimeserial: Timeserial): boolean {
+    const siteTimeserial = this._siteTimeserials[opOriginTimeserial.siteCode];
+    return !siteTimeserial || opOriginTimeserial.after(siteTimeserial);
+  }
+
   private _createObjectId(): string {
     // TODO: implement object id generation based on live object type and initial value
     return Math.random().toString().substring(2);
@@ -127,7 +131,7 @@ export abstract class LiveObject<
   /**
    * @internal
    */
-  abstract applyOperation(op: StateOperation, msg: StateMessage, opRegionalTimeserial: Timeserial): void;
+  abstract applyOperation(op: StateOperation, msg: StateMessage): void;
   protected abstract _getZeroValueData(): TData;
   /**
    * Calculate the update object based on the current Live Object data and incoming new data.

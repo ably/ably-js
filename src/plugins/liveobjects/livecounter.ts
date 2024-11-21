@@ -1,7 +1,7 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import { StateCounter, StateCounterOp, StateMessage, StateOperation, StateOperationAction } from './statemessage';
-import { Timeserial } from './timeserial';
+import { DefaultTimeserial, Timeserial } from './timeserial';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number;
@@ -17,9 +17,9 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     private _created: boolean,
     initialData?: LiveCounterData | null,
     objectId?: string,
-    regionalTimeserial?: Timeserial,
+    siteTimeserials?: Record<string, Timeserial>,
   ) {
-    super(liveObjects, initialData, objectId, regionalTimeserial);
+    super(liveObjects, initialData, objectId, siteTimeserials);
   }
 
   /**
@@ -31,9 +31,9 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     liveobjects: LiveObjects,
     isCreated: boolean,
     objectId?: string,
-    regionalTimeserial?: Timeserial,
+    siteTimeserials?: Record<string, Timeserial>,
   ): LiveCounter {
-    return new LiveCounter(liveobjects, isCreated, null, objectId, regionalTimeserial);
+    return new LiveCounter(liveobjects, isCreated, null, objectId, siteTimeserials);
   }
 
   value(): number {
@@ -57,7 +57,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  applyOperation(op: StateOperation, msg: StateMessage, opRegionalTimeserial: Timeserial): void {
+  applyOperation(op: StateOperation, msg: StateMessage): void {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply state operation with objectId=${op.objectId}, to this LiveCounter with objectId=${this.getObjectId()}`,
@@ -65,6 +65,20 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         500,
       );
     }
+
+    const opOriginTimeserial = DefaultTimeserial.calculateTimeserial(this._client, msg.serial);
+    if (!this._canApplyOperation(opOriginTimeserial)) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MICRO,
+        'LiveCounter.applyOperation()',
+        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opOriginTimeserial.siteCode].toString()}; objectId=${this._objectId}`,
+      );
+      return;
+    }
+    // should update stored site timeserial immediately. doesn't matter if we successfully apply the op,
+    // as it's important to mark that the op was processed by the object
+    this._siteTimeserials[opOriginTimeserial.siteCode] = opOriginTimeserial;
 
     let update: LiveCounterUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
@@ -90,7 +104,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         );
     }
 
-    this.setRegionalTimeserial(opRegionalTimeserial);
     this.notifyUpdated(update);
   }
 
