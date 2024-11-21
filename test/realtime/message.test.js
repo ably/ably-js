@@ -1275,40 +1275,29 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /**
      * @spec TM2j
      */
-    describe('DefaultMessage.fromValues stringify action', function () {
+    describe('DefaultMessage.fromWireProtocol', function () {
       const testCases = [
         {
           description: 'should stringify the numeric action',
           action: 1,
-          options: { stringifyAction: true },
           expectedString: '[Message; action=message.create]',
-          expectedJSON: { action: 1 },
-        },
-        {
-          description: 'should not stringify the numeric action',
-          action: 1,
-          options: { stringifyAction: false },
-          expectedString: '[Message; action=1]',
           expectedJSON: { action: 1 },
         },
         {
           description: 'should accept an already stringified action',
           action: 'message.update',
-          options: { stringifyAction: true },
           expectedString: '[Message; action=message.update]',
           expectedJSON: { action: 2 },
         },
         {
           description: 'should handle no action provided',
           action: undefined,
-          options: { stringifyAction: true },
           expectedString: '[Message]',
           expectedJSON: { action: undefined },
         },
         {
           description: 'should handle unknown action provided',
           action: 10,
-          options: { stringifyAction: true },
           expectedString: '[Message; action=10]',
           expectedJSON: { action: 10 },
         },
@@ -1316,7 +1305,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       testCases.forEach(({ description, action, options, expectedString, expectedJSON }) => {
         it(description, function () {
           const values = { action };
-          const message = Message.fromValues(values, options);
+          const message = Message.fromWireProtocol(values);
           expect(message.toString()).to.equal(expectedString);
           expect(message.toJSON()).to.deep.contains(expectedJSON);
         });

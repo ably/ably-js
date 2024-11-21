@@ -393,9 +393,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               helper.recordPrivateApi('call.BufferUtils.base64Decode');
               helper.recordPrivateApi('call.msgpack.decode');
-              var messageFromMsgpack = Message.fromValues(
+              var messageFromMsgpack = Message.fromWireProtocol(
                 msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
-                { stringifyAction: true },
               );
 
               try {
@@ -438,9 +437,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               helper.recordPrivateApi('call.BufferUtils.base64Decode');
               helper.recordPrivateApi('call.msgpack.decode');
-              var messageFromMsgpack = Message.fromValues(
+              var messageFromMsgpack = Message.fromWireProtocol(
                 msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
-                { stringifyAction: true },
               );
 
               try {
