@@ -10,6 +10,11 @@ export interface Timeserial {
   readonly seriesId: string;
 
   /**
+   * The site code of the timeserial.
+   */
+  readonly siteCode: string;
+
+  /**
    * The timestamp of the timeserial.
    */
   readonly timestamp: number;
@@ -40,6 +45,7 @@ export interface Timeserial {
  */
 export class DefaultTimeserial implements Timeserial {
   public readonly seriesId: string;
+  public readonly siteCode: string;
   public readonly timestamp: number;
   public readonly counter: number;
   public readonly index?: number;
@@ -55,6 +61,8 @@ export class DefaultTimeserial implements Timeserial {
     this.timestamp = timestamp;
     this.counter = counter;
     this.index = index;
+    // TODO: will be removed once https://ably.atlassian.net/browse/DTP-1078 is implemented on the realtime
+    this.siteCode = this.seriesId.slice(0, 3); // site code is stored in the first 3 letters of the epoch, which is stored in the series id field
   }
 
   /**
