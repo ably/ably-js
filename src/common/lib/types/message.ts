@@ -1,13 +1,14 @@
 import Platform from 'common/platform';
 import Logger from '../util/logger';
 import ErrorInfo from './errorinfo';
-import { ChannelOptions } from '../../types/channel';
 import PresenceMessage from './presencemessage';
 import * as Utils from '../util/utils';
 import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/bufferutils';
 import * as API from '../../../../ably';
-import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
-import { MsgPack } from 'common/types/msgpack';
+
+import type { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
+import type { ChannelOptions } from '../../types/channel';
+import type { Properties } from '../util/utils';
 
 const MessageActionArray: API.MessageAction[] = [
   'message.unset',
@@ -56,6 +57,8 @@ export type EncodingDecodingContext = {
   baseEncodedPreviousPayload?: Buffer | BrowserBufferlike;
 };
 
+export type WireProtocolMessage = Omit<Message, 'action'> & { action: number };
+
 function normaliseContext(context: CipherOptions | EncodingDecodingContext | ChannelOptions): EncodingDecodingContext {
   if (!context || !(context as EncodingDecodingContext).channelOptions) {
     return {
@@ -67,7 +70,7 @@ function normaliseContext(context: CipherOptions | EncodingDecodingContext | Cha
   return context as EncodingDecodingContext;
 }
 
-function normalizeCipherOptions(
+export function normalizeCipherOptions(
   Crypto: IUntypedCryptoStatic | null,
   logger: Logger,
   options: API.ChannelOptions | null,
@@ -103,10 +106,10 @@ function getMessageSize(msg: Message) {
 export async function fromEncoded(
   logger: Logger,
   Crypto: IUntypedCryptoStatic | null,
-  encoded: unknown,
+  encoded: WireProtocolMessage,
   inputOptions?: API.ChannelOptions,
 ): Promise<Message> {
-  const msg = fromValues(encoded as Message | Record<string, unknown>, { stringifyAction: true });
+  const msg = fromWireProtocol(encoded);
   const options = normalizeCipherOptions(Crypto, logger, inputOptions ?? null);
   /* if decoding fails at any point, catch and return the message decoded to
    * the fullest extent possible */
@@ -121,7 +124,7 @@ export async function fromEncoded(
 export async function fromEncodedArray(
   logger: Logger,
   Crypto: IUntypedCryptoStatic | null,
-  encodedArray: Array<unknown>,
+  encodedArray: Array<WireProtocolMessage>,
   options?: API.ChannelOptions,
 ): Promise<Message[]> {
   return Promise.all(
@@ -272,45 +275,17 @@ export async function decode(
   context.baseEncodedPreviousPayload = lastPayload;
 }
 
-export async function fromResponseBody(
-  body: Array<Message>,
-  options: ChannelOptions | EncodingDecodingContext,
-  logger: Logger,
-  MsgPack: MsgPack | null,
-  format?: Utils.Format,
-): Promise<Message[]> {
-  if (format) {
-    body = Utils.decodeBody(body, MsgPack, format);
-  }
-
-  for (let i = 0; i < body.length; i++) {
-    const msg = (body[i] = fromValues(body[i], { stringifyAction: true }));
-    try {
-      await decode(msg, options);
-    } catch (e) {
-      Logger.logAction(logger, Logger.LOG_ERROR, 'Message.fromResponseBody()', (e as Error).toString());
-    }
-  }
-  return body;
-}
-
-export function fromValues(
-  values: Message | Record<string, unknown>,
-  options?: { stringifyAction?: boolean },
-): Message {
-  const stringifyAction = options?.stringifyAction;
-  if (stringifyAction) {
-    const action = toMessageActionString(values.action as number) || values.action;
-    return Object.assign(new Message(), { ...values, action });
-  }
+export function fromValues(values: Properties<Message>): Message {
   return Object.assign(new Message(), values);
 }
 
-export function fromValuesArray(values: unknown[]): Message[] {
-  const count = values.length,
-    result = new Array(count);
-  for (let i = 0; i < count; i++) result[i] = fromValues(values[i] as Record<string, unknown>);
-  return result;
+export function fromWireProtocol(values: WireProtocolMessage): Message {
+  const action = toMessageActionString(values.action as number) || values.action;
+  return Object.assign(new Message(), { ...values, action });
+}
+
+export function fromValuesArray(values: Properties<Message>[]): Message[] {
+  return values.map(fromValues);
 }
 
 /* This should be called on encode()d (and encrypt()d) Messages (as it
@@ -336,7 +311,7 @@ class Message {
   encoding?: string | null;
   extras?: any;
   size?: number;
-  action?: API.MessageAction | number;
+  action?: API.MessageAction;
   serial?: string;
   refSerial?: string;
   refType?: string;

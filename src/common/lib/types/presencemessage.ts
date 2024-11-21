@@ -1,11 +1,14 @@
 import Logger from '../util/logger';
 import Platform from 'common/platform';
-import { encode as encodeMessage, decode as decodeMessage, getMessagesSize, CipherOptions } from './message';
-import * as Utils from '../util/utils';
+import { normalizeCipherOptions, encode as encodeMessage, decode as decodeMessage, getMessagesSize } from './message';
 import * as API from '../../../../ably';
-import { MsgPack } from 'common/types/msgpack';
+
+import type { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
+import type { Properties } from '../util/utils';
 
 const actions = ['absent', 'present', 'enter', 'leave', 'update'];
+
+export type WireProtocolPresenceMessage = Omit<PresenceMessage, 'action'> & { action: number };
 
 function toActionValue(actionString: string) {
   return actions.indexOf(actionString);
@@ -13,10 +16,12 @@ function toActionValue(actionString: string) {
 
 export async function fromEncoded(
   logger: Logger,
-  encoded: unknown,
-  options?: API.ChannelOptions,
+  Crypto: IUntypedCryptoStatic | null,
+  encoded: WireProtocolPresenceMessage,
+  inputOptions?: API.ChannelOptions,
 ): Promise<PresenceMessage> {
-  const msg = fromValues(encoded as PresenceMessage | Record<string, unknown>, true);
+  const msg = fromWireProtocol(encoded);
+  const options = normalizeCipherOptions(Crypto, logger, inputOptions ?? null);
   /* if decoding fails at any point, catch and return the message decoded to
    * the fullest extent possible */
   try {
@@ -29,60 +34,34 @@ export async function fromEncoded(
 
 export async function fromEncodedArray(
   logger: Logger,
-  encodedArray: unknown[],
+  Crypto: IUntypedCryptoStatic | null,
+  encodedArray: WireProtocolPresenceMessage[],
   options?: API.ChannelOptions,
 ): Promise<PresenceMessage[]> {
   return Promise.all(
     encodedArray.map(function (encoded) {
-      return fromEncoded(logger, encoded, options);
+      return fromEncoded(logger, Crypto, encoded, options);
     }),
   );
 }
 
-export function fromValues(
-  values: PresenceMessage | Record<string, unknown>,
-  stringifyAction?: boolean,
-): PresenceMessage {
-  if (stringifyAction) {
-    values.action = actions[values.action as number];
-  }
+export function fromValues(values: Properties<PresenceMessage>): PresenceMessage {
   return Object.assign(new PresenceMessage(), values);
+}
+
+export function fromWireProtocol(values: WireProtocolPresenceMessage): PresenceMessage {
+  const action = actions[values.action];
+  return Object.assign(new PresenceMessage(), { ...values, action });
 }
 
 export { encodeMessage as encode };
 export const decode = decodeMessage;
 
-export async function fromResponseBody(
-  body: Record<string, unknown>[],
-  options: CipherOptions,
-  logger: Logger,
-  MsgPack: MsgPack | null,
-  format?: Utils.Format,
-): Promise<PresenceMessage[]> {
-  const messages: PresenceMessage[] = [];
-  if (format) {
-    body = Utils.decodeBody(body, MsgPack, format);
-  }
-
-  for (let i = 0; i < body.length; i++) {
-    const msg = (messages[i] = fromValues(body[i], true));
-    try {
-      await decode(msg, options);
-    } catch (e) {
-      Logger.logAction(logger, Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', (e as Error).toString());
-    }
-  }
-  return messages;
+export function fromValuesArray(values: Properties<PresenceMessage>[]): PresenceMessage[] {
+  return values.map(fromValues);
 }
 
-export function fromValuesArray(values: unknown[]): PresenceMessage[] {
-  const count = values.length,
-    result = new Array(count);
-  for (let i = 0; i < count; i++) result[i] = fromValues(values[i] as Record<string, unknown>);
-  return result;
-}
-
-export function fromData(data: unknown): PresenceMessage {
+export function fromData(data: any): PresenceMessage {
   if (data instanceof PresenceMessage) {
     return data;
   }
@@ -94,7 +73,7 @@ export function fromData(data: unknown): PresenceMessage {
 export { getMessagesSize };
 
 class PresenceMessage {
-  action?: string | number;
+  action?: string;
   id?: string;
   timestamp?: number;
   clientId?: string;

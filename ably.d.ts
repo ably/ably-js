@@ -2516,9 +2516,8 @@ export interface PresenceMessageStatic {
    * Initialises a `PresenceMessage` from a `PresenceMessage`-like object.
    *
    * @param values - The values to intialise the `PresenceMessage` from.
-   * @param stringifyAction - Whether to convert the `action` field from a number to a string.
    */
-  fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage;
+  fromValues(values: Partial<Pick<PresenceMessage, 'clientId' | 'data' | 'extras'>>): PresenceMessage;
 }
 
 /**

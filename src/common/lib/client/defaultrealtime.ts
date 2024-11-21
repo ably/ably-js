@@ -14,6 +14,7 @@ import { FilteredSubscriptions } from './filteredsubscriptions';
 import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
+  fromWireProtocol as presenceMessageFromWireProtocol,
 } from '../types/presencemessage';
 import { Http } from 'common/types/http';
 import Defaults from '../util/defaults';
@@ -39,6 +40,7 @@ export class DefaultRealtime extends BaseRealtime {
           RealtimePresence,
           presenceMessageFromValues,
           presenceMessagesFromValuesArray,
+          presenceMessageFromWireProtocol,
         },
         WebSocketTransport,
         MessageInteractions: FilteredSubscriptions,

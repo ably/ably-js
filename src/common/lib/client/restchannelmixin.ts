@@ -2,7 +2,8 @@ import * as API from '../../../../ably';
 import RestChannel from './restchannel';
 import RealtimeChannel from './realtimechannel';
 import * as Utils from '../util/utils';
-import Message, { fromResponseBody as messageFromResponseBody } from '../types/message';
+import Platform from '../../platform';
+import Message, { WireProtocolMessage, fromEncodedArray } from '../types/message';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
@@ -36,13 +37,11 @@ export class RestChannelMixin {
       headers,
       unpacked,
     ) {
-      return await messageFromResponseBody(
-        body as Message[],
-        options,
-        channel.logger,
-        client._MsgPack,
-        unpacked ? undefined : format,
-      );
+      const decoded: WireProtocolMessage[] = unpacked
+        ? (body as WireProtocolMessage[])
+        : Utils.decodeBody(body, client._MsgPack, format);
+
+      return fromEncodedArray(channel.logger, Platform.Crypto, decoded, options);
     }).get(params as Record<string, unknown>);
   }
 

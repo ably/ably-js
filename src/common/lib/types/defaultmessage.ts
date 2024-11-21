@@ -1,4 +1,5 @@
 import Message, {
+  WireProtocolMessage,
   CipherOptions,
   decode,
   encode,
@@ -6,28 +7,35 @@ import Message, {
   fromEncoded,
   fromEncodedArray,
   fromValues,
+  fromWireProtocol,
 } from './message';
 import * as API from '../../../../ably';
 import Platform from 'common/platform';
 import PresenceMessage from './presencemessage';
 import { ChannelOptions } from 'common/types/channel';
 import Logger from '../util/logger';
+import type { Properties } from '../util/utils';
 
 /**
  `DefaultMessage` is the class returned by `DefaultRest` and `DefaultRealtime`’s `Message` static property. It introduces the static methods described in the `MessageStatic` interface of the public API of the non tree-shakable version of the library.
  */
 export class DefaultMessage extends Message {
   static async fromEncoded(encoded: unknown, inputOptions?: API.ChannelOptions): Promise<Message> {
-    return fromEncoded(Logger.defaultLogger, Platform.Crypto, encoded, inputOptions);
+    return fromEncoded(Logger.defaultLogger, Platform.Crypto, encoded as WireProtocolMessage, inputOptions);
   }
 
   static async fromEncodedArray(encodedArray: Array<unknown>, options?: API.ChannelOptions): Promise<Message[]> {
-    return fromEncodedArray(Logger.defaultLogger, Platform.Crypto, encodedArray, options);
+    return fromEncodedArray(Logger.defaultLogger, Platform.Crypto, encodedArray as WireProtocolMessage[], options);
   }
 
   // Used by tests
-  static fromValues(values: Message | Record<string, unknown>, options?: { stringifyAction?: boolean }): Message {
-    return fromValues(values, options);
+  static fromValues(values: Properties<Message>): Message {
+    return fromValues(values);
+  }
+
+  // Used by tests
+  static fromWireProtocol(values: WireProtocolMessage): Message {
+    return fromWireProtocol(values);
   }
 
   // Used by tests
