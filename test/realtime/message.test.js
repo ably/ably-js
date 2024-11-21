@@ -1310,6 +1310,25 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           expect(message.toJSON()).to.deep.contains(expectedJSON);
         });
       });
+
+      /**
+       * @spec TM2k
+       * @spec TM2o
+       */
+      it('create message should fill out serial and createdAt from version/timestamp', function () {
+        const values = { action: 1, timestamp: 12345, version: 'foo' };
+        const message = Message.fromWireProtocol(values);
+        expect(message.timestamp).to.equal(12345);
+        expect(message.createdAt).to.equal(12345);
+        expect(message.version).to.equal('foo');
+        expect(message.serial).to.equal('foo');
+
+        // should only apply to creates
+        const update = { action: 2, timestamp: 12345, version: 'foo' };
+        const updateMessage = Message.fromWireProtocol(update);
+        expect(updateMessage.createdAt).to.equal(undefined);
+        expect(updateMessage.serial).to.equal(undefined);
+      });
     });
 
     /**

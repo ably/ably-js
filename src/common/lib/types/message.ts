@@ -304,7 +304,9 @@ export function fromValues(values: Properties<Message>): Message {
 
 export function fromWireProtocol(values: WireProtocolMessage): Message {
   const action = toMessageActionString(values.action as number) || values.action;
-  return Object.assign(new Message(), { ...values, action });
+  const res = Object.assign(new Message(), { ...values, action });
+  res.expandFields();
+  return res;
 }
 
 export function fromValuesArray(values: Properties<Message>[]): Message[] {
@@ -338,8 +340,8 @@ class Message {
   serial?: string;
   refSerial?: string;
   refType?: string;
-  updatedAt?: number;
-  updateSerial?: string;
+  createdAt?: number;
+  version?: string;
   operation?: API.Operation;
 
   /**
@@ -375,12 +377,25 @@ class Message {
       action: toMessageActionNumber(this.action as API.MessageAction) || this.action,
       refSerial: this.refSerial,
       refType: this.refType,
-      updatedAt: this.updatedAt,
-      updateSerial: this.updateSerial,
+      createdAt: this.createdAt,
+      version: this.version,
       operation: this.operation,
       encoding,
       data,
     };
+  }
+
+  expandFields() {
+    if (this.action === 'message.create') {
+      // TM2k
+      if (this.version && !this.serial) {
+        this.serial = this.version;
+      }
+      // TM2o
+      if (this.timestamp && !this.createdAt) {
+        this.createdAt = this.timestamp;
+      }
+    }
   }
 
   toString(): string {
@@ -402,10 +417,10 @@ class Message {
 
     if (this.action) result += '; action=' + this.action;
     if (this.serial) result += '; serial=' + this.serial;
+    if (this.version) result += '; version=' + this.version;
     if (this.refSerial) result += '; refSerial=' + this.refSerial;
     if (this.refType) result += '; refType=' + this.refType;
-    if (this.updatedAt) result += '; updatedAt=' + this.updatedAt;
-    if (this.updateSerial) result += '; updateSerial=' + this.updateSerial;
+    if (this.createdAt) result += '; createdAt=' + this.createdAt;
     if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
     result += ']';
     return result;
