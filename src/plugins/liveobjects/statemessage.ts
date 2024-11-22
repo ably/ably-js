@@ -164,8 +164,8 @@ export class StateMessage {
       }
     }
 
-    if (message.operation?.map) {
-      for (const entry of Object.values(message.operation.map)) {
+    if (message.operation?.map?.entries) {
+      for (const entry of Object.values(message.operation.map.entries)) {
         await decodeMapEntry(entry, inputContext, decodeDataFn);
       }
     }
