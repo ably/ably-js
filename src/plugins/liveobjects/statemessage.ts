@@ -151,23 +151,23 @@ export class StateMessage {
     // TODO: decide how to handle individual errors from decoding values. currently we throw first ever error we get
 
     if (message.object?.map?.entries) {
-      await this._decodeMapEntries(message.object.map.entries, inputContext, decodeDataFn);
+      await StateMessage._decodeMapEntries(message.object.map.entries, inputContext, decodeDataFn);
     }
 
     if (message.object?.createOp?.map?.entries) {
-      await this._decodeMapEntries(message.object.createOp.map.entries, inputContext, decodeDataFn);
+      await StateMessage._decodeMapEntries(message.object.createOp.map.entries, inputContext, decodeDataFn);
     }
 
     if (message.object?.createOp?.mapOp?.data && 'value' in message.object.createOp.mapOp.data) {
-      await this._decodeStateData(message.object.createOp.mapOp.data, inputContext, decodeDataFn);
+      await StateMessage._decodeStateData(message.object.createOp.mapOp.data, inputContext, decodeDataFn);
     }
 
     if (message.operation?.map?.entries) {
-      await this._decodeMapEntries(message.operation.map.entries, inputContext, decodeDataFn);
+      await StateMessage._decodeMapEntries(message.operation.map.entries, inputContext, decodeDataFn);
     }
 
     if (message.operation?.mapOp?.data && 'value' in message.operation.mapOp.data) {
-      await this._decodeStateData(message.operation.mapOp.data, inputContext, decodeDataFn);
+      await StateMessage._decodeStateData(message.operation.mapOp.data, inputContext, decodeDataFn);
     }
   }
 
@@ -180,7 +180,7 @@ export class StateMessage {
     const result = new Array(count);
 
     for (let i = 0; i < count; i++) {
-      result[i] = this.fromValues(values[i] as Record<string, unknown>, platform);
+      result[i] = StateMessage.fromValues(values[i] as Record<string, unknown>, platform);
     }
 
     return result;
@@ -192,7 +192,7 @@ export class StateMessage {
     decodeDataFn: typeof decodeData,
   ): Promise<void> {
     for (const entry of Object.values(mapEntries)) {
-      await this._decodeStateData(entry.data, inputContext, decodeDataFn);
+      await StateMessage._decodeStateData(entry.data, inputContext, decodeDataFn);
     }
   }
 
@@ -221,13 +221,21 @@ export class StateMessage {
 
     if (stateOperationCopy.mapOp?.data && 'value' in stateOperationCopy.mapOp.data) {
       // use original "stateOperation" object when encoding values, so we have access to the original buffer values.
-      stateOperationCopy.mapOp.data = this._encodeStateData(platform, stateOperation.mapOp?.data!, withBase64Encoding);
+      stateOperationCopy.mapOp.data = StateMessage._encodeStateData(
+        platform,
+        stateOperation.mapOp?.data!,
+        withBase64Encoding,
+      );
     }
 
     if (stateOperationCopy.map?.entries) {
       Object.entries(stateOperationCopy.map.entries).forEach(([key, entry]) => {
         // use original "stateOperation" object when encoding values, so we have access to original buffer values.
-        entry.data = this._encodeStateData(platform, stateOperation?.map?.entries?.[key].data!, withBase64Encoding);
+        entry.data = StateMessage._encodeStateData(
+          platform,
+          stateOperation?.map?.entries?.[key].data!,
+          withBase64Encoding,
+        );
       });
     }
 
@@ -256,14 +264,23 @@ export class StateMessage {
 
     if (stateObjectCopy.createOp) {
       // use original "stateObject" object when encoding values, so we have access to original buffer values.
-      stateObjectCopy.createOp = this._encodeStateOperation(platform, stateObject.createOp!, withBase64Encoding);
+      stateObjectCopy.createOp = StateMessage._encodeStateOperation(
+        platform,
+        stateObject.createOp!,
+        withBase64Encoding,
+      );
     }
 
     return stateObjectCopy;
   }
 
   private static _encodeStateData(platform: typeof Platform, data: StateData, withBase64Encoding: boolean): StateData {
-    const { value, encoding } = this._encodeStateValue(platform, data?.value, data?.encoding, withBase64Encoding);
+    const { value, encoding } = StateMessage._encodeStateValue(
+      platform,
+      data?.value,
+      data?.encoding,
+      withBase64Encoding,
+    );
     return {
       ...data,
       value,
