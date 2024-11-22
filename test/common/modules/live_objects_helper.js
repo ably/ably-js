@@ -101,11 +101,17 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
           action: ACTIONS.MAP_CREATE,
           nonce: nonce(),
           objectId,
+          map: {
+            semantics: 0,
+          },
         },
       };
 
       if (entries) {
-        op.operation.map = { entries };
+        op.operation.map = {
+          ...op.operation.map,
+          entries,
+        };
       }
 
       return op;
@@ -175,30 +181,40 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     }
 
     mapObject(opts) {
-      const { objectId, siteTimeserials, entries } = opts;
+      const { objectId, siteTimeserials, initialEntries, materialisedEntries } = opts;
       const obj = {
         object: {
           objectId,
           siteTimeserials,
-          map: { entries },
+          map: {
+            semantics: 0,
+            entries: materialisedEntries,
+          },
         },
       };
+
+      if (initialEntries) {
+        obj.object.createOp = this.mapCreateOp({ objectId, entries: initialEntries }).operation;
+      }
 
       return obj;
     }
 
     counterObject(opts) {
-      const { objectId, siteTimeserials, count } = opts;
+      const { objectId, siteTimeserials, initialCount, materialisedCount } = opts;
       const obj = {
         object: {
           objectId,
           siteTimeserials,
           counter: {
-            created: true,
-            count,
+            count: materialisedCount,
           },
         },
       };
+
+      if (initialCount != null) {
+        obj.object.createOp = this.counterCreateOp({ objectId, count: initialCount }).operation;
+      }
 
       return obj;
     }

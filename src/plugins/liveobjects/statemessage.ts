@@ -71,12 +71,6 @@ export interface StateMap {
 export interface StateCounter {
   /** The value of the counter */
   count?: number;
-  /**
-   * Indicates (true) if the counter has seen an explicit create operation
-   * and false if the counter was created with a default value when
-   * processing a regular operation.
-   */
-  created: boolean;
 }
 
 /** A StateOperation describes an operation to be applied to a state object. */
@@ -112,9 +106,21 @@ export interface StateObject {
   objectId: string;
   /** A vector of origin timeserials keyed by site code of the last operation that was applied to this state object. */
   siteTimeserials: Record<string, string>;
-  /** The data that represents the state of the object if it is a Map object type. */
+  /**
+   * The operation that created the state object.
+   *
+   * Can be missing if create operation for the object is not known at this point.
+   */
+  createOp?: StateOperation;
+  /**
+   * The data that represents the result of applying all operations to a Map object
+   * excluding the initial value from the create operation if it is a Map object type.
+   */
   map?: StateMap;
-  /** The data that represents the state of the object if it is a Counter object type. */
+  /**
+   * The data that represents the result of applying all operations to a Counter object
+   * excluding the initial value from the create operation if it is a Counter object type.
+   */
   counter?: StateCounter;
 }
 
@@ -146,6 +152,14 @@ export class StateMessage {
 
     if (message.object?.map?.entries) {
       await this._decodeMapEntries(message.object.map.entries, inputContext, decodeDataFn);
+    }
+
+    if (message.object?.createOp?.map?.entries) {
+      await this._decodeMapEntries(message.object.createOp.map.entries, inputContext, decodeDataFn);
+    }
+
+    if (message.object?.createOp?.mapOp?.data && 'value' in message.object.createOp.mapOp.data) {
+      await this._decodeStateData(message.object.createOp.mapOp.data, inputContext, decodeDataFn);
     }
 
     if (message.operation?.map?.entries) {
@@ -238,6 +252,11 @@ export class StateMessage {
           withBase64Encoding,
         );
       });
+    }
+
+    if (stateObjectCopy.createOp) {
+      // use original "stateObject" object when encoding values, so we have access to original buffer values.
+      stateObjectCopy.createOp = this._encodeStateOperation(platform, stateObject.createOp!, withBase64Encoding);
     }
 
     return stateObjectCopy;

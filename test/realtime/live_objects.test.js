@@ -293,7 +293,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               liveObjectsHelper.mapObject({
                 objectId: 'root',
                 siteTimeserials: { '000': '000@0-0' },
-                entries: { key: { timeserial: '000@0-0', data: { value: 1 } } },
+                initialEntries: { key: { timeserial: '000@0-0', data: { value: 1 } } },
               }),
             ],
           });
@@ -1394,7 +1394,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                     bbb: 'bbb@2-0',
                     ccc: 'ccc@5-0',
                   },
-                  entries: {
+                  materialisedEntries: {
                     foo1: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
                     foo2: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
                     foo3: { timeserial: 'ccc@5-0', data: { value: 'bar' } },
@@ -1410,13 +1410,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   siteTimeserials: {
                     bbb: 'bbb@1-0',
                   },
-                  count: 1,
+                  initialCount: 1,
                 }),
                 // add objects to the root so they're discoverable in the state tree
                 liveObjectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { '000': '000@0-0' },
-                  entries: {
+                  initialEntries: {
                     map: { timeserial: '000@0-0', data: { objectId: mapId } },
                     counter: { timeserial: '000@0-0', data: { objectId: counterId } },
                   },

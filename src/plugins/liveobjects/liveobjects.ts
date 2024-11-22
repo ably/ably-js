@@ -7,7 +7,7 @@ import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
-import { LiveCounterDataEntry, SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
+import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
 
 enum LiveObjectsEvents {
   SyncCompleted = 'SyncCompleted',
@@ -195,16 +195,9 @@ export class LiveObjects {
       const existingObject = this._liveObjectsPool.get(objectId);
 
       if (existingObject) {
-        // SYNC sequence is a source of truth for the current state of the objects,
-        // so we can use the data received from the SYNC sequence directly
-        // without the need to merge data values or site timeserials.
-        const update = existingObject.setData(entry.objectData);
-        existingObject.setSiteTimeserials(entry.siteTimeserials);
-        if (existingObject instanceof LiveCounter) {
-          existingObject.setCreated((entry as LiveCounterDataEntry).created);
-        }
-        // store updates for existing objects to call subscription callbacks for all of them once the SYNC sequence is completed.
-        // this will ensure that clients get notified about changes only once everything was applied.
+        const update = existingObject.overrideWithStateObject(entry.stateObject);
+        // store updates to call subscription callbacks for all of them once the SYNC sequence is completed.
+        // this will ensure that clients get notified about the changes only once everything has been applied.
         existingObjectUpdates.push({ object: existingObject, update });
         continue;
       }
@@ -214,11 +207,11 @@ export class LiveObjects {
       const objectType = entry.objectType;
       switch (objectType) {
         case 'LiveCounter':
-          newObject = new LiveCounter(this, entry.created, entry.objectData, objectId, entry.siteTimeserials);
+          newObject = LiveCounter.fromStateObject(this, entry.stateObject);
           break;
 
         case 'LiveMap':
-          newObject = new LiveMap(this, entry.semantics, entry.objectData, objectId, entry.siteTimeserials);
+          newObject = LiveMap.fromStateObject(this, entry.stateObject);
           break;
 
         default:

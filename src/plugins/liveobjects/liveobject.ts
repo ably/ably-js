@@ -1,8 +1,8 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import { LiveObjects } from './liveobjects';
-import { StateMessage, StateOperation } from './statemessage';
-import { Timeserial } from './timeserial';
+import { StateMessage, StateObject, StateOperation } from './statemessage';
+import { DefaultTimeserial, Timeserial } from './timeserial';
 
 enum LiveObjectEvents {
   Updated = 'Updated',
@@ -32,22 +32,26 @@ export abstract class LiveObject<
 > {
   protected _client: BaseClient;
   protected _eventEmitter: EventEmitter;
-  protected _dataRef: TData;
   protected _objectId: string;
+  /**
+   * Represents an aggregated value for an object, which combines the initial value for an object from the create operation,
+   * and all state operations applied to the object.
+   */
+  protected _dataRef: TData;
   protected _siteTimeserials: Record<string, Timeserial>;
+  protected _createOperationIsMerged: boolean;
 
-  constructor(
+  protected constructor(
     protected _liveObjects: LiveObjects,
-    initialData?: TData | null,
-    objectId?: string,
-    siteTimeserials?: Record<string, Timeserial>,
+    objectId: string,
   ) {
     this._client = this._liveObjects.getClient();
     this._eventEmitter = new this._client.EventEmitter(this._client.logger);
-    this._dataRef = initialData ?? this._getZeroValueData();
-    this._objectId = objectId ?? this._createObjectId();
+    this._dataRef = this._getZeroValueData();
+    this._createOperationIsMerged = false;
+    this._objectId = objectId;
     // use empty timeserials vector by default, so any future operation can be applied to this object
-    this._siteTimeserials = siteTimeserials ?? {};
+    this._siteTimeserials = {};
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
@@ -83,24 +87,8 @@ export abstract class LiveObject<
   }
 
   /**
-   * Sets a new data reference for the LiveObject and returns an update object that describes the changes applied based on the object's previous value.
+   * Emits the {@link LiveObjectEvents.Updated} event with provided update object if it isn't a noop.
    *
-   * @internal
-   */
-  setData(newDataRef: TData): TUpdate {
-    const update = this._updateFromDataDiff(this._dataRef, newDataRef);
-    this._dataRef = newDataRef;
-    return update;
-  }
-
-  /**
-   * @internal
-   */
-  setSiteTimeserials(siteTimeserials: Record<string, Timeserial>): void {
-    this._siteTimeserials = siteTimeserials;
-  }
-
-  /**
    * @internal
    */
   notifyUpdated(update: TUpdate | LiveObjectUpdateNoop): void {
@@ -123,18 +111,57 @@ export abstract class LiveObject<
     return !siteTimeserial || opOriginTimeserial.after(siteTimeserial);
   }
 
+  protected _timeserialMapFromStringMap(stringTimeserialsMap: Record<string, string>): Record<string, Timeserial> {
+    const objTimeserialsMap = Object.entries(stringTimeserialsMap).reduce(
+      (acc, v) => {
+        const [key, timeserialString] = v;
+        acc[key] = DefaultTimeserial.calculateTimeserial(this._client, timeserialString);
+        return acc;
+      },
+      {} as Record<string, Timeserial>,
+    );
+
+    return objTimeserialsMap;
+  }
+
   private _createObjectId(): string {
     // TODO: implement object id generation based on live object type and initial value
     return Math.random().toString().substring(2);
   }
 
   /**
+   * Apply state operation message on live object.
+   *
    * @internal
    */
   abstract applyOperation(op: StateOperation, msg: StateMessage): void;
+  /**
+   * Overrides internal data for live object with data from the given state object.
+   * Provided state object should hold a valid data for current live object, e.g. counter data for LiveCounter, map data for LiveMap.
+   *
+   * State objects are received during SYNC sequence, and SYNC sequence is a source of truth for the current state of the objects,
+   * so we can use the data received from the SYNC sequence directly and override any data values or site timeserials this live object has
+   * without the need to merge them.
+   *
+   * Returns an update object that describes the changes applied based on the object's previous value.
+   *
+   * @internal
+   */
+  abstract overrideWithStateObject(stateObject: StateObject): TUpdate;
   protected abstract _getZeroValueData(): TData;
   /**
    * Calculate the update object based on the current Live Object data and incoming new data.
    */
-  protected abstract _updateFromDataDiff(currentDataRef: TData, newDataRef: TData): TUpdate;
+  protected abstract _updateFromDataDiff(prevDataRef: TData, newDataRef: TData): TUpdate;
+  /**
+   * Merges the initial data from the create operation into the live object state.
+   *
+   * Client SDKs do not need to keep around the state operation that created the object,
+   * so we can merge the initial data the first time we receive it for the object,
+   * and work with aggregated value after that.
+   *
+   * This saves us from needing to merge the initial value with operations applied to
+   * the object every time the object is read.
+   */
+  protected abstract _mergeInitialDataFromCreateOperation(stateOperation: StateOperation): TUpdate;
 }

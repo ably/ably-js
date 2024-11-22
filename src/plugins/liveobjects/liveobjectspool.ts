@@ -5,8 +5,7 @@ import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import { ObjectId } from './objectid';
-import { MapSemantics, StateMessage, StateOperation, StateOperationAction } from './statemessage';
-import { DefaultTimeserial, Timeserial } from './timeserial';
+import { StateMessage, StateOperationAction } from './statemessage';
 
 export const ROOT_OBJECT_ID = 'root';
 
@@ -60,7 +59,7 @@ export class LiveObjectsPool {
       }
 
       case 'counter':
-        zeroValueObject = LiveCounter.zeroValue(this._liveObjects, false, objectId);
+        zeroValueObject = LiveCounter.zeroValue(this._liveObjects, objectId);
         break;
     }
 
@@ -79,35 +78,20 @@ export class LiveObjectsPool {
         continue;
       }
 
-      const opOriginTimeserial = DefaultTimeserial.calculateTimeserial(this._client, stateMessage.serial);
       const stateOperation = stateMessage.operation;
 
       switch (stateOperation.action) {
         case StateOperationAction.MAP_CREATE:
         case StateOperationAction.COUNTER_CREATE:
-          if (this.get(stateOperation.objectId)) {
-            // object wich such id already exists (we may have created a zero-value object before, or this is a duplicate *_CREATE op),
-            // so delegate application of the op to that object
-            this.get(stateOperation.objectId)!.applyOperation(stateOperation, stateMessage);
-            break;
-          }
-
-          // otherwise we can create new objects in the pool
-          if (stateOperation.action === StateOperationAction.MAP_CREATE) {
-            this._handleMapCreate(stateOperation, opOriginTimeserial);
-          }
-
-          if (stateOperation.action === StateOperationAction.COUNTER_CREATE) {
-            this._handleCounterCreate(stateOperation, opOriginTimeserial);
-          }
-          break;
-
         case StateOperationAction.MAP_SET:
         case StateOperationAction.MAP_REMOVE:
         case StateOperationAction.COUNTER_INC:
           // we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
-          // we create a zero-value object for the provided object id, and apply operation for that zero-value object.
-          // when we eventually receive a corresponding *_CREATE op for that object, its application will be handled by that zero-value object.
+          // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
+          // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
+          // since they need to be able to eventually initialize themselves from that *_CREATE op.
+          // so to simplify operations handling, we always try to create a zero-value object in the pool first,
+          // and then we can always apply the operation on the existing object in the pool.
           this.createZeroValueObjectIfNotExists(stateOperation.objectId);
           this.get(stateOperation.objectId)!.applyOperation(stateOperation, stateMessage);
           break;
@@ -128,50 +112,5 @@ export class LiveObjectsPool {
     const root = LiveMap.zeroValue(this._liveObjects, ROOT_OBJECT_ID);
     pool.set(root.getObjectId(), root);
     return pool;
-  }
-
-  private _handleCounterCreate(stateOperation: StateOperation, opOriginTimeserial: Timeserial): void {
-    // should use op's origin timeserial as the initial value for the object's site timeserials vector
-    const siteTimeserials = {
-      [opOriginTimeserial.siteCode]: opOriginTimeserial,
-    };
-    let counter: LiveCounter;
-    if (this._client.Utils.isNil(stateOperation.counter)) {
-      // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly a zero-value counter.
-      counter = LiveCounter.zeroValue(this._liveObjects, true, stateOperation.objectId, siteTimeserials);
-    } else {
-      counter = new LiveCounter(
-        this._liveObjects,
-        true,
-        { data: stateOperation.counter.count ?? 0 },
-        stateOperation.objectId,
-        siteTimeserials,
-      );
-    }
-
-    this.set(stateOperation.objectId, counter);
-  }
-
-  private _handleMapCreate(stateOperation: StateOperation, opOriginTimeserial: Timeserial): void {
-    // should use op's origin timeserial as the initial value for the object's site timeserials vector
-    const siteTimeserials = {
-      [opOriginTimeserial.siteCode]: opOriginTimeserial,
-    };
-    let map: LiveMap;
-    if (this._client.Utils.isNil(stateOperation.map)) {
-      // if a map object is missing for the MAP_CREATE op, the initial value is implicitly a zero-value map.
-      map = LiveMap.zeroValue(this._liveObjects, stateOperation.objectId, siteTimeserials);
-    } else {
-      const objectData = LiveMap.liveMapDataFromMapEntries(this._client, stateOperation.map.entries ?? {});
-      map = new LiveMap(
-        this._liveObjects,
-        stateOperation.map.semantics ?? MapSemantics.LWW,
-        objectData,
-        stateOperation.objectId,
-        siteTimeserials,
-      );
-    }
-
-    this.set(stateOperation.objectId, map);
   }
 }
