@@ -30,6 +30,21 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
     expect(object.constructor.name).to.match(new RegExp(`_?${className}`), msg);
   }
 
+  function forScenarios(scenarios, testFn) {
+    // if there are scenarios marked as "only", run only them.
+    // otherwise go over every scenario
+    const onlyScenarios = scenarios.filter((x) => x.only === true);
+    const scenariosToRun = onlyScenarios.length > 0 ? onlyScenarios : scenarios;
+
+    for (const scenario of scenariosToRun) {
+      if (scenario.skip === true) {
+        continue;
+      }
+
+      testFn(scenario);
+    }
+  }
+
   describe('realtime/live_objects', function () {
     this.timeout(60 * 1000);
 
@@ -881,11 +896,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
       ];
 
-      for (const scenario of applyOperationsScenarios) {
-        if (scenario.skip === true) {
-          continue;
-        }
-
+      forScenarios(applyOperationsScenarios, (scenario) =>
         /** @nospec */
         it(`can apply ${scenario.description} state operation messages`, async function () {
           const helper = this.test.helper;
@@ -902,8 +913,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             await scenario.action({ root, liveObjectsHelper, channelName });
           }, client);
-        });
-      }
+        }),
+      );
 
       const applyOperationsDuringSyncScenarios = [
         {
@@ -1206,11 +1217,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
       ];
 
-      for (const scenario of applyOperationsDuringSyncScenarios) {
-        if (scenario.skip === true) {
-          continue;
-        }
-
+      forScenarios(applyOperationsDuringSyncScenarios, (scenario) =>
         /** @nospec */
         it(scenario.description, async function () {
           const helper = this.test.helper;
@@ -1229,8 +1236,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             await scenario.action({ root, liveObjectsHelper, channelName, channel });
           }, client);
-        });
-      }
+        }),
+      );
 
       const subscriptionCallbacksScenarios = [
         {
@@ -1699,11 +1706,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
       ];
 
-      for (const scenario of subscriptionCallbacksScenarios) {
-        if (scenario.skip === true) {
-          continue;
-        }
-
+      forScenarios(subscriptionCallbacksScenarios, (scenario) =>
         /** @nospec */
         it(scenario.description, async function () {
           const helper = this.test.helper;
@@ -1744,8 +1747,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               sampleCounterObjectId,
             });
           }, client);
-        });
-      }
+        }),
+      );
     });
 
     /** @nospec */
