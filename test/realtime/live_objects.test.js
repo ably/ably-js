@@ -1351,7 +1351,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               map.subscribe((update) => {
                 try {
                   expect(update).to.deep.equal(
-                    { update: { stringKey: 'deleted' } },
+                    { update: { stringKey: 'removed' } },
                     'Check map subscription callback is called with an expected update object for MAP_REMOVE operation',
                   );
                   resolve();
@@ -1382,9 +1382,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const expectedMapUpdates = [
               { update: { foo: 'updated' } },
               { update: { bar: 'updated' } },
-              { update: { foo: 'deleted' } },
+              { update: { foo: 'removed' } },
               { update: { baz: 'updated' } },
-              { update: { bar: 'deleted' } },
+              { update: { bar: 'removed' } },
             ];
             let currentUpdateIndex = 0;
 
