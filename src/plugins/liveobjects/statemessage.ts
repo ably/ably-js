@@ -144,41 +144,16 @@ export class StateMessage {
   ): Promise<void> {
     // TODO: decide how to handle individual errors from decoding values. currently we throw first ever error we get
 
-    const decodeMapEntry = async (
-      entry: StateMapEntry,
-      ctx: ChannelOptions,
-      decode: typeof decodeData,
-    ): Promise<void> => {
-      const { data, encoding, error } = await decode(entry.data.value, entry.data.encoding, ctx);
-      entry.data.value = data;
-      entry.data.encoding = encoding ?? undefined;
-
-      if (error) {
-        throw error;
-      }
-    };
-
     if (message.object?.map?.entries) {
-      for (const entry of Object.values(message.object.map.entries)) {
-        await decodeMapEntry(entry, inputContext, decodeDataFn);
-      }
+      await this._decodeMapEntries(message.object.map.entries, inputContext, decodeDataFn);
     }
 
     if (message.operation?.map?.entries) {
-      for (const entry of Object.values(message.operation.map.entries)) {
-        await decodeMapEntry(entry, inputContext, decodeDataFn);
-      }
+      await this._decodeMapEntries(message.operation.map.entries, inputContext, decodeDataFn);
     }
 
-    if (message.operation?.mapOp?.data && 'value' in message.operation?.mapOp?.data) {
-      const mapOpData = message.operation.mapOp.data;
-      const { data, encoding, error } = await decodeDataFn(mapOpData.value, mapOpData.encoding, inputContext);
-      mapOpData.value = data;
-      mapOpData.encoding = encoding ?? undefined;
-
-      if (error) {
-        throw error;
-      }
+    if (message.operation?.mapOp?.data && 'value' in message.operation.mapOp.data) {
+      await this._decodeStateData(message.operation.mapOp.data, inputContext, decodeDataFn);
     }
   }
 
@@ -195,6 +170,114 @@ export class StateMessage {
     }
 
     return result;
+  }
+
+  private static async _decodeMapEntries(
+    mapEntries: Record<string, StateMapEntry>,
+    inputContext: ChannelOptions,
+    decodeDataFn: typeof decodeData,
+  ): Promise<void> {
+    for (const entry of Object.values(mapEntries)) {
+      await this._decodeStateData(entry.data, inputContext, decodeDataFn);
+    }
+  }
+
+  private static async _decodeStateData(
+    stateData: StateData,
+    inputContext: ChannelOptions,
+    decodeDataFn: typeof decodeData,
+  ): Promise<void> {
+    const { data, encoding, error } = await decodeDataFn(stateData.value, stateData.encoding, inputContext);
+    stateData.value = data;
+    stateData.encoding = encoding ?? undefined;
+
+    if (error) {
+      throw error;
+    }
+  }
+
+  private static _encodeStateOperation(
+    platform: typeof Platform,
+    stateOperation: StateOperation,
+    withBase64Encoding: boolean,
+  ): StateOperation {
+    // deep copy "stateOperation" object so we can modify the copy here.
+    // buffer values won't be correctly copied, so we will need to set them again explictly.
+    const stateOperationCopy = JSON.parse(JSON.stringify(stateOperation)) as StateOperation;
+
+    if (stateOperationCopy.mapOp?.data && 'value' in stateOperationCopy.mapOp.data) {
+      // use original "stateOperation" object when encoding values, so we have access to the original buffer values.
+      stateOperationCopy.mapOp.data = this._encodeStateData(platform, stateOperation.mapOp?.data!, withBase64Encoding);
+    }
+
+    if (stateOperationCopy.map?.entries) {
+      Object.entries(stateOperationCopy.map.entries).forEach(([key, entry]) => {
+        // use original "stateOperation" object when encoding values, so we have access to original buffer values.
+        entry.data = this._encodeStateData(platform, stateOperation?.map?.entries?.[key].data!, withBase64Encoding);
+      });
+    }
+
+    return stateOperationCopy;
+  }
+
+  private static _encodeStateObject(
+    platform: typeof Platform,
+    stateObject: StateObject,
+    withBase64Encoding: boolean,
+  ): StateObject {
+    // deep copy "stateObject" object so we can modify the copy here.
+    // buffer values won't be correctly copied, so we will need to set them again explictly.
+    const stateObjectCopy = JSON.parse(JSON.stringify(stateObject)) as StateObject;
+
+    if (stateObjectCopy.map?.entries) {
+      Object.entries(stateObjectCopy.map.entries).forEach(([key, entry]) => {
+        // use original "stateObject" object when encoding values, so we have access to original buffer values.
+        entry.data = StateMessage._encodeStateData(
+          platform,
+          stateObject?.map?.entries?.[key].data!,
+          withBase64Encoding,
+        );
+      });
+    }
+
+    return stateObjectCopy;
+  }
+
+  private static _encodeStateData(platform: typeof Platform, data: StateData, withBase64Encoding: boolean): StateData {
+    const { value, encoding } = this._encodeStateValue(platform, data?.value, data?.encoding, withBase64Encoding);
+    return {
+      ...data,
+      value,
+      encoding,
+    };
+  }
+
+  private static _encodeStateValue(
+    platform: typeof Platform,
+    value: StateValue | undefined,
+    encoding: string | undefined,
+    withBase64Encoding: boolean,
+  ): {
+    value: StateValue | undefined;
+    encoding: string | undefined;
+  } {
+    if (!value || !platform.BufferUtils.isBuffer(value)) {
+      return { value, encoding };
+    }
+
+    if (withBase64Encoding) {
+      return {
+        value: platform.BufferUtils.base64Encode(value),
+        encoding: encoding ? encoding + '/base64' : 'base64',
+      };
+    }
+
+    // toBuffer returns a datatype understandable by
+    // that platform's msgpack implementation (Buffer in node, Uint8Array in browsers)
+    return {
+      value: platform.BufferUtils.toBuffer(value),
+      encoding,
+    };
   }
 
   /**
@@ -215,44 +298,18 @@ export class StateMessage {
     // if withBase64Encoding = false - we were called by msgpack
     const withBase64Encoding = arguments.length > 0;
 
-    let operationCopy: StateOperation | undefined = undefined;
-    if (this.operation) {
-      // deep copy "operation" prop so we can modify it here.
-      // buffer values won't be correctly copied, so we will need to set them again explictly
-      operationCopy = JSON.parse(JSON.stringify(this.operation)) as StateOperation;
-
-      if (operationCopy.mapOp?.data && 'value' in operationCopy.mapOp.data) {
-        // use original "operation" prop when encoding values, so we have access to original buffer values.
-        operationCopy.mapOp.data = this._encodeStateData(this.operation.mapOp?.data!, withBase64Encoding);
-      }
-
-      if (operationCopy.map?.entries) {
-        Object.entries(operationCopy.map.entries).forEach(([key, entry]) => {
-          // use original "operation" prop when encoding values, so we have access to original buffer values.
-          entry.data = this._encodeStateData(this.operation?.map?.entries?.[key].data!, withBase64Encoding);
-        });
-      }
-    }
-
-    let object: StateObject | undefined = undefined;
-    if (this.object) {
-      // deep copy "object" prop so we can modify it here.
-      // buffer values won't be correctly copied, so we will need to set them again explictly
-      object = JSON.parse(JSON.stringify(this.object)) as StateObject;
-
-      if (object.map?.entries) {
-        Object.entries(object.map.entries).forEach(([key, entry]) => {
-          // use original "object" prop when encoding values, so we have access to original buffer values.
-          entry.data = this._encodeStateData(this.object?.map?.entries?.[key].data!, withBase64Encoding);
-        });
-      }
-    }
+    const encodedOperation = this.operation
+      ? StateMessage._encodeStateOperation(this._platform, this.operation, withBase64Encoding)
+      : undefined;
+    const encodedObject = this.object
+      ? StateMessage._encodeStateObject(this._platform, this.object, withBase64Encoding)
+      : undefined;
 
     return {
       id: this.id,
       clientId: this.clientId,
-      operation: operationCopy,
-      object: object,
+      operation: encodedOperation,
+      object: encodedObject,
       extras: this.extras,
     };
   }
@@ -274,41 +331,5 @@ export class StateMessage {
     result += ']';
 
     return result;
-  }
-
-  private _encodeStateData(data: StateData, withBase64Encoding: boolean): StateData {
-    const { value, encoding } = this._encodeStateValue(data?.value, data?.encoding, withBase64Encoding);
-    return {
-      ...data,
-      value,
-      encoding,
-    };
-  }
-
-  private _encodeStateValue(
-    value: StateValue | undefined,
-    encoding: string | undefined,
-    withBase64Encoding: boolean,
-  ): {
-    value: StateValue | undefined;
-    encoding: string | undefined;
-  } {
-    if (!value || !this._platform.BufferUtils.isBuffer(value)) {
-      return { value, encoding };
-    }
-
-    if (withBase64Encoding) {
-      return {
-        value: this._platform.BufferUtils.base64Encode(value),
-        encoding: encoding ? encoding + '/base64' : 'base64',
-      };
-    }
-
-    // toBuffer returns a datatype understandable by
-    // that platform's msgpack implementation (Buffer in node, Uint8Array in browsers)
-    return {
-      value: this._platform.BufferUtils.toBuffer(value),
-      encoding,
-    };
   }
 }
