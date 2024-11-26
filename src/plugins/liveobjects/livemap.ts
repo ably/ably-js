@@ -1,14 +1,13 @@
 import deepEqual from 'deep-equal';
 
-import type BaseClient from 'common/lib/client/baseclient';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import {
   MapSemantics,
-  StateMap,
   StateMapEntry,
   StateMapOp,
   StateMessage,
+  StateObject,
   StateOperation,
   StateOperationAction,
   StateValue,
@@ -50,11 +49,9 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
   constructor(
     liveObjects: LiveObjects,
     private _semantics: MapSemantics,
-    initialData?: LiveMapData | null,
-    objectId?: string,
-    regionalTimeserial?: Timeserial,
+    objectId: string,
   ) {
-    super(liveObjects, initialData, objectId, regionalTimeserial);
+    super(liveObjects, objectId);
   }
 
   /**
@@ -62,41 +59,20 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
    *
    * @internal
    */
-  static zeroValue(liveobjects: LiveObjects, objectId?: string, regionalTimeserial?: Timeserial): LiveMap {
-    return new LiveMap(liveobjects, MapSemantics.LWW, null, objectId, regionalTimeserial);
+  static zeroValue(liveobjects: LiveObjects, objectId: string): LiveMap {
+    return new LiveMap(liveobjects, MapSemantics.LWW, objectId);
   }
 
   /**
+   * Returns a {@link LiveMap} instance based on the provided state object.
+   * The provided state object must hold a valid map object data.
+   *
    * @internal
    */
-  static liveMapDataFromMapEntries(client: BaseClient, entries: Record<string, StateMapEntry>): LiveMapData {
-    const liveMapData: LiveMapData = {
-      data: new Map<string, MapEntry>(),
-    };
-
-    // need to iterate over entries manually to work around optional parameters from state object entries type
-    Object.entries(entries ?? {}).forEach(([key, entry]) => {
-      let liveData: StateData;
-      if (typeof entry.data.objectId !== 'undefined') {
-        liveData = { objectId: entry.data.objectId } as ObjectIdStateData;
-      } else {
-        liveData = { encoding: entry.data.encoding, value: entry.data.value } as ValueStateData;
-      }
-
-      const liveDataEntry: MapEntry = {
-        ...entry,
-        timeserial: entry.timeserial
-          ? DefaultTimeserial.calculateTimeserial(client, entry.timeserial)
-          : DefaultTimeserial.zeroValueTimeserial(client),
-        // true only if we received explicit true. otherwise always false
-        tombstone: entry.tombstone === true,
-        data: liveData,
-      };
-
-      liveMapData.data.set(key, liveDataEntry);
-    });
-
-    return liveMapData;
+  static fromStateObject(liveobjects: LiveObjects, stateObject: StateObject): LiveMap {
+    const obj = new LiveMap(liveobjects, stateObject.map?.semantics!, stateObject.objectId);
+    obj.overrideWithStateObject(stateObject);
+    return obj;
   }
 
   /**
@@ -144,7 +120,7 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
   /**
    * @internal
    */
-  applyOperation(op: StateOperation, msg: StateMessage, opRegionalTimeserial: Timeserial): void {
+  applyOperation(op: StateOperation, msg: StateMessage): void {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply state operation with objectId=${op.objectId}, to this LiveMap with objectId=${this.getObjectId()}`,
@@ -153,10 +129,24 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
       );
     }
 
+    const opOriginTimeserial = DefaultTimeserial.calculateTimeserial(this._client, msg.serial);
+    if (!this._canApplyOperation(opOriginTimeserial)) {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MICRO,
+        'LiveMap.applyOperation()',
+        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opOriginTimeserial.siteCode].toString()}; objectId=${this._objectId}`,
+      );
+      return;
+    }
+    // should update stored site timeserial immediately. doesn't matter if we successfully apply the op,
+    // as it's important to mark that the op was processed by the object
+    this._siteTimeserials[opOriginTimeserial.siteCode] = opOriginTimeserial;
+
     let update: LiveMapUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
       case StateOperationAction.MAP_CREATE:
-        update = this._applyMapCreate(op.map);
+        update = this._applyMapCreate(op);
         break;
 
       case StateOperationAction.MAP_SET:
@@ -165,7 +155,7 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyMapSet(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
+          update = this._applyMapSet(op.mapOp, opOriginTimeserial);
         }
         break;
 
@@ -175,7 +165,7 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyMapRemove(op.mapOp, DefaultTimeserial.calculateTimeserial(this._client, msg.serial));
+          update = this._applyMapRemove(op.mapOp, opOriginTimeserial);
         }
         break;
 
@@ -187,18 +177,76 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
         );
     }
 
-    this.setRegionalTimeserial(opRegionalTimeserial);
     this.notifyUpdated(update);
+  }
+
+  /**
+   * @internal
+   */
+  overrideWithStateObject(stateObject: StateObject): LiveMapUpdate {
+    if (stateObject.objectId !== this.getObjectId()) {
+      throw new this._client.ErrorInfo(
+        `Invalid state object: state object objectId=${stateObject.objectId}; LiveMap objectId=${this.getObjectId()}`,
+        50000,
+        500,
+      );
+    }
+
+    if (stateObject.map?.semantics !== this._semantics) {
+      throw new this._client.ErrorInfo(
+        `Invalid state object: state object map semantics=${stateObject.map?.semantics}; LiveMap semantics=${this._semantics}`,
+        50000,
+        500,
+      );
+    }
+
+    if (!this._client.Utils.isNil(stateObject.createOp)) {
+      // it is expected that create operation can be missing in the state object, so only validate it when it exists
+      if (stateObject.createOp.objectId !== this.getObjectId()) {
+        throw new this._client.ErrorInfo(
+          `Invalid state object: state object createOp objectId=${stateObject.createOp?.objectId}; LiveMap objectId=${this.getObjectId()}`,
+          50000,
+          500,
+        );
+      }
+
+      if (stateObject.createOp.action !== StateOperationAction.MAP_CREATE) {
+        throw new this._client.ErrorInfo(
+          `Invalid state object: state object createOp action=${stateObject.createOp?.action}; LiveMap objectId=${this.getObjectId()}`,
+          50000,
+          500,
+        );
+      }
+
+      if (stateObject.createOp.map?.semantics !== this._semantics) {
+        throw new this._client.ErrorInfo(
+          `Invalid state object: state object createOp map semantics=${stateObject.createOp.map?.semantics}; LiveMap semantics=${this._semantics}`,
+          50000,
+          500,
+        );
+      }
+    }
+
+    const previousDataRef = this._dataRef;
+    // override all relevant data for this object with data from the state object
+    this._createOperationIsMerged = false;
+    this._dataRef = this._liveMapDataFromMapEntries(stateObject.map?.entries ?? {});
+    this._siteTimeserials = this._timeserialMapFromStringMap(stateObject.siteTimeserials);
+    if (!this._client.Utils.isNil(stateObject.createOp)) {
+      this._mergeInitialDataFromCreateOperation(stateObject.createOp);
+    }
+
+    return this._updateFromDataDiff(previousDataRef, this._dataRef);
   }
 
   protected _getZeroValueData(): LiveMapData {
     return { data: new Map<string, MapEntry>() };
   }
 
-  protected _updateFromDataDiff(currentDataRef: LiveMapData, newDataRef: LiveMapData): LiveMapUpdate {
+  protected _updateFromDataDiff(prevDataRef: LiveMapData, newDataRef: LiveMapData): LiveMapUpdate {
     const update: LiveMapUpdate = { update: {} };
 
-    for (const [key, currentEntry] of currentDataRef.data.entries()) {
+    for (const [key, currentEntry] of prevDataRef.data.entries()) {
       // any non-tombstoned properties that exist on a current map, but not in the new data - got removed
       if (currentEntry.tombstone === false && !newDataRef.data.has(key)) {
         update.update[key] = 'removed';
@@ -206,7 +254,7 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
     }
 
     for (const [key, newEntry] of newDataRef.data.entries()) {
-      if (!currentDataRef.data.has(key)) {
+      if (!prevDataRef.data.has(key)) {
         // if property does not exist in the current map, but new data has it as a non-tombstoned property - got updated
         if (newEntry.tombstone === false) {
           update.update[key] = 'updated';
@@ -220,7 +268,7 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
       }
 
       // properties that exist both in current and new map data need to have their values compared to decide on the update type
-      const currentEntry = currentDataRef.data.get(key)!;
+      const currentEntry = prevDataRef.data.get(key)!;
 
       // compare tombstones first
       if (currentEntry.tombstone === true && newEntry.tombstone === false) {
@@ -249,33 +297,17 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
     return update;
   }
 
-  private _throwNoPayloadError(op: StateOperation): void {
-    throw new this._client.ErrorInfo(
-      `No payload found for ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
-      50000,
-      500,
-    );
-  }
-
-  private _applyMapCreate(op: StateMap | undefined): LiveMapUpdate | LiveObjectUpdateNoop {
-    if (this._client.Utils.isNil(op)) {
+  protected _mergeInitialDataFromCreateOperation(stateOperation: StateOperation): LiveMapUpdate {
+    if (this._client.Utils.isNil(stateOperation.map)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
       return { update: {} };
     }
 
-    if (this._semantics !== op.semantics) {
-      throw new this._client.ErrorInfo(
-        `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${op.semantics}`,
-        50000,
-        500,
-      );
-    }
-
     const aggregatedUpdate: LiveMapUpdate | LiveObjectUpdateNoop = { update: {} };
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
-    Object.entries(op.entries ?? {}).forEach(([key, entry]) => {
+    Object.entries(stateOperation.map.entries ?? {}).forEach(([key, entry]) => {
       // for MAP_CREATE op we must use dedicated timeserial field available on an entry, instead of a timeserial on a message
       const opOriginTimeserial = entry.timeserial
         ? DefaultTimeserial.calculateTimeserial(this._client, entry.timeserial)
@@ -298,7 +330,42 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
       Object.assign(aggregatedUpdate.update, update.update);
     });
 
+    this._createOperationIsMerged = true;
+
     return aggregatedUpdate;
+  }
+
+  private _throwNoPayloadError(op: StateOperation): void {
+    throw new this._client.ErrorInfo(
+      `No payload found for ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
+      50000,
+      500,
+    );
+  }
+
+  private _applyMapCreate(op: StateOperation): LiveMapUpdate | LiveObjectUpdateNoop {
+    if (this._createOperationIsMerged) {
+      // There can't be two different create operation for the same object id, because the object id
+      // fully encodes that operation. This means we can safely ignore any new incoming create operations
+      // if we already merged it once.
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MICRO,
+        'LiveMap._applyMapCreate()',
+        `skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=${this._objectId}`,
+      );
+      return { noop: true };
+    }
+
+    if (this._semantics !== op.map?.semantics) {
+      throw new this._client.ErrorInfo(
+        `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${op.map?.semantics}`,
+        50000,
+        500,
+      );
+    }
+
+    return this._mergeInitialDataFromCreateOperation(op);
   }
 
   private _applyMapSet(op: StateMapOp, opOriginTimeserial: Timeserial): LiveMapUpdate | LiveObjectUpdateNoop {
@@ -384,5 +451,35 @@ export class LiveMap extends LiveObject<LiveMapData, LiveMapUpdate> {
     }
 
     return { update: { [op.key]: 'removed' } };
+  }
+
+  private _liveMapDataFromMapEntries(entries: Record<string, StateMapEntry>): LiveMapData {
+    const liveMapData: LiveMapData = {
+      data: new Map<string, MapEntry>(),
+    };
+
+    // need to iterate over entries manually to work around optional parameters from state object entries type
+    Object.entries(entries ?? {}).forEach(([key, entry]) => {
+      let liveData: StateData;
+      if (typeof entry.data.objectId !== 'undefined') {
+        liveData = { objectId: entry.data.objectId } as ObjectIdStateData;
+      } else {
+        liveData = { encoding: entry.data.encoding, value: entry.data.value } as ValueStateData;
+      }
+
+      const liveDataEntry: MapEntry = {
+        ...entry,
+        timeserial: entry.timeserial
+          ? DefaultTimeserial.calculateTimeserial(this._client, entry.timeserial)
+          : DefaultTimeserial.zeroValueTimeserial(this._client),
+        // true only if we received explicit true. otherwise always false
+        tombstone: entry.tombstone === true,
+        data: liveData,
+      };
+
+      liveMapData.data.set(key, liveDataEntry);
+    });
+
+    return liveMapData;
   }
 }

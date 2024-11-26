@@ -7,16 +7,10 @@ import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage } from './statemessage';
-import { LiveCounterDataEntry, SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
-import { DefaultTimeserial, Timeserial } from './timeserial';
+import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
 
 enum LiveObjectsEvents {
   SyncCompleted = 'SyncCompleted',
-}
-
-export interface BufferedStateMessage {
-  stateMessage: StateMessage;
-  regionalTimeserial: Timeserial;
 }
 
 export class LiveObjects {
@@ -30,7 +24,7 @@ export class LiveObjects {
   private _syncInProgress: boolean;
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
-  private _bufferedStateOperations: BufferedStateMessage[];
+  private _bufferedStateOperations: StateMessage[];
 
   constructor(channel: RealtimeChannel) {
     this._channel = channel;
@@ -92,23 +86,17 @@ export class LiveObjects {
   /**
    * @internal
    */
-  handleStateMessages(stateMessages: StateMessage[], msgRegionalTimeserial: string | null | undefined): void {
-    const timeserial = DefaultTimeserial.calculateTimeserial(this._client, msgRegionalTimeserial);
-
+  handleStateMessages(stateMessages: StateMessage[]): void {
     if (this._syncInProgress) {
       // The client receives state messages in realtime over the channel concurrently with the SYNC sequence.
       // Some of the incoming state messages may have already been applied to the state objects described in
       // the SYNC sequence, but others may not; therefore we must buffer these messages so that we can apply
-      // them to the state objects once the SYNC is complete. To avoid double-counting, the buffered operations
-      // are applied according to the state object's regional timeserial, which reflects the regional timeserial
-      // of the state message that was last applied to that state object.
-      stateMessages.forEach((x) =>
-        this._bufferedStateOperations.push({ stateMessage: x, regionalTimeserial: timeserial }),
-      );
+      // them to the state objects once the SYNC is complete.
+      this._bufferedStateOperations.push(...stateMessages);
       return;
     }
 
-    this._liveObjectsPool.applyStateMessages(stateMessages, timeserial);
+    this._liveObjectsPool.applyStateMessages(stateMessages);
   }
 
   /**
@@ -164,8 +152,9 @@ export class LiveObjects {
 
   private _endSync(): void {
     this._applySync();
-    // should apply buffered state operations after we applied the SYNC data
-    this._liveObjectsPool.applyBufferedStateMessages(this._bufferedStateOperations);
+    // should apply buffered state operations after we applied the SYNC data.
+    // can use regular state messages application logic
+    this._liveObjectsPool.applyStateMessages(this._bufferedStateOperations);
 
     this._bufferedStateOperations = [];
     this._syncLiveObjectsDataPool.reset();
@@ -204,16 +193,11 @@ export class LiveObjects {
     for (const [objectId, entry] of this._syncLiveObjectsDataPool.entries()) {
       receivedObjectIds.add(objectId);
       const existingObject = this._liveObjectsPool.get(objectId);
-      const regionalTimeserialObj = DefaultTimeserial.calculateTimeserial(this._client, entry.regionalTimeserial);
 
       if (existingObject) {
-        const update = existingObject.setData(entry.objectData);
-        existingObject.setRegionalTimeserial(regionalTimeserialObj);
-        if (existingObject instanceof LiveCounter) {
-          existingObject.setCreated((entry as LiveCounterDataEntry).created);
-        }
-        // store updates for existing objects to call subscription callbacks for all of them once the SYNC sequence is completed.
-        // this will ensure that clients get notified about changes only once everything was applied.
+        const update = existingObject.overrideWithStateObject(entry.stateObject);
+        // store updates to call subscription callbacks for all of them once the SYNC sequence is completed.
+        // this will ensure that clients get notified about the changes only once everything has been applied.
         existingObjectUpdates.push({ object: existingObject, update });
         continue;
       }
@@ -223,11 +207,11 @@ export class LiveObjects {
       const objectType = entry.objectType;
       switch (objectType) {
         case 'LiveCounter':
-          newObject = new LiveCounter(this, entry.created, entry.objectData, objectId, regionalTimeserialObj);
+          newObject = LiveCounter.fromStateObject(this, entry.stateObject);
           break;
 
         case 'LiveMap':
-          newObject = new LiveMap(this, entry.semantics, entry.objectData, objectId, regionalTimeserialObj);
+          newObject = LiveMap.fromStateObject(this, entry.stateObject);
           break;
 
         default:
