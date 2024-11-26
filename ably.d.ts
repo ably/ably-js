@@ -2311,6 +2311,10 @@ export interface Message {
    */
   connectionId?: string;
   /**
+   * The connection key of the publisher of this message to be used in publish on behalf.
+   */
+  connectionKey? : string;
+  /**
    * The message payload, if provided.
    */
   data?: any;
