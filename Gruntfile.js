@@ -73,7 +73,7 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['checkGitSubmodules', 'webpack:all', 'build:browser', 'build:node', 'build:push']);
+  grunt.registerTask('build', ['webpack:all', 'build:browser', 'build:node', 'build:push']);
 
   grunt.registerTask('all', ['build', 'requirejs']);
 
