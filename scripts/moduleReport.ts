@@ -332,7 +332,6 @@ async function checkLiveObjectsPluginFiles() {
     'src/plugins/liveobjects/objectid.ts',
     'src/plugins/liveobjects/statemessage.ts',
     'src/plugins/liveobjects/syncliveobjectsdatapool.ts',
-    'src/plugins/liveobjects/timeserial.ts',
   ]);
 
   return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);

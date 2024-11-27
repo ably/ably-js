@@ -220,9 +220,12 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     }
 
     stateOperationMessage(opts) {
-      const { channelName, serial, state } = opts;
+      const { channelName, serial, siteCode, state } = opts;
 
-      state?.forEach((x, i) => (x.serial = `${serial}:${i}`));
+      state?.forEach((stateMessage, i) => {
+        stateMessage.serial = serial;
+        stateMessage.siteCode = siteCode;
+      });
 
       return {
         action: 19, // STATE

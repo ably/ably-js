@@ -2,7 +2,6 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import { LiveObjects } from './liveobjects';
 import { StateMessage, StateObject, StateOperation } from './statemessage';
-import { DefaultTimeserial, Timeserial } from './timeserial';
 
 enum LiveObjectEvents {
   Updated = 'Updated',
@@ -38,7 +37,7 @@ export abstract class LiveObject<
    * and all state operations applied to the object.
    */
   protected _dataRef: TData;
-  protected _siteTimeserials: Record<string, Timeserial>;
+  protected _siteTimeserials: Record<string, string>;
   protected _createOperationIsMerged: boolean;
 
   protected constructor(
@@ -106,22 +105,17 @@ export abstract class LiveObject<
    * An operation should be applied if the origin timeserial is strictly greater than the timeserial in the site timeserials for the same site.
    * If the site timeserials do not contain a timeserial for the site of the origin timeserial, the operation should be applied.
    */
-  protected _canApplyOperation(opOriginTimeserial: Timeserial): boolean {
-    const siteTimeserial = this._siteTimeserials[opOriginTimeserial.siteCode];
-    return !siteTimeserial || opOriginTimeserial.after(siteTimeserial);
-  }
+  protected _canApplyOperation(opOriginTimeserial: string | undefined, opSiteCode: string | undefined): boolean {
+    if (!opOriginTimeserial) {
+      throw new this._client.ErrorInfo(`Invalid timeserial: ${opOriginTimeserial}`, 50000, 500);
+    }
 
-  protected _timeserialMapFromStringMap(stringTimeserialsMap: Record<string, string>): Record<string, Timeserial> {
-    const objTimeserialsMap = Object.entries(stringTimeserialsMap).reduce(
-      (acc, v) => {
-        const [key, timeserialString] = v;
-        acc[key] = DefaultTimeserial.calculateTimeserial(this._client, timeserialString);
-        return acc;
-      },
-      {} as Record<string, Timeserial>,
-    );
+    if (!opSiteCode) {
+      throw new this._client.ErrorInfo(`Invalid site code: ${opSiteCode}`, 50000, 500);
+    }
 
-    return objTimeserialsMap;
+    const siteTimeserial = this._siteTimeserials[opSiteCode];
+    return !siteTimeserial || opOriginTimeserial > siteTimeserial;
   }
 
   private _createObjectId(): string {

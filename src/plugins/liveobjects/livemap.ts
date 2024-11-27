@@ -13,7 +13,6 @@ import {
   StateOperationAction,
   StateValue,
 } from './statemessage';
-import { DefaultTimeserial, Timeserial } from './timeserial';
 
 export interface ObjectIdStateData {
   /** A reference to another state object, used to support composable state objects. */
@@ -34,7 +33,7 @@ export type StateData = ObjectIdStateData | ValueStateData;
 
 export interface MapEntry {
   tombstone: boolean;
-  timeserial: Timeserial;
+  timeserial: string | undefined;
   data: StateData | undefined;
 }
 
@@ -131,19 +130,20 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       );
     }
 
-    const opOriginTimeserial = DefaultTimeserial.calculateTimeserial(this._client, msg.serial);
-    if (!this._canApplyOperation(opOriginTimeserial)) {
+    const opOriginTimeserial = msg.serial!;
+    const opSiteCode = msg.siteCode!;
+    if (!this._canApplyOperation(opOriginTimeserial, opSiteCode)) {
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap.applyOperation()',
-        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opOriginTimeserial.siteCode].toString()}; objectId=${this._objectId}`,
+        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this._objectId}`,
       );
       return;
     }
     // should update stored site timeserial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    this._siteTimeserials[opOriginTimeserial.siteCode] = opOriginTimeserial;
+    this._siteTimeserials[opSiteCode] = opOriginTimeserial;
 
     let update: LiveMapUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
@@ -233,7 +233,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // override all relevant data for this object with data from the state object
     this._createOperationIsMerged = false;
     this._dataRef = this._liveMapDataFromMapEntries(stateObject.map?.entries ?? {});
-    this._siteTimeserials = this._timeserialMapFromStringMap(stateObject.siteTimeserials);
+    // should default to empty map if site timeserials do not exist on the state object, so that any future operation can be applied to this object
+    this._siteTimeserials = stateObject.siteTimeserials ?? {};
     if (!this._client.Utils.isNil(stateObject.createOp)) {
       this._mergeInitialDataFromCreateOperation(stateObject.createOp);
     }
@@ -311,9 +312,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
     Object.entries(stateOperation.map.entries ?? {}).forEach(([key, entry]) => {
       // for MAP_CREATE op we must use dedicated timeserial field available on an entry, instead of a timeserial on a message
-      const opOriginTimeserial = entry.timeserial
-        ? DefaultTimeserial.calculateTimeserial(this._client, entry.timeserial)
-        : DefaultTimeserial.zeroValueTimeserial(this._client);
+      const opOriginTimeserial = entry.timeserial;
       let update: LiveMapUpdate | LiveObjectUpdateNoop;
       if (entry.tombstone === true) {
         // entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
@@ -370,20 +369,17 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return this._mergeInitialDataFromCreateOperation(op);
   }
 
-  private _applyMapSet(op: StateMapOp, opOriginTimeserial: Timeserial): LiveMapUpdate | LiveObjectUpdateNoop {
+  private _applyMapSet(op: StateMapOp, opOriginTimeserial: string | undefined): LiveMapUpdate | LiveObjectUpdateNoop {
     const { ErrorInfo, Utils } = this._client;
 
     const existingEntry = this._dataRef.data.get(op.key);
-    if (
-      existingEntry &&
-      (opOriginTimeserial.before(existingEntry.timeserial) || opOriginTimeserial.equal(existingEntry.timeserial))
-    ) {
+    if (existingEntry && !this._canApplyMapOperation(existingEntry.timeserial, opOriginTimeserial)) {
       // the operation's origin timeserial <= the entry's timeserial, ignore the operation.
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapSet()',
-        `skipping update for key="${op.key}": op timeserial ${opOriginTimeserial.toString()} <= entry timeserial ${existingEntry.timeserial.toString()}; objectId=${this._objectId}`,
+        `skipping update for key="${op.key}": op timeserial ${opOriginTimeserial?.toString()} <= entry timeserial ${existingEntry.timeserial?.toString()}; objectId=${this._objectId}`,
       );
       return { noop: true };
     }
@@ -423,18 +419,18 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return { update: { [op.key]: 'updated' } };
   }
 
-  private _applyMapRemove(op: StateMapOp, opOriginTimeserial: Timeserial): LiveMapUpdate | LiveObjectUpdateNoop {
+  private _applyMapRemove(
+    op: StateMapOp,
+    opOriginTimeserial: string | undefined,
+  ): LiveMapUpdate | LiveObjectUpdateNoop {
     const existingEntry = this._dataRef.data.get(op.key);
-    if (
-      existingEntry &&
-      (opOriginTimeserial.before(existingEntry.timeserial) || opOriginTimeserial.equal(existingEntry.timeserial))
-    ) {
+    if (existingEntry && !this._canApplyMapOperation(existingEntry.timeserial, opOriginTimeserial)) {
       // the operation's origin timeserial <= the entry's timeserial, ignore the operation.
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapRemove()',
-        `skipping remove for key="${op.key}": op timeserial ${opOriginTimeserial.toString()} <= entry timeserial ${existingEntry.timeserial.toString()}; objectId=${this._objectId}`,
+        `skipping remove for key="${op.key}": op timeserial ${opOriginTimeserial?.toString()} <= entry timeserial ${existingEntry.timeserial?.toString()}; objectId=${this._objectId}`,
       );
       return { noop: true };
     }
@@ -455,6 +451,34 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return { update: { [op.key]: 'removed' } };
   }
 
+  /**
+   * Returns true if the origin timeserials of the given operation and entry indicate that
+   * the operation should be applied to the entry, following the CRDT semantics of this LiveMap.
+   */
+  private _canApplyMapOperation(entryTimeserial: string | undefined, opTimeserial: string | undefined): boolean {
+    // for LWW CRDT semantics (the only supported LiveMap semantic) an operation
+    // should only be applied if its timeserial is strictly greater ("after") than an entry's timeserial.
+
+    if (!entryTimeserial && !opTimeserial) {
+      // if both timeserials are nullish or emptry strings, we treat them as the "earliest possible" timeserials,
+      // in which case they are "equal", so the operation should not be applied
+      return false;
+    }
+
+    if (!entryTimeserial) {
+      // any op timeserial is greater than non-existing entry timeserial
+      return true;
+    }
+
+    if (!opTimeserial) {
+      // non-existing op timeserial is lower than any entry timeserial
+      return false;
+    }
+
+    // if both timeserials exist, compare them lexicographically
+    return opTimeserial > entryTimeserial;
+  }
+
   private _liveMapDataFromMapEntries(entries: Record<string, StateMapEntry>): LiveMapData {
     const liveMapData: LiveMapData = {
       data: new Map<string, MapEntry>(),
@@ -470,10 +494,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       }
 
       const liveDataEntry: MapEntry = {
-        ...entry,
-        timeserial: entry.timeserial
-          ? DefaultTimeserial.calculateTimeserial(this._client, entry.timeserial)
-          : DefaultTimeserial.zeroValueTimeserial(this._client),
+        timeserial: entry.timeserial,
         // true only if we received explicit true. otherwise always false
         tombstone: entry.tombstone === true,
         data: liveData,

@@ -31,18 +31,28 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
   }
 
   function forScenarios(scenarios, testFn) {
-    // if there are scenarios marked as "only", run only them.
-    // otherwise go over every scenario
-    const onlyScenarios = scenarios.filter((x) => x.only === true);
-    const scenariosToRun = onlyScenarios.length > 0 ? onlyScenarios : scenarios;
+    for (const scenario of scenarios) {
+      const itFn = scenario.skip ? it.skip : scenario.only ? it.only : it;
 
-    for (const scenario of scenariosToRun) {
-      if (scenario.skip === true) {
-        continue;
-      }
-
-      testFn(scenario);
+      itFn(scenario.description, async function () {
+        const helper = this.test.helper;
+        await testFn(helper, scenario);
+      });
     }
+  }
+
+  function lexicoTimeserial(seriesId, timestamp, counter, index) {
+    const paddedTimestamp = timestamp.toString().padStart(14, '0');
+    const paddedCounter = counter.toString().padStart(3, '0');
+    const paddedIndex = index != null ? index.toString().padStart(3, '0') : undefined;
+
+    // Example:
+    //
+    //	01726585978590-001@abcdefghij:001
+    //	|____________| |_| |________| |_|
+    //	      |         |        |     |
+    //	timestamp   counter  seriesId  idx
+    return `${paddedTimestamp}-${paddedCounter}@${seriesId}` + (paddedIndex ? `:${paddedIndex}` : '');
   }
 
   describe('realtime/live_objects', function () {
@@ -91,7 +101,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // inject STATE message that should be ignored and not break anything without LiveObjects plugin
             await liveObjectsHelper.processStateOperationMessageOnChannel({
               channel: testChannel,
-              serial: '@0-0',
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
               state: [
                 liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'stringKey', data: { value: 'stringValue' } }),
               ],
@@ -125,7 +136,12 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             await liveObjectsHelper.processStateObjectMessageOnChannel({
               channel: testChannel,
               syncSerial: 'serial:',
-              state: [liveObjectsHelper.mapObject({ objectId: 'root', siteTimeserials: { '000': '000@0-0' } })],
+              state: [
+                liveObjectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                }),
+              ],
             });
 
             const publishChannel = publishClient.channels.get('channel');
@@ -292,8 +308,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             state: [
               liveObjectsHelper.mapObject({
                 objectId: 'root',
-                siteTimeserials: { '000': '000@0-0' },
-                initialEntries: { key: { timeserial: '000@0-0', data: { value: 1 } } },
+                siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                initialEntries: { key: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 1 } } },
               }),
             ],
           });
@@ -512,7 +528,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check no maps exist on root
             primitiveMapsFixtures.forEach((fixture) => {
               const key = fixture.name;
-              expect(root.get(key, `Check "${key}" key doesn't exist on root before applying MAP_CREATE ops`)).to.not
+              expect(root.get(key), `Check "${key}" key doesn't exist on root before applying MAP_CREATE ops`).to.not
                 .exist;
             });
 
@@ -571,10 +587,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             // check map does not exist on root
             expect(
-              root.get(
-                withReferencesMapKey,
-                `Check "${withReferencesMapKey}" key doesn't exist on root before applying MAP_CREATE ops`,
-              ),
+              root.get(withReferencesMapKey),
+              `Check "${withReferencesMapKey}" key doesn't exist on root before applying MAP_CREATE ops`,
             ).to.not.exist;
 
             // create map with references. need to create referenced objects first to obtain their object ids
@@ -653,28 +667,31 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                 // send a MAP_SET op first to create a zero-value map with forged site timeserials vector (from the op), and set it on a root.
                 await liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: 'bbb@1-0',
+                  serial: lexicoTimeserial('bbb', 1, 0),
+                  siteCode: 'bbb',
                   state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: 'foo', data: { value: 'bar' } })],
                 });
                 await liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: `aaa@${i}-0`,
+                  serial: lexicoTimeserial('aaa', i, 0),
+                  siteCode: 'aaa',
                   state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: mapId, data: { objectId: mapId } })],
                 });
               }),
             );
 
             // inject operations with various timeserial values
-            for (const [i, serial] of [
-              'bbb@0-0', // existing site, earlier CGO, not applied
-              'bbb@1-0', // existing site, same CGO, not applied
-              'bbb@2-0', // existing site, later CGO, applied
-              'aaa@0-0', // different site, earlier CGO, applied
-              'ccc@9-0', // different site, later CGO, applied
+            for (const [i, { serial, siteCode }] of [
+              { serial: lexicoTimeserial('bbb', 0, 0), siteCode: 'bbb' }, // existing site, earlier CGO, not applied
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb' }, // existing site, same CGO, not applied
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // existing site, later CGO, applied
+              { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
+              { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
             ].entries()) {
               await liveObjectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
+                siteCode,
                 state: [
                   liveObjectsHelper.mapCreateOp({
                     objectId: mapIds[i],
@@ -721,7 +738,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check root is empty before ops
             primitiveKeyData.forEach((keyData) => {
               expect(
-                root.get(keyData.key, `Check "${keyData.key}" key doesn't exist on root before applying MAP_SET ops`),
+                root.get(keyData.key),
+                `Check "${keyData.key}" key doesn't exist on root before applying MAP_SET ops`,
               ).to.not.exist;
             });
 
@@ -763,9 +781,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             // check no object ids are set on root
             expect(
-              root.get('keyToCounter', `Check "keyToCounter" key doesn't exist on root before applying MAP_SET ops`),
+              root.get('keyToCounter'),
+              `Check "keyToCounter" key doesn't exist on root before applying MAP_SET ops`,
             ).to.not.exist;
-            expect(root.get('keyToMap', `Check "keyToMap" key doesn't exist on root before applying MAP_SET ops`)).to
+            expect(root.get('keyToMap'), `Check "keyToMap" key doesn't exist on root before applying MAP_SET ops`).to
               .not.exist;
 
             // create new objects and set on root
@@ -817,39 +836,42 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const mapId = liveObjectsHelper.fakeMapObjectId();
             await liveObjectsHelper.processStateOperationMessageOnChannel({
               channel,
-              serial: 'bbb@1-0',
+              serial: lexicoTimeserial('bbb', 1, 0),
+              siteCode: 'bbb',
               state: [
                 liveObjectsHelper.mapCreateOp({
                   objectId: mapId,
                   entries: {
-                    foo1: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo2: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo3: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo4: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo5: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo6: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo3: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo5: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo6: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
                   },
                 }),
               ],
             });
             await liveObjectsHelper.processStateOperationMessageOnChannel({
               channel,
-              serial: 'aaa@0-0',
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
               state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
             });
 
             // inject operations with various timeserial values
-            for (const [i, serial] of [
-              'bbb@0-0', // existing site, earlier site CGO, not applied
-              'bbb@1-0', // existing site, same site CGO, not applied
-              'bbb@2-0', // existing site, later site CGO, applied, site timeserials updated
-              'bbb@2-0', // existing site, same site CGO (updated from last op), not applied
-              'aaa@0-0', // different site, earlier entry CGO, not applied
-              'ccc@9-0', // different site, later entry CGO, applied
+            for (const [i, { serial, siteCode }] of [
+              { serial: lexicoTimeserial('bbb', 0, 0), siteCode: 'bbb' }, // existing site, earlier site CGO, not applied
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb' }, // existing site, same site CGO, not applied
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // existing site, later site CGO, applied, site timeserials updated
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // existing site, same site CGO (updated from last op), not applied
+              { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier entry CGO, not applied
+              { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later entry CGO, applied
             ].entries()) {
               await liveObjectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
+                siteCode,
                 state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
               });
             }
@@ -941,39 +963,42 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const mapId = liveObjectsHelper.fakeMapObjectId();
             await liveObjectsHelper.processStateOperationMessageOnChannel({
               channel,
-              serial: 'bbb@1-0',
+              serial: lexicoTimeserial('bbb', 1, 0),
+              siteCode: 'bbb',
               state: [
                 liveObjectsHelper.mapCreateOp({
                   objectId: mapId,
                   entries: {
-                    foo1: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo2: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo3: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo4: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo5: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo6: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
+                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo3: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo5: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo6: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
                   },
                 }),
               ],
             });
             await liveObjectsHelper.processStateOperationMessageOnChannel({
               channel,
-              serial: 'aaa@0-0',
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
               state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
             });
 
             // inject operations with various timeserial values
-            for (const [i, serial] of [
-              'bbb@0-0', // existing site, earlier site CGO, not applied
-              'bbb@1-0', // existing site, same site CGO, not applied
-              'bbb@2-0', // existing site, later site CGO, applied, site timeserials updated
-              'bbb@2-0', // existing site, same site CGO (updated from last op), not applied
-              'aaa@0-0', // different site, earlier entry CGO, not applied
-              'ccc@9-0', // different site, later entry CGO, applied
+            for (const [i, { serial, siteCode }] of [
+              { serial: lexicoTimeserial('bbb', 0, 0), siteCode: 'bbb' }, // existing site, earlier site CGO, not applied
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb' }, // existing site, same site CGO, not applied
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // existing site, later site CGO, applied, site timeserials updated
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // existing site, same site CGO (updated from last op), not applied
+              { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier entry CGO, not applied
+              { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later entry CGO, applied
             ].entries()) {
               await liveObjectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
+                siteCode,
                 state: [liveObjectsHelper.mapRemoveOp({ objectId: mapId, key: `foo${i + 1}` })],
               });
             }
@@ -1012,7 +1037,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check no counters exist on root
             countersFixtures.forEach((fixture) => {
               const key = fixture.name;
-              expect(root.get(key, `Check "${key}" key doesn't exist on root before applying COUNTER_CREATE ops`)).to
+              expect(root.get(key), `Check "${key}" key doesn't exist on root before applying COUNTER_CREATE ops`).to
                 .not.exist;
             });
 
@@ -1069,12 +1094,14 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                 // send a COUNTER_INC op first to create a zero-value counter with forged site timeserials vector (from the op), and set it on a root.
                 await liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: 'bbb@1-0',
+                  serial: lexicoTimeserial('bbb', 1, 0),
+                  siteCode: 'bbb',
                   state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
                 });
                 await liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: `aaa@${i}-0`,
+                  serial: lexicoTimeserial('aaa', i, 0),
+                  siteCode: 'aaa',
                   state: [
                     liveObjectsHelper.mapSetOp({ objectId: 'root', key: counterId, data: { objectId: counterId } }),
                   ],
@@ -1083,16 +1110,17 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             );
 
             // inject operations with various timeserial values
-            for (const [i, serial] of [
-              'bbb@0-0', // existing site, earlier CGO, not applied
-              'bbb@1-0', // existing site, same CGO, not applied
-              'bbb@2-0', // existing site, later CGO, applied
-              'aaa@0-0', // different site, earlier CGO, applied
-              'ccc@9-0', // different site, later CGO, applied
+            for (const [i, { serial, siteCode }] of [
+              { serial: lexicoTimeserial('bbb', 0, 0), siteCode: 'bbb' }, // existing site, earlier CGO, not applied
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb' }, // existing site, same CGO, not applied
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // existing site, later CGO, applied
+              { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
+              { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
             ].entries()) {
               await liveObjectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
+                siteCode,
                 state: [liveObjectsHelper.counterCreateOp({ objectId: counterIds[i], count: 10 })],
               });
             }
@@ -1186,27 +1214,30 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const counterId = liveObjectsHelper.fakeCounterObjectId();
             await liveObjectsHelper.processStateOperationMessageOnChannel({
               channel,
-              serial: 'bbb@1-0',
+              serial: lexicoTimeserial('bbb', 1, 0),
+              siteCode: 'bbb',
               state: [liveObjectsHelper.counterCreateOp({ objectId: counterId, count: 1 })],
             });
             await liveObjectsHelper.processStateOperationMessageOnChannel({
               channel,
-              serial: 'aaa@0-0',
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
               state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
             });
 
             // inject operations with various timeserial values
-            for (const [i, serial] of [
-              'bbb@0-0', // +10       existing site, earlier CGO, not applied
-              'bbb@1-0', // +100      existing site, same CGO, not applied
-              'bbb@2-0', // +1000     existing site, later CGO, applied, site timeserials updated
-              'bbb@2-0', // +10000    existing site, same CGO (updated from last op), not applied
-              'aaa@0-0', // +100000   different site, earlier CGO, applied
-              'ccc@9-0', // +1000000  different site, later CGO, applied
+            for (const [i, { serial, siteCode }] of [
+              { serial: lexicoTimeserial('bbb', 0, 0), siteCode: 'bbb' }, // +10       existing site, earlier CGO, not applied
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb' }, // +100      existing site, same CGO, not applied
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // +1000     existing site, later CGO, applied, site timeserials updated
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // +10000    existing site, same CGO (updated from last op), not applied
+              { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // +100000   different site, earlier CGO, applied
+              { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // +1000000  different site, later CGO, applied
             ].entries()) {
               await liveObjectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
+                siteCode,
                 state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: Math.pow(10, i + 1) })],
               });
             }
@@ -1220,25 +1251,22 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
       ];
 
-      forScenarios(applyOperationsScenarios, (scenario) =>
-        /** @nospec */
-        it(scenario.description, async function () {
-          const helper = this.test.helper;
-          const liveObjectsHelper = new LiveObjectsHelper(helper);
-          const client = RealtimeWithLiveObjects(helper);
+      /** @nospec */
+      forScenarios(applyOperationsScenarios, async function (helper, scenario) {
+        const liveObjectsHelper = new LiveObjectsHelper(helper);
+        const client = RealtimeWithLiveObjects(helper);
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
-            const channelName = scenario.description;
-            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-            const liveObjects = channel.liveObjects;
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channelName = scenario.description;
+          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
 
-            await channel.attach();
-            const root = await liveObjects.getRoot();
+          await channel.attach();
+          const root = await liveObjects.getRoot();
 
-            await scenario.action({ root, liveObjectsHelper, channelName, channel });
-          }, client);
-        }),
-      );
+          await scenario.action({ root, liveObjectsHelper, channelName, channel });
+        }, client);
+      });
 
       const applyOperationsDuringSyncScenarios = [
         {
@@ -1257,7 +1285,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               primitiveKeyData.map((keyData) =>
                 liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: '@0-0',
+                  serial: lexicoTimeserial('aaa', 0, 0),
+                  siteCode: 'aaa',
                   state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
                 }),
               ),
@@ -1287,7 +1316,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               primitiveKeyData.map((keyData, i) =>
                 liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: `aaa@${i}-0`,
+                  serial: lexicoTimeserial('aaa', i, 0),
+                  siteCode: 'aaa',
                   state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
                 }),
               ),
@@ -1329,10 +1359,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             // inject operations, expect them to be discarded when sync with new sequence id starts
             await Promise.all(
-              primitiveKeyData.map((keyData) =>
+              primitiveKeyData.map((keyData, i) =>
                 liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: '@0-0',
+                  serial: lexicoTimeserial('aaa', i, 0),
+                  siteCode: 'aaa',
                   state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
                 }),
               ),
@@ -1347,7 +1378,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // inject another operation that should be applied when latest sync ends
             await liveObjectsHelper.processStateOperationMessageOnChannel({
               channel,
-              serial: '@0-0',
+              serial: lexicoTimeserial('bbb', 0, 0),
+              siteCode: 'bbb',
               state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 'bar' } })],
             });
 
@@ -1391,34 +1423,34 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                 liveObjectsHelper.mapObject({
                   objectId: mapId,
                   siteTimeserials: {
-                    bbb: 'bbb@2-0',
-                    ccc: 'ccc@5-0',
+                    bbb: lexicoTimeserial('bbb', 2, 0),
+                    ccc: lexicoTimeserial('ccc', 5, 0),
                   },
                   materialisedEntries: {
-                    foo1: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo2: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo3: { timeserial: 'ccc@5-0', data: { value: 'bar' } },
-                    foo4: { timeserial: 'bbb@0-0', data: { value: 'bar' } },
-                    foo5: { timeserial: 'bbb@2-0', data: { value: 'bar' } },
-                    foo6: { timeserial: 'ccc@2-0', data: { value: 'bar' } },
-                    foo7: { timeserial: 'ccc@0-0', data: { value: 'bar' } },
-                    foo8: { timeserial: 'ccc@0-0', data: { value: 'bar' } },
+                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo3: { timeserial: lexicoTimeserial('ccc', 5, 0), data: { value: 'bar' } },
+                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo5: { timeserial: lexicoTimeserial('bbb', 2, 0), data: { value: 'bar' } },
+                    foo6: { timeserial: lexicoTimeserial('ccc', 2, 0), data: { value: 'bar' } },
+                    foo7: { timeserial: lexicoTimeserial('ccc', 0, 0), data: { value: 'bar' } },
+                    foo8: { timeserial: lexicoTimeserial('ccc', 0, 0), data: { value: 'bar' } },
                   },
                 }),
                 liveObjectsHelper.counterObject({
                   objectId: counterId,
                   siteTimeserials: {
-                    bbb: 'bbb@1-0',
+                    bbb: lexicoTimeserial('bbb', 1, 0),
                   },
                   initialCount: 1,
                 }),
                 // add objects to the root so they're discoverable in the state tree
                 liveObjectsHelper.mapObject({
                   objectId: 'root',
-                  siteTimeserials: { '000': '000@0-0' },
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                   initialEntries: {
-                    map: { timeserial: '000@0-0', data: { objectId: mapId } },
-                    counter: { timeserial: '000@0-0', data: { objectId: counterId } },
+                    map: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: mapId } },
+                    counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
                   },
                 }),
               ],
@@ -1426,37 +1458,39 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             // inject operations with various timeserial values
             // Map:
-            for (const [i, serial] of [
-              'bbb@1-0', // existing site, earlier site CGO, not applied
-              'bbb@2-0', // existing site, same site CGO, not applied
-              'bbb@3-0', // existing site, later site CGO, earlier entry CGO, not applied but site timeserial updated
+            for (const [i, { serial, siteCode }] of [
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb' }, // existing site, earlier site CGO, not applied
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // existing site, same site CGO, not applied
+              { serial: lexicoTimeserial('bbb', 3, 0), siteCode: 'bbb' }, // existing site, later site CGO, earlier entry CGO, not applied but site timeserial updated
               // message with later site CGO, same entry CGO case is not possible, as timeserial from entry would be set for the corresponding site code or be less than that
-              'bbb@3-0', // existing site, same site CGO (updated from last op), later entry CGO, not applied
-              'bbb@4-0', // existing site, later site CGO, later entry CGO, applied
-              'aaa@1-0', // different site, earlier entry CGO, not applied but site timeserial updated
-              'aaa@1-0', // different site, same site CGO (updated from last op), later entry CGO, not applied
+              { serial: lexicoTimeserial('bbb', 3, 0), siteCode: 'bbb' }, // existing site, same site CGO (updated from last op), later entry CGO, not applied
+              { serial: lexicoTimeserial('bbb', 4, 0), siteCode: 'bbb' }, // existing site, later site CGO, later entry CGO, applied
+              { serial: lexicoTimeserial('aaa', 1, 0), siteCode: 'aaa' }, // different site, earlier entry CGO, not applied but site timeserial updated
+              { serial: lexicoTimeserial('aaa', 1, 0), siteCode: 'aaa' }, // different site, same site CGO (updated from last op), later entry CGO, not applied
               // different site with matching entry CGO case is not possible, as matching entry timeserial means that that timeserial is in the site timeserials vector
-              'ddd@1-0', // different site, later entry CGO, applied
+              { serial: lexicoTimeserial('ddd', 1, 0), siteCode: 'ddd' }, // different site, later entry CGO, applied
             ].entries()) {
               await liveObjectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
+                siteCode,
                 state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
               });
             }
 
             // Counter:
-            for (const [i, serial] of [
-              'bbb@0-0', // +10       existing site, earlier CGO, not applied
-              'bbb@1-0', // +100      existing site, same CGO, not applied
-              'bbb@2-0', // +1000     existing site, later CGO, applied, site timeserials updated
-              'bbb@2-0', // +10000    existing site, same CGO (updated from last op), not applied
-              'aaa@0-0', // +100000   different site, earlier CGO, applied
-              'ccc@9-0', // +1000000  different site, later CGO, applied
+            for (const [i, { serial, siteCode }] of [
+              { serial: lexicoTimeserial('bbb', 0, 0), siteCode: 'bbb' }, // +10       existing site, earlier CGO, not applied
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb' }, // +100      existing site, same CGO, not applied
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // +1000     existing site, later CGO, applied, site timeserials updated
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // +10000    existing site, same CGO (updated from last op), not applied
+              { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // +100000   different site, earlier CGO, applied
+              { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // +1000000  different site, later CGO, applied
             ].entries()) {
               await liveObjectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
+                siteCode,
                 state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: Math.pow(10, i + 1) })],
               });
             }
@@ -1510,7 +1544,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               primitiveKeyData.map((keyData, i) =>
                 liveObjectsHelper.processStateOperationMessageOnChannel({
                   channel,
-                  serial: `aaa@${i}-0`,
+                  serial: lexicoTimeserial('aaa', i, 0),
+                  siteCode: 'aaa',
                   state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
                 }),
               ),
@@ -1554,27 +1589,24 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
       ];
 
-      forScenarios(applyOperationsDuringSyncScenarios, (scenario) =>
-        /** @nospec */
-        it(scenario.description, async function () {
-          const helper = this.test.helper;
-          const liveObjectsHelper = new LiveObjectsHelper(helper);
-          const client = RealtimeWithLiveObjects(helper);
+      /** @nospec */
+      forScenarios(applyOperationsDuringSyncScenarios, async function (helper, scenario) {
+        const liveObjectsHelper = new LiveObjectsHelper(helper);
+        const client = RealtimeWithLiveObjects(helper);
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
-            const channelName = scenario.description;
-            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-            const liveObjects = channel.liveObjects;
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channelName = scenario.description;
+          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
 
-            await channel.attach();
-            // wait for getRoot() to resolve so the initial SYNC sequence is completed,
-            // as we're going to initiate a new one to test applying operations during SYNC sequence.
-            const root = await liveObjects.getRoot();
+          await channel.attach();
+          // wait for getRoot() to resolve so the initial SYNC sequence is completed,
+          // as we're going to initiate a new one to test applying operations during SYNC sequence.
+          const root = await liveObjects.getRoot();
 
-            await scenario.action({ root, liveObjectsHelper, channelName, channel });
-          }, client);
-        }),
-      );
+          await scenario.action({ root, liveObjectsHelper, channelName, channel });
+        }, client);
+      });
 
       const subscriptionCallbacksScenarios = [
         {
@@ -2043,49 +2075,46 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
       ];
 
-      forScenarios(subscriptionCallbacksScenarios, (scenario) =>
-        /** @nospec */
-        it(scenario.description, async function () {
-          const helper = this.test.helper;
-          const liveObjectsHelper = new LiveObjectsHelper(helper);
-          const client = RealtimeWithLiveObjects(helper);
+      /** @nospec */
+      forScenarios(subscriptionCallbacksScenarios, async function (helper, scenario) {
+        const liveObjectsHelper = new LiveObjectsHelper(helper);
+        const client = RealtimeWithLiveObjects(helper);
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
-            const channelName = scenario.description;
-            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-            const liveObjects = channel.liveObjects;
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channelName = scenario.description;
+          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
 
-            await channel.attach();
-            const root = await liveObjects.getRoot();
+          await channel.attach();
+          const root = await liveObjects.getRoot();
 
-            const sampleMapKey = 'sampleMap';
-            const sampleCounterKey = 'sampleCounter';
+          const sampleMapKey = 'sampleMap';
+          const sampleCounterKey = 'sampleCounter';
 
-            // prepare map and counter objects for use by the scenario
-            const { objectId: sampleMapObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
-              mapObjectId: 'root',
-              key: sampleMapKey,
-              createOp: liveObjectsHelper.mapCreateOp(),
-            });
-            const { objectId: sampleCounterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
-              mapObjectId: 'root',
-              key: sampleCounterKey,
-              createOp: liveObjectsHelper.counterCreateOp(),
-            });
+          // prepare map and counter objects for use by the scenario
+          const { objectId: sampleMapObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            mapObjectId: 'root',
+            key: sampleMapKey,
+            createOp: liveObjectsHelper.mapCreateOp(),
+          });
+          const { objectId: sampleCounterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            mapObjectId: 'root',
+            key: sampleCounterKey,
+            createOp: liveObjectsHelper.counterCreateOp(),
+          });
 
-            await scenario.action({
-              root,
-              liveObjectsHelper,
-              channelName,
-              channel,
-              sampleMapKey,
-              sampleMapObjectId,
-              sampleCounterKey,
-              sampleCounterObjectId,
-            });
-          }, client);
-        }),
-      );
+          await scenario.action({
+            root,
+            liveObjectsHelper,
+            channelName,
+            channel,
+            sampleMapKey,
+            sampleMapObjectId,
+            sampleCounterKey,
+            sampleCounterObjectId,
+          });
+        }, client);
+      });
     });
 
     /** @nospec */
