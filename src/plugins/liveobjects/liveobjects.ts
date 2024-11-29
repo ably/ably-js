@@ -36,13 +36,18 @@ export class LiveObjects {
     this._bufferedStateOperations = [];
   }
 
-  async getRoot(): Promise<LiveMap> {
+  /**
+   * When called without a type variable, we return a default root type which is based on globally defined LiveObjects interface.
+   * A user can provide an explicit type for the getRoot method to explicitly set the LiveObjects type structure on this particular channel.
+   * This is useful when working with LiveObjects on multiple channels with different underlying data.
+   */
+  async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
     // SYNC is currently in progress, wait for SYNC sequence to finish
     if (this._syncInProgress) {
       await this._eventEmitter.once(LiveObjectsEvents.SyncCompleted);
     }
 
-    return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap;
+    return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>;
   }
 
   /**

@@ -2039,10 +2039,61 @@ export declare interface LiveObjects {
   /**
    * Retrieves the root {@link LiveMap} object for state on a channel.
    *
+   * A type parameter can be provided to describe the structure of the LiveObjects state on the channel. By default, it uses types from the globally defined `LiveObjectsTypes` interface.
+   *
+   * You can specify custom types for LiveObjects by defining a global `LiveObjectsTypes` interface with a `root` property that conforms to {@link LiveMapType}.
+   *
+   * Example:
+   *
+   * ```typescript
+   * import { LiveCounter } from 'ably';
+   *
+   * type MyRoot = {
+   *   myTypedKey: LiveCounter;
+   * };
+   *
+   * declare global {
+   *   export interface LiveObjectsTypes {
+   *     root: MyRoot;
+   *   }
+   * }
+   * ```
+   *
    * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
-  getRoot(): Promise<LiveMap>;
+  getRoot<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>>;
 }
+
+declare global {
+  /**
+   * A globally defined interface that allows users to define custom types for LiveObjects.
+   */
+  export interface LiveObjectsTypes {
+    [key: string]: unknown;
+  }
+}
+
+/**
+ * Represents the type of data stored in a {@link LiveMap}.
+ * It maps string keys to scalar values ({@link StateValue}), or other LiveObjects.
+ */
+export type LiveMapType = { [key: string]: StateValue | LiveMap<LiveMapType> | LiveCounter | undefined };
+
+/**
+ * The default type for the `root` object in the LiveObjects, based on the globally defined {@link LiveObjectsTypes} interface.
+ *
+ * - If no custom types are provided in `LiveObjectsTypes`, defaults to an untyped root map representation using the {@link LiveMapType} interface.
+ * - If a `root` type exists in `LiveObjectsTypes` and conforms to the {@link LiveMapType} interface, it is used as the type for the `root` object.
+ * - If the provided `root` type does not match {@link LiveMapType}, a type error message is returned.
+ */
+export type DefaultRoot =
+  // we need a way to know when no types were provided by the user.
+  // we expect a "root" property to be set on LiveObjectsTypes interface, e.g. it won't be "unknown" anymore
+  unknown extends LiveObjectsTypes['root']
+    ? LiveMapType // no custom types provided; use the default untyped map representation for the root
+    : LiveObjectsTypes['root'] extends LiveMapType
+      ? LiveObjectsTypes['root'] // "root" property exists, and it is of an expected type, we can use this interface for the root object in LiveObjects.
+      : `Provided type definition for the "root" object in LiveObjectsTypes is not of an expected LiveMapType`;
 
 /**
  * The `LiveMap` class represents a key/value map data structure, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
@@ -2050,14 +2101,14 @@ export declare interface LiveObjects {
  *
  * Keys must be strings. Values can be another Live Object, or a primitive type, such as a string, number, boolean, or binary data (see {@link StateValue}).
  */
-export declare interface LiveMap extends LiveObject<LiveMapUpdate> {
+export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate> {
   /**
    * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map.
    *
    * @param key - The key to retrieve the value for.
    * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map.
    */
-  get(key: string): LiveObject | StateValue | undefined;
+  get<TKey extends keyof T & string>(key: TKey): T[TKey];
 
   /**
    * Returns the number of key/value pairs in the map.

@@ -20,5 +20,6 @@
     "TypeAlias",
     "Variable",
     "Namespace"
-  ]
+  ],
+  "intentionallyNotExported": ["__global.LiveObjectsTypes"]
 }
