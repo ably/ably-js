@@ -2045,8 +2045,8 @@ export declare interface LiveObjects {
 }
 
 /**
- * The `LiveMap` class represents a synchronized key/value storage, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
- * Conflict-free resolution for updates follows Last Write Wins (LWW) semantics, meaning that if two clients update the same key in the map, the last change wins.
+ * The `LiveMap` class represents a key/value map data structure, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
+ * Conflict-free resolution for updates follows Last Write Wins (LWW) semantics, meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
  *
  * Keys must be strings. Values can be another Live Object, or a primitive type, such as a string, number, boolean, or binary data (see {@link StateValue}).
  */
@@ -2085,7 +2085,7 @@ export declare interface LiveMapUpdate extends LiveObjectUpdate {
 export type StateValue = string | number | boolean | Buffer | ArrayBuffer;
 
 /**
- * The `LiveCounter` class represents a synchronized counter that can be incremented or decremented and is synchronized across clients in realtime.
+ * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.
  */
 export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
   /**
