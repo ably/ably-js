@@ -265,7 +265,7 @@ define([
 
     becomeSuspended(realtime, cb) {
       const helper = this.addingHelperFunction('becomeSuspended');
-      helper._becomeSuspended(realtime, cb);
+      return helper._becomeSuspended(realtime, cb);
     }
 
     _becomeSuspended(realtime, cb) {
@@ -276,10 +276,13 @@ define([
         self.recordPrivateApi('call.connectionManager.notifyState');
         realtime.connection.connectionManager.notifyState({ state: 'suspended' });
       });
-      if (cb)
+      if (cb) {
         realtime.connection.once('suspended', function () {
           cb();
         });
+      } else {
+        return realtime.connection.once('suspended');
+      }
     }
 
     callbackOnClose(realtime, callback) {

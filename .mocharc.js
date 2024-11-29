@@ -9,7 +9,7 @@ const config = {
 // if you've defined specs in your config. therefore we work around it by only adding specs to the
 // config if none are passed as arguments
 if (!process.argv.slice(2).some(isTestFile)) {
-  config.spec = ['test/realtime/*.test.js', 'test/rest/*.test.js'];
+  config.spec = ['test/realtime/*.test.js', 'test/rest/*.test.js', 'test/unit/*.test.js'];
 }
 
 function isTestFile(arg) {

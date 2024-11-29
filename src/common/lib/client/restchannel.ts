@@ -2,12 +2,12 @@ import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import RestPresence from './restpresence';
 import Message, {
-  fromValues as messageFromValues,
-  fromValuesArray as messagesFromValuesArray,
   encodeArray as encodeMessagesArray,
   serialize as serializeMessage,
   getMessagesSize,
   CipherOptions,
+  fromValues as messageFromValues,
+  fromValuesArray as messagesFromValuesArray,
 } from '../types/message';
 import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
