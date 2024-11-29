@@ -1,7 +1,6 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import { StateCounterOp, StateMessage, StateObject, StateOperation, StateOperationAction } from './statemessage';
-import { DefaultTimeserial } from './timeserial';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number;
@@ -49,19 +48,20 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       );
     }
 
-    const opOriginTimeserial = DefaultTimeserial.calculateTimeserial(this._client, msg.serial);
-    if (!this._canApplyOperation(opOriginTimeserial)) {
+    const opOriginTimeserial = msg.serial!;
+    const opSiteCode = msg.siteCode!;
+    if (!this._canApplyOperation(opOriginTimeserial, opSiteCode)) {
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveCounter.applyOperation()',
-        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opOriginTimeserial.siteCode].toString()}; objectId=${this._objectId}`,
+        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this._objectId}`,
       );
       return;
     }
     // should update stored site timeserial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    this._siteTimeserials[opOriginTimeserial.siteCode] = opOriginTimeserial;
+    this._siteTimeserials[opSiteCode] = opOriginTimeserial;
 
     let update: LiveCounterUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
@@ -125,7 +125,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // override all relevant data for this object with data from the state object
     this._createOperationIsMerged = false;
     this._dataRef = { data: stateObject.counter?.count ?? 0 };
-    this._siteTimeserials = this._timeserialMapFromStringMap(stateObject.siteTimeserials);
+    // should default to empty map if site timeserials do not exist on the state object, so that any future operation can be applied to this object
+    this._siteTimeserials = stateObject.siteTimeserials ?? {};
     if (!this._client.Utils.isNil(stateObject.createOp)) {
       this._mergeInitialDataFromCreateOperation(stateObject.createOp);
     }

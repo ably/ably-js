@@ -51,8 +51,8 @@ export interface StateMapEntry {
   /**
    * The *origin* timeserial of the last operation that was applied to the map entry.
    *
-   * It is optional in a MAP_CREATE operation and might be missing, in which case the client should default to using zero-value timeserial,
-   * which is the "earliest possible" timeserial. This will allow any other operation to update the field based on a timeserial comparison.
+   * It is optional in a MAP_CREATE operation and might be missing, in which case the client should use a nullish value for it
+   * and treat it as the "earliest possible" timeserial for comparison purposes.
    */
   timeserial?: string;
   /** The data that represents the value of the map entry. */
@@ -140,6 +140,8 @@ export class StateMessage {
   object?: StateObject;
   /** Timeserial format. Contains the origin timeserial for this state message. */
   serial?: string;
+  /** Site code corresponding to this message's timeserial */
+  siteCode?: string;
 
   constructor(private _platform: typeof Platform) {}
 
@@ -357,12 +359,14 @@ export class StateMessage {
     if (this.timestamp) result += '; timestamp=' + this.timestamp;
     if (this.clientId) result += '; clientId=' + this.clientId;
     if (this.connectionId) result += '; connectionId=' + this.connectionId;
+    if (this.channel) result += '; channel=' + this.channel;
     // TODO: prettify output for operation and object and encode buffers.
     // see examples for data in Message and PresenceMessage
     if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
     if (this.object) result += '; object=' + JSON.stringify(this.object);
     if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
     if (this.serial) result += '; serial=' + this.serial;
+    if (this.siteCode) result += '; siteCode=' + this.siteCode;
 
     result += ']';
 
