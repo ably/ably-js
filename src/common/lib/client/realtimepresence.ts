@@ -13,12 +13,7 @@ import ChannelStateChange from './channelstatechange';
 import { CipherOptions } from '../types/message';
 import { ErrCallback } from '../../types/utils';
 import { PaginatedResult } from './paginatedresource';
-
-interface RealtimePresenceParams {
-  waitForSync?: boolean;
-  clientId?: string;
-  connectionId?: string;
-}
+import { PresenceMap, RealtimePresenceParams } from './presencemap';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -61,23 +56,6 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
       break;
     default:
       callback(ErrorInfo.fromValues(channel.invalidStateError()));
-  }
-}
-
-function newerThan(item: PresenceMessage, existing: PresenceMessage) {
-  /* RTP2b1: if either is synthesised, compare by timestamp */
-  if (item.isSynthesized() || existing.isSynthesized()) {
-    // RTP2b1a: if equal, prefer the newly-arrived one
-    return (item.timestamp as number) >= (existing.timestamp as number);
-  }
-
-  /* RTP2b2 */
-  const itemOrderings = item.parseId(),
-    existingOrderings = existing.parseId();
-  if (itemOrderings.msgSerial === existingOrderings.msgSerial) {
-    return itemOrderings.index > existingOrderings.index;
-  } else {
-    return itemOrderings.msgSerial > existingOrderings.msgSerial;
   }
 }
 
@@ -425,16 +403,8 @@ class RealtimePresence extends EventEmitter {
   }
 
   _ensureMyMembersPresent(): void {
-    const myMembers = this._myMembers,
-      reenterCb = (err?: ErrorInfo | null) => {
-        if (err) {
-          const msg = 'Presence auto-re-enter failed: ' + err.toString();
-          const wrappedErr = new ErrorInfo(msg, 91004, 400);
-          Logger.logAction(this.logger, Logger.LOG_ERROR, 'RealtimePresence._ensureMyMembersPresent()', msg);
-          const change = new ChannelStateChange(this.channel.state, this.channel.state, true, false, wrappedErr);
-          this.channel.emit('update', change);
-        }
-      };
+    const myMembers = this._myMembers;
+    const connId = this.channel.connectionManager.connectionId;
 
     for (const memberKey in myMembers.map) {
       const entry = myMembers.map[memberKey];
@@ -446,7 +416,19 @@ class RealtimePresence extends EventEmitter {
       );
       // RTP17g: Send ENTER containing the member id, clientId and data
       // attributes.
-      Utils.whenPromiseSettles(this._enterOrUpdateClient(entry.id, entry.clientId, entry.data, 'enter'), reenterCb);
+      // RTP17g1: suppress id if the connId has changed
+      const id = entry.connectionId === connId ? entry.id : undefined;
+      this._enterOrUpdateClient(id, entry.clientId, entry.data, 'enter').catch((err) => {
+        const wrappedErr = new ErrorInfo('Presence auto re-enter failed', 91004, 400, err);
+        Logger.logAction(
+          this.logger,
+          Logger.LOG_ERROR,
+          'RealtimePresence._ensureMyMembersPresent()',
+          'Presence auto re-enter failed; reason = ' + Utils.inspectError(err),
+        );
+        const change = new ChannelStateChange(this.channel.state, this.channel.state, true, false, wrappedErr);
+        this.channel.emit('update', change);
+      });
     }
   }
 
@@ -484,178 +466,6 @@ class RealtimePresence extends EventEmitter {
     const event = args[0];
     const listener = args[1];
     this.subscriptions.off(event, listener);
-  }
-}
-
-class PresenceMap extends EventEmitter {
-  map: Record<string, PresenceMessage>;
-  residualMembers: Record<string, PresenceMessage> | null;
-  syncInProgress: boolean;
-  presence: RealtimePresence;
-  memberKey: (item: PresenceMessage) => string;
-
-  constructor(presence: RealtimePresence, memberKey: (item: PresenceMessage) => string) {
-    super(presence.logger);
-    this.presence = presence;
-    this.map = Object.create(null);
-    this.syncInProgress = false;
-    this.residualMembers = null;
-    this.memberKey = memberKey;
-  }
-
-  get(key: string) {
-    return this.map[key];
-  }
-
-  getClient(clientId: string) {
-    const map = this.map,
-      result = [];
-    for (const key in map) {
-      const item = map[key];
-      if (item.clientId == clientId && item.action != 'absent') result.push(item);
-    }
-    return result;
-  }
-
-  list(params: RealtimePresenceParams) {
-    const map = this.map,
-      clientId = params && params.clientId,
-      connectionId = params && params.connectionId,
-      result = [];
-
-    for (const key in map) {
-      const item = map[key];
-      if (item.action === 'absent') continue;
-      if (clientId && clientId != item.clientId) continue;
-      if (connectionId && connectionId != item.connectionId) continue;
-      result.push(item);
-    }
-    return result;
-  }
-
-  put(item: PresenceMessage) {
-    if (item.action === 'enter' || item.action === 'update') {
-      item = presenceMessageFromValues(item);
-      item.action = 'present';
-    }
-    const map = this.map,
-      key = this.memberKey(item);
-    /* we've seen this member, so do not remove it at the end of sync */
-    if (this.residualMembers) delete this.residualMembers[key];
-
-    /* compare the timestamp of the new item with any existing member (or ABSENT witness) */
-    const existingItem = map[key];
-    if (existingItem && !newerThan(item, existingItem)) {
-      return false;
-    }
-    map[key] = item;
-    return true;
-  }
-
-  values() {
-    const map = this.map,
-      result = [];
-    for (const key in map) {
-      const item = map[key];
-      if (item.action != 'absent') result.push(item);
-    }
-    return result;
-  }
-
-  remove(item: PresenceMessage) {
-    const map = this.map,
-      key = this.memberKey(item);
-    const existingItem = map[key];
-
-    if (existingItem && !newerThan(item, existingItem)) {
-      return false;
-    }
-
-    /* RTP2f */
-    if (this.syncInProgress) {
-      item = presenceMessageFromValues(item);
-      item.action = 'absent';
-      map[key] = item;
-    } else {
-      delete map[key];
-    }
-
-    return true;
-  }
-
-  startSync() {
-    const map = this.map,
-      syncInProgress = this.syncInProgress;
-    Logger.logAction(
-      this.logger,
-      Logger.LOG_MINOR,
-      'PresenceMap.startSync()',
-      'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
-    );
-    /* we might be called multiple times while a sync is in progress */
-    if (!this.syncInProgress) {
-      this.residualMembers = Utils.copy(map);
-      this.setInProgress(true);
-    }
-  }
-
-  endSync() {
-    const map = this.map,
-      syncInProgress = this.syncInProgress;
-    Logger.logAction(
-      this.logger,
-      Logger.LOG_MINOR,
-      'PresenceMap.endSync()',
-      'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
-    );
-    if (syncInProgress) {
-      /* we can now strip out the ABSENT members, as we have
-       * received all of the out-of-order sync messages */
-      for (const memberKey in map) {
-        const entry = map[memberKey];
-        if (entry.action === 'absent') {
-          delete map[memberKey];
-        }
-      }
-      /* any members that were present at the start of the sync,
-       * and have not been seen in sync, can be removed, and leave events emitted */
-      this.presence._synthesizeLeaves(Utils.valuesArray(this.residualMembers as Record<string, PresenceMessage>));
-      for (const memberKey in this.residualMembers) {
-        delete map[memberKey];
-      }
-      this.residualMembers = null;
-
-      /* finish, notifying any waiters */
-      this.setInProgress(false);
-    }
-    this.emit('sync');
-  }
-
-  waitSync(callback: () => void) {
-    const syncInProgress = this.syncInProgress;
-    Logger.logAction(
-      this.logger,
-      Logger.LOG_MINOR,
-      'PresenceMap.waitSync()',
-      'channel = ' + this.presence.channel.name + '; syncInProgress = ' + syncInProgress,
-    );
-    if (!syncInProgress) {
-      callback();
-      return;
-    }
-    this.once('sync', callback);
-  }
-
-  clear() {
-    this.map = {};
-    this.setInProgress(false);
-    this.residualMembers = null;
-  }
-
-  setInProgress(inProgress: boolean) {
-    Logger.logAction(this.logger, Logger.LOG_MICRO, 'PresenceMap.setInProgress()', 'inProgress = ' + inProgress);
-    this.syncInProgress = inProgress;
-    this.presence.syncComplete = !inProgress;
   }
 }
 

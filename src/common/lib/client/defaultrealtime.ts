@@ -11,6 +11,7 @@ import RealtimePresence from './realtimepresence';
 import { DefaultPresenceMessage } from '../types/defaultpresencemessage';
 import WebSocketTransport from '../transport/websockettransport';
 import { FilteredSubscriptions } from './filteredsubscriptions';
+import { PresenceMap } from './presencemap';
 import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
@@ -69,4 +70,5 @@ export class DefaultRealtime extends BaseRealtime {
 
   // Used by tests
   static _Http = Http;
+  static _PresenceMap = PresenceMap;
 }

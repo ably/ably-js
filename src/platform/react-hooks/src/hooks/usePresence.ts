@@ -73,9 +73,11 @@ export function usePresence<T = any>(
     return () => {
       // here we use the ably.connection.state property, which upon this cleanup function call
       // will have the current connection state for that connection, thanks to us accessing the Ably instance here by reference.
-      // if the connection is in one of the inactive states or the channel is not attached, a presence.leave call will produce an exception.
-      // so we only leave presence in other cases.
-      if (channel.state === 'attached' && !INACTIVE_CONNECTION_STATES.includes(ably.connection.state)) {
+      // if the connection is in one of the inactive states or the channel is not attached/attaching, a presence.leave call will produce an exception.
+      // so we should only leave presence in other cases.
+      const canLeaveFromConnectionState = !INACTIVE_CONNECTION_STATES.includes(ably.connection.state);
+      const canLeaveFromChannelState = ['attached', 'attaching'].includes(channel.state);
+      if (canLeaveFromChannelState && canLeaveFromConnectionState) {
         channel.presence.leave();
       }
     };

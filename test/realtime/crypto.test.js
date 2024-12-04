@@ -395,6 +395,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               helper.recordPrivateApi('call.msgpack.decode');
               var messageFromMsgpack = Message.fromValues(
                 msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
+                { stringifyAction: true },
               );
 
               try {
@@ -439,6 +440,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               helper.recordPrivateApi('call.msgpack.decode');
               var messageFromMsgpack = Message.fromValues(
                 msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
+                { stringifyAction: true },
               );
 
               try {

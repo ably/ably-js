@@ -676,6 +676,26 @@ The issue is coming from the fact that when using App Router specifically depend
 Using `serverComponentsExternalPackages` opt-outs from using Next.js bundling for specific packages and uses native Node.js `require` instead.
 This is a common problem in App Router for a number of packages (for example, see next.js issue [vercel/next.js#52876](https://github.com/vercel/next.js/issues/52876)), and using `serverComponentsExternalPackages` is the recommended approach here.
 
+#### "Connection limit exceeded" error during development
+
+If you're encountering a "Connection limit exceeded" error when trying to connect to Ably servers during the development of your application, and you notice spikes or linear increases in the connection count on the Ably dashboard for your app, this may be due to one of the following reasons:
+
+- If you're using Next.js, your `Ably.Realtime` client instance may be created multiple times on the server side (i.e., in a Node.js process) as you're developing your app, due to Next.js server side rendering your components. Note that even for "Client Components" (i.e., components with the 'use client' directive), [Next.js may still run the component code on the server in order to pre-render HTML](https://nextjs.org/docs/app/building-your-application/rendering/client-components#how-are-client-components-rendered). Depending on your client configuration options, those clients may also successfully open a connection to Ably servers from that Node.js process, which won't close until you restart your development server.
+
+  The simplest fix is to use the `autoConnect` client option and check if the client is created on the server side with a simple window object check, like this:
+
+  ```typescript
+  const client = new Ably.Realtime({ key: 'your-ably-api-key', autoConnect: typeof window !== 'undefined' });
+  ```
+
+  This will prevent the client from connecting to Ably servers if it is created on the server side, while not affecting your client side components.
+
+- If you're using any React-based framework, you may be recreating the `Ably.Realtime` client instance on every component re-render. To avoid this, and to prevent potentially reaching the maximum connections limit on your account, move the client instantiation (`new Ably.Realtime`) outside of your components. You can find an example in our [React docs](./docs/react.md#Usage).
+
+- The connection limit error can be caused by the Hot Reloading mechanism of your development environment (called Fast Refresh in newer Next.js versions, or more generally, Hot Module Replacement - HMR). When you edit and save a file that contains a `new Ably.Realtime()` call in an environment that supports HMR (such as React, Vite, or Next.js apps), the file gets refreshed and creates a new `Ably.Realtime` client instance. However, the previous client remains in memory, unaware of the replacement, and stays connected to Ably's realtime systems. As a result, your connection count will keep increasing with each file edit as new clients are created. This only resets when you manually refresh the browser page, which closes all clients. This behavior applies to any development environment with an HMR mechanism implemented.
+
+  The solution is simple: move the `new Ably.Realtime()` call to a separate file, such as `ably-client.js`, and export the client instance from there. This way, the client instance will only be recreated when you specifically make changes to the `ably-client.js` file, which should be far less frequent than changes in the rest of the codebase.
+
 ## Contributing
 
 For guidance on how to contribute to this project, see the [CONTRIBUTING.md](CONTRIBUTING.md).

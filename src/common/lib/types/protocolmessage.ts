@@ -103,15 +103,24 @@ export function fromDeserialized(
   liveObjectsPlugin: typeof LiveObjectsPlugin | null,
 ): ProtocolMessage {
   const error = deserialized.error;
-  if (error) deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
+  if (error) {
+    deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
+  }
+
   const messages = deserialized.messages as Message[];
-  if (messages) for (let i = 0; i < messages.length; i++) messages[i] = messageFromValues(messages[i]);
+  if (messages) {
+    for (let i = 0; i < messages.length; i++) {
+      messages[i] = messageFromValues(messages[i], { stringifyAction: true });
+    }
+  }
 
   const presence = presenceMessagePlugin ? (deserialized.presence as PresenceMessage[]) : undefined;
   if (presenceMessagePlugin) {
-    if (presence && presenceMessagePlugin)
-      for (let i = 0; i < presence.length; i++)
+    if (presence && presenceMessagePlugin) {
+      for (let i = 0; i < presence.length; i++) {
         presence[i] = presenceMessagePlugin.presenceMessageFromValues(presence[i], true);
+      }
+    }
   }
 
   let state: LiveObjectsPlugin.StateMessage[] | undefined = undefined;
