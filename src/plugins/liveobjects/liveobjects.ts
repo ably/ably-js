@@ -4,7 +4,7 @@ import type EventEmitter from 'common/lib/util/eventemitter';
 import type * as API from '../../../ably';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { LiveObject, LiveObjectUpdate } from './liveobject';
+import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage, StateOperationAction } from './statemessage';
 import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
@@ -193,7 +193,7 @@ export class LiveObjects {
     }
 
     const receivedObjectIds = new Set<string>();
-    const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate }[] = [];
+    const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate | LiveObjectUpdateNoop }[] = [];
 
     for (const [objectId, entry] of this._syncLiveObjectsDataPool.entries()) {
       receivedObjectIds.add(objectId);
@@ -253,6 +253,7 @@ export class LiveObjects {
         case StateOperationAction.MAP_SET:
         case StateOperationAction.MAP_REMOVE:
         case StateOperationAction.COUNTER_INC:
+        case StateOperationAction.OBJECT_DELETE:
           // we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
           // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
           // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,

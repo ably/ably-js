@@ -515,6 +515,162 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         { name: 'maxSafeIntegerCounter', count: Number.MAX_SAFE_INTEGER },
         { name: 'negativeMaxSafeIntegerCounter', count: -Number.MAX_SAFE_INTEGER },
       ];
+
+      const stateSyncSequenceScanarios = [
+        {
+          description: 'STATE_SYNC sequence with state object "tombstone" property creates tombstoned object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            const mapId = liveObjectsHelper.fakeMapObjectId();
+            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            await liveObjectsHelper.processStateObjectMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              // add state objects with tombstone=true
+              state: [
+                liveObjectsHelper.mapObject({
+                  objectId: mapId,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: true,
+                  initialEntries: {},
+                }),
+                liveObjectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: true,
+                  initialCount: 1,
+                }),
+                liveObjectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    map: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: mapId } },
+                    counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'bar' } },
+                  },
+                }),
+              ],
+            });
+
+            expect(
+              root.get('map'),
+              'Check map does not exist on root after STATE_SYNC with "tombstone=true" for a map object',
+            ).to.not.exist;
+            expect(
+              root.get('counter'),
+              'Check counter does not exist on root after STATE_SYNC with "tombstone=true" for a counter object',
+            ).to.not.exist;
+            // control check that STATE_SYNC was applied at all
+            expect(root.get('foo'), 'Check property exists on root after STATE_SYNC').to.exist;
+          },
+        },
+
+        {
+          description: 'STATE_SYNC sequence with state object "tombstone" property deletes existing object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName, channel } = ctx;
+
+            const { objectId: counterId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp({ count: 1 }),
+            });
+
+            expect(root.get('counter'), 'Check counter exists on root before STATE_SYNC sequence with "tombstone=true"')
+              .to.exist;
+
+            // inject a STATE_SYNC sequence where a counter is now tombstoned
+            await liveObjectsHelper.processStateObjectMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              state: [
+                liveObjectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: true,
+                  initialCount: 1,
+                }),
+                liveObjectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'bar' } },
+                  },
+                }),
+              ],
+            });
+
+            expect(
+              root.get('counter'),
+              'Check counter does not exist on root after STATE_SYNC with "tombstone=true" for an existing counter object',
+            ).to.not.exist;
+            // control check that STATE_SYNC was applied at all
+            expect(root.get('foo'), 'Check property exists on root after STATE_SYNC').to.exist;
+          },
+        },
+
+        {
+          description:
+            'STATE_SYNC sequence with state object "tombstone" property triggers subscription callback for existing object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName, channel } = ctx;
+
+            const { objectId: counterId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp({ count: 1 }),
+            });
+
+            const counterSubPromise = new Promise((resolve, reject) =>
+              root.get('counter').subscribe((update) => {
+                try {
+                  expect(update).to.deep.equal(
+                    { update: { inc: -1 } },
+                    'Check counter subscription callback is called with an expected update object after STATE_SYNC sequence with "tombstone=true"',
+                  );
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              }),
+            );
+
+            // inject a STATE_SYNC sequence where a counter is now tombstoned
+            await liveObjectsHelper.processStateObjectMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              state: [
+                liveObjectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: true,
+                  initialCount: 1,
+                }),
+                liveObjectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
+                  },
+                }),
+              ],
+            });
+
+            await counterSubPromise;
+          },
+        },
+      ];
+
       const applyOperationsScenarios = [
         {
           description: 'can apply MAP_CREATE with primitives state operation messages',
@@ -1249,24 +1405,337 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             );
           },
         },
+
+        {
+          description: 'can apply OBJECT_DELETE state operation messages',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName, channel } = ctx;
+
+            // create initial objects and set on root
+            const { objectId: mapObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map',
+              createOp: liveObjectsHelper.mapCreateOp(),
+            });
+            const { objectId: counterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+
+            expect(root.get('map'), 'Check map exists on root before OBJECT_DELETE').to.exist;
+            expect(root.get('counter'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
+
+            // inject OBJECT_DELETE
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: mapObjectId })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterObjectId })],
+            });
+
+            expect(root.get('map'), 'Check map is not accessible on root after OBJECT_DELETE').to.not.exist;
+            expect(root.get('counter'), 'Check counter is not accessible on root after OBJECT_DELETE').to.not.exist;
+          },
+        },
+
+        {
+          description: 'OBJECT_DELETE for unknown object id creates zero-value tombstoned object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            // inject OBJECT_DELETE. should create a zero-value tombstoned object which can't be modified
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterId })],
+            });
+
+            // try to create and set tombstoned object on root
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('bbb', 0, 0),
+              siteCode: 'bbb',
+              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('bbb', 1, 0),
+              siteCode: 'bbb',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
+            });
+
+            expect(root.get('counter'), 'Check counter is not accessible on root').to.not.exist;
+          },
+        },
+
+        {
+          description:
+            'OBJECT_DELETE state operation messages are applied based on the site timeserials vector of the object',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            // need to use multiple objects as OBJECT_DELETE op can only be applied once to an object
+            const counterIds = [
+              liveObjectsHelper.fakeCounterObjectId(),
+              liveObjectsHelper.fakeCounterObjectId(),
+              liveObjectsHelper.fakeCounterObjectId(),
+              liveObjectsHelper.fakeCounterObjectId(),
+              liveObjectsHelper.fakeCounterObjectId(),
+            ];
+            await Promise.all(
+              counterIds.map(async (counterId, i) => {
+                // create objects and set them on root with forged timeserials
+                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                  channel,
+                  serial: lexicoTimeserial('bbb', 1, 0),
+                  siteCode: 'bbb',
+                  state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+                });
+                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                  channel,
+                  serial: lexicoTimeserial('aaa', i, 0),
+                  siteCode: 'aaa',
+                  state: [
+                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: counterId, data: { objectId: counterId } }),
+                  ],
+                });
+              }),
+            );
+
+            // inject OBJECT_DELETE operations with various timeserial values
+            for (const [i, { serial, siteCode }] of [
+              { serial: lexicoTimeserial('bbb', 0, 0), siteCode: 'bbb' }, // existing site, earlier CGO, not applied
+              { serial: lexicoTimeserial('bbb', 1, 0), siteCode: 'bbb' }, // existing site, same CGO, not applied
+              { serial: lexicoTimeserial('bbb', 2, 0), siteCode: 'bbb' }, // existing site, later CGO, applied
+              { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
+              { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
+            ].entries()) {
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial,
+                siteCode,
+                state: [liveObjectsHelper.objectDeleteOp({ objectId: counterIds[i] })],
+              });
+            }
+
+            // check only operations with correct timeserials were applied
+            const expectedCounters = [
+              { exists: true },
+              { exists: true },
+              { exists: false }, // OBJECT_DELETE applied
+              { exists: false }, // OBJECT_DELETE applied
+              { exists: false }, // OBJECT_DELETE applied
+            ];
+
+            for (const [i, counterId] of counterIds.entries()) {
+              const { exists } = expectedCounters[i];
+
+              if (exists) {
+                expect(
+                  root.get(counterId),
+                  `Check counter #${i + 1} exists on root as OBJECT_DELETE op was not applied`,
+                ).to.exist;
+              } else {
+                expect(
+                  root.get(counterId),
+                  `Check counter #${i + 1} does not exist on root as OBJECT_DELETE op was applied`,
+                ).to.not.exist;
+              }
+            }
+          },
+        },
+
+        {
+          description: 'OBJECT_DELETE triggers subscription callback with deleted data',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName, channel } = ctx;
+
+            // create initial objects and set on root
+            const { objectId: mapObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map',
+              createOp: liveObjectsHelper.mapCreateOp({
+                entries: {
+                  foo: { data: { value: 'bar' } },
+                  baz: { data: { value: 1 } },
+                },
+              }),
+            });
+            const { objectId: counterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp({ count: 1 }),
+            });
+
+            const mapSubPromise = new Promise((resolve, reject) =>
+              root.get('map').subscribe((update) => {
+                try {
+                  expect(update).to.deep.equal(
+                    { update: { foo: 'removed', baz: 'removed' } },
+                    'Check map subscription callback is called with an expected update object after OBJECT_DELETE operation',
+                  );
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              }),
+            );
+            const counterSubPromise = new Promise((resolve, reject) =>
+              root.get('counter').subscribe((update) => {
+                try {
+                  expect(update).to.deep.equal(
+                    { update: { inc: -1 } },
+                    'Check counter subscription callback is called with an expected update object after OBJECT_DELETE operation',
+                  );
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              }),
+            );
+
+            // inject OBJECT_DELETE
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: mapObjectId })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterObjectId })],
+            });
+
+            await Promise.all([mapSubPromise, counterSubPromise]);
+          },
+        },
+
+        {
+          description: 'MAP_SET with reference to a tombstoned object results in undefined value on key',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName, channel } = ctx;
+
+            // create initial objects and set on root
+            const { objectId: counterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'foo',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+
+            expect(root.get('foo'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
+
+            // inject OBJECT_DELETE
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterObjectId })],
+            });
+
+            // set tombstoned counter to another key on root
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [
+                liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'bar', data: { objectId: counterObjectId } }),
+              ],
+            });
+
+            expect(root.get('bar'), 'Check counter is not accessible on new key in root after OBJECT_DELETE').to.not
+              .exist;
+          },
+        },
+
+        {
+          description: 'state operation message on a tombstoned object does not revive it',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName, channel } = ctx;
+
+            // create initial objects and set on root
+            const { objectId: mapId1 } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map1',
+              createOp: liveObjectsHelper.mapCreateOp(),
+            });
+            const { objectId: mapId2 } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map2',
+              createOp: liveObjectsHelper.mapCreateOp({ entries: { foo: { data: { value: 'bar' } } } }),
+            });
+            const { objectId: counterId1 } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter1',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+
+            expect(root.get('map1'), 'Check map1 exists on root before OBJECT_DELETE').to.exist;
+            expect(root.get('map2'), 'Check map2 exists on root before OBJECT_DELETE').to.exist;
+            expect(root.get('counter1'), 'Check counter1 exists on root before OBJECT_DELETE').to.exist;
+
+            // inject OBJECT_DELETE
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: mapId1 })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: mapId2 })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 2, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterId1 })],
+            });
+
+            // inject state ops on tombstoned objects
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 3, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: mapId1, key: 'baz', data: { value: 'qux' } })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 4, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapRemoveOp({ objectId: mapId2, key: 'foo' })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 5, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.counterIncOp({ objectId: counterId1, amount: 1 })],
+            });
+
+            // objects should still be deleted
+            expect(root.get('map1'), 'Check map1 does not exist on root after OBJECT_DELETE and another state op').to
+              .not.exist;
+            expect(root.get('map2'), 'Check map2 does not exist on root after OBJECT_DELETE and another state op').to
+              .not.exist;
+            expect(
+              root.get('counter1'),
+              'Check counter1 does not exist on root after OBJECT_DELETE and another state op',
+            ).to.not.exist;
+          },
+        },
       ];
-
-      /** @nospec */
-      forScenarios(applyOperationsScenarios, async function (helper, scenario) {
-        const liveObjectsHelper = new LiveObjectsHelper(helper);
-        const client = RealtimeWithLiveObjects(helper);
-
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channelName = scenario.description;
-          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
-
-          await channel.attach();
-          const root = await liveObjects.getRoot();
-
-          await scenario.action({ root, liveObjectsHelper, channelName, channel });
-        }, client);
-      });
 
       const applyOperationsDuringSyncScenarios = [
         {
@@ -1590,23 +2059,24 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       ];
 
       /** @nospec */
-      forScenarios(applyOperationsDuringSyncScenarios, async function (helper, scenario) {
-        const liveObjectsHelper = new LiveObjectsHelper(helper);
-        const client = RealtimeWithLiveObjects(helper);
+      forScenarios(
+        [...stateSyncSequenceScanarios, ...applyOperationsScenarios, ...applyOperationsDuringSyncScenarios],
+        async function (helper, scenario) {
+          const liveObjectsHelper = new LiveObjectsHelper(helper);
+          const client = RealtimeWithLiveObjects(helper);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channelName = scenario.description;
-          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const channelName = scenario.description;
+            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+            const liveObjects = channel.liveObjects;
 
-          await channel.attach();
-          // wait for getRoot() to resolve so the initial SYNC sequence is completed,
-          // as we're going to initiate a new one to test applying operations during SYNC sequence.
-          const root = await liveObjects.getRoot();
+            await channel.attach();
+            const root = await liveObjects.getRoot();
 
-          await scenario.action({ root, liveObjectsHelper, channelName, channel });
-        }, client);
-      });
+            await scenario.action({ root, liveObjectsHelper, channelName, channel });
+          }, client);
+        },
+      );
 
       const subscriptionCallbacksScenarios = [
         {
