@@ -5,6 +5,7 @@ import { StateMessage, StateObject, StateOperation } from './statemessage';
 
 enum LiveObjectEvents {
   Updated = 'Updated',
+  Valid = 'Valid',
 }
 
 export interface LiveObjectData {
@@ -25,6 +26,17 @@ export interface SubscribeResponse {
   unsubscribe(): void;
 }
 
+export interface OnEventResponse {
+  off(): void;
+}
+
+/**
+ * Provides an interface for a buffered operation with the ability to cancel it, regardless of the buffering mechanism used
+ */
+export interface BufferedOperation {
+  cancel(): void;
+}
+
 export abstract class LiveObject<
   TData extends LiveObjectData = LiveObjectData,
   TUpdate extends LiveObjectUpdate = LiveObjectUpdate,
@@ -39,6 +51,7 @@ export abstract class LiveObject<
   protected _dataRef: TData;
   protected _siteTimeserials: Record<string, string>;
   protected _createOperationIsMerged: boolean;
+  protected _bufferedOperations: Set<BufferedOperation>;
 
   protected constructor(
     protected _liveObjects: LiveObjects,
@@ -51,6 +64,7 @@ export abstract class LiveObject<
     this._objectId = objectId;
     // use empty timeserials vector by default, so any future operation can be applied to this object
     this._siteTimeserials = {};
+    this._bufferedOperations = new Set();
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
@@ -100,6 +114,42 @@ export abstract class LiveObject<
   }
 
   /**
+   * Object is considered a "valid object" if we have seen the create operation for that object.
+   *
+   * Non-valid objects should be treated as though they don't exist from the perspective of the public API for the end users,
+   * i.e. the public access API that would return this object instead should return an `undefined`. In other words, non-valid
+   * objects are not surfaced to the end users and they're not able to interact with it.
+   *
+   * Once the create operation for the object has been seen and merged, the object becomes valid and can be exposed to the end users.
+   *
+   * @internal
+   */
+  isValid(): boolean {
+    return this._createOperationIsMerged;
+  }
+
+  /**
+   * @internal
+   */
+  onceValid(listener: () => void): OnEventResponse {
+    this._eventEmitter.once(LiveObjectEvents.Valid, listener);
+
+    const off = () => {
+      this._eventEmitter.off(LiveObjectEvents.Valid, listener);
+    };
+
+    return { off };
+  }
+
+  /**
+   * @internal
+   */
+  cancelBufferedOperations(): void {
+    this._bufferedOperations.forEach((x) => x.cancel());
+    this._bufferedOperations.clear();
+  }
+
+  /**
    * Returns true if the given origin timeserial indicates that the operation to which it belongs should be applied to the object.
    *
    * An operation should be applied if the origin timeserial is strictly greater than the timeserial in the site timeserials for the same site.
@@ -116,6 +166,16 @@ export abstract class LiveObject<
 
     const siteTimeserial = this._siteTimeserials[opSiteCode];
     return !siteTimeserial || opOriginTimeserial > siteTimeserial;
+  }
+
+  protected _setCreateOperationIsMerged(createOperationIsMerged: boolean): void {
+    const shouldNotifyValid =
+      createOperationIsMerged === true && this._createOperationIsMerged !== createOperationIsMerged;
+    this._createOperationIsMerged = createOperationIsMerged;
+
+    if (shouldNotifyValid) {
+      this._eventEmitter.emit(LiveObjectEvents.Valid);
+    }
   }
 
   private _createObjectId(): string {

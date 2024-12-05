@@ -149,6 +149,8 @@ export class LiveObjects {
   private _startNewSync(syncId?: string, syncCursor?: string): void {
     // need to discard all buffered state operation messages on new sync start
     this._bufferedStateOperations = [];
+    // cancel any buffered operations for all objects in the pool, as we're overriding the current state and they will no longer be valid
+    this._liveObjectsPool.cancelBufferedOperations();
     this._syncLiveObjectsDataPool.reset();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;

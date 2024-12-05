@@ -62,6 +62,10 @@ export class LiveObjectsPool {
     this.set(objectId, zeroValueObject);
   }
 
+  cancelBufferedOperations(): void {
+    this._pool.forEach((x) => x.cancelBufferedOperations());
+  }
+
   private _getInitialPool(): Map<string, LiveObject> {
     const pool = new Map<string, LiveObject>();
     const root = LiveMap.zeroValue(this._liveObjects, ROOT_OBJECT_ID);

@@ -1,7 +1,7 @@
 import deepEqual from 'deep-equal';
 
 import type * as API from '../../../ably';
-import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
+import { BufferedOperation, LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import {
   MapSemantics,
@@ -77,10 +77,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
   /**
    * Returns the value associated with the specified key in the underlying Map object.
-   * If no element is associated with the specified key, undefined is returned.
-   * If the value that is associated to the provided key is an objectId string of another Live Object,
-   * then you will get a reference to that Live Object if it exists in the local pool, or undefined otherwise.
-   * If the value is not an objectId, then you will get that value.
+   *
+   * - If no entry is associated with the specified key, `undefined` is returned.
+   * - If map entry is tombstoned (deleted), `undefined` is returned.
+   * - If the value associated with the provided key is an objectId string of another Live Object, a reference to that Live Object
+   * is returned, provided it exists in the local pool and is valid. Otherwise, `undefined` is returned.
+   * - If the value is not an objectId, then that value is returned.
    */
   // force the key to be of type string as we only allow strings as key in a map
   get<TKey extends keyof T & string>(key: TKey): T[TKey] {
@@ -94,14 +96,26 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return undefined as T[TKey];
     }
 
-    // data exists for non-tombstoned elements
+    // data always exists for non-tombstoned elements
     const data = element.data!;
 
     if ('value' in data) {
+      // map entry has a primitive type value, just return it as is.
       return data.value as T[TKey];
-    } else {
-      return this._liveObjects.getPool().get(data.objectId) as T[TKey];
     }
+
+    // map entry points to another object, get it from the pool
+    const refObject: LiveObject | undefined = this._liveObjects.getPool().get(data.objectId);
+    if (!refObject) {
+      return undefined as T[TKey];
+    }
+
+    if (!refObject.isValid()) {
+      // non-valid objects must not be surfaced to the end users
+      return undefined as T[TKey];
+    }
+
+    return refObject as API.LiveObject as T[TKey];
   }
 
   size(): number {
@@ -109,6 +123,13 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     for (const value of this._dataRef.data.values()) {
       if (value.tombstone === true) {
         // should not count removed entries
+        continue;
+      }
+
+      // data always exists for non-tombstoned elements
+      const data = value.data!;
+      if ('objectId' in data && !this._liveObjects.getPool().get(data.objectId)?.isValid()) {
+        // should not count non-valid objects
         continue;
       }
 
@@ -144,6 +165,16 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // should update stored site timeserial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
     this._siteTimeserials[opSiteCode] = opOriginTimeserial;
+
+    if (msg.isMapSetWithObjectIdReference() && !this._liveObjects.getPool().get(op.mapOp?.data?.objectId!)?.isValid()) {
+      // invalid objects must not be surfaced to the end users, so we cannot apply this MAP_SET operation on the map yet,
+      // as it will set the key to point to the invalid object. we also can't just update the key on a map right now, as
+      // that would require us to send an update event for the key, and the user will end up with a key on map which got
+      // updated to return undefined, which is undesired. instead we should buffer the MAP_SET operation until referenced
+      // object becomes valid
+      this._handleMapSetWithInvalidObjectReference(op.mapOp!, opOriginTimeserial);
+      return;
+    }
 
     let update: LiveMapUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
@@ -231,7 +262,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     const previousDataRef = this._dataRef;
     // override all relevant data for this object with data from the state object
-    this._createOperationIsMerged = false;
+    this._setCreateOperationIsMerged(false);
     this._dataRef = this._liveMapDataFromMapEntries(stateObject.map?.entries ?? {});
     // should default to empty map if site timeserials do not exist on the state object, so that any future operation can be applied to this object
     this._siteTimeserials = stateObject.siteTimeserials ?? {};
@@ -331,7 +362,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       Object.assign(aggregatedUpdate.update, update.update);
     });
 
-    this._createOperationIsMerged = true;
+    this._setCreateOperationIsMerged(true);
 
     return aggregatedUpdate;
   }
@@ -342,6 +373,38 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       50000,
       500,
     );
+  }
+
+  private _handleMapSetWithInvalidObjectReference(op: StateMapOp, opOriginTimeserial: string | undefined): void {
+    const refObjectId = op?.data?.objectId!;
+    // ensure referenced object always exist so we can subscribe to it becoming valid
+    this._liveObjects.getPool().createZeroValueObjectIfNotExists(refObjectId);
+
+    // wait until the referenced object becomes valid, then apply MAP_SET operation,
+    // as it will now point to the existing valid object
+    const { off } = this._liveObjects
+      .getPool()
+      .get(refObjectId)!
+      .onceValid(() => {
+        try {
+          const update = this._applyMapSet(op, opOriginTimeserial);
+          this.notifyUpdated(update);
+        } catch (error) {
+          this._client.Logger.logAction(
+            this._client.logger,
+            this._client.Logger.LOG_ERROR,
+            `LiveMap._handleMapSetWithInvalidObjectReference()`,
+            `error applying buffered MAP_SET operation: ${this._client.Utils.inspectError(error)}`,
+          );
+        } finally {
+          this._bufferedOperations.delete(bufferedOperation);
+        }
+      });
+
+    const bufferedOperation: BufferedOperation = {
+      cancel: () => off(),
+    };
+    this._bufferedOperations.add(bufferedOperation);
   }
 
   private _applyMapCreate(op: StateOperation): LiveMapUpdate | LiveObjectUpdateNoop {
@@ -395,11 +458,6 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     let liveData: StateData;
     if (!Utils.isNil(op.data.objectId)) {
       liveData = { objectId: op.data.objectId } as ObjectIdStateData;
-      // this MAP_SET op is setting a key to point to another object via its object id,
-      // but it is possible that we don't have the corresponding object in the pool yet (for example, we haven't seen the *_CREATE op for it).
-      // we don't want to return undefined from this map's .get() method even if we don't have the object,
-      // so instead we create a zero-value object for that object id if it not exists.
-      this._liveObjects.getPool().createZeroValueObjectIfNotExists(op.data.objectId);
     } else {
       liveData = { encoding: op.data.encoding, value: op.data.value } as ValueStateData;
     }

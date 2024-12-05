@@ -704,28 +704,33 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             }
 
             // check only operations with correct timeserials were applied
-            const expectedMapValues = [
-              { foo: 'bar' },
-              { foo: 'bar' },
-              { foo: 'bar', baz: 'qux' }, // applied MAP_CREATE
-              { foo: 'bar', baz: 'qux' }, // applied MAP_CREATE
-              { foo: 'bar', baz: 'qux' }, // applied MAP_CREATE
+            const expectedMaps = [
+              { exists: false }, // MAP_CREATE not applied, object is not valid and we should get undefined
+              { exists: false }, // MAP_CREATE not applied, object is not valid and we should get undefined
+              { exists: true, data: { foo: 'bar', baz: 'qux' } }, // applied MAP_CREATE, object is valid
+              { exists: true, data: { foo: 'bar', baz: 'qux' } }, // applied MAP_CREATE, object is valid
+              { exists: true, data: { foo: 'bar', baz: 'qux' } }, // applied MAP_CREATE, object is valid
             ];
 
             for (const [i, mapId] of mapIds.entries()) {
-              const expectedMapValue = expectedMapValues[i];
-              const expectedKeysCount = Object.keys(expectedMapValue).length;
+              const expectedMap = expectedMaps[i];
+              if (!expectedMap.exists) {
+                expect(root.get(mapId), `Check map #${i + 1} does not exist on root as MAP_CREATE op was not applied`)
+                  .to.not.exist;
+              } else {
+                const expectedKeysCount = Object.keys(expectedMap.data).length;
 
-              expect(root.get(mapId).size()).to.equal(
-                expectedKeysCount,
-                `Check map #${i + 1} has expected number of keys after MAP_CREATE ops`,
-              );
-              Object.entries(expectedMapValue).forEach(([key, value]) => {
-                expect(root.get(mapId).get(key)).to.equal(
-                  value,
-                  `Check map #${i + 1} has expected value for "${key}" key after MAP_CREATE ops`,
+                expect(root.get(mapId).size()).to.equal(
+                  expectedKeysCount,
+                  `Check map #${i + 1} has expected number of keys after MAP_CREATE ops`,
                 );
-              });
+                Object.entries(expectedMap.data).forEach(([key, value]) => {
+                  expect(root.get(mapId).get(key)).to.equal(
+                    value,
+                    `Check map #${i + 1} has expected value for "${key}" key after MAP_CREATE ops`,
+                  );
+                });
+              }
             }
           },
         },
@@ -892,6 +897,278 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                 `Check "${key}" key on map has expected value after MAP_SET ops`,
               );
             });
+          },
+        },
+
+        {
+          description: 'MAP_SET with reference to an invalid object is buffered until object becomes valid',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            const mapId = liveObjectsHelper.fakeMapObjectId();
+            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            // MAP_SET on root to non-valid object
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
+            });
+
+            expect(root.get('map'), 'Check map does not exist on root until map is valid').to.not.exist;
+            expect(root.get('counter'), 'Check counter does not exist on root until counter is valid').to.not.exist;
+
+            // send CREATE ops which should make objects valid and add them to the root
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 2, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapCreateOp({ objectId: mapId })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 3, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+            });
+
+            expect(
+              root.get('map'),
+              'Check map exists on root after MAP_CREATE was seen and buffered MAP_SET op was applied',
+            ).to.exist;
+            expect(
+              root.get('counter'),
+              'Check counter exists on root after COUNTER_CREATE was seen and buffered MAP_SET op was applied',
+            ).to.exist;
+          },
+        },
+
+        {
+          description:
+            'MAP_SET with reference to an invalid object does not update the existing key until object becomes valid',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            // set some initial value for a key on root
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 1 } })],
+            });
+
+            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            // MAP_SET same key with non-valid object reference
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { objectId: counterId } })],
+            });
+
+            expect(root.get('foo')).to.equal(
+              1,
+              'Check key "foo" was not updated by MAP_SET op with reference to an invalid object',
+            );
+
+            // send CREATE ops which should make objects valid and add them to the root
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 2, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+            });
+
+            expectInstanceOf(
+              root.get('foo'),
+              'LiveCounter',
+              'Check key "foo" was updated by buffered MAP_SET op once the referenced object became valid',
+            );
+          },
+        },
+
+        {
+          description: 'MAP_SET with reference to an invalid object triggers subscription callback only when applied',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            // subscribe to updates on root. should only proc once CREATE ops are received for referenced objects
+            let subscribeCallbackCalledCount = 0;
+            const keyUpdated = {
+              map: false,
+              counter: false,
+            };
+            root.subscribe(({ update }) => {
+              subscribeCallbackCalledCount++;
+              Object.keys(update).forEach((x) => (keyUpdated[x] = true));
+            });
+
+            const mapId = liveObjectsHelper.fakeMapObjectId();
+            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            // MAP_SET on root to non-valid object
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
+            });
+
+            expect(subscribeCallbackCalledCount).to.equal(
+              0,
+              `Check subscription callback on root wasn't called for MAP_SET operations with invalid objects`,
+            );
+            expect(keyUpdated.map).to.equal(
+              false,
+              'Check "map" key was not updated via a subscription callback on root',
+            );
+            expect(keyUpdated.counter).to.equal(
+              false,
+              'Check "counter" key was not updated via a subscription callback on root',
+            );
+
+            // send CREATE ops which should make objects valid and add them to the root
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 2, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapCreateOp({ objectId: mapId })],
+            });
+
+            expect(subscribeCallbackCalledCount).to.equal(
+              1,
+              `Check subscription callback for root is called correct number of times once MAP_SET ops are applied for valid objects`,
+            );
+            expect(keyUpdated.map).to.equal(true, 'Check "map" key was updated via a subscription callback on root');
+
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 3, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+            });
+
+            expect(subscribeCallbackCalledCount).to.equal(
+              2,
+              `Check subscription callback for root is called correct number of times once MAP_SET ops are applied for valid objects`,
+            );
+            expect(keyUpdated.counter).to.equal(
+              true,
+              'Check "counter" key was updated via a subscription callback on root',
+            );
+          },
+        },
+
+        {
+          description:
+            'MAP_SET with reference to an invalid object is applied once object becomes valid even if site timeserials have updated',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            // MAP_SET on root to non-valid object
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
+            });
+
+            // send another MAP_SET on root with higher timeserial than buffered MAP_SET
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 99, 0), // higher timeserial than buffered MAP_SET above
+              siteCode: 'aaa',
+              state: [
+                liveObjectsHelper.mapSetOp({
+                  objectId: 'root',
+                  key: 'otherKey',
+                  data: { value: 1 },
+                }),
+              ],
+            });
+
+            expect(root.get('otherKey')).to.equal(
+              1,
+              'Check another key was updated on root while a MAP_SET operation is buffered',
+            );
+            expect(root.get('counter'), 'Check counter does not exist on root until counter is valid').to.not.exist;
+
+            // send CREATE op which should make objects valid and add them to the root
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('bbb', 0, 0),
+              siteCode: 'bbb',
+              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+            });
+
+            expect(
+              root.get('counter'),
+              'Check counter exists on root after COUNTER_CREATE was seen and buffered MAP_SET op was applied',
+            ).to.exist;
+          },
+        },
+
+        {
+          description:
+            'buffered MAP_SET with reference to an invalid object is discarded when new STATE_SYNC sequence starts',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            // MAP_SET on root to non-valid object
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
+            });
+
+            expect(root.get('counter'), 'Check counter does not exist on root as counter is not valid').to.not.exist;
+
+            // inject STATE_SYNC message with empty serial so it is ended immediately
+            await liveObjectsHelper.processStateObjectMessageOnChannel({
+              channel,
+              syncSerial: 'serial:',
+            });
+
+            // send COUNTER_CREATE op and set it on another key on root. only this new MAP_SET op should be applied
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+            });
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 2, 0),
+              siteCode: 'aaa',
+              state: [
+                liveObjectsHelper.mapSetOp({
+                  objectId: 'root',
+                  key: 'anotherCounterKey',
+                  data: { objectId: counterId },
+                }),
+              ],
+            });
+
+            expect(
+              root.get('counter'),
+              'Check MAP_SET for "counter" key was discarded on new STATE_SYNC sequence and not applied on root even when counter became valid',
+            ).to.not.exist;
+            expect(root.get('anotherCounterKey'), 'Check valid counter was set on "anotherCounterKey" key on root').to
+              .exist;
           },
         },
 
@@ -1126,21 +1403,28 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             }
 
             // check only operations with correct timeserials were applied
-            const expectedCounterValues = [
-              1,
-              1,
-              11, // applied COUNTER_CREATE
-              11, // applied COUNTER_CREATE
-              11, // applied COUNTER_CREATE
+            const expectedCounters = [
+              { exists: false }, // COUNTER_CREATE not applied, object is not valid and we should get undefined
+              { exists: false }, // COUNTER_CREATE not applied, object is not valid and we should get undefined
+              { exists: true, value: 11 }, // applied COUNTER_CREATE
+              { exists: true, value: 11 }, // applied COUNTER_CREATE
+              { exists: true, value: 11 }, // applied COUNTER_CREATE
             ];
 
             for (const [i, counterId] of counterIds.entries()) {
-              const expectedValue = expectedCounterValues[i];
+              const expectedCounter = expectedCounters[i];
 
-              expect(root.get(counterId).value()).to.equal(
-                expectedValue,
-                `Check counter #${i + 1} has expected value after COUNTER_CREATE ops`,
-              );
+              if (!expectedCounter.exists) {
+                expect(
+                  root.get(counterId),
+                  `Check counter #${i + 1} does not exist on root as COUNTER_CREATE op was not applied`,
+                ).to.not.exist;
+              } else {
+                expect(root.get(counterId).value()).to.equal(
+                  expectedCounter.value,
+                  `Check counter #${i + 1} has expected value after COUNTER_CREATE ops`,
+                );
+              }
             }
           },
         },
@@ -1426,6 +1710,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                     bbb: lexicoTimeserial('bbb', 2, 0),
                     ccc: lexicoTimeserial('ccc', 5, 0),
                   },
+                  initialEntries: {},
                   materialisedEntries: {
                     foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
                     foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },

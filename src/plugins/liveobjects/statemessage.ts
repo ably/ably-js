@@ -319,6 +319,13 @@ export class StateMessage {
   }
 
   /**
+   * Returns true if this state message is a state operation with `MAP_SET` action and it sets a map entry to point to another objectId.
+   */
+  isMapSetWithObjectIdReference(): boolean {
+    return this.operation?.action === StateOperationAction.MAP_SET && this.operation.mapOp?.data?.objectId != null;
+  }
+
+  /**
    * Overload toJSON() to intercept JSON.stringify()
    * @return {*}
    */
