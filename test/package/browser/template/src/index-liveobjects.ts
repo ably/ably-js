@@ -31,7 +31,7 @@ globalThis.testAblyPackage = async function () {
   const couldBeUndefined: string | undefined = root.get('couldBeUndefined');
   // live objects on a root:
   // LiveMap.get can still return undefined for LiveObject typed properties even if custom typings have them as non-optional.
-  // objects can be non-valid and result in the undefined value
+  // objects can be tombstoned/non-valid and result in the undefined value
   const counter: Ably.LiveCounter | undefined = root.get('counterKey');
   const map: LiveObjectsTypes['root']['mapKey'] | undefined = root.get('mapKey');
   // check string literal types works

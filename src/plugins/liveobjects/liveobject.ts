@@ -52,6 +52,7 @@ export abstract class LiveObject<
   protected _siteTimeserials: Record<string, string>;
   protected _createOperationIsMerged: boolean;
   protected _bufferedOperations: Set<BufferedOperation>;
+  private _tombstone: boolean;
 
   protected constructor(
     protected _liveObjects: LiveObjects,
@@ -59,12 +60,13 @@ export abstract class LiveObject<
   ) {
     this._client = this._liveObjects.getClient();
     this._eventEmitter = new this._client.EventEmitter(this._client.logger);
-    this._dataRef = this._getZeroValueData();
-    this._createOperationIsMerged = false;
     this._objectId = objectId;
+    this._dataRef = this._getZeroValueData();
     // use empty timeserials vector by default, so any future operation can be applied to this object
     this._siteTimeserials = {};
+    this._createOperationIsMerged = false;
     this._bufferedOperations = new Set();
+    this._tombstone = false;
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
@@ -150,6 +152,25 @@ export abstract class LiveObject<
   }
 
   /**
+   * Clears the object's state, cancels any buffered operations and sets the tombstone flag to `true`.
+   *
+   * @internal
+   */
+  tombstone(): void {
+    this._tombstone = true;
+    this._dataRef = this._getZeroValueData();
+    this.cancelBufferedOperations();
+    // TODO: emit "deleted" event so that end users get notified about this object getting deleted
+  }
+
+  /**
+   * @internal
+   */
+  isTombstoned(): boolean {
+    return this._tombstone;
+  }
+
+  /**
    * Returns true if the given origin timeserial indicates that the operation to which it belongs should be applied to the object.
    *
    * An operation should be applied if the origin timeserial is strictly greater than the timeserial in the site timeserials for the same site.
@@ -178,6 +199,12 @@ export abstract class LiveObject<
     }
   }
 
+  protected _applyObjectDelete(): TUpdate {
+    const previousDataRef = this._dataRef;
+    this.tombstone();
+    return this._updateFromDataDiff(previousDataRef, this._dataRef);
+  }
+
   private _createObjectId(): string {
     // TODO: implement object id generation based on live object type and initial value
     return Math.random().toString().substring(2);
@@ -201,7 +228,7 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  abstract overrideWithStateObject(stateObject: StateObject): TUpdate;
+  abstract overrideWithStateObject(stateObject: StateObject): TUpdate | LiveObjectUpdateNoop;
   protected abstract _getZeroValueData(): TData;
   /**
    * Calculate the update object based on the current Live Object data and incoming new data.

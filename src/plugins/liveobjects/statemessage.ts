@@ -8,6 +8,7 @@ export enum StateOperationAction {
   MAP_REMOVE = 2,
   COUNTER_CREATE = 3,
   COUNTER_INC = 4,
+  OBJECT_DELETE = 5,
 }
 
 export enum MapSemantics {
@@ -106,6 +107,8 @@ export interface StateObject {
   objectId: string;
   /** A vector of origin timeserials keyed by site code of the last operation that was applied to this state object. */
   siteTimeserials: Record<string, string>;
+  /** True if the object has been tombstoned. */
+  tombstone: boolean;
   /**
    * The operation that created the state object.
    *
