@@ -77,13 +77,15 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
   /**
    * Returns the value associated with the specified key in the underlying Map object.
-   * If no element is associated with the specified key, undefined is returned.
-   * If the value that is associated to the provided key is an objectId string of another Live Object,
-   * then you will get a reference to that Live Object if it exists in the local pool, or undefined otherwise.
-   * If the value is not an objectId, then you will get that value.
+   *
+   * - If no entry is associated with the specified key, `undefined` is returned.
+   * - If map entry is tombstoned (deleted), `undefined` is returned.
+   * - If the value associated with the provided key is an objectId string of another Live Object, a reference to that Live Object
+   * is returned, provided it exists in the local pool and is not tombstoned. Otherwise, `undefined` is returned.
+   * - If the value is not an objectId, then that value is returned.
    */
   // force the key to be of type string as we only allow strings as key in a map
-  get<TKey extends keyof T & string>(key: TKey): T[TKey] {
+  get<TKey extends keyof T & string>(key: TKey): T[TKey] extends StateValue ? T[TKey] : T[TKey] | undefined {
     const element = this._dataRef.data.get(key);
 
     if (element === undefined) {
@@ -94,14 +96,26 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return undefined as T[TKey];
     }
 
-    // data exists for non-tombstoned elements
+    // data always exists for non-tombstoned elements
     const data = element.data!;
 
     if ('value' in data) {
+      // map entry has a primitive type value, just return it as is.
       return data.value as T[TKey];
-    } else {
-      return this._liveObjects.getPool().get(data.objectId) as T[TKey];
     }
+
+    // map entry points to another object, get it from the pool
+    const refObject: LiveObject | undefined = this._liveObjects.getPool().get(data.objectId);
+    if (!refObject) {
+      return undefined as T[TKey];
+    }
+
+    if (refObject.isTombstoned()) {
+      // tombstoned objects must not be surfaced to the end users
+      return undefined as T[TKey];
+    }
+
+    return refObject as API.LiveObject as T[TKey];
   }
 
   size(): number {
@@ -110,6 +124,17 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       if (value.tombstone === true) {
         // should not count removed entries
         continue;
+      }
+
+      // data always exists for non-tombstoned elements
+      const data = value.data!;
+      if ('objectId' in data) {
+        const refObject = this._liveObjects.getPool().get(data.objectId);
+
+        if (refObject?.isTombstoned()) {
+          // should not count tombstoned objects
+          continue;
+        }
       }
 
       size++;
@@ -145,6 +170,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // as it's important to mark that the op was processed by the object
     this._siteTimeserials[opSiteCode] = opOriginTimeserial;
 
+    if (this.isTombstoned()) {
+      // this object is tombstoned so the operation cannot be applied
+      return;
+    }
+
     let update: LiveMapUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
       case StateOperationAction.MAP_CREATE:
@@ -171,6 +201,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         }
         break;
 
+      case StateOperationAction.OBJECT_DELETE:
+        update = this._applyObjectDelete();
+        break;
+
       default:
         throw new this._client.ErrorInfo(
           `Invalid ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
@@ -185,7 +219,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  overrideWithStateObject(stateObject: StateObject): LiveMapUpdate {
+  overrideWithStateObject(stateObject: StateObject): LiveMapUpdate | LiveObjectUpdateNoop {
     if (stateObject.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Invalid state object: state object objectId=${stateObject.objectId}; LiveMap objectId=${this.getObjectId()}`,
@@ -229,16 +263,30 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       }
     }
 
-    const previousDataRef = this._dataRef;
-    // override all relevant data for this object with data from the state object
-    this._createOperationIsMerged = false;
-    this._dataRef = this._liveMapDataFromMapEntries(stateObject.map?.entries ?? {});
-    // should default to empty map if site timeserials do not exist on the state object, so that any future operation can be applied to this object
+    // object's site timeserials are still updated even if it is tombstoned, so always use the site timeserials received from the op.
+    // should default to empty map if site timeserials do not exist on the state object, so that any future operation may be applied to this object.
     this._siteTimeserials = stateObject.siteTimeserials ?? {};
-    if (!this._client.Utils.isNil(stateObject.createOp)) {
-      this._mergeInitialDataFromCreateOperation(stateObject.createOp);
+
+    if (this.isTombstoned()) {
+      // this object is tombstoned. this is a terminal state which can't be overriden. skip the rest of state object message processing
+      return { noop: true };
     }
 
+    const previousDataRef = this._dataRef;
+    if (stateObject.tombstone) {
+      // tombstone this object and ignore the data from the state object message
+      this.tombstone();
+    } else {
+      // override data for this object with data from the state object
+      this._createOperationIsMerged = false;
+      this._dataRef = this._liveMapDataFromMapEntries(stateObject.map?.entries ?? {});
+      if (!this._client.Utils.isNil(stateObject.createOp)) {
+        this._mergeInitialDataFromCreateOperation(stateObject.createOp);
+      }
+    }
+
+    // if object got tombstoned, the update object will include all data that got cleared.
+    // otherwise it is a diff between previous value and new value from state object.
     return this._updateFromDataDiff(previousDataRef, this._dataRef);
   }
 

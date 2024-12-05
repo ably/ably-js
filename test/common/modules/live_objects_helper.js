@@ -12,6 +12,7 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     MAP_REMOVE: 2,
     COUNTER_CREATE: 3,
     COUNTER_INC: 4,
+    OBJECT_DELETE: 5,
   };
 
   function nonce() {
@@ -180,12 +181,25 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
       return op;
     }
 
+    objectDeleteOp(opts) {
+      const { objectId } = opts ?? {};
+      const op = {
+        operation: {
+          action: ACTIONS.OBJECT_DELETE,
+          objectId,
+        },
+      };
+
+      return op;
+    }
+
     mapObject(opts) {
-      const { objectId, siteTimeserials, initialEntries, materialisedEntries } = opts;
+      const { objectId, siteTimeserials, initialEntries, materialisedEntries, tombstone } = opts;
       const obj = {
         object: {
           objectId,
           siteTimeserials,
+          tombstone: tombstone === true,
           map: {
             semantics: 0,
             entries: materialisedEntries,
@@ -201,11 +215,12 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     }
 
     counterObject(opts) {
-      const { objectId, siteTimeserials, initialCount, materialisedCount } = opts;
+      const { objectId, siteTimeserials, initialCount, materialisedCount, tombstone } = opts;
       const obj = {
         object: {
           objectId,
           siteTimeserials,
+          tombstone: tombstone === true,
           counter: {
             count: materialisedCount,
           },

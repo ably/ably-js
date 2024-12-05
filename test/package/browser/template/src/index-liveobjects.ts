@@ -30,8 +30,10 @@ globalThis.testAblyPackage = async function () {
   const aBoolean: boolean = root.get('booleanKey');
   const couldBeUndefined: string | undefined = root.get('couldBeUndefined');
   // live objects on a root:
+  // LiveMap.get can still return undefined for LiveObject typed properties even if custom typings have them as non-optional.
+  // objects can be tombstoned and result in the undefined value
   const counter: Ably.LiveCounter | undefined = root.get('counterKey');
-  const map: LiveObjectsTypes['root']['mapKey'] = root.get('mapKey');
+  const map: LiveObjectsTypes['root']['mapKey'] | undefined = root.get('mapKey');
   // check string literal types works
   // need to use nullish coalescing as we didn't actually create any data on the root,
   // so the next calls would fail. we only need to check that TypeScript types work

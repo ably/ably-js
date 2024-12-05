@@ -63,6 +63,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // as it's important to mark that the op was processed by the object
     this._siteTimeserials[opSiteCode] = opOriginTimeserial;
 
+    if (this.isTombstoned()) {
+      // this object is tombstoned so the operation cannot be applied
+      return;
+    }
+
     let update: LiveCounterUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
       case StateOperationAction.COUNTER_CREATE:
@@ -79,6 +84,10 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         }
         break;
 
+      case StateOperationAction.OBJECT_DELETE:
+        update = this._applyObjectDelete();
+        break;
+
       default:
         throw new this._client.ErrorInfo(
           `Invalid ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
@@ -93,7 +102,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  overrideWithStateObject(stateObject: StateObject): LiveCounterUpdate {
+  overrideWithStateObject(stateObject: StateObject): LiveCounterUpdate | LiveObjectUpdateNoop {
     if (stateObject.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Invalid state object: state object objectId=${stateObject.objectId}; LiveCounter objectId=${this.getObjectId()}`,
@@ -121,16 +130,30 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       }
     }
 
-    const previousDataRef = this._dataRef;
-    // override all relevant data for this object with data from the state object
-    this._createOperationIsMerged = false;
-    this._dataRef = { data: stateObject.counter?.count ?? 0 };
-    // should default to empty map if site timeserials do not exist on the state object, so that any future operation can be applied to this object
+    // object's site timeserials are still updated even if it is tombstoned, so always use the site timeserials received from the op.
+    // should default to empty map if site timeserials do not exist on the state object, so that any future operation may be applied to this object.
     this._siteTimeserials = stateObject.siteTimeserials ?? {};
-    if (!this._client.Utils.isNil(stateObject.createOp)) {
-      this._mergeInitialDataFromCreateOperation(stateObject.createOp);
+
+    if (this.isTombstoned()) {
+      // this object is tombstoned. this is a terminal state which can't be overriden. skip the rest of state object message processing
+      return { noop: true };
     }
 
+    const previousDataRef = this._dataRef;
+    if (stateObject.tombstone) {
+      // tombstone this object and ignore the data from the state object message
+      this.tombstone();
+    } else {
+      // override data for this object with data from the state object
+      this._createOperationIsMerged = false;
+      this._dataRef = { data: stateObject.counter?.count ?? 0 };
+      if (!this._client.Utils.isNil(stateObject.createOp)) {
+        this._mergeInitialDataFromCreateOperation(stateObject.createOp);
+      }
+    }
+
+    // if object got tombstoned, the update object will include all data that got cleared.
+    // otherwise it is a diff between previous value and new value from state object.
     return this._updateFromDataDiff(previousDataRef, this._dataRef);
   }
 
