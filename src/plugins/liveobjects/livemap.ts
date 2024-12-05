@@ -85,7 +85,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * - If the value is not an objectId, then that value is returned.
    */
   // force the key to be of type string as we only allow strings as key in a map
-  get<TKey extends keyof T & string>(key: TKey): T[TKey] {
+  get<TKey extends keyof T & string>(key: TKey): T[TKey] extends StateValue ? T[TKey] : T[TKey] | undefined {
     const element = this._dataRef.data.get(key);
 
     if (element === undefined) {
