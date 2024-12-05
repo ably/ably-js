@@ -507,6 +507,39 @@ function registerAblyModularTests(Helper) {
           );
         }
 
+        async function testIsAbleToDecryptHistoryMessages(helper, clientClassConfig) {
+          const clientOptions = helper.ablyClientOptions();
+
+          const client = new clientClassConfig.clientClass({
+            ...clientOptions,
+            plugins: {
+              ...clientClassConfig.additionalPlugins,
+              FetchRequest,
+              Crypto,
+            },
+          });
+
+          await (clientClassConfig.isRealtime ? monitorConnectionThenCloseAndFinish : async (helper, op) => await op())(
+            helper,
+            async () => {
+              const channelName = 'encrypted_history',
+                messageText = 'Test message';
+
+              const key = await generateRandomKey();
+
+              const channel = client.channels.get(channelName, { cipher: { key: key } });
+              await channel.publish('event0', messageText);
+              let items;
+              await helper.waitFor(async () => {
+                items = (await channel.history()).items;
+                return items.length > 0;
+              }, 10_000);
+              expect(items[0].data).to.equal(messageText);
+            },
+            client,
+          );
+        }
+
         for (const clientClassConfig of [
           { clientClass: BaseRest, isRealtime: false },
           {
@@ -519,6 +552,22 @@ function registerAblyModularTests(Helper) {
             /** @nospec */
             it('is able to publish encrypted messages', async function () {
               await testIsAbleToPublishEncryptedMessages(this.test.helper, clientClassConfig);
+            });
+          });
+        }
+
+        for (const clientClassConfig of [
+          { clientClass: BaseRest, isRealtime: false },
+          {
+            clientClass: BaseRealtime,
+            additionalPlugins: { WebSocketTransport, Rest },
+            isRealtime: true,
+          },
+        ]) {
+          describe(clientClassConfig.clientClass.name, () => {
+            /** @nospec */
+            it('is able to decrypt history messages', async function () {
+              await testIsAbleToDecryptHistoryMessages(this.test.helper, clientClassConfig);
             });
           });
         }
