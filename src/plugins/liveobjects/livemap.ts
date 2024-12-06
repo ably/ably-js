@@ -80,12 +80,13 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * - If no entry is associated with the specified key, `undefined` is returned.
    * - If map entry is tombstoned (deleted), `undefined` is returned.
+   * - If this map object is tombstoned, `undefined` is returned.
    * - If the value associated with the provided key is an objectId string of another Live Object, a reference to that Live Object
    * is returned, provided it exists in the local pool and is not tombstoned. Otherwise, `undefined` is returned.
    * - If the value is not an objectId, then that value is returned.
    */
   // force the key to be of type string as we only allow strings as key in a map
-  get<TKey extends keyof T & string>(key: TKey): T[TKey] extends StateValue ? T[TKey] : T[TKey] | undefined {
+  get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined {
     const element = this._dataRef.data.get(key);
 
     if (element === undefined) {
