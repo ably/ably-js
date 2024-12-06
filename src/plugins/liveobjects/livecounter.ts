@@ -123,7 +123,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
     const previousDataRef = this._dataRef;
     // override all relevant data for this object with data from the state object
-    this._createOperationIsMerged = false;
+    this._setCreateOperationIsMerged(false);
     this._dataRef = { data: stateObject.counter?.count ?? 0 };
     // should default to empty map if site timeserials do not exist on the state object, so that any future operation can be applied to this object
     this._siteTimeserials = stateObject.siteTimeserials ?? {};
@@ -149,7 +149,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
     this._dataRef.data += stateOperation.counter?.count ?? 0;
-    this._createOperationIsMerged = true;
+    this._setCreateOperationIsMerged(true);
 
     return { update: { inc: stateOperation.counter?.count ?? 0 } };
   }
