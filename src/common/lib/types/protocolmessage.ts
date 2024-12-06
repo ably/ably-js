@@ -3,10 +3,16 @@ import * as API from '../../../../ably';
 import { PresenceMessagePlugin } from '../client/modularplugins';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
-import Message, { fromValues as messageFromValues, fromValuesArray as messagesFromValuesArray } from './message';
+import Message, {
+  fromWireProtocol as messageFromWireProtocol,
+  fromValuesArray as messagesFromValuesArray,
+  WireProtocolMessage,
+} from './message';
 import PresenceMessage, {
+  fromWireProtocol as presenceMessageFromWireProtocol,
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
+  WireProtocolPresenceMessage,
 } from './presencemessage';
 
 export const actions = {
@@ -85,30 +91,30 @@ export function fromDeserialized(
     deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
   }
 
-  const messages = deserialized.messages as Message[];
-  if (messages) {
-    for (let i = 0; i < messages.length; i++) {
-      messages[i] = messageFromValues(messages[i], { stringifyAction: true });
-    }
+  let messages: Message[] | undefined;
+  if (deserialized.messages) {
+    const dm = deserialized.messages as WireProtocolMessage[];
+    messages = dm.map((m) => messageFromWireProtocol(m));
   }
 
-  const presence = presenceMessagePlugin ? (deserialized.presence as PresenceMessage[]) : undefined;
-  if (presenceMessagePlugin) {
-    if (presence && presenceMessagePlugin) {
-      for (let i = 0; i < presence.length; i++) {
-        presence[i] = presenceMessagePlugin.presenceMessageFromValues(presence[i], true);
-      }
-    }
+  let presence: PresenceMessage[] | undefined;
+  if (presenceMessagePlugin && deserialized.presence) {
+    const dp = deserialized.presence as WireProtocolPresenceMessage[];
+    presence = dp.map((pm) => presenceMessagePlugin.presenceMessageFromWireProtocol(pm));
   }
 
-  return Object.assign(new ProtocolMessage(), { ...deserialized, presence });
+  return Object.assign(new ProtocolMessage(), { ...deserialized, presence, messages });
 }
 
 /**
  * Used by the tests.
  */
 export function fromDeserializedIncludingDependencies(deserialized: Record<string, unknown>): ProtocolMessage {
-  return fromDeserialized(deserialized, { presenceMessageFromValues, presenceMessagesFromValuesArray });
+  return fromDeserialized(deserialized, {
+    presenceMessageFromValues,
+    presenceMessagesFromValuesArray,
+    presenceMessageFromWireProtocol,
+  });
 }
 
 export function fromValues(values: unknown): ProtocolMessage {
