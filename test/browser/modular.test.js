@@ -8,6 +8,8 @@ import {
   decodeEncryptedMessage,
   decodeMessages,
   decodeEncryptedMessages,
+  decodeEncryptedPresenceMessage,
+  decodeEncryptedPresenceMessages,
   Crypto,
   MsgPack,
   RealtimePresence,
@@ -348,6 +350,26 @@ function registerAblyModularTests(Helper) {
         });
       });
 
+      describe('decodeEncryptedPresenceMessage', async () => {
+        /** @nospec */
+        it('decrypts a presence message', async function () {
+          const helper = this.test.helper;
+          const testData = await loadTestData(helper, helper.testResourcesPath + 'crypto-data-128.json');
+
+          const key = BufferUtils.base64Decode(testData.key);
+          const iv = BufferUtils.base64Decode(testData.iv);
+
+          for (const item of testData.items) {
+            const [decodedFromEncoded, decodedFromEncrypted] = await Promise.all([
+              decodePresenceMessage(item.encoded),
+              decodeEncryptedPresenceMessage(item.encrypted, { cipher: { key, iv } }),
+            ]);
+
+            this.test.helper.testMessageEquality(decodedFromEncoded, decodedFromEncrypted);
+          }
+        });
+      });
+
       async function testDecodesMessagesData(helper, functionUnderTest) {
         const testData = await loadTestData(helper, helper.testResourcesPath + 'crypto-data-128.json');
 
@@ -408,6 +430,29 @@ function registerAblyModularTests(Helper) {
           const [decodedFromEncoded, decodedFromEncrypted] = await Promise.all([
             decodeMessages(testData.items.map((item) => item.encoded)),
             decodeEncryptedMessages(
+              testData.items.map((item) => item.encrypted),
+              { cipher: { key, iv } },
+            ),
+          ]);
+
+          for (let i = 0; i < decodedFromEncoded.length; i++) {
+            this.test.helper.testMessageEquality(decodedFromEncoded[i], decodedFromEncrypted[i]);
+          }
+        });
+      });
+
+      describe('decodeEncryptedPresenceMessages', () => {
+        /** @nospec */
+        it('decrypts messages', async function () {
+          const helper = this.test.helper;
+          const testData = await loadTestData(helper, helper.testResourcesPath + 'crypto-data-128.json');
+
+          const key = BufferUtils.base64Decode(testData.key);
+          const iv = BufferUtils.base64Decode(testData.iv);
+
+          const [decodedFromEncoded, decodedFromEncrypted] = await Promise.all([
+            decodePresenceMessages(testData.items.map((item) => item.encoded)),
+            decodeEncryptedPresenceMessages(
               testData.items.map((item) => item.encrypted),
               { cipher: { key, iv } },
             ),
