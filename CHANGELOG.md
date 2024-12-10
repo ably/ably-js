@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.6.0](https://github.com/ably/ably-js/tree/2.6.0) (2024-12-10)
+
+- Removed a build check that prevented referencing branch builds in `package.json`. It is now possible to point npm at specific branches of ably-js.
+- Presence will now only emit a `LEAVE` event if a member was present in the presence set to begin with.
+- The experimental attributes on the `Message` type to support edits and deletes have been updated and renamed.
+
 ## [2.5.0](https://github.com/ably/ably-js/tree/2.5.0) (2024-11-06)
 
 With this release, ably-js will now expose the new `Message` attributes needed to support upcoming features,
