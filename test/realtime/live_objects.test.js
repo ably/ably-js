@@ -12,6 +12,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
   const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
   const liveObjectsFixturesChannel = 'liveobjects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
+  const gcIntervalOriginal = LiveObjectsPlugin.LiveObjects._DEFAULTS.gcInterval;
+  const gcGracePeriodOriginal = LiveObjectsPlugin.LiveObjects._DEFAULTS.gcGracePeriod;
 
   function RealtimeWithLiveObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
@@ -2584,6 +2586,157 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             sampleCounterObjectId,
           });
         }, client);
+      });
+
+      const tombstonesGCScenarios = [
+        // for the next tests we need to access the private API of LiveObjects plugin in order to verify that tombstoned entities were indeed deleted after the GC grace period.
+        // public API hides that kind of information from the user and returns undefined for tombstoned entities even if realtime client still keeps a reference to them.
+        {
+          description: 'tombstoned object is removed from the pool after the GC grace period',
+          action: async (ctx) => {
+            const { liveObjectsHelper, channelName, channel, liveObjects, helper, waitForGCCycles } = ctx;
+
+            // send a CREATE op, this add an object to the pool
+            const { objectId } = await liveObjectsHelper.stateRequest(
+              channelName,
+              liveObjectsHelper.counterCreateOp({ count: 1 }),
+            );
+
+            expect(liveObjects._liveObjectsPool.get(objectId), 'Check object exists in the pool after creation').to
+              .exist;
+
+            // inject OBJECT_DELETE for the object. this should tombstone the object and make it inaccessible to the end user, but still keep it in memory in the local pool
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.objectDeleteOp({ objectId })],
+            });
+
+            helper.recordPrivateApi('call.LiveObjects._liveObjectsPool.get');
+            expect(
+              liveObjects._liveObjectsPool.get(objectId),
+              'Check object exists in the pool immediately after OBJECT_DELETE',
+            ).to.exist;
+            helper.recordPrivateApi('call.LiveObjects._liveObjectsPool.get');
+            helper.recordPrivateApi('call.LiveObject.isTombstoned');
+            expect(liveObjects._liveObjectsPool.get(objectId).isTombstoned()).to.equal(
+              true,
+              `Check object's "tombstone" flag is set to "true" after OBJECT_DELETE`,
+            );
+
+            // we expect 2 cycles to guarantee that grace period has expired, which will always be true based on the test config used
+            await waitForGCCycles(2);
+
+            // object should be removed from the local pool entirely now, as the GC grace period has passed
+            helper.recordPrivateApi('call.LiveObjects._liveObjectsPool.get');
+            expect(
+              liveObjects._liveObjectsPool.get(objectId),
+              'Check object exists does not exist in the pool after the GC grace period expiration',
+            ).to.not.exist;
+          },
+        },
+
+        {
+          description: 'tombstoned map entry is removed from the LiveMap after the GC grace period',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName, helper, waitForGCCycles } = ctx;
+
+            // set a key on a root
+            await liveObjectsHelper.stateRequest(
+              channelName,
+              liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 'bar' } }),
+            );
+
+            expect(root.get('foo')).to.equal('bar', 'Check key "foo" exists on root after MAP_SET');
+
+            // remove the key from the root. this should tombstone the map entry and make it inaccessible to the end user, but still keep it in memory in the underlying map
+            await liveObjectsHelper.stateRequest(
+              channelName,
+              liveObjectsHelper.mapRemoveOp({ objectId: 'root', key: 'foo' }),
+            );
+
+            expect(root.get('foo'), 'Check key "foo" is inaccessible via public API on root after MAP_REMOVE').to.not
+              .exist;
+            helper.recordPrivateApi('read.LiveMap._dataRef.data');
+            expect(
+              root._dataRef.data.get('foo'),
+              'Check map entry for "foo" exists on root in the underlying data immediately after MAP_REMOVE',
+            ).to.exist;
+            helper.recordPrivateApi('read.LiveMap._dataRef.data');
+            expect(
+              root._dataRef.data.get('foo').tombstone,
+              'Check map entry for "foo" on root has "tombstone" flag set to "true" after MAP_REMOVE',
+            ).to.exist;
+
+            // we expect 2 cycles to guarantee that grace period has expired, which will always be true based on the test config used
+            await waitForGCCycles(2);
+
+            // the entry should be removed from the underlying map now
+            helper.recordPrivateApi('read.LiveMap._dataRef.data');
+            expect(
+              root._dataRef.data.get('foo'),
+              'Check map entry for "foo" does not exist on root in the underlying data after the GC grace period expiration',
+            ).to.not.exist;
+          },
+        },
+      ];
+
+      /** @nospec */
+      forScenarios(tombstonesGCScenarios, async function (helper, scenario) {
+        try {
+          helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcInterval');
+          LiveObjectsPlugin.LiveObjects._DEFAULTS.gcInterval = 500;
+          helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcGracePeriod');
+          LiveObjectsPlugin.LiveObjects._DEFAULTS.gcGracePeriod = 250;
+
+          const liveObjectsHelper = new LiveObjectsHelper(helper);
+          const client = RealtimeWithLiveObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            const channelName = scenario.description;
+            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+            const liveObjects = channel.liveObjects;
+
+            await channel.attach();
+            const root = await liveObjects.getRoot();
+
+            // helper function to spy on the GC interval callback and wait for a specific number of GC cycles.
+            // returns a promise which will resolve when required number of cycles have happened.
+            const waitForGCCycles = (cycles) => {
+              const onGCIntervalOriginal = liveObjects._liveObjectsPool._onGCInterval;
+              let gcCalledTimes = 0;
+              return new Promise((resolve) => {
+                helper.recordPrivateApi('replace.LiveObjects._liveObjectsPool._onGCInterval');
+                liveObjects._liveObjectsPool._onGCInterval = function () {
+                  helper.recordPrivateApi('call.LiveObjects._liveObjectsPool._onGCInterval');
+                  onGCIntervalOriginal.call(this);
+
+                  gcCalledTimes++;
+                  if (gcCalledTimes >= cycles) {
+                    resolve();
+                    liveObjects._liveObjectsPool._onGCInterval = onGCIntervalOriginal;
+                  }
+                };
+              });
+            };
+
+            await scenario.action({
+              root,
+              liveObjectsHelper,
+              channelName,
+              channel,
+              liveObjects,
+              helper,
+              waitForGCCycles,
+            });
+          }, client);
+        } finally {
+          helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcInterval');
+          LiveObjectsPlugin.LiveObjects._DEFAULTS.gcInterval = gcIntervalOriginal;
+          helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcGracePeriod');
+          LiveObjectsPlugin.LiveObjects._DEFAULTS.gcGracePeriod = gcGracePeriodOriginal;
+        }
       });
     });
 
