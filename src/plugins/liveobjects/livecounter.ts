@@ -157,6 +157,14 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return this._updateFromDataDiff(previousDataRef, this._dataRef);
   }
 
+  /**
+   * @internal
+   */
+  onGCInterval(): void {
+    // nothing to GC for a counter object
+    return;
+  }
+
   protected _getZeroValueData(): LiveCounterData {
     return { data: 0 };
   }

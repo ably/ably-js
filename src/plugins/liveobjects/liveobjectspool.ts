@@ -1,4 +1,5 @@
 import type BaseClient from 'common/lib/client/baseclient';
+import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
@@ -13,10 +14,16 @@ export const ROOT_OBJECT_ID = 'root';
 export class LiveObjectsPool {
   private _client: BaseClient;
   private _pool: Map<string, LiveObject>;
+  private _gcInterval: ReturnType<typeof setInterval>;
 
   constructor(private _liveObjects: LiveObjects) {
     this._client = this._liveObjects.getClient();
     this._pool = this._getInitialPool();
+    this._gcInterval = setInterval(() => {
+      this._onGCInterval();
+    }, DEFAULTS.gcInterval);
+    // call nodejs's Timeout.unref to not require Node.js event loop to remain active due to this interval. see https://nodejs.org/api/timers.html#timeoutunref
+    this._gcInterval.unref?.();
   }
 
   get(objectId: string): LiveObject | undefined {
@@ -67,5 +74,22 @@ export class LiveObjectsPool {
     const root = LiveMap.zeroValue(this._liveObjects, ROOT_OBJECT_ID);
     pool.set(root.getObjectId(), root);
     return pool;
+  }
+
+  private _onGCInterval(): void {
+    const toDelete: string[] = [];
+    for (const [objectId, obj] of this._pool.entries()) {
+      // tombstoned objects should be removed from the pool if they have been tombstoned for longer than grace period.
+      // by removing them from the local pool, LiveObjects plugin no longer keeps a reference to those objects, allowing JS's
+      // Garbage Collection to eventually free the memory for those objects, provided the user no longer references them either.
+      if (obj.isTombstoned() && Date.now() - obj.tombstonedAt()! >= DEFAULTS.gcGracePeriod) {
+        toDelete.push(objectId);
+        continue;
+      }
+
+      obj.onGCInterval();
+    }
+
+    toDelete.forEach((x) => this._pool.delete(x));
   }
 }
