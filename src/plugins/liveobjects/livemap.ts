@@ -1,6 +1,7 @@
 import deepEqual from 'deep-equal';
 
 import type * as API from '../../../ably';
+import { DEFAULTS } from './defaults';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
 import {
@@ -33,6 +34,10 @@ export type StateData = ObjectIdStateData | ValueStateData;
 
 export interface MapEntry {
   tombstone: boolean;
+  /**
+   * Can't use timeserial from the operation that deleted the entry for the same reason as for {@link LiveObject} tombstones, see explanation there.
+   */
+  tombstonedAt: number | undefined;
   timeserial: string | undefined;
   data: StateData | undefined;
 }
@@ -295,6 +300,22 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return this._updateFromDataDiff(previousDataRef, this._dataRef);
   }
 
+  /**
+   * @internal
+   */
+  onGCInterval(): void {
+    // should remove any tombstoned entries from the underlying map data that have exceeded the GC grace period
+
+    const keysToDelete: string[] = [];
+    for (const [key, value] of this._dataRef.data.entries()) {
+      if (value.tombstone === true && Date.now() - value.tombstonedAt! >= DEFAULTS.gcGracePeriod) {
+        keysToDelete.push(key);
+      }
+    }
+
+    keysToDelete.forEach((x) => this._dataRef.data.delete(x));
+  }
+
   protected _getZeroValueData(): LiveMapData {
     return { data: new Map<string, MapEntry>() };
   }
@@ -459,11 +480,13 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     if (existingEntry) {
       existingEntry.tombstone = false;
+      existingEntry.tombstonedAt = undefined;
       existingEntry.timeserial = opOriginTimeserial;
       existingEntry.data = liveData;
     } else {
       const newEntry: MapEntry = {
         tombstone: false,
+        tombstonedAt: undefined,
         timeserial: opOriginTimeserial,
         data: liveData,
       };
@@ -490,11 +513,13 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     if (existingEntry) {
       existingEntry.tombstone = true;
+      existingEntry.tombstonedAt = Date.now();
       existingEntry.timeserial = opOriginTimeserial;
       existingEntry.data = undefined;
     } else {
       const newEntry: MapEntry = {
         tombstone: true,
+        tombstonedAt: Date.now(),
         timeserial: opOriginTimeserial,
         data: undefined,
       };
@@ -548,9 +573,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
       const liveDataEntry: MapEntry = {
         timeserial: entry.timeserial,
-        // true only if we received explicit true. otherwise always false
-        tombstone: entry.tombstone === true,
         data: liveData,
+        // consider object as tombstoned only if we received an explicit flag stating that. otherwise it exists
+        tombstone: entry.tombstone === true,
+        tombstonedAt: entry.tombstone === true ? Date.now() : undefined,
       };
 
       liveMapData.data.set(key, liveDataEntry);

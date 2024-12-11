@@ -2,6 +2,7 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import type * as API from '../../../ably';
+import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
@@ -25,6 +26,9 @@ export class LiveObjects {
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
   private _bufferedStateOperations: StateMessage[];
+
+  // Used by tests
+  static _DEFAULTS = DEFAULTS;
 
   constructor(channel: RealtimeChannel) {
     this._channel = channel;
