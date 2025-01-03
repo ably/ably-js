@@ -175,7 +175,7 @@ class ProtocolMessage {
     return ((this.flags as number) & flags[flag]) > 0;
   };
 
-  setFlag(flag: API.ChannelMode): number {
+  setFlag(flag: keyof typeof flags): number {
     return (this.flags = (this.flags as number) | flags[flag]);
   }
 
