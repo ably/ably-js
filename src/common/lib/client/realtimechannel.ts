@@ -83,7 +83,6 @@ class RealtimeChannel extends EventEmitter {
     channelSerial: string | null | undefined;
   };
   errorReason: ErrorInfo | string | null;
-  _requestedFlags: Array<API.ChannelMode> | null;
   _mode?: null | number;
   _attachResume: boolean;
   _decodingContext: EncodingDecodingContext;
@@ -117,7 +116,6 @@ class RealtimeChannel extends EventEmitter {
     };
     this.setOptions(options);
     this.errorReason = null;
-    this._requestedFlags = null;
     this._mode = null;
     this._attachResume = false;
     this._decodingContext = {
@@ -368,9 +366,7 @@ class RealtimeChannel extends EventEmitter {
       // or attachment.
       channelSerial: this.properties.channelSerial,
     });
-    if (this._requestedFlags) {
-      attachMsg.encodeModesToFlags(this._requestedFlags);
-    } else if (this.channelOptions.modes) {
+    if (this.channelOptions.modes) {
       attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as API.ChannelMode[]);
     }
     if (this._attachResume) {
