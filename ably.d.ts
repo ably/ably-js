@@ -859,7 +859,7 @@ declare namespace ChannelModes {
    */
   type PUBLISH = 'PUBLISH' | 'publish';
   /**
-   * The client can subscribe to messages.
+   * The client will receive messages.
    */
   type SUBSCRIBE = 'SUBSCRIBE' | 'subscribe';
   /**
@@ -867,9 +867,17 @@ declare namespace ChannelModes {
    */
   type PRESENCE = 'PRESENCE' | 'presence';
   /**
-   * The client can receive presence messages.
+   * The client will receive presence messages.
    */
   type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE' | 'presence_subscribe';
+  /**
+   * The client can publish annotations
+   */
+  type ANNOTATION_PUBLISH = 'ANNOTATION_PUBLISH' | 'annotation_publish';
+  /**
+   * The client will receive annotations
+   */
+  type ANNOTATION_SUBSCRIBE = 'ANNOTATION_SUBSCRIBE' | 'annotation_subscribe';
 }
 
 /**
@@ -881,7 +889,9 @@ export type ChannelMode =
   | ChannelModes.PUBLISH
   | ChannelModes.SUBSCRIBE
   | ChannelModes.PRESENCE
-  | ChannelModes.PRESENCE_SUBSCRIBE;
+  | ChannelModes.PRESENCE_SUBSCRIBE
+  | ChannelModes.ANNOTATION_PUBLISH
+  | ChannelModes.ANNOTATION_SUBSCRIBE;
 
 /**
  * The `ResolvedChannelModes` namespace describes the possible values of the {@link ResolvedChannelMode} type.
