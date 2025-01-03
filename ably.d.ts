@@ -866,10 +866,6 @@ declare namespace ChannelModes {
    * The client can receive presence messages.
    */
   type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
-  /**
-   * The client is resuming an existing connection.
-   */
-  type ATTACH_RESUME = 'ATTACH_RESUME';
 }
 
 /**
@@ -880,7 +876,6 @@ export type ChannelMode =
   | ChannelModes.SUBSCRIBE
   | ChannelModes.PRESENCE
   | ChannelModes.PRESENCE_SUBSCRIBE
-  | ChannelModes.ATTACH_RESUME;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
