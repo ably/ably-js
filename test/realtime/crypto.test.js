@@ -772,6 +772,31 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /**
+     * @spec RSL5a
+     */
+    it('encrypted history', async function () {
+      if (!Crypto) {
+        done(new Error('Encryption not supported'));
+        return;
+      }
+
+      const helper = this.test.helper,
+        rest = helper.AblyRest(),
+        channelName = 'encrypted_history',
+        messageText = 'Test message';
+
+      const key = await Crypto.generateRandomKey();
+      const channel = rest.channels.get(channelName, { cipher: { key: key } });
+      await channel.publish('event0', messageText);
+      let items;
+      await helper.waitFor(async () => {
+        items = (await channel.history()).items;
+        return items.length > 0;
+      }, 10_000);
+      expect(items[0].data).to.equal(messageText);
+    });
+
+    /**
      * Connect twice to the service, using different cipher keys.
      * Publish an encrypted message on that channel using
      * the default cipher params and verify that the decrypt failure
