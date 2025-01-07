@@ -14,13 +14,11 @@ import type RealtimeChannel from '../client/realtimechannel';
 type Channel = RestChannel | RealtimeChannel;
 
 const MessageActionArray: API.MessageAction[] = [
-  'message.unset',
   'message.create',
   'message.update',
   'message.delete',
-  'annotation.create',
-  'annotation.delete',
   'meta.occupancy',
+  'message.summary'
 ];
 
 const MessageActionMap = new Map<API.MessageAction, number>(MessageActionArray.map((action, index) => [action, index]));
