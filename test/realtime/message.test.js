@@ -1279,15 +1279,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const testCases = [
         {
           description: 'should stringify the numeric action',
-          action: 1,
+          action: 0,
           expectedString: '[Message; action=message.create]',
-          expectedJSON: { action: 1 },
+          expectedJSON: { action: 0 },
         },
         {
           description: 'should accept an already stringified action',
           action: 'message.update',
           expectedString: '[Message; action=message.update]',
-          expectedJSON: { action: 2 },
+          expectedJSON: { action: 1 },
         },
         {
           description: 'should handle no action provided',
