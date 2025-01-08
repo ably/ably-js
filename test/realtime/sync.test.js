@@ -70,26 +70,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             function (cb) {
               helper.recordPrivateApi('call.channel.processMessage');
               channel
-                .processMessage({
-                  action: 16,
-                  channel: channelName,
-                  presence: [
-                    {
-                      action: 'present',
-                      clientId: 'one',
-                      connectionId: 'one_connid',
-                      id: 'one_connid:0:0',
-                      timestamp: 1e12,
-                    },
-                    {
-                      action: 'present',
-                      clientId: 'two',
-                      connectionId: 'two_connid',
-                      id: 'two_connid:0:0',
-                      timestamp: 1e12,
-                    },
-                  ],
-                })
+                .processMessage(
+                  createPM({
+                    action: 16,
+                    channel: channelName,
+                    presence: [
+                      {
+                        action: 1,
+                        clientId: 'one',
+                        connectionId: 'one_connid',
+                        id: 'one_connid:0:0',
+                        timestamp: 1e12,
+                      },
+                      {
+                        action: 1,
+                        clientId: 'two',
+                        connectionId: 'two_connid',
+                        id: 'two_connid:0:0',
+                        timestamp: 1e12,
+                      },
+                    ],
+                  }),
+                )
                 .then(function () {
                   cb();
                 })
@@ -114,26 +116,28 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               /* Trigger another sync. Two has gone without so much as a `leave` message! */
               helper.recordPrivateApi('call.channel.processMessage');
               channel
-                .processMessage({
-                  action: 16,
-                  channel: channelName,
-                  presence: [
-                    {
-                      action: 'present',
-                      clientId: 'one',
-                      connectionId: 'one_connid',
-                      id: 'one_connid:0:0',
-                      timestamp: 1e12,
-                    },
-                    {
-                      action: 'present',
-                      clientId: 'three',
-                      connectionId: 'three_connid',
-                      id: 'three_connid:0:0',
-                      timestamp: 1e12,
-                    },
-                  ],
-                })
+                .processMessage(
+                  createPM({
+                    action: 16,
+                    channel: channelName,
+                    presence: [
+                      {
+                        action: 1,
+                        clientId: 'one',
+                        connectionId: 'one_connid',
+                        id: 'one_connid:0:0',
+                        timestamp: 1e12,
+                      },
+                      {
+                        action: 1,
+                        clientId: 'three',
+                        connectionId: 'three_connid',
+                        id: 'three_connid:0:0',
+                        timestamp: 1e12,
+                      },
+                    ],
+                  }),
+                )
                 .then(function () {
                   cb();
                 })
@@ -191,67 +195,75 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       /* First sync */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 16,
-        channel: channelName,
-        presence: [
-          {
-            action: 'present',
-            clientId: 'one',
-            connectionId: 'one_connid',
-            id: 'one_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 16,
+          channel: channelName,
+          presence: [
+            {
+              action: 1,
+              clientId: 'one',
+              connectionId: 'one_connid',
+              id: 'one_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       /* A second sync, this time in multiple parts, with a presence message in the middle */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 16,
-        channel: channelName,
-        channelSerial: 'serial:cursor',
-        presence: [
-          {
-            action: 'present',
-            clientId: 'two',
-            connectionId: 'two_connid',
-            id: 'two_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 16,
+          channel: channelName,
+          channelSerial: 'serial:cursor',
+          presence: [
+            {
+              action: 1,
+              clientId: 'two',
+              connectionId: 'two_connid',
+              id: 'two_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        presence: [
-          {
-            action: 'enter',
-            clientId: 'three',
-            connectionId: 'three_connid',
-            id: 'three_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          presence: [
+            {
+              action: 2,
+              clientId: 'three',
+              connectionId: 'three_connid',
+              id: 'three_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 16,
-        channel: channelName,
-        channelSerial: 'serial:',
-        presence: [
-          {
-            action: 'present',
-            clientId: 'four',
-            connectionId: 'four_connid',
-            id: 'four_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 16,
+          channel: channelName,
+          channelSerial: 'serial:',
+          presence: [
+            {
+              action: 1,
+              clientId: 'four',
+              connectionId: 'four_connid',
+              id: 'four_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       await new Promise(function (resolve, reject) {
         var done = function (err) {
@@ -302,51 +314,57 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       );
 
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 16,
-        channel: channelName,
-        channelSerial: 'serial:cursor',
-        presence: [
-          {
-            action: 'present',
-            clientId: 'one',
-            connectionId: 'one_connid',
-            id: 'one_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 16,
+          channel: channelName,
+          channelSerial: 'serial:cursor',
+          presence: [
+            {
+              action: 1,
+              clientId: 'one',
+              connectionId: 'one_connid',
+              id: 'one_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        presence: [
-          {
-            action: 'enter',
-            clientId: 'one',
-            connectionId: 'one_connid',
-            id: 'one_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          presence: [
+            {
+              action: 2,
+              clientId: 'one',
+              connectionId: 'one_connid',
+              id: 'one_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 16,
-        channel: channelName,
-        channelSerial: 'serial:',
-        presence: [
-          {
-            action: 'present',
-            clientId: 'two',
-            connectionId: 'two_connid',
-            id: 'two_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 16,
+          channel: channelName,
+          channelSerial: 'serial:',
+          presence: [
+            {
+              action: 1,
+              clientId: 'two',
+              connectionId: 'two_connid',
+              id: 'two_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       await new Promise(function (resolve, reject) {
         var done = function (err) {
@@ -394,51 +412,57 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       );
 
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 16,
-        channel: channelName,
-        channelSerial: 'serial:cursor',
-        presence: [
-          {
-            action: 'present',
-            clientId: 'one',
-            connectionId: 'one_connid',
-            id: 'one_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 16,
+          channel: channelName,
+          channelSerial: 'serial:cursor',
+          presence: [
+            {
+              action: 1,
+              clientId: 'one',
+              connectionId: 'one_connid',
+              id: 'one_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        presence: [
-          {
-            action: 'enter',
-            clientId: 'two',
-            connectionId: 'two_connid',
-            id: 'two_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          presence: [
+            {
+              action: 2,
+              clientId: 'two',
+              connectionId: 'two_connid',
+              id: 'two_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 16,
-        channel: channelName,
-        channelSerial: 'serial:',
-        presence: [
-          {
-            action: 'present',
-            clientId: 'two',
-            connectionId: 'two_connid',
-            id: 'two_connid:0:0',
-            timestamp: 1e12,
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 16,
+          channel: channelName,
+          channelSerial: 'serial:',
+          presence: [
+            {
+              action: 1,
+              clientId: 'two',
+              connectionId: 'two_connid',
+              id: 'two_connid:0:0',
+              timestamp: 1e12,
+            },
+          ],
+        }),
+      );
 
       await new Promise(function (resolve, reject) {
         var done = function (err) {
@@ -490,124 +514,138 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       /* One enters */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        id: 'one_connid:1',
-        connectionId: 'one_connid',
-        timestamp: 1e12,
-        presence: [
-          {
-            action: 'enter',
-            clientId: 'one',
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          id: 'one_connid:1',
+          connectionId: 'one_connid',
+          timestamp: 1e12,
+          presence: [
+            {
+              action: 2,
+              clientId: 'one',
+            },
+          ],
+        }),
+      );
 
       /* An earlier leave from one (should be ignored) */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        connectionId: 'one_connid',
-        id: 'one_connid:0',
-        timestamp: 1e12,
-        presence: [
-          {
-            action: 'leave',
-            clientId: 'one',
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          connectionId: 'one_connid',
+          id: 'one_connid:0',
+          timestamp: 1e12,
+          presence: [
+            {
+              action: 3,
+              clientId: 'one',
+            },
+          ],
+        }),
+      );
 
       /* One adds some data in a newer msgSerial */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        connectionId: 'one_connid',
-        id: 'one_connid:2',
-        timestamp: 1e12,
-        presence: [
-          {
-            action: 'update',
-            clientId: 'one',
-            data: 'onedata',
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          connectionId: 'one_connid',
+          id: 'one_connid:2',
+          timestamp: 1e12,
+          presence: [
+            {
+              action: 4,
+              clientId: 'one',
+              data: 'onedata',
+            },
+          ],
+        }),
+      );
 
       /* Two enters */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        connectionId: 'two_connid',
-        id: 'two_connid:0',
-        timestamp: 1e12,
-        presence: [
-          {
-            action: 'enter',
-            clientId: 'two',
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          connectionId: 'two_connid',
+          id: 'two_connid:0',
+          timestamp: 1e12,
+          presence: [
+            {
+              action: 2,
+              clientId: 'two',
+            },
+          ],
+        }),
+      );
 
       /* Two updates twice in the same message */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        connectionId: 'two_connid',
-        id: 'two_connid:0',
-        timestamp: 1e12,
-        presence: [
-          {
-            action: 'update',
-            clientId: 'two',
-            data: 'twowrongdata',
-          },
-          {
-            action: 'update',
-            clientId: 'two',
-            data: 'twodata',
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          connectionId: 'two_connid',
+          id: 'two_connid:0',
+          timestamp: 1e12,
+          presence: [
+            {
+              action: 4,
+              clientId: 'two',
+              data: 'twowrongdata',
+            },
+            {
+              action: 4,
+              clientId: 'two',
+              data: 'twodata',
+            },
+          ],
+        }),
+      );
 
       /* Three enters */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        connectionId: 'three_connid',
-        id: 'three_connid:99',
-        timestamp: 1e12,
-        presence: [
-          {
-            action: 'enter',
-            clientId: 'three',
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          connectionId: 'three_connid',
+          id: 'three_connid:99',
+          timestamp: 1e12,
+          presence: [
+            {
+              action: 2,
+              clientId: 'three',
+            },
+          ],
+        }),
+      );
 
       /* Synthesized leave for three (with earlier msgSerial, incompatible id,
        * and later timestamp) */
       helper.recordPrivateApi('call.channel.processMessage');
-      await channel.processMessage({
-        action: 14,
-        channel: channelName,
-        connectionId: 'synthesized',
-        id: 'synthesized:0',
-        timestamp: 1e12 + 1,
-        presence: [
-          {
-            action: 'leave',
-            clientId: 'three',
-            connectionId: 'three_connid',
-          },
-        ],
-      });
+      await channel.processMessage(
+        createPM({
+          action: 14,
+          channel: channelName,
+          connectionId: 'synthesized',
+          id: 'synthesized:0',
+          timestamp: 1e12 + 1,
+          presence: [
+            {
+              action: 3,
+              clientId: 'three',
+              connectionId: 'three_connid',
+            },
+          ],
+        }),
+      );
 
       await new Promise(function (resolve, reject) {
         var done = function (err) {
@@ -690,18 +728,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                 helper.recordPrivateApi('replace.channel.processMessage');
                 syncerChannel.processMessage = originalProcessMessage;
                 helper.recordPrivateApi('call.channel.processMessage');
-                await syncerChannel.processMessage({
-                  action: 14,
-                  id: 'messageid:0',
-                  connectionId: 'connid',
-                  timestamp: 2000000000000,
-                  presence: [
-                    {
-                      clientId: interrupterClientId,
-                      action: 'enter',
-                    },
-                  ],
-                });
+                await syncerChannel.processMessage(
+                  createPM({
+                    action: 14,
+                    id: 'messageid:0',
+                    connectionId: 'connid',
+                    timestamp: 2000000000000,
+                    presence: [
+                      {
+                        clientId: interrupterClientId,
+                        action: 2,
+                      },
+                    ],
+                  }),
+                );
               }
             };
             Helper.whenPromiseSettles(syncerChannel.attach(), cb);
