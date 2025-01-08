@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
-import PresenceMessage, { WireProtocolPresenceMessage, _fromEncodedArray } from '../types/presencemessage';
+import PresenceMessage, { WirePresenceMessage, _fromEncodedArray } from '../types/presencemessage';
 import RestChannel from './restchannel';
 import Defaults from '../util/defaults';
 
@@ -31,9 +31,9 @@ class RestPresence {
       headers,
       envelope,
       async (body, headers, unpacked) => {
-        const decoded: WireProtocolPresenceMessage[] = unpacked
-          ? (body as WireProtocolPresenceMessage[])
-          : Utils.decodeBody(body, client._MsgPack, format);
+        const decoded = (
+          unpacked ? body : Utils.decodeBody(body, client._MsgPack, format)
+        ) as Utils.Properties<WirePresenceMessage>[];
 
         return _fromEncodedArray(decoded, this.channel);
       },

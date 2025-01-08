@@ -1,16 +1,12 @@
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import PresenceMessage, {
-  fromValues as presenceMessageFromValues,
-  fromData as presenceMessageFromData,
-  encode as encodePresenceMessage,
-} from '../types/presencemessage';
+import PresenceMessage, { WirePresenceMessage } from '../types/presencemessage';
+import type { CipherOptions } from '../types/basemessage';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
-import { CipherOptions } from '../types/message';
 import { ErrCallback } from '../../types/utils';
 import { PaginatedResult } from './paginatedresource';
 import { PresenceMap, RealtimePresenceParams } from './presencemap';
@@ -61,7 +57,7 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
 
 class RealtimePresence extends EventEmitter {
   channel: RealtimeChannel;
-  pendingPresence: { presence: PresenceMessage; callback: ErrCallback }[];
+  pendingPresence: { presence: WirePresenceMessage; callback: ErrCallback }[];
   syncComplete: boolean;
   members: PresenceMap;
   _myMembers: PresenceMap;
@@ -119,7 +115,7 @@ class RealtimePresence extends EventEmitter {
       'channel = ' + channel.name + ', id = ' + id + ', client = ' + (clientId || '(implicit) ' + getClientId(this)),
     );
 
-    const presence = presenceMessageFromData(data);
+    const presence = PresenceMessage.fromData(data);
     presence.action = action;
     if (id) {
       presence.id = id;
@@ -127,12 +123,12 @@ class RealtimePresence extends EventEmitter {
     if (clientId) {
       presence.clientId = clientId;
     }
+    const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 
-    await encodePresenceMessage(presence, channel.channelOptions as CipherOptions);
     switch (channel.state) {
       case 'attached':
         return new Promise((resolve, reject) => {
-          channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
+          channel.sendPresence([wirePresMsg], (err) => (err ? reject(err) : resolve()));
         });
       case 'initialized':
       case 'detached':
@@ -141,7 +137,7 @@ class RealtimePresence extends EventEmitter {
       case 'attaching':
         return new Promise((resolve, reject) => {
           this.pendingPresence.push({
-            presence: presence,
+            presence: wirePresMsg,
             callback: (err) => (err ? reject(err) : resolve()),
           });
         });
@@ -175,20 +171,21 @@ class RealtimePresence extends EventEmitter {
       'RealtimePresence.leaveClient()',
       'leaving; channel = ' + this.channel.name + ', client = ' + clientId,
     );
-    const presence = presenceMessageFromData(data);
+    const presence = PresenceMessage.fromData(data);
     presence.action = 'leave';
     if (clientId) {
       presence.clientId = clientId;
     }
+    const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 
     return new Promise((resolve, reject) => {
       switch (channel.state) {
         case 'attached':
-          channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
+          channel.sendPresence([wirePresMsg], (err) => (err ? reject(err) : resolve()));
           break;
         case 'attaching':
           this.pendingPresence.push({
-            presence: presence,
+            presence: wirePresMsg,
             callback: (err) => (err ? reject(err) : resolve()),
           });
           break;
@@ -288,8 +285,7 @@ class RealtimePresence extends EventEmitter {
       }
     }
 
-    for (let i = 0; i < presenceSet.length; i++) {
-      const presence = presenceMessageFromValues(presenceSet[i]);
+    for (let presence of presenceSet) {
       switch (presence.action) {
         case 'leave':
           if (members.remove(presence)) {
@@ -320,7 +316,7 @@ class RealtimePresence extends EventEmitter {
     /* broadcast to listeners */
     for (let i = 0; i < broadcastMessages.length; i++) {
       const presence = broadcastMessages[i];
-      this.subscriptions.emit(presence.action as string, presence);
+      this.subscriptions.emit(presence.action!, presence);
     }
   }
 
@@ -435,7 +431,7 @@ class RealtimePresence extends EventEmitter {
   _synthesizeLeaves(items: PresenceMessage[]): void {
     const subscriptions = this.subscriptions;
     items.forEach(function (item) {
-      const presence = presenceMessageFromValues({
+      const presence = PresenceMessage.fromValues({
         action: 'leave',
         connectionId: item.connectionId,
         clientId: item.clientId,

@@ -875,7 +875,7 @@ export type ChannelMode =
   | ChannelModes.PUBLISH
   | ChannelModes.SUBSCRIBE
   | ChannelModes.PRESENCE
-  | ChannelModes.PRESENCE_SUBSCRIBE
+  | ChannelModes.PRESENCE_SUBSCRIBE;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
