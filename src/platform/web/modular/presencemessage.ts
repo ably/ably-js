@@ -1,5 +1,5 @@
 import * as API from '../../../../ably';
-import PresenceMessage, { fromEncoded, fromEncodedArray } from '../../../common/lib/types/presencemessage';
+import { fromValues, fromEncoded, fromEncodedArray } from '../../../common/lib/types/presencemessage';
 import { Crypto } from './crypto';
 import Logger from '../../../common/lib/util/logger';
 
@@ -21,4 +21,4 @@ export const decodeEncryptedPresenceMessages = ((obj, options) => {
   return fromEncodedArray(Logger.defaultLogger, Crypto, obj, options);
 }) as API.PresenceMessageStatic['fromEncodedArray'];
 
-export const constructPresenceMessage = PresenceMessage.fromValues as API.PresenceMessageStatic['fromValues'];
+export const constructPresenceMessage = fromValues as API.PresenceMessageStatic['fromValues'];

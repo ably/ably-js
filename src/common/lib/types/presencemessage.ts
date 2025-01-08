@@ -56,6 +56,11 @@ export async function _fromEncodedArray(
   );
 }
 
+// for tree-shakability
+export function fromValues(values: Properties<PresenceMessage>) {
+  return PresenceMessage.fromValues(values);
+}
+
 class PresenceMessage extends BaseMessage {
   action?: string;
 
