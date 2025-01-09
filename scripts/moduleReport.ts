@@ -264,7 +264,9 @@ async function checkBaseRealtimeFiles() {
     'src/common/lib/transport/transport.ts',
     'src/common/lib/types/errorinfo.ts',
     'src/common/lib/types/message.ts',
+    'src/common/lib/types/basemessage.ts',
     'src/common/lib/types/protocolmessage.ts',
+    'src/common/lib/types/protocolmessagecommon.ts',
     'src/common/lib/types/pushchannelsubscription.ts', // TODO why? https://github.com/ably/ably-js/issues/1506
     'src/common/lib/util/defaults.ts',
     'src/common/lib/util/eventemitter.ts',

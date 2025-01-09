@@ -1,11 +1,6 @@
 import * as API from '../../../../ably';
 import Logger from '../util/logger';
-import PresenceMessage, {
-  fromEncoded,
-  fromEncodedArray,
-  fromValues,
-  WireProtocolPresenceMessage,
-} from './presencemessage';
+import PresenceMessage, { fromEncoded, fromEncodedArray, WirePresenceMessage } from './presencemessage';
 import Platform from 'common/platform';
 import type { Properties } from '../util/utils';
 
@@ -14,22 +9,17 @@ import type { Properties } from '../util/utils';
  */
 export class DefaultPresenceMessage extends PresenceMessage {
   static async fromEncoded(encoded: unknown, inputOptions?: API.ChannelOptions): Promise<PresenceMessage> {
-    return fromEncoded(Logger.defaultLogger, Platform.Crypto, encoded as WireProtocolPresenceMessage, inputOptions);
+    return fromEncoded(Logger.defaultLogger, Platform.Crypto, encoded as WirePresenceMessage, inputOptions);
   }
 
   static async fromEncodedArray(
     encodedArray: Array<unknown>,
     options?: API.ChannelOptions,
   ): Promise<PresenceMessage[]> {
-    return fromEncodedArray(
-      Logger.defaultLogger,
-      Platform.Crypto,
-      encodedArray as WireProtocolPresenceMessage[],
-      options,
-    );
+    return fromEncodedArray(Logger.defaultLogger, Platform.Crypto, encodedArray as WirePresenceMessage[], options);
   }
 
   static fromValues(values: Properties<PresenceMessage>): PresenceMessage {
-    return fromValues(values);
+    return PresenceMessage.fromValues(values);
   }
 }
