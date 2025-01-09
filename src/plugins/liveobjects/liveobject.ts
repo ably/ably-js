@@ -40,6 +40,15 @@ export abstract class LiveObject<
   protected _siteTimeserials: Record<string, string>;
   protected _createOperationIsMerged: boolean;
   private _tombstone: boolean;
+  /**
+   * Even though the `timeserial` from the operation that deleted the object contains the timestamp value,
+   * the `timeserial` should be treated as an opaque string on the client, meaning we should not attempt to parse it.
+   *
+   * Therefore, we need to set our own timestamp using local clock when the object is deleted client-side.
+   * Strictly speaking, this does make an assumption about the client clock not being too heavily skewed behind the server,
+   * but it is an acceptable compromise for the time being, as the likelihood of encountering a race here is pretty low given the grace periods we use.
+   */
+  private _tombstonedAt: number | undefined;
 
   protected constructor(
     protected _liveObjects: LiveObjects,
@@ -108,6 +117,7 @@ export abstract class LiveObject<
    */
   tombstone(): void {
     this._tombstone = true;
+    this._tombstonedAt = Date.now();
     this._dataRef = this._getZeroValueData();
     // TODO: emit "deleted" event so that end users get notified about this object getting deleted
   }
@@ -117,6 +127,13 @@ export abstract class LiveObject<
    */
   isTombstoned(): boolean {
     return this._tombstone;
+  }
+
+  /**
+   * @internal
+   */
+  tombstonedAt(): number | undefined {
+    return this._tombstonedAt;
   }
 
   /**
@@ -168,6 +185,11 @@ export abstract class LiveObject<
    * @internal
    */
   abstract overrideWithStateObject(stateObject: StateObject): TUpdate | LiveObjectUpdateNoop;
+  /**
+   * @internal
+   */
+  abstract onGCInterval(): void;
+
   protected abstract _getZeroValueData(): TData;
   /**
    * Calculate the update object based on the current Live Object data and incoming new data.
