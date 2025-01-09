@@ -5,13 +5,13 @@ type CustomRoot = {
   stringKey: string;
   booleanKey: boolean;
   couldBeUndefined?: string;
-  mapKey?: LiveMap<{
+  mapKey: LiveMap<{
     foo: 'bar';
     nestedMap?: LiveMap<{
       baz: 'qux';
     }>;
   }>;
-  counterKey?: LiveCounter;
+  counterKey: LiveCounter;
 };
 
 declare global {

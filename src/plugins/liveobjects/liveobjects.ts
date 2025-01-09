@@ -4,9 +4,9 @@ import type EventEmitter from 'common/lib/util/eventemitter';
 import type * as API from '../../../ably';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { LiveObject, LiveObjectUpdate } from './liveobject';
+import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
-import { StateMessage } from './statemessage';
+import { StateMessage, StateOperationAction } from './statemessage';
 import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
 
 enum LiveObjectsEvents {
@@ -101,7 +101,7 @@ export class LiveObjects {
       return;
     }
 
-    this._liveObjectsPool.applyStateMessages(stateMessages);
+    this._applyStateMessages(stateMessages);
   }
 
   /**
@@ -159,7 +159,7 @@ export class LiveObjects {
     this._applySync();
     // should apply buffered state operations after we applied the SYNC data.
     // can use regular state messages application logic
-    this._liveObjectsPool.applyStateMessages(this._bufferedStateOperations);
+    this._applyStateMessages(this._bufferedStateOperations);
 
     this._bufferedStateOperations = [];
     this._syncLiveObjectsDataPool.reset();
@@ -193,7 +193,7 @@ export class LiveObjects {
     }
 
     const receivedObjectIds = new Set<string>();
-    const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate }[] = [];
+    const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate | LiveObjectUpdateNoop }[] = [];
 
     for (const [objectId, entry] of this._syncLiveObjectsDataPool.entries()) {
       receivedObjectIds.add(objectId);
@@ -231,5 +231,47 @@ export class LiveObjects {
 
     // call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
+  }
+
+  private _applyStateMessages(stateMessages: StateMessage[]): void {
+    for (const stateMessage of stateMessages) {
+      if (!stateMessage.operation) {
+        this._client.Logger.logAction(
+          this._client.logger,
+          this._client.Logger.LOG_MAJOR,
+          'LiveObjects._applyStateMessages()',
+          `state operation message is received without 'operation' field, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+        );
+        continue;
+      }
+
+      const stateOperation = stateMessage.operation;
+
+      switch (stateOperation.action) {
+        case StateOperationAction.MAP_CREATE:
+        case StateOperationAction.COUNTER_CREATE:
+        case StateOperationAction.MAP_SET:
+        case StateOperationAction.MAP_REMOVE:
+        case StateOperationAction.COUNTER_INC:
+        case StateOperationAction.OBJECT_DELETE:
+          // we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
+          // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
+          // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
+          // since they need to be able to eventually initialize themselves from that *_CREATE op.
+          // so to simplify operations handling, we always try to create a zero-value object in the pool first,
+          // and then we can always apply the operation on the existing object in the pool.
+          this._liveObjectsPool.createZeroValueObjectIfNotExists(stateOperation.objectId);
+          this._liveObjectsPool.get(stateOperation.objectId)!.applyOperation(stateOperation, stateMessage);
+          break;
+
+        default:
+          this._client.Logger.logAction(
+            this._client.logger,
+            this._client.Logger.LOG_MAJOR,
+            'LiveObjects._applyStateMessages()',
+            `received unsupported action in state operation message: ${stateOperation.action}, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+          );
+      }
+    }
   }
 }

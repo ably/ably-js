@@ -2103,12 +2103,14 @@ export type DefaultRoot =
  */
 export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate> {
   /**
-   * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map.
+   * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map or if the associated {@link LiveObject} has been deleted.
+   *
+   * Always returns undefined if this map object is deleted.
    *
    * @param key - The key to retrieve the value for.
-   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map.
+   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
    */
-  get<TKey extends keyof T & string>(key: TKey): T[TKey];
+  get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
 
   /**
    * Returns the number of key/value pairs in the map.

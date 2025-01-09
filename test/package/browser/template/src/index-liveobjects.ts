@@ -24,14 +24,16 @@ globalThis.testAblyPackage = async function () {
   const size: number = root.size();
 
   // check custom user provided typings via LiveObjectsTypes are working:
+  // any LiveMap.get() call can return undefined, as the LiveMap itself can be tombstoned (has empty state),
+  // or referenced object is tombstoned.
   // keys on a root:
-  const aNumber: number = root.get('numberKey');
-  const aString: string = root.get('stringKey');
-  const aBoolean: boolean = root.get('booleanKey');
-  const couldBeUndefined: string | undefined = root.get('couldBeUndefined');
+  const aNumber: number | undefined = root.get('numberKey');
+  const aString: string | undefined = root.get('stringKey');
+  const aBoolean: boolean | undefined = root.get('booleanKey');
+  const userProvidedUndefined: string | undefined = root.get('couldBeUndefined');
   // live objects on a root:
   const counter: Ably.LiveCounter | undefined = root.get('counterKey');
-  const map: LiveObjectsTypes['root']['mapKey'] = root.get('mapKey');
+  const map: LiveObjectsTypes['root']['mapKey'] | undefined = root.get('mapKey');
   // check string literal types works
   // need to use nullish coalescing as we didn't actually create any data on the root,
   // so the next calls would fail. we only need to check that TypeScript types work
@@ -61,5 +63,5 @@ globalThis.testAblyPackage = async function () {
 
   // check can provide custom types for the getRoot method, ignoring global LiveObjectsTypes interface
   const explicitRoot: Ably.LiveMap<ExplicitRootType> = await liveObjects.getRoot<ExplicitRootType>();
-  const someOtherKey: string = explicitRoot.get('someOtherKey');
+  const someOtherKey: string | undefined = explicitRoot.get('someOtherKey');
 };
