@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.6.1](https://github.com/ably/ably-js/tree/2.6.1) (2025-01-13)
+
+- Removed an incorrect channel mode `ATTACH_RESUME` from the `ChannelModes` enum.
+- Removed the `UNSET` type from `MESSAGE_ACTIONS` enum, all messages will always have their `action` set.
+- Removed `ANNOTATION_CREATE` and `ANNOTATION_DELETE` from the `MESSAGE_ACTIONS` enum.
+- Adds support for upcoming message summaries with the new `MESSAGE_SUMMARY` message action type.
+- Multiple improvements to type definitions and message handling.
+
 ## [2.6.0](https://github.com/ably/ably-js/tree/2.6.0) (2024-12-10)
 
 - Removed a build check that prevented referencing branch builds in `package.json`. It is now possible to point npm at specific branches of ably-js.
