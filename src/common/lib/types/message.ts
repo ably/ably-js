@@ -442,6 +442,13 @@ export function getMessagesSize(messages: Message[]): number {
   return total;
 }
 
+export const MessageEncoding = {
+  encryptData,
+  encodeData,
+  encodeDataForWireProtocol,
+  decodeData,
+};
+
 class Message {
   name?: string;
   id?: string;

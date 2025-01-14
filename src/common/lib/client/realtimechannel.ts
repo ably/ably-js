@@ -12,10 +12,10 @@ import Message, {
   fromValuesArray as messagesFromValuesArray,
   encodeArray as encodeMessagesArray,
   decode as decodeMessage,
-  decodeData,
   getMessagesSize,
   CipherOptions,
   EncodingDecodingContext,
+  MessageEncoding,
 } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
@@ -615,7 +615,7 @@ class RealtimeChannel extends EventEmitter {
         const options = this.channelOptions;
         await this._decodeAndPrepareMessages(message, stateMessages, (msg) =>
           this.client._LiveObjectsPlugin
-            ? this.client._LiveObjectsPlugin.StateMessage.decode(msg, options, decodeData)
+            ? this.client._LiveObjectsPlugin.StateMessage.decode(msg, options, MessageEncoding.decodeData)
             : Utils.throwMissingPluginError('LiveObjects'),
         );
 
