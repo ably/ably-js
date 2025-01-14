@@ -14,12 +14,13 @@ export type ChannelParameters = string | ChannelNameAndOptions;
 
 export const version = '2.6.1';
 
-export function channelOptionsWithAgent(options?: Ably.ChannelOptions) {
+export function channelOptionsWithAgent(options?: Ably.ChannelOptions): Ably.ChannelOptions {
   return {
     ...options,
     params: {
       ...options?.params,
       agent: `react-hooks/${version}`,
     },
+    attachOnSubscribe: false,
   };
 }

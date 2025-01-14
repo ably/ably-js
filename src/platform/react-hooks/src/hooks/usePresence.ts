@@ -6,15 +6,13 @@ import { useChannelInstance } from './useChannelInstance.js';
 import { useStateErrors } from './useStateErrors.js';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
 import { useChannelStateListener } from './useChannelStateListener.js';
+import { INACTIVE_CHANNEL_STATES, INACTIVE_CONNECTION_STATES } from './constants.js';
 
 export interface PresenceResult<T> {
   updateStatus: (messageOrPresenceObject: T) => Promise<void>;
   connectionError: Ably.ErrorInfo | null;
   channelError: Ably.ErrorInfo | null;
 }
-
-const INACTIVE_CONNECTION_STATES: Ably.ConnectionState[] = ['suspended', 'closing', 'closed', 'failed'];
-const INACTIVE_CHANNEL_STATES: Ably.ChannelState[] = ['failed', 'suspended', 'detaching'];
 
 export function usePresence<T = any>(
   channelNameOrNameAndOptions: ChannelParameters,

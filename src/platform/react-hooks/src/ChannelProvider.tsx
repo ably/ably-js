@@ -1,13 +1,16 @@
-import React, { useLayoutEffect, useMemo } from 'react';
+import React, { useLayoutEffect, useMemo, useState } from 'react';
 import * as Ably from 'ably';
-import { type AblyContextValue, AblyContext } from './AblyContext.js';
+import { AblyContext, type AblyContextValue } from './AblyContext.js';
 import { channelOptionsWithAgent } from './AblyReactHooks.js';
+import { useConnectionStateListener } from './hooks/useConnectionStateListener.js';
+import { INACTIVE_CONNECTION_STATES } from './hooks/constants.js';
 
 interface ChannelProviderProps {
   ablyId?: string;
   channelName: string;
   options?: Ably.ChannelOptions;
   deriveOptions?: Ably.DeriveOptions;
+  skip?: boolean;
   children?: React.ReactNode | React.ReactNode[] | null;
 }
 
@@ -16,10 +19,15 @@ export const ChannelProvider = ({
   channelName,
   options,
   deriveOptions,
+  skip,
   children,
 }: ChannelProviderProps) => {
   const context = React.useContext(AblyContext);
   const { client, _channelNameToChannelContext } = context[ablyId];
+  const [connectionState, setConnectionState] = useState(client.connection.state);
+  useConnectionStateListener((stateChange) => {
+    setConnectionState(stateChange.current);
+  }, ablyId);
 
   if (_channelNameToChannelContext[channelName]) {
     throw new Error('You can not use more than one `ChannelProvider` with the same channel name');
@@ -47,6 +55,20 @@ export const ChannelProvider = ({
   useLayoutEffect(() => {
     channel.setOptions(channelOptionsWithAgent(options));
   }, [channel, options]);
+
+  const shouldAttachToTheChannel = !skip && !INACTIVE_CONNECTION_STATES.includes(connectionState);
+
+  useLayoutEffect(() => {
+    if (shouldAttachToTheChannel) {
+      channel.attach();
+    }
+
+    return () => {
+      if (channel.state !== 'failed') {
+        channel.detach();
+      }
+    };
+  }, [shouldAttachToTheChannel, channel]);
 
   return <AblyContext.Provider value={value}>{children}</AblyContext.Provider>;
 };
