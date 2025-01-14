@@ -157,6 +157,28 @@ export class StateMessage {
   ) {}
 
   /**
+   * Protocol agnostic encoding of the state message's data entries.
+   * Mutates the provided StateMessage.
+   *
+   * Uses encoding functions from regular `Message` processing.
+   */
+  static async encode(message: StateMessage, messageEncoding: typeof MessageEncoding): Promise<StateMessage> {
+    const encodeFn: StateDataEncodeFunction = (value, encoding) => {
+      const { data: newValue, encoding: newEncoding } = messageEncoding.encodeData(value, encoding);
+
+      return {
+        value: newValue,
+        encoding: newEncoding!,
+      };
+    };
+
+    message.operation = message.operation ? StateMessage._encodeStateOperation(message.operation, encodeFn) : undefined;
+    message.object = message.object ? StateMessage._encodeStateObject(message.object, encodeFn) : undefined;
+
+    return message;
+  }
+
+  /**
    * Mutates the provided StateMessage and decodes all data entries in the message
    */
   static async decode(
