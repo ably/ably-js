@@ -596,8 +596,7 @@ class RealtimeChannel extends EventEmitter {
 
         const encoded = message.messages!,
           firstMessage = encoded[0],
-          lastMessage = encoded[encoded.length - 1],
-          channelSerial = message.channelSerial;
+          lastMessage = encoded[encoded.length - 1];
 
         if (
           firstMessage.extras &&
@@ -636,13 +635,6 @@ class RealtimeChannel extends EventEmitter {
               default:
               // do nothing, continue decoding
             }
-          }
-        }
-
-        for (let i = 0; i < messages.length; i++) {
-          const msg = messages[i];
-          if (channelSerial && !msg.version) {
-            msg.version = channelSerial + ':' + i.toString().padStart(3, '0');
           }
         }
 

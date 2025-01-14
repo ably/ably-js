@@ -218,11 +218,20 @@ export function wireToJSON(this: BaseMessage, ...args: any[]): any {
 
 // in-place, generally called on the protocol message before decoding
 export function populateFieldsFromParent(parent: ProtocolMessage) {
+  const { id, connectionId, timestamp, channelSerial } = parent;
+
   let msgs: BaseMessage[];
   switch (parent.action) {
-    case actions.MESSAGE:
+    case actions.MESSAGE: {
       msgs = parent.messages!;
+      for (let i = 0; i < msgs.length; i++) {
+        const msg = parent.messages![i];
+        if (channelSerial && !msg.version) {
+          msg.version = channelSerial + ':' + i.toString().padStart(3, '0');
+        }
+      }
       break;
+    }
     case actions.PRESENCE:
     case actions.SYNC:
       msgs = parent.presence!;
@@ -231,12 +240,17 @@ export function populateFieldsFromParent(parent: ProtocolMessage) {
       throw new ErrorInfo('Unexpected action ' + parent.action, 40000, 400);
   }
 
-  const { id, connectionId, timestamp } = parent;
   for (let i = 0; i < msgs.length; i++) {
     const msg = msgs[i];
-    if (!msg.connectionId) msg.connectionId = connectionId;
-    if (!msg.timestamp) msg.timestamp = timestamp;
-    if (id && !msg.id) msg.id = id + ':' + i;
+    if (!msg.connectionId) {
+      msg.connectionId = connectionId;
+    }
+    if (!msg.timestamp) {
+      msg.timestamp = timestamp;
+    }
+    if (id && !msg.id) {
+      msg.id = id + ':' + i;
+    }
   }
 }
 
