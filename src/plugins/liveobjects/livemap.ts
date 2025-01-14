@@ -154,6 +154,98 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   /**
+   * Send a MAP_SET operation to the realtime system to set a key on this LiveMap object to a specified value.
+   *
+   * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
+   * the published MAP_SET operation is echoed back to the client and applied to the object following the regular
+   * operation application procedure.
+   *
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   */
+  async set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void> {
+    const stateMessage = this.createMapSetMessage(key, value);
+    return this._liveObjects.publish([stateMessage]);
+  }
+
+  /**
+   * @internal
+   */
+  createMapSetMessage<TKey extends keyof T & string>(key: TKey, value: T[TKey]): StateMessage {
+    if (typeof key !== 'string') {
+      throw new this._client.ErrorInfo('Map key should be string', 40013, 400);
+    }
+
+    if (
+      typeof value !== 'string' &&
+      typeof value !== 'number' &&
+      typeof value !== 'boolean' &&
+      !this._client.Platform.BufferUtils.isBuffer(value) &&
+      !(value instanceof LiveObject)
+    ) {
+      throw new this._client.ErrorInfo('Map value data type is unsupported', 40013, 400);
+    }
+
+    const stateData: StateData =
+      value instanceof LiveObject
+        ? ({ objectId: value.getObjectId() } as ObjectIdStateData)
+        : ({ value } as ValueStateData);
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          action: StateOperationAction.MAP_SET,
+          objectId: this.getObjectId(),
+          mapOp: {
+            key,
+            data: stateData,
+          },
+        },
+      },
+      this._client.Utils,
+      this._client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
+   * Send a MAP_REMOVE operation to the realtime system to tombstone a key on this LiveMap object.
+   *
+   * This does not modify the underlying data of this LiveMap object. Instead, the change will be applied when
+   * the published MAP_REMOVE operation is echoed back to the client and applied to the object following the regular
+   * operation application procedure.
+   *
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   */
+  async remove<TKey extends keyof T & string>(key: TKey): Promise<void> {
+    const stateMessage = this.createMapRemoveMessage(key);
+    return this._liveObjects.publish([stateMessage]);
+  }
+
+  /**
+   * @internal
+   */
+  createMapRemoveMessage<TKey extends keyof T & string>(key: TKey): StateMessage {
+    if (typeof key !== 'string') {
+      throw new this._client.ErrorInfo('Map key should be string', 40013, 400);
+    }
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          action: StateOperationAction.MAP_REMOVE,
+          objectId: this.getObjectId(),
+          mapOp: { key },
+        },
+      },
+      this._client.Utils,
+      this._client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
    * @internal
    */
   applyOperation(op: StateOperation, msg: StateMessage): void {
@@ -172,7 +264,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap.applyOperation()',
-        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this._objectId}`,
+        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
       );
       return;
     }
@@ -427,7 +519,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapCreate()',
-        `skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=${this._objectId}`,
+        `skipping applying MAP_CREATE op on a map instance as it was already applied before; objectId=${this.getObjectId()}`,
       );
       return { noop: true };
     }
@@ -453,7 +545,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapSet()',
-        `skipping update for key="${op.key}": op timeserial ${opOriginTimeserial?.toString()} <= entry timeserial ${existingEntry.timeserial?.toString()}; objectId=${this._objectId}`,
+        `skipping update for key="${op.key}": op timeserial ${opOriginTimeserial?.toString()} <= entry timeserial ${existingEntry.timeserial?.toString()}; objectId=${this.getObjectId()}`,
       );
       return { noop: true };
     }
@@ -506,7 +598,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveMap._applyMapRemove()',
-        `skipping remove for key="${op.key}": op timeserial ${opOriginTimeserial?.toString()} <= entry timeserial ${existingEntry.timeserial?.toString()}; objectId=${this._objectId}`,
+        `skipping remove for key="${op.key}": op timeserial ${opOriginTimeserial?.toString()} <= entry timeserial ${existingEntry.timeserial?.toString()}; objectId=${this.getObjectId()}`,
       );
       return { noop: true };
     }

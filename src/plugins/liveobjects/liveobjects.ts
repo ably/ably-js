@@ -150,6 +150,23 @@ export class LiveObjects {
     }
   }
 
+  /**
+   * @internal
+   */
+  async publish(stateMessages: StateMessage[]): Promise<void> {
+    if (!this._channel.connectionManager.activeState()) {
+      throw this._channel.connectionManager.getError();
+    }
+
+    if (this._channel.state === 'failed' || this._channel.state === 'suspended') {
+      throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
+    }
+
+    stateMessages.forEach((x) => StateMessage.encode(x, this._client.MessageEncoding));
+
+    return this._channel.sendState(stateMessages);
+  }
+
   private _startNewSync(syncId?: string, syncCursor?: string): void {
     // need to discard all buffered state operation messages on new sync start
     this._bufferedStateOperations = [];
