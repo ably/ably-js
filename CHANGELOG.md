@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.6.2](https://github.com/ably/ably-js/tree/2.6.2) (2025-01-14)
+
+- Minor bugfix for experimental message fields.
+
 ## [2.6.1](https://github.com/ably/ably-js/tree/2.6.1) (2025-01-13)
 
 - Removed an incorrect channel mode `ATTACH_RESUME` from the `ChannelModes` enum.
