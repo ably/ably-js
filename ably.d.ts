@@ -893,6 +893,13 @@ export interface ChannelOptions {
    * An array of {@link ChannelMode} objects.
    */
   modes?: ChannelMode[];
+  /**
+   *  A boolean which determines whether calling subscribe
+   *  on a channel or presence object should trigger an implicit attach. Defaults to `true`
+   *
+   *  Note: this option is for realtime client libraries only
+   */
+  attachOnSubscribe?: boolean;
 }
 
 /**

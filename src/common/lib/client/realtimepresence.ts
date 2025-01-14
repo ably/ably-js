@@ -454,7 +454,11 @@ class RealtimePresence extends EventEmitter {
     }
 
     this.subscriptions.on(event, listener);
-    await channel.attach();
+
+    // (RTP6d)
+    if (channel.channelOptions.attachOnSubscribe !== false) {
+      await channel.attach();
+    }
   }
 
   unsubscribe(..._args: unknown[] /* [event], listener */): void {
