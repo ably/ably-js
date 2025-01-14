@@ -1,6 +1,11 @@
-import type { decodeData } from 'common/lib/types/message';
-import type Platform from 'common/platform';
+import type { MessageEncoding } from 'common/lib/types/message';
+import type * as Utils from 'common/lib/util/utils';
 import type { ChannelOptions } from 'common/types/channel';
+
+export type StateDataEncodeFunction = (
+  value: StateValue | undefined,
+  encoding: string | undefined,
+) => { value: StateValue | undefined; encoding: string | undefined };
 
 export enum StateOperationAction {
   MAP_CREATE = 0,
@@ -146,46 +151,60 @@ export class StateMessage {
   /** Site code corresponding to this message's timeserial */
   siteCode?: string;
 
-  constructor(private _platform: typeof Platform) {}
+  constructor(
+    private _utils: typeof Utils,
+    private _messageEncoding: typeof MessageEncoding,
+  ) {}
 
+  /**
+   * Mutates the provided StateMessage and decodes all data entries in the message
+   */
   static async decode(
     message: StateMessage,
     inputContext: ChannelOptions,
-    decodeDataFn: typeof decodeData,
+    messageEncoding: typeof MessageEncoding,
   ): Promise<void> {
     // TODO: decide how to handle individual errors from decoding values. currently we throw first ever error we get
 
     if (message.object?.map?.entries) {
-      await StateMessage._decodeMapEntries(message.object.map.entries, inputContext, decodeDataFn);
+      await StateMessage._decodeMapEntries(message.object.map.entries, inputContext, messageEncoding);
     }
 
     if (message.object?.createOp?.map?.entries) {
-      await StateMessage._decodeMapEntries(message.object.createOp.map.entries, inputContext, decodeDataFn);
+      await StateMessage._decodeMapEntries(message.object.createOp.map.entries, inputContext, messageEncoding);
     }
 
     if (message.object?.createOp?.mapOp?.data && 'value' in message.object.createOp.mapOp.data) {
-      await StateMessage._decodeStateData(message.object.createOp.mapOp.data, inputContext, decodeDataFn);
+      await StateMessage._decodeStateData(message.object.createOp.mapOp.data, inputContext, messageEncoding);
     }
 
     if (message.operation?.map?.entries) {
-      await StateMessage._decodeMapEntries(message.operation.map.entries, inputContext, decodeDataFn);
+      await StateMessage._decodeMapEntries(message.operation.map.entries, inputContext, messageEncoding);
     }
 
     if (message.operation?.mapOp?.data && 'value' in message.operation.mapOp.data) {
-      await StateMessage._decodeStateData(message.operation.mapOp.data, inputContext, decodeDataFn);
+      await StateMessage._decodeStateData(message.operation.mapOp.data, inputContext, messageEncoding);
     }
   }
 
-  static fromValues(values: StateMessage | Record<string, unknown>, platform: typeof Platform): StateMessage {
-    return Object.assign(new StateMessage(platform), values);
+  static fromValues(
+    values: StateMessage | Record<string, unknown>,
+    utils: typeof Utils,
+    messageEncoding: typeof MessageEncoding,
+  ): StateMessage {
+    return Object.assign(new StateMessage(utils, messageEncoding), values);
   }
 
-  static fromValuesArray(values: unknown[], platform: typeof Platform): StateMessage[] {
+  static fromValuesArray(
+    values: (StateMessage | Record<string, unknown>)[],
+    utils: typeof Utils,
+    messageEncoding: typeof MessageEncoding,
+  ): StateMessage[] {
     const count = values.length;
     const result = new Array(count);
 
     for (let i = 0; i < count; i++) {
-      result[i] = StateMessage.fromValues(values[i] as Record<string, unknown>, platform);
+      result[i] = StateMessage.fromValues(values[i], utils, messageEncoding);
     }
 
     return result;
@@ -194,19 +213,23 @@ export class StateMessage {
   private static async _decodeMapEntries(
     mapEntries: Record<string, StateMapEntry>,
     inputContext: ChannelOptions,
-    decodeDataFn: typeof decodeData,
+    messageEncoding: typeof MessageEncoding,
   ): Promise<void> {
     for (const entry of Object.values(mapEntries)) {
-      await StateMessage._decodeStateData(entry.data, inputContext, decodeDataFn);
+      await StateMessage._decodeStateData(entry.data, inputContext, messageEncoding);
     }
   }
 
   private static async _decodeStateData(
     stateData: StateData,
     inputContext: ChannelOptions,
-    decodeDataFn: typeof decodeData,
+    messageEncoding: typeof MessageEncoding,
   ): Promise<void> {
-    const { data, encoding, error } = await decodeDataFn(stateData.value, stateData.encoding, inputContext);
+    const { data, encoding, error } = await messageEncoding.decodeData(
+      stateData.value,
+      stateData.encoding,
+      inputContext,
+    );
     stateData.value = data;
     stateData.encoding = encoding ?? undefined;
 
@@ -216,9 +239,8 @@ export class StateMessage {
   }
 
   private static _encodeStateOperation(
-    platform: typeof Platform,
     stateOperation: StateOperation,
-    withBase64Encoding: boolean,
+    encodeFn: StateDataEncodeFunction,
   ): StateOperation {
     // deep copy "stateOperation" object so we can modify the copy here.
     // buffer values won't be correctly copied, so we will need to set them again explictly.
@@ -226,32 +248,20 @@ export class StateMessage {
 
     if (stateOperationCopy.mapOp?.data && 'value' in stateOperationCopy.mapOp.data) {
       // use original "stateOperation" object when encoding values, so we have access to the original buffer values.
-      stateOperationCopy.mapOp.data = StateMessage._encodeStateData(
-        platform,
-        stateOperation.mapOp?.data!,
-        withBase64Encoding,
-      );
+      stateOperationCopy.mapOp.data = StateMessage._encodeStateData(stateOperation.mapOp?.data!, encodeFn);
     }
 
     if (stateOperationCopy.map?.entries) {
       Object.entries(stateOperationCopy.map.entries).forEach(([key, entry]) => {
         // use original "stateOperation" object when encoding values, so we have access to original buffer values.
-        entry.data = StateMessage._encodeStateData(
-          platform,
-          stateOperation?.map?.entries?.[key].data!,
-          withBase64Encoding,
-        );
+        entry.data = StateMessage._encodeStateData(stateOperation?.map?.entries?.[key].data!, encodeFn);
       });
     }
 
     return stateOperationCopy;
   }
 
-  private static _encodeStateObject(
-    platform: typeof Platform,
-    stateObject: StateObject,
-    withBase64Encoding: boolean,
-  ): StateObject {
+  private static _encodeStateObject(stateObject: StateObject, encodeFn: StateDataEncodeFunction): StateObject {
     // deep copy "stateObject" object so we can modify the copy here.
     // buffer values won't be correctly copied, so we will need to set them again explictly.
     const stateObjectCopy = JSON.parse(JSON.stringify(stateObject)) as StateObject;
@@ -259,71 +269,34 @@ export class StateMessage {
     if (stateObjectCopy.map?.entries) {
       Object.entries(stateObjectCopy.map.entries).forEach(([key, entry]) => {
         // use original "stateObject" object when encoding values, so we have access to original buffer values.
-        entry.data = StateMessage._encodeStateData(
-          platform,
-          stateObject?.map?.entries?.[key].data!,
-          withBase64Encoding,
-        );
+        entry.data = StateMessage._encodeStateData(stateObject?.map?.entries?.[key].data!, encodeFn);
       });
     }
 
     if (stateObjectCopy.createOp) {
       // use original "stateObject" object when encoding values, so we have access to original buffer values.
-      stateObjectCopy.createOp = StateMessage._encodeStateOperation(
-        platform,
-        stateObject.createOp!,
-        withBase64Encoding,
-      );
+      stateObjectCopy.createOp = StateMessage._encodeStateOperation(stateObject.createOp!, encodeFn);
     }
 
     return stateObjectCopy;
   }
 
-  private static _encodeStateData(platform: typeof Platform, data: StateData, withBase64Encoding: boolean): StateData {
-    const { value, encoding } = StateMessage._encodeStateValue(
-      platform,
-      data?.value,
-      data?.encoding,
-      withBase64Encoding,
-    );
+  private static _encodeStateData(data: StateData, encodeFn: StateDataEncodeFunction): StateData {
+    const { value: newValue, encoding: newEncoding } = encodeFn(data?.value, data?.encoding);
+
     return {
       ...data,
-      value,
-      encoding,
-    };
-  }
-
-  private static _encodeStateValue(
-    platform: typeof Platform,
-    value: StateValue | undefined,
-    encoding: string | undefined,
-    withBase64Encoding: boolean,
-  ): {
-    value: StateValue | undefined;
-    encoding: string | undefined;
-  } {
-    if (!value || !platform.BufferUtils.isBuffer(value)) {
-      return { value, encoding };
-    }
-
-    if (withBase64Encoding) {
-      return {
-        value: platform.BufferUtils.base64Encode(value),
-        encoding: encoding ? encoding + '/base64' : 'base64',
-      };
-    }
-
-    // toBuffer returns a datatype understandable by
-    // that platform's msgpack implementation (Buffer in node, Uint8Array in browsers)
-    return {
-      value: platform.BufferUtils.toBuffer(value),
-      encoding,
+      value: newValue,
+      encoding: newEncoding!,
     };
   }
 
   /**
-   * Overload toJSON() to intercept JSON.stringify()
-   * @return {*}
+   * Overload toJSON() to intercept JSON.stringify().
+   *
+   * This will prepare the message to be transmitted over the wire to Ably.
+   * It will encode the data payload according to the wire protocol used on the client.
+   * It will transform any client-side enum string representations into their corresponding numbers, if needed (like "action" fields).
    */
   toJSON(): {
     id?: string;
@@ -332,19 +305,24 @@ export class StateMessage {
     object?: StateObject;
     extras?: any;
   } {
-    // need to encode buffer data to base64 if present and if we're returning a real JSON.
-    // although msgpack also calls toJSON() directly,
-    // we know it is a JSON.stringify() call if we have a non-empty arguments list.
-    // if withBase64Encoding = true - JSON.stringify() call
-    // if withBase64Encoding = false - we were called by msgpack
-    const withBase64Encoding = arguments.length > 0;
+    // we can infer the format used by client by inspecting with what arguments this method was called.
+    // if JSON protocol is being used, the JSON.stringify() will be called and this toJSON() method will have a non-empty arguments list.
+    // MSGPack protocol implementation also calls toJSON(), but with an empty arguments list.
+    const format = arguments.length > 0 ? this._utils.Format.json : this._utils.Format.msgpack;
+    const encodeFn: StateDataEncodeFunction = (value, encoding) => {
+      const { data: newValue, encoding: newEncoding } = this._messageEncoding.encodeDataForWireProtocol(
+        value,
+        encoding,
+        format,
+      );
+      return {
+        value: newValue,
+        encoding: newEncoding!,
+      };
+    };
 
-    const encodedOperation = this.operation
-      ? StateMessage._encodeStateOperation(this._platform, this.operation, withBase64Encoding)
-      : undefined;
-    const encodedObject = this.object
-      ? StateMessage._encodeStateObject(this._platform, this.object, withBase64Encoding)
-      : undefined;
+    const encodedOperation = this.operation ? StateMessage._encodeStateOperation(this.operation, encodeFn) : undefined;
+    const encodedObject = this.object ? StateMessage._encodeStateObject(this.object, encodeFn) : undefined;
 
     return {
       id: this.id,

@@ -615,7 +615,7 @@ class RealtimeChannel extends EventEmitter {
         const options = this.channelOptions;
         await this._decodeAndPrepareMessages(message, stateMessages, (msg) =>
           this.client._LiveObjectsPlugin
-            ? this.client._LiveObjectsPlugin.StateMessage.decode(msg, options, MessageEncoding.decodeData)
+            ? this.client._LiveObjectsPlugin.StateMessage.decode(msg, options, MessageEncoding)
             : Utils.throwMissingPluginError('LiveObjects'),
         );
 
