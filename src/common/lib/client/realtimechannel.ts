@@ -433,7 +433,12 @@ class RealtimeChannel extends EventEmitter {
       this.subscriptions.on(event, listener);
     }
 
-    return this.attach();
+    // (RTL7g)
+    if (this.channelOptions.attachOnSubscribe !== false) {
+      return this.attach();
+    } else {
+      return null;
+    }
   }
 
   unsubscribe(...args: unknown[] /* [event], listener */): void {

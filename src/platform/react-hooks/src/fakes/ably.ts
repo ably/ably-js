@@ -163,6 +163,10 @@ export class ClientSingleChannelConnection extends EventEmitter {
   public async setOptions() {
     // do nothing
   }
+
+  public async attach() {
+    // do nothing
+  }
 }
 
 export class ClientSingleDerivedChannelConnection extends EventEmitter {
@@ -198,6 +202,10 @@ export class ClientSingleDerivedChannelConnection extends EventEmitter {
 
   public async publish() {
     throw Error('no publish for derived channel');
+  }
+
+  public async attach() {
+    // do nothing
   }
 }
 
@@ -346,6 +354,10 @@ export class Channel {
   }
 
   public async setOptions() {
+    // do nothing
+  }
+
+  public async attach() {
     // do nothing
   }
 }
