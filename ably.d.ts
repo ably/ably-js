@@ -1954,6 +1954,7 @@ export declare interface RealtimePresence {
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
    */
   enterClient(clientId: string, data?: any): Promise<void>;
+  enterClientNamespace(clientId: string, namespace: string, data?: any)
   /**
    * Updates the `data` payload for a presence member using a given `clientId`. Enables a single client to update presence on behalf of any number of clients using a single connection. The library must have been instantiated with an API key or a token bound to a wildcard `clientId`.
    *
@@ -1970,6 +1971,7 @@ export declare interface RealtimePresence {
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
    */
   leaveClient(clientId: string, data?: any): Promise<void>;
+  leaveClientNamespace(clientId: string, namespace: string, data?: any): Promise<void>;
 }
 
 /**
@@ -2455,6 +2457,9 @@ export declare interface PresenceMessage {
    * The type of {@link PresenceAction} the `PresenceMessage` is for.
    */
   action: PresenceAction;
+
+  namespace?: string;
+
   /**
    * The ID of the client that published the `PresenceMessage`.
    */

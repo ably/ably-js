@@ -68,7 +68,7 @@ class RealtimePresence extends EventEmitter {
     super(channel.logger);
     this.channel = channel;
     this.syncComplete = false;
-    this.members = new PresenceMap(this, (item) => item.clientId + ':' + item.connectionId);
+    this.members = new PresenceMap(this, (item) => item.clientId + ':' + item.connectionId + (item.namespace ? `:${item.namespace}` : ''));
     // RTP17h: Store own members by clientId only.
     this._myMembers = new PresenceMap(this, (item) => item.clientId!);
     this.subscriptions = new EventEmitter(this.logger);
@@ -97,11 +97,16 @@ class RealtimePresence extends EventEmitter {
     return this._enterOrUpdateClient(undefined, clientId, data, 'update');
   }
 
+  async enterClientNamespace(clientId: string, namespace: string, data: unknown) {
+    return this._enterOrUpdateClient(undefined, clientId, data, 'enter', namespace);
+  }
+
   async _enterOrUpdateClient(
     id: string | undefined,
     clientId: string | undefined,
     data: unknown,
     action: string,
+    namespace?: string
   ): Promise<void> {
     const channel = this.channel;
     if (!channel.connectionManager.activeState()) {
@@ -122,6 +127,9 @@ class RealtimePresence extends EventEmitter {
     }
     if (clientId) {
       presence.clientId = clientId;
+    }
+    if (namespace) {
+      presence.namespace = namespace
     }
     const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 
@@ -152,14 +160,18 @@ class RealtimePresence extends EventEmitter {
     }
   }
 
+  async leaveClientNamespace(clientId: string, namespace: string, data?: unknown) {
+    return this._leaveClient(clientId, data, namespace);
+  }
+
   async leave(data: unknown): Promise<void> {
     if (isAnonymousOrWildcard(this)) {
       throw new ErrorInfo('clientId must have been specified to enter or leave a presence channel', 40012, 400);
     }
-    return this.leaveClient(undefined, data);
+    return this._leaveClient(undefined, data);
   }
 
-  async leaveClient(clientId?: string, data?: unknown): Promise<void> {
+  async _leaveClient(clientId?: string, data?: unknown, namespace?: string): Promise<void> {
     const channel = this.channel;
     if (!channel.connectionManager.activeState()) {
       throw channel.connectionManager.getError();
@@ -175,6 +187,9 @@ class RealtimePresence extends EventEmitter {
     presence.action = 'leave';
     if (clientId) {
       presence.clientId = clientId;
+    }
+    if (namespace) {
+      presence.namespace = namespace;
     }
     const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 

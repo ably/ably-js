@@ -63,6 +63,7 @@ export function fromValues(values: Properties<PresenceMessage>) {
 
 class PresenceMessage extends BaseMessage {
   action?: string;
+  namespace?: string;
 
   /* Returns whether this presenceMessage is synthesized, i.e. was not actually
    * sent by the connection (usually means a leave event sent 15s after a
@@ -90,6 +91,7 @@ class PresenceMessage extends BaseMessage {
   async encode(options: CipherOptions): Promise<WirePresenceMessage> {
     const res = Object.assign(new WirePresenceMessage(), this, {
       action: actions.indexOf(this.action || 'present'),
+      namespace: this.namespace,
     });
     return encode(res, options);
   }
@@ -118,6 +120,7 @@ class PresenceMessage extends BaseMessage {
 
 export class WirePresenceMessage extends BaseMessage {
   action?: number;
+  namespace?: string;
 
   toJSON(...args: any[]) {
     return wireToJSON.call(this, ...args);
