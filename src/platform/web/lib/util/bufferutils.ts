@@ -1,6 +1,6 @@
 import Platform from 'common/platform';
 import IBufferUtils from 'common/types/IBufferUtils';
-import { hmac as hmacSha256 } from './hmac-sha256';
+import { hmac as hmacSha256, sha256 } from './hmac-sha256';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
  * The exception is toBuffer, which returns a Uint8Array */
@@ -193,6 +193,11 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
 
   arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView): ArrayBuffer {
     return this.toArrayBuffer(arrayBufferView);
+  }
+
+  sha256(message: Bufferlike): Output {
+    const hash = sha256(this.toBuffer(message));
+    return this.toArrayBuffer(hash);
   }
 
   hmacSha256(message: Bufferlike, key: Bufferlike): Output {

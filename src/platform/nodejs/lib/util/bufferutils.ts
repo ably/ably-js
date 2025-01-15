@@ -70,14 +70,17 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return Buffer.from(string, 'utf8');
   }
 
+  sha256(message: Bufferlike): Output {
+    const messageBuffer = this.toBuffer(message);
+
+    return crypto.createHash('SHA256').update(messageBuffer).digest();
+  }
+
   hmacSha256(message: Bufferlike, key: Bufferlike): Output {
     const messageBuffer = this.toBuffer(message);
     const keyBuffer = this.toBuffer(key);
 
-    const hmac = crypto.createHmac('SHA256', keyBuffer);
-    hmac.update(messageBuffer);
-
-    return hmac.digest();
+    return crypto.createHmac('SHA256', keyBuffer).update(messageBuffer).digest();
   }
 }
 
