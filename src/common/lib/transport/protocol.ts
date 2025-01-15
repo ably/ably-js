@@ -20,7 +20,8 @@ export class PendingMessage {
     this.merged = false;
     const action = message.action;
     this.sendAttempted = false;
-    this.ackRequired = action == actions.MESSAGE || action == actions.PRESENCE;
+    this.ackRequired =
+      typeof action === 'number' && [actions.MESSAGE, actions.PRESENCE, actions.STATE].includes(action);
   }
 }
 

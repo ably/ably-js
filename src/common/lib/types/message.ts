@@ -131,41 +131,120 @@ export async function fromEncodedArray(
   );
 }
 
-async function encrypt<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
-  let data = msg.data,
-    encoding = msg.encoding,
-    cipher = options.channelCipher;
-
-  encoding = encoding ? encoding + '/' : '';
-  if (!Platform.BufferUtils.isBuffer(data)) {
-    data = Platform.BufferUtils.utf8Encode(String(data));
-    encoding = encoding + 'utf-8/';
-  }
-  const ciphertext = await cipher.encrypt(data);
-  msg.data = ciphertext;
-  msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+async function encrypt<T extends Message | PresenceMessage>(msg: T, cipherOptions: CipherOptions): Promise<T> {
+  const { data, encoding } = await encryptData(msg.data, msg.encoding, cipherOptions);
+  msg.data = data;
+  msg.encoding = encoding;
   return msg;
 }
 
-export async function encode<T extends Message | PresenceMessage>(msg: T, options: CipherOptions): Promise<T> {
-  const data = msg.data;
-  const nativeDataType =
-    typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
+export async function encryptData(
+  data: any,
+  encoding: string | null | undefined,
+  cipherOptions: CipherOptions,
+): Promise<{ data: any; encoding: string | null | undefined }> {
+  let cipher = cipherOptions.channelCipher;
+  let dataToEncrypt = data;
+  let finalEncoding = encoding ? encoding + '/' : '';
 
-  if (!nativeDataType) {
-    if (Utils.isObject(data) || Array.isArray(data)) {
-      msg.data = JSON.stringify(data);
-      msg.encoding = msg.encoding ? msg.encoding + '/json' : 'json';
-    } else {
-      throw new ErrorInfo('Data type is unsupported', 40013, 400);
-    }
+  if (!Platform.BufferUtils.isBuffer(dataToEncrypt)) {
+    dataToEncrypt = Platform.BufferUtils.utf8Encode(String(dataToEncrypt));
+    finalEncoding = finalEncoding + 'utf-8/';
   }
 
-  if (options != null && options.cipher) {
-    return encrypt(msg, options);
+  const ciphertext = await cipher.encrypt(dataToEncrypt);
+  finalEncoding = finalEncoding + 'cipher+' + cipher.algorithm;
+
+  return {
+    data: ciphertext,
+    encoding: finalEncoding,
+  };
+}
+
+/**
+ * Protocol agnostic encoding and encryption of the message's payload. Mutates the message.
+ * Implements RSL4 (only parts that are common for all protocols), and RSL5.
+ *
+ * Since this encoding function is protocol agnostic, it won't apply the final encodings
+ * required by the protocol used by the client (like encoding binary data to the appropriate representation).
+ */
+export async function encode<T extends Message | PresenceMessage>(msg: T, cipherOptions: CipherOptions): Promise<T> {
+  const { data, encoding } = encodeData(msg.data, msg.encoding);
+  msg.data = data;
+  msg.encoding = encoding;
+
+  if (cipherOptions != null && cipherOptions.cipher) {
+    return encrypt(msg, cipherOptions);
   } else {
     return msg;
   }
+}
+
+/**
+ * Protocol agnostic encoding of the provided payload data. Implements RSL4 (only parts that are common for all protocols).
+ */
+export function encodeData(
+  data: any,
+  encoding: string | null | undefined,
+): { data: any; encoding: string | null | undefined } {
+  // RSL4a, supported types
+  const nativeDataType =
+    typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
+
+  if (nativeDataType) {
+    // nothing to do with the native data types at this point
+    return {
+      data,
+      encoding,
+    };
+  }
+
+  if (Utils.isObject(data) || Array.isArray(data)) {
+    // RSL4c3 and RSL4d3, encode objects and arrays as strings
+    return {
+      data: JSON.stringify(data),
+      encoding: encoding ? encoding + '/json' : 'json',
+    };
+  }
+
+  // RSL4a, throw an error for unsupported types
+  throw new ErrorInfo('Data type is unsupported', 40013, 400);
+}
+
+/**
+ * Prepares the payload data to be transmitted over the wire to Ably.
+ * Encodes the data depending on the selected protocol format.
+ *
+ * Implements RSL4c1 and RSL4d1
+ */
+export function encodeDataForWireProtocol(
+  data: any,
+  encoding: string | null | undefined,
+  format: Utils.Format,
+): { data: any; encoding: string | null | undefined } {
+  if (!data || !Platform.BufferUtils.isBuffer(data)) {
+    // no transformation required for non-buffer payloads
+    return {
+      data,
+      encoding,
+    };
+  }
+
+  if (format === Utils.Format.msgpack) {
+    // RSL4c1
+    // BufferUtils.toBuffer returns a datatype understandable by that platform's msgpack implementation:
+    // Buffer in node, Uint8Array in browsers
+    return {
+      data: Platform.BufferUtils.toBuffer(data),
+      encoding,
+    };
+  }
+
+  // RSL4d1, encode binary payload as base64 string
+  return {
+    data: Platform.BufferUtils.base64Encode(data),
+    encoding: encoding ? encoding + '/base64' : 'base64',
+  };
 }
 
 export async function encodeArray(messages: Array<Message>, options: CipherOptions): Promise<Array<Message>> {
@@ -178,6 +257,8 @@ export async function decode(
   message: Message | PresenceMessage,
   inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions,
 ): Promise<void> {
+  // data can be decoded partially and throw an error on a later decoding step.
+  // so we need to reassign the data and encoding values we got, and only then throw an error if there is one
   const { data, encoding, error } = await decodeData(message.data, message.encoding, inputContext);
   message.data = data;
   message.encoding = encoding;
@@ -187,6 +268,9 @@ export async function decode(
   }
 }
 
+/**
+ * Implements RSL6
+ */
 export async function decodeData(
   data: any,
   encoding: string | null | undefined,
@@ -199,8 +283,8 @@ export async function decodeData(
   const context = normaliseContext(inputContext);
   let lastPayload = data;
   let decodedData = data;
-  let finalEncoding: string | null | undefined = encoding;
-  let decodingError: ErrorInfo | undefined = undefined;
+  let finalEncoding = encoding;
+  let decodingError: ErrorInfo | undefined;
 
   if (encoding) {
     const xforms = encoding.split('/');
@@ -358,6 +442,13 @@ export function getMessagesSize(messages: Message[]): number {
   return total;
 }
 
+export const MessageEncoding = {
+  encryptData,
+  encodeData,
+  encodeDataForWireProtocol,
+  decodeData,
+};
+
 class Message {
   name?: string;
   id?: string;
@@ -378,27 +469,19 @@ class Message {
   operation?: API.Operation;
 
   /**
-   * Overload toJSON() to intercept JSON.stringify()
-   * @return {*}
+   * Overload toJSON() to intercept JSON.stringify().
+   *
+   * This will prepare the message to be transmitted over the wire to Ably.
+   * It will encode the data payload according to the wire protocol used on the client.
+   * It will transform any client-side enum string representations into their corresponding numbers, if needed (like "action" fields).
    */
   toJSON() {
-    /* encode data to base64 if present and we're returning real JSON;
-     * although msgpack calls toJSON(), we know it is a stringify()
-     * call if it has a non-empty arguments list */
-    let encoding = this.encoding;
-    let data = this.data;
-    if (data && Platform.BufferUtils.isBuffer(data)) {
-      if (arguments.length > 0) {
-        /* stringify call */
-        encoding = encoding ? encoding + '/base64' : 'base64';
-        data = Platform.BufferUtils.base64Encode(data);
-      } else {
-        /* Called by msgpack. toBuffer returns a datatype understandable by
-         * that platform's msgpack implementation (Buffer in node, Uint8Array
-         * in browsers) */
-        data = Platform.BufferUtils.toBuffer(data);
-      }
-    }
+    // we can infer the format used by client by inspecting with what arguments this method was called.
+    // if JSON protocol is being used, the JSON.stringify() will be called and this toJSON() method will have a non-empty arguments list.
+    // MSGPack protocol implementation also calls toJSON(), but with an empty arguments list.
+    const format = arguments.length > 0 ? Utils.Format.json : Utils.Format.msgpack;
+    const { data, encoding } = encodeDataForWireProtocol(this.data, this.encoding, format);
+
     return {
       name: this.name,
       id: this.id,

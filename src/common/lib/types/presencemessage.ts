@@ -1,6 +1,12 @@
 import Logger from '../util/logger';
 import Platform from 'common/platform';
-import { encode as encodeMessage, decode as decodeMessage, getMessagesSize, CipherOptions } from './message';
+import {
+  encode as encodeMessage,
+  decode as decodeMessage,
+  getMessagesSize,
+  CipherOptions,
+  encodeDataForWireProtocol,
+} from './message';
 import * as Utils from '../util/utils';
 import * as API from '../../../../ably';
 import { MsgPack } from 'common/types/msgpack';
@@ -128,8 +134,11 @@ class PresenceMessage {
   }
 
   /**
-   * Overload toJSON() to intercept JSON.stringify()
-   * @return {*}
+   * Overload toJSON() to intercept JSON.stringify().
+   *
+   * This will prepare the message to be transmitted over the wire to Ably.
+   * It will encode the data payload according to the wire protocol used on the client.
+   * It will transform any client-side enum string representations into their corresponding numbers, if needed (like "action" fields).
    */
   toJSON(): {
     id?: string;
@@ -139,30 +148,19 @@ class PresenceMessage {
     encoding?: string;
     extras?: any;
   } {
-    /* encode data to base64 if present and we're returning real JSON;
-     * although msgpack calls toJSON(), we know it is a stringify()
-     * call if it has a non-empty arguments list */
-    let data = this.data as string | Buffer | Uint8Array;
-    let encoding = this.encoding;
-    if (data && Platform.BufferUtils.isBuffer(data)) {
-      if (arguments.length > 0) {
-        /* stringify call */
-        encoding = encoding ? encoding + '/base64' : 'base64';
-        data = Platform.BufferUtils.base64Encode(data);
-      } else {
-        /* Called by msgpack. toBuffer returns a datatype understandable by
-         * that platform's msgpack implementation (Buffer in node, Uint8Array
-         * in browsers) */
-        data = Platform.BufferUtils.toBuffer(data);
-      }
-    }
+    // we can infer the format used by client by inspecting with what arguments this method was called.
+    // if JSON protocol is being used, the JSON.stringify() will be called and this toJSON() method will have a non-empty arguments list.
+    // MSGPack protocol implementation also calls toJSON(), but with an empty arguments list.
+    const format = arguments.length > 0 ? Utils.Format.json : Utils.Format.msgpack;
+    const { data, encoding } = encodeDataForWireProtocol(this.data, this.encoding, format);
+
     return {
       id: this.id,
       clientId: this.clientId,
       /* Convert presence action back to an int for sending to Ably */
       action: toActionValue(this.action as string),
       data: data,
-      encoding: encoding,
+      encoding: encoding!,
       extras: this.extras,
     };
   }

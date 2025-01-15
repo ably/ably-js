@@ -518,7 +518,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         { name: 'negativeMaxSafeIntegerCounter', count: -Number.MAX_SAFE_INTEGER },
       ];
 
-      const stateSyncSequenceScanarios = [
+      const stateSyncSequenceScenarios = [
         {
           description: 'STATE_SYNC sequence with state object "tombstone" property creates tombstoned object',
           action: async (ctx) => {
@@ -2060,9 +2060,292 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
       ];
 
+      const writeApiScenarios = [
+        {
+          description: 'LiveCounter.increment sends COUNTER_INC operation',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+
+            const counter = root.get('counter');
+            const increments = [
+              1, // value=1
+              10, // value=11
+              -11, // value=0
+              -1, // value=-1
+              -10, // value=-11
+              11, // value=0
+              Number.MAX_SAFE_INTEGER, // value=9007199254740991
+              -Number.MAX_SAFE_INTEGER, // value=0
+              -Number.MAX_SAFE_INTEGER, // value=-9007199254740991
+            ];
+            let expectedCounterValue = 0;
+
+            for (let i = 0; i < increments.length; i++) {
+              const increment = increments[i];
+              expectedCounterValue += increment;
+              await counter.increment(increment);
+
+              expect(counter.value()).to.equal(
+                expectedCounterValue,
+                `Check counter has correct value after ${i + 1} LiveCounter.increment calls`,
+              );
+            }
+          },
+        },
+
+        {
+          description: 'LiveCounter.increment throws on invalid input',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+
+            const counter = root.get('counter');
+
+            expect(() => counter.increment()).to.throw('Counter value increment should be a number');
+            expect(() => counter.increment(null)).to.throw('Counter value increment should be a number');
+            expect(() => counter.increment('foo')).to.throw('Counter value increment should be a number');
+            expect(() => counter.increment(BigInt(1))).to.throw('Counter value increment should be a number');
+            expect(() => counter.increment(true)).to.throw('Counter value increment should be a number');
+            expect(() => counter.increment(Symbol())).to.throw('Counter value increment should be a number');
+            expect(() => counter.increment({})).to.throw('Counter value increment should be a number');
+            expect(() => counter.increment([])).to.throw('Counter value increment should be a number');
+            expect(() => counter.increment(counter)).to.throw('Counter value increment should be a number');
+          },
+        },
+
+        {
+          description: 'LiveCounter.decrement sends COUNTER_INC operation',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+
+            const counter = root.get('counter');
+            const decrements = [
+              1, // value=-1
+              10, // value=-11
+              -11, // value=0
+              -1, // value=1
+              -10, // value=11
+              11, // value=0
+              Number.MAX_SAFE_INTEGER, // value=-9007199254740991
+              -Number.MAX_SAFE_INTEGER, // value=0
+              -Number.MAX_SAFE_INTEGER, // value=9007199254740991
+            ];
+            let expectedCounterValue = 0;
+
+            for (let i = 0; i < decrements.length; i++) {
+              const decrement = decrements[i];
+              expectedCounterValue -= decrement;
+              await counter.decrement(decrement);
+
+              expect(counter.value()).to.equal(
+                expectedCounterValue,
+                `Check counter has correct value after ${i + 1} LiveCounter.decrement calls`,
+              );
+            }
+          },
+        },
+
+        {
+          description: 'LiveCounter.decrement throws on invalid input',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+
+            const counter = root.get('counter');
+
+            expect(() => counter.decrement()).to.throw('Counter value decrement should be a number');
+            expect(() => counter.decrement(null)).to.throw('Counter value decrement should be a number');
+            expect(() => counter.decrement('foo')).to.throw('Counter value decrement should be a number');
+            expect(() => counter.decrement(BigInt(1))).to.throw('Counter value decrement should be a number');
+            expect(() => counter.decrement(true)).to.throw('Counter value decrement should be a number');
+            expect(() => counter.decrement(Symbol())).to.throw('Counter value decrement should be a number');
+            expect(() => counter.decrement({})).to.throw('Counter value decrement should be a number');
+            expect(() => counter.decrement([])).to.throw('Counter value decrement should be a number');
+            expect(() => counter.decrement(counter)).to.throw('Counter value decrement should be a number');
+          },
+        },
+
+        {
+          description: 'LiveMap.set sends MAP_SET operation for primitive values',
+          action: async (ctx) => {
+            const { root } = ctx;
+
+            await Promise.all(
+              primitiveKeyData.map(async (keyData) => {
+                const value = keyData.data.encoding ? BufferUtils.base64Decode(keyData.data.value) : keyData.data.value;
+                await root.set(keyData.key, value);
+              }),
+            );
+
+            // check everything is applied correctly
+            primitiveKeyData.forEach((keyData) => {
+              if (keyData.data.encoding) {
+                expect(
+                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
+                  `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
+                ).to.be.true;
+              } else {
+                expect(root.get(keyData.key)).to.equal(
+                  keyData.data.value,
+                  `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
+                );
+              }
+            });
+          },
+        },
+
+        {
+          description: 'LiveMap.set sends MAP_SET operation with reference to another LiveObject',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+
+            const counter = root.get('counter');
+            const map = root.get('map');
+
+            await root.set('counter2', counter);
+            await root.set('map2', map);
+
+            expect(root.get('counter2')).to.equal(
+              counter,
+              'Check can set a reference to a LiveCounter object on a root via a LiveMap.set call',
+            );
+            expect(root.get('map2')).to.equal(
+              map,
+              'Check can set a reference to a LiveMap object on a root via a LiveMap.set call',
+            );
+          },
+        },
+
+        {
+          description: 'LiveMap.set throws on invalid input',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map',
+              createOp: liveObjectsHelper.mapCreateOp(),
+            });
+
+            const map = root.get('map');
+
+            expect(() => map.set()).to.throw('Map key should be string');
+            expect(() => map.set(null)).to.throw('Map key should be string');
+            expect(() => map.set(1)).to.throw('Map key should be string');
+            expect(() => map.set(BigInt(1))).to.throw('Map key should be string');
+            expect(() => map.set(true)).to.throw('Map key should be string');
+            expect(() => map.set(Symbol())).to.throw('Map key should be string');
+            expect(() => map.set({})).to.throw('Map key should be string');
+            expect(() => map.set([])).to.throw('Map key should be string');
+            expect(() => map.set(map)).to.throw('Map key should be string');
+
+            expect(() => map.set('key')).to.throw('Map value data type is unsupported');
+            expect(() => map.set('key', null)).to.throw('Map value data type is unsupported');
+            expect(() => map.set('key', BigInt(1))).to.throw('Map value data type is unsupported');
+            expect(() => map.set('key', Symbol())).to.throw('Map value data type is unsupported');
+            expect(() => map.set('key', {})).to.throw('Map value data type is unsupported');
+            expect(() => map.set('key', [])).to.throw('Map value data type is unsupported');
+          },
+        },
+
+        {
+          description: 'LiveMap.remove sends MAP_REMOVE operation',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map',
+              createOp: liveObjectsHelper.mapCreateOp({
+                entries: {
+                  foo: { data: { value: 1 } },
+                  bar: { data: { value: 1 } },
+                  baz: { data: { value: 1 } },
+                },
+              }),
+            });
+
+            const map = root.get('map');
+
+            await map.remove('foo');
+            await map.remove('bar');
+
+            expect(map.get('foo'), 'Check can remove a key from a root via a LiveMap.remove call').to.not.exist;
+            expect(map.get('bar'), 'Check can remove a key from a root via a LiveMap.remove call').to.not.exist;
+            expect(
+              map.get('baz'),
+              'Check non-removed keys are still present on a root after LiveMap.remove call for another keys',
+            ).to.equal(1);
+          },
+        },
+
+        {
+          description: 'LiveMap.remove throws on invalid input',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map',
+              createOp: liveObjectsHelper.mapCreateOp(),
+            });
+
+            const map = root.get('map');
+
+            expect(() => map.remove()).to.throw('Map key should be string');
+            expect(() => map.remove(null)).to.throw('Map key should be string');
+            expect(() => map.remove(1)).to.throw('Map key should be string');
+            expect(() => map.remove(BigInt(1))).to.throw('Map key should be string');
+            expect(() => map.remove(true)).to.throw('Map key should be string');
+            expect(() => map.remove(Symbol())).to.throw('Map key should be string');
+            expect(() => map.remove({})).to.throw('Map key should be string');
+            expect(() => map.remove([])).to.throw('Map key should be string');
+            expect(() => map.remove(map)).to.throw('Map key should be string');
+          },
+        },
+      ];
+
       /** @nospec */
       forScenarios(
-        [...stateSyncSequenceScanarios, ...applyOperationsScenarios, ...applyOperationsDuringSyncScenarios],
+        [
+          ...stateSyncSequenceScenarios,
+          ...applyOperationsScenarios,
+          ...applyOperationsDuringSyncScenarios,
+          ...writeApiScenarios,
+        ],
         async function (helper, scenario) {
           const liveObjectsHelper = new LiveObjectsHelper(helper);
           const client = RealtimeWithLiveObjects(helper);
