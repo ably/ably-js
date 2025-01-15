@@ -17,6 +17,10 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return this.toBuffer(buffer).toString('base64');
   }
 
+  base64UrlEncode(buffer: Bufferlike): string {
+    return this.toBuffer(buffer).toString('base64url');
+  }
+
   areBuffersEqual(buffer1: Bufferlike, buffer2: Bufferlike): boolean {
     if (!buffer1 || !buffer2) return false;
     return this.toBuffer(buffer1).compare(this.toBuffer(buffer2)) == 0;
