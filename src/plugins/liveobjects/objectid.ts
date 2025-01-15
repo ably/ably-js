@@ -1,4 +1,5 @@
 import type BaseClient from 'common/lib/client/baseclient';
+import type Platform from 'common/platform';
 
 export type LiveObjectType = 'map' | 'counter';
 
@@ -13,6 +14,21 @@ export class ObjectId {
     readonly hash: string,
     readonly msTimestamp: number,
   ) {}
+
+  static fromInitialValue(
+    platform: typeof Platform,
+    objectType: LiveObjectType,
+    encodedInitialValue: string,
+    nonce: string,
+    msTimestamp: number,
+  ): ObjectId {
+    const valueForHashBuffer = platform.BufferUtils.utf8Encode(`${encodedInitialValue}:${nonce}`);
+    const hashBuffer = platform.BufferUtils.sha256(valueForHashBuffer);
+
+    const hash = platform.BufferUtils.base64UrlEncode(hashBuffer);
+
+    return new ObjectId(objectType, hash, msTimestamp);
+  }
 
   /**
    * Create ObjectId instance from hashed object id string.
