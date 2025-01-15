@@ -11,6 +11,7 @@ export class ObjectId {
   private constructor(
     readonly type: LiveObjectType,
     readonly hash: string,
+    readonly msTimestamp: number,
   ) {}
 
   /**
@@ -21,8 +22,8 @@ export class ObjectId {
       throw new client.ErrorInfo('Invalid object id string', 50000, 500);
     }
 
-    const [type, hash] = objectId.split(':');
-    if (!type || !hash) {
+    const [type, rest] = objectId.split(':');
+    if (!type || !rest) {
       throw new client.ErrorInfo('Invalid object id string', 50000, 500);
     }
 
@@ -30,6 +31,19 @@ export class ObjectId {
       throw new client.ErrorInfo(`Invalid object type in object id: ${objectId}`, 50000, 500);
     }
 
-    return new ObjectId(type as LiveObjectType, hash);
+    const [hash, msTimestamp] = rest.split('@');
+    if (!hash || !msTimestamp) {
+      throw new client.ErrorInfo('Invalid object id string', 50000, 500);
+    }
+
+    if (!Number.isInteger(Number.parseInt(msTimestamp))) {
+      throw new client.ErrorInfo('Invalid object id string', 50000, 500);
+    }
+
+    return new ObjectId(type as LiveObjectType, hash, Number.parseInt(msTimestamp));
+  }
+
+  toString(): string {
+    return `${this.type}:${this.hash}@${this.msTimestamp}`;
   }
 }
