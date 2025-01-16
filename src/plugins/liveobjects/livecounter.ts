@@ -185,7 +185,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._siteTimeserials = stateObject.siteTimeserials ?? {};
 
     if (this.isTombstoned()) {
-      // this object is tombstoned. this is a terminal state which can't be overriden. skip the rest of state object message processing
+      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of state object message processing
       return { noop: true };
     }
 

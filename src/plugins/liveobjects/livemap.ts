@@ -370,7 +370,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     this._siteTimeserials = stateObject.siteTimeserials ?? {};
 
     if (this.isTombstoned()) {
-      // this object is tombstoned. this is a terminal state which can't be overriden. skip the rest of state object message processing
+      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of state object message processing
       return { noop: true };
     }
 
@@ -630,7 +630,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // should only be applied if its timeserial is strictly greater ("after") than an entry's timeserial.
 
     if (!entryTimeserial && !opTimeserial) {
-      // if both timeserials are nullish or emptry strings, we treat them as the "earliest possible" timeserials,
+      // if both timeserials are nullish or empty strings, we treat them as the "earliest possible" timeserials,
       // in which case they are "equal", so the operation should not be applied
       return false;
     }

@@ -265,7 +265,7 @@ export class StateMessage {
     encodeFn: StateDataEncodeFunction,
   ): StateOperation {
     // deep copy "stateOperation" object so we can modify the copy here.
-    // buffer values won't be correctly copied, so we will need to set them again explictly.
+    // buffer values won't be correctly copied, so we will need to set them again explicitly.
     const stateOperationCopy = JSON.parse(JSON.stringify(stateOperation)) as StateOperation;
 
     if (stateOperationCopy.mapOp?.data && 'value' in stateOperationCopy.mapOp.data) {
@@ -285,7 +285,7 @@ export class StateMessage {
 
   private static _encodeStateObject(stateObject: StateObject, encodeFn: StateDataEncodeFunction): StateObject {
     // deep copy "stateObject" object so we can modify the copy here.
-    // buffer values won't be correctly copied, so we will need to set them again explictly.
+    // buffer values won't be correctly copied, so we will need to set them again explicitly.
     const stateObjectCopy = JSON.parse(JSON.stringify(stateObject)) as StateObject;
 
     if (stateObjectCopy.map?.entries) {
