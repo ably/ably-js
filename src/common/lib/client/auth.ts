@@ -775,7 +775,7 @@ class Auth {
       capability = tokenParams.capability || '';
 
     if (!request.timestamp) {
-      request.timestamp = await this.getTimestamp(authOptions && authOptions.queryTime);
+      request.timestamp = await this._getTimestamp(authOptions && authOptions.queryTime);
     }
 
     /* nonce */
@@ -830,28 +830,6 @@ class Auth {
       }
       return { authorization: 'Bearer ' + Utils.toBase64(tokenDetails.token) };
     }
-  }
-
-  /**
-   * Get the current time based on the local clock,
-   * or if the option queryTime is true, return the server time.
-   * The server time offset from the local time is stored so that
-   * only one request to the server to get the time is ever needed
-   */
-  async getTimestamp(queryTime: boolean): Promise<number> {
-    if (!this.isTimeOffsetSet() && (queryTime || this.authOptions.queryTime)) {
-      return this.client.time();
-    } else {
-      return this.getTimestampUsingOffset();
-    }
-  }
-
-  getTimestampUsingOffset() {
-    return Date.now() + (this.client.serverTimeOffset || 0);
-  }
-
-  isTimeOffsetSet() {
-    return this.client.serverTimeOffset !== null;
   }
 
   _saveBasicOptions(authOptions: AuthOptions) {
@@ -913,7 +891,7 @@ class Auth {
       /* RSA4b1 -- if we have a server time offset set already, we can
        * automatically remove expired tokens. Else just use the cached token. If it is
        * expired Ably will tell us and we'll discard it then. */
-      if (!this.isTimeOffsetSet() || !token.expires || token.expires >= this.getTimestampUsingOffset()) {
+      if (!this.client.isTimeOffsetSet() || !token.expires || token.expires >= this.client.getTimestampUsingOffset()) {
         Logger.logAction(
           this.logger,
           Logger.LOG_MINOR,
@@ -1019,6 +997,13 @@ class Auth {
     options?: TokenRevocationOptions,
   ): Promise<TokenRevocationResult> {
     return this.client.rest.revokeTokens(specifiers, options);
+  }
+
+  /**
+   * Same as {@link BaseClient.getTimestamp} but also takes into account {@link Auth.authOptions}
+   */
+  private async _getTimestamp(queryTime: boolean): Promise<number> {
+    return this.client.getTimestamp(queryTime || !!this.authOptions.queryTime);
   }
 }
 
