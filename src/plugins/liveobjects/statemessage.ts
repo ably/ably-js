@@ -21,7 +21,7 @@ export enum MapSemantics {
 }
 
 /** A StateValue represents a concrete leaf value in a state object graph. */
-export type StateValue = string | number | boolean | Buffer | Uint8Array;
+export type StateValue = string | number | boolean | Buffer | ArrayBuffer;
 
 /** StateData captures a value in a state object. */
 export interface StateData {
