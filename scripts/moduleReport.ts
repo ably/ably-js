@@ -323,6 +323,9 @@ async function checkLiveObjectsPluginFiles() {
 
   // These are the files that are allowed to contribute >= `threshold` bytes to the LiveObjects bundle.
   const allowedFiles = new Set([
+    'src/plugins/liveobjects/batchcontext.ts',
+    'src/plugins/liveobjects/batchcontextlivecounter.ts',
+    'src/plugins/liveobjects/batchcontextlivemap.ts',
     'src/plugins/liveobjects/index.ts',
     'src/plugins/liveobjects/livecounter.ts',
     'src/plugins/liveobjects/livemap.ts',
