@@ -1,5 +1,6 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
+import { ObjectId } from './objectid';
 import { StateCounterOp, StateMessage, StateObject, StateOperation, StateOperationAction } from './statemessage';
 
 export interface LiveCounterData extends LiveObjectData {
@@ -33,6 +34,18 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   /**
+   * Returns a {@link LiveCounter} instance based on the provided state operation.
+   * The provided state operation must hold a valid counter object data.
+   *
+   * @internal
+   */
+  static fromStateOperation(liveobjects: LiveObjects, stateOperation: StateOperation): LiveCounter {
+    const obj = new LiveCounter(liveobjects, stateOperation.objectId);
+    obj._mergeInitialDataFromCreateOperation(stateOperation);
+    return obj;
+  }
+
+  /**
    * @internal
    */
   static createCounterIncMessage(liveObjects: LiveObjects, objectId: string, amount: number): StateMessage {
@@ -55,6 +68,58 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     );
 
     return stateMessage;
+  }
+
+  /**
+   * @internal
+   */
+  static async createCounterCreateMessage(liveObjects: LiveObjects, count?: number): Promise<StateMessage> {
+    const client = liveObjects.getClient();
+
+    if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
+      throw new client.ErrorInfo('Counter value should be a valid number', 40013, 400);
+    }
+
+    const initialValueObj = LiveCounter.createInitialValueObject(count);
+    const { encodedInitialValue, format } = StateMessage.encodeInitialValue(client.Utils, initialValueObj);
+    const nonce = client.Utils.cheapRandStr();
+    const msTimestamp = await client.getTimestamp(true);
+
+    const objectId = ObjectId.fromInitialValue(
+      client.Platform,
+      'counter',
+      encodedInitialValue,
+      nonce,
+      msTimestamp,
+    ).toString();
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          ...initialValueObj,
+          action: StateOperationAction.COUNTER_CREATE,
+          objectId,
+          nonce,
+          initialValue: encodedInitialValue,
+          initialValueEncoding: format,
+        },
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
+   * @internal
+   */
+  static createInitialValueObject(count?: number): Pick<StateOperation, 'counter'> {
+    return {
+      counter: {
+        count: count ?? 0,
+      },
+    };
   }
 
   value(): number {

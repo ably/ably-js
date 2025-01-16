@@ -4,6 +4,7 @@ import type * as API from '../../../ably';
 import { DEFAULTS } from './defaults';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
+import { ObjectId } from './objectid';
 import {
   MapSemantics,
   StateMapEntry,
@@ -77,6 +78,21 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   static fromStateObject<T extends API.LiveMapType>(liveobjects: LiveObjects, stateObject: StateObject): LiveMap<T> {
     const obj = new LiveMap<T>(liveobjects, stateObject.map?.semantics!, stateObject.objectId);
     obj.overrideWithStateObject(stateObject);
+    return obj;
+  }
+
+  /**
+   * Returns a {@link LiveMap} instance based on the provided state operation.
+   * The provided state operation must hold a valid map object data.
+   *
+   * @internal
+   */
+  static fromStateOperation<T extends API.LiveMapType>(
+    liveobjects: LiveObjects,
+    stateOperation: StateOperation,
+  ): LiveMap<T> {
+    const obj = new LiveMap<T>(liveobjects, stateOperation.map?.semantics!, stateOperation.objectId);
+    obj._mergeInitialDataFromCreateOperation(stateOperation);
     return obj;
   }
 
@@ -168,6 +184,74 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     ) {
       throw new client.ErrorInfo('Map value data type is unsupported', 40013, 400);
     }
+  }
+
+  /**
+   * @internal
+   */
+  static async createMapCreateMessage(liveObjects: LiveObjects, entries?: API.LiveMapType): Promise<StateMessage> {
+    const client = liveObjects.getClient();
+
+    if (entries !== undefined && (entries === null || typeof entries !== 'object')) {
+      throw new client.ErrorInfo('Map entries should be a key/value object', 40013, 400);
+    }
+
+    Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(liveObjects, key, value));
+
+    const initialValueObj = LiveMap.createInitialValueObject(entries);
+    const { encodedInitialValue, format } = StateMessage.encodeInitialValue(client.Utils, initialValueObj);
+    const nonce = client.Utils.cheapRandStr();
+    const msTimestamp = await client.getTimestamp(true);
+
+    const objectId = ObjectId.fromInitialValue(
+      client.Platform,
+      'map',
+      encodedInitialValue,
+      nonce,
+      msTimestamp,
+    ).toString();
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          ...initialValueObj,
+          action: StateOperationAction.MAP_CREATE,
+          objectId,
+          nonce,
+          initialValue: encodedInitialValue,
+          initialValueEncoding: format,
+        },
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
+   * @internal
+   */
+  static createInitialValueObject(entries?: API.LiveMapType): Pick<StateOperation, 'map'> {
+    const stateMapEntries: Record<string, StateMapEntry> = {};
+
+    Object.entries(entries ?? {}).forEach(([key, value]) => {
+      const stateData: StateData =
+        value instanceof LiveObject
+          ? ({ objectId: value.getObjectId() } as ObjectIdStateData)
+          : ({ value } as ValueStateData);
+
+      stateMapEntries[key] = {
+        data: stateData,
+      };
+    });
+
+    return {
+      map: {
+        semantics: MapSemantics.LWW,
+        entries: stateMapEntries,
+      },
+    };
   }
 
   /**

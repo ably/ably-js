@@ -161,11 +161,6 @@ export abstract class LiveObject<
     return this._updateFromDataDiff(previousDataRef, this._dataRef);
   }
 
-  private _createObjectId(): string {
-    // TODO: implement object id generation based on live object type and initial value
-    return Math.random().toString().substring(2);
-  }
-
   /**
    * Apply state operation message on live object.
    *
