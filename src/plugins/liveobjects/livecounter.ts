@@ -32,6 +32,31 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return obj;
   }
 
+  /**
+   * @internal
+   */
+  static createCounterIncMessage(liveObjects: LiveObjects, objectId: string, amount: number): StateMessage {
+    const client = liveObjects.getClient();
+
+    if (typeof amount !== 'number' || !isFinite(amount)) {
+      throw new client.ErrorInfo('Counter value increment should be a valid number', 40013, 400);
+    }
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          action: StateOperationAction.COUNTER_INC,
+          objectId,
+          counterOp: { amount },
+        },
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
   value(): number {
     return this._dataRef.data;
   }
@@ -46,31 +71,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async increment(amount: number): Promise<void> {
-    const stateMessage = this.createCounterIncMessage(amount);
+    const stateMessage = LiveCounter.createCounterIncMessage(this._liveObjects, this.getObjectId(), amount);
     return this._liveObjects.publish([stateMessage]);
-  }
-
-  /**
-   * @internal
-   */
-  createCounterIncMessage(amount: number): StateMessage {
-    if (typeof amount !== 'number' || !isFinite(amount)) {
-      throw new this._client.ErrorInfo('Counter value increment should be a valid number', 40013, 400);
-    }
-
-    const stateMessage = StateMessage.fromValues(
-      {
-        operation: {
-          action: StateOperationAction.COUNTER_INC,
-          objectId: this.getObjectId(),
-          counterOp: { amount },
-        },
-      },
-      this._client.Utils,
-      this._client.MessageEncoding,
-    );
-
-    return stateMessage;
   }
 
   /**

@@ -81,6 +81,96 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   /**
+   * @internal
+   */
+  static createMapSetMessage<TKey extends keyof API.LiveMapType & string>(
+    liveObjects: LiveObjects,
+    objectId: string,
+    key: TKey,
+    value: API.LiveMapType[TKey],
+  ): StateMessage {
+    const client = liveObjects.getClient();
+
+    LiveMap.validateKeyValue(liveObjects, key, value);
+
+    const stateData: StateData =
+      value instanceof LiveObject
+        ? ({ objectId: value.getObjectId() } as ObjectIdStateData)
+        : ({ value } as ValueStateData);
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          action: StateOperationAction.MAP_SET,
+          objectId,
+          mapOp: {
+            key,
+            data: stateData,
+          },
+        },
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
+   * @internal
+   */
+  static createMapRemoveMessage<TKey extends keyof API.LiveMapType & string>(
+    liveObjects: LiveObjects,
+    objectId: string,
+    key: TKey,
+  ): StateMessage {
+    const client = liveObjects.getClient();
+
+    if (typeof key !== 'string') {
+      throw new client.ErrorInfo('Map key should be string', 40013, 400);
+    }
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          action: StateOperationAction.MAP_REMOVE,
+          objectId,
+          mapOp: { key },
+        },
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
+   * @internal
+   */
+  static validateKeyValue<TKey extends keyof API.LiveMapType & string>(
+    liveObjects: LiveObjects,
+    key: TKey,
+    value: API.LiveMapType[TKey],
+  ): void {
+    const client = liveObjects.getClient();
+
+    if (typeof key !== 'string') {
+      throw new client.ErrorInfo('Map key should be string', 40013, 400);
+    }
+
+    if (
+      typeof value !== 'string' &&
+      typeof value !== 'number' &&
+      typeof value !== 'boolean' &&
+      !client.Platform.BufferUtils.isBuffer(value) &&
+      !(value instanceof LiveObject)
+    ) {
+      throw new client.ErrorInfo('Map value data type is unsupported', 40013, 400);
+    }
+  }
+
+  /**
    * Returns the value associated with the specified key in the underlying Map object.
    *
    * - If this map object is tombstoned (deleted), `undefined` is returned.
@@ -163,49 +253,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void> {
-    const stateMessage = this.createMapSetMessage(key, value);
+    const stateMessage = LiveMap.createMapSetMessage(this._liveObjects, this.getObjectId(), key, value);
     return this._liveObjects.publish([stateMessage]);
-  }
-
-  /**
-   * @internal
-   */
-  createMapSetMessage<TKey extends keyof T & string>(key: TKey, value: T[TKey]): StateMessage {
-    if (typeof key !== 'string') {
-      throw new this._client.ErrorInfo('Map key should be string', 40013, 400);
-    }
-
-    if (
-      typeof value !== 'string' &&
-      typeof value !== 'number' &&
-      typeof value !== 'boolean' &&
-      !this._client.Platform.BufferUtils.isBuffer(value) &&
-      !(value instanceof LiveObject)
-    ) {
-      throw new this._client.ErrorInfo('Map value data type is unsupported', 40013, 400);
-    }
-
-    const stateData: StateData =
-      value instanceof LiveObject
-        ? ({ objectId: value.getObjectId() } as ObjectIdStateData)
-        : ({ value } as ValueStateData);
-
-    const stateMessage = StateMessage.fromValues(
-      {
-        operation: {
-          action: StateOperationAction.MAP_SET,
-          objectId: this.getObjectId(),
-          mapOp: {
-            key,
-            data: stateData,
-          },
-        },
-      },
-      this._client.Utils,
-      this._client.MessageEncoding,
-    );
-
-    return stateMessage;
   }
 
   /**
@@ -218,31 +267,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async remove<TKey extends keyof T & string>(key: TKey): Promise<void> {
-    const stateMessage = this.createMapRemoveMessage(key);
+    const stateMessage = LiveMap.createMapRemoveMessage(this._liveObjects, this.getObjectId(), key);
     return this._liveObjects.publish([stateMessage]);
-  }
-
-  /**
-   * @internal
-   */
-  createMapRemoveMessage<TKey extends keyof T & string>(key: TKey): StateMessage {
-    if (typeof key !== 'string') {
-      throw new this._client.ErrorInfo('Map key should be string', 40013, 400);
-    }
-
-    const stateMessage = StateMessage.fromValues(
-      {
-        operation: {
-          action: StateOperationAction.MAP_REMOVE,
-          objectId: this.getObjectId(),
-          mapOp: { key },
-        },
-      },
-      this._client.Utils,
-      this._client.MessageEncoding,
-    );
-
-    return stateMessage;
   }
 
   /**
