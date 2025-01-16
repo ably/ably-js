@@ -241,6 +241,19 @@ export class StateMessage {
     return result;
   }
 
+  static encodeInitialValue(
+    utils: typeof Utils,
+    initialValue: Partial<StateOperation>,
+  ): {
+    encodedInitialValue: string;
+    format: Utils.Format;
+  } {
+    return {
+      encodedInitialValue: JSON.stringify(initialValue),
+      format: utils.Format.json,
+    };
+  }
+
   private static async _decodeMapEntries(
     mapEntries: Record<string, StateMapEntry>,
     inputContext: ChannelOptions,
