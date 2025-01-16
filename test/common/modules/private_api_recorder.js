@@ -117,6 +117,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'read.transport.recvRequest.recvUri',
     'read.transport.uri',
     'replace.LiveObjects._liveObjectsPool._onGCInterval',
+    'replace.LiveObjects.publish',
     'replace.channel.attachImpl',
     'replace.channel.processMessage',
     'replace.channel.sendMessage',
