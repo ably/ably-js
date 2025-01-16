@@ -104,6 +104,15 @@ export interface StateOperation {
    * that has been hashed with the type and initial value to create the object ID.
    */
   nonce?: string;
+  /**
+   * The initial value bytes for the object. These bytes should be used along with the nonce
+   * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
+   * After verification the bytes will be decoded into the Map or Counter objects and
+   * the initialValue, nonce, and initialValueEncoding will be removed.
+   */
+  initialValue?: Buffer | ArrayBuffer;
+  /** The initial value encoding defines how the initialValue should be interpreted. */
+  initialValueEncoding?: string;
 }
 
 /** A StateObject describes the instantaneous state of an object. */
