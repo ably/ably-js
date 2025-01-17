@@ -493,6 +493,12 @@ define([
       return this.waitFor(condition, remaining - 100);
     }
 
+    async setTimeoutAsync(ms) {
+      return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      });
+    }
+
     async monitorConnectionThenCloseAndFinishAsync(action, realtime, states) {
       try {
         await this.monitorConnectionAsync(action, realtime, states);
