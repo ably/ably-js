@@ -49,11 +49,19 @@ export const flags: { [key: string]: number } = {
 
 export const flagNames = Object.keys(flags);
 
-flags.MODE_ALL = flags.PRESENCE
-  | flags.PUBLISH
-  | flags.SUBSCRIBE
-  | flags.PRESENCE_SUBSCRIBE
-  | flags.ANNOTATION_PUBLISH
-  | flags.ANNOTATION_SUBSCRIBE;
+flags.MODE_ALL =
+  flags.PRESENCE |
+  flags.PUBLISH |
+  flags.SUBSCRIBE |
+  flags.PRESENCE_SUBSCRIBE |
+  flags.ANNOTATION_PUBLISH |
+  flags.ANNOTATION_SUBSCRIBE;
 
-export const channelModes = ['PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE', 'ANNOTATION_PUBLISH', 'ANNOTATION_SUBSCRIBE'];
+export const channelModes = [
+  'PRESENCE',
+  'PUBLISH',
+  'SUBSCRIBE',
+  'PRESENCE_SUBSCRIBE',
+  'ANNOTATION_PUBLISH',
+  'ANNOTATION_SUBSCRIBE',
+];

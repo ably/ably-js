@@ -76,7 +76,7 @@ async function encrypt<T extends BaseMessage>(msg: T, options: CipherOptions): P
   return msg;
 }
 
-export async function encode<T extends BaseMessage>(msg: T, options: CipherOptions): Promise<T> {
+export async function encode<T extends BaseMessage>(msg: T, options: unknown): Promise<T> {
   const data = msg.data;
   const nativeDataType =
     typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
@@ -90,8 +90,8 @@ export async function encode<T extends BaseMessage>(msg: T, options: CipherOptio
     }
   }
 
-  if (options != null && options.cipher) {
-    return encrypt(msg, options);
+  if (options != null && (options as CipherOptions).cipher) {
+    return encrypt(msg, options as CipherOptions);
   } else {
     return msg;
   }
@@ -218,23 +218,20 @@ export function wireToJSON(this: BaseMessage, ...args: any[]): any {
 
 // in-place, generally called on the protocol message before decoding
 export function populateFieldsFromParent(parent: ProtocolMessage) {
-  const { id, connectionId, timestamp, channelSerial } = parent;
+  const { id, connectionId, timestamp } = parent;
 
   let msgs: BaseMessage[];
   switch (parent.action) {
     case actions.MESSAGE: {
       msgs = parent.messages!;
-      for (let i = 0; i < msgs.length; i++) {
-        const msg = parent.messages![i];
-        if (channelSerial && !msg.version) {
-          msg.version = channelSerial + ':' + i.toString().padStart(3, '0');
-        }
-      }
       break;
     }
     case actions.PRESENCE:
     case actions.SYNC:
       msgs = parent.presence!;
+      break;
+    case actions.ANNOTATION:
+      msgs = parent.annotations!;
       break;
     default:
       throw new ErrorInfo('Unexpected action ' + parent.action, 40000, 400);

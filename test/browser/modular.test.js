@@ -21,6 +21,7 @@ import {
   FetchRequest,
   XHRRequest,
   MessageInteractions,
+  Annotations,
 } from '../../build/modular/index.mjs';
 
 function registerAblyModularTests(Helper) {
@@ -912,6 +913,147 @@ function registerAblyModularTests(Helper) {
 
           expect(presenceMessage.constructor.name).to.contain('PresenceMessage');
           expect(presenceMessage.extras).to.equal(extras);
+        });
+      });
+    });
+
+    describe('Annotations', () => {
+      describe('BaseRealtime without Annotations', () => {
+        /** @nospec */
+        it('throws an error when attempting to access the `annotations` property', async function () {
+          const helper = this.test.helper;
+          const client = new BaseRealtime(helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }));
+
+          await monitorConnectionThenCloseAndFinish(
+            helper,
+            async () => {
+              const channel = client.channels.get('channel');
+
+              expect(() => channel.annotations).to.throw('Annotations plugin not provided');
+            },
+            client,
+          );
+        });
+
+        /** @nospec */
+        it('doesn’t break when it receives an ANNOTATION ProtocolMessage', async function () {
+          const helper = this.test.helper;
+          const rxClient = new BaseRealtime(
+            helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
+          );
+          const channelName = 'mutable:annotation-1';
+
+          await monitorConnectionThenCloseAndFinish(
+            helper,
+            async () => {
+              const rxChannel = rxClient.channels.get(channelName, {
+                modes: ['PUBLISH', 'SUBSCRIBE', 'ANNOTATION_PUBLISH', 'ANNOTATION_SUBSCRIBE'],
+              });
+              await rxChannel.attach();
+              let receivedMessagePromise = rxChannel.subscriptions.once();
+
+              const txClient = new BaseRealtime(
+                this.test.helper.ablyClientOptions({
+                  plugins: {
+                    WebSocketTransport,
+                    FetchRequest,
+                    Annotations,
+                  },
+                }),
+              );
+
+              await monitorConnectionThenCloseAndFinish(
+                helper,
+                async () => {
+                  const txChannel = txClient.channels.get(channelName);
+                  const onMessage = txChannel.subscriptions.once();
+                  await txChannel.attach();
+                  await txChannel.publish('test', 'body');
+                  const message = await onMessage;
+                  await txChannel.annotations.publish(message.serial, 'reaction:emoji.v1', '👍');
+
+                  // with that received, do another round-trip pub-sub of a normal message
+                  // to check that rxChannel is still receiving
+                  await receivedMessagePromise;
+                  receivedMessagePromise = rxChannel.subscriptions.once();
+                  txChannel.publish('test2', 'body');
+                  await receivedMessagePromise;
+                },
+                txClient,
+              );
+            },
+            rxClient,
+          );
+        });
+      });
+
+      describe('BaseRealtime with Annotations', () => {
+        it('offers annotation functionality', async function () {
+          const helper = this.test.helper;
+          const channelName = 'mutable:annotation-2';
+          const rxClient = new BaseRealtime(
+            helper.ablyClientOptions({
+              plugins: {
+                WebSocketTransport,
+                FetchRequest,
+                Annotations,
+              },
+            }),
+          );
+          const rxChannel = rxClient.channels.get(channelName, {
+            modes: ['PUBLISH', 'SUBSCRIBE', 'ANNOTATION_PUBLISH', 'ANNOTATION_SUBSCRIBE'],
+          });
+
+          await monitorConnectionThenCloseAndFinish(
+            helper,
+            async () => {
+              const txRealtime = new BaseRealtime(
+                this.test.helper.ablyClientOptions({
+                  plugins: {
+                    WebSocketTransport,
+                    FetchRequest,
+                    Annotations,
+                  },
+                }),
+              );
+              const txRest = new BaseRest(
+                this.test.helper.ablyClientOptions({
+                  plugins: {
+                    FetchRequest,
+                    Annotations,
+                  },
+                }),
+              );
+
+              await monitorConnectionThenCloseAndFinish(
+                helper,
+                async () => {
+                  const txChannel = txRealtime.channels.get(channelName, {
+                    modes: ['PUBLISH', 'SUBSCRIBE', 'ANNOTATION_PUBLISH', 'ANNOTATION_SUBSCRIBE'],
+                  });
+                  const onMessage = txChannel.subscriptions.once();
+                  let rxOnAnnotation = rxChannel.annotations.subscriptions.once();
+                  await txChannel.attach();
+                  await rxChannel.attach();
+
+                  await txChannel.publish('test', 'body');
+                  const message = await onMessage;
+                  await txChannel.annotations.publish(message.serial, 'reaction:emoji.v1', '👍');
+                  let annotation = await rxOnAnnotation;
+                  expect(annotation.data).to.equal('👍');
+
+                  // and try a rest annotation publish
+                  rxOnAnnotation = rxChannel.annotations.subscriptions.once();
+                  const txRestChannel = txRest.channels.get(channelName);
+                  await txRestChannel.annotations.publish(message.serial, 'reaction:emoji.v1', '😕');
+                  annotation = await rxOnAnnotation;
+                  expect(annotation.data).to.equal('😕');
+                },
+                txRealtime,
+              );
+            },
+            rxClient,
+          );
         });
       });
     });

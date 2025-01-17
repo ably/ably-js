@@ -1241,7 +1241,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       helper.recordPrivateApi('replace.channel.sendPresence');
       var originalSendPresence = channel.sendPresence;
-      channel.sendPresence = function (presence, callback) {
+      channel.sendPresence = async function (presence) {
         try {
           expect(!presence.clientId, 'Client ID should not be present as it is implicit').to.be.ok;
         } catch (err) {
