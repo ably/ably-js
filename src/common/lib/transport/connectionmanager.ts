@@ -1805,7 +1805,7 @@ class ConnectionManager extends EventEmitter {
 
         Logger.LOG_MICRO,
         'ConnectionManager.send()',
-        'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence),
+        'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence, this.realtime._Annotations),
       );
     }
     this.queue(msg, callback);

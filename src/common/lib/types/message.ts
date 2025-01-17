@@ -116,6 +116,7 @@ class Message extends BaseMessage {
   createdAt?: number;
   version?: string;
   operation?: API.Operation;
+  summary?: any; // TODO improve typings after summary structure is finalised
 
   expandFields() {
     if (this.action === 'message.create') {
@@ -160,6 +161,7 @@ export class WireMessage extends BaseMessage {
   createdAt?: number;
   version?: string;
   operation?: API.Operation;
+  summary?: any;
 
   // Overload toJSON() to intercept JSON.stringify()
   toJSON(...args: any[]) {
