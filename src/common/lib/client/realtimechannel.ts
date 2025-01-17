@@ -72,7 +72,7 @@ class RealtimeChannel extends EventEmitter {
     channelSerial: string | null | undefined;
   };
   errorReason: ErrorInfo | string | null;
-  _mode?: null | number;
+  _mode = 0;
   _attachResume: boolean;
   _decodingContext: EncodingDecodingContext;
   _lastPayload: {
@@ -82,7 +82,7 @@ class RealtimeChannel extends EventEmitter {
   };
   _allChannelChanges: EventEmitter;
   params?: Record<string, any>;
-  modes: string[] | undefined;
+  modes: API.ChannelMode[] | undefined;
   stateTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
@@ -105,7 +105,6 @@ class RealtimeChannel extends EventEmitter {
     };
     this.setOptions(options);
     this.errorReason = null;
-    this._mode = null;
     this._attachResume = false;
     this._decodingContext = {
       channelOptions: this.channelOptions,
@@ -506,7 +505,7 @@ class RealtimeChannel extends EventEmitter {
         this._mode = message.getMode();
         this.params = (message as any).params || {};
         const modesFromFlags = message.decodeModesFromFlags();
-        this.modes = (modesFromFlags && Utils.allToLowerCase(modesFromFlags)) || undefined;
+        this.modes = (modesFromFlags && (Utils.allToLowerCase(modesFromFlags) as API.ChannelMode[])) || undefined;
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         const hasBacklog = message.hasFlag('HAS_BACKLOG');
