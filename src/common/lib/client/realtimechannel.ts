@@ -3,21 +3,21 @@ import ProtocolMessage, { fromValues as protocolMessageFromValues } from '../typ
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
-import RealtimePresence from './realtimepresence';
 import { EncodingDecodingContext, CipherOptions, populateFieldsFromParent } from '../types/basemessage';
-import Message, { WireMessage, getMessagesSize, encodeArray as encodeMessagesArray } from '../types/message';
+import Message, { getMessagesSize, encodeArray as encodeMessagesArray } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
-import { ErrCallback, StandardCallback } from '../../types/utils';
+import { StandardCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
 import type { WirePresenceMessage } from '../types/presencemessage';
+import type RealtimePresence from './realtimepresence';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -217,9 +217,6 @@ class RealtimeChannel extends EventEmitter {
     let messages: Message[];
     let argCount = args.length;
 
-    if (!this.connectionManager.activeState()) {
-      throw this.connectionManager.getError();
-    }
     if (argCount == 1) {
       if (Utils.isObject(args[0])) {
         messages = [Message.fromValues(args[0])];
@@ -251,33 +248,26 @@ class RealtimeChannel extends EventEmitter {
         400,
       );
     }
-    return new Promise((resolve, reject) => {
-      this._publish(wireMessages, (err) => (err ? reject(err) : resolve()));
-    });
+
+    this._throwIfUnpublishableState();
+
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MICRO,
+      'RealtimeChannel.publish()',
+      'sending message; channel state is ' + this.state + ', message count = ' + wireMessages.length,
+    );
+
+    const pm = protocolMessageFromValues({ action: actions.MESSAGE, channel: this.name, messages: wireMessages });
+    return this.sendMessage(pm);
   }
 
-  _publish(messages: Array<WireMessage>, callback: ErrCallback) {
-    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
-    const state = this.state;
-    switch (state) {
-      case 'failed':
-      case 'suspended':
-        callback(ErrorInfo.fromValues(this.invalidStateError()));
-        break;
-      default: {
-        Logger.logAction(
-          this.logger,
-          Logger.LOG_MICRO,
-          'RealtimeChannel.publish()',
-          'sending message; channel state is ' + state,
-        );
-        const msg = new ProtocolMessage();
-        msg.action = actions.MESSAGE;
-        msg.channel = this.name;
-        msg.messages = messages;
-        this.sendMessage(msg, callback);
-        break;
-      }
+  _throwIfUnpublishableState(): void {
+    if (!this.connectionManager.activeState()) {
+      throw this.connectionManager.getError();
+    }
+    if (this.state === 'failed' || this.state === 'suspended') {
+      throw this.invalidStateError();
     }
   }
 
@@ -368,7 +358,7 @@ class RealtimeChannel extends EventEmitter {
     if (this._lastPayload.decodeFailureRecoveryInProgress) {
       attachMsg.channelSerial = this._lastPayload.protocolMessageChannelSerial;
     }
-    this.sendMessage(attachMsg, noop);
+    this.sendMessage(attachMsg).catch(noop);
   }
 
   async detach(): Promise<void> {
@@ -412,10 +402,10 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  detachImpl(callback?: ErrCallback): void {
+  detachImpl(): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
     const msg = protocolMessageFromValues({ action: actions.DETACH, channel: this.name });
-    this.sendMessage(msg, callback || noop);
+    this.sendMessage(msg).catch(noop);
   }
 
   async subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
@@ -476,17 +466,25 @@ class RealtimeChannel extends EventEmitter {
     connectionManager.send(syncMessage);
   }
 
-  sendMessage(msg: ProtocolMessage, callback?: ErrCallback): void {
-    this.connectionManager.send(msg, this.client.options.queueMessages, callback);
+  async sendMessage(msg: ProtocolMessage): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.connectionManager.send(msg, this.client.options.queueMessages, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
-  sendPresence(presence: WirePresenceMessage[], callback?: ErrCallback): void {
+  async sendPresence(presence: WirePresenceMessage[]): Promise<void> {
     const msg = protocolMessageFromValues({
       action: actions.PRESENCE,
       channel: this.name,
       presence: presence,
     });
-    this.sendMessage(msg, callback);
+    return this.sendMessage(msg);
   }
 
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
