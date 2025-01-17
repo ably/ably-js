@@ -18,6 +18,7 @@ import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
 import type { WirePresenceMessage } from '../types/presencemessage';
 import type RealtimePresence from './realtimepresence';
+import type RealtimeAnnotations from './realtimeannotations';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -56,11 +57,18 @@ class RealtimeChannel extends EventEmitter {
   channelOptions: ChannelOptions;
   client: BaseRealtime;
   private _presence: RealtimePresence | null;
+  private _annotations: RealtimeAnnotations | null = null;
   get presence(): RealtimePresence {
     if (!this._presence) {
       Utils.throwMissingPluginError('RealtimePresence');
     }
     return this._presence;
+  }
+  get annotations(): RealtimeAnnotations {
+    if (!this._annotations) {
+      Utils.throwMissingPluginError('Annotations');
+    }
+    return this._annotations;
   }
   connectionManager: ConnectionManager;
   state: API.ChannelState;
@@ -95,6 +103,9 @@ class RealtimeChannel extends EventEmitter {
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, this.logger, options);
     this.client = client;
     this._presence = client._RealtimePresence ? new client._RealtimePresence.RealtimePresence(this) : null;
+    if (client._Annotations) {
+      this._annotations = new client._Annotations.RealtimeAnnotations(this);
+    }
     this.connectionManager = client.connection.connectionManager;
     this.state = 'initialized';
     this.subscriptions = new EventEmitter(this.logger);
@@ -491,7 +502,8 @@ class RealtimeChannel extends EventEmitter {
     if (
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||
-      message.action === actions.PRESENCE
+      message.action === actions.PRESENCE ||
+      message.action === actions.ANNOTATION
     ) {
       // RTL15b
       this.setChannelSerial(message.channelSerial);
@@ -642,6 +654,21 @@ class RealtimeChannel extends EventEmitter {
         this._lastPayload.messageId = lastMessage.id;
         this._lastPayload.protocolMessageChannelSerial = message.channelSerial;
         this.onEvent(messages);
+        break;
+      }
+
+      case actions.ANNOTATION: {
+        populateFieldsFromParent(message);
+        const options = this.channelOptions;
+        if (this._annotations) {
+          const annotations = await Promise.all(
+            (message.annotations || []).map((wpm) => {
+              return wpm.decode(options, this.logger);
+            }),
+          );
+
+          this._annotations._processIncoming(annotations);
+        }
         break;
       }
 
