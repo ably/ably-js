@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChannelParameters } from '../AblyReactHooks.js';
 import { useChannelInstance } from './useChannelInstance.js';
 import { useStateErrors } from './useStateErrors.js';
+import { useChannelAttach } from './useChannelAttach.js';
 
 interface PresenceMessage<T = any> extends Ably.PresenceMessage {
   data: T;
@@ -63,6 +64,8 @@ export function usePresenceListener<T = any>(
       onUnmount();
     };
   }, [skip, onMount, onUnmount]);
+
+  useChannelAttach(channel, params.ablyId, skip);
 
   return { presenceData, connectionError, channelError };
 }
