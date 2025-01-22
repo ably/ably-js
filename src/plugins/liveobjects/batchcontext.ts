@@ -24,6 +24,7 @@ export class BatchContext {
   }
 
   getRoot<T extends API.LiveMapType = API.DefaultRoot>(): BatchContextLiveMap<T> {
+    this._liveObjects.throwIfMissingStateSubscribeMode();
     this.throwIfClosed();
     return this.getWrappedObject(ROOT_OBJECT_ID) as BatchContextLiveMap<T>;
   }

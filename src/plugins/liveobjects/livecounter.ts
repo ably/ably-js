@@ -123,6 +123,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   value(): number {
+    this._liveObjects.throwIfMissingStateSubscribeMode();
     return this._dataRef.data;
   }
 
@@ -136,6 +137,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async increment(amount: number): Promise<void> {
+    this._liveObjects.throwIfMissingStatePublishMode();
     const stateMessage = LiveCounter.createCounterIncMessage(this._liveObjects, this.getObjectId(), amount);
     return this._liveObjects.publish([stateMessage]);
   }
@@ -144,6 +146,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * Alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
    */
   async decrement(amount: number): Promise<void> {
+    this._liveObjects.throwIfMissingStatePublishMode();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
     if (typeof amount !== 'number' || !isFinite(amount)) {

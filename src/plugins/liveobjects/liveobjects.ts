@@ -49,6 +49,8 @@ export class LiveObjects {
    * This is useful when working with LiveObjects on multiple channels with different underlying data.
    */
   async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
+    this.throwIfMissingStateSubscribeMode();
+
     // SYNC is currently in progress, wait for SYNC sequence to finish
     if (this._syncInProgress) {
       await this._eventEmitter.once(LiveObjectsEvents.SyncCompleted);
@@ -61,6 +63,8 @@ export class LiveObjects {
    * Provides access to the synchronous write API for LiveObjects that can be used to batch multiple operations together in a single channel message.
    */
   async batch(callback: BatchCallback): Promise<void> {
+    this.throwIfMissingStatePublishMode();
+
     const root = await this.getRoot();
     const context = new BatchContext(this, root);
 
@@ -82,6 +86,8 @@ export class LiveObjects {
    * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with a zero-value object created in the local pool.
    */
   async createMap<T extends API.LiveMapType>(entries?: T): Promise<LiveMap<T>> {
+    this.throwIfMissingStatePublishMode();
+
     const stateMessage = await LiveMap.createMapCreateMessage(this, entries);
     const objectId = stateMessage.operation?.objectId!;
 
@@ -113,6 +119,8 @@ export class LiveObjects {
    * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with a zero-value object created in the local pool.
    */
   async createCounter(count?: number): Promise<LiveCounter> {
+    this.throwIfMissingStatePublishMode();
+
     const stateMessage = await LiveCounter.createCounterCreateMessage(this, count);
     const objectId = stateMessage.operation?.objectId!;
 
@@ -246,6 +254,20 @@ export class LiveObjects {
     return this._channel.sendState(stateMessages);
   }
 
+  /**
+   * @internal
+   */
+  throwIfMissingStateSubscribeMode(): void {
+    this._throwIfMissingChannelMode('state_subscribe');
+  }
+
+  /**
+   * @internal
+   */
+  throwIfMissingStatePublishMode(): void {
+    this._throwIfMissingChannelMode('state_publish');
+  }
+
   private _startNewSync(syncId?: string, syncCursor?: string): void {
     // need to discard all buffered state operation messages on new sync start
     this._bufferedStateOperations = [];
@@ -372,6 +394,17 @@ export class LiveObjects {
             `received unsupported action in state operation message: ${stateOperation.action}, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
           );
       }
+    }
+  }
+
+  private _throwIfMissingChannelMode(expectedMode: 'state_subscribe' | 'state_publish'): void {
+    // channel.modes is only populated on channel attachment, so use it only if it is set,
+    // otherwise as a best effort use user provided channel options
+    if (this._channel.modes != null && !this._channel.modes.includes(expectedMode)) {
+      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40160, 400);
+    }
+    if (!this._client.Utils.allToLowerCase(this._channel.channelOptions.modes ?? []).includes(expectedMode)) {
+      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40160, 400);
     }
   }
 }
