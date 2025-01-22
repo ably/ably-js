@@ -213,26 +213,6 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         });
       });
 
-      // strip instanceID and handleID from connectionKey */
-      function connectionHmac(key) {
-        /* connectionKey has the form <instanceID>!<hmac>-<handleID> */
-
-        /* remove the handleID from the end of key */
-        let k = key.split('-')[0];
-
-        /* skip the server instanceID if present, as reconnects may be routed to different frontends */
-        if (k.includes('!')) {
-          k = k.split('!')[1];
-        }
-        return k;
-      }
-
-      /* uses internal realtime knowledge of the format of the connection key to
-       * check if a connection key is the result of a successful recovery of another */
-      function sameConnection(keyA, keyB) {
-        return connectionHmac(keyA) === connectionHmac(keyB);
-      }
-
       /**
        * @specpartial RTN16 test
        * @specpartial RTN16d
@@ -251,7 +231,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
-          var connectionKey = realtime.connection.key;
+          var connectionId = realtime.connection.id;
           document.dispatchEvent(refreshEvent);
           try {
             expect(realtime.connection.state).to.equal(
@@ -267,10 +247,10 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           var newRealtime = helper.AblyRealtime(realtimeOpts);
           newRealtime.connection.once('connected', function () {
             try {
-              expect(
-                sameConnection(connectionKey, newRealtime.connection.key),
+              expect(newRealtime.connection.id).to.equal(
+                connectionId,
                 'Check new realtime recovered the connection from the cookie',
-              ).to.be.ok;
+              );
             } catch (err) {
               helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
@@ -295,7 +275,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
-          var connectionKey = realtime.connection.key;
+          var connectionId = realtime.connection.id;
           document.dispatchEvent(refreshEvent);
           try {
             expect(realtime.connection.state).to.equal(
@@ -311,10 +291,10 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           var newRealtime = helper.AblyRealtime(realtimeOpts);
           newRealtime.connection.once('connected', function () {
             try {
-              expect(
-                !sameConnection(connectionKey, newRealtime.connection.key),
+              expect(newRealtime.connection.id).not.to.equal(
+                connectionId,
                 'Check new realtime created a new connection',
-              ).to.be.ok;
+              );
             } catch (err) {
               helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
@@ -359,7 +339,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
-          var connectionKey = realtime.connection.key,
+          var connectionId = realtime.connection.id,
             recoveryKey = realtime.connection.recoveryKey;
 
           document.dispatchEvent(refreshEvent);
@@ -377,8 +357,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           var newRealtime = helper.AblyRealtime({ recover: recoveryKey });
           newRealtime.connection.once('connected', function () {
             try {
-              expect(sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime recovered the old')
-                .to.be.ok;
+              expect(newRealtime.connection.id).to.equal(connectionId, 'Check new realtime recovered the old');
             } catch (err) {
               helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
