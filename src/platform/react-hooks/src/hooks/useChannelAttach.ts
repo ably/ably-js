@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useConnectionStateListener } from './useConnectionStateListener.js';
 import { useAbly } from './useAbly.js';
 import { INACTIVE_CONNECTION_STATES } from './constants.js';
+import { logError } from '../utils.js';
 
 interface ChannelAttachResult {
   connectionState: Ably.ConnectionState;
@@ -35,7 +36,7 @@ export function useChannelAttach(
       channel.attach().catch((reason) => {
         // we use a fire-and-forget approach for attaching, but calling detach during the attaching process or while
         // suspending can cause errors that will be automatically resolved
-        console.log(reason);
+        logError(ably, reason.toString());
       });
     }
   }, [shouldAttachToTheChannel, channel]);
