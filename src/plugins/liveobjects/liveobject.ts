@@ -3,8 +3,8 @@ import type EventEmitter from 'common/lib/util/eventemitter';
 import { LiveObjects } from './liveobjects';
 import { StateMessage, StateObject, StateOperation } from './statemessage';
 
-enum LiveObjectEvents {
-  Updated = 'Updated',
+export enum LiveObjectSubscriptionEvent {
+  updated = 'updated',
 }
 
 export interface LiveObjectData {
@@ -30,7 +30,7 @@ export abstract class LiveObject<
   TUpdate extends LiveObjectUpdate = LiveObjectUpdate,
 > {
   protected _client: BaseClient;
-  protected _eventEmitter: EventEmitter;
+  protected _subscriptions: EventEmitter;
   protected _objectId: string;
   /**
    * Represents an aggregated value for an object, which combines the initial value for an object from the create operation,
@@ -55,7 +55,7 @@ export abstract class LiveObject<
     objectId: string,
   ) {
     this._client = this._liveObjects.getClient();
-    this._eventEmitter = new this._client.EventEmitter(this._client.logger);
+    this._subscriptions = new this._client.EventEmitter(this._client.logger);
     this._objectId = objectId;
     this._dataRef = this._getZeroValueData();
     // use empty timeserials vector by default, so any future operation can be applied to this object
@@ -67,10 +67,10 @@ export abstract class LiveObject<
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
     this._liveObjects.throwIfMissingStateSubscribeMode();
 
-    this._eventEmitter.on(LiveObjectEvents.Updated, listener);
+    this._subscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
 
     const unsubscribe = () => {
-      this._eventEmitter.off(LiveObjectEvents.Updated, listener);
+      this._subscriptions.off(LiveObjectSubscriptionEvent.updated, listener);
     };
 
     return { unsubscribe };
@@ -86,12 +86,12 @@ export abstract class LiveObject<
       return;
     }
 
-    this._eventEmitter.off(LiveObjectEvents.Updated, listener);
+    this._subscriptions.off(LiveObjectSubscriptionEvent.updated, listener);
   }
 
   unsubscribeAll(): void {
     // can allow calling this public method without checking for state modes on the channel as the result of this method is not dependant on them
-    this._eventEmitter.off(LiveObjectEvents.Updated);
+    this._subscriptions.off(LiveObjectSubscriptionEvent.updated);
   }
 
   /**
@@ -102,7 +102,7 @@ export abstract class LiveObject<
   }
 
   /**
-   * Emits the {@link LiveObjectEvents.Updated} event with provided update object if it isn't a noop.
+   * Emits the {@link LiveObjectSubscriptionEvent.updated} event with provided update object if it isn't a noop.
    *
    * @internal
    */
@@ -112,7 +112,7 @@ export abstract class LiveObject<
       return;
     }
 
-    this._eventEmitter.emit(LiveObjectEvents.Updated, update);
+    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, update);
   }
 
   /**
