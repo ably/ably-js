@@ -1,6 +1,6 @@
 'use strict';
 
-define(['shared_helper', 'chai'], function (Helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
   var { expect, assert } = chai;
   var transportPreferenceName = 'ably-transport-preference';
 
@@ -453,6 +453,62 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         }
         this.test.helper.closeAndFinish(done, realtime);
       });
+
+      // this is identical to disable_connectivity_check test in connectivity, but here we specifically test browser supported request implementations
+      for (const scenario of [
+        {
+          description: 'XHR request disable connectivity check',
+          ctx: { initialFetchSupported: Ably.Rest.Platform.Config.fetchSupported },
+          before: (ctx) => {
+            Ably.Rest.Platform.Config.fetchSupported = false;
+          },
+          after: (ctx) => {
+            Ably.Rest.Platform.Config.fetchSupported = ctx.initialFetchSupported;
+          },
+        },
+        {
+          description: 'Fetch request disable connectivity check',
+          ctx: { initialXhrSupported: Ably.Rest.Platform.Config.xhrSupported },
+          before: (ctx) => {
+            Ably.Rest.Platform.Config.xhrSupported = false;
+          },
+          after: (ctx) => {
+            Ably.Rest.Platform.Config.xhrSupported = ctx.initialXhrSupported;
+          },
+        },
+      ]) {
+        /** @nospec */
+        it(scenario.description, async function () {
+          const helper = this.test.helper;
+          scenario.before(scenario.ctx);
+          let thrownError = null;
+          let res = null;
+
+          try {
+            helper.recordPrivateApi('pass.clientOption.connectivityCheckUrl');
+            helper.recordPrivateApi('pass.clientOption.disableConnectivityCheck');
+            const options = {
+              connectivityCheckUrl: helper.unroutableHost,
+              disableConnectivityCheck: true,
+              autoConnect: false,
+            };
+
+            helper.recordPrivateApi('call.http.checkConnectivity');
+            res = await helper.AblyRealtime(options).http.checkConnectivity();
+          } catch (error) {
+            thrownError = error;
+          } finally {
+            scenario.after(scenario.ctx);
+          }
+
+          expect(
+            res && !thrownError,
+            'Connectivity check completed ' +
+              (thrownError &&
+                (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(thrownError))),
+          ).to.be.ok;
+        });
+      }
     });
   }
 });

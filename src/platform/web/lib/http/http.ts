@@ -117,18 +117,25 @@ const Http = class {
       this.Request = async (method, uri, headers, params, body) => {
         return fetchRequestImplementation(method, client ?? null, uri, headers, params, body);
       };
-      this.checkConnectivity = async function () {
-        Logger.logAction(
-          this.logger,
-          Logger.LOG_MICRO,
-          '(Fetch)Http.checkConnectivity()',
-          'Sending; ' + connectivityCheckUrl,
-        );
-        const requestResult = await this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null);
-        const result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
-        Logger.logAction(this.logger, Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
-        return result;
-      };
+
+      if (client?.options.disableConnectivityCheck) {
+        this.checkConnectivity = async function () {
+          return true;
+        };
+      } else {
+        this.checkConnectivity = async function () {
+          Logger.logAction(
+            this.logger,
+            Logger.LOG_MICRO,
+            '(Fetch)Http.checkConnectivity()',
+            'Sending; ' + connectivityCheckUrl,
+          );
+          const requestResult = await this.doUri(HttpMethods.Get, connectivityCheckUrl, null, null, null);
+          const result = !requestResult.error && (requestResult.body as string)?.replace(/\n/, '') == 'yes';
+          Logger.logAction(this.logger, Logger.LOG_MICRO, '(Fetch)Http.checkConnectivity()', 'Result: ' + result);
+          return result;
+        };
+      }
     } else {
       this.Request = async () => {
         const error = hasImplementation
