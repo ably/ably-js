@@ -28,7 +28,13 @@ const StateToEventsMap: Record<LiveObjectsState, LiveObjectsEvent | undefined> =
   synced: LiveObjectsEvent.synced,
 };
 
-type BatchCallback = (batchContext: BatchContext) => void;
+export type LiveObjectsEventCallback = () => void;
+
+export interface OnLiveObjectsEventResponse {
+  off(): void;
+}
+
+export type BatchCallback = (batchContext: BatchContext) => void;
 
 export class LiveObjects {
   private _client: BaseClient;
@@ -36,7 +42,9 @@ export class LiveObjects {
   private _state: LiveObjectsState;
   // composition over inheritance since we cannot import class directly into plugin code.
   // instead we obtain a class type from the client
-  private _eventEmitter: EventEmitter;
+  private _eventEmitterInternal: EventEmitter;
+  // related to RTC10, should have a separate EventEmitter for users of the library
+  private _eventEmitterPublic: EventEmitter;
   private _liveObjectsPool: LiveObjectsPool;
   private _syncLiveObjectsDataPool: SyncLiveObjectsDataPool;
   private _currentSyncId: string | undefined;
@@ -50,7 +58,8 @@ export class LiveObjects {
     this._channel = channel;
     this._client = channel.client;
     this._state = LiveObjectsState.initialized;
-    this._eventEmitter = new this._client.EventEmitter(this._client.logger);
+    this._eventEmitterInternal = new this._client.EventEmitter(this._client.logger);
+    this._eventEmitterPublic = new this._client.EventEmitter(this._client.logger);
     this._liveObjectsPool = new LiveObjectsPool(this);
     this._syncLiveObjectsDataPool = new SyncLiveObjectsDataPool(this);
     this._bufferedStateOperations = [];
@@ -66,7 +75,7 @@ export class LiveObjects {
 
     // if we're not synced yet, wait for SYNC sequence to finish before returning root
     if (this._state !== LiveObjectsState.synced) {
-      await this._eventEmitter.once(LiveObjectsEvent.synced);
+      await this._eventEmitterInternal.once(LiveObjectsEvent.synced);
     }
 
     return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>;
@@ -154,6 +163,33 @@ export class LiveObjects {
     return counter;
   }
 
+  on(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): OnLiveObjectsEventResponse {
+    // we don't require any specific channel mode to be set to call this public method
+    this._eventEmitterPublic.on(event, callback);
+
+    const off = () => {
+      this._eventEmitterPublic.off(event, callback);
+    };
+
+    return { off };
+  }
+
+  off(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): void {
+    // we don't require any specific channel mode to be set to call this public method
+
+    // prevent accidentally calling .off without any arguments on an EventEmitter and removing all callbacks
+    if (this._client.Utils.isNil(event) && this._client.Utils.isNil(callback)) {
+      return;
+    }
+
+    this._eventEmitterPublic.off(event, callback);
+  }
+
+  offAll(): void {
+    // we don't require any specific channel mode to be set to call this public method
+    this._eventEmitterPublic.off();
+  }
+
   /**
    * @internal
    */
@@ -180,7 +216,8 @@ export class LiveObjects {
    */
   handleStateSyncMessages(stateMessages: StateMessage[], syncChannelSerial: string | null | undefined): void {
     const { syncId, syncCursor } = this._parseSyncChannelSerial(syncChannelSerial);
-    if (this._currentSyncId !== syncId) {
+    const newSyncSequence = this._currentSyncId !== syncId;
+    if (newSyncSequence) {
       this._startNewSync(syncId, syncCursor);
     }
 
@@ -188,7 +225,9 @@ export class LiveObjects {
 
     // if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
-      this._endSync();
+      // defer the state change event until the next tick if this was a new sync sequence
+      // to allow any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
+      this._endSync(newSyncSequence);
     }
   }
 
@@ -219,14 +258,20 @@ export class LiveObjects {
       `channel=${this._channel.name}, hasState=${hasState}`,
     );
 
-    if (hasState) {
+    const fromInitializedState = this._state === LiveObjectsState.initialized;
+    if (hasState || fromInitializedState) {
+      // should always start a new sync sequence if we're in the initialized state, no matter the HAS_STATE flag value.
+      // this guarantees we emit both "syncing" -> "synced" events in that order.
       this._startNewSync();
-    } else {
-      // no HAS_STATE flag received on attach, can end SYNC sequence immediately
-      // and treat it as no state on a channel
+    }
+
+    if (!hasState) {
+      // if no HAS_STATE flag received on attach, we can end SYNC sequence immediately and treat it as no state on a channel.
       this._liveObjectsPool.reset();
       this._syncLiveObjectsDataPool.reset();
-      this._endSync();
+      // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
+      // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
+      this._endSync(fromInitializedState);
     }
   }
 
@@ -287,10 +332,10 @@ export class LiveObjects {
     this._syncLiveObjectsDataPool.reset();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
-    this._stateChange(LiveObjectsState.syncing);
+    this._stateChange(LiveObjectsState.syncing, false);
   }
 
-  private _endSync(): void {
+  private _endSync(deferStateEvent: boolean): void {
     this._applySync();
     // should apply buffered state operations after we applied the SYNC data.
     // can use regular state messages application logic
@@ -300,7 +345,7 @@ export class LiveObjects {
     this._syncLiveObjectsDataPool.reset();
     this._currentSyncId = undefined;
     this._currentSyncCursor = undefined;
-    this._stateChange(LiveObjectsState.synced);
+    this._stateChange(LiveObjectsState.synced, deferStateEvent);
   }
 
   private _parseSyncChannelSerial(syncChannelSerial: string | null | undefined): {
@@ -420,7 +465,7 @@ export class LiveObjects {
     }
   }
 
-  private _stateChange(state: LiveObjectsState): void {
+  private _stateChange(state: LiveObjectsState, deferEvent: boolean): void {
     if (this._state === state) {
       return;
     }
@@ -431,6 +476,14 @@ export class LiveObjects {
       return;
     }
 
-    this._eventEmitter.emit(event);
+    if (deferEvent) {
+      this._client.Platform.Config.nextTick(() => {
+        this._eventEmitterInternal.emit(event);
+        this._eventEmitterPublic.emit(event);
+      });
+    } else {
+      this._eventEmitterInternal.emit(event);
+      this._eventEmitterPublic.emit(event);
+    }
   }
 }
