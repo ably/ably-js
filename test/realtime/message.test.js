@@ -1480,5 +1480,45 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         helper.closeAndFinish(done, realtime, err);
       }
     });
+
+    /** @spec RSF1 */
+    it('unrecognized message action', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime();
+
+      let caughtError;
+      try {
+        await helper.monitorConnectionAsync(async () => {
+          const channel = realtime.channels.get('unknown_action');
+          await channel.attach();
+
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          realtime.connection.connectionManager.activeProtocol
+            .getTransport()
+            .onProtocolMessage({ action: Number.MAX_SAFE_INTEGER, channel: channel.name });
+
+          // wait for the next event loop so connection can process any pending callbacks and go to a failed state
+          await new Promise((res, rej) =>
+            setTimeout(() => {
+              try {
+                expect(realtime.connection.state).to.equal(
+                  'connected',
+                  'Check still connected after unrecognized action field',
+                );
+                res();
+              } catch (error) {
+                rej(error);
+              }
+            }, 0),
+          );
+        }, realtime);
+      } catch (error) {
+        caughtError = error;
+      }
+
+      expect(caughtError, 'Check connection was not closed after receiving unrecognized message action').to.not.exist;
+      await helper.closeAndFinishAsync(realtime);
+    });
   });
 });
