@@ -25,12 +25,23 @@ export interface SubscribeResponse {
   unsubscribe(): void;
 }
 
+export enum LiveObjectLifecycleEvent {
+  deleted = 'deleted',
+}
+
+export type LiveObjectLifecycleEventCallback = () => void;
+
+export interface OnLiveObjectLifecycleEventResponse {
+  off(): void;
+}
+
 export abstract class LiveObject<
   TData extends LiveObjectData = LiveObjectData,
   TUpdate extends LiveObjectUpdate = LiveObjectUpdate,
 > {
   protected _client: BaseClient;
   protected _subscriptions: EventEmitter;
+  protected _lifecycleEvents: EventEmitter;
   protected _objectId: string;
   /**
    * Represents an aggregated value for an object, which combines the initial value for an object from the create operation,
@@ -56,6 +67,7 @@ export abstract class LiveObject<
   ) {
     this._client = this._liveObjects.getClient();
     this._subscriptions = new this._client.EventEmitter(this._client.logger);
+    this._lifecycleEvents = new this._client.EventEmitter(this._client.logger);
     this._objectId = objectId;
     this._dataRef = this._getZeroValueData();
     // use empty timeserials vector by default, so any future operation can be applied to this object
@@ -94,6 +106,33 @@ export abstract class LiveObject<
     this._subscriptions.off(LiveObjectSubscriptionEvent.updated);
   }
 
+  on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse {
+    // we don't require any specific channel mode to be set to call this public method
+    this._lifecycleEvents.on(event, callback);
+
+    const off = () => {
+      this._lifecycleEvents.off(event, callback);
+    };
+
+    return { off };
+  }
+
+  off(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): void {
+    // we don't require any specific channel mode to be set to call this public method
+
+    // prevent accidentally calling .off without any arguments on an EventEmitter and removing all callbacks
+    if (this._client.Utils.isNil(event) && this._client.Utils.isNil(callback)) {
+      return;
+    }
+
+    this._lifecycleEvents.off(event, callback);
+  }
+
+  offAll(): void {
+    // we don't require any specific channel mode to be set to call this public method
+    this._lifecycleEvents.off();
+  }
+
   /**
    * @internal
    */
@@ -124,7 +163,7 @@ export abstract class LiveObject<
     this._tombstone = true;
     this._tombstonedAt = Date.now();
     this._dataRef = this._getZeroValueData();
-    // TODO: emit "deleted" event so that end users get notified about this object getting deleted
+    this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
   }
 
   /**
