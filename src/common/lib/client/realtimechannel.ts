@@ -8,7 +8,6 @@ import { EncodingDecodingContext, CipherOptions, populateFieldsFromParent } from
 import Message, { WireMessage, getMessagesSize, encodeArray as encodeMessagesArray } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
-import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
@@ -662,13 +661,13 @@ class RealtimeChannel extends EventEmitter {
       }
 
       default:
+        // RSF1, should handle unrecognized message actions gracefully and don't abort the realtime connection to ensure forward compatibility
         Logger.logAction(
           this.logger,
-          Logger.LOG_ERROR,
+          Logger.LOG_MAJOR,
           'RealtimeChannel.processMessage()',
-          'Fatal protocol error: unrecognised action (' + message.action + ')',
+          'Protocol error: unrecognised message action (' + message.action + ')',
         );
-        this.connectionManager.abort(ConnectionErrors.unknownChannelErr());
     }
   }
 
