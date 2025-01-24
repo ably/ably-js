@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.6.3](https://github.com/ably/ably-js/tree/2.6.3) (2025-01-28)
+
+- Fixed `useChannel` hook can throw exception in the effect if connection is closed [\#1938](https://github.com/ably/ably-js/issues/1938)
+- Fixed web `FetchRequest` does not respect `disableConnectivityCheck` client option [\#1925](https://github.com/ably/ably-js/pull/1925)
+- Fixed typings for `RealtimeChannel.modes` [\#1955](https://github.com/ably/ably-js/pull/1955)
+
 ## [2.6.2](https://github.com/ably/ably-js/tree/2.6.2) (2025-01-14)
 
 - Minor bugfix for experimental message fields.
