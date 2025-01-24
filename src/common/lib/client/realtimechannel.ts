@@ -516,7 +516,8 @@ class RealtimeChannel extends EventEmitter {
     if (
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||
-      message.action === actions.PRESENCE
+      message.action === actions.PRESENCE ||
+      message.action === actions.STATE
     ) {
       // RTL15b
       this.setChannelSerial(message.channelSerial);
