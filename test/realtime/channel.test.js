@@ -1861,5 +1861,95 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       await helper.closeAndFinishAsync(realtime);
     });
+
+    /** @spec RTL4c1 */
+    it('set channelSerial field for ATTACH ProtocolMessage if available', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime();
+
+      await helper.monitorConnectionAsync(async () => {
+        const channel = realtime.channels.get('channel');
+        channel.properties.channelSerial = 'channelSerial';
+
+        await realtime.connection.once('connected');
+
+        const promiseCheck = new Promise((resolve, reject) => {
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+          const sendOriginal = transport.send;
+
+          helper.recordPrivateApi('replace.transport.send');
+          transport.send = function (msg) {
+            if (msg.action === 10) {
+              try {
+                expect(msg.channelSerial).to.equal('channelSerial2');
+                resolve();
+              } catch (error) {
+                reject(error);
+              }
+            } else {
+              helper.recordPrivateApi('call.transport.send');
+              sendOriginal.call(this, msg);
+            }
+          };
+        });
+
+        // don't await for attach as it will never resolve in this test since we don't send ATTACH msg to realtime
+        channel.attach();
+        await promiseCheck;
+      }, realtime);
+
+      await helper.closeAndFinishAsync(realtime);
+    });
+
+    /** @spec RTL15b */
+    it('channel.properties.channelSerial is updated with channelSerial from latest message', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ clientId: 'me' });
+
+      await helper.monitorConnectionAsync(async () => {
+        const channel = realtime.channels.get('channel');
+        await realtime.connection.once('connected');
+
+        helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+        const messagesToUpdateChannelSerial = [
+          createPM({
+            action: 11, // ATTACHED
+            channel: channel.name,
+            channelSerial: 'ATTACHED',
+          }),
+          createPM({
+            action: 15, // MESSAGE
+            channel: channel.name,
+            channelSerial: 'MESSAGE',
+            messages: [{ name: 'foo', data: 'bar' }],
+          }),
+          createPM({
+            action: 14, // PRESENCE
+            channel: channel.name,
+            channelSerial: 'PRESENCE',
+          }),
+          createPM({
+            action: 19, // STATE
+            channel: channel.name,
+            channelSerial: 'STATE',
+          }),
+        ];
+
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+
+        for (const msg of messagesToUpdateChannelSerial) {
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          transport.onProtocolMessage(msg);
+
+          // wait until next event loop so any async ops get resolved and channel serial gets updated on a channel
+          await new Promise((res) => setTimeout(res, 0));
+          expect(channel.properties.channelSerial).to.equal(msg.channelSerial);
+        }
+      }, realtime);
+
+      await helper.closeAndFinishAsync(realtime);
+    });
   });
 });
