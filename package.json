@@ -108,7 +108,7 @@
     "process": "^0.11.10",
     "react": ">=18.1.0",
     "react-dom": ">=18.1.0",
-    "requirejs": "~2.1",
+    "requirejs": "~2.3",
     "shelljs": "~0.8",
     "source-map-explorer": "^2.5.2",
     "source-map-support": "^0.5.21",
