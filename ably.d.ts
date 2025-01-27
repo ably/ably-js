@@ -853,29 +853,66 @@ declare namespace ChannelModes {
   /**
    * The client can publish messages.
    */
-  type PUBLISH = 'PUBLISH';
+  type PUBLISH = 'PUBLISH' | 'publish';
   /**
    * The client can subscribe to messages.
    */
-  type SUBSCRIBE = 'SUBSCRIBE';
+  type SUBSCRIBE = 'SUBSCRIBE' | 'subscribe';
   /**
    * The client can enter the presence set.
    */
-  type PRESENCE = 'PRESENCE';
+  type PRESENCE = 'PRESENCE' | 'presence';
   /**
    * The client can receive presence messages.
    */
-  type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
+  type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE' | 'presence_subscribe';
 }
 
 /**
  * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
+ *
+ * **Note:** This type admits uppercase or lowercase values for reasons of backwards compatibility. In the next major release of this SDK, it will be merged with {@link ResolvedChannelMode} and only admit lowercase values; see [this GitHub issue](https://github.com/ably/ably-js/issues/1954).
  */
 export type ChannelMode =
   | ChannelModes.PUBLISH
   | ChannelModes.SUBSCRIBE
   | ChannelModes.PRESENCE
   | ChannelModes.PRESENCE_SUBSCRIBE;
+
+/**
+ * The `ResolvedChannelModes` namespace describes the possible values of the {@link ResolvedChannelMode} type.
+ */
+declare namespace ResolvedChannelModes {
+  /**
+   * The client can publish messages.
+   */
+  type PUBLISH = 'publish';
+  /**
+   * The client can subscribe to messages.
+   */
+  type SUBSCRIBE = 'subscribe';
+  /**
+   * The client can enter the presence set.
+   */
+  type PRESENCE = 'presence';
+  /**
+   * The client can receive presence messages.
+   */
+  type PRESENCE_SUBSCRIBE = 'presence_subscribe';
+}
+
+/**
+ * Describes the configuration that a {@link RealtimeChannel} is using, as returned by {@link RealtimeChannel.modes}.
+ *
+ * This type is the same as the {@link ChannelMode} type but with all of the values lowercased.
+ *
+ * **Note:** This type exists for reasons of backwards compatibility. In the next major release of this SDK, it will be merged with {@link ChannelMode}; see [this GitHub issue](https://github.com/ably/ably-js/issues/1954).
+ */
+export type ResolvedChannelMode =
+  | ResolvedChannelModes.PUBLISH
+  | ResolvedChannelModes.SUBSCRIBE
+  | ResolvedChannelModes.PRESENCE
+  | ResolvedChannelModes.PRESENCE_SUBSCRIBE;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
@@ -2090,9 +2127,9 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   params: ChannelParams;
   /**
-   * An array of {@link ChannelMode} objects.
+   * An array of {@link ResolvedChannelMode} objects.
    */
-  modes: ChannelMode[];
+  modes: ResolvedChannelMode[];
   /**
    * Deregisters the given listener for the specified event name. This removes an earlier event-specific subscription.
    *
