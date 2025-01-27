@@ -265,11 +265,7 @@ class RealtimeChannel extends EventEmitter {
     const size = getMessagesSize(messages);
     if (size > maxMessageSize) {
       throw new ErrorInfo(
-        'Maximum size of messages that can be published at once exceeded ( was ' +
-          size +
-          ' bytes; limit is ' +
-          maxMessageSize +
-          ' bytes)',
+        `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
         40009,
         400,
       );
