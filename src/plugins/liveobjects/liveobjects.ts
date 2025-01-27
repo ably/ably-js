@@ -250,6 +250,15 @@ export class LiveObjects {
     }
 
     stateMessages.forEach((x) => StateMessage.encode(x, this._client.MessageEncoding));
+    const maxMessageSize = this._client.options.maxMessageSize;
+    const size = stateMessages.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
+    if (size > maxMessageSize) {
+      throw new this._client.ErrorInfo(
+        `Maximum size of state messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        40009,
+        400,
+      );
+    }
 
     return this._channel.sendState(stateMessages);
   }

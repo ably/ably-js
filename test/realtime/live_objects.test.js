@@ -9,6 +9,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 ) {
   const expect = chai.expect;
   const BufferUtils = Ably.Realtime.Platform.BufferUtils;
+  const Utils = Ably.Realtime.Utils;
+  const MessageEncoding = Ably.Realtime._MessageEncoding;
   const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
   const liveObjectsFixturesChannel = 'liveobjects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
@@ -58,14 +60,20 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
   }
 
   async function expectToThrowAsync(fn, errorStr) {
-    let verifiedError = false;
+    let savedError;
     try {
       await fn();
     } catch (error) {
       expect(error.message).to.have.string(errorStr);
-      verifiedError = true;
+      savedError = error;
     }
-    expect(verifiedError, 'Expected async function to throw an error').to.be.true;
+    expect(savedError, 'Expected async function to throw an error').to.exist;
+
+    return savedError;
+  }
+
+  function stateMessageFromValues(values) {
+    return LiveObjectsPlugin.StateMessage.fromValues(values, Utils, MessageEncoding);
   }
 
   describe('realtime/live_objects', function () {
@@ -3982,6 +3990,277 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           await scenario.action({ liveObjects, liveObjectsHelper, channelName, channel, root, map, counter, helper });
         }, client);
+      });
+
+      /**
+       * @spec TO3l8
+       * @spec RSL1i
+       */
+      it('state message publish respects connectionDetails.maxMessageSize', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper, { clientId: 'test' });
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          await client.connection.once('connected');
+
+          const connectionManager = client.connection.connectionManager;
+          const connectionDetails = connectionManager.connectionDetails;
+          const connectionDetailsPromise = connectionManager.once('connectiondetails');
+
+          helper.recordPrivateApi('write.connectionManager.connectionDetails.maxMessageSize');
+          connectionDetails.maxMessageSize = 64;
+
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+          // forge lower maxMessageSize
+          connectionManager.activeProtocol.getTransport().onProtocolMessage(
+            createPM({
+              action: 4, // CONNECTED
+              connectionDetails,
+            }),
+          );
+
+          helper.recordPrivateApi('listen.connectionManager.connectiondetails');
+          await connectionDetailsPromise;
+
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          const data = new Array(100).fill('a').join('');
+          const error = await expectRejectedWith(
+            async () => root.set('key', data),
+            'Maximum size of state messages that can be published at once exceeded',
+          );
+
+          expect(error.code).to.equal(40009, 'Check maximum size of messages error has correct error code');
+        }, client);
+      });
+
+      describe('StateMessage message size', () => {
+        const stateMessageSizeScenarios = [
+          {
+            description: 'client id',
+            message: stateMessageFromValues({
+              clientId: 'my-client',
+            }),
+            expected: Utils.dataSizeBytes('my-client'),
+          },
+          {
+            description: 'extras',
+            message: stateMessageFromValues({
+              extras: { foo: 'bar' },
+            }),
+            expected: Utils.dataSizeBytes('{"foo":"bar"}'),
+          },
+          {
+            description: 'object id',
+            message: stateMessageFromValues({
+              operation: { objectId: 'object-id' },
+            }),
+            expected: 0,
+          },
+          {
+            description: 'map create op no payload',
+            message: stateMessageFromValues({
+              operation: { action: 0, objectId: 'object-id' },
+            }),
+            expected: 0,
+          },
+          {
+            description: 'map create op with object payload',
+            message: stateMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: {
+                    semantics: 0,
+                    entries: { 'key-1': { tombstone: false, data: { objectId: 'another-object-id' } } },
+                  },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1'),
+          },
+          {
+            description: 'map create op with string payload',
+            message: stateMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: 'a string' } } } },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
+          },
+          {
+            description: 'map create op with bytes payload',
+            message: stateMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: {
+                    semantics: 0,
+                    entries: { 'key-1': { tombstone: false, data: { value: BufferUtils.utf8Encode('my-value') } } },
+                  },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
+          },
+          {
+            description: 'map create op with boolean payload',
+            message: stateMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: true } } } },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1') + 1,
+          },
+          {
+            description: 'map remove op',
+            message: stateMessageFromValues({
+              operation: { action: 2, objectId: 'object-id', mapOp: { key: 'my-key' } },
+            }),
+            expected: Utils.dataSizeBytes('my-key'),
+          },
+          {
+            description: 'map set operation value=object',
+            message: stateMessageFromValues({
+              operation: {
+                action: 1,
+                objectId: 'object-id',
+                mapOp: { key: 'my-key', data: { objectId: 'another-object-id' } },
+              },
+            }),
+            expected: Utils.dataSizeBytes('my-key'),
+          },
+          {
+            description: 'map set operation value=string',
+            message: stateMessageFromValues({
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 'my-value' } } },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes('my-value'),
+          },
+          {
+            description: 'map set operation value=bytes',
+            message: stateMessageFromValues({
+              operation: {
+                action: 1,
+                objectId: 'object-id',
+                mapOp: { key: 'my-key', data: { value: BufferUtils.utf8Encode('my-value') } },
+              },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
+          },
+          {
+            description: 'map set operation value=boolean',
+            message: stateMessageFromValues({
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: true } } },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + 1,
+          },
+          {
+            description: 'map set operation value=double',
+            message: stateMessageFromValues({
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 123.456 } } },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + 8,
+          },
+          {
+            description: 'map object',
+            message: stateMessageFromValues({
+              object: {
+                objectId: 'object-id',
+                map: {
+                  semantics: 0,
+                  entries: {
+                    'key-1': { tombstone: false, data: { value: 'a string' } },
+                    'key-2': { tombstone: true, data: { value: 'another string' } },
+                  },
+                },
+                createOp: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { value: 'third string' } } } },
+                },
+                siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
+                tombstone: false,
+              },
+            }),
+            expected:
+              Utils.dataSizeBytes('key-1') +
+              Utils.dataSizeBytes('a string') +
+              Utils.dataSizeBytes('key-2') +
+              Utils.dataSizeBytes('another string') +
+              Utils.dataSizeBytes('key-3') +
+              Utils.dataSizeBytes('third string'),
+          },
+          {
+            description: 'counter create op no payload',
+            message: stateMessageFromValues({
+              operation: { action: 3, objectId: 'object-id' },
+            }),
+            expected: 0,
+          },
+          {
+            description: 'counter create op with payload',
+            message: stateMessageFromValues({
+              operation: { action: 3, objectId: 'object-id', counter: { count: 1234567 } },
+            }),
+            expected: 8,
+          },
+          {
+            description: 'counter inc op',
+            message: stateMessageFromValues({
+              operation: { action: 4, objectId: 'object-id', counterOp: { amount: 123.456 } },
+            }),
+            expected: 8,
+          },
+          {
+            description: 'counter object',
+            message: stateMessageFromValues({
+              object: {
+                objectId: 'object-id',
+                counter: { count: 1234567 },
+                createOp: {
+                  action: 3,
+                  objectId: 'object-id',
+                  counter: { count: 9876543 },
+                },
+                siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
+                tombstone: false,
+              },
+            }),
+            expected: 8 + 8,
+          },
+        ];
+
+        /** @nospec */
+        forScenarios(stateMessageSizeScenarios, function (helper, scenario) {
+          helper.recordPrivateApi('call.StateMessage.encode');
+          LiveObjectsPlugin.StateMessage.encode(scenario.message);
+          helper.recordPrivateApi('call.BufferUtils.utf8Encode'); // was called by a scenario to create buffers
+          helper.recordPrivateApi('call.StateMessage.fromValues'); // was called by a scenario to create a StateMessage instance
+          helper.recordPrivateApi('call.Utils.dataSizeBytes'); // was called by a scenario to calculated the expected byte size
+          helper.recordPrivateApi('call.StateMessage.getMessageSize');
+          expect(scenario.message.getMessageSize()).to.equal(scenario.expected);
+        });
       });
     });
 
