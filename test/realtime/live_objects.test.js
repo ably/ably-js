@@ -438,6 +438,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           expect(valuesMap.get('stringKey')).to.equal('stringValue', 'Check values map has correct string value key');
           expect(valuesMap.get('emptyStringKey')).to.equal('', 'Check values map has correct empty string value key');
+          helper.recordPrivateApi('call.BufferUtils.base64Decode');
+          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
           expect(
             BufferUtils.areBuffersEqual(
               valuesMap.get('bytesKey'),
@@ -445,6 +447,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             ),
             'Check values map has correct bytes value key',
           ).to.be.true;
+          helper.recordPrivateApi('call.BufferUtils.base64Decode');
+          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
           expect(
             BufferUtils.areBuffersEqual(valuesMap.get('emptyBytesKey'), BufferUtils.base64Decode('')),
             'Check values map has correct empty bytes value key',
@@ -688,7 +692,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can apply MAP_CREATE with primitives state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, liveObjectsHelper, channelName, helper } = ctx;
 
             // LiveObjects public API allows us to check value of objects we've created based on MAP_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
@@ -729,6 +733,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
                 if (keyData.data.encoding) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                   expect(
                     BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.value)),
                     `Check map "${mapKey}" has correct value for "${key}" key`,
@@ -902,7 +908,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can apply MAP_SET with primitives state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, liveObjectsHelper, channelName, helper } = ctx;
 
             // check root is empty before ops
             primitiveKeyData.forEach((keyData) => {
@@ -929,6 +935,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
                   `Check root has correct value for "${keyData.key}" key after MAP_SET op`,
@@ -1785,7 +1793,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'buffered state operation messages are applied when STATE_SYNC sequence ends',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, liveObjectsHelper, channel, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
             await liveObjectsHelper.processStateObjectMessageOnChannel({
@@ -1814,6 +1822,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
                   `Check root has correct value for "${keyData.key}" key after STATE_SYNC has ended and buffered operations are applied`,
@@ -2013,7 +2023,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'subsequent state operation messages are applied immediately after STATE_SYNC ended and buffers are applied',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel, channelName } = ctx;
+            const { root, liveObjectsHelper, channel, channelName, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
             await liveObjectsHelper.processStateObjectMessageOnChannel({
@@ -2052,6 +2062,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check buffered operations are applied, as well as the most recent operation outside of the STATE_SYNC is applied
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
                   `Check root has correct value for "${keyData.key}" key after STATE_SYNC has ended and buffered operations are applied`,
@@ -2279,10 +2291,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'LiveMap.set sends MAP_SET operation with primitive values',
           action: async (ctx) => {
-            const { root } = ctx;
+            const { root, helper } = ctx;
 
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
                 const value = keyData.data.encoding ? BufferUtils.base64Decode(keyData.data.value) : keyData.data.value;
                 await root.set(keyData.key, value);
               }),
@@ -2291,6 +2304,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
                   `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
@@ -2602,12 +2617,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'LiveObjects.createMap sends MAP_CREATE operation with primitive values',
           action: async (ctx) => {
-            const { liveObjects } = ctx;
+            const { liveObjects, helper } = ctx;
 
             const maps = await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
                 const entries = mapFixture.entries
                   ? Object.entries(mapFixture.entries).reduce((acc, [key, keyData]) => {
+                      helper.recordPrivateApi('call.BufferUtils.base64Decode');
                       const value = keyData.data.encoding
                         ? BufferUtils.base64Decode(keyData.data.value)
                         : keyData.data.value;
@@ -2634,6 +2650,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
                 if (keyData.data.encoding) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                   expect(
                     BufferUtils.areBuffersEqual(map.get(key), BufferUtils.base64Decode(keyData.data.value)),
                     `Check map #${i + 1} has correct value for "${key}" key`,
