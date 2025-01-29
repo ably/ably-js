@@ -127,9 +127,7 @@ class RealtimePresence extends EventEmitter {
 
     switch (channel.state) {
       case 'attached':
-        return new Promise((resolve, reject) => {
-          channel.sendPresence([wirePresMsg], (err) => (err ? reject(err) : resolve()));
-        });
+        return channel.sendPresence([wirePresMsg]);
       case 'initialized':
       case 'detached':
         channel.attach();
@@ -178,29 +176,25 @@ class RealtimePresence extends EventEmitter {
     }
     const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 
-    return new Promise((resolve, reject) => {
-      switch (channel.state) {
-        case 'attached':
-          channel.sendPresence([wirePresMsg], (err) => (err ? reject(err) : resolve()));
-          break;
-        case 'attaching':
+    switch (channel.state) {
+      case 'attached':
+        return channel.sendPresence([wirePresMsg]);
+      case 'attaching':
+        return new Promise((resolve, reject) => {
           this.pendingPresence.push({
             presence: wirePresMsg,
             callback: (err) => (err ? reject(err) : resolve()),
           });
-          break;
-        case 'initialized':
-        case 'failed': {
-          /* we're not attached; therefore we let any entered status
-           * timeout by itself instead of attaching just in order to leave */
-          const err = new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
-          reject(err);
-          break;
-        }
-        default:
-          reject(channel.invalidStateError());
+        });
+      case 'initialized':
+      case 'failed': {
+        /* we're not attached; therefore we let any entered status
+         * timeout by itself instead of attaching just in order to leave */
+        throw new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
       }
-    });
+      default:
+        throw channel.invalidStateError();
+    }
   }
 
   async get(params?: RealtimePresenceParams): Promise<PresenceMessage[]> {
@@ -357,7 +351,10 @@ class RealtimePresence extends EventEmitter {
         presenceArray.push(event.presence);
         multicaster.push(event.callback);
       }
-      this.channel.sendPresence(presenceArray, multicaster);
+      this.channel
+        .sendPresence(presenceArray)
+        .then(() => multicaster())
+        .catch((err: ErrorInfo) => multicaster(err));
     }
   }
 

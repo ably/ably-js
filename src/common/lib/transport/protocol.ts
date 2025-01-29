@@ -21,7 +21,7 @@ export class PendingMessage {
     this.merged = false;
     const action = message.action;
     this.sendAttempted = false;
-    this.ackRequired = action == actions.MESSAGE || action == actions.PRESENCE;
+    this.ackRequired = action == actions.MESSAGE || action == actions.PRESENCE || action == actions.ANNOTATION;
   }
 }
 
@@ -78,7 +78,11 @@ class Protocol extends EventEmitter {
         Logger.LOG_MICRO,
         'Protocol.send()',
         'sending msg; ' +
-          stringifyProtocolMessage(pendingMessage.message, this.transport.connectionManager.realtime._RealtimePresence),
+          stringifyProtocolMessage(
+            pendingMessage.message,
+            this.transport.connectionManager.realtime._RealtimePresence,
+            this.transport.connectionManager.realtime._Annotations,
+          ),
       );
     }
     pendingMessage.sendAttempted = true;

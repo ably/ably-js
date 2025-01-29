@@ -1465,7 +1465,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       /* Stub out the channel's ability to communicate */
       helper.recordPrivateApi('replace.channel.sendMessage');
-      channel.sendMessage = function () {};
+      channel.sendMessage = async function () {};
 
       async.series(
         [

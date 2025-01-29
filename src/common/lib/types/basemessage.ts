@@ -236,6 +236,9 @@ export function populateFieldsFromParent(parent: ProtocolMessage) {
     case actions.SYNC:
       msgs = parent.presence!;
       break;
+    case actions.ANNOTATION:
+      msgs = parent.annotations!;
+      break;
     default:
       throw new ErrorInfo('Unexpected action ' + parent.action, 40000, 400);
   }
