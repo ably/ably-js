@@ -1769,7 +1769,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   channel,
                   serial: lexicoTimeserial('aaa', 0, 0),
                   siteCode: 'aaa',
-                  state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
+                  // copy data object as library will modify it
+                  state: [
+                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } }),
+                  ],
                 }),
               ),
             );
@@ -1800,7 +1803,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
+                  // copy data object as library will modify it
+                  state: [
+                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } }),
+                  ],
                 }),
               ),
             );
@@ -1846,7 +1852,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
+                  // copy data object as library will modify it
+                  state: [
+                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } }),
+                  ],
                 }),
               ),
             );
@@ -2028,7 +2037,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: keyData.data })],
+                  // copy data object as library will modify it
+                  state: [
+                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } }),
+                  ],
                 }),
               ),
             );
