@@ -25,8 +25,14 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
       this._rest = helper.AblyRest({ useBinaryProtocol: false });
     }
 
+    static ACTIONS = ACTIONS;
+
+    static fixtureRootKeys() {
+      return ['emptyCounter', 'initialValueCounter', 'referencedCounter', 'emptyMap', 'referencedMap', 'valuesMap'];
+    }
+
     /**
-     * Creates next LiveObjects state tree on a provided channel name:
+     * Sends REST STATE requests to create LiveObjects state tree on a provided channel name:
      *
      * root "emptyMap" -> Map#1 {} -- empty map
      * root "referencedMap" -> Map#2 { "counterKey": <object id Counter#3> }
