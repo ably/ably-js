@@ -292,11 +292,11 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     }
 
     fakeMapObjectId() {
-      return `map:${Helper.randomString()}`;
+      return `map:${Helper.randomString()}@${Date.now()}`;
     }
 
     fakeCounterObjectId() {
-      return `counter:${Helper.randomString()}`;
+      return `counter:${Helper.randomString()}@${Date.now()}`;
     }
 
     async stateRequest(channelName, opBody) {
