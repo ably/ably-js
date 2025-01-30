@@ -12,10 +12,10 @@ import Message, {
   fromValuesArray as messagesFromValuesArray,
   encodeArray as encodeMessagesArray,
   decode as decodeMessage,
-  decodeData,
   getMessagesSize,
   CipherOptions,
   EncodingDecodingContext,
+  MessageEncoding,
 } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
@@ -511,6 +511,17 @@ class RealtimeChannel extends EventEmitter {
     this.sendMessage(msg, callback);
   }
 
+  sendState(state: StateMessage[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const msg = protocolMessageFromValues({
+        action: actions.STATE,
+        channel: this.name,
+        state,
+      });
+      this.sendMessage(msg, (err) => (err ? reject(err) : resolve()));
+    });
+  }
+
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
   async processMessage(message: ProtocolMessage): Promise<void> {
     if (
@@ -616,7 +627,7 @@ class RealtimeChannel extends EventEmitter {
         const options = this.channelOptions;
         await this._decodeAndPrepareMessages(message, stateMessages, (msg) =>
           this.client._LiveObjectsPlugin
-            ? this.client._LiveObjectsPlugin.StateMessage.decode(msg, options, decodeData)
+            ? this.client._LiveObjectsPlugin.StateMessage.decode(msg, options, MessageEncoding)
             : Utils.throwMissingPluginError('LiveObjects'),
         );
 

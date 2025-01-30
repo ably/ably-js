@@ -37,6 +37,56 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   /**
+   * Send a COUNTER_INC operation to the realtime system to increment a value on this LiveCounter object.
+   *
+   * This does not modify the underlying data of this LiveCounter object. Instead, the change will be applied when
+   * the published COUNTER_INC operation is echoed back to the client and applied to the object following the regular
+   * operation application procedure.
+   *
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   */
+  async increment(amount: number): Promise<void> {
+    const stateMessage = this.createCounterIncMessage(amount);
+    return this._liveObjects.publish([stateMessage]);
+  }
+
+  /**
+   * @internal
+   */
+  createCounterIncMessage(amount: number): StateMessage {
+    if (typeof amount !== 'number' || !isFinite(amount)) {
+      throw new this._client.ErrorInfo('Counter value increment should be a valid number', 40013, 400);
+    }
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          action: StateOperationAction.COUNTER_INC,
+          objectId: this.getObjectId(),
+          counterOp: { amount },
+        },
+      },
+      this._client.Utils,
+      this._client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
+   * Alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
+   */
+  async decrement(amount: number): Promise<void> {
+    // do an explicit type safety check here before negating the amount value,
+    // so we don't unintentionally change the type sent by a user
+    if (typeof amount !== 'number' || !isFinite(amount)) {
+      throw new this._client.ErrorInfo('Counter value decrement should be a valid number', 40013, 400);
+    }
+
+    return this.increment(-amount);
+  }
+
+  /**
    * @internal
    */
   applyOperation(op: StateOperation, msg: StateMessage): void {
@@ -55,7 +105,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveCounter.applyOperation()',
-        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this._objectId}`,
+        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
       );
       return;
     }
@@ -202,7 +252,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveCounter._applyCounterCreate()',
-        `skipping applying COUNTER_CREATE op on a counter instance as it was already applied before; objectId=${this._objectId}`,
+        `skipping applying COUNTER_CREATE op on a counter instance as it was already applied before; objectId=${this.getObjectId()}`,
       );
       return { noop: true };
     }

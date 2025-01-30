@@ -3,13 +3,16 @@ import * as API from '../../../../ably';
 import { PresenceMessagePlugin } from '../client/modularplugins';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
-import Message, { fromValues as messageFromValues, fromValuesArray as messagesFromValuesArray } from './message';
+import Message, {
+  fromValues as messageFromValues,
+  fromValuesArray as messagesFromValuesArray,
+  MessageEncoding,
+} from './message';
 import PresenceMessage, {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from './presencemessage';
 import type * as LiveObjectsPlugin from 'plugins/liveobjects';
-import Platform from '../../platform';
 
 export const actions = {
   HEARTBEAT: 0,
@@ -128,7 +131,7 @@ export function fromDeserialized(
     state = deserialized.state as LiveObjectsPlugin.StateMessage[];
     if (state) {
       for (let i = 0; i < state.length; i++) {
-        state[i] = liveObjectsPlugin.StateMessage.fromValues(state[i], Platform);
+        state[i] = liveObjectsPlugin.StateMessage.fromValues(state[i], Utils, MessageEncoding);
       }
     }
   }
@@ -177,7 +180,8 @@ export function stringify(
   if (msg.presence && presenceMessagePlugin)
     result += '; presence=' + toStringArray(presenceMessagePlugin.presenceMessagesFromValuesArray(msg.presence));
   if (msg.state && liveObjectsPlugin) {
-    result += '; state=' + toStringArray(liveObjectsPlugin.StateMessage.fromValuesArray(msg.state, Platform));
+    result +=
+      '; state=' + toStringArray(liveObjectsPlugin.StateMessage.fromValuesArray(msg.state, Utils, MessageEncoding));
   }
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
