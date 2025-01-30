@@ -74,6 +74,10 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return Buffer.from(string, 'utf8');
   }
 
+  concat(buffers: Bufferlike[]): Output {
+    return Buffer.concat(buffers.map((x) => this.toBuffer(x)));
+  }
+
   sha256(message: Bufferlike): Output {
     const messageBuffer = this.toBuffer(message);
 

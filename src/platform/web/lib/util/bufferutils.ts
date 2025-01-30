@@ -200,6 +200,21 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return this.toArrayBuffer(arrayBufferView);
   }
 
+  concat(buffers: Bufferlike[]): Output {
+    const sumLength = buffers.reduce((acc, v) => acc + v.byteLength, 0);
+    const result = new Uint8Array(sumLength);
+    let offset = 0;
+
+    for (const buffer of buffers) {
+      const uint8Array = this.toBuffer(buffer);
+      // see TypedArray.set for TypedArray argument https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set#typedarray
+      result.set(uint8Array, offset);
+      offset += uint8Array.byteLength;
+    }
+
+    return result.buffer;
+  }
+
   sha256(message: Bufferlike): Output {
     const hash = sha256(this.toBuffer(message));
     return this.toArrayBuffer(hash);

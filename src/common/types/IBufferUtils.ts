@@ -20,6 +20,7 @@ export default interface IBufferUtils<Bufferlike, Output, ToBufferOutput> {
    * Returns ArrayBuffer on browser and Buffer on Node.js
    */
   arrayBufferViewToBuffer: (arrayBufferView: ArrayBufferView) => Bufferlike;
+  concat(buffers: Bufferlike[]): Output;
   sha256(message: Bufferlike): Output;
   hmacSha256(message: Bufferlike, key: Bufferlike): Output;
 }
