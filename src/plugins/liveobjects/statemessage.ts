@@ -248,9 +248,21 @@ export class StateMessage {
     format: Utils.Format;
   } {
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
-    const encodedInitialValue = client.Utils.encodeBody(initialValue, client._MsgPack, format);
 
-    // if we've got string result (for example, json format was used), we need to additionally convert it to bytes array with utf8 encoding
+    // initial value object may contain user provided data that requires an additional encoding (for example buffers as map keys).
+    // so we need to encode that data first as if we were sending it over the wire. we can use a StateMessage methods for this
+    const stateMessage = StateMessage.fromValues({ operation: initialValue }, client.Utils, client.MessageEncoding);
+    StateMessage.encode(stateMessage, client.MessageEncoding);
+    const { operation: initialValueWithDataEncoding } = StateMessage._encodeForWireProtocol(
+      stateMessage,
+      client.MessageEncoding,
+      format,
+    );
+
+    // initial value field should be represented as an array of bytes over the wire. so we encode the whole object based on the client encoding format
+    const encodedInitialValue = client.Utils.encodeBody(initialValueWithDataEncoding, client._MsgPack, format);
+
+    // if we've got string result (for example, json encoding was used), we need to additionally convert it to bytes array with utf8 encoding
     if (typeof encodedInitialValue === 'string') {
       return {
         encodedInitialValue: client.Platform.BufferUtils.utf8Encode(encodedInitialValue),
@@ -349,6 +361,42 @@ export class StateMessage {
   }
 
   /**
+   * Encodes operation and object fields of the StateMessage. Does not mutate the provided StateMessage.
+   *
+   * Uses encoding functions from regular `Message` processing.
+   */
+  private static _encodeForWireProtocol(
+    message: StateMessage,
+    messageEncoding: typeof MessageEncoding,
+    format: Utils.Format,
+  ): {
+    operation?: StateOperation;
+    object?: StateObject;
+  } {
+    const encodeFn: EncodeFunction = (data, encoding) => {
+      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWireProtocol(
+        data,
+        encoding,
+        format,
+      );
+      return {
+        data: encodedData,
+        encoding: newEncoding,
+      };
+    };
+
+    const encodedOperation = message.operation
+      ? StateMessage._encodeStateOperation(message.operation, encodeFn)
+      : undefined;
+    const encodedObject = message.object ? StateMessage._encodeStateObject(message.object, encodeFn) : undefined;
+
+    return {
+      operation: encodedOperation,
+      object: encodedObject,
+    };
+  }
+
+  /**
    * Overload toJSON() to intercept JSON.stringify().
    *
    * This will prepare the message to be transmitted over the wire to Ably.
@@ -366,26 +414,13 @@ export class StateMessage {
     // if JSON protocol is being used, the JSON.stringify() will be called and this toJSON() method will have a non-empty arguments list.
     // MSGPack protocol implementation also calls toJSON(), but with an empty arguments list.
     const format = arguments.length > 0 ? this._utils.Format.json : this._utils.Format.msgpack;
-    const encodeFn: EncodeFunction = (data, encoding) => {
-      const { data: encodedData, encoding: newEncoding } = this._messageEncoding.encodeDataForWireProtocol(
-        data,
-        encoding,
-        format,
-      );
-      return {
-        data: encodedData,
-        encoding: newEncoding,
-      };
-    };
-
-    const encodedOperation = this.operation ? StateMessage._encodeStateOperation(this.operation, encodeFn) : undefined;
-    const encodedObject = this.object ? StateMessage._encodeStateObject(this.object, encodeFn) : undefined;
+    const { operation, object } = StateMessage._encodeForWireProtocol(this, this._messageEncoding, format);
 
     return {
       id: this.id,
       clientId: this.clientId,
-      operation: encodedOperation,
-      object: encodedObject,
+      operation,
+      object,
       extras: this.extras,
     };
   }
