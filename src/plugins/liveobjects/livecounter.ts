@@ -61,7 +61,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
           action: StateOperationAction.COUNTER_INC,
           objectId,
           counterOp: { amount },
-        },
+        } as StateOperation,
       },
       client.Utils,
       client.MessageEncoding,
@@ -81,7 +81,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     }
 
     const initialValueObj = LiveCounter.createInitialValueObject(count);
-    const { encodedInitialValue, format } = StateMessage.encodeInitialValue(client.Utils, initialValueObj);
+    const { encodedInitialValue, format } = StateMessage.encodeInitialValue(initialValueObj, client);
     const nonce = client.Utils.cheapRandStr();
     const msTimestamp = await client.getTimestamp(true);
 
@@ -102,7 +102,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
           nonce,
           initialValue: encodedInitialValue,
           initialValueEncoding: format,
-        },
+        } as StateOperation,
       },
       client.Utils,
       client.MessageEncoding,

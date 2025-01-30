@@ -123,7 +123,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
             key,
             data: stateData,
           },
-        },
+        } as StateOperation,
       },
       client.Utils,
       client.MessageEncoding,
@@ -152,7 +152,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
           action: StateOperationAction.MAP_REMOVE,
           objectId,
           mapOp: { key },
-        },
+        } as StateOperation,
       },
       client.Utils,
       client.MessageEncoding,
@@ -199,7 +199,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(liveObjects, key, value));
 
     const initialValueObj = LiveMap.createInitialValueObject(entries);
-    const { encodedInitialValue, format } = StateMessage.encodeInitialValue(client.Utils, initialValueObj);
+    const { encodedInitialValue, format } = StateMessage.encodeInitialValue(initialValueObj, client);
     const nonce = client.Utils.cheapRandStr();
     const msTimestamp = await client.getTimestamp(true);
 
@@ -220,7 +220,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
           nonce,
           initialValue: encodedInitialValue,
           initialValueEncoding: format,
-        },
+        } as StateOperation,
       },
       client.Utils,
       client.MessageEncoding,
