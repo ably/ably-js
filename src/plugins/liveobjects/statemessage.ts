@@ -1,11 +1,10 @@
+import type BaseClient from 'common/lib/client/baseclient';
 import type { MessageEncoding } from 'common/lib/types/message';
 import type * as Utils from 'common/lib/util/utils';
+import type { Bufferlike } from 'common/platform';
 import type { ChannelOptions } from 'common/types/channel';
 
-export type StateDataEncodeFunction = (
-  value: StateValue | undefined,
-  encoding: string | undefined,
-) => { value: StateValue | undefined; encoding: string | undefined };
+export type EncodeFunction = (data: any, encoding?: string | null) => { data: any; encoding?: string | null };
 
 export enum StateOperationAction {
   MAP_CREATE = 0,
@@ -21,7 +20,7 @@ export enum MapSemantics {
 }
 
 /** A StateValue represents a concrete leaf value in a state object graph. */
-export type StateValue = string | number | boolean | Buffer | Uint8Array;
+export type StateValue = string | number | boolean | Bufferlike;
 
 /** StateData captures a value in a state object. */
 export interface StateData {
@@ -104,6 +103,15 @@ export interface StateOperation {
    * that has been hashed with the type and initial value to create the object ID.
    */
   nonce?: string;
+  /**
+   * The initial value bytes for the object. These bytes should be used along with the nonce
+   * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
+   * After verification the bytes will be decoded into the Map or Counter objects and
+   * the initialValue, nonce, and initialValueEncoding will be removed.
+   */
+  initialValue?: Bufferlike;
+  /** The initial value encoding defines how the initialValue should be interpreted. */
+  initialValueEncoding?: Utils.Format;
 }
 
 /** A StateObject describes the instantaneous state of an object. */
@@ -163,12 +171,12 @@ export class StateMessage {
    * Uses encoding functions from regular `Message` processing.
    */
   static async encode(message: StateMessage, messageEncoding: typeof MessageEncoding): Promise<StateMessage> {
-    const encodeFn: StateDataEncodeFunction = (value, encoding) => {
-      const { data: newValue, encoding: newEncoding } = messageEncoding.encodeData(value, encoding);
+    const encodeFn: EncodeFunction = (data, encoding) => {
+      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeData(data, encoding);
 
       return {
-        value: newValue,
-        encoding: newEncoding!,
+        data: encodedData,
+        encoding: newEncoding,
       };
     };
 
@@ -232,6 +240,42 @@ export class StateMessage {
     return result;
   }
 
+  static encodeInitialValue(
+    initialValue: Partial<StateOperation>,
+    client: BaseClient,
+  ): {
+    encodedInitialValue: Bufferlike;
+    format: Utils.Format;
+  } {
+    const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
+
+    // initial value object may contain user provided data that requires an additional encoding (for example buffers as map keys).
+    // so we need to encode that data first as if we were sending it over the wire. we can use a StateMessage methods for this
+    const stateMessage = StateMessage.fromValues({ operation: initialValue }, client.Utils, client.MessageEncoding);
+    StateMessage.encode(stateMessage, client.MessageEncoding);
+    const { operation: initialValueWithDataEncoding } = StateMessage._encodeForWireProtocol(
+      stateMessage,
+      client.MessageEncoding,
+      format,
+    );
+
+    // initial value field should be represented as an array of bytes over the wire. so we encode the whole object based on the client encoding format
+    const encodedInitialValue = client.Utils.encodeBody(initialValueWithDataEncoding, client._MsgPack, format);
+
+    // if we've got string result (for example, json encoding was used), we need to additionally convert it to bytes array with utf8 encoding
+    if (typeof encodedInitialValue === 'string') {
+      return {
+        encodedInitialValue: client.Platform.BufferUtils.utf8Encode(encodedInitialValue),
+        format,
+      };
+    }
+
+    return {
+      encodedInitialValue,
+      format,
+    };
+  }
+
   private static async _decodeMapEntries(
     mapEntries: Record<string, StateMapEntry>,
     inputContext: ChannelOptions,
@@ -260,12 +304,9 @@ export class StateMessage {
     }
   }
 
-  private static _encodeStateOperation(
-    stateOperation: StateOperation,
-    encodeFn: StateDataEncodeFunction,
-  ): StateOperation {
+  private static _encodeStateOperation(stateOperation: StateOperation, encodeFn: EncodeFunction): StateOperation {
     // deep copy "stateOperation" object so we can modify the copy here.
-    // buffer values won't be correctly copied, so we will need to set them again explictly.
+    // buffer values won't be correctly copied, so we will need to set them again explicitly.
     const stateOperationCopy = JSON.parse(JSON.stringify(stateOperation)) as StateOperation;
 
     if (stateOperationCopy.mapOp?.data && 'value' in stateOperationCopy.mapOp.data) {
@@ -280,12 +321,18 @@ export class StateMessage {
       });
     }
 
+    if (stateOperation.initialValue) {
+      // use original "stateOperation" object so we have access to the original buffer value
+      const { data: encodedInitialValue } = encodeFn(stateOperation.initialValue);
+      stateOperationCopy.initialValue = encodedInitialValue;
+    }
+
     return stateOperationCopy;
   }
 
-  private static _encodeStateObject(stateObject: StateObject, encodeFn: StateDataEncodeFunction): StateObject {
+  private static _encodeStateObject(stateObject: StateObject, encodeFn: EncodeFunction): StateObject {
     // deep copy "stateObject" object so we can modify the copy here.
-    // buffer values won't be correctly copied, so we will need to set them again explictly.
+    // buffer values won't be correctly copied, so we will need to set them again explicitly.
     const stateObjectCopy = JSON.parse(JSON.stringify(stateObject)) as StateObject;
 
     if (stateObjectCopy.map?.entries) {
@@ -303,13 +350,49 @@ export class StateMessage {
     return stateObjectCopy;
   }
 
-  private static _encodeStateData(data: StateData, encodeFn: StateDataEncodeFunction): StateData {
-    const { value: newValue, encoding: newEncoding } = encodeFn(data?.value, data?.encoding);
+  private static _encodeStateData(data: StateData, encodeFn: EncodeFunction): StateData {
+    const { data: encodedValue, encoding: newEncoding } = encodeFn(data?.value, data?.encoding);
 
     return {
       ...data,
-      value: newValue,
-      encoding: newEncoding!,
+      value: encodedValue,
+      encoding: newEncoding ?? undefined,
+    };
+  }
+
+  /**
+   * Encodes operation and object fields of the StateMessage. Does not mutate the provided StateMessage.
+   *
+   * Uses encoding functions from regular `Message` processing.
+   */
+  private static _encodeForWireProtocol(
+    message: StateMessage,
+    messageEncoding: typeof MessageEncoding,
+    format: Utils.Format,
+  ): {
+    operation?: StateOperation;
+    object?: StateObject;
+  } {
+    const encodeFn: EncodeFunction = (data, encoding) => {
+      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWireProtocol(
+        data,
+        encoding,
+        format,
+      );
+      return {
+        data: encodedData,
+        encoding: newEncoding,
+      };
+    };
+
+    const encodedOperation = message.operation
+      ? StateMessage._encodeStateOperation(message.operation, encodeFn)
+      : undefined;
+    const encodedObject = message.object ? StateMessage._encodeStateObject(message.object, encodeFn) : undefined;
+
+    return {
+      operation: encodedOperation,
+      object: encodedObject,
     };
   }
 
@@ -331,26 +414,13 @@ export class StateMessage {
     // if JSON protocol is being used, the JSON.stringify() will be called and this toJSON() method will have a non-empty arguments list.
     // MSGPack protocol implementation also calls toJSON(), but with an empty arguments list.
     const format = arguments.length > 0 ? this._utils.Format.json : this._utils.Format.msgpack;
-    const encodeFn: StateDataEncodeFunction = (value, encoding) => {
-      const { data: newValue, encoding: newEncoding } = this._messageEncoding.encodeDataForWireProtocol(
-        value,
-        encoding,
-        format,
-      );
-      return {
-        value: newValue,
-        encoding: newEncoding!,
-      };
-    };
-
-    const encodedOperation = this.operation ? StateMessage._encodeStateOperation(this.operation, encodeFn) : undefined;
-    const encodedObject = this.object ? StateMessage._encodeStateObject(this.object, encodeFn) : undefined;
+    const { operation, object } = StateMessage._encodeForWireProtocol(this, this._messageEncoding, format);
 
     return {
       id: this.id,
       clientId: this.clientId,
-      operation: encodedOperation,
-      object: encodedObject,
+      operation,
+      object,
       extras: this.extras,
     };
   }

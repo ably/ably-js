@@ -48,9 +48,10 @@ export class LiveObjectsPool {
     this._pool = this._getInitialPool();
   }
 
-  createZeroValueObjectIfNotExists(objectId: string): void {
-    if (this.get(objectId)) {
-      return;
+  createZeroValueObjectIfNotExists(objectId: string): LiveObject {
+    const existingObject = this.get(objectId);
+    if (existingObject) {
+      return existingObject;
     }
 
     const parsedObjectId = ObjectId.fromString(this._client, objectId);
@@ -67,6 +68,7 @@ export class LiveObjectsPool {
     }
 
     this.set(objectId, zeroValueObject);
+    return zeroValueObject;
   }
 
   private _getInitialPool(): Map<string, LiveObject> {

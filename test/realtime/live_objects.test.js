@@ -714,29 +714,29 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             // check created maps
             primitiveMapsFixtures.forEach((fixture) => {
-              const key = fixture.name;
-              const mapObj = root.get(key);
+              const mapKey = fixture.name;
+              const mapObj = root.get(mapKey);
 
               // check all maps exist on root
-              expect(mapObj, `Check map at "${key}" key in root exists`).to.exist;
-              expectInstanceOf(mapObj, 'LiveMap', `Check map at "${key}" key in root is of type LiveMap`);
+              expect(mapObj, `Check map at "${mapKey}" key in root exists`).to.exist;
+              expectInstanceOf(mapObj, 'LiveMap', `Check map at "${mapKey}" key in root is of type LiveMap`);
 
               // check primitive maps have correct values
               expect(mapObj.size()).to.equal(
                 Object.keys(fixture.entries ?? {}).length,
-                `Check map "${key}" has correct number of keys`,
+                `Check map "${mapKey}" has correct number of keys`,
               );
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
                 if (keyData.data.encoding) {
                   expect(
                     BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.value)),
-                    `Check map "${key}" has correct value for "${key}" key`,
+                    `Check map "${mapKey}" has correct value for "${key}" key`,
                   ).to.be.true;
                 } else {
                   expect(mapObj.get(key)).to.equal(
                     keyData.data.value,
-                    `Check map "${key}" has correct value for "${key}" key`,
+                    `Check map "${mapKey}" has correct value for "${key}" key`,
                   );
                 }
               });
@@ -2425,6 +2425,434 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             await expectRejectedWith(async () => map.remove(map), 'Map key should be string');
           },
         },
+
+        {
+          description: 'LiveObjects.createCounter sends COUNTER_CREATE operation',
+          action: async (ctx) => {
+            const { liveObjects } = ctx;
+
+            const counters = await Promise.all(countersFixtures.map(async (x) => liveObjects.createCounter(x.count)));
+
+            for (let i = 0; i < counters.length; i++) {
+              const counter = counters[i];
+              const fixture = countersFixtures[i];
+
+              expect(counter, `Check counter #${i + 1} exists`).to.exist;
+              expectInstanceOf(counter, 'LiveCounter', `Check counter instance #${i + 1} is of an expected class`);
+              expect(counter.value()).to.equal(
+                fixture.count ?? 0,
+                `Check counter #${i + 1} has expected initial value`,
+              );
+            }
+          },
+        },
+
+        {
+          description: 'LiveCounter created with LiveObjects.createCounter can be assigned to the state tree',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter(1);
+            await root.set('counter', counter);
+
+            expectInstanceOf(counter, 'LiveCounter', `Check counter instance is of an expected class`);
+            expectInstanceOf(
+              root.get('counter'),
+              'LiveCounter',
+              `Check counter instance on root is of an expected class`,
+            );
+            expect(root.get('counter')).to.equal(
+              counter,
+              'Check counter object on root is the same as from create method',
+            );
+            expect(root.get('counter').value()).to.equal(
+              1,
+              'Check counter assigned to the state tree has the expected value',
+            );
+          },
+        },
+
+        {
+          description:
+            'LiveObjects.createCounter can return LiveCounter with initial value without applying CREATE operation',
+          action: async (ctx) => {
+            const { liveObjects, helper } = ctx;
+
+            // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
+            helper.recordPrivateApi('replace.LiveObjects.publish');
+            liveObjects.publish = () => {};
+
+            const counter = await liveObjects.createCounter(1);
+            expect(counter.value()).to.equal(1, `Check counter has expected initial value`);
+          },
+        },
+
+        {
+          description:
+            'LiveObjects.createCounter can return LiveCounter with initial value from applied CREATE operation',
+          action: async (ctx) => {
+            const { liveObjects, liveObjectsHelper, helper, channel } = ctx;
+
+            // instead of sending CREATE op to the realtime, echo it immediately to the client
+            // with forged initial value so we can check that counter gets initialized with a value from a CREATE op
+            helper.recordPrivateApi('replace.LiveObjects.publish');
+            liveObjects.publish = async (stateMessages) => {
+              const counterId = stateMessages[0].operation.objectId;
+              // this should result in liveobjects' operation application procedure and create a object in the pool with forged initial value
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial: lexicoTimeserial('aaa', 1, 1),
+                siteCode: 'aaa',
+                state: [liveObjectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
+              });
+            };
+
+            const counter = await liveObjects.createCounter(1);
+
+            // counter should be created with forged initial value instead of the actual one
+            expect(counter.value()).to.equal(
+              10,
+              'Check counter value has the expected initial value from a CREATE operation',
+            );
+          },
+        },
+
+        {
+          description:
+            'Initial value is not double counted for LiveCounter from LiveObjects.createCounter when CREATE op is received',
+          action: async (ctx) => {
+            const { liveObjects, liveObjectsHelper, helper, channel } = ctx;
+
+            // prevent publishing of ops to realtime so we can guarantee order of operations
+            helper.recordPrivateApi('replace.LiveObjects.publish');
+            liveObjects.publish = () => {};
+
+            // create counter locally, should have an initial value set
+            const counter = await liveObjects.createCounter(1);
+            helper.recordPrivateApi('call.LiveObject.getObjectId');
+            const counterId = counter.getObjectId();
+
+            // now inject CREATE op for a counter with a forged value. it should not be applied
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 1),
+              siteCode: 'aaa',
+              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
+            });
+
+            expect(counter.value()).to.equal(
+              1,
+              `Check counter initial value is not double counted after being created and receiving CREATE operation`,
+            );
+          },
+        },
+
+        {
+          description: 'LiveObjects.createCounter throws on invalid input',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            await expectRejectedWith(
+              async () => liveObjects.createCounter(null),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter(Number.NaN),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter(Number.POSITIVE_INFINITY),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter(Number.NEGATIVE_INFINITY),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter('foo'),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter(BigInt(1)),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter(true),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter(Symbol()),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter({}),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter([]),
+              'Counter value should be a valid number',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createCounter(root),
+              'Counter value should be a valid number',
+            );
+          },
+        },
+
+        {
+          description: 'LiveObjects.createMap sends MAP_CREATE operation with primitive values',
+          action: async (ctx) => {
+            const { liveObjects } = ctx;
+
+            const maps = await Promise.all(
+              primitiveMapsFixtures.map(async (mapFixture) => {
+                const entries = mapFixture.entries
+                  ? Object.entries(mapFixture.entries).reduce((acc, [key, keyData]) => {
+                      const value = keyData.data.encoding
+                        ? BufferUtils.base64Decode(keyData.data.value)
+                        : keyData.data.value;
+                      acc[key] = value;
+                      return acc;
+                    }, {})
+                  : undefined;
+
+                return liveObjects.createMap(entries);
+              }),
+            );
+
+            for (let i = 0; i < maps.length; i++) {
+              const map = maps[i];
+              const fixture = primitiveMapsFixtures[i];
+
+              expect(map, `Check map #${i + 1} exists`).to.exist;
+              expectInstanceOf(map, 'LiveMap', `Check map instance #${i + 1} is of an expected class`);
+
+              expect(map.size()).to.equal(
+                Object.keys(fixture.entries ?? {}).length,
+                `Check map #${i + 1} has correct number of keys`,
+              );
+
+              Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
+                if (keyData.data.encoding) {
+                  expect(
+                    BufferUtils.areBuffersEqual(map.get(key), BufferUtils.base64Decode(keyData.data.value)),
+                    `Check map #${i + 1} has correct value for "${key}" key`,
+                  ).to.be.true;
+                } else {
+                  expect(map.get(key)).to.equal(
+                    keyData.data.value,
+                    `Check map #${i + 1} has correct value for "${key}" key`,
+                  );
+                }
+              });
+            }
+          },
+        },
+
+        {
+          description: 'LiveObjects.createMap sends MAP_CREATE operation with reference to another LiveObject',
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channelName, liveObjects } = ctx;
+
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: liveObjectsHelper.counterCreateOp(),
+            });
+            await liveObjectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map',
+              createOp: liveObjectsHelper.mapCreateOp(),
+            });
+
+            const counter = root.get('counter');
+            const map = root.get('map');
+
+            const newMap = await liveObjects.createMap({ counter, map });
+
+            expect(newMap, 'Check map exists').to.exist;
+            expectInstanceOf(newMap, 'LiveMap', 'Check map instance is of an expected class');
+
+            expect(newMap.get('counter')).to.equal(
+              counter,
+              'Check can set a reference to a LiveCounter object on a new map via a MAP_CREATE operation',
+            );
+            expect(newMap.get('map')).to.equal(
+              map,
+              'Check can set a reference to a LiveMap object on a new map via a MAP_CREATE operation',
+            );
+          },
+        },
+
+        {
+          description: 'LiveMap created with LiveObjects.createMap can be assigned to the state tree',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter();
+            const map = await liveObjects.createMap({ foo: 'bar', baz: counter });
+            await root.set('map', map);
+
+            expectInstanceOf(map, 'LiveMap', `Check map instance is of an expected class`);
+            expectInstanceOf(root.get('map'), 'LiveMap', `Check map instance on root is of an expected class`);
+            expect(root.get('map')).to.equal(map, 'Check map object on root is the same as from create method');
+            expect(root.get('map').size()).to.equal(
+              2,
+              'Check map assigned to the state tree has the expected number of keys',
+            );
+            expect(root.get('map').get('foo')).to.equal(
+              'bar',
+              'Check map assigned to the state tree has the expected value for its string key',
+            );
+            expect(root.get('map').get('baz')).to.equal(
+              counter,
+              'Check map assigned to the state tree has the expected value for its LiveCounter key',
+            );
+          },
+        },
+
+        {
+          description: 'LiveObjects.createMap can return LiveMap with initial value without applying CREATE operation',
+          action: async (ctx) => {
+            const { liveObjects, helper } = ctx;
+
+            // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
+            helper.recordPrivateApi('replace.LiveObjects.publish');
+            liveObjects.publish = () => {};
+
+            const map = await liveObjects.createMap({ foo: 'bar' });
+            expect(map.get('foo')).to.equal('bar', `Check map has expected initial value`);
+          },
+        },
+
+        {
+          description: 'LiveObjects.createMap can return LiveMap with initial value from applied CREATE operation',
+          action: async (ctx) => {
+            const { liveObjects, liveObjectsHelper, helper, channel } = ctx;
+
+            // instead of sending CREATE op to the realtime, echo it immediately to the client
+            // with forged initial value so we can check that map gets initialized with a value from a CREATE op
+            helper.recordPrivateApi('replace.LiveObjects.publish');
+            liveObjects.publish = async (stateMessages) => {
+              const mapId = stateMessages[0].operation.objectId;
+              // this should result in liveobjects' operation application procedure and create a object in the pool with forged initial value
+              await liveObjectsHelper.processStateOperationMessageOnChannel({
+                channel,
+                serial: lexicoTimeserial('aaa', 1, 1),
+                siteCode: 'aaa',
+                state: [
+                  liveObjectsHelper.mapCreateOp({
+                    objectId: mapId,
+                    entries: { baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { value: 'qux' } } },
+                  }),
+                ],
+              });
+            };
+
+            const map = await liveObjects.createMap({ foo: 'bar' });
+
+            // map should be created with forged initial value instead of the actual one
+            expect(map.get('foo'), `Check key "foo" was not set on a map client-side`).to.not.exist;
+            expect(map.get('baz')).to.equal(
+              'qux',
+              `Check key "baz" was set on a map from a CREATE operation after object creation`,
+            );
+          },
+        },
+
+        {
+          description:
+            'Initial value is not double counted for LiveMap from LiveObjects.createMap when CREATE op is received',
+          action: async (ctx) => {
+            const { liveObjects, liveObjectsHelper, helper, channel } = ctx;
+
+            // prevent publishing of ops to realtime so we can guarantee order of operations
+            helper.recordPrivateApi('replace.LiveObjects.publish');
+            liveObjects.publish = () => {};
+
+            // create map locally, should have an initial value set
+            const map = await liveObjects.createMap({ foo: 'bar' });
+            helper.recordPrivateApi('call.LiveObject.getObjectId');
+            const mapId = map.getObjectId();
+
+            // now inject CREATE op for a map with a forged value. it should not be applied
+            await liveObjectsHelper.processStateOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 1),
+              siteCode: 'aaa',
+              state: [
+                liveObjectsHelper.mapCreateOp({
+                  objectId: mapId,
+                  entries: {
+                    foo: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { value: 'qux' } },
+                    baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { value: 'qux' } },
+                  },
+                }),
+              ],
+            });
+
+            expect(map.get('foo')).to.equal(
+              'bar',
+              `Check key "foo" was not overridden by a CREATE operation after creating a map locally`,
+            );
+            expect(map.get('baz'), `Check key "baz" was not set by a CREATE operation after creating a map locally`).to
+              .not.exist;
+          },
+        },
+
+        {
+          description: 'LiveObjects.createMap throws on invalid input',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            await expectRejectedWith(
+              async () => liveObjects.createMap(null),
+              'Map entries should be a key/value object',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createMap('foo'),
+              'Map entries should be a key/value object',
+            );
+            await expectRejectedWith(async () => liveObjects.createMap(1), 'Map entries should be a key/value object');
+            await expectRejectedWith(
+              async () => liveObjects.createMap(BigInt(1)),
+              'Map entries should be a key/value object',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createMap(true),
+              'Map entries should be a key/value object',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createMap(Symbol()),
+              'Map entries should be a key/value object',
+            );
+
+            await expectRejectedWith(
+              async () => liveObjects.createMap({ key: undefined }),
+              'Map value data type is unsupported',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createMap({ key: null }),
+              'Map value data type is unsupported',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createMap({ key: BigInt(1) }),
+              'Map value data type is unsupported',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createMap({ key: Symbol() }),
+              'Map value data type is unsupported',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createMap({ key: {} }),
+              'Map value data type is unsupported',
+            );
+            await expectRejectedWith(
+              async () => liveObjects.createMap({ key: [] }),
+              'Map value data type is unsupported',
+            );
+          },
+        },
       ];
 
       /** @nospec */
@@ -2447,7 +2875,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             await channel.attach();
             const root = await liveObjects.getRoot();
 
-            await scenario.action({ root, liveObjectsHelper, channelName, channel });
+            await scenario.action({ liveObjects, root, liveObjectsHelper, channelName, channel, client, helper });
           }, client);
         },
       );

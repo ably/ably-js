@@ -1,5 +1,6 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { LiveObjects } from './liveobjects';
+import { ObjectId } from './objectid';
 import { StateCounterOp, StateMessage, StateObject, StateOperation, StateOperationAction } from './statemessage';
 
 export interface LiveCounterData extends LiveObjectData {
@@ -32,6 +33,95 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return obj;
   }
 
+  /**
+   * Returns a {@link LiveCounter} instance based on the provided COUNTER_CREATE state operation.
+   * The provided state operation must hold a valid counter object data.
+   *
+   * @internal
+   */
+  static fromStateOperation(liveobjects: LiveObjects, stateOperation: StateOperation): LiveCounter {
+    const obj = new LiveCounter(liveobjects, stateOperation.objectId);
+    obj._mergeInitialDataFromCreateOperation(stateOperation);
+    return obj;
+  }
+
+  /**
+   * @internal
+   */
+  static createCounterIncMessage(liveObjects: LiveObjects, objectId: string, amount: number): StateMessage {
+    const client = liveObjects.getClient();
+
+    if (typeof amount !== 'number' || !isFinite(amount)) {
+      throw new client.ErrorInfo('Counter value increment should be a valid number', 40013, 400);
+    }
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          action: StateOperationAction.COUNTER_INC,
+          objectId,
+          counterOp: { amount },
+        } as StateOperation,
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
+   * @internal
+   */
+  static async createCounterCreateMessage(liveObjects: LiveObjects, count?: number): Promise<StateMessage> {
+    const client = liveObjects.getClient();
+
+    if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
+      throw new client.ErrorInfo('Counter value should be a valid number', 40013, 400);
+    }
+
+    const initialValueObj = LiveCounter.createInitialValueObject(count);
+    const { encodedInitialValue, format } = StateMessage.encodeInitialValue(initialValueObj, client);
+    const nonce = client.Utils.cheapRandStr();
+    const msTimestamp = await client.getTimestamp(true);
+
+    const objectId = ObjectId.fromInitialValue(
+      client.Platform,
+      'counter',
+      encodedInitialValue,
+      nonce,
+      msTimestamp,
+    ).toString();
+
+    const stateMessage = StateMessage.fromValues(
+      {
+        operation: {
+          ...initialValueObj,
+          action: StateOperationAction.COUNTER_CREATE,
+          objectId,
+          nonce,
+          initialValue: encodedInitialValue,
+          initialValueEncoding: format,
+        } as StateOperation,
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    return stateMessage;
+  }
+
+  /**
+   * @internal
+   */
+  static createInitialValueObject(count?: number): Pick<StateOperation, 'counter'> {
+    return {
+      counter: {
+        count: count ?? 0,
+      },
+    };
+  }
+
   value(): number {
     return this._dataRef.data;
   }
@@ -46,31 +136,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async increment(amount: number): Promise<void> {
-    const stateMessage = this.createCounterIncMessage(amount);
+    const stateMessage = LiveCounter.createCounterIncMessage(this._liveObjects, this.getObjectId(), amount);
     return this._liveObjects.publish([stateMessage]);
-  }
-
-  /**
-   * @internal
-   */
-  createCounterIncMessage(amount: number): StateMessage {
-    if (typeof amount !== 'number' || !isFinite(amount)) {
-      throw new this._client.ErrorInfo('Counter value increment should be a valid number', 40013, 400);
-    }
-
-    const stateMessage = StateMessage.fromValues(
-      {
-        operation: {
-          action: StateOperationAction.COUNTER_INC,
-          objectId: this.getObjectId(),
-          counterOp: { amount },
-        },
-      },
-      this._client.Utils,
-      this._client.MessageEncoding,
-    );
-
-    return stateMessage;
   }
 
   /**
@@ -185,7 +252,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._siteTimeserials = stateObject.siteTimeserials ?? {};
 
     if (this.isTombstoned()) {
-      // this object is tombstoned. this is a terminal state which can't be overriden. skip the rest of state object message processing
+      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of state object message processing
       return { noop: true };
     }
 

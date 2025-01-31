@@ -55,6 +55,67 @@ export class LiveObjects {
   }
 
   /**
+   * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
+   *
+   * Locally on the client it creates a zero-value object with the corresponding id and returns it.
+   * The object initialization with the initial value is expected to happen when the corresponding MAP_CREATE operation is echoed
+   * back to the client and applied to the object following the regular operation application procedure.
+   *
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with a zero-value object created in the local pool.
+   */
+  async createMap<T extends API.LiveMapType>(entries?: T): Promise<LiveMap<T>> {
+    const stateMessage = await LiveMap.createMapCreateMessage(this, entries);
+    const objectId = stateMessage.operation?.objectId!;
+
+    await this.publish([stateMessage]);
+
+    // we may have already received the CREATE operation at this point, as it could arrive before the ACK for our publish message.
+    // this means the object might already exist in the local pool, having been added during the usual CREATE operation process.
+    // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
+    if (this._liveObjectsPool.get(objectId)) {
+      return this._liveObjectsPool.get(objectId) as LiveMap<T>;
+    }
+
+    // we haven't received the CREATE operation yet, so we can create a new map object using the locally constructed state operation.
+    // we don't know the timeserials for map entries, so we assign an "earliest possible" timeserial to each entry, so that any subsequent operation can be applied to them.
+    // we mark the CREATE operation as merged for the object, guaranteeing its idempotency and preventing it from being applied again when the operation arrives.
+    const map = LiveMap.fromStateOperation<T>(this, stateMessage.operation!);
+    this._liveObjectsPool.set(objectId, map);
+
+    return map;
+  }
+
+  /**
+   * Send a COUNTER_CREATE operation to the realtime system to create a new counter object in the pool.
+   *
+   * Locally on the client it creates a zero-value object with the corresponding id and returns it.
+   * The object initialization with the initial value is expected to happen when the corresponding COUNTER_CREATE operation is echoed
+   * back to the client and applied to the object following the regular operation application procedure.
+   *
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with a zero-value object created in the local pool.
+   */
+  async createCounter(count?: number): Promise<LiveCounter> {
+    const stateMessage = await LiveCounter.createCounterCreateMessage(this, count);
+    const objectId = stateMessage.operation?.objectId!;
+
+    await this.publish([stateMessage]);
+
+    // we may have already received the CREATE operation at this point, as it could arrive before the ACK for our publish message.
+    // this means the object might already exist in the local pool, having been added during the usual CREATE operation process.
+    // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
+    if (this._liveObjectsPool.get(objectId)) {
+      return this._liveObjectsPool.get(objectId) as LiveCounter;
+    }
+
+    // we haven't received the CREATE operation yet, so we can create a new counter object using the locally constructed state operation.
+    // we mark the CREATE operation as merged for the object, guaranteeing its idempotency. this ensures we don't double count the initial counter value when the operation arrives.
+    const counter = LiveCounter.fromStateOperation(this, stateMessage.operation!);
+    this._liveObjectsPool.set(objectId, counter);
+
+    return counter;
+  }
+
+  /**
    * @internal
    */
   getPool(): LiveObjectsPool {
