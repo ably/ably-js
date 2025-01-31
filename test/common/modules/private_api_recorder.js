@@ -141,6 +141,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'write.auth.key',
     'write.auth.tokenDetails.token',
     'write.channel._lastPayload',
+    'write.channel.channelOptions.modes',
     'write.channel.state',
     'write.connectionManager.connectionDetails.maxMessageSize',
     'write.connectionManager.connectionId',

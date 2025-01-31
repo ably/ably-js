@@ -57,7 +57,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
     return `${paddedTimestamp}-${paddedCounter}@${seriesId}` + (paddedIndex ? `:${paddedIndex}` : '');
   }
 
-  async function expectRejectedWith(fn, errorStr) {
+  async function expectToThrowAsync(fn, errorStr) {
     let verifiedError = false;
     try {
       await fn();
@@ -2123,51 +2123,51 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             const counter = root.get('counter');
 
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(null),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(Number.NaN),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(Number.POSITIVE_INFINITY),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(Number.NEGATIVE_INFINITY),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment('foo'),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(BigInt(1)),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(true),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(Symbol()),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment({}),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment([]),
               'Counter value increment should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.increment(counter),
               'Counter value increment should be a valid number',
             );
@@ -2225,51 +2225,51 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             const counter = root.get('counter');
 
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(null),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(Number.NaN),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(Number.POSITIVE_INFINITY),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(Number.NEGATIVE_INFINITY),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement('foo'),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(BigInt(1)),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(true),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(Symbol()),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement({}),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement([]),
               'Counter value decrement should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => counter.decrement(counter),
               'Counter value decrement should be a valid number',
             );
@@ -2351,22 +2351,22 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             const map = root.get('map');
 
-            await expectRejectedWith(async () => map.set(), 'Map key should be string');
-            await expectRejectedWith(async () => map.set(null), 'Map key should be string');
-            await expectRejectedWith(async () => map.set(1), 'Map key should be string');
-            await expectRejectedWith(async () => map.set(BigInt(1)), 'Map key should be string');
-            await expectRejectedWith(async () => map.set(true), 'Map key should be string');
-            await expectRejectedWith(async () => map.set(Symbol()), 'Map key should be string');
-            await expectRejectedWith(async () => map.set({}), 'Map key should be string');
-            await expectRejectedWith(async () => map.set([]), 'Map key should be string');
-            await expectRejectedWith(async () => map.set(map), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set(), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set(null), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set(1), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set(BigInt(1)), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set(true), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set(Symbol()), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set({}), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set([]), 'Map key should be string');
+            await expectToThrowAsync(async () => map.set(map), 'Map key should be string');
 
-            await expectRejectedWith(async () => map.set('key'), 'Map value data type is unsupported');
-            await expectRejectedWith(async () => map.set('key', null), 'Map value data type is unsupported');
-            await expectRejectedWith(async () => map.set('key', BigInt(1)), 'Map value data type is unsupported');
-            await expectRejectedWith(async () => map.set('key', Symbol()), 'Map value data type is unsupported');
-            await expectRejectedWith(async () => map.set('key', {}), 'Map value data type is unsupported');
-            await expectRejectedWith(async () => map.set('key', []), 'Map value data type is unsupported');
+            await expectToThrowAsync(async () => map.set('key'), 'Map value data type is unsupported');
+            await expectToThrowAsync(async () => map.set('key', null), 'Map value data type is unsupported');
+            await expectToThrowAsync(async () => map.set('key', BigInt(1)), 'Map value data type is unsupported');
+            await expectToThrowAsync(async () => map.set('key', Symbol()), 'Map value data type is unsupported');
+            await expectToThrowAsync(async () => map.set('key', {}), 'Map value data type is unsupported');
+            await expectToThrowAsync(async () => map.set('key', []), 'Map value data type is unsupported');
           },
         },
 
@@ -2414,15 +2414,15 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             const map = root.get('map');
 
-            await expectRejectedWith(async () => map.remove(), 'Map key should be string');
-            await expectRejectedWith(async () => map.remove(null), 'Map key should be string');
-            await expectRejectedWith(async () => map.remove(1), 'Map key should be string');
-            await expectRejectedWith(async () => map.remove(BigInt(1)), 'Map key should be string');
-            await expectRejectedWith(async () => map.remove(true), 'Map key should be string');
-            await expectRejectedWith(async () => map.remove(Symbol()), 'Map key should be string');
-            await expectRejectedWith(async () => map.remove({}), 'Map key should be string');
-            await expectRejectedWith(async () => map.remove([]), 'Map key should be string');
-            await expectRejectedWith(async () => map.remove(map), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove(), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove(null), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove(1), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove(BigInt(1)), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove(true), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove(Symbol()), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove({}), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove([]), 'Map key should be string');
+            await expectToThrowAsync(async () => map.remove(map), 'Map key should be string');
           },
         },
 
@@ -2552,47 +2552,47 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           action: async (ctx) => {
             const { root, liveObjects } = ctx;
 
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter(null),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter(Number.NaN),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter(Number.POSITIVE_INFINITY),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter(Number.NEGATIVE_INFINITY),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter('foo'),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter(BigInt(1)),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter(true),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter(Symbol()),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter({}),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter([]),
               'Counter value should be a valid number',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createCounter(root),
               'Counter value should be a valid number',
             );
@@ -2805,49 +2805,49 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           action: async (ctx) => {
             const { root, liveObjects } = ctx;
 
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap(null),
               'Map entries should be a key/value object',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap('foo'),
               'Map entries should be a key/value object',
             );
-            await expectRejectedWith(async () => liveObjects.createMap(1), 'Map entries should be a key/value object');
-            await expectRejectedWith(
+            await expectToThrowAsync(async () => liveObjects.createMap(1), 'Map entries should be a key/value object');
+            await expectToThrowAsync(
               async () => liveObjects.createMap(BigInt(1)),
               'Map entries should be a key/value object',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap(true),
               'Map entries should be a key/value object',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap(Symbol()),
               'Map entries should be a key/value object',
             );
 
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap({ key: undefined }),
               'Map value data type is unsupported',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap({ key: null }),
               'Map value data type is unsupported',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap({ key: BigInt(1) }),
               'Map value data type is unsupported',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap({ key: Symbol() }),
               'Map value data type is unsupported',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap({ key: {} }),
               'Map value data type is unsupported',
             );
-            await expectRejectedWith(
+            await expectToThrowAsync(
               async () => liveObjects.createMap({ key: [] }),
               'Map value data type is unsupported',
             );
@@ -3813,6 +3813,157 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcGracePeriod');
           LiveObjectsPlugin.LiveObjects._DEFAULTS.gcGracePeriod = gcGracePeriodOriginal;
         }
+      });
+
+      const expectToThrowMissingStateMode = async ({ liveObjects, map, counter }) => {
+        await expectToThrowAsync(
+          async () => liveObjects.getRoot(),
+          '"state_subscribe" channel mode must be set for this operation',
+        );
+        await expectToThrowAsync(
+          async () => liveObjects.batch(),
+          '"state_publish" channel mode must be set for this operation',
+        );
+        await expectToThrowAsync(
+          async () => liveObjects.createMap(),
+          '"state_publish" channel mode must be set for this operation',
+        );
+        await expectToThrowAsync(
+          async () => liveObjects.createCounter(),
+          '"state_publish" channel mode must be set for this operation',
+        );
+
+        expect(() => counter.value()).to.throw('"state_subscribe" channel mode must be set for this operation');
+        await expectToThrowAsync(
+          async () => counter.increment(),
+          '"state_publish" channel mode must be set for this operation',
+        );
+        await expectToThrowAsync(
+          async () => counter.decrement(),
+          '"state_publish" channel mode must be set for this operation',
+        );
+
+        expect(() => map.get()).to.throw('"state_subscribe" channel mode must be set for this operation');
+        expect(() => map.size()).to.throw('"state_subscribe" channel mode must be set for this operation');
+        await expectToThrowAsync(async () => map.set(), '"state_publish" channel mode must be set for this operation');
+        await expectToThrowAsync(
+          async () => map.remove(),
+          '"state_publish" channel mode must be set for this operation',
+        );
+
+        for (const obj of [map, counter]) {
+          expect(() => obj.subscribe()).to.throw('"state_subscribe" channel mode must be set for this operation');
+          expect(() => obj.unsubscribe(() => {})).not.to.throw(
+            '"state_subscribe" channel mode must be set for this operation',
+          ); // note: this should not throw
+          expect(() => obj.unsubscribe(() => {})).not.to.throw(
+            '"state_publish" channel mode must be set for this operation',
+          ); // note: this should not throw
+          expect(() => obj.unsubscribeAll()).not.to.throw(
+            '"state_subscribe" channel mode must be set for this operation',
+          ); // note: this should not throw
+          expect(() => obj.unsubscribeAll()).not.to.throw(
+            '"state_publish" channel mode must be set for this operation',
+          ); // note: this should not throw
+        }
+      };
+
+      const expectToThrowMissingStateModeInBatchContext = ({ ctx, map, counter }) => {
+        expect(() => ctx.getRoot()).to.throw('"state_subscribe" channel mode must be set for this operation');
+
+        expect(() => counter.value()).to.throw('"state_subscribe" channel mode must be set for this operation');
+        expect(() => counter.increment()).to.throw('"state_publish" channel mode must be set for this operation');
+        expect(() => counter.decrement()).to.throw('"state_publish" channel mode must be set for this operation');
+
+        expect(() => map.get()).to.throw('"state_subscribe" channel mode must be set for this operation');
+        expect(() => map.size()).to.throw('"state_subscribe" channel mode must be set for this operation');
+        expect(() => map.set()).to.throw('"state_publish" channel mode must be set for this operation');
+        expect(() => map.remove()).to.throw('"state_publish" channel mode must be set for this operation');
+      };
+
+      const missingChannelModesScenarios = [
+        {
+          description: 'public API throws missing state modes error when attached without correct state modes',
+          action: async (ctx) => {
+            const { liveObjects, channel, map, counter } = ctx;
+
+            // obtain batch context with valid modes first
+            await liveObjects.batch((ctx) => {
+              const map = ctx.getRoot().get('map');
+              const counter = ctx.getRoot().get('counter');
+              // now simulate missing modes
+              channel.modes = [];
+              expectToThrowMissingStateModeInBatchContext({ ctx, map, counter });
+            });
+            await expectToThrowMissingStateMode({ liveObjects, map, counter });
+          },
+        },
+
+        {
+          description:
+            'public API throws missing state modes error when not yet attached but client options are missing correct modes',
+          action: async (ctx) => {
+            const { liveObjects, channel, map, counter, helper } = ctx;
+
+            // obtain batch context with valid modes first
+            await liveObjects.batch((ctx) => {
+              const map = ctx.getRoot().get('map');
+              const counter = ctx.getRoot().get('counter');
+              // now simulate a situation where we're not yet attached/modes are not received on ATTACHED event
+              channel.modes = undefined;
+              helper.recordPrivateApi('write.channel.channelOptions.modes');
+              channel.channelOptions.modes = [];
+
+              expectToThrowMissingStateModeInBatchContext({ ctx, map, counter });
+            });
+            await expectToThrowMissingStateMode({ liveObjects, map, counter });
+          },
+        },
+      ];
+
+      /** @nospec */
+      forScenarios(missingChannelModesScenarios, async function (helper, scenario) {
+        const liveObjectsHelper = new LiveObjectsHelper(helper);
+        const client = RealtimeWithLiveObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          const channelName = scenario.description;
+          // attach with correct channel modes so we can create liveobjects on the root for testing.
+          // each scenario will modify the underlying modes array to test specific behavior
+          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          let mapSet = false;
+          let counterSet = false;
+          const rootReadyPromise = new Promise((resolve) => {
+            const { unsubscribe } = root.subscribe(({ update }) => {
+              if (update.map) {
+                mapSet = true;
+              }
+              if (update.counter) {
+                counterSet = true;
+              }
+
+              if (mapSet && counterSet) {
+                unsubscribe();
+                resolve();
+              }
+            });
+          });
+
+          const map = await liveObjects.createMap();
+          const counter = await liveObjects.createCounter();
+
+          await root.set('map', map);
+          await root.set('counter', counter);
+
+          await rootReadyPromise;
+
+          await scenario.action({ liveObjects, liveObjectsHelper, channelName, channel, root, map, counter, helper });
+        }, client);
       });
     });
 

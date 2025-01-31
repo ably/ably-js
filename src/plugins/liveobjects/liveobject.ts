@@ -65,6 +65,8 @@ export abstract class LiveObject<
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
+    this._liveObjects.throwIfMissingStateSubscribeMode();
+
     this._eventEmitter.on(LiveObjectEvents.Updated, listener);
 
     const unsubscribe = () => {
@@ -75,6 +77,8 @@ export abstract class LiveObject<
   }
 
   unsubscribe(listener: (update: TUpdate) => void): void {
+    // can allow calling this public method without checking for state modes on the channel as the result of this method is not dependant on them
+
     // current implementation of the EventEmitter will remove all listeners if .off is called without arguments or with nullish arguments.
     // or when called with just an event argument, it will remove all listeners for the event.
     // thus we need to check that listener does actually exist before calling .off.
@@ -86,6 +90,7 @@ export abstract class LiveObject<
   }
 
   unsubscribeAll(): void {
+    // can allow calling this public method without checking for state modes on the channel as the result of this method is not dependant on them
     this._eventEmitter.off(LiveObjectEvents.Updated);
   }
 
