@@ -2853,6 +2853,282 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             );
           },
         },
+
+        {
+          description: 'batch API getRoot method is synchronous',
+          action: async (ctx) => {
+            const { liveObjects } = ctx;
+
+            await liveObjects.batch((ctx) => {
+              const root = ctx.getRoot();
+              expect(root, 'Check getRoot method in a BatchContext returns root object synchronously').to.exist;
+              expectInstanceOf(root, 'LiveMap', 'root object obtained from a BatchContext is a LiveMap');
+            });
+          },
+        },
+
+        {
+          description: 'batch API .get method on a map returns BatchContext* wrappers for live objects',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter(1);
+            const map = await liveObjects.createMap({ innerCounter: counter });
+            await root.set('counter', counter);
+            await root.set('map', map);
+
+            await liveObjects.batch((ctx) => {
+              const ctxRoot = ctx.getRoot();
+              const ctxCounter = ctxRoot.get('counter');
+              const ctxMap = ctxRoot.get('map');
+              const ctxInnerCounter = ctxMap.get('innerCounter');
+
+              expect(ctxCounter, 'Check counter object can be accessed from a map in a batch API').to.exist;
+              expectInstanceOf(
+                ctxCounter,
+                'BatchContextLiveCounter',
+                'Check counter object obtained in a batch API has a BatchContext specific wrapper type',
+              );
+              expect(ctxMap, 'Check map object can be accessed from a map in a batch API').to.exist;
+              expectInstanceOf(
+                ctxMap,
+                'BatchContextLiveMap',
+                'Check map object obtained in a batch API has a BatchContext specific wrapper type',
+              );
+              expect(ctxInnerCounter, 'Check inner counter object can be accessed from a map in a batch API').to.exist;
+              expectInstanceOf(
+                ctxInnerCounter,
+                'BatchContextLiveCounter',
+                'Check inner counter object obtained in a batch API has a BatchContext specific wrapper type',
+              );
+            });
+          },
+        },
+
+        {
+          description: 'batch API access API methods on live objects work and are synchronous',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter(1);
+            const map = await liveObjects.createMap({ foo: 'bar' });
+            await root.set('counter', counter);
+            await root.set('map', map);
+
+            await liveObjects.batch((ctx) => {
+              const ctxRoot = ctx.getRoot();
+              const ctxCounter = ctxRoot.get('counter');
+              const ctxMap = ctxRoot.get('map');
+
+              expect(ctxCounter.value()).to.equal(
+                1,
+                'Check batch API counter .value() method works and is synchronous',
+              );
+              expect(ctxMap.get('foo')).to.equal('bar', 'Check batch API map .get() method works and is synchronous');
+              expect(ctxMap.size()).to.equal(1, 'Check batch API map .size() method works and is synchronous');
+            });
+          },
+        },
+
+        {
+          description: 'batch API write API methods on live objects do not mutate objects inside the batch callback',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter(1);
+            const map = await liveObjects.createMap({ foo: 'bar' });
+            await root.set('counter', counter);
+            await root.set('map', map);
+
+            await liveObjects.batch((ctx) => {
+              const ctxRoot = ctx.getRoot();
+              const ctxCounter = ctxRoot.get('counter');
+              const ctxMap = ctxRoot.get('map');
+
+              ctxCounter.increment(10);
+              expect(ctxCounter.value()).to.equal(
+                1,
+                'Check batch API counter .increment method does not mutate the object inside the batch callback',
+              );
+
+              ctxCounter.decrement(100);
+              expect(ctxCounter.value()).to.equal(
+                1,
+                'Check batch API counter .decrement method does not mutate the object inside the batch callback',
+              );
+
+              ctxMap.set('baz', 'qux');
+              expect(
+                ctxMap.get('baz'),
+                'Check batch API map .set method does not mutate the object inside the batch callback',
+              ).to.not.exist;
+
+              ctxMap.remove('foo');
+              expect(ctxMap.get('foo')).to.equal(
+                'bar',
+                'Check batch API map .remove method does not mutate the object inside the batch callback',
+              );
+            });
+          },
+        },
+
+        {
+          description: 'batch API scheduled operations are applied when batch callback is finished',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter(1);
+            const map = await liveObjects.createMap({ foo: 'bar' });
+            await root.set('counter', counter);
+            await root.set('map', map);
+
+            await liveObjects.batch((ctx) => {
+              const ctxRoot = ctx.getRoot();
+              const ctxCounter = ctxRoot.get('counter');
+              const ctxMap = ctxRoot.get('map');
+
+              ctxCounter.increment(10);
+              ctxCounter.decrement(100);
+
+              ctxMap.set('baz', 'qux');
+              ctxMap.remove('foo');
+            });
+
+            expect(counter.value()).to.equal(1 + 10 - 100, 'Check counter has an expected value after batch call');
+            expect(map.get('baz')).to.equal('qux', 'Check key "baz" has an expected value in a map after batch call');
+            expect(map.get('foo'), 'Check key "foo" is removed from map after batch call').to.not.exist;
+          },
+        },
+
+        {
+          description: 'batch API can be called without scheduling any operations',
+          action: async (ctx) => {
+            const { liveObjects } = ctx;
+
+            let caughtError;
+            try {
+              await liveObjects.batch((ctx) => {});
+            } catch (error) {
+              caughtError = error;
+            }
+            expect(
+              caughtError,
+              `Check batch API can be called without scheduling any operations, but got error: ${caughtError?.toString()}`,
+            ).to.not.exist;
+          },
+        },
+
+        {
+          description: 'batch API scheduled operations can be canceled by throwing an error in the batch callback',
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter(1);
+            const map = await liveObjects.createMap({ foo: 'bar' });
+            await root.set('counter', counter);
+            await root.set('map', map);
+
+            const cancelError = new Error('cancel batch');
+            let caughtError;
+            try {
+              await liveObjects.batch((ctx) => {
+                const ctxRoot = ctx.getRoot();
+                const ctxCounter = ctxRoot.get('counter');
+                const ctxMap = ctxRoot.get('map');
+
+                ctxCounter.increment(10);
+                ctxCounter.decrement(100);
+
+                ctxMap.set('baz', 'qux');
+                ctxMap.remove('foo');
+
+                throw cancelError;
+              });
+            } catch (error) {
+              caughtError = error;
+            }
+
+            expect(counter.value()).to.equal(1, 'Check counter value is not changed after canceled batch call');
+            expect(map.get('baz'), 'Check key "baz" does not exist on a map after canceled batch call').to.not.exist;
+            expect(map.get('foo')).to.equal('bar', 'Check key "foo" is not changed on a map after canceled batch call');
+            expect(caughtError).to.equal(
+              cancelError,
+              'Check error from a batch callback was rethrown by a batch method',
+            );
+          },
+        },
+
+        {
+          description: `batch API batch context and derived objects can't be interacted with after the batch call`,
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter(1);
+            const map = await liveObjects.createMap({ foo: 'bar' });
+            await root.set('counter', counter);
+            await root.set('map', map);
+
+            let savedCtx;
+            let savedCtxCounter;
+            let savedCtxMap;
+
+            await liveObjects.batch((ctx) => {
+              const ctxRoot = ctx.getRoot();
+              savedCtx = ctx;
+              savedCtxCounter = ctxRoot.get('counter');
+              savedCtxMap = ctxRoot.get('map');
+            });
+
+            expect(() => savedCtx.getRoot()).to.throw('Batch is closed');
+            expect(() => savedCtxCounter.value()).to.throw('Batch is closed');
+            expect(() => savedCtxCounter.increment()).to.throw('Batch is closed');
+            expect(() => savedCtxCounter.decrement()).to.throw('Batch is closed');
+            expect(() => savedCtxMap.get()).to.throw('Batch is closed');
+            expect(() => savedCtxMap.size()).to.throw('Batch is closed');
+            expect(() => savedCtxMap.set()).to.throw('Batch is closed');
+            expect(() => savedCtxMap.remove()).to.throw('Batch is closed');
+          },
+        },
+
+        {
+          description: `batch API batch context and derived objects can't be interacted with thrown error from batch callback`,
+          action: async (ctx) => {
+            const { root, liveObjects } = ctx;
+
+            const counter = await liveObjects.createCounter(1);
+            const map = await liveObjects.createMap({ foo: 'bar' });
+            await root.set('counter', counter);
+            await root.set('map', map);
+
+            let savedCtx;
+            let savedCtxCounter;
+            let savedCtxMap;
+
+            let caughtError;
+            try {
+              await liveObjects.batch((ctx) => {
+                const ctxRoot = ctx.getRoot();
+                savedCtx = ctx;
+                savedCtxCounter = ctxRoot.get('counter');
+                savedCtxMap = ctxRoot.get('map');
+
+                throw new Error('cancel batch');
+              });
+            } catch (error) {
+              caughtError = error;
+            }
+
+            expect(caughtError, 'Check batch call failed with an error').to.exist;
+            expect(() => savedCtx.getRoot()).to.throw('Batch is closed');
+            expect(() => savedCtxCounter.value()).to.throw('Batch is closed');
+            expect(() => savedCtxCounter.increment()).to.throw('Batch is closed');
+            expect(() => savedCtxCounter.decrement()).to.throw('Batch is closed');
+            expect(() => savedCtxMap.get()).to.throw('Batch is closed');
+            expect(() => savedCtxMap.size()).to.throw('Batch is closed');
+            expect(() => savedCtxMap.set()).to.throw('Batch is closed');
+            expect(() => savedCtxMap.remove()).to.throw('Batch is closed');
+          },
+        },
       ];
 
       /** @nospec */

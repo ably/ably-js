@@ -2,6 +2,7 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import type * as API from '../../../ably';
+import { BatchContext } from './batchcontext';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
@@ -13,6 +14,8 @@ import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
 enum LiveObjectsEvents {
   SyncCompleted = 'SyncCompleted',
 }
+
+type BatchCallback = (batchContext: BatchContext) => void;
 
 export class LiveObjects {
   private _client: BaseClient;
@@ -52,6 +55,21 @@ export class LiveObjects {
     }
 
     return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>;
+  }
+
+  /**
+   * Provides access to the synchronous write API for LiveObjects that can be used to batch multiple operations together in a single channel message.
+   */
+  async batch(callback: BatchCallback): Promise<void> {
+    const root = await this.getRoot();
+    const context = new BatchContext(this, root);
+
+    try {
+      callback(context);
+      await context.flush();
+    } finally {
+      context.close();
+    }
   }
 
   /**
@@ -302,7 +320,7 @@ export class LiveObjects {
           break;
 
         default:
-          throw new this._client.ErrorInfo(`Unknown live object type: ${objectType}`, 50000, 500);
+          throw new this._client.ErrorInfo(`Unknown Live Object type: ${objectType}`, 50000, 500);
       }
 
       this._liveObjectsPool.set(objectId, newObject);
