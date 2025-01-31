@@ -445,4 +445,121 @@ export class StateMessage {
 
     return result;
   }
+
+  getMessageSize(): number {
+    let size = 0;
+
+    size += this.clientId?.length ?? 0;
+    if (this.operation) {
+      size += this._getStateOperationSize(this.operation);
+    }
+    if (this.object) {
+      size += this._getStateObjectSize(this.object);
+    }
+    if (this.extras) {
+      size += JSON.stringify(this.extras).length;
+    }
+
+    return size;
+  }
+
+  private _getStateOperationSize(operation: StateOperation): number {
+    let size = 0;
+
+    if (operation.mapOp) {
+      size += this._getStateMapOpSize(operation.mapOp);
+    }
+    if (operation.counterOp) {
+      size += this._getStateCounterOpSize(operation.counterOp);
+    }
+    if (operation.map) {
+      size += this._getStateMapSize(operation.map);
+    }
+    if (operation.counter) {
+      size += this._getStateCounterSize(operation.counter);
+    }
+
+    return size;
+  }
+
+  private _getStateObjectSize(obj: StateObject): number {
+    let size = 0;
+
+    if (obj.map) {
+      size += this._getStateMapSize(obj.map);
+    }
+    if (obj.counter) {
+      size += this._getStateCounterSize(obj.counter);
+    }
+    if (obj.createOp) {
+      size += this._getStateOperationSize(obj.createOp);
+    }
+
+    return size;
+  }
+
+  private _getStateMapSize(map: StateMap): number {
+    let size = 0;
+
+    Object.entries(map.entries ?? {}).forEach(([key, entry]) => {
+      size += key?.length ?? 0;
+      if (entry) {
+        size += this._getStateMapEntrySize(entry);
+      }
+    });
+
+    return size;
+  }
+
+  private _getStateCounterSize(counter: StateCounter): number {
+    if (counter.count == null) {
+      return 0;
+    }
+
+    return 8;
+  }
+
+  private _getStateMapEntrySize(entry: StateMapEntry): number {
+    let size = 0;
+
+    if (entry.data) {
+      size += this._getStateDataSize(entry.data);
+    }
+
+    return size;
+  }
+
+  private _getStateMapOpSize(mapOp: StateMapOp): number {
+    let size = 0;
+
+    size += mapOp.key?.length ?? 0;
+
+    if (mapOp.data) {
+      size += this._getStateDataSize(mapOp.data);
+    }
+
+    return size;
+  }
+
+  private _getStateCounterOpSize(operation: StateCounterOp): number {
+    if (operation.amount == null) {
+      return 0;
+    }
+
+    return 8;
+  }
+
+  private _getStateDataSize(data: StateData): number {
+    let size = 0;
+
+    if (data.value) {
+      size += this._getStateValueSize(data.value);
+    }
+
+    return size;
+  }
+
+  private _getStateValueSize(value: StateValue): number {
+    return this._utils.dataSizeBytes(value);
+  }
 }
