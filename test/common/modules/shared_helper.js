@@ -373,17 +373,18 @@ define([
       itFn(name + '_with_text_transport', createTest({ transports, useBinaryProtocol: false }));
     }
 
-    static restTestOnJsonMsgpack(name, testFn, skip) {
-      var itFn = skip ? it.skip : it;
-      itFn(name + ' with binary protocol', async function () {
-        const helper = this.test.helper.withParameterisedTestTitle(name);
+    static testOnJsonMsgpack(testName, testFn, skip, only) {
+      const itFn = skip ? it.skip : only ? it.only : it;
 
-        await testFn(new clientModule.AblyRest(helper, { useBinaryProtocol: true }), name + '_binary', helper);
+      itFn(testName + ' with binary protocol', async function () {
+        const helper = this.test.helper.withParameterisedTestTitle(testName);
+        const channelName = testName + ' binary';
+        await testFn({ useBinaryProtocol: true }, channelName, helper);
       });
-      itFn(name + ' with text protocol', async function () {
-        const helper = this.test.helper.withParameterisedTestTitle(name);
-
-        await testFn(new clientModule.AblyRest(helper, { useBinaryProtocol: false }), name + '_text', helper);
+      itFn(testName + ' with text protocol', async function () {
+        const helper = this.test.helper.withParameterisedTestTitle(testName);
+        const channelName = testName + ' text';
+        await testFn({ useBinaryProtocol: false }, channelName, helper);
       });
     }
 
@@ -497,8 +498,12 @@ define([
     SharedHelper.testOnAllTransports(thisInDescribe, name, testFn, true);
   };
 
-  SharedHelper.restTestOnJsonMsgpack.skip = function (name, testFn) {
-    SharedHelper.restTestOnJsonMsgpack(name, testFn, true);
+  SharedHelper.testOnJsonMsgpack.skip = function (testName, testFn) {
+    SharedHelper.testOnJsonMsgpack(testName, testFn, true);
+  };
+
+  SharedHelper.testOnJsonMsgpack.only = function (testName, testFn) {
+    SharedHelper.testOnJsonMsgpack(testName, testFn, false, true);
   };
 
   return (module.exports = SharedHelper);
