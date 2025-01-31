@@ -29,7 +29,6 @@ export class ObjectId {
       platform.BufferUtils.utf8Encode(nonce),
     ]);
     const hashBuffer = platform.BufferUtils.sha256(valueForHashBuffer);
-
     const hash = platform.BufferUtils.base64UrlEncode(hashBuffer);
 
     return new ObjectId(objectType, hash, msTimestamp);
