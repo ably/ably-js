@@ -69,15 +69,16 @@ export class LiveObjects {
 
     await this.publish([stateMessage]);
 
-    // we might have received CREATE operation already at this point (it might arrive before the ACK message for our publish message),
-    // so the object could exist in the local pool as it was added there during regular CREATE operation application.
-    // check if the object is there and return it in case it is. otherwise create a new object client-side
+    // we may have already received the CREATE operation at this point, as it could arrive before the ACK for our publish message.
+    // this means the object might already exist in the local pool, having been added during the usual CREATE operation process.
+    // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
     if (this._liveObjectsPool.get(objectId)) {
       return this._liveObjectsPool.get(objectId) as LiveMap<T>;
     }
 
-    // new map object can be created using locally constructed state operation, even though it is missing timeserials for map entries.
-    // CREATE operation is only applied once, and all map entries will have an "earliest possible" timeserial so that any subsequent operation can be applied to them.
+    // we haven't received the CREATE operation yet, so we can create a new map object using the locally constructed state operation.
+    // we don't know the timeserials for map entries, so we assign an "earliest possible" timeserial to each entry, so that any subsequent operation can be applied to them.
+    // we mark the CREATE operation as merged for the object, guaranteeing its idempotency and preventing it from being applied again when the operation arrives.
     const map = LiveMap.fromStateOperation<T>(this, stateMessage.operation!);
     this._liveObjectsPool.set(objectId, map);
 
@@ -99,15 +100,15 @@ export class LiveObjects {
 
     await this.publish([stateMessage]);
 
-    // we might have received CREATE operation already at this point (it might arrive before the ACK message for our publish message),
-    // so the object could exist in the local pool as it was added there during regular CREATE operation application.
-    // check if the object is there and return it in case it is. otherwise create a new object client-side
+    // we may have already received the CREATE operation at this point, as it could arrive before the ACK for our publish message.
+    // this means the object might already exist in the local pool, having been added during the usual CREATE operation process.
+    // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
     if (this._liveObjectsPool.get(objectId)) {
       return this._liveObjectsPool.get(objectId) as LiveCounter;
     }
 
-    // new counter object can be created using locally constructed state operation.
-    // CREATE operation is only applied once, so the initial counter value won't be double counted when we eventually receive an echoed CREATE operation
+    // we haven't received the CREATE operation yet, so we can create a new counter object using the locally constructed state operation.
+    // we mark the CREATE operation as merged for the object, guaranteeing its idempotency. this ensures we don't double count the initial counter value when the operation arrives.
     const counter = LiveCounter.fromStateOperation(this, stateMessage.operation!);
     this._liveObjectsPool.set(objectId, counter);
 

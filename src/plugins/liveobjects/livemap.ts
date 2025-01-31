@@ -82,7 +82,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   /**
-   * Returns a {@link LiveMap} instance based on the provided state operation.
+   * Returns a {@link LiveMap} instance based on the provided MAP_CREATE state operation.
    * The provided state operation must hold a valid map object data.
    *
    * @internal

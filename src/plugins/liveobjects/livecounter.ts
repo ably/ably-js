@@ -34,7 +34,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   /**
-   * Returns a {@link LiveCounter} instance based on the provided state operation.
+   * Returns a {@link LiveCounter} instance based on the provided COUNTER_CREATE state operation.
    * The provided state operation must hold a valid counter object data.
    *
    * @internal
