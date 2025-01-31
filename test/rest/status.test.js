@@ -34,7 +34,8 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
      * @spec CHM2e
      * @spec CHM2f
      */
-    Helper.restTestOnJsonMsgpack('status0', async function (rest) {
+    Helper.testOnJsonMsgpack('status0', async function (options, _, helper) {
+      const rest = helper.AblyRest(options);
       var channel = rest.channels.get('status0');
       var channelDetails = await channel.status();
       expect(channelDetails.channelId).to.equal('status0');
