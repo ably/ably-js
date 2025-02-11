@@ -9,6 +9,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 ) {
   const expect = chai.expect;
   const BufferUtils = Ably.Realtime.Platform.BufferUtils;
+  const Utils = Ably.Realtime.Utils;
+  const MessageEncoding = Ably.Realtime._MessageEncoding;
   const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
   const liveObjectsFixturesChannel = 'liveobjects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
@@ -58,14 +60,20 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
   }
 
   async function expectToThrowAsync(fn, errorStr) {
-    let verifiedError = false;
+    let savedError;
     try {
       await fn();
     } catch (error) {
       expect(error.message).to.have.string(errorStr);
-      verifiedError = true;
+      savedError = error;
     }
-    expect(verifiedError, 'Expected async function to throw an error').to.be.true;
+    expect(savedError, 'Expected async function to throw an error').to.exist;
+
+    return savedError;
+  }
+
+  function stateMessageFromValues(values) {
+    return LiveObjectsPlugin.StateMessage.fromValues(values, Utils, MessageEncoding);
   }
 
   async function waitForMapKeyUpdate(map, key) {
@@ -503,6 +511,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           expect(valuesMap.get('stringKey')).to.equal('stringValue', 'Check values map has correct string value key');
           expect(valuesMap.get('emptyStringKey')).to.equal('', 'Check values map has correct empty string value key');
+          helper.recordPrivateApi('call.BufferUtils.base64Decode');
+          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
           expect(
             BufferUtils.areBuffersEqual(
               valuesMap.get('bytesKey'),
@@ -510,6 +520,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             ),
             'Check values map has correct bytes value key',
           ).to.be.true;
+          helper.recordPrivateApi('call.BufferUtils.base64Decode');
+          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
           expect(
             BufferUtils.areBuffersEqual(valuesMap.get('emptyBytesKey'), BufferUtils.base64Decode('')),
             'Check values map has correct empty bytes value key',
@@ -759,7 +771,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can apply MAP_CREATE with primitives state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, liveObjectsHelper, channelName, helper } = ctx;
 
             // LiveObjects public API allows us to check value of objects we've created based on MAP_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
@@ -802,6 +814,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
                 if (keyData.data.encoding) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                   expect(
                     BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.value)),
                     `Check map "${mapKey}" has correct value for "${key}" key`,
@@ -977,7 +991,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can apply MAP_SET with primitives state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, liveObjectsHelper, channelName, helper } = ctx;
 
             // check root is empty before ops
             primitiveKeyData.forEach((keyData) => {
@@ -1006,6 +1020,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
                   `Check root has correct value for "${keyData.key}" key after MAP_SET op`,
@@ -1898,7 +1914,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'buffered state operation messages are applied when STATE_SYNC sequence ends',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, liveObjectsHelper, channel, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
             await liveObjectsHelper.processStateObjectMessageOnChannel({
@@ -1930,6 +1946,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
                   `Check root has correct value for "${keyData.key}" key after STATE_SYNC has ended and buffered operations are applied`,
@@ -2132,7 +2150,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'subsequent state operation messages are applied immediately after STATE_SYNC ended and buffers are applied',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel, channelName } = ctx;
+            const { root, liveObjectsHelper, channel, channelName, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
             await liveObjectsHelper.processStateObjectMessageOnChannel({
@@ -2176,6 +2194,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check buffered operations are applied, as well as the most recent operation outside of the STATE_SYNC is applied
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
                   `Check root has correct value for "${keyData.key}" key after STATE_SYNC has ended and buffered operations are applied`,
@@ -2417,11 +2437,12 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'LiveMap.set sends MAP_SET operation with primitive values',
           action: async (ctx) => {
-            const { root } = ctx;
+            const { root, helper } = ctx;
 
             const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
                 const value = keyData.data.encoding ? BufferUtils.base64Decode(keyData.data.value) : keyData.data.value;
                 await root.set(keyData.key, value);
               }),
@@ -2431,6 +2452,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
+                helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
                   `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
@@ -2762,12 +2785,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'LiveObjects.createMap sends MAP_CREATE operation with primitive values',
           action: async (ctx) => {
-            const { liveObjects } = ctx;
+            const { liveObjects, helper } = ctx;
 
             const maps = await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
                 const entries = mapFixture.entries
                   ? Object.entries(mapFixture.entries).reduce((acc, [key, keyData]) => {
+                      helper.recordPrivateApi('call.BufferUtils.base64Decode');
                       const value = keyData.data.encoding
                         ? BufferUtils.base64Decode(keyData.data.value)
                         : keyData.data.value;
@@ -2794,6 +2818,8 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
                 if (keyData.data.encoding) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                   expect(
                     BufferUtils.areBuffersEqual(map.get(key), BufferUtils.base64Decode(keyData.data.value)),
                     `Check map #${i + 1} has correct value for "${key}" key`,
@@ -4179,6 +4205,277 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           await scenario.action({ liveObjects, liveObjectsHelper, channelName, channel, root, map, counter, helper });
         }, client);
+      });
+
+      /**
+       * @spec TO3l8
+       * @spec RSL1i
+       */
+      it('state message publish respects connectionDetails.maxMessageSize', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithLiveObjects(helper, { clientId: 'test' });
+
+        await helper.monitorConnectionThenCloseAndFinish(async () => {
+          await client.connection.once('connected');
+
+          const connectionManager = client.connection.connectionManager;
+          const connectionDetails = connectionManager.connectionDetails;
+          const connectionDetailsPromise = connectionManager.once('connectiondetails');
+
+          helper.recordPrivateApi('write.connectionManager.connectionDetails.maxMessageSize');
+          connectionDetails.maxMessageSize = 64;
+
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+          // forge lower maxMessageSize
+          connectionManager.activeProtocol.getTransport().onProtocolMessage(
+            createPM({
+              action: 4, // CONNECTED
+              connectionDetails,
+            }),
+          );
+
+          helper.recordPrivateApi('listen.connectionManager.connectiondetails');
+          await connectionDetailsPromise;
+
+          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
+          const liveObjects = channel.liveObjects;
+
+          await channel.attach();
+          const root = await liveObjects.getRoot();
+
+          const data = new Array(100).fill('a').join('');
+          const error = await expectRejectedWith(
+            async () => root.set('key', data),
+            'Maximum size of state messages that can be published at once exceeded',
+          );
+
+          expect(error.code).to.equal(40009, 'Check maximum size of messages error has correct error code');
+        }, client);
+      });
+
+      describe('StateMessage message size', () => {
+        const stateMessageSizeScenarios = [
+          {
+            description: 'client id',
+            message: stateMessageFromValues({
+              clientId: 'my-client',
+            }),
+            expected: Utils.dataSizeBytes('my-client'),
+          },
+          {
+            description: 'extras',
+            message: stateMessageFromValues({
+              extras: { foo: 'bar' },
+            }),
+            expected: Utils.dataSizeBytes('{"foo":"bar"}'),
+          },
+          {
+            description: 'object id',
+            message: stateMessageFromValues({
+              operation: { objectId: 'object-id' },
+            }),
+            expected: 0,
+          },
+          {
+            description: 'map create op no payload',
+            message: stateMessageFromValues({
+              operation: { action: 0, objectId: 'object-id' },
+            }),
+            expected: 0,
+          },
+          {
+            description: 'map create op with object payload',
+            message: stateMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: {
+                    semantics: 0,
+                    entries: { 'key-1': { tombstone: false, data: { objectId: 'another-object-id' } } },
+                  },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1'),
+          },
+          {
+            description: 'map create op with string payload',
+            message: stateMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: 'a string' } } } },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
+          },
+          {
+            description: 'map create op with bytes payload',
+            message: stateMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: {
+                    semantics: 0,
+                    entries: { 'key-1': { tombstone: false, data: { value: BufferUtils.utf8Encode('my-value') } } },
+                  },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
+          },
+          {
+            description: 'map create op with boolean payload',
+            message: stateMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: true } } } },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1') + 1,
+          },
+          {
+            description: 'map remove op',
+            message: stateMessageFromValues({
+              operation: { action: 2, objectId: 'object-id', mapOp: { key: 'my-key' } },
+            }),
+            expected: Utils.dataSizeBytes('my-key'),
+          },
+          {
+            description: 'map set operation value=object',
+            message: stateMessageFromValues({
+              operation: {
+                action: 1,
+                objectId: 'object-id',
+                mapOp: { key: 'my-key', data: { objectId: 'another-object-id' } },
+              },
+            }),
+            expected: Utils.dataSizeBytes('my-key'),
+          },
+          {
+            description: 'map set operation value=string',
+            message: stateMessageFromValues({
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 'my-value' } } },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes('my-value'),
+          },
+          {
+            description: 'map set operation value=bytes',
+            message: stateMessageFromValues({
+              operation: {
+                action: 1,
+                objectId: 'object-id',
+                mapOp: { key: 'my-key', data: { value: BufferUtils.utf8Encode('my-value') } },
+              },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
+          },
+          {
+            description: 'map set operation value=boolean',
+            message: stateMessageFromValues({
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: true } } },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + 1,
+          },
+          {
+            description: 'map set operation value=double',
+            message: stateMessageFromValues({
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 123.456 } } },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + 8,
+          },
+          {
+            description: 'map object',
+            message: stateMessageFromValues({
+              object: {
+                objectId: 'object-id',
+                map: {
+                  semantics: 0,
+                  entries: {
+                    'key-1': { tombstone: false, data: { value: 'a string' } },
+                    'key-2': { tombstone: true, data: { value: 'another string' } },
+                  },
+                },
+                createOp: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { value: 'third string' } } } },
+                },
+                siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
+                tombstone: false,
+              },
+            }),
+            expected:
+              Utils.dataSizeBytes('key-1') +
+              Utils.dataSizeBytes('a string') +
+              Utils.dataSizeBytes('key-2') +
+              Utils.dataSizeBytes('another string') +
+              Utils.dataSizeBytes('key-3') +
+              Utils.dataSizeBytes('third string'),
+          },
+          {
+            description: 'counter create op no payload',
+            message: stateMessageFromValues({
+              operation: { action: 3, objectId: 'object-id' },
+            }),
+            expected: 0,
+          },
+          {
+            description: 'counter create op with payload',
+            message: stateMessageFromValues({
+              operation: { action: 3, objectId: 'object-id', counter: { count: 1234567 } },
+            }),
+            expected: 8,
+          },
+          {
+            description: 'counter inc op',
+            message: stateMessageFromValues({
+              operation: { action: 4, objectId: 'object-id', counterOp: { amount: 123.456 } },
+            }),
+            expected: 8,
+          },
+          {
+            description: 'counter object',
+            message: stateMessageFromValues({
+              object: {
+                objectId: 'object-id',
+                counter: { count: 1234567 },
+                createOp: {
+                  action: 3,
+                  objectId: 'object-id',
+                  counter: { count: 9876543 },
+                },
+                siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
+                tombstone: false,
+              },
+            }),
+            expected: 8 + 8,
+          },
+        ];
+
+        /** @nospec */
+        forScenarios(stateMessageSizeScenarios, function (helper, scenario) {
+          helper.recordPrivateApi('call.StateMessage.encode');
+          LiveObjectsPlugin.StateMessage.encode(scenario.message);
+          helper.recordPrivateApi('call.BufferUtils.utf8Encode'); // was called by a scenario to create buffers
+          helper.recordPrivateApi('call.StateMessage.fromValues'); // was called by a scenario to create a StateMessage instance
+          helper.recordPrivateApi('call.Utils.dataSizeBytes'); // was called by a scenario to calculated the expected byte size
+          helper.recordPrivateApi('call.StateMessage.getMessageSize');
+          expect(scenario.message.getMessageSize()).to.equal(scenario.expected);
+        });
       });
     });
 
