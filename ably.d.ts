@@ -2092,6 +2092,14 @@ export declare interface RealtimeAnnotations {
    */
   publish(refSerial: string, refType: string, data: string | ArrayBuffer | Uint8Array): Promise<void>;
   /**
+   * Delete an annotation for a message.
+   *
+   * @param refSerial - The `serial` of the message to annotate.
+   * @param refType - What type of annotation you want.
+   * @param data - The contents of the annotation.
+   */
+  delete(refSerial: string, refType: string, data: string | ArrayBuffer | Uint8Array): Promise<void>;
+  /**
    * Get all annotations for a given message (as a paginated result)
    *
    * @param serial - The `serial` of the message to get annotations for.
@@ -2207,6 +2215,14 @@ export declare interface RestAnnotations {
    * @param data - The contents of the annotation.
    */
   publish(refSerial: string, refType: string, data: string | ArrayBuffer | Uint8Array): Promise<void>;
+  /**
+   * Delete an annotation for a message.
+   *
+   * @param refSerial - The `serial` of the message to annotate.
+   * @param refType - What type of annotation you want.
+   * @param data - The contents of the annotation.
+   */
+    delete(refSerial: string, refType: string, data: string | ArrayBuffer | Uint8Array): Promise<void>;
   /**
    * Get all annotations for a given message (as a paginated result)
    *

@@ -49,6 +49,36 @@ class RealtimeAnnotations {
     return this.channel.sendMessage(pm);
   }
 
+  async delete(refSerial: string, refType: string, data: any): Promise<void> {
+    const channelName = this.channel.name;
+    const annotation = Annotation.fromValues({
+      action: 'annotation.delete',
+      refSerial,
+      refType,
+      data,
+    });
+
+    // TODO get rid of CipherOptions type assertion, indicates channeloptions types are broken
+    const wireAnnotation = await annotation.encode(this.channel.channelOptions as CipherOptions);
+
+    this.channel._throwIfUnpublishableState();
+
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MICRO,
+      'RealtimeAnnotations.delete()',
+      'channelName = ' + channelName + ', deleting annotation with refSerial = ' + refSerial + ', refType = ' + refType,
+    );
+
+    const pm = protocolMessageFromValues({
+      action: actions.ANNOTATION,
+      channel: channelName,
+      annotations: [wireAnnotation],
+    });
+
+    return this.channel.sendMessage(pm);
+  }
+
   async subscribe(..._args: unknown[] /* [refType], listener */): Promise<void> {
     const args = RealtimeChannel.processListenerArgs(_args);
     const event = args[0];
