@@ -44,6 +44,27 @@ class RestAnnotations {
     await Resource.post(client, basePathForSerial(this.channel, refSerial), requestBody, headers, params, null, true);
   }
 
+  async delete(refSerial: string, refType: string, data: any): Promise<void> {
+    const annotation = Annotation.fromValues({
+      action: 'annotation.delete',
+      refSerial,
+      refType,
+      data,
+    });
+
+    const wireAnnotation = await annotation.encode();
+
+    const client = this.channel.client,
+      options = client.options,
+      format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
+      headers = Defaults.defaultPostHeaders(client.options, { format }),
+      params = {};
+
+    const requestBody = Utils.encodeBody([wireAnnotation], client._MsgPack, format);
+
+    await Resource.post(client, basePathForSerial(this.channel, refSerial), requestBody, headers, params, null, true);
+  }
+
   async get(serial: string, params: RestGetAnnotationsParams | null): Promise<PaginatedResult<Annotation>> {
     const client = this.channel.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
