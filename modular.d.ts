@@ -20,6 +20,8 @@
  * | `PresenceMessageStatic.fromEncodedArray()` | [`decodeEncryptedPresenceMessages()`](../functions/modular.decodeEncryptedPresenceMessages.html)     |
  * | `PresenceMessageStatic.fromEncodedArray()` | [`decodePresenceMessages()`](../functions/modular.decodePresenceMessages.html)     |
  * | `PresenceMessageStatic.fromValues()`       | [`constructPresenceMessage()`](../functions/modular.constructPresenceMessage.html) |
+ * | `AnnotationStatic.fromEncoded()`           | [`decodeAnnotation()`](../functions/modular.decodeAnnotation.html)                 |
+ * | `AnnotationStatic.fromEncodedArray()`      | [`decodeAnnotations()`](../functions/modular.decodeAnnotations.html)               |
  *
  * @module
  */
@@ -31,6 +33,7 @@ import {
   Crypto as CryptoClass,
   MessageStatic,
   PresenceMessageStatic,
+  AnnotationStatic,
   RealtimeClient,
   Auth,
   Channels,
@@ -65,6 +68,8 @@ export declare const decodePresenceMessages: PresenceMessageStatic['fromEncodedA
 export declare const decodeEncryptedPresenceMessage: PresenceMessageStatic['fromEncoded'];
 export declare const decodeEncryptedPresenceMessages: PresenceMessageStatic['fromEncodedArray'];
 export declare const constructPresenceMessage: PresenceMessageStatic['fromValues'];
+export declare const decodeAnnotation: AnnotationStatic['fromEncoded'];
+export declare const decodeAnnotations: AnnotationStatic['fromEncodedArray'];
 
 /**
  * Provides REST-related functionality to a {@link BaseRealtime} client.
