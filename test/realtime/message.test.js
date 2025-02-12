@@ -79,7 +79,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Test publishes in quick succession (on successive ticks of the event loop)
      * @spec RTL6b
      */
-    Helper.testOnAllTransports(this, 'publishfast', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'publishfast', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -146,7 +146,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL6c2
      * @specpartial RTL3d - test processing queued messages
      */
-    Helper.testOnAllTransports(this, 'publishQueued', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'publishQueued', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           txRealtime,
@@ -629,7 +629,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL6
      * @spec RTL6b
      */
-    Helper.testOnAllTransports(this, 'publish', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'publish', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var count = 10;

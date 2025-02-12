@@ -342,35 +342,49 @@ define([
       );
     }
 
-    /* testFn is assumed to be a function of realtimeOptions that returns a mocha test */
-    static testOnAllTransports(thisInDescribe, name, testFn, skip) {
-      const helper = this.forTestDefinition(thisInDescribe, name).addingHelperFunction('testOnAllTransports');
-      var itFn = skip ? it.skip : it;
+    /* testFn is assumed to be a function of realtimeOptions and channelName that returns a mocha test */
+    static testOnAllTransportsAndProtocols(thisInDescribe, testName, testFn, skip, only) {
+      const helper = SharedHelper.forTestDefinition(thisInDescribe, testName).addingHelperFunction(
+        'testOnAllTransportsAndProtocols',
+      );
+      const itFn = skip ? it.skip : only ? it.only : it;
 
-      function createTest(options) {
+      function createTest(options, channelName) {
         return function (done) {
-          this.test.helper = this.test.helper.withParameterisedTestTitle(name);
-          return testFn(options).apply(this, [done]);
+          this.test.helper = this.test.helper.withParameterisedTestTitle(testName);
+          // we want to support both callback-based and async test functions here.
+          // for this we check the return type of the test function to see if it is a Promise.
+          // if it is, then the test function provided is an async one, and won't call done function on its own.
+          // instead we attach own .then and .catch callbacks for the promise here and call done when needed
+          const testFnReturn = testFn(options, channelName).apply(this, [done]);
+          if (testFnReturn instanceof Promise) {
+            testFnReturn.then(done).catch(done);
+          } else {
+            return testFnReturn;
+          }
         };
       }
 
-      let transports = helper.availableTransports;
+      const transports = helper.availableTransports;
       transports.forEach(function (transport) {
         itFn(
-          name + '_with_' + transport + '_binary_transport',
-          createTest({ transports: [transport], useBinaryProtocol: true }),
+          testName + ' with ' + transport + ' binary protocol',
+          createTest({ transports: [transport], useBinaryProtocol: true }, `${testName} ${transport} binary`),
         );
         itFn(
-          name + '_with_' + transport + '_text_transport',
-          createTest({ transports: [transport], useBinaryProtocol: false }),
+          testName + ' with ' + transport + ' text protocol',
+          createTest({ transports: [transport], useBinaryProtocol: false }, `${testName} ${transport} text`),
         );
       });
       /* Plus one for no transport specified (ie use websocket/base mechanism if
        * present).  (we explicitly specify all transports since node only does
        * websocket+nodecomet if comet is explicitly requested)
        * */
-      itFn(name + '_with_binary_transport', createTest({ transports, useBinaryProtocol: true }));
-      itFn(name + '_with_text_transport', createTest({ transports, useBinaryProtocol: false }));
+      itFn(
+        testName + ' with binary protocol',
+        createTest({ transports, useBinaryProtocol: true }, `${testName} binary`),
+      );
+      itFn(testName + ' with text protocol', createTest({ transports, useBinaryProtocol: false }, `${testName} text`));
     }
 
     static testOnJsonMsgpack(testName, testFn, skip, only) {
@@ -494,8 +508,12 @@ define([
     }
   }
 
-  SharedHelper.testOnAllTransports.skip = function (thisInDescribe, name, testFn) {
-    SharedHelper.testOnAllTransports(thisInDescribe, name, testFn, true);
+  SharedHelper.testOnAllTransportsAndProtocols.skip = function (thisInDescribe, testName, testFn) {
+    SharedHelper.testOnAllTransportsAndProtocols(thisInDescribe, testName, testFn, true);
+  };
+
+  SharedHelper.testOnAllTransportsAndProtocols.only = function (thisInDescribe, testName, testFn) {
+    SharedHelper.testOnAllTransportsAndProtocols(thisInDescribe, testName, testFn, false, true);
   };
 
   SharedHelper.testOnJsonMsgpack.skip = function (testName, testFn) {

@@ -465,7 +465,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     }
 
     function single_send(done, helper, realtimeOpts, keyLength) {
-      // the _128 and _256 variants both call this so it makes more sense for this to be the parameterisedTestTitle instead of that set by testOnAllTransports
+      // the _128 and _256 variants both call this so it makes more sense for this to be the parameterisedTestTitle instead of that set by testOnAllTransportsAndProtocols
       helper = helper.withParameterisedTestTitle('single_send');
 
       if (!Crypto) {
@@ -513,14 +513,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
     // Publish and subscribe, various transport, 128 and 256-bit
     /** @specpartial RSL5b - test aes 128 */
-    Helper.testOnAllTransports(this, 'single_send_128', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'single_send_128', function (realtimeOpts) {
       return function (done) {
         single_send(done, this.test.helper, realtimeOpts, 128);
       };
     });
 
     /** @specpartial RSL5b - test aes 256 */
-    Helper.testOnAllTransports(this, 'single_send_256', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'single_send_256', function (realtimeOpts) {
       return function (done) {
         single_send(done, this.test.helper, realtimeOpts, 256);
       };
