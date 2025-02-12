@@ -20,6 +20,8 @@
  * | `PresenceMessageStatic.fromEncodedArray()` | [`decodeEncryptedPresenceMessages()`](../functions/modular.decodeEncryptedPresenceMessages.html)     |
  * | `PresenceMessageStatic.fromEncodedArray()` | [`decodePresenceMessages()`](../functions/modular.decodePresenceMessages.html)     |
  * | `PresenceMessageStatic.fromValues()`       | [`constructPresenceMessage()`](../functions/modular.constructPresenceMessage.html) |
+ * | `AnnotationStatic.fromEncoded()`           | [`decodeAnnotation()`](../functions/modular.decodeAnnotation.html)                 |
+ * | `AnnotationStatic.fromEncodedArray()`      | [`decodeAnnotations()`](../functions/modular.decodeAnnotations.html)               |
  *
  * @module
  */
@@ -31,6 +33,7 @@ import {
   Crypto as CryptoClass,
   MessageStatic,
   PresenceMessageStatic,
+  AnnotationStatic,
   RealtimeClient,
   Auth,
   Channels,
@@ -65,6 +68,8 @@ export declare const decodePresenceMessages: PresenceMessageStatic['fromEncodedA
 export declare const decodeEncryptedPresenceMessage: PresenceMessageStatic['fromEncoded'];
 export declare const decodeEncryptedPresenceMessages: PresenceMessageStatic['fromEncodedArray'];
 export declare const constructPresenceMessage: PresenceMessageStatic['fromValues'];
+export declare const decodeAnnotation: AnnotationStatic['fromEncoded'];
+export declare const decodeAnnotations: AnnotationStatic['fromEncodedArray'];
 
 /**
  * Provides REST-related functionality to a {@link BaseRealtime} client.
@@ -134,6 +139,21 @@ export declare const MsgPack: unknown;
  * If you do not provide this plugin, then attempting to access a channel’s {@link ably!RealtimeChannel.presence} property will cause a runtime error.
  */
 export declare const RealtimePresence: unknown;
+
+/**
+ * Provides a {@link BaseRealtime} instance with the ability to interact with message
+ * annotations.
+ *
+ * To create a client that includes this plugin, include it in the client options that you pass to the {@link BaseRealtime.constructor}:
+ *
+ * ```javascript
+ * import { BaseRealtime, WebSocketTransport, FetchRequest, Annotations } from 'ably/modular';
+ * const realtime = new BaseRealtime({ ...options, plugins: { WebSocketTransport, FetchRequest, Annotations } });
+ * ```
+ *
+ * If you do not provide this plugin, then attempting to access a channel’s {@link ably!RealtimeChannel.annotations} property will cause a runtime error.
+ */
+export declare const Annotations: unknown;
 
 /**
  * Provides a {@link BaseRealtime} instance with the ability to establish a connection with the Ably realtime service using a [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) connection.
@@ -229,6 +249,11 @@ export interface ModularPlugins {
    * See {@link RealtimePresence | documentation for the `RealtimePresence` plugin}.
    */
   RealtimePresence?: typeof RealtimePresence;
+
+  /**
+   * See {@link Annotations | documentation for the `Annotations` plugin}.
+   */
+  Annotations?: typeof Annotations;
 
   /**
    * See {@link WebSocketTransport | documentation for the `WebSocketTransport` plugin}.
