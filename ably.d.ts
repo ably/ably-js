@@ -1566,6 +1566,25 @@ export type ErrorCallback = (error: ErrorInfo | null) => void;
  */
 export type LiveObjectUpdateCallback<T> = (update: T) => void;
 
+/**
+ * The callback used for the events emitted by {@link LiveObjects}.
+ */
+export type LiveObjectsEventCallback = () => void;
+
+/**
+ * The callback used for the lifecycle events emitted by {@link LiveObject}.
+ */
+export type LiveObjectLifecycleEventCallback = () => void;
+
+/**
+ * A function passed to {@link LiveObjects.batch} to group multiple Live Object operations into a single channel message.
+ *
+ * Must not be `async`.
+ *
+ * @param batchContext - A {@link BatchContext} object that allows grouping operations on Live Objects for this batch.
+ */
+export type BatchCallback = (batchContext: BatchContext) => void;
+
 // Internal Interfaces
 
 // To allow a uniform (callback) interface between on and once even in the
@@ -2033,6 +2052,40 @@ export declare interface PushChannel {
 }
 
 /**
+ * The `LiveObjectsEvents` namespace describes the possible values of the {@link LiveObjectsEvent} type.
+ */
+declare namespace LiveObjectsEvents {
+  /**
+   * The local Live Objects state is currently being synchronized with the Ably service.
+   */
+  type SYNCING = 'syncing';
+  /**
+   * The local Live Objects state has been synchronized with the Ably service.
+   */
+  type SYNCED = 'synced';
+}
+
+/**
+ * Describes the events emitted by a {@link LiveObjects} object.
+ */
+export type LiveObjectsEvent = LiveObjectsEvents.SYNCED | LiveObjectsEvents.SYNCING;
+
+/**
+ * The `LiveObjectLifecycleEvents` namespace describes the possible values of the {@link LiveObjectLifecycleEvent} type.
+ */
+declare namespace LiveObjectLifecycleEvents {
+  /**
+   * Indicates that the object has been deleted from the Live Objects pool and should no longer be interacted with.
+   */
+  type DELETED = 'deleted';
+}
+
+/**
+ * Describes the events emitted by a {@link LiveObject} object.
+ */
+export type LiveObjectLifecycleEvent = LiveObjectLifecycleEvents.DELETED;
+
+/**
  * Enables the LiveObjects state to be subscribed to for a channel.
  */
 export declare interface LiveObjects {
@@ -2062,6 +2115,59 @@ export declare interface LiveObjects {
    * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   getRoot<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>>;
+
+  /**
+   * Creates a new {@link LiveMap} object instance with the provided entries.
+   *
+   * @param entries - The initial entries for the new {@link LiveMap} object.
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  createMap<T extends LiveMapType>(entries?: T): Promise<LiveMap<T>>;
+
+  /**
+   * Creates a new {@link LiveCounter} object instance with the provided `count` value.
+   *
+   * @param count - The initial value for the new {@link LiveCounter} object.
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveCounter} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  createCounter(count?: number): Promise<LiveCounter>;
+
+  /**
+   * Allows you to group multiple operations together and send them to the Ably service in a single channel message.
+   * As a result, other clients will receive the changes as a single channel message after the batch function has completed.
+   *
+   * This method accepts a synchronous callback, which is provided with a {@link BatchContext} object.
+   * Use the context object to access Live Object instances in your state and batch operations for them.
+   *
+   * The objects' data is not modified inside the callback function. Instead, the objects will be updated
+   * when the batched operations are applied by the Ably service and echoed back to the client.
+   *
+   * @param callback - A batch callback function used to group operations together. Cannot be an `async` function.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  batch(callback: BatchCallback): Promise<void>;
+
+  /**
+   * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
+   *
+   * @param event - The named event to listen for.
+   * @param callback - The event listener.
+   * @returns A {@link OnLiveObjectsEventResponse} object that allows the provided listener to be deregistered from future updates.
+   */
+  on(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): OnLiveObjectsEventResponse;
+
+  /**
+   * Removes all registrations that match both the specified listener and the specified event.
+   *
+   * @param event - The named event.
+   * @param callback - The event listener.
+   */
+  off(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): void;
+
+  /**
+   * Deregisters all registrations, for all events and listeners.
+   */
+  offAll(): void;
 }
 
 declare global {
@@ -2096,6 +2202,97 @@ export type DefaultRoot =
       : `Provided type definition for the "root" object in LiveObjectsTypes is not of an expected LiveMapType`;
 
 /**
+ * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
+ */
+export declare interface OnLiveObjectsEventResponse {
+  /**
+   * Deregisters the listener passed to the `on` call.
+   */
+  off(): void;
+}
+
+/**
+ * Enables grouping multiple Live Object operations together by providing `BatchContext*` wrapper objects.
+ */
+export declare interface BatchContext {
+  /**
+   * Mirrors the {@link LiveObjects.getRoot} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
+   *
+   * @returns A {@link BatchContextLiveMap} object.
+   */
+  getRoot<T extends LiveMapType = DefaultRoot>(): BatchContextLiveMap<T>;
+}
+
+/**
+ * A wrapper around the {@link LiveMap} object that enables batching operations inside a {@link BatchCallback}.
+ */
+export declare interface BatchContextLiveMap<T extends LiveMapType> {
+  /**
+   * Mirrors the {@link LiveMap.get} method and returns the value associated with a key in the map.
+   *
+   * @param key - The key to retrieve the value for.
+   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   */
+  get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
+
+  /**
+   * Returns the number of key/value pairs in the map.
+   */
+  size(): number;
+
+  /**
+   * Similar to the {@link LiveMap.set} method, but instead, it adds an operation to set a key in the map with the provided value to the current batch, to be sent in a single message to the Ably service.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param key - The key to set the value for.
+   * @param value - The value to assign to the key.
+   */
+  set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): void;
+
+  /**
+   * Similar to the {@link LiveMap.remove} method, but instead, it adds an operation to remove a key from the map to the current batch, to be sent in a single message to the Ably service.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param key - The key to set the value for.
+   */
+  remove<TKey extends keyof T & string>(key: TKey): void;
+}
+
+/**
+ * A wrapper around the {@link LiveCounter} object that enables batching operations inside a {@link BatchCallback}.
+ */
+export declare interface BatchContextLiveCounter {
+  /**
+   * Returns the current value of the counter.
+   */
+  value(): number;
+
+  /**
+   * Similar to the {@link LiveCounter.increment} method, but instead, it adds an operation to increment the counter value to the current batch, to be sent in a single message to the Ably service.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param amount - The amount by which to increase the counter value.
+   */
+  increment(amount: number): void;
+
+  /**
+   * An alias for calling {@link BatchContextLiveCounter.increment | BatchContextLiveCounter.increment(-amount)}
+   *
+   * @param amount - The amount by which to decrease the counter value.
+   */
+  decrement(amount: number): void;
+}
+
+/**
  * The `LiveMap` class represents a key/value map data structure, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
  * Conflict-free resolution for updates follows Last Write Wins (LWW) semantics, meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
  *
@@ -2116,6 +2313,31 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
    * Returns the number of key/value pairs in the map.
    */
   size(): number;
+
+  /**
+   * Sends an operation to the Ably system to set a key on this `LiveMap` object to a specified value.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param key - The key to set the value for.
+   * @param value - The value to assign to the key.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void>;
+
+  /**
+   * Sends an operation to the Ably system to remove a key from this `LiveMap` object.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param key - The key to remove.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  remove<TKey extends keyof T & string>(key: TKey): Promise<void>;
 }
 
 /**
@@ -2145,6 +2367,26 @@ export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
    * Returns the current value of the counter.
    */
   value(): number;
+
+  /**
+   * Sends an operation to the Ably system to increment the value of this `LiveCounter` object.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param amount - The amount by which to increase the counter value.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  increment(amount: number): Promise<void>;
+
+  /**
+   * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
+   *
+   * @param amount - The amount by which to decrease the counter value.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  decrement(amount: number): Promise<void>;
 }
 
 /**
@@ -2185,6 +2427,28 @@ export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjec
    * Deregisters all listeners from updates for this Live Object.
    */
   unsubscribeAll(): void;
+
+  /**
+   * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
+   *
+   * @param event - The named event to listen for.
+   * @param callback - The event listener.
+   * @returns A {@link OnLiveObjectLifecycleEventResponse} object that allows the provided listener to be deregistered from future updates.
+   */
+  on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse;
+
+  /**
+   * Removes all registrations that match both the specified listener and the specified event.
+   *
+   * @param event - The named event.
+   * @param callback - The event listener.
+   */
+  off(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): void;
+
+  /**
+   * Deregisters all registrations, for all events and listeners.
+   */
+  offAll(): void;
 }
 
 /**
@@ -2205,6 +2469,16 @@ export declare interface SubscribeResponse {
    * Deregisters the listener passed to the `subscribe` call.
    */
   unsubscribe(): void;
+}
+
+/**
+ * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
+ */
+export declare interface OnLiveObjectLifecycleEventResponse {
+  /**
+   * Deregisters the listener passed to the `on` call.
+   */
+  off(): void;
 }
 
 /**
