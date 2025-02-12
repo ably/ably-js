@@ -33,7 +33,7 @@ export class BatchContextLiveCounter {
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
     if (typeof amount !== 'number') {
-      throw new this._client.ErrorInfo('Counter value decrement should be a number', 40013, 400);
+      throw new this._client.ErrorInfo('Counter value decrement should be a number', 40003, 400);
     }
 
     this.increment(-amount);

@@ -467,10 +467,10 @@ export class LiveObjects {
     // channel.modes is only populated on channel attachment, so use it only if it is set,
     // otherwise as a best effort use user provided channel options
     if (this._channel.modes != null && !this._channel.modes.includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40160, 400);
+      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400);
     }
     if (!this._client.Utils.allToLowerCase(this._channel.channelOptions.modes ?? []).includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40160, 400);
+      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400);
     }
   }
 

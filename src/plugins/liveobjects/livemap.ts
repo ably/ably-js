@@ -143,7 +143,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const client = liveObjects.getClient();
 
     if (typeof key !== 'string') {
-      throw new client.ErrorInfo('Map key should be string', 40013, 400);
+      throw new client.ErrorInfo('Map key should be string', 40003, 400);
     }
 
     const stateMessage = StateMessage.fromValues(
@@ -172,7 +172,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const client = liveObjects.getClient();
 
     if (typeof key !== 'string') {
-      throw new client.ErrorInfo('Map key should be string', 40013, 400);
+      throw new client.ErrorInfo('Map key should be string', 40003, 400);
     }
 
     if (
@@ -193,7 +193,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const client = liveObjects.getClient();
 
     if (entries !== undefined && (entries === null || typeof entries !== 'object')) {
-      throw new client.ErrorInfo('Map entries should be a key/value object', 40013, 400);
+      throw new client.ErrorInfo('Map entries should be a key/value object', 40003, 400);
     }
 
     Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(liveObjects, key, value));
@@ -368,7 +368,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply state operation with objectId=${op.objectId}, to this LiveMap with objectId=${this.getObjectId()}`,
-        50000,
+        92000,
         500,
       );
     }
@@ -426,7 +426,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       default:
         throw new this._client.ErrorInfo(
           `Invalid ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
-          50000,
+          92000,
           500,
         );
     }
@@ -441,7 +441,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (stateObject.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Invalid state object: state object objectId=${stateObject.objectId}; LiveMap objectId=${this.getObjectId()}`,
-        50000,
+        92000,
         500,
       );
     }
@@ -449,7 +449,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (stateObject.map?.semantics !== this._semantics) {
       throw new this._client.ErrorInfo(
         `Invalid state object: state object map semantics=${stateObject.map?.semantics}; LiveMap semantics=${this._semantics}`,
-        50000,
+        92000,
         500,
       );
     }
@@ -459,7 +459,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       if (stateObject.createOp.objectId !== this.getObjectId()) {
         throw new this._client.ErrorInfo(
           `Invalid state object: state object createOp objectId=${stateObject.createOp?.objectId}; LiveMap objectId=${this.getObjectId()}`,
-          50000,
+          92000,
           500,
         );
       }
@@ -467,7 +467,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       if (stateObject.createOp.action !== StateOperationAction.MAP_CREATE) {
         throw new this._client.ErrorInfo(
           `Invalid state object: state object createOp action=${stateObject.createOp?.action}; LiveMap objectId=${this.getObjectId()}`,
-          50000,
+          92000,
           500,
         );
       }
@@ -475,7 +475,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       if (stateObject.createOp.map?.semantics !== this._semantics) {
         throw new this._client.ErrorInfo(
           `Invalid state object: state object createOp map semantics=${stateObject.createOp.map?.semantics}; LiveMap semantics=${this._semantics}`,
-          50000,
+          92000,
           500,
         );
       }
@@ -621,7 +621,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   private _throwNoPayloadError(op: StateOperation): void {
     throw new this._client.ErrorInfo(
       `No payload found for ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
-      50000,
+      92000,
       500,
     );
   }
@@ -643,7 +643,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (this._semantics !== op.map?.semantics) {
       throw new this._client.ErrorInfo(
         `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${op.map?.semantics}`,
-        50000,
+        92000,
         500,
       );
     }
@@ -669,7 +669,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (Utils.isNil(op.data) || (Utils.isNil(op.data.value) && Utils.isNil(op.data.objectId))) {
       throw new ErrorInfo(
         `Invalid state data for MAP_SET op on objectId=${this.getObjectId()} on key=${op.key}`,
-        50000,
+        92000,
         500,
       );
     }
