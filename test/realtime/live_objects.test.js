@@ -4246,7 +4246,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           const root = await liveObjects.getRoot();
 
           const data = new Array(100).fill('a').join('');
-          const error = await expectRejectedWith(
+          const error = await expectToThrowAsync(
             async () => root.set('key', data),
             'Maximum size of state messages that can be published at once exceeded',
           );
