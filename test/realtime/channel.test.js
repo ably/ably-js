@@ -1882,7 +1882,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           transport.send = function (msg) {
             if (msg.action === 10) {
               try {
-                expect(msg.channelSerial).to.equal('channelSerial2');
+                expect(msg.channelSerial).to.equal('channelSerial');
                 resolve();
               } catch (error) {
                 reject(error);
