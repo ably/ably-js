@@ -101,11 +101,10 @@ export class LiveObjects {
   /**
    * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
    *
-   * Locally on the client it creates a zero-value object with the corresponding id and returns it.
-   * The object initialization with the initial value is expected to happen when the corresponding MAP_CREATE operation is echoed
-   * back to the client and applied to the object following the regular operation application procedure.
+   * Once the ACK message is received, the method returns the object from the local pool if it got created due to
+   * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally using the provided data and returns it.
    *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with a zero-value object created in the local pool.
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
    */
   async createMap<T extends API.LiveMapType>(entries?: T): Promise<LiveMap<T>> {
     this.throwIfMissingStatePublishMode();
@@ -134,11 +133,10 @@ export class LiveObjects {
   /**
    * Send a COUNTER_CREATE operation to the realtime system to create a new counter object in the pool.
    *
-   * Locally on the client it creates a zero-value object with the corresponding id and returns it.
-   * The object initialization with the initial value is expected to happen when the corresponding COUNTER_CREATE operation is echoed
-   * back to the client and applied to the object following the regular operation application procedure.
+   * Once the ACK message is received, the method returns the object from the local pool if it got created due to
+   * the echoed COUNTER_CREATE operation, or if it wasn't received yet, the method creates a new object locally using the provided data and returns it.
    *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with a zero-value object created in the local pool.
+   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
    */
   async createCounter(count?: number): Promise<LiveCounter> {
     this.throwIfMissingStatePublishMode();

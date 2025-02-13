@@ -143,7 +143,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   /**
-   * Alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
+   * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
    */
   async decrement(amount: number): Promise<void> {
     this._liveObjects.throwIfMissingStatePublishMode();
