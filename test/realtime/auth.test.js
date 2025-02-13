@@ -774,7 +774,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RSA4b1
      * @specpartial RSA4b - token expired
      */
-    Helper.testOnAllTransports(this, 'auth_token_expires', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'auth_token_expires', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           clientRealtime,
@@ -879,7 +879,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTN15a - attempt to reconnect and restore the connection state on token expire
      * @specpartial RSA10e - obtain new token from authcallback when previous expires
      */
-    Helper.testOnAllTransports(this, 'auth_tokenDetails_expiry_with_authcallback', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'auth_tokenDetails_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -928,7 +928,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @specpartial RTN15a - attempt to reconnect and restore the connection state on token expire
      * @specpartial RSA10e - obtain new token from authcallback when previous expires
      */
-    Helper.testOnAllTransports(this, 'auth_token_string_expiry_with_authcallback', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'auth_token_string_expiry_with_authcallback', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -975,7 +975,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RSA4a
      * @spec RSA4a2
      */
-    Helper.testOnAllTransports(this, 'auth_token_string_expiry_with_token', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'auth_token_string_expiry_with_token', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -1023,7 +1023,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RSA4a
      * @spec RSA4a2
      */
-    Helper.testOnAllTransports(this, 'auth_expired_token_string', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'auth_expired_token_string', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -1073,7 +1073,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTC8
      * @specskip
      */
-    Helper.testOnAllTransports.skip(this, 'reauth_authCallback', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols.skip(this, 'reauth_authCallback', function (realtimeOpts) {
       return function (done) {
         var helper = this.test.helper,
           realtime,
@@ -1586,7 +1586,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /** @nospec */
-    Helper.testOnAllTransports(this, 'authorize_immediately_after_init', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'authorize_immediately_after_init', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var realtime = helper.AblyRealtime({

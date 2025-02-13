@@ -170,7 +170,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTS3c
      * @spec RTL16
      */
-    Helper.testOnAllTransports(this, 'channelinit0', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelinit0', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -208,7 +208,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4
      */
-    Helper.testOnAllTransports(this, 'channelattach0', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattach0', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -235,7 +235,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4
      */
-    Helper.testOnAllTransports(this, 'channelattach2', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattach2', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -262,7 +262,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4
      * @spec RTL5
      */
-    Helper.testOnAllTransports(
+    Helper.testOnAllTransportsAndProtocols(
       this,
       'channelattach3',
       function (realtimeOpts) {
@@ -303,7 +303,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4d
      */
-    Helper.testOnAllTransports(this, 'channelattachempty', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattachempty', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -338,7 +338,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4d
      */
-    Helper.testOnAllTransports(this, 'channelattachinvalid', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattachinvalid', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -379,7 +379,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL6
      */
-    Helper.testOnAllTransports(this, 'publish_no_attach', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'publish_no_attach', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -409,7 +409,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @specpartial RTL6b - callback which is called with an error
      */
-    Helper.testOnAllTransports(this, 'channelattach_publish_invalid', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattach_publish_invalid', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -443,7 +443,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @nospec
      */
-    Helper.testOnAllTransports(this, 'channelattach_invalid_twice', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattach_invalid_twice', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -538,7 +538,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4k1
      * @spec RTL4m
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsBasicChannelsGet';
@@ -601,7 +601,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4m
      * @spec RTL16
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsBasicSetOptions';
@@ -656,7 +656,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL16
      * @spec RTL7c
      */
-    Helper.testOnAllTransports(this, 'subscribeAfterSetOptions', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'subscribeAfterSetOptions', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'subscribeAfterSetOptions';
@@ -732,7 +732,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /** @spec RTL16a */
-    Helper.testOnAllTransports(this, 'setOptionsCallbackBehaviour', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'setOptionsCallbackBehaviour', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'setOptionsCallbackBehaviour';
@@ -814,61 +814,65 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Verify modes is ignored when params.modes is present
      * @nospec
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelParamsModesAndChannelModes', function (realtimeOpts) {
-      return function (done) {
-        const helper = this.test.helper;
-        var testName = 'attachWithChannelParamsModesAndChannelModes';
-        try {
-          var realtime = helper.AblyRealtime(realtimeOpts);
-          realtime.connection.on('connected', function () {
-            var paramsModes = ['presence', 'subscribe'];
-            var params = {
-              modes: paramsModes.join(','),
-            };
-            var channelOptions = {
-              params: params,
-              modes: ['publish', 'presence_subscribe'],
-            };
-            var channel = realtime.channels.get(testName, channelOptions);
-            Helper.whenPromiseSettles(channel.attach(), function (err) {
-              if (err) {
-                helper.closeAndFinish(done, realtime, err);
-                return;
-              }
-              try {
-                helper.recordPrivateApi('read.channel.channelOptions');
-                expect(channel.channelOptions).to.deep.equal(channelOptions, 'Check requested channel options');
-                expect(channel.params).to.deep.equal(params, 'Check result params');
-                expect(channel.modes).to.deep.equal(paramsModes, 'Check result modes');
-              } catch (err) {
-                helper.closeAndFinish(done, realtime, err);
-                return;
-              }
+    Helper.testOnAllTransportsAndProtocols(
+      this,
+      'attachWithChannelParamsModesAndChannelModes',
+      function (realtimeOpts) {
+        return function (done) {
+          const helper = this.test.helper;
+          var testName = 'attachWithChannelParamsModesAndChannelModes';
+          try {
+            var realtime = helper.AblyRealtime(realtimeOpts);
+            realtime.connection.on('connected', function () {
+              var paramsModes = ['presence', 'subscribe'];
+              var params = {
+                modes: paramsModes.join(','),
+              };
+              var channelOptions = {
+                params: params,
+                modes: ['publish', 'presence_subscribe'],
+              };
+              var channel = realtime.channels.get(testName, channelOptions);
+              Helper.whenPromiseSettles(channel.attach(), function (err) {
+                if (err) {
+                  helper.closeAndFinish(done, realtime, err);
+                  return;
+                }
+                try {
+                  helper.recordPrivateApi('read.channel.channelOptions');
+                  expect(channel.channelOptions).to.deep.equal(channelOptions, 'Check requested channel options');
+                  expect(channel.params).to.deep.equal(params, 'Check result params');
+                  expect(channel.modes).to.deep.equal(paramsModes, 'Check result modes');
+                } catch (err) {
+                  helper.closeAndFinish(done, realtime, err);
+                  return;
+                }
 
-              var testRealtime = helper.AblyRealtime();
-              testRealtime.connection.on('connected', function () {
-                var testChannel = testRealtime.channels.get(testName);
-                async.series(
-                  [
-                    checkCanSubscribe(channel, testChannel),
-                    checkCanEnterPresence(channel),
-                    checkCantPublish(channel),
-                    checkCantPresenceSubscribe(channel, testChannel),
-                  ],
-                  function (err) {
-                    testRealtime.close();
-                    helper.closeAndFinish(done, realtime, err);
-                  },
-                );
+                var testRealtime = helper.AblyRealtime();
+                testRealtime.connection.on('connected', function () {
+                  var testChannel = testRealtime.channels.get(testName);
+                  async.series(
+                    [
+                      checkCanSubscribe(channel, testChannel),
+                      checkCanEnterPresence(channel),
+                      checkCantPublish(channel),
+                      checkCantPresenceSubscribe(channel, testChannel),
+                    ],
+                    function (err) {
+                      testRealtime.close();
+                      helper.closeAndFinish(done, realtime, err);
+                    },
+                  );
+                });
               });
             });
-          });
-          helper.monitorConnection(done, realtime);
-        } catch (err) {
-          helper.closeAndFinish(done, realtime, err);
-        }
-      };
-    });
+            helper.monitorConnection(done, realtime);
+          } catch (err) {
+            helper.closeAndFinish(done, realtime, err);
+          }
+        };
+      },
+    );
 
     /**
      * No spec items found for 'modes' property behavior (like preventing publish, entering presence, presence subscription)
@@ -877,7 +881,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4l
      * @spec RTL4m
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelModes', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'attachWithChannelModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelModes';
@@ -937,7 +941,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4l
      * @spec RTL4m
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsDeltaAndModes';

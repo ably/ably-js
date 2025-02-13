@@ -178,7 +178,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
     }
 
     function testCase(thisInDescribe, name, createSteps) {
-      Helper.testOnAllTransports(thisInDescribe, name, function (realtimeOpts) {
+      Helper.testOnAllTransportsAndProtocols(thisInDescribe, name, function (realtimeOpts) {
         return function (done) {
           const helper = this.test.helper;
           var _steps = createSteps(helper).slice();
