@@ -52,7 +52,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     const client = liveObjects.getClient();
 
     if (typeof amount !== 'number' || !isFinite(amount)) {
-      throw new client.ErrorInfo('Counter value increment should be a valid number', 40013, 400);
+      throw new client.ErrorInfo('Counter value increment should be a valid number', 40003, 400);
     }
 
     const stateMessage = StateMessage.fromValues(
@@ -77,7 +77,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     const client = liveObjects.getClient();
 
     if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
-      throw new client.ErrorInfo('Counter value should be a valid number', 40013, 400);
+      throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
     }
 
     const initialValueObj = LiveCounter.createInitialValueObject(count);
@@ -150,7 +150,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
     if (typeof amount !== 'number' || !isFinite(amount)) {
-      throw new this._client.ErrorInfo('Counter value decrement should be a valid number', 40013, 400);
+      throw new this._client.ErrorInfo('Counter value decrement should be a valid number', 40003, 400);
     }
 
     return this.increment(-amount);
@@ -163,7 +163,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply state operation with objectId=${op.objectId}, to this LiveCounter with objectId=${this.getObjectId()}`,
-        50000,
+        92000,
         500,
       );
     }
@@ -211,7 +211,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       default:
         throw new this._client.ErrorInfo(
           `Invalid ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
-          50000,
+          92000,
           500,
         );
     }
@@ -226,7 +226,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     if (stateObject.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Invalid state object: state object objectId=${stateObject.objectId}; LiveCounter objectId=${this.getObjectId()}`,
-        50000,
+        92000,
         500,
       );
     }
@@ -236,7 +236,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       if (stateObject.createOp.objectId !== this.getObjectId()) {
         throw new this._client.ErrorInfo(
           `Invalid state object: state object createOp objectId=${stateObject.createOp?.objectId}; LiveCounter objectId=${this.getObjectId()}`,
-          50000,
+          92000,
           500,
         );
       }
@@ -244,7 +244,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       if (stateObject.createOp.action !== StateOperationAction.COUNTER_CREATE) {
         throw new this._client.ErrorInfo(
           `Invalid state object: state object createOp action=${stateObject.createOp?.action}; LiveCounter objectId=${this.getObjectId()}`,
-          50000,
+          92000,
           500,
         );
       }
@@ -308,7 +308,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   private _throwNoPayloadError(op: StateOperation): void {
     throw new this._client.ErrorInfo(
       `No payload found for ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
-      50000,
+      92000,
       500,
     );
   }

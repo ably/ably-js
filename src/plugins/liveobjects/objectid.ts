@@ -39,25 +39,25 @@ export class ObjectId {
    */
   static fromString(client: BaseClient, objectId: string | null | undefined): ObjectId {
     if (client.Utils.isNil(objectId)) {
-      throw new client.ErrorInfo('Invalid object id string', 50000, 500);
+      throw new client.ErrorInfo('Invalid object id string', 92000, 500);
     }
 
     const [type, rest] = objectId.split(':');
     if (!type || !rest) {
-      throw new client.ErrorInfo('Invalid object id string', 50000, 500);
+      throw new client.ErrorInfo('Invalid object id string', 92000, 500);
     }
 
     if (!['map', 'counter'].includes(type)) {
-      throw new client.ErrorInfo(`Invalid object type in object id: ${objectId}`, 50000, 500);
+      throw new client.ErrorInfo(`Invalid object type in object id: ${objectId}`, 92000, 500);
     }
 
     const [hash, msTimestamp] = rest.split('@');
     if (!hash || !msTimestamp) {
-      throw new client.ErrorInfo('Invalid object id string', 50000, 500);
+      throw new client.ErrorInfo('Invalid object id string', 92000, 500);
     }
 
     if (!Number.isInteger(Number.parseInt(msTimestamp))) {
-      throw new client.ErrorInfo('Invalid object id string', 50000, 500);
+      throw new client.ErrorInfo('Invalid object id string', 92000, 500);
     }
 
     return new ObjectId(type as LiveObjectType, hash, Number.parseInt(msTimestamp));

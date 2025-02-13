@@ -188,11 +188,11 @@ export abstract class LiveObject<
    */
   protected _canApplyOperation(opOriginTimeserial: string | undefined, opSiteCode: string | undefined): boolean {
     if (!opOriginTimeserial) {
-      throw new this._client.ErrorInfo(`Invalid timeserial: ${opOriginTimeserial}`, 50000, 500);
+      throw new this._client.ErrorInfo(`Invalid timeserial: ${opOriginTimeserial}`, 92000, 500);
     }
 
     if (!opSiteCode) {
-      throw new this._client.ErrorInfo(`Invalid site code: ${opSiteCode}`, 50000, 500);
+      throw new this._client.ErrorInfo(`Invalid site code: ${opSiteCode}`, 92000, 500);
     }
 
     const siteTimeserial = this._siteTimeserials[opSiteCode];
