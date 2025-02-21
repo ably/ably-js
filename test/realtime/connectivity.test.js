@@ -136,7 +136,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       it('succeeds with plain url', function (done) {
         const helper = this.test.helper;
         Helper.whenPromiseSettles(
-          helper.AblyRealtime(options(helper, 'sandbox-rest.ably.io/time')).http.checkConnectivity(),
+          helper.AblyRealtime(options(helper, 'sandbox.realtime.ably-nonprod.net/time')).http.checkConnectivity(),
           function (err, res) {
             try {
               expect(
