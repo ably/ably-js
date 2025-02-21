@@ -279,7 +279,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         var realtime = new Ably.Realtime({ key: 'not_a.real:key', autoConnect: false });
         helper.recordPrivateApi('read.connectionManager.httpHosts');
         var defaultHost = realtime.connection.connectionManager.httpHosts[0];
-        expect(defaultHost).to.equal('rest.ably.io', 'Verify correct default rest host chosen');
+        expect(defaultHost).to.equal('main.realtime.ably.net', 'Verify correct default rest host chosen');
         realtime.close();
         done();
       } catch (err) {
@@ -340,8 +340,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     /**
      * Check changing the default fallback hosts and changing httpMaxRetryCount.
      *
-     * @spec RSC12
-     * @spec RTN17b2
+     * @spec REC2a2
      * @spec TO3k2
      * @spec TO3l5
      * @specpartial RSC11 - test override endpoint using restHost
@@ -473,7 +472,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       }
     });
 
-    /** @spec RTN17b2 */
+    /** @spec REC2c */
     it('init_fallbacks_once_connected', function (done) {
       const helper = this.test.helper;
       var realtime = helper.AblyRealtime({
