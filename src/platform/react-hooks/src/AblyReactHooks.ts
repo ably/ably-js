@@ -12,14 +12,20 @@ export type ChannelNameAndOptions = {
 export type ChannelNameAndAblyId = Pick<ChannelNameAndOptions, 'channelName' | 'ablyId'>;
 export type ChannelParameters = string | ChannelNameAndOptions;
 
-export const version = '2.5.0';
+export const version = '2.6.3';
 
-export function channelOptionsWithAgent(options?: Ably.ChannelOptions) {
+/**
+ * channel options for react-hooks
+ */
+export function channelOptionsForReactHooks(options?: Ably.ChannelOptions): Ably.ChannelOptions {
   return {
     ...options,
     params: {
       ...options?.params,
       agent: `react-hooks/${version}`,
     },
+    // we explicitly attach channels in React hooks (useChannel, usePresence, usePresenceListener)
+    // to avoid situations where implicit attachment could cause errors (when connection state is failed or disconnected)
+    attachOnSubscribe: false,
   };
 }

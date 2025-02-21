@@ -3,54 +3,12 @@ import * as API from '../../../../ably';
 import { PresenceMessagePlugin } from '../client/modularplugins';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
-import Message, { fromValues as messageFromValues, fromValuesArray as messagesFromValuesArray } from './message';
-import PresenceMessage, {
-  fromValues as presenceMessageFromValues,
-  fromValuesArray as presenceMessagesFromValuesArray,
-} from './presencemessage';
+import { WireMessage } from './message';
+import PresenceMessage, { WirePresenceMessage } from './presencemessage';
+import { flags, flagNames, channelModes, ActionName } from './protocolmessagecommon';
+import type { Properties } from '../util/utils';
 
-export const actions = {
-  HEARTBEAT: 0,
-  ACK: 1,
-  NACK: 2,
-  CONNECT: 3,
-  CONNECTED: 4,
-  DISCONNECT: 5,
-  DISCONNECTED: 6,
-  CLOSE: 7,
-  CLOSED: 8,
-  ERROR: 9,
-  ATTACH: 10,
-  ATTACHED: 11,
-  DETACH: 12,
-  DETACHED: 13,
-  PRESENCE: 14,
-  MESSAGE: 15,
-  SYNC: 16,
-  AUTH: 17,
-  ACTIVATE: 18,
-};
-
-export const ActionName: string[] = [];
-Object.keys(actions).forEach(function (name) {
-  ActionName[(actions as { [key: string]: number })[name]] = name;
-});
-
-const flags: { [key: string]: number } = {
-  /* Channel attach state flags */
-  HAS_PRESENCE: 1 << 0,
-  HAS_BACKLOG: 1 << 1,
-  RESUMED: 1 << 2,
-  TRANSIENT: 1 << 4,
-  ATTACH_RESUME: 1 << 5,
-  /* Channel mode flags */
-  PRESENCE: 1 << 16,
-  PUBLISH: 1 << 17,
-  SUBSCRIBE: 1 << 18,
-  PRESENCE_SUBSCRIBE: 1 << 19,
-};
-const flagNames = Object.keys(flags);
-flags.MODE_ALL = flags.PRESENCE | flags.PUBLISH | flags.SUBSCRIBE | flags.PRESENCE_SUBSCRIBE;
+export const serialize = Utils.encodeBody;
 
 function toStringArray(array?: any[]): string {
   const result = [];
@@ -61,10 +19,6 @@ function toStringArray(array?: any[]): string {
   }
   return '[ ' + result.join(', ') + ' ]';
 }
-
-export const channelModes = ['PRESENCE', 'PUBLISH', 'SUBSCRIBE', 'PRESENCE_SUBSCRIBE'];
-
-export const serialize = Utils.encodeBody;
 
 export function deserialize(
   serialized: unknown,
@@ -80,35 +34,31 @@ export function fromDeserialized(
   deserialized: Record<string, unknown>,
   presenceMessagePlugin: PresenceMessagePlugin | null,
 ): ProtocolMessage {
-  const error = deserialized.error;
-  if (error) {
-    deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
+  let error: ErrorInfo | undefined;
+  if (deserialized.error) {
+    error = ErrorInfo.fromValues(deserialized.error as ErrorInfo);
   }
 
-  const messages = deserialized.messages as Message[];
-  if (messages) {
-    for (let i = 0; i < messages.length; i++) {
-      messages[i] = messageFromValues(messages[i], { stringifyAction: true });
-    }
+  let messages: WireMessage[] | undefined;
+  if (deserialized.messages) {
+    messages = WireMessage.fromValuesArray(deserialized.messages as Array<Properties<WireMessage>>);
   }
 
-  const presence = presenceMessagePlugin ? (deserialized.presence as PresenceMessage[]) : undefined;
-  if (presenceMessagePlugin) {
-    if (presence && presenceMessagePlugin) {
-      for (let i = 0; i < presence.length; i++) {
-        presence[i] = presenceMessagePlugin.presenceMessageFromValues(presence[i], true);
-      }
-    }
+  let presence: WirePresenceMessage[] | undefined;
+  if (presenceMessagePlugin && deserialized.presence) {
+    presence = presenceMessagePlugin.WirePresenceMessage.fromValuesArray(
+      deserialized.presence as Array<Properties<WirePresenceMessage>>,
+    );
   }
 
-  return Object.assign(new ProtocolMessage(), { ...deserialized, presence });
+  return Object.assign(new ProtocolMessage(), { ...deserialized, presence, messages, error });
 }
 
 /**
  * Used by the tests.
  */
 export function fromDeserializedIncludingDependencies(deserialized: Record<string, unknown>): ProtocolMessage {
-  return fromDeserialized(deserialized, { presenceMessageFromValues, presenceMessagesFromValuesArray });
+  return fromDeserialized(deserialized, { PresenceMessage, WirePresenceMessage });
 }
 
 export function fromValues(values: unknown): ProtocolMessage {
@@ -126,9 +76,9 @@ export function stringify(msg: any, presenceMessagePlugin: PresenceMessagePlugin
     if (msg[attribute] !== undefined) result += '; ' + attribute + '=' + msg[attribute];
   }
 
-  if (msg.messages) result += '; messages=' + toStringArray(messagesFromValuesArray(msg.messages));
+  if (msg.messages) result += '; messages=' + toStringArray(WireMessage.fromValuesArray(msg.messages));
   if (msg.presence && presenceMessagePlugin)
-    result += '; presence=' + toStringArray(presenceMessagePlugin.presenceMessagesFromValuesArray(msg.presence));
+    result += '; presence=' + toStringArray(presenceMessagePlugin.WirePresenceMessage.fromValuesArray(msg.presence));
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
   if (msg.flags) result += '; flags=' + flagNames.filter(msg.hasFlag).join(',');
@@ -159,9 +109,9 @@ class ProtocolMessage {
   channel?: string;
   channelSerial?: string | null;
   msgSerial?: number;
-  messages?: Message[];
+  messages?: WireMessage[];
   // This will be undefined if we skipped decoding this property due to user not requesting presence functionality — see `fromDeserialized`
-  presence?: PresenceMessage[];
+  presence?: WirePresenceMessage[];
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
 
@@ -169,7 +119,7 @@ class ProtocolMessage {
     return ((this.flags as number) & flags[flag]) > 0;
   };
 
-  setFlag(flag: API.ChannelMode): number {
+  setFlag(flag: keyof typeof flags): number {
     return (this.flags = (this.flags as number) | flags[flag]);
   }
 

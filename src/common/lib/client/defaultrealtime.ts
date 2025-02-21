@@ -11,10 +11,8 @@ import RealtimePresence from './realtimepresence';
 import { DefaultPresenceMessage } from '../types/defaultpresencemessage';
 import WebSocketTransport from '../transport/websockettransport';
 import { FilteredSubscriptions } from './filteredsubscriptions';
-import {
-  fromValues as presenceMessageFromValues,
-  fromValuesArray as presenceMessagesFromValuesArray,
-} from '../types/presencemessage';
+import { PresenceMap } from './presencemap';
+import PresenceMessage, { WirePresenceMessage } from '../types/presencemessage';
 import { Http } from 'common/types/http';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
@@ -37,8 +35,8 @@ export class DefaultRealtime extends BaseRealtime {
         MsgPack,
         RealtimePresence: {
           RealtimePresence,
-          presenceMessageFromValues,
-          presenceMessagesFromValuesArray,
+          PresenceMessage,
+          WirePresenceMessage,
         },
         WebSocketTransport,
         MessageInteractions: FilteredSubscriptions,
@@ -69,4 +67,5 @@ export class DefaultRealtime extends BaseRealtime {
 
   // Used by tests
   static _Http = Http;
+  static _PresenceMap = PresenceMap;
 }

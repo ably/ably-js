@@ -89,9 +89,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       var presenceBool = presenceMessages.find(function (msg) {
         return msg.clientId == 'client_bool';
       });
-      expect(JSON.parse(JSON.stringify(presenceBool)).action).to.equal(1); // present
+      expect(JSON.parse(JSON.stringify(await presenceBool.encode({}))).action).to.equal(1); // present
       presenceBool.action = 'leave';
-      expect(JSON.parse(JSON.stringify(presenceBool)).action).to.equal(3); // leave
+      expect(JSON.parse(JSON.stringify(await presenceBool.encode({}))).action).to.equal(3); // leave
     });
 
     /**

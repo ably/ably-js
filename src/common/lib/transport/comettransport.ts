@@ -1,6 +1,6 @@
 import * as Utils from '../util/utils';
+import { actions } from '../types/protocolmessagecommon';
 import ProtocolMessage, {
-  actions,
   fromValues as protocolMessageFromValues,
   fromDeserialized as protocolMessageFromDeserialized,
 } from '../types/protocolmessage';

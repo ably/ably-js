@@ -2,13 +2,11 @@ import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import RestPresence from './restpresence';
 import Message, {
-  encodeArray as encodeMessagesArray,
   serialize as serializeMessage,
   getMessagesSize,
-  CipherOptions,
-  fromValues as messageFromValues,
-  fromValuesArray as messagesFromValuesArray,
+  encodeArray as encodeMessagesArray,
 } from '../types/message';
+import { CipherOptions } from '../types/basemessage';
 import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
@@ -74,13 +72,13 @@ class RestChannel {
 
     if (typeof first === 'string' || first === null) {
       /* (name, data, ...) */
-      messages = [messageFromValues({ name: first, data: second })];
+      messages = [Message.fromValues({ name: first, data: second })];
       params = args[2];
     } else if (Utils.isObject(first)) {
-      messages = [messageFromValues(first)];
+      messages = [Message.fromValues(first)];
       params = args[1];
     } else if (Array.isArray(first)) {
-      messages = messagesFromValuesArray(first);
+      messages = Message.fromValuesArray(first);
       params = args[1];
     } else {
       throw new ErrorInfo(
@@ -110,10 +108,10 @@ class RestChannel {
       });
     }
 
-    await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
+    const wireMessages = await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
 
     /* RSL1i */
-    const size = getMessagesSize(messages),
+    const size = getMessagesSize(wireMessages),
       maxMessageSize = options.maxMessageSize;
     if (size > maxMessageSize) {
       throw new ErrorInfo(
@@ -127,7 +125,7 @@ class RestChannel {
       );
     }
 
-    await this._publish(serializeMessage(messages, client._MsgPack, format), headers, params);
+    await this._publish(serializeMessage(wireMessages, client._MsgPack, format), headers, params);
   }
 
   async _publish(requestBody: RequestBody | null, headers: Record<string, string>, params: any): Promise<void> {

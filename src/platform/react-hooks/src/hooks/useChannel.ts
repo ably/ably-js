@@ -4,6 +4,7 @@ import { ChannelParameters } from '../AblyReactHooks.js';
 import { useAbly } from './useAbly.js';
 import { useStateErrors } from './useStateErrors.js';
 import { useChannelInstance } from './useChannelInstance.js';
+import { useChannelAttach } from './useChannelAttach.js';
 
 export type AblyMessageCallback = Ably.messageCallback<Ably.Message>;
 
@@ -81,6 +82,8 @@ export function useChannel(
       !skip && subscribeArgs && handleChannelUnmount(channel, ...subscribeArgs);
     };
   }, [channelEvent, channel, skip]);
+
+  useChannelAttach(channel, channelHookOptions.ablyId, skip);
 
   return { channel, publish, ably, connectionError, channelError };
 }

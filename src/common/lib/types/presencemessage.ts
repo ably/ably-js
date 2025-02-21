@@ -1,108 +1,68 @@
 import Logger from '../util/logger';
-import Platform from 'common/platform';
-import { encode as encodeMessage, decode as decodeMessage, getMessagesSize, CipherOptions } from './message';
-import * as Utils from '../util/utils';
+import { BaseMessage, encode, decode, wireToJSON, normalizeCipherOptions, CipherOptions, strMsg } from './basemessage';
 import * as API from '../../../../ably';
-import { MsgPack } from 'common/types/msgpack';
+import * as Utils from '../util/utils';
+
+import type { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
+import type { Properties } from '../util/utils';
+import type RestChannel from '../client/restchannel';
+import type RealtimeChannel from '../client/realtimechannel';
+import type { ChannelOptions } from '../../types/channel';
+type Channel = RestChannel | RealtimeChannel;
 
 const actions = ['absent', 'present', 'enter', 'leave', 'update'];
 
-function toActionValue(actionString: string) {
-  return actions.indexOf(actionString);
-}
-
 export async function fromEncoded(
   logger: Logger,
-  encoded: unknown,
-  options?: API.ChannelOptions,
+  Crypto: IUntypedCryptoStatic | null,
+  encoded: WirePresenceMessage,
+  inputOptions?: API.ChannelOptions,
 ): Promise<PresenceMessage> {
-  const msg = fromValues(encoded as PresenceMessage | Record<string, unknown>, true);
-  /* if decoding fails at any point, catch and return the message decoded to
-   * the fullest extent possible */
-  try {
-    await decode(msg, options ?? {});
-  } catch (e) {
-    Logger.logAction(logger, Logger.LOG_ERROR, 'PresenceMessage.fromEncoded()', (e as Error).toString());
-  }
-  return msg;
+  const options = normalizeCipherOptions(Crypto, logger, inputOptions ?? null);
+  const wpm = WirePresenceMessage.fromValues(encoded);
+  return wpm.decode(options, logger);
 }
 
 export async function fromEncodedArray(
   logger: Logger,
-  encodedArray: unknown[],
+  Crypto: IUntypedCryptoStatic | null,
+  encodedArray: WirePresenceMessage[],
   options?: API.ChannelOptions,
 ): Promise<PresenceMessage[]> {
   return Promise.all(
     encodedArray.map(function (encoded) {
-      return fromEncoded(logger, encoded, options);
+      return fromEncoded(logger, Crypto, encoded, options);
     }),
   );
 }
 
-export function fromValues(
-  values: PresenceMessage | Record<string, unknown>,
-  stringifyAction?: boolean,
-): PresenceMessage {
-  if (stringifyAction) {
-    values.action = actions[values.action as number];
-  }
-  return Object.assign(new PresenceMessage(), values);
+// these forms of the functions are used internally when we have a channel instance
+// already, so don't need to normalise channel options
+export async function _fromEncoded(
+  encoded: Properties<WirePresenceMessage>,
+  channel: Channel,
+): Promise<PresenceMessage> {
+  return WirePresenceMessage.fromValues(encoded).decode(channel.channelOptions, channel.logger);
 }
 
-export { encodeMessage as encode };
-export const decode = decodeMessage;
-
-export async function fromResponseBody(
-  body: Record<string, unknown>[],
-  options: CipherOptions,
-  logger: Logger,
-  MsgPack: MsgPack | null,
-  format?: Utils.Format,
+export async function _fromEncodedArray(
+  encodedArray: Properties<WirePresenceMessage>[],
+  channel: Channel,
 ): Promise<PresenceMessage[]> {
-  const messages: PresenceMessage[] = [];
-  if (format) {
-    body = Utils.decodeBody(body, MsgPack, format);
-  }
-
-  for (let i = 0; i < body.length; i++) {
-    const msg = (messages[i] = fromValues(body[i], true));
-    try {
-      await decode(msg, options);
-    } catch (e) {
-      Logger.logAction(logger, Logger.LOG_ERROR, 'PresenceMessage.fromResponseBody()', (e as Error).toString());
-    }
-  }
-  return messages;
+  return Promise.all(
+    encodedArray.map(function (encoded) {
+      return _fromEncoded(encoded, channel);
+    }),
+  );
 }
 
-export function fromValuesArray(values: unknown[]): PresenceMessage[] {
-  const count = values.length,
-    result = new Array(count);
-  for (let i = 0; i < count; i++) result[i] = fromValues(values[i] as Record<string, unknown>);
-  return result;
+// for tree-shakability
+export function fromValues(values: Properties<PresenceMessage>) {
+  return PresenceMessage.fromValues(values);
 }
 
-export function fromData(data: unknown): PresenceMessage {
-  if (data instanceof PresenceMessage) {
-    return data;
-  }
-  return fromValues({
-    data,
-  });
-}
-
-export { getMessagesSize };
-
-class PresenceMessage {
-  action?: string | number;
-  id?: string;
-  timestamp?: number;
-  clientId?: string;
-  connectionId?: string;
-  data?: string | Buffer | Uint8Array;
-  encoding?: string;
-  extras?: any;
-  size?: number;
+class PresenceMessage extends BaseMessage {
+  action?: string;
 
   /* Returns whether this presenceMessage is synthesized, i.e. was not actually
    * sent by the connection (usually means a leave event sent 15s after a
@@ -127,65 +87,65 @@ class PresenceMessage {
     };
   }
 
-  /**
-   * Overload toJSON() to intercept JSON.stringify()
-   * @return {*}
-   */
-  toJSON(): {
-    id?: string;
-    clientId?: string;
-    action: number;
-    data: string | Buffer | Uint8Array;
-    encoding?: string;
-    extras?: any;
-  } {
-    /* encode data to base64 if present and we're returning real JSON;
-     * although msgpack calls toJSON(), we know it is a stringify()
-     * call if it has a non-empty arguments list */
-    let data = this.data as string | Buffer | Uint8Array;
-    let encoding = this.encoding;
-    if (data && Platform.BufferUtils.isBuffer(data)) {
-      if (arguments.length > 0) {
-        /* stringify call */
-        encoding = encoding ? encoding + '/base64' : 'base64';
-        data = Platform.BufferUtils.base64Encode(data);
-      } else {
-        /* Called by msgpack. toBuffer returns a datatype understandable by
-         * that platform's msgpack implementation (Buffer in node, Uint8Array
-         * in browsers) */
-        data = Platform.BufferUtils.toBuffer(data);
-      }
-    }
-    return {
-      id: this.id,
-      clientId: this.clientId,
-      /* Convert presence action back to an int for sending to Ably */
-      action: toActionValue(this.action as string),
-      data: data,
-      encoding: encoding,
-      extras: this.extras,
-    };
+  async encode(options: CipherOptions): Promise<WirePresenceMessage> {
+    const res = Object.assign(new WirePresenceMessage(), this, {
+      action: actions.indexOf(this.action || 'present'),
+    });
+    return encode(res, options);
   }
 
-  toString(): string {
-    let result = '[PresenceMessage';
-    result += '; action=' + this.action;
-    if (this.id) result += '; id=' + this.id;
-    if (this.timestamp) result += '; timestamp=' + this.timestamp;
-    if (this.clientId) result += '; clientId=' + this.clientId;
-    if (this.connectionId) result += '; connectionId=' + this.connectionId;
-    if (this.encoding) result += '; encoding=' + this.encoding;
-    if (this.data) {
-      if (typeof this.data == 'string') result += '; data=' + this.data;
-      else if (Platform.BufferUtils.isBuffer(this.data))
-        result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(this.data);
-      else result += '; data (json)=' + JSON.stringify(this.data);
+  static fromValues(values: Properties<PresenceMessage>): PresenceMessage {
+    return Object.assign(new PresenceMessage(), values);
+  }
+
+  static fromValuesArray(values: Properties<PresenceMessage>[]): PresenceMessage[] {
+    return values.map((v) => PresenceMessage.fromValues(v));
+  }
+
+  static fromData(data: any): PresenceMessage {
+    if (data instanceof PresenceMessage) {
+      return data;
     }
-    if (this.extras) {
-      result += '; extras=' + JSON.stringify(this.extras);
+    return PresenceMessage.fromValues({
+      data,
+    });
+  }
+
+  toString() {
+    return strMsg(this, 'PresenceMessage');
+  }
+}
+
+export class WirePresenceMessage extends BaseMessage {
+  action?: number;
+
+  toJSON(...args: any[]) {
+    return wireToJSON.call(this, ...args);
+  }
+
+  static fromValues(values: Properties<WirePresenceMessage>): WirePresenceMessage {
+    return Object.assign(new WirePresenceMessage(), values);
+  }
+
+  static fromValuesArray(values: Properties<WirePresenceMessage>[]): WirePresenceMessage[] {
+    return values.map((v) => WirePresenceMessage.fromValues(v));
+  }
+
+  async decode(channelOptions: ChannelOptions, logger: Logger): Promise<PresenceMessage> {
+    const res = Object.assign(new PresenceMessage(), {
+      ...this,
+      action: actions[this.action!],
+    });
+    try {
+      await decode(res, channelOptions);
+    } catch (e) {
+      Logger.logAction(logger, Logger.LOG_ERROR, 'WirePresenceMessage.decode()', Utils.inspectError(e));
     }
-    result += ']';
-    return result;
+    return res;
+  }
+
+  toString() {
+    return strMsg(this, 'WirePresenceMessage');
   }
 }
 

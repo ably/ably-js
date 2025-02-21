@@ -264,9 +264,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
           helper.recordPrivateApi('call.Message.encode');
-          Helper.whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
-            /* compare */
-            testMessageEquality(done, helper, testMessage, encryptedMessage);
+          Helper.whenPromiseSettles(testMessage.encode(channelOpts), function (_, encrypted) {
+            testMessageEquality(done, helper, encrypted, encryptedMessage);
           });
         },
       );
@@ -288,9 +287,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         function (channelOpts, testMessage, encryptedMessage) {
           /* encrypt plaintext message; encode() also to handle data that is not already string or buffer */
           helper.recordPrivateApi('call.Message.encode');
-          Helper.whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
-            /* compare */
-            testMessageEquality(done, helper, testMessage, encryptedMessage);
+          Helper.whenPromiseSettles(testMessage.encode(channelOpts), function (_, encrypted) {
+            testMessageEquality(done, helper, encrypted, encryptedMessage);
           });
         },
       );
@@ -387,15 +385,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
             helper.recordPrivateApi('call.Message.encode');
-            Helper.whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
+            Helper.whenPromiseSettles(testMessage.encode(channelOpts), function (_, encrypted) {
               helper.recordPrivateApi('call.msgpack.encode');
-              var msgpackFromEncoded = msgpack.encode(testMessage);
+              var msgpackFromEncoded = msgpack.encode(encrypted);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               helper.recordPrivateApi('call.BufferUtils.base64Decode');
               helper.recordPrivateApi('call.msgpack.decode');
-              var messageFromMsgpack = Message.fromValues(
+              var messageFromMsgpack = Message.fromWireProtocol(
                 msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
-                { stringifyAction: true },
               );
 
               try {
@@ -432,15 +429,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           2,
           false,
           function (channelOpts, testMessage, encryptedMessage, msgpackEncodedMessage) {
-            Helper.whenPromiseSettles(Message.encode(testMessage, channelOpts), function () {
+            Helper.whenPromiseSettles(testMessage.encode(channelOpts), function (_, encrypted) {
               helper.recordPrivateApi('call.msgpack.encode');
-              var msgpackFromEncoded = msgpack.encode(testMessage);
+              var msgpackFromEncoded = msgpack.encode(encrypted);
               var msgpackFromEncrypted = msgpack.encode(encryptedMessage);
               helper.recordPrivateApi('call.BufferUtils.base64Decode');
               helper.recordPrivateApi('call.msgpack.decode');
-              var messageFromMsgpack = Message.fromValues(
+              var messageFromMsgpack = Message.fromWireProtocol(
                 msgpack.decode(BufferUtils.base64Decode(msgpackEncodedMessage)),
-                { stringifyAction: true },
               );
 
               try {
@@ -771,6 +767,31 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           },
         );
       });
+    });
+
+    /**
+     * @spec RSL5a
+     */
+    it('encrypted history', async function () {
+      if (!Crypto) {
+        done(new Error('Encryption not supported'));
+        return;
+      }
+
+      const helper = this.test.helper,
+        rest = helper.AblyRest(),
+        channelName = 'encrypted_history',
+        messageText = 'Test message';
+
+      const key = await Crypto.generateRandomKey();
+      const channel = rest.channels.get(channelName, { cipher: { key: key } });
+      await channel.publish('event0', messageText);
+      let items;
+      await helper.waitFor(async () => {
+        items = (await channel.history()).items;
+        return items.length > 0;
+      }, 10_000);
+      expect(items[0].data).to.equal(messageText);
     });
 
     /**

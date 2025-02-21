@@ -853,34 +853,66 @@ declare namespace ChannelModes {
   /**
    * The client can publish messages.
    */
-  type PUBLISH = 'PUBLISH';
+  type PUBLISH = 'PUBLISH' | 'publish';
   /**
    * The client can subscribe to messages.
    */
-  type SUBSCRIBE = 'SUBSCRIBE';
+  type SUBSCRIBE = 'SUBSCRIBE' | 'subscribe';
   /**
    * The client can enter the presence set.
    */
-  type PRESENCE = 'PRESENCE';
+  type PRESENCE = 'PRESENCE' | 'presence';
   /**
    * The client can receive presence messages.
    */
-  type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
-  /**
-   * The client is resuming an existing connection.
-   */
-  type ATTACH_RESUME = 'ATTACH_RESUME';
+  type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE' | 'presence_subscribe';
 }
 
 /**
  * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
+ *
+ * **Note:** This type admits uppercase or lowercase values for reasons of backwards compatibility. In the next major release of this SDK, it will be merged with {@link ResolvedChannelMode} and only admit lowercase values; see [this GitHub issue](https://github.com/ably/ably-js/issues/1954).
  */
 export type ChannelMode =
   | ChannelModes.PUBLISH
   | ChannelModes.SUBSCRIBE
   | ChannelModes.PRESENCE
-  | ChannelModes.PRESENCE_SUBSCRIBE
-  | ChannelModes.ATTACH_RESUME;
+  | ChannelModes.PRESENCE_SUBSCRIBE;
+
+/**
+ * The `ResolvedChannelModes` namespace describes the possible values of the {@link ResolvedChannelMode} type.
+ */
+declare namespace ResolvedChannelModes {
+  /**
+   * The client can publish messages.
+   */
+  type PUBLISH = 'publish';
+  /**
+   * The client can subscribe to messages.
+   */
+  type SUBSCRIBE = 'subscribe';
+  /**
+   * The client can enter the presence set.
+   */
+  type PRESENCE = 'presence';
+  /**
+   * The client can receive presence messages.
+   */
+  type PRESENCE_SUBSCRIBE = 'presence_subscribe';
+}
+
+/**
+ * Describes the configuration that a {@link RealtimeChannel} is using, as returned by {@link RealtimeChannel.modes}.
+ *
+ * This type is the same as the {@link ChannelMode} type but with all of the values lowercased.
+ *
+ * **Note:** This type exists for reasons of backwards compatibility. In the next major release of this SDK, it will be merged with {@link ChannelMode}; see [this GitHub issue](https://github.com/ably/ably-js/issues/1954).
+ */
+export type ResolvedChannelMode =
+  | ResolvedChannelModes.PUBLISH
+  | ResolvedChannelModes.SUBSCRIBE
+  | ResolvedChannelModes.PRESENCE
+  | ResolvedChannelModes.PRESENCE_SUBSCRIBE;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
@@ -898,6 +930,13 @@ export interface ChannelOptions {
    * An array of {@link ChannelMode} objects.
    */
   modes?: ChannelMode[];
+  /**
+   *  A boolean which determines whether calling subscribe
+   *  on a channel or presence object should trigger an implicit attach. Defaults to `true`
+   *
+   *  Note: this option is for realtime client libraries only
+   */
+  attachOnSubscribe?: boolean;
 }
 
 /**
@@ -2088,9 +2127,9 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   params: ChannelParams;
   /**
-   * An array of {@link ChannelMode} objects.
+   * An array of {@link ResolvedChannelMode} objects.
    */
-  modes: ChannelMode[];
+  modes: ResolvedChannelMode[];
   /**
    * Deregisters the given listener for the specified event name. This removes an earlier event-specific subscription.
    *
@@ -2336,6 +2375,7 @@ export interface Message {
   name?: string;
   /**
    * Timestamp of when the message was received by Ably, as milliseconds since the Unix epoch.
+   * (This is the timestamp of the current version of the message)
    */
   timestamp?: number;
   /**
@@ -2343,27 +2383,32 @@ export interface Message {
    */
   action?: MessageAction;
   /**
-   * This message's unique serial.
+   * This message's unique serial (an identifier that will be the same in all future
+   * updates of this message).
    */
   serial?: string;
   /**
-   * The serial of the message that this message is a reference to.
+   * If this message references another, the serial of that message.
    */
   refSerial?: string;
   /**
-   * The type of reference this message is, in relation to the message it references.
+   * If this message references another, the type of reference that is.
    */
   refType?: string;
   /**
-   * If an `update` operation was applied to this message, this will be the timestamp the update occurred.
+   * The timestamp of the very first version of a given message (will differ from
+   * createdAt only if the message has been updated or deleted).
    */
-  updatedAt?: number;
+  createdAt?: number;
   /**
-   * The serial of the operation that updated this message.
+   * The version of the message, lexicographically-comparable with other versions (that
+   * share the same serial) Will differ from the serial only if the message has been
+   * updated or deleted.
    */
-  updateSerial?: string;
+  version?: string;
   /**
-   * If this message resulted from an operation, this will contain the operation details.
+   * In the case of an updated or deleted message, this will contain metadata about the
+   * update or delete operation.
    */
   operation?: Operation;
 }
@@ -2391,10 +2436,6 @@ export interface Operation {
  */
 declare namespace MessageActions {
   /**
-   * Message action has not been set.
-   */
-  type MESSAGE_UNSET = 'message.unset';
-  /**
    * Message action for a newly created message.
    */
   type MESSAGE_CREATE = 'message.create';
@@ -2407,30 +2448,25 @@ declare namespace MessageActions {
    */
   type MESSAGE_DELETE = 'message.delete';
   /**
-   * Message action for a newly created annotation.
-   */
-  type ANNOTATION_CREATE = 'annotation.create';
-  /**
-   * Message action for a deleted annotation.
-   */
-  type ANNOTATION_DELETE = 'annotation.delete';
-  /**
    * Message action for a meta-message that contains channel occupancy information.
    */
   type META_OCCUPANCY = 'meta.occupancy';
+  /**
+   * Message action for a message containing the latest rolled-up summary of annotations
+   * that have been made to this message.
+   */
+  type MESSAGE_SUMMARY = 'message.summary';
 }
 
 /**
  * Describes the possible action types used on an {@link Message}.
  */
 export type MessageAction =
-  | MessageActions.MESSAGE_UNSET
   | MessageActions.MESSAGE_CREATE
   | MessageActions.MESSAGE_UPDATE
   | MessageActions.MESSAGE_DELETE
-  | MessageActions.ANNOTATION_CREATE
-  | MessageActions.ANNOTATION_DELETE
-  | MessageActions.META_OCCUPANCY;
+  | MessageActions.META_OCCUPANCY
+  | MessageActions.MESSAGE_SUMMARY;
 
 /**
  * A message received from Ably.
@@ -2520,9 +2556,8 @@ export interface PresenceMessageStatic {
    * Initialises a `PresenceMessage` from a `PresenceMessage`-like object.
    *
    * @param values - The values to intialise the `PresenceMessage` from.
-   * @param stringifyAction - Whether to convert the `action` field from a number to a string.
    */
-  fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage;
+  fromValues(values: Partial<Pick<PresenceMessage, 'clientId' | 'data' | 'extras'>>): PresenceMessage;
 }
 
 /**
