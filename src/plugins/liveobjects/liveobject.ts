@@ -77,7 +77,7 @@ export abstract class LiveObject<
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
-    this._liveObjects.throwIfMissingStateSubscribeMode();
+    this._liveObjects.throwIfInvalidAccessApiConfiguration();
 
     this._subscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
 
@@ -89,7 +89,7 @@ export abstract class LiveObject<
   }
 
   unsubscribe(listener: (update: TUpdate) => void): void {
-    // can allow calling this public method without checking for state modes on the channel as the result of this method is not dependant on them
+    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
 
     // current implementation of the EventEmitter will remove all listeners if .off is called without arguments or with nullish arguments.
     // or when called with just an event argument, it will remove all listeners for the event.
@@ -102,12 +102,12 @@ export abstract class LiveObject<
   }
 
   unsubscribeAll(): void {
-    // can allow calling this public method without checking for state modes on the channel as the result of this method is not dependant on them
+    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._subscriptions.off(LiveObjectSubscriptionEvent.updated);
   }
 
   on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse {
-    // we don't require any specific channel mode to be set to call this public method
+    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._lifecycleEvents.on(event, callback);
 
     const off = () => {
@@ -118,7 +118,7 @@ export abstract class LiveObject<
   }
 
   off(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): void {
-    // we don't require any specific channel mode to be set to call this public method
+    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
 
     // prevent accidentally calling .off without any arguments on an EventEmitter and removing all callbacks
     if (this._client.Utils.isNil(event) && this._client.Utils.isNil(callback)) {
@@ -129,7 +129,7 @@ export abstract class LiveObject<
   }
 
   offAll(): void {
-    // we don't require any specific channel mode to be set to call this public method
+    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._lifecycleEvents.off();
   }
 

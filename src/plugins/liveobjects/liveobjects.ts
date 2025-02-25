@@ -71,7 +71,7 @@ export class LiveObjects {
    * This is useful when working with LiveObjects on multiple channels with different underlying data.
    */
   async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
-    this.throwIfMissingStateSubscribeMode();
+    this.throwIfInvalidAccessApiConfiguration();
 
     // if we're not synced yet, wait for SYNC sequence to finish before returning root
     if (this._state !== LiveObjectsState.synced) {
@@ -85,7 +85,7 @@ export class LiveObjects {
    * Provides access to the synchronous write API for LiveObjects that can be used to batch multiple operations together in a single channel message.
    */
   async batch(callback: BatchCallback): Promise<void> {
-    this.throwIfMissingStatePublishMode();
+    this.throwIfInvalidWriteApiConfiguration();
 
     const root = await this.getRoot();
     const context = new BatchContext(this, root);
@@ -107,7 +107,7 @@ export class LiveObjects {
    * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
    */
   async createMap<T extends API.LiveMapType>(entries?: T): Promise<LiveMap<T>> {
-    this.throwIfMissingStatePublishMode();
+    this.throwIfInvalidWriteApiConfiguration();
 
     const stateMessage = await LiveMap.createMapCreateMessage(this, entries);
     const objectId = stateMessage.operation?.objectId!;
@@ -139,7 +139,7 @@ export class LiveObjects {
    * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
    */
   async createCounter(count?: number): Promise<LiveCounter> {
-    this.throwIfMissingStatePublishMode();
+    this.throwIfInvalidWriteApiConfiguration();
 
     const stateMessage = await LiveCounter.createCounterCreateMessage(this, count);
     const objectId = stateMessage.operation?.objectId!;
@@ -162,7 +162,7 @@ export class LiveObjects {
   }
 
   on(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): OnLiveObjectsEventResponse {
-    // we don't require any specific channel mode to be set to call this public method
+    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._eventEmitterPublic.on(event, callback);
 
     const off = () => {
@@ -173,7 +173,7 @@ export class LiveObjects {
   }
 
   off(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): void {
-    // we don't require any specific channel mode to be set to call this public method
+    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
 
     // prevent accidentally calling .off without any arguments on an EventEmitter and removing all callbacks
     if (this._client.Utils.isNil(event) && this._client.Utils.isNil(callback)) {
@@ -184,7 +184,7 @@ export class LiveObjects {
   }
 
   offAll(): void {
-    // we don't require any specific channel mode to be set to call this public method
+    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._eventEmitterPublic.off();
   }
 
@@ -284,11 +284,8 @@ export class LiveObjects {
 
       case 'detached':
       case 'failed':
-        // TODO: do something
-        break;
-
-      case 'suspended':
-        // TODO: do something
+        this._liveObjectsPool.reset();
+        this._syncLiveObjectsDataPool.reset();
         break;
     }
   }
@@ -322,15 +319,17 @@ export class LiveObjects {
   /**
    * @internal
    */
-  throwIfMissingStateSubscribeMode(): void {
+  throwIfInvalidAccessApiConfiguration(): void {
     this._throwIfMissingChannelMode('state_subscribe');
+    this._throwIfInChannelState(['detached', 'failed']);
   }
 
   /**
    * @internal
    */
-  throwIfMissingStatePublishMode(): void {
+  throwIfInvalidWriteApiConfiguration(): void {
     this._throwIfMissingChannelMode('state_publish');
+    this._throwIfInChannelState(['detached', 'failed', 'suspended']);
   }
 
   private _startNewSync(syncId?: string, syncCursor?: string): void {
@@ -491,6 +490,12 @@ export class LiveObjects {
     } else {
       this._eventEmitterInternal.emit(event);
       this._eventEmitterPublic.emit(event);
+    }
+  }
+
+  private _throwIfInChannelState(channelState: API.ChannelState[]): void {
+    if (channelState.includes(this._channel.state)) {
+      throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
     }
   }
 }
