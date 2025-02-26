@@ -4004,6 +4004,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             );
             await counterCreatedPromise;
 
+            helper.recordPrivateApi('call.LiveObjects._liveObjectsPool.get');
             expect(liveObjects._liveObjectsPool.get(objectId), 'Check object exists in the pool after creation').to
               .exist;
 
@@ -4146,74 +4147,58 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         }
       });
 
-      const expectToThrowMissingStateMode = async ({ liveObjects, map, counter }) => {
-        await expectToThrowAsync(
-          async () => liveObjects.getRoot(),
-          '"state_subscribe" channel mode must be set for this operation',
-        );
-        await expectToThrowAsync(
-          async () => liveObjects.batch(),
-          '"state_publish" channel mode must be set for this operation',
-        );
-        await expectToThrowAsync(
-          async () => liveObjects.createMap(),
-          '"state_publish" channel mode must be set for this operation',
-        );
-        await expectToThrowAsync(
-          async () => liveObjects.createCounter(),
-          '"state_publish" channel mode must be set for this operation',
-        );
+      const expectAccessApiToThrow = async ({ liveObjects, map, counter, errorMsg }) => {
+        await expectToThrowAsync(async () => liveObjects.getRoot(), errorMsg);
 
-        expect(() => counter.value()).to.throw('"state_subscribe" channel mode must be set for this operation');
-        await expectToThrowAsync(
-          async () => counter.increment(),
-          '"state_publish" channel mode must be set for this operation',
-        );
-        await expectToThrowAsync(
-          async () => counter.decrement(),
-          '"state_publish" channel mode must be set for this operation',
-        );
+        expect(() => counter.value()).to.throw(errorMsg);
 
-        expect(() => map.get()).to.throw('"state_subscribe" channel mode must be set for this operation');
-        expect(() => map.size()).to.throw('"state_subscribe" channel mode must be set for this operation');
-        await expectToThrowAsync(async () => map.set(), '"state_publish" channel mode must be set for this operation');
-        await expectToThrowAsync(
-          async () => map.remove(),
-          '"state_publish" channel mode must be set for this operation',
-        );
+        expect(() => map.get()).to.throw(errorMsg);
+        expect(() => map.size()).to.throw(errorMsg);
 
         for (const obj of [map, counter]) {
-          expect(() => obj.subscribe()).to.throw('"state_subscribe" channel mode must be set for this operation');
-          expect(() => obj.unsubscribe(() => {})).not.to.throw(
-            '"state_subscribe" channel mode must be set for this operation',
-          ); // note: this should not throw
-          expect(() => obj.unsubscribe(() => {})).not.to.throw(
-            '"state_publish" channel mode must be set for this operation',
-          ); // note: this should not throw
-          expect(() => obj.unsubscribeAll()).not.to.throw(
-            '"state_subscribe" channel mode must be set for this operation',
-          ); // note: this should not throw
-          expect(() => obj.unsubscribeAll()).not.to.throw(
-            '"state_publish" channel mode must be set for this operation',
-          ); // note: this should not throw
+          expect(() => obj.subscribe()).to.throw(errorMsg);
+          expect(() => obj.unsubscribe(() => {})).not.to.throw(); // this should not throw
+          expect(() => obj.unsubscribeAll()).not.to.throw(); // this should not throw
+        }
+      };
+
+      const expectWriteApiToThrow = async ({ liveObjects, map, counter, errorMsg }) => {
+        await expectToThrowAsync(async () => liveObjects.batch(), errorMsg);
+        await expectToThrowAsync(async () => liveObjects.createMap(), errorMsg);
+        await expectToThrowAsync(async () => liveObjects.createCounter(), errorMsg);
+
+        await expectToThrowAsync(async () => counter.increment(), errorMsg);
+        await expectToThrowAsync(async () => counter.decrement(), errorMsg);
+
+        await expectToThrowAsync(async () => map.set(), errorMsg);
+        await expectToThrowAsync(async () => map.remove(), errorMsg);
+
+        for (const obj of [map, counter]) {
+          expect(() => obj.unsubscribe(() => {})).not.to.throw(); // this should not throw
+          expect(() => obj.unsubscribeAll()).not.to.throw(); // this should not throw
         }
       };
 
       /** Make sure to call this inside the batch method as batch objects can't be interacted with outside the batch callback */
-      const expectToThrowMissingStateModeInBatchContext = ({ ctx, map, counter }) => {
-        expect(() => ctx.getRoot()).to.throw('"state_subscribe" channel mode must be set for this operation');
+      const expectAccessBatchApiToThrow = ({ ctx, map, counter, errorMsg }) => {
+        expect(() => ctx.getRoot()).to.throw(errorMsg);
 
-        expect(() => counter.value()).to.throw('"state_subscribe" channel mode must be set for this operation');
-        expect(() => counter.increment()).to.throw('"state_publish" channel mode must be set for this operation');
-        expect(() => counter.decrement()).to.throw('"state_publish" channel mode must be set for this operation');
+        expect(() => counter.value()).to.throw(errorMsg);
 
-        expect(() => map.get()).to.throw('"state_subscribe" channel mode must be set for this operation');
-        expect(() => map.size()).to.throw('"state_subscribe" channel mode must be set for this operation');
-        expect(() => map.set()).to.throw('"state_publish" channel mode must be set for this operation');
-        expect(() => map.remove()).to.throw('"state_publish" channel mode must be set for this operation');
+        expect(() => map.get()).to.throw(errorMsg);
+        expect(() => map.size()).to.throw(errorMsg);
       };
 
-      const missingChannelModesScenarios = [
+      /** Make sure to call this inside the batch method as batch objects can't be interacted with outside the batch callback */
+      const expectWriteBatchApiToThrow = ({ ctx, map, counter, errorMsg }) => {
+        expect(() => counter.increment()).to.throw(errorMsg);
+        expect(() => counter.decrement()).to.throw(errorMsg);
+
+        expect(() => map.set()).to.throw(errorMsg);
+        expect(() => map.remove()).to.throw(errorMsg);
+      };
+
+      const channelConfigurationScenarios = [
         {
           description: 'public API throws missing state modes error when attached without correct state modes',
           action: async (ctx) => {
@@ -4225,9 +4210,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               const counter = ctx.getRoot().get('counter');
               // now simulate missing modes
               channel.modes = [];
-              expectToThrowMissingStateModeInBatchContext({ ctx, map, counter });
+
+              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: '"state_subscribe" channel mode' });
+              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"state_publish" channel mode' });
             });
-            await expectToThrowMissingStateMode({ liveObjects, map, counter });
+
+            await expectAccessApiToThrow({ liveObjects, map, counter, errorMsg: '"state_subscribe" channel mode' });
+            await expectWriteApiToThrow({ liveObjects, map, counter, errorMsg: '"state_publish" channel mode' });
           },
         },
 
@@ -4246,21 +4235,103 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               helper.recordPrivateApi('write.channel.channelOptions.modes');
               channel.channelOptions.modes = [];
 
-              expectToThrowMissingStateModeInBatchContext({ ctx, map, counter });
+              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: '"state_subscribe" channel mode' });
+              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"state_publish" channel mode' });
             });
-            await expectToThrowMissingStateMode({ liveObjects, map, counter });
+
+            await expectAccessApiToThrow({ liveObjects, map, counter, errorMsg: '"state_subscribe" channel mode' });
+            await expectWriteApiToThrow({ liveObjects, map, counter, errorMsg: '"state_publish" channel mode' });
+          },
+        },
+
+        {
+          description: 'public API throws invalid channel state error when channel DETACHED',
+          action: async (ctx) => {
+            const { liveObjects, channel, map, counter, helper } = ctx;
+
+            // obtain batch context with valid channel state first
+            await liveObjects.batch((ctx) => {
+              const map = ctx.getRoot().get('map');
+              const counter = ctx.getRoot().get('counter');
+              // now simulate channel state change
+              helper.recordPrivateApi('call.channel.requestState');
+              channel.requestState('detached');
+
+              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is detached' });
+              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is detached' });
+            });
+
+            await expectAccessApiToThrow({
+              liveObjects,
+              map,
+              counter,
+              errorMsg: 'failed as channel state is detached',
+            });
+            await expectWriteApiToThrow({ liveObjects, map, counter, errorMsg: 'failed as channel state is detached' });
+          },
+        },
+
+        {
+          description: 'public API throws invalid channel state error when channel FAILED',
+          action: async (ctx) => {
+            const { liveObjects, channel, map, counter, helper } = ctx;
+
+            // obtain batch context with valid channel state first
+            await liveObjects.batch((ctx) => {
+              const map = ctx.getRoot().get('map');
+              const counter = ctx.getRoot().get('counter');
+              // now simulate channel state change
+              helper.recordPrivateApi('call.channel.requestState');
+              channel.requestState('failed');
+
+              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is failed' });
+              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is failed' });
+            });
+
+            await expectAccessApiToThrow({
+              liveObjects,
+              map,
+              counter,
+              errorMsg: 'failed as channel state is failed',
+            });
+            await expectWriteApiToThrow({ liveObjects, map, counter, errorMsg: 'failed as channel state is failed' });
+          },
+        },
+
+        {
+          description: 'public write API throws invalid channel state error when channel SUSPENDED',
+          action: async (ctx) => {
+            const { liveObjects, channel, map, counter, helper } = ctx;
+
+            // obtain batch context with valid channel state first
+            await liveObjects.batch((ctx) => {
+              const map = ctx.getRoot().get('map');
+              const counter = ctx.getRoot().get('counter');
+              // now simulate channel state change
+              helper.recordPrivateApi('call.channel.requestState');
+              channel.requestState('suspended');
+
+              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: 'failed as channel state is suspended' });
+            });
+
+            await expectWriteApiToThrow({
+              liveObjects,
+              map,
+              counter,
+              errorMsg: 'failed as channel state is suspended',
+            });
           },
         },
       ];
 
       /** @nospec */
-      forScenarios(this, missingChannelModesScenarios, async function (helper, scenario, clientOptions, channelName) {
+      forScenarios(this, channelConfigurationScenarios, async function (helper, scenario, clientOptions, channelName) {
         const liveObjectsHelper = new LiveObjectsHelper(helper);
         const client = RealtimeWithLiveObjects(helper, clientOptions);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
           // attach with correct channel modes so we can create liveobjects on the root for testing.
-          // each scenario will modify the underlying modes array to test specific behavior
+          // some scenarios will modify the underlying modes array to test specific behavior
           const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
           const liveObjects = channel.liveObjects;
 

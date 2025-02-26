@@ -266,7 +266,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    */
   // force the key to be of type string as we only allow strings as key in a map
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined {
-    this._liveObjects.throwIfMissingStateSubscribeMode();
+    this._liveObjects.throwIfInvalidAccessApiConfiguration();
 
     if (this.isTombstoned()) {
       return undefined as T[TKey];
@@ -305,7 +305,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   size(): number {
-    this._liveObjects.throwIfMissingStateSubscribeMode();
+    this._liveObjects.throwIfInvalidAccessApiConfiguration();
 
     let size = 0;
     for (const value of this._dataRef.data.values()) {
@@ -341,7 +341,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void> {
-    this._liveObjects.throwIfMissingStatePublishMode();
+    this._liveObjects.throwIfInvalidWriteApiConfiguration();
     const stateMessage = LiveMap.createMapSetMessage(this._liveObjects, this.getObjectId(), key, value);
     return this._liveObjects.publish([stateMessage]);
   }
@@ -356,7 +356,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async remove<TKey extends keyof T & string>(key: TKey): Promise<void> {
-    this._liveObjects.throwIfMissingStatePublishMode();
+    this._liveObjects.throwIfInvalidWriteApiConfiguration();
     const stateMessage = LiveMap.createMapRemoveMessage(this._liveObjects, this.getObjectId(), key);
     return this._liveObjects.publish([stateMessage]);
   }

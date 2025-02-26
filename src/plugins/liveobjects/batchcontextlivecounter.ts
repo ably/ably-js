@@ -15,20 +15,20 @@ export class BatchContextLiveCounter {
   }
 
   value(): number {
-    this._liveObjects.throwIfMissingStateSubscribeMode();
+    this._liveObjects.throwIfInvalidAccessApiConfiguration();
     this._batchContext.throwIfClosed();
     return this._counter.value();
   }
 
   increment(amount: number): void {
-    this._liveObjects.throwIfMissingStatePublishMode();
+    this._liveObjects.throwIfInvalidWriteApiConfiguration();
     this._batchContext.throwIfClosed();
     const stateMessage = LiveCounter.createCounterIncMessage(this._liveObjects, this._counter.getObjectId(), amount);
     this._batchContext.queueStateMessage(stateMessage);
   }
 
   decrement(amount: number): void {
-    this._liveObjects.throwIfMissingStatePublishMode();
+    this._liveObjects.throwIfInvalidWriteApiConfiguration();
     this._batchContext.throwIfClosed();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
