@@ -2056,11 +2056,11 @@ export declare interface PushChannel {
  */
 declare namespace LiveObjectsEvents {
   /**
-   * The local Live Objects state is currently being synchronized with the Ably service.
+   * The local LiveObjects state is currently being synchronized with the Ably service.
    */
   type SYNCING = 'syncing';
   /**
-   * The local Live Objects state has been synchronized with the Ably service.
+   * The local LiveObjects state has been synchronized with the Ably service.
    */
   type SYNCED = 'synced';
 }
@@ -2075,7 +2075,7 @@ export type LiveObjectsEvent = LiveObjectsEvents.SYNCED | LiveObjectsEvents.SYNC
  */
 declare namespace LiveObjectLifecycleEvents {
   /**
-   * Indicates that the object has been deleted from the Live Objects pool and should no longer be interacted with.
+   * Indicates that the object has been deleted from the LiveObjects pool and should no longer be interacted with.
    */
   type DELETED = 'deleted';
 }
