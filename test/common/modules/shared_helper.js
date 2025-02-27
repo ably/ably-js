@@ -492,6 +492,14 @@ define([
       await this.setTimeoutAsync(100);
       return this.waitFor(condition, remaining - 100);
     }
+
+    async monitorConnectionThenCloseAndFinishAsync(action, realtime, states) {
+      try {
+        await this.monitorConnectionAsync(action, realtime, states);
+      } finally {
+        await this.closeAndFinishAsync(realtime);
+      }
+    }
   }
 
   SharedHelper.testOnAllTransports.skip = function (thisInDescribe, name, testFn) {
