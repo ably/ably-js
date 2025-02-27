@@ -259,5 +259,41 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       await channel.publish([{ name: 'foo', data: 'bar' }], { testParam: 'testParamValue' });
       await channel.publish([{ name: 'foo', data: 'bar' }], { testParam: 'testParamValue' }, noop);
     });
+
+    /**
+     * Tests that when the user sends the connectionKey in a REST publish, the REST client sends it correctly, enabling the "publish on behalf of a Realtime client" functionality.
+     *
+     * @spec TM2h
+     */
+    it('allows you to publish a message on behalf of a Realtime connection by setting connectionKey on the message', async function () {
+      const helper = this.test.helper;
+      const rest = helper.AblyRest();
+      const realtime = helper.AblyRealtime();
+
+      await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+        await realtime.connection.whenState('connected');
+        const connectionKey = realtime.connection.key;
+        expect(connectionKey).to.be.ok;
+
+        const channelName = 'publishOnBehalf';
+        const realtimeChannel = realtime.channels.get(channelName);
+        await realtimeChannel.attach();
+
+        const receivedMessagePromise = new Promise((resolve) => {
+          realtimeChannel.subscribe((message) => {
+            resolve(message);
+          });
+        });
+
+        const sentMessage = { name: 'foo', data: 'bar', connectionKey };
+        const restChannel = rest.channels.get(channelName);
+        // Publish a message on behalf of `realtime`
+        await restChannel.publish(sentMessage);
+
+        const receivedMessage = await receivedMessagePromise;
+        // Check that the message we published got attributed to `realtime`'s connection
+        expect(receivedMessage.connectionId).to.equal(realtime.connection.id);
+      }, realtime);
+    });
   });
 });
