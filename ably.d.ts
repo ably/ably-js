@@ -2411,6 +2411,10 @@ export interface Message {
    * update or delete operation.
    */
   operation?: Operation;
+  /**
+   * Allows a REST client to publish a message on behalf of a Realtime client. If you set this to the {@link Connection.key | private connection key} of a Realtime connection when publishing a message using a {@link RestClient}, the message will be published on behalf of that Realtime client. This property is only populated by a client performing a publish, and will never be populated on an inbound message.
+   */
+  connectionKey?: string;
 }
 
 /**
@@ -2471,7 +2475,8 @@ export type MessageAction =
 /**
  * A message received from Ably.
  */
-export type InboundMessage = Message & Required<Pick<Message, 'id' | 'timestamp' | 'serial' | 'action'>>;
+export type InboundMessage = Omit<Message, 'connectionKey'> &
+  Required<Pick<Message, 'id' | 'timestamp' | 'serial' | 'action'>>;
 
 /**
  * Static utilities related to messages.
