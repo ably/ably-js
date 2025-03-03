@@ -550,7 +550,7 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   /**
    * A set of key-value pairs that can be used to pass in arbitrary connection parameters, such as [`heartbeatInterval`](https://ably.com/docs/realtime/connection#heartbeats) or [`remainPresentFor`](https://ably.com/docs/realtime/presence#unstable-connections).
    */
-  transportParams?: { [k: string]: string | number };
+  transportParams?: { [k: string]: string | number | boolean };
 
   /**
    * An array of transports to use, in descending order of preference. In the browser environment the available transports are: `web_socket` and `xhr`.
@@ -2279,6 +2279,11 @@ export type PublishOptions = {
    * See [here](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes).
    */
   quickAck?: boolean;
+  /**
+   * Support any publish options that may be added serverside without needing
+   * typings changes.
+   */
+  [k: string]: string | number | boolean;
 };
 
 /**
