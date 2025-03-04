@@ -3373,14 +3373,18 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               savedCtxMap = ctxRoot.get('map');
             });
 
-            expect(() => savedCtx.getRoot()).to.throw('Batch is closed');
-            expect(() => savedCtxCounter.value()).to.throw('Batch is closed');
-            expect(() => savedCtxCounter.increment()).to.throw('Batch is closed');
-            expect(() => savedCtxCounter.decrement()).to.throw('Batch is closed');
-            expect(() => savedCtxMap.get()).to.throw('Batch is closed');
-            expect(() => savedCtxMap.size()).to.throw('Batch is closed');
-            expect(() => savedCtxMap.set()).to.throw('Batch is closed');
-            expect(() => savedCtxMap.remove()).to.throw('Batch is closed');
+            expectAccessBatchApiToThrow({
+              ctx: savedCtx,
+              map: savedCtxMap,
+              counter: savedCtxCounter,
+              errorMsg: 'Batch is closed',
+            });
+            expectWriteBatchApiToThrow({
+              ctx: savedCtx,
+              map: savedCtxMap,
+              counter: savedCtxCounter,
+              errorMsg: 'Batch is closed',
+            });
           },
         },
 
@@ -3418,14 +3422,18 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             }
 
             expect(caughtError, 'Check batch call failed with an error').to.exist;
-            expect(() => savedCtx.getRoot()).to.throw('Batch is closed');
-            expect(() => savedCtxCounter.value()).to.throw('Batch is closed');
-            expect(() => savedCtxCounter.increment()).to.throw('Batch is closed');
-            expect(() => savedCtxCounter.decrement()).to.throw('Batch is closed');
-            expect(() => savedCtxMap.get()).to.throw('Batch is closed');
-            expect(() => savedCtxMap.size()).to.throw('Batch is closed');
-            expect(() => savedCtxMap.set()).to.throw('Batch is closed');
-            expect(() => savedCtxMap.remove()).to.throw('Batch is closed');
+            expectAccessBatchApiToThrow({
+              ctx: savedCtx,
+              map: savedCtxMap,
+              counter: savedCtxCounter,
+              errorMsg: 'Batch is closed',
+            });
+            expectWriteBatchApiToThrow({
+              ctx: savedCtx,
+              map: savedCtxMap,
+              counter: savedCtxCounter,
+              errorMsg: 'Batch is closed',
+            });
           },
         },
       ];
