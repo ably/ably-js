@@ -3199,6 +3199,18 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               );
               expect(ctxMap.get('foo')).to.equal('bar', 'Check batch API map .get() method works and is synchronous');
               expect(ctxMap.size()).to.equal(1, 'Check batch API map .size() method works and is synchronous');
+              expect([...ctxMap.entries()]).to.deep.equal(
+                [['foo', 'bar']],
+                'Check batch API map .entries() method works and is synchronous',
+              );
+              expect([...ctxMap.keys()]).to.deep.equal(
+                ['foo'],
+                'Check batch API map .keys() method works and is synchronous',
+              );
+              expect([...ctxMap.values()]).to.deep.equal(
+                ['bar'],
+                'Check batch API map .values() method works and is synchronous',
+              );
             });
           },
         },
@@ -3438,6 +3450,132 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
       ];
 
+      const liveMapEnumerationScenarios = [
+        {
+          description: `LiveMap enumeration`,
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel } = ctx;
+
+            const counterId1 = liveObjectsHelper.fakeCounterObjectId();
+            const counterId2 = liveObjectsHelper.fakeCounterObjectId();
+            await liveObjectsHelper.processStateObjectMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              state: [
+                liveObjectsHelper.counterObject({
+                  objectId: counterId1,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: false,
+                  initialCount: 0,
+                }),
+                liveObjectsHelper.counterObject({
+                  objectId: counterId2,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: true,
+                  initialCount: 0,
+                }),
+                liveObjectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  materialisedEntries: {
+                    counter1: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId1 } },
+                    counter2: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId2 } },
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'bar' } },
+                    baz: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'qux' }, tombstone: true },
+                  },
+                }),
+              ],
+            });
+
+            const counter1 = await root.get('counter1');
+
+            // enumeration methods should not count tombstoned entries
+            expect(root.size()).to.equal(2, 'Check LiveMap.size() returns expected number of keys');
+            expect([...root.entries()]).to.deep.equal(
+              [
+                ['counter1', counter1],
+                ['foo', 'bar'],
+              ],
+              'Check LiveMap.entries() returns expected entries',
+            );
+            expect([...root.keys()]).to.deep.equal(['counter1', 'foo'], 'Check LiveMap.keys() returns expected keys');
+            expect([...root.values()]).to.deep.equal(
+              [counter1, 'bar'],
+              'Check LiveMap.values() returns expected values',
+            );
+          },
+        },
+        {
+          description: `BatchContextLiveMap enumeration`,
+          action: async (ctx) => {
+            const { root, liveObjectsHelper, channel, liveObjects } = ctx;
+
+            const counterId1 = liveObjectsHelper.fakeCounterObjectId();
+            const counterId2 = liveObjectsHelper.fakeCounterObjectId();
+            await liveObjectsHelper.processStateObjectMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              state: [
+                liveObjectsHelper.counterObject({
+                  objectId: counterId1,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: false,
+                  initialCount: 0,
+                }),
+                liveObjectsHelper.counterObject({
+                  objectId: counterId2,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: true,
+                  initialCount: 0,
+                }),
+                liveObjectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  materialisedEntries: {
+                    counter1: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId1 } },
+                    counter2: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId2 } },
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'bar' } },
+                    baz: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'qux' }, tombstone: true },
+                  },
+                }),
+              ],
+            });
+
+            const counter1 = await root.get('counter1');
+
+            await liveObjects.batch(async (ctx) => {
+              const ctxRoot = ctx.getRoot();
+
+              // enumeration methods should not count tombstoned entries
+              expect(ctxRoot.size()).to.equal(2, 'Check BatchContextLiveMap.size() returns expected number of keys');
+              expect([...ctxRoot.entries()]).to.deep.equal(
+                [
+                  ['counter1', counter1],
+                  ['foo', 'bar'],
+                ],
+                'Check BatchContextLiveMap.entries() returns expected entries',
+              );
+              expect([...ctxRoot.keys()]).to.deep.equal(
+                ['counter1', 'foo'],
+                'Check BatchContextLiveMap.keys() returns expected keys',
+              );
+              expect([...ctxRoot.values()]).to.deep.equal(
+                [counter1, 'bar'],
+                'Check BatchContextLiveMap.values() returns expected values',
+              );
+            });
+          },
+        },
+      ];
+
       /** @nospec */
       forScenarios(
         this,
@@ -3446,6 +3584,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           ...applyOperationsScenarios,
           ...applyOperationsDuringSyncScenarios,
           ...writeApiScenarios,
+          ...liveMapEnumerationScenarios,
         ],
         async function (helper, scenario, clientOptions, channelName) {
           const liveObjectsHelper = new LiveObjectsHelper(helper);
@@ -4162,6 +4301,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         expect(() => map.get()).to.throw(errorMsg);
         expect(() => map.size()).to.throw(errorMsg);
+        expect(() => [...map.entries()]).to.throw(errorMsg);
+        expect(() => [...map.keys()]).to.throw(errorMsg);
+        expect(() => [...map.values()]).to.throw(errorMsg);
 
         for (const obj of [map, counter]) {
           expect(() => obj.subscribe()).to.throw(errorMsg);
@@ -4195,6 +4337,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         expect(() => map.get()).to.throw(errorMsg);
         expect(() => map.size()).to.throw(errorMsg);
+        expect(() => [...map.entries()]).to.throw(errorMsg);
+        expect(() => [...map.keys()]).to.throw(errorMsg);
+        expect(() => [...map.values()]).to.throw(errorMsg);
       };
 
       /** Make sure to call this inside the batch method as batch objects can't be interacted with outside the batch callback */

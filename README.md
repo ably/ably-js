@@ -672,6 +672,17 @@ root.get('bar');
 // get a number of key/value pairs in a map with .size
 root.size();
 
+// iterate over keys/values in a map
+for (const [key, value] of root.entries()) {
+  /**/
+}
+for (const key of root.keys()) {
+  /**/
+}
+for (const value of root.values()) {
+  /**/
+}
+
 // set keys on a map with .set
 // different data types are supported
 await root.set('foo', 'Alice');

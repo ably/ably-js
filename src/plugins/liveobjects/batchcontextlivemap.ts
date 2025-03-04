@@ -28,6 +28,24 @@ export class BatchContextLiveMap<T extends API.LiveMapType> {
     return this._map.size();
   }
 
+  *entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]> {
+    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+    this._batchContext.throwIfClosed();
+    yield* this._map.entries();
+  }
+
+  *keys<TKey extends keyof T & string>(): IterableIterator<TKey> {
+    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+    this._batchContext.throwIfClosed();
+    yield* this._map.keys();
+  }
+
+  *values<TKey extends keyof T & string>(): IterableIterator<T[TKey]> {
+    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+    this._batchContext.throwIfClosed();
+    yield* this._map.values();
+  }
+
   set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): void {
     this._liveObjects.throwIfInvalidWriteApiConfiguration();
     this._batchContext.throwIfClosed();
