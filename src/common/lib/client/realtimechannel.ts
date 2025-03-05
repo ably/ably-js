@@ -30,7 +30,7 @@ import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
-import type { LiveObjects, StateMessage } from 'plugins/liveobjects';
+import type { Objects, StateMessage } from 'plugins/objects';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -101,7 +101,7 @@ class RealtimeChannel extends EventEmitter {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
   _push?: PushChannel;
-  _liveObjects?: LiveObjects;
+  _objects?: Objects;
 
   constructor(client: BaseRealtime, name: string, options?: API.ChannelOptions) {
     super(client.logger);
@@ -141,8 +141,8 @@ class RealtimeChannel extends EventEmitter {
       this._push = new client.options.plugins.Push.PushChannel(this);
     }
 
-    if (client.options.plugins?.LiveObjects) {
-      this._liveObjects = new client.options.plugins.LiveObjects.LiveObjects(this);
+    if (client.options.plugins?.Objects) {
+      this._objects = new client.options.plugins.Objects.Objects(this);
     }
   }
 
@@ -153,11 +153,11 @@ class RealtimeChannel extends EventEmitter {
     return this._push;
   }
 
-  get liveObjects() {
-    if (!this._liveObjects) {
-      Utils.throwMissingPluginError('LiveObjects');
+  get objects() {
+    if (!this._objects) {
+      Utils.throwMissingPluginError('Objects');
     }
-    return this._liveObjects;
+    return this._objects;
   }
 
   invalidStateError(): ErrorInfo {
@@ -550,9 +550,9 @@ class RealtimeChannel extends EventEmitter {
             if (this._presence) {
               this._presence.onAttached(hasPresence);
             }
-            // the Live Objects state needs to be re-synced
-            if (this._liveObjects) {
-              this._liveObjects.onAttached(hasState);
+            // the Objects state needs to be re-synced
+            if (this._objects) {
+              this._objects.onAttached(hasState);
             }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
@@ -615,22 +615,22 @@ class RealtimeChannel extends EventEmitter {
       // STATE and STATE_SYNC message processing share most of the logic, so group them together
       case actions.STATE:
       case actions.STATE_SYNC: {
-        if (!this._liveObjects) {
+        if (!this._objects) {
           return;
         }
 
         const stateMessages = message.state ?? [];
         const options = this.channelOptions;
         await this._decodeAndPrepareMessages(message, stateMessages, (msg) =>
-          this.client._LiveObjectsPlugin
-            ? this.client._LiveObjectsPlugin.StateMessage.decode(msg, options, MessageEncoding)
-            : Utils.throwMissingPluginError('LiveObjects'),
+          this.client._objectsPlugin
+            ? this.client._objectsPlugin.StateMessage.decode(msg, options, MessageEncoding)
+            : Utils.throwMissingPluginError('Objects'),
         );
 
         if (message.action === actions.STATE) {
-          this._liveObjects.handleStateMessages(stateMessages);
+          this._objects.handleStateMessages(stateMessages);
         } else {
-          this._liveObjects.handleStateSyncMessages(stateMessages, message.channelSerial);
+          this._objects.handleStateSyncMessages(stateMessages, message.channelSerial);
         }
 
         break;
@@ -830,8 +830,8 @@ class RealtimeChannel extends EventEmitter {
     if (this._presence) {
       this._presence.actOnChannelState(state, hasPresence, reason);
     }
-    if (this._liveObjects) {
-      this._liveObjects.actOnChannelState(state, hasState);
+    if (this._objects) {
+      this._objects.actOnChannelState(state, hasState);
     }
     if (state === 'suspended' && this.connectionManager.state.sendEvents) {
       this.startRetryTimer();

@@ -11,7 +11,7 @@ import {
 } from '../types/presencemessage';
 import { TransportCtor } from '../transport/transport';
 import type * as PushPlugin from 'plugins/push';
-import type * as LiveObjectsPlugin from 'plugins/liveobjects';
+import type * as ObjectsPlugin from 'plugins/objects';
 
 export interface PresenceMessagePlugin {
   presenceMessageFromValues: typeof presenceMessageFromValues;
@@ -33,7 +33,7 @@ export interface ModularPlugins {
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
   Push?: typeof PushPlugin;
-  LiveObjects?: typeof LiveObjectsPlugin;
+  Objects?: typeof ObjectsPlugin;
 }
 
 export const allCommonModularPlugins: ModularPlugins = { Rest };

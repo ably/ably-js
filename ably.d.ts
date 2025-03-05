@@ -625,9 +625,9 @@ export interface CorePlugins {
   Push?: unknown;
 
   /**
-   * A plugin which allows the client to use LiveObjects functionality at {@link RealtimeChannel.liveObjects}.
+   * A plugin which allows the client to use LiveObjects functionality at {@link RealtimeChannel.objects}.
    */
-  LiveObjects?: unknown;
+  Objects?: unknown;
 }
 
 /**
@@ -872,13 +872,13 @@ declare namespace ChannelModes {
    */
   type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
   /**
-   * The client can publish LiveObjects state messages.
+   * The client can publish Objects messages.
    */
-  type STATE_PUBLISH = 'STATE_PUBLISH';
+  type OBJECT_PUBLISH = 'OBJECT_PUBLISH';
   /**
-   * The client can receive LiveObjects state messages.
+   * The client can receive Objects messages.
    */
-  type STATE_SUBSCRIBE = 'STATE_SUBSCRIBE';
+  type OBJECT_SUBSCRIBE = 'OBJECT_SUBSCRIBE';
   /**
    * The client is resuming an existing connection.
    */
@@ -893,8 +893,8 @@ export type ChannelMode =
   | ChannelModes.SUBSCRIBE
   | ChannelModes.PRESENCE
   | ChannelModes.PRESENCE_SUBSCRIBE
-  | ChannelModes.STATE_PUBLISH
-  | ChannelModes.STATE_SUBSCRIBE
+  | ChannelModes.OBJECT_PUBLISH
+  | ChannelModes.OBJECT_SUBSCRIBE
   | ChannelModes.ATTACH_RESUME;
 
 /**
@@ -1567,9 +1567,9 @@ export type ErrorCallback = (error: ErrorInfo | null) => void;
 export type LiveObjectUpdateCallback<T> = (update: T) => void;
 
 /**
- * The callback used for the events emitted by {@link LiveObjects}.
+ * The callback used for the events emitted by {@link Objects}.
  */
-export type LiveObjectsEventCallback = () => void;
+export type ObjectsEventCallback = () => void;
 
 /**
  * The callback used for the lifecycle events emitted by {@link LiveObject}.
@@ -1577,11 +1577,11 @@ export type LiveObjectsEventCallback = () => void;
 export type LiveObjectLifecycleEventCallback = () => void;
 
 /**
- * A function passed to {@link LiveObjects.batch} to group multiple Live Object operations into a single channel message.
+ * A function passed to {@link Objects.batch} to group multiple Objects operations into a single channel message.
  *
  * Must not be `async`.
  *
- * @param batchContext - A {@link BatchContext} object that allows grouping operations on Live Objects for this batch.
+ * @param batchContext - A {@link BatchContext} object that allows grouping Objects operations for this batch.
  */
 export type BatchCallback = (batchContext: BatchContext) => void;
 
@@ -2052,30 +2052,30 @@ export declare interface PushChannel {
 }
 
 /**
- * The `LiveObjectsEvents` namespace describes the possible values of the {@link LiveObjectsEvent} type.
+ * The `ObjectsEvents` namespace describes the possible values of the {@link ObjectsEvent} type.
  */
-declare namespace LiveObjectsEvents {
+declare namespace ObjectsEvents {
   /**
-   * The local LiveObjects state is currently being synchronized with the Ably service.
+   * The local copy of Objects on a channel is currently being synchronized with the Ably service.
    */
   type SYNCING = 'syncing';
   /**
-   * The local LiveObjects state has been synchronized with the Ably service.
+   * The local copy of Objects on a channel has been synchronized with the Ably service.
    */
   type SYNCED = 'synced';
 }
 
 /**
- * Describes the events emitted by a {@link LiveObjects} object.
+ * Describes the events emitted by a {@link Objects} object.
  */
-export type LiveObjectsEvent = LiveObjectsEvents.SYNCED | LiveObjectsEvents.SYNCING;
+export type ObjectsEvent = ObjectsEvents.SYNCED | ObjectsEvents.SYNCING;
 
 /**
  * The `LiveObjectLifecycleEvents` namespace describes the possible values of the {@link LiveObjectLifecycleEvent} type.
  */
 declare namespace LiveObjectLifecycleEvents {
   /**
-   * Indicates that the object has been deleted from the LiveObjects pool and should no longer be interacted with.
+   * Indicates that the object has been deleted from the Objects pool and should no longer be interacted with.
    */
   type DELETED = 'deleted';
 }
@@ -2086,15 +2086,15 @@ declare namespace LiveObjectLifecycleEvents {
 export type LiveObjectLifecycleEvent = LiveObjectLifecycleEvents.DELETED;
 
 /**
- * Enables the LiveObjects state to be subscribed to for a channel.
+ * Enables the Objects to be read, modified and subscribed to for a channel.
  */
-export declare interface LiveObjects {
+export declare interface Objects {
   /**
-   * Retrieves the root {@link LiveMap} object for state on a channel.
+   * Retrieves the root {@link LiveMap} object for Objects on a channel.
    *
-   * A type parameter can be provided to describe the structure of the LiveObjects state on the channel. By default, it uses types from the globally defined `LiveObjectsTypes` interface.
+   * A type parameter can be provided to describe the structure of the Objects on the channel. By default, it uses types from the globally defined `ObjectsTypes` interface.
    *
-   * You can specify custom types for LiveObjects by defining a global `LiveObjectsTypes` interface with a `root` property that conforms to {@link LiveMapType}.
+   * You can specify custom types for Objects by defining a global `ObjectsTypes` interface with a `root` property that conforms to {@link LiveMapType}.
    *
    * Example:
    *
@@ -2106,7 +2106,7 @@ export declare interface LiveObjects {
    * };
    *
    * declare global {
-   *   export interface LiveObjectsTypes {
+   *   export interface ObjectsTypes {
    *     root: MyRoot;
    *   }
    * }
@@ -2137,7 +2137,7 @@ export declare interface LiveObjects {
    * As a result, other clients will receive the changes as a single channel message after the batch function has completed.
    *
    * This method accepts a synchronous callback, which is provided with a {@link BatchContext} object.
-   * Use the context object to access Live Object instances in your state and batch operations for them.
+   * Use the context object to access Objects on a channel and batch operations for them.
    *
    * The objects' data is not modified inside the callback function. Instead, the objects will be updated
    * when the batched operations are applied by the Ably service and echoed back to the client.
@@ -2152,9 +2152,9 @@ export declare interface LiveObjects {
    *
    * @param event - The named event to listen for.
    * @param callback - The event listener.
-   * @returns A {@link OnLiveObjectsEventResponse} object that allows the provided listener to be deregistered from future updates.
+   * @returns A {@link OnObjectsEventResponse} object that allows the provided listener to be deregistered from future updates.
    */
-  on(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): OnLiveObjectsEventResponse;
+  on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse;
 
   /**
    * Removes all registrations that match both the specified listener and the specified event.
@@ -2162,7 +2162,7 @@ export declare interface LiveObjects {
    * @param event - The named event.
    * @param callback - The event listener.
    */
-  off(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): void;
+  off(event: ObjectsEvent, callback: ObjectsEventCallback): void;
 
   /**
    * Deregisters all registrations, for all events and listeners.
@@ -2172,39 +2172,39 @@ export declare interface LiveObjects {
 
 declare global {
   /**
-   * A globally defined interface that allows users to define custom types for LiveObjects.
+   * A globally defined interface that allows users to define custom types for Objects.
    */
-  export interface LiveObjectsTypes {
+  export interface ObjectsTypes {
     [key: string]: unknown;
   }
 }
 
 /**
  * Represents the type of data stored in a {@link LiveMap}.
- * It maps string keys to scalar values ({@link StateValue}), or other LiveObjects.
+ * It maps string keys to scalar values ({@link StateValue}), or other Live Objects.
  */
 export type LiveMapType = { [key: string]: StateValue | LiveMap<LiveMapType> | LiveCounter | undefined };
 
 /**
- * The default type for the `root` object in the LiveObjects, based on the globally defined {@link LiveObjectsTypes} interface.
+ * The default type for the `root` object for Objects on a channel, based on the globally defined {@link ObjectsTypes} interface.
  *
- * - If no custom types are provided in `LiveObjectsTypes`, defaults to an untyped root map representation using the {@link LiveMapType} interface.
- * - If a `root` type exists in `LiveObjectsTypes` and conforms to the {@link LiveMapType} interface, it is used as the type for the `root` object.
+ * - If no custom types are provided in `ObjectsTypes`, defaults to an untyped root map representation using the {@link LiveMapType} interface.
+ * - If a `root` type exists in `ObjectsTypes` and conforms to the {@link LiveMapType} interface, it is used as the type for the `root` object.
  * - If the provided `root` type does not match {@link LiveMapType}, a type error message is returned.
  */
 export type DefaultRoot =
   // we need a way to know when no types were provided by the user.
-  // we expect a "root" property to be set on LiveObjectsTypes interface, e.g. it won't be "unknown" anymore
-  unknown extends LiveObjectsTypes['root']
+  // we expect a "root" property to be set on ObjectsTypes interface, e.g. it won't be "unknown" anymore
+  unknown extends ObjectsTypes['root']
     ? LiveMapType // no custom types provided; use the default untyped map representation for the root
-    : LiveObjectsTypes['root'] extends LiveMapType
-      ? LiveObjectsTypes['root'] // "root" property exists, and it is of an expected type, we can use this interface for the root object in LiveObjects.
-      : `Provided type definition for the "root" object in LiveObjectsTypes is not of an expected LiveMapType`;
+    : ObjectsTypes['root'] extends LiveMapType
+      ? ObjectsTypes['root'] // "root" property exists, and it is of an expected type, we can use this interface for the root object in Objects.
+      : `Provided type definition for the "root" object in ObjectsTypes is not of an expected LiveMapType`;
 
 /**
  * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
  */
-export declare interface OnLiveObjectsEventResponse {
+export declare interface OnObjectsEventResponse {
   /**
    * Deregisters the listener passed to the `on` call.
    */
@@ -2212,11 +2212,11 @@ export declare interface OnLiveObjectsEventResponse {
 }
 
 /**
- * Enables grouping multiple Live Object operations together by providing `BatchContext*` wrapper objects.
+ * Enables grouping multiple Objects operations together by providing `BatchContext*` wrapper objects.
  */
 export declare interface BatchContext {
   /**
-   * Mirrors the {@link LiveObjects.getRoot} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
+   * Mirrors the {@link Objects.getRoot} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
    *
    * @returns A {@link BatchContextLiveMap} object.
    */
@@ -2420,7 +2420,7 @@ export declare interface LiveCounterUpdate extends LiveObjectUpdate {
 }
 
 /**
- * Describes the common interface for all conflict-free data structures supported by the `LiveObjects`.
+ * Describes the common interface for all conflict-free data structures supported by the Objects.
  */
 export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjectUpdate> {
   /**
@@ -2626,9 +2626,9 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   presence: RealtimePresence;
   /**
-   * A {@link LiveObjects} object.
+   * A {@link Objects} object.
    */
-  liveObjects: LiveObjects;
+  objects: Objects;
   /**
    * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel.
    *
