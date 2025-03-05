@@ -1,7 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import { BatchContext } from './batchcontext';
 import { LiveCounter } from './livecounter';
-import { Objects } from './liveobjects';
+import { Objects } from './objects';
 
 export class BatchContextLiveCounter {
   private _client: BaseClient;

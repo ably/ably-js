@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('NPM package', () => {
   for (const scenario of [
     { name: 'default export', path: '/index-default.html' },
-    { name: 'Objects plugin export', path: '/index-liveobjects.html' },
+    { name: 'Objects plugin export', path: '/index-objects.html' },
     { name: 'modular export', path: '/index-modular.html' },
   ]) {
     test.describe(scenario.name, () => {

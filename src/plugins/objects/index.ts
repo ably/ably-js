@@ -1,4 +1,4 @@
-import { Objects } from './liveobjects';
+import { Objects } from './objects';
 import { StateMessage } from './statemessage';
 
 export { Objects, StateMessage };

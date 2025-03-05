@@ -3,8 +3,8 @@ import deepEqual from 'deep-equal';
 import type * as API from '../../../ably';
 import { DEFAULTS } from './defaults';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { Objects } from './liveobjects';
 import { ObjectId } from './objectid';
+import { Objects } from './objects';
 import {
   MapSemantics,
   StateMapEntry,

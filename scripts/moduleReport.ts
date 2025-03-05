@@ -323,18 +323,18 @@ async function checkObjectsPluginFiles() {
 
   // These are the files that are allowed to contribute >= `threshold` bytes to the Objects bundle.
   const allowedFiles = new Set([
-    'src/plugins/liveobjects/batchcontext.ts',
-    'src/plugins/liveobjects/batchcontextlivecounter.ts',
-    'src/plugins/liveobjects/batchcontextlivemap.ts',
-    'src/plugins/liveobjects/index.ts',
-    'src/plugins/liveobjects/livecounter.ts',
-    'src/plugins/liveobjects/livemap.ts',
-    'src/plugins/liveobjects/liveobject.ts',
-    'src/plugins/liveobjects/liveobjects.ts',
-    'src/plugins/liveobjects/liveobjectspool.ts',
-    'src/plugins/liveobjects/objectid.ts',
-    'src/plugins/liveobjects/statemessage.ts',
-    'src/plugins/liveobjects/syncliveobjectsdatapool.ts',
+    'src/plugins/objects/batchcontext.ts',
+    'src/plugins/objects/batchcontextlivecounter.ts',
+    'src/plugins/objects/batchcontextlivemap.ts',
+    'src/plugins/objects/index.ts',
+    'src/plugins/objects/livecounter.ts',
+    'src/plugins/objects/livemap.ts',
+    'src/plugins/objects/liveobject.ts',
+    'src/plugins/objects/objectid.ts',
+    'src/plugins/objects/objects.ts',
+    'src/plugins/objects/objectspool.ts',
+    'src/plugins/objects/statemessage.ts',
+    'src/plugins/objects/syncobjectsdatapool.ts',
   ]);
 
   return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);

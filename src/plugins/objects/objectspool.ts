@@ -3,8 +3,8 @@ import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
-import { Objects } from './liveobjects';
 import { ObjectId } from './objectid';
+import { Objects } from './objects';
 
 export const ROOT_OBJECT_ID = 'root';
 

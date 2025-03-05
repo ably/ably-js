@@ -12,7 +12,7 @@ import PresenceMessage, {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from './presencemessage';
-import type * as ObjectsPlugin from 'plugins/liveobjects';
+import type * as ObjectsPlugin from 'plugins/objects';
 
 export const actions = {
   HEARTBEAT: 0,

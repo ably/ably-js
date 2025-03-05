@@ -7,9 +7,9 @@ import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { ObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
+import { ObjectsPool, ROOT_OBJECT_ID } from './objectspool';
 import { StateMessage, StateOperationAction } from './statemessage';
-import { SyncObjectsDataPool } from './syncliveobjectsdatapool';
+import { SyncObjectsDataPool } from './syncobjectsdatapool';
 
 export enum ObjectsEvent {
   syncing = 'syncing',

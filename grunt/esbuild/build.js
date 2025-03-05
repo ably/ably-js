@@ -79,7 +79,7 @@ const minifiedPushPluginCdnConfig = {
 
 const objectsPluginConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  entryPoints: ['src/plugins/objects/index.ts'],
   plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
   outfile: 'build/objects.js',
   external: ['deep-equal'],
@@ -87,14 +87,14 @@ const objectsPluginConfig = {
 
 const objectsPluginCdnConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  entryPoints: ['src/plugins/objects/index.ts'],
   plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
   outfile: 'build/objects.umd.js',
 };
 
 const minifiedObjectsPluginCdnConfig = {
   ...createBaseConfig(),
-  entryPoints: ['src/plugins/liveobjects/index.ts'],
+  entryPoints: ['src/plugins/objects/index.ts'],
   plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
   outfile: 'build/objects.umd.min.js',
   minify: true,

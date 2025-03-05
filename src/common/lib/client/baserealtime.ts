@@ -13,7 +13,7 @@ import { ModularPlugins, RealtimePresencePlugin } from './modularplugins';
 import { TransportNames } from 'common/constants/TransportName';
 import { TransportImplementations } from 'common/platform';
 import Defaults from '../util/defaults';
-import type * as ObjectsPlugin from 'plugins/liveobjects';
+import type * as ObjectsPlugin from 'plugins/objects';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
