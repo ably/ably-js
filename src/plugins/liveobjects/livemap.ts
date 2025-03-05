@@ -283,25 +283,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     // data always exists for non-tombstoned elements
-    const data = element.data!;
-
-    if ('value' in data) {
-      // map entry has a primitive type value, just return it as is.
-      return data.value as T[TKey];
-    }
-
-    // map entry points to another object, get it from the pool
-    const refObject: LiveObject | undefined = this._liveObjects.getPool().get(data.objectId);
-    if (!refObject) {
-      return undefined as T[TKey];
-    }
-
-    if (refObject.isTombstoned()) {
-      // tombstoned objects must not be surfaced to the end users
-      return undefined as T[TKey];
-    }
-
-    return refObject as API.LiveObject as T[TKey];
+    return this._getResolvedValueFromStateData(element.data!) as T[TKey];
   }
 
   size(): number {
@@ -309,26 +291,42 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     let size = 0;
     for (const value of this._dataRef.data.values()) {
-      if (value.tombstone === true) {
-        // should not count removed entries
+      if (this._isMapEntryTombstoned(value)) {
+        // should not count tombstoned entries
         continue;
-      }
-
-      // data always exists for non-tombstoned elements
-      const data = value.data!;
-      if ('objectId' in data) {
-        const refObject = this._liveObjects.getPool().get(data.objectId);
-
-        if (refObject?.isTombstoned()) {
-          // should not count tombstoned objects
-          continue;
-        }
       }
 
       size++;
     }
 
     return size;
+  }
+
+  *entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]> {
+    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+
+    for (const [key, entry] of this._dataRef.data.entries()) {
+      if (this._isMapEntryTombstoned(entry)) {
+        // do not return tombstoned entries
+        continue;
+      }
+
+      // data always exists for non-tombstoned elements
+      const value = this._getResolvedValueFromStateData(entry.data!) as T[TKey];
+      yield [key as TKey, value];
+    }
+  }
+
+  *keys<TKey extends keyof T & string>(): IterableIterator<TKey> {
+    for (const [key] of this.entries<TKey>()) {
+      yield key;
+    }
+  }
+
+  *values<TKey extends keyof T & string>(): IterableIterator<T[TKey]> {
+    for (const [_, value] of this.entries<TKey>()) {
+      yield value;
+    }
   }
 
   /**
@@ -791,5 +789,47 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     });
 
     return liveMapData;
+  }
+
+  /**
+   * Returns value as is if MapEntry stores a primitive type, or a reference to another Live Object from the pool if it stores an objectId.
+   */
+  private _getResolvedValueFromStateData(data: StateData): StateValue | LiveObject | undefined {
+    if ('value' in data) {
+      // state data stores a primitive type value, just return it as is.
+      return data.value;
+    }
+
+    // state data points to another object, get it from the pool
+    const refObject: LiveObject | undefined = this._liveObjects.getPool().get(data.objectId);
+    if (!refObject) {
+      return undefined;
+    }
+
+    if (refObject.isTombstoned()) {
+      // tombstoned objects must not be surfaced to the end users
+      return undefined;
+    }
+
+    return refObject;
+  }
+
+  private _isMapEntryTombstoned(entry: MapEntry): boolean {
+    if (entry.tombstone === true) {
+      return true;
+    }
+
+    // data always exists for non-tombstoned entries
+    const data = entry.data!;
+    if ('objectId' in data) {
+      const refObject = this._liveObjects.getPool().get(data.objectId);
+
+      if (refObject?.isTombstoned()) {
+        // entry that points to tombstoned object should be considered tombstoned as well
+        return true;
+      }
+    }
+
+    return false;
   }
 }

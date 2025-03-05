@@ -2315,6 +2315,21 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
   size(): number;
 
   /**
+   * Returns an iterable of key/value pairs for every entry in the map.
+   */
+  entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]>;
+
+  /**
+   * Returns an iterable of keys in the map.
+   */
+  keys<TKey extends keyof T & string>(): IterableIterator<TKey>;
+
+  /**
+   * Returns an iterable of values in the map.
+   */
+  values<TKey extends keyof T & string>(): IterableIterator<T[TKey]>;
+
+  /**
    * Sends an operation to the Ably system to set a key on this `LiveMap` object to a specified value.
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
