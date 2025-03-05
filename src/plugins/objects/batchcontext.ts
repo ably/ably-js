@@ -4,8 +4,8 @@ import { BatchContextLiveCounter } from './batchcontextlivecounter';
 import { BatchContextLiveMap } from './batchcontextlivemap';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { Objects } from './liveobjects';
-import { ROOT_OBJECT_ID } from './liveobjectspool';
+import { Objects } from './objects';
+import { ROOT_OBJECT_ID } from './objectspool';
 import { StateMessage } from './statemessage';
 
 export class BatchContext {

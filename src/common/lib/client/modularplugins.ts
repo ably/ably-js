@@ -11,7 +11,7 @@ import {
 } from '../types/presencemessage';
 import { TransportCtor } from '../transport/transport';
 import type * as PushPlugin from 'plugins/push';
-import type * as ObjectsPlugin from 'plugins/liveobjects';
+import type * as ObjectsPlugin from 'plugins/objects';
 
 export interface PresenceMessagePlugin {
   presenceMessageFromValues: typeof presenceMessageFromValues;

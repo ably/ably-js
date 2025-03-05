@@ -1,6 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import { Objects } from './liveobjects';
+import { Objects } from './objects';
 import { StateMessage, StateObject, StateOperation } from './statemessage';
 
 export enum LiveObjectSubscriptionEvent {

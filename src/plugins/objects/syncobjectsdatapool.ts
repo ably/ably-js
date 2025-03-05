@@ -1,6 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
-import { Objects } from './liveobjects';
+import { Objects } from './objects';
 import { StateMessage, StateObject } from './statemessage';
 
 export interface LiveObjectDataEntry {

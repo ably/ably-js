@@ -1,4 +1,4 @@
-import Objects from './liveobjects';
+import Objects from './objects';
 import Push from './push';
 
 export interface StandardPlugins {

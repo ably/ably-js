@@ -30,7 +30,7 @@ import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
-import type { Objects, StateMessage } from 'plugins/liveobjects';
+import type { Objects, StateMessage } from 'plugins/objects';
 
 interface RealtimeHistoryParams {
   start?: number;

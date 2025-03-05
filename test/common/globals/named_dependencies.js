@@ -28,8 +28,8 @@ define(function () {
       node: 'test/common/modules/private_api_recorder',
     },
     objects_helper: {
-      browser: 'test/common/modules/live_objects_helper',
-      node: 'test/common/modules/live_objects_helper',
+      browser: 'test/common/modules/objects_helper',
+      node: 'test/common/modules/objects_helper',
     },
   });
 });

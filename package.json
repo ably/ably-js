@@ -31,14 +31,14 @@
       "import": "./build/push.js"
     },
     "./objects": {
-      "types": "./liveobjects.d.ts",
+      "types": "./objects.d.ts",
       "import": "./build/objects.js"
     }
   },
   "files": [
     "build/**",
     "ably.d.ts",
-    "liveobjects.d.ts",
+    "objects.d.ts",
     "modular.d.ts",
     "push.d.ts",
     "resources/**",
