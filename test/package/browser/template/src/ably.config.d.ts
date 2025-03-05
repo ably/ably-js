@@ -15,7 +15,7 @@ type CustomRoot = {
 };
 
 declare global {
-  export interface LiveObjectsTypes {
+  export interface ObjectsTypes {
     root: CustomRoot;
   }
 }

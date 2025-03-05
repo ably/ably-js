@@ -7,46 +7,46 @@ import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { LiveObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
+import { ObjectsPool, ROOT_OBJECT_ID } from './liveobjectspool';
 import { StateMessage, StateOperationAction } from './statemessage';
-import { SyncLiveObjectsDataPool } from './syncliveobjectsdatapool';
+import { SyncObjectsDataPool } from './syncliveobjectsdatapool';
 
-export enum LiveObjectsEvent {
+export enum ObjectsEvent {
   syncing = 'syncing',
   synced = 'synced',
 }
 
-export enum LiveObjectsState {
+export enum ObjectsState {
   initialized = 'initialized',
   syncing = 'syncing',
   synced = 'synced',
 }
 
-const StateToEventsMap: Record<LiveObjectsState, LiveObjectsEvent | undefined> = {
+const StateToEventsMap: Record<ObjectsState, ObjectsEvent | undefined> = {
   initialized: undefined,
-  syncing: LiveObjectsEvent.syncing,
-  synced: LiveObjectsEvent.synced,
+  syncing: ObjectsEvent.syncing,
+  synced: ObjectsEvent.synced,
 };
 
-export type LiveObjectsEventCallback = () => void;
+export type ObjectsEventCallback = () => void;
 
-export interface OnLiveObjectsEventResponse {
+export interface OnObjectsEventResponse {
   off(): void;
 }
 
 export type BatchCallback = (batchContext: BatchContext) => void;
 
-export class LiveObjects {
+export class Objects {
   private _client: BaseClient;
   private _channel: RealtimeChannel;
-  private _state: LiveObjectsState;
+  private _state: ObjectsState;
   // composition over inheritance since we cannot import class directly into plugin code.
   // instead we obtain a class type from the client
   private _eventEmitterInternal: EventEmitter;
   // related to RTC10, should have a separate EventEmitter for users of the library
   private _eventEmitterPublic: EventEmitter;
-  private _liveObjectsPool: LiveObjectsPool;
-  private _syncLiveObjectsDataPool: SyncLiveObjectsDataPool;
+  private _objectsPool: ObjectsPool;
+  private _syncObjectsDataPool: SyncObjectsDataPool;
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
   private _bufferedStateOperations: StateMessage[];
@@ -57,32 +57,32 @@ export class LiveObjects {
   constructor(channel: RealtimeChannel) {
     this._channel = channel;
     this._client = channel.client;
-    this._state = LiveObjectsState.initialized;
+    this._state = ObjectsState.initialized;
     this._eventEmitterInternal = new this._client.EventEmitter(this._client.logger);
     this._eventEmitterPublic = new this._client.EventEmitter(this._client.logger);
-    this._liveObjectsPool = new LiveObjectsPool(this);
-    this._syncLiveObjectsDataPool = new SyncLiveObjectsDataPool(this);
+    this._objectsPool = new ObjectsPool(this);
+    this._syncObjectsDataPool = new SyncObjectsDataPool(this);
     this._bufferedStateOperations = [];
   }
 
   /**
-   * When called without a type variable, we return a default root type which is based on globally defined LiveObjects interface.
-   * A user can provide an explicit type for the getRoot method to explicitly set the LiveObjects type structure on this particular channel.
-   * This is useful when working with LiveObjects on multiple channels with different underlying data.
+   * When called without a type variable, we return a default root type which is based on globally defined interface for Objects feature.
+   * A user can provide an explicit type for the getRoot method to explicitly set the type structure on this particular channel.
+   * This is useful when working with multiple channels with different underlying data structure.
    */
   async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
     this.throwIfInvalidAccessApiConfiguration();
 
     // if we're not synced yet, wait for SYNC sequence to finish before returning root
-    if (this._state !== LiveObjectsState.synced) {
-      await this._eventEmitterInternal.once(LiveObjectsEvent.synced);
+    if (this._state !== ObjectsState.synced) {
+      await this._eventEmitterInternal.once(ObjectsEvent.synced);
     }
 
-    return this._liveObjectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>;
+    return this._objectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>;
   }
 
   /**
-   * Provides access to the synchronous write API for LiveObjects that can be used to batch multiple operations together in a single channel message.
+   * Provides access to the synchronous write API for Objects that can be used to batch multiple operations together in a single channel message.
    */
   async batch(callback: BatchCallback): Promise<void> {
     this.throwIfInvalidWriteApiConfiguration();
@@ -117,15 +117,15 @@ export class LiveObjects {
     // we may have already received the CREATE operation at this point, as it could arrive before the ACK for our publish message.
     // this means the object might already exist in the local pool, having been added during the usual CREATE operation process.
     // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
-    if (this._liveObjectsPool.get(objectId)) {
-      return this._liveObjectsPool.get(objectId) as LiveMap<T>;
+    if (this._objectsPool.get(objectId)) {
+      return this._objectsPool.get(objectId) as LiveMap<T>;
     }
 
     // we haven't received the CREATE operation yet, so we can create a new map object using the locally constructed state operation.
     // we don't know the timeserials for map entries, so we assign an "earliest possible" timeserial to each entry, so that any subsequent operation can be applied to them.
     // we mark the CREATE operation as merged for the object, guaranteeing its idempotency and preventing it from being applied again when the operation arrives.
     const map = LiveMap.fromStateOperation<T>(this, stateMessage.operation!);
-    this._liveObjectsPool.set(objectId, map);
+    this._objectsPool.set(objectId, map);
 
     return map;
   }
@@ -149,19 +149,19 @@ export class LiveObjects {
     // we may have already received the CREATE operation at this point, as it could arrive before the ACK for our publish message.
     // this means the object might already exist in the local pool, having been added during the usual CREATE operation process.
     // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
-    if (this._liveObjectsPool.get(objectId)) {
-      return this._liveObjectsPool.get(objectId) as LiveCounter;
+    if (this._objectsPool.get(objectId)) {
+      return this._objectsPool.get(objectId) as LiveCounter;
     }
 
     // we haven't received the CREATE operation yet, so we can create a new counter object using the locally constructed state operation.
     // we mark the CREATE operation as merged for the object, guaranteeing its idempotency. this ensures we don't double count the initial counter value when the operation arrives.
     const counter = LiveCounter.fromStateOperation(this, stateMessage.operation!);
-    this._liveObjectsPool.set(objectId, counter);
+    this._objectsPool.set(objectId, counter);
 
     return counter;
   }
 
-  on(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): OnLiveObjectsEventResponse {
+  on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse {
     // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._eventEmitterPublic.on(event, callback);
 
@@ -172,7 +172,7 @@ export class LiveObjects {
     return { off };
   }
 
-  off(event: LiveObjectsEvent, callback: LiveObjectsEventCallback): void {
+  off(event: ObjectsEvent, callback: ObjectsEventCallback): void {
     // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
 
     // prevent accidentally calling .off without any arguments on an EventEmitter and removing all callbacks
@@ -191,8 +191,8 @@ export class LiveObjects {
   /**
    * @internal
    */
-  getPool(): LiveObjectsPool {
-    return this._liveObjectsPool;
+  getPool(): ObjectsPool {
+    return this._objectsPool;
   }
 
   /**
@@ -219,7 +219,7 @@ export class LiveObjects {
       this._startNewSync(syncId, syncCursor);
     }
 
-    this._syncLiveObjectsDataPool.applyStateSyncMessages(stateMessages);
+    this._syncObjectsDataPool.applyStateSyncMessages(stateMessages);
 
     // if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
@@ -233,7 +233,7 @@ export class LiveObjects {
    * @internal
    */
   handleStateMessages(stateMessages: StateMessage[]): void {
-    if (this._state !== LiveObjectsState.synced) {
+    if (this._state !== ObjectsState.synced) {
       // The client receives state messages in realtime over the channel concurrently with the SYNC sequence.
       // Some of the incoming state messages may have already been applied to the state objects described in
       // the SYNC sequence, but others may not; therefore we must buffer these messages so that we can apply
@@ -252,11 +252,11 @@ export class LiveObjects {
     this._client.Logger.logAction(
       this._client.logger,
       this._client.Logger.LOG_MINOR,
-      'LiveObjects.onAttached()',
+      'Objects.onAttached()',
       `channel=${this._channel.name}, hasState=${hasState}`,
     );
 
-    const fromInitializedState = this._state === LiveObjectsState.initialized;
+    const fromInitializedState = this._state === ObjectsState.initialized;
     if (hasState || fromInitializedState) {
       // should always start a new sync sequence if we're in the initialized state, no matter the HAS_STATE flag value.
       // this guarantees we emit both "syncing" -> "synced" events in that order.
@@ -265,8 +265,8 @@ export class LiveObjects {
 
     if (!hasState) {
       // if no HAS_STATE flag received on attach, we can end SYNC sequence immediately and treat it as no state on a channel.
-      this._liveObjectsPool.reset();
-      this._syncLiveObjectsDataPool.reset();
+      this._objectsPool.reset();
+      this._syncObjectsDataPool.reset();
       // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
       // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
       this._endSync(fromInitializedState);
@@ -284,8 +284,8 @@ export class LiveObjects {
 
       case 'detached':
       case 'failed':
-        this._liveObjectsPool.reset();
-        this._syncLiveObjectsDataPool.reset();
+        this._objectsPool.reset();
+        this._syncObjectsDataPool.reset();
         break;
     }
   }
@@ -320,7 +320,7 @@ export class LiveObjects {
    * @internal
    */
   throwIfInvalidAccessApiConfiguration(): void {
-    this._throwIfMissingChannelMode('state_subscribe');
+    this._throwIfMissingChannelMode('object_subscribe');
     this._throwIfInChannelState(['detached', 'failed']);
   }
 
@@ -328,17 +328,17 @@ export class LiveObjects {
    * @internal
    */
   throwIfInvalidWriteApiConfiguration(): void {
-    this._throwIfMissingChannelMode('state_publish');
+    this._throwIfMissingChannelMode('object_publish');
     this._throwIfInChannelState(['detached', 'failed', 'suspended']);
   }
 
   private _startNewSync(syncId?: string, syncCursor?: string): void {
     // need to discard all buffered state operation messages on new sync start
     this._bufferedStateOperations = [];
-    this._syncLiveObjectsDataPool.reset();
+    this._syncObjectsDataPool.reset();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
-    this._stateChange(LiveObjectsState.syncing, false);
+    this._stateChange(ObjectsState.syncing, false);
   }
 
   private _endSync(deferStateEvent: boolean): void {
@@ -348,10 +348,10 @@ export class LiveObjects {
     this._applyStateMessages(this._bufferedStateOperations);
 
     this._bufferedStateOperations = [];
-    this._syncLiveObjectsDataPool.reset();
+    this._syncObjectsDataPool.reset();
     this._currentSyncId = undefined;
     this._currentSyncCursor = undefined;
-    this._stateChange(LiveObjectsState.synced, deferStateEvent);
+    this._stateChange(ObjectsState.synced, deferStateEvent);
   }
 
   private _parseSyncChannelSerial(syncChannelSerial: string | null | undefined): {
@@ -373,16 +373,16 @@ export class LiveObjects {
   }
 
   private _applySync(): void {
-    if (this._syncLiveObjectsDataPool.isEmpty()) {
+    if (this._syncObjectsDataPool.isEmpty()) {
       return;
     }
 
     const receivedObjectIds = new Set<string>();
     const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate | LiveObjectUpdateNoop }[] = [];
 
-    for (const [objectId, entry] of this._syncLiveObjectsDataPool.entries()) {
+    for (const [objectId, entry] of this._syncObjectsDataPool.entries()) {
       receivedObjectIds.add(objectId);
-      const existingObject = this._liveObjectsPool.get(objectId);
+      const existingObject = this._objectsPool.get(objectId);
 
       if (existingObject) {
         const update = existingObject.overrideWithStateObject(entry.stateObject);
@@ -408,11 +408,11 @@ export class LiveObjects {
           throw new this._client.ErrorInfo(`Unknown Live Object type: ${objectType}`, 50000, 500);
       }
 
-      this._liveObjectsPool.set(objectId, newObject);
+      this._objectsPool.set(objectId, newObject);
     }
 
-    // need to remove LiveObject instances from the LiveObjectsPool for which objectIds were not received during the SYNC sequence
-    this._liveObjectsPool.deleteExtraObjectIds([...receivedObjectIds]);
+    // need to remove Live Object instances from the ObjectsPool for which objectIds were not received during the SYNC sequence
+    this._objectsPool.deleteExtraObjectIds([...receivedObjectIds]);
 
     // call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
@@ -424,7 +424,7 @@ export class LiveObjects {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'LiveObjects._applyStateMessages()',
+          'Objects._applyStateMessages()',
           `state operation message is received without 'operation' field, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
@@ -445,22 +445,22 @@ export class LiveObjects {
           // since they need to be able to eventually initialize themselves from that *_CREATE op.
           // so to simplify operations handling, we always try to create a zero-value object in the pool first,
           // and then we can always apply the operation on the existing object in the pool.
-          this._liveObjectsPool.createZeroValueObjectIfNotExists(stateOperation.objectId);
-          this._liveObjectsPool.get(stateOperation.objectId)!.applyOperation(stateOperation, stateMessage);
+          this._objectsPool.createZeroValueObjectIfNotExists(stateOperation.objectId);
+          this._objectsPool.get(stateOperation.objectId)!.applyOperation(stateOperation, stateMessage);
           break;
 
         default:
           this._client.Logger.logAction(
             this._client.logger,
             this._client.Logger.LOG_MAJOR,
-            'LiveObjects._applyStateMessages()',
+            'Objects._applyStateMessages()',
             `received unsupported action in state operation message: ${stateOperation.action}, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
           );
       }
     }
   }
 
-  private _throwIfMissingChannelMode(expectedMode: 'state_subscribe' | 'state_publish'): void {
+  private _throwIfMissingChannelMode(expectedMode: 'object_subscribe' | 'object_publish'): void {
     // channel.modes is only populated on channel attachment, so use it only if it is set,
     // otherwise as a best effort use user provided channel options
     if (this._channel.modes != null && !this._channel.modes.includes(expectedMode)) {
@@ -471,7 +471,7 @@ export class LiveObjects {
     }
   }
 
-  private _stateChange(state: LiveObjectsState, deferEvent: boolean): void {
+  private _stateChange(state: ObjectsState, deferEvent: boolean): void {
     if (this._state === state) {
       return;
     }

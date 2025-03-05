@@ -11,9 +11,9 @@ define(function () {
       browser: 'build/push',
       node: 'build/push',
     },
-    live_objects: {
-      browser: 'build/liveobjects',
-      node: 'build/liveobjects',
+    objects: {
+      browser: 'build/objects',
+      node: 'build/objects',
     },
 
     // test modules
@@ -27,7 +27,7 @@ define(function () {
       browser: 'test/common/modules/private_api_recorder',
       node: 'test/common/modules/private_api_recorder',
     },
-    live_objects_helper: {
+    objects_helper: {
       browser: 'test/common/modules/live_objects_helper',
       node: 'test/common/modules/live_objects_helper',
     },

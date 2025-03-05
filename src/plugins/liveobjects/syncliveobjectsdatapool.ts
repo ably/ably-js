@@ -1,6 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
-import { LiveObjects } from './liveobjects';
+import { Objects } from './liveobjects';
 import { StateMessage, StateObject } from './statemessage';
 
 export interface LiveObjectDataEntry {
@@ -22,14 +22,14 @@ export type AnyDataEntry = LiveCounterDataEntry | LiveMapDataEntry;
 /**
  * @internal
  */
-export class SyncLiveObjectsDataPool {
+export class SyncObjectsDataPool {
   private _client: BaseClient;
   private _channel: RealtimeChannel;
   private _pool: Map<string, AnyDataEntry>;
 
-  constructor(private _liveObjects: LiveObjects) {
-    this._client = this._liveObjects.getClient();
-    this._channel = this._liveObjects.getChannel();
+  constructor(private _objects: Objects) {
+    this._client = this._objects.getClient();
+    this._channel = this._objects.getChannel();
     this._pool = new Map<string, AnyDataEntry>();
   }
 
@@ -55,7 +55,7 @@ export class SyncLiveObjectsDataPool {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'LiveObjects.SyncLiveObjectsDataPool.applyStateSyncMessages()',
+          'SyncObjectsDataPool.applyStateSyncMessages()',
           `state object message is received during SYNC without 'object' field, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
@@ -71,7 +71,7 @@ export class SyncLiveObjectsDataPool {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'LiveObjects.SyncLiveObjectsDataPool.applyStateSyncMessages()',
+          'SyncObjectsDataPool.applyStateSyncMessages()',
           `received unsupported state object message during SYNC, expected 'counter' or 'map' to be present, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
         );
       }

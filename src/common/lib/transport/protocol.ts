@@ -81,7 +81,7 @@ class Protocol extends EventEmitter {
           stringifyProtocolMessage(
             pendingMessage.message,
             this.transport.connectionManager.realtime._RealtimePresence,
-            this.transport.connectionManager.realtime._LiveObjectsPlugin,
+            this.transport.connectionManager.realtime._objectsPlugin,
           ),
       );
     }
