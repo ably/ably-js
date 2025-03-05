@@ -588,82 +588,82 @@ For more information on publishing push notifications over Ably, see the [Ably p
 
 ### LiveObjects
 
-#### Using the plugin
+#### Using the Objects plugin
 
-LiveObjects functionality is supported for Realtime clients via the LiveObjects plugin. In order to use LiveObjects, you must pass in the plugin via client options.
+LiveObjects functionality is supported for Realtime clients via the Objects plugin. In order to use Objects on a channel, you must pass in the plugin via client options.
 
 ```typescript
 import * as Ably from 'ably';
-import LiveObjects from 'ably/liveobjects';
+import Objects from 'ably/objects';
 
 const client = new Ably.Realtime({
   ...options,
-  plugins: { LiveObjects },
+  plugins: { Objects },
 });
 ```
 
-LiveObjects plugin also works with the [Modular variant](#modular-tree-shakable-variant) of the library.
+Objects plugin also works with the [Modular variant](#modular-tree-shakable-variant) of the library.
 
-Alternatively, you can load the LiveObjects plugin directly in your HTML using `script` tag (in case you can't use a package manager):
+Alternatively, you can load the Objects plugin directly in your HTML using `script` tag (in case you can't use a package manager):
 
 ```html
-<script src="https://cdn.ably.com/lib/liveobjects.umd.min-2.js"></script>
+<script src="https://cdn.ably.com/lib/objects.umd.min-2.js"></script>
 ```
 
-When loaded this way, the LiveObjects plugin will be available on the global object via the `AblyLiveObjectsPlugin` property, so you will need to pass it to the Ably instance as follows:
+When loaded this way, the Objects plugin will be available on the global object via the `AblyObjectsPlugin` property, so you will need to pass it to the Ably instance as follows:
 
 ```typescript
 const client = new Ably.Realtime({
   ...options,
-  plugins: { LiveObjects: AblyLiveObjectsPlugin },
+  plugins: { Objects: AblyObjectsPlugin },
 });
 ```
 
-The LiveObjects plugin is developed as part of the Ably client library, so it is available for the same versions as the Ably client library itself. It also means that it follows the same semantic versioning rules as they were defined for [the Ably client library](#for-browsers). For example, to lock into a major or minor version of the LiveObjects plugin, you can specify a specific version number such as https://cdn.ably.com/lib/liveobjects.umd.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/liveobjects.umd.min-2.4.js for all v2.4._ versions, or you can lock into a single release with https://cdn.ably.com/lib/liveobjects.umd.min-2.4.0.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/liveobjects.umd-2.js.
+The Objects plugin is developed as part of the Ably client library, so it is available for the same versions as the Ably client library itself. It also means that it follows the same semantic versioning rules as they were defined for [the Ably client library](#for-browsers). For example, to lock into a major or minor version of the Objects plugin, you can specify a specific version number such as https://cdn.ably.com/lib/objects.umd.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/objects.umd.min-2.4.js for all v2.4._ versions, or you can lock into a single release with https://cdn.ably.com/lib/objects.umd.min-2.4.0.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/objects.umd-2.js.
 
 For more information about the LiveObjects product, see the [Ably LiveObjects documentation](https://ably.com/docs/products/liveobjects).
 
-#### State Channel Modes
+#### Objects Channel Modes
 
-To use the LiveObjects feature, clients must attach to a channel with the correct channel mode:
+To use the Objects on a channel, clients must attach to a channel with the correct channel mode:
 
-- `state_subscribe` - required to retrieve state of Live Objects for a channel
-- `state_publish` - required to create new and modify existing Live Objects on a channel
+- `object_subscribe` - required to retrieve Objects for a channel
+- `object_publish` - required to create new and modify existing Objects on a channel
 
 ```typescript
 const client = new Ably.Realtime({
   // authentication options
   ...options,
-  plugins: { LiveObjects },
+  plugins: { Objects },
 });
-const channelOptions = { modes: ['state_subscribe', 'state_publish'] };
-const channel = client.channels.get('my_live_objects_channel', channelOptions);
-const liveObjects = channel.liveObjects;
+const channelOptions = { modes: ['object_subscribe', 'object_publish'] };
+const channel = client.channels.get('my_objects_channel', channelOptions);
+const objects = channel.objects;
 ```
 
-The authentication token must include corresponding capabilities for the client to interact with LiveObjects.
+The authentication token must include corresponding capabilities for the client to interact with Objects.
 
 #### Getting the Root Object
 
-The root object represents the top-level entry point for LiveObjects state within a channel. It gives access to all other nested Live Objects.
+The root object represents the top-level entry point for Objects within a channel. It gives access to all other nested Live Objects.
 
 ```typescript
-const root = await liveObjects.getRoot();
+const root = await objects.getRoot();
 ```
 
-The root object is a `LiveMap` instance and serves as the starting point for storing and organizing LiveObjects state.
+The root object is a `LiveMap` instance and serves as the starting point for storing and organizing Objects on a channel.
 
 #### Live Object Types
 
 LiveObjects currently supports two primary data structures; `LiveMap` and `LiveCounter`.
 
-`LiveMap` - A key/value map data structure, similar to a JavaScript `Map`, where all changes are synchronized across clients in realtime. It allows you to store primitive values and other Live Objects, enabling a composable state.
+`LiveMap` - A key/value map data structure, similar to a JavaScript `Map`, where all changes are synchronized across clients in realtime. It allows you to store primitive values and other Live Objects, enabling composability.
 
 You can use `LiveMap` as follows:
 
 ```typescript
 // root object is a LiveMap
-const root = await liveObjects.getRoot();
+const root = await objects.getRoot();
 
 // you can read values for a key with .get
 root.get('foo');
@@ -690,7 +690,7 @@ await root.set('bar', 1);
 await root.set('baz', true);
 await root.set('qux', new Uint8Array([21, 31]));
 // as well as other live objects
-const counter = await liveObjects.createCounter();
+const counter = await objects.createCounter();
 await root.set('quux', counter);
 
 // and you can remove keys with .remove
@@ -702,7 +702,7 @@ await root.remove('name');
 You can use `LiveCounter` as follows:
 
 ```typescript
-const counter = await liveObjects.createCounter();
+const counter = await objects.createCounter();
 
 // you can get current value of a counter with .value
 counter.value();
@@ -714,14 +714,14 @@ await counter.decrement(2);
 
 #### Subscribing to Updates
 
-Subscribing to updates on Live Objects allows you to receive changes made by other clients in realtime. Since multiple clients may modify the same Live Objects state, subscribing ensures that your application reacts to external updates as soon as they are received.
+Subscribing to updates on Live Objects allows you to receive changes made by other clients in realtime. Since multiple clients may modify the same Live Objects, subscribing ensures that your application reacts to external updates as soon as they are received.
 
 Additionally, mutation methods such as `LiveMap.set`, `LiveCounter.increment`, and `LiveCounter.decrement` do not directly edit the current state of the object locally. Instead, they send the intended operation to the Ably system, and the change is applied to the local object only when the corresponding realtime operation is echoed back to the client. This means that the state you retrieve immediately after a mutation may not reflect the latest updates yet.
 
 You can subscribe to updates on all Live Objects using subscription listeners as follows:
 
 ```typescript
-const root = await liveObjects.getRoot();
+const root = await objects.getRoot();
 
 // subscribe to updates on a LiveMap
 root.subscribe((update: LiveMapUpdate) => {
@@ -730,7 +730,7 @@ root.subscribe((update: LiveMapUpdate) => {
 });
 
 // subscribe to updates on a LiveCounter
-const counter = await liveObjects.createCounter();
+const counter = await objects.createCounter();
 counter.subscribe((update: LiveCounterUpdate) => {
   console.log('LiveCounter new value:', counter.value()); // can read the current value of the counter inside this callback
   console.log('LiveCounter update details:', update); // and can get update details from the provided update object
@@ -775,18 +775,18 @@ root.unsubscribeAll();
 New `LiveMap` and `LiveCounter` instances can be created as follows:
 
 ```typescript
-const counter = await liveObjects.createCounter(123); // with optional initial counter value
-const map = await liveObjects.createMap({ key: 'value' }); // with optional initial map entries
+const counter = await objects.createCounter(123); // with optional initial counter value
+const map = await objects.createMap({ key: 'value' }); // with optional initial map entries
 ```
 
-To persist them within the LiveObjects state, they must be assigned to a parent `LiveMap` that is connected to the root object through the object hierarchy:
+To persist them within the Objects state, they must be assigned to a parent `LiveMap` that is connected to the root object through the object hierarchy:
 
 ```typescript
-const root = await liveObjects.getRoot();
+const root = await objects.getRoot();
 
-const counter = await liveObjects.createCounter();
-const map = await liveObjects.createMap({ counter });
-const outerMap = await liveObjects.createMap({ map });
+const counter = await objects.createCounter();
+const map = await objects.createMap({ counter });
+const outerMap = await objects.createMap({ map });
 
 await root.set('outerMap', outerMap);
 
@@ -804,7 +804,7 @@ Batching allows multiple operations to be grouped into a single message that is 
 Within a batch callback, the `BatchContext` instance provides wrapper objects around regular Live Objects with a synchronous API for storing changes in the batch context.
 
 ```typescript
-await liveObjects.batch((ctx) => {
+await objects.batch((ctx) => {
   const root = ctx.getRoot();
 
   root.set('foo', 'bar');
@@ -821,16 +821,16 @@ await liveObjects.batch((ctx) => {
 
 Live Objects emit lifecycle events to signal critical state changes, such as synchronization progress and object deletions.
 
-**Synchronization Events** - the `syncing` and `synced` events notify when the LiveObjects state is being synchronized with the Ably service. These events can be useful for displaying loading indicators, preventing user edits during synchronization, or triggering application logic when the data was loaded for the first time.
+**Synchronization Events** - the `syncing` and `synced` events notify when the Objects state is being synchronized with the Ably service. These events can be useful for displaying loading indicators, preventing user edits during synchronization, or triggering application logic when the data was loaded for the first time.
 
 ```typescript
-liveObjects.on('syncing', () => {
-  console.log('LiveObjects state is syncing...');
+objects.on('syncing', () => {
+  console.log('Objects are syncing...');
   // Example: Show a loading indicator
 });
 
-liveObjects.on('synced', () => {
-  console.log('LiveObjects state has been synced.');
+objects.on('synced', () => {
+  console.log('Objects have been synced.');
   // Example: Hide loading indicator
 });
 ```
@@ -838,7 +838,7 @@ liveObjects.on('synced', () => {
 **Object Deletion Events** - objects that have been orphaned for a long period (i.e., not connected to the state tree graph by being set as a key in a map accessible from the root map object) will eventually be deleted. Once a Live Object is deleted, it can no longer be interacted with. You should avoid accessing its data or trying to update its value and you should remove all references to the deleted object in your application.
 
 ```typescript
-const root = await liveObjects.getRoot();
+const root = await objects.getRoot();
 const counter = root.get('counter');
 
 counter.on('deleted', () => {
@@ -850,23 +850,23 @@ counter.on('deleted', () => {
 To unsubscribe from lifecycle events:
 
 ```typescript
-// same API for channel.liveObjects and LiveObject instances
+// same API for channel.objects and LiveObject instances
 // use dedicated off function from the .on call
-const { off } = liveObjects.on('synced', () => {});
+const { off } = objects.on('synced', () => {});
 off();
 
 // call .off with an event name and a listener reference
 const listener = () => {};
-liveObjects.on('synced', listener);
-liveObjects.off('synced', listener);
+objects.on('synced', listener);
+objects.off('synced', listener);
 
 // deregister all listeners using .offAll
-liveObjects.offAll();
+objects.offAll();
 ```
 
-#### Typing LiveObjects
+#### Typing Objects
 
-You can provide your own TypeScript typings for LiveObjects by providing a globally defined `LiveObjectsTypes` interface.
+You can provide your own TypeScript typings for Objects by providing a globally defined `ObjectsTypes` interface.
 
 ```typescript
 // file: ably.config.d.ts
@@ -880,23 +880,23 @@ type MyCustomRoot = {
 };
 
 declare global {
-  export interface LiveObjectsTypes {
+  export interface ObjectsTypes {
     root: MyCustomRoot;
   }
 }
 ```
 
-This will enable code completion and editor hints when interacting with the LiveObjects API:
+This will enable code completion and editor hints when interacting with the Objects API:
 
 ```typescript
-const root = await liveObjects.getRoot(); // uses types defined by global LiveObjectsTypes interface by default
+const root = await objects.getRoot(); // uses types defined by global ObjectsTypes interface by default
 
 const map = root.get('map'); // LiveMap<{ foo: string; counter: LiveCounter }>
 map.set('foo', 1); // TypeError
 map.get('counter').value(); // autocompletion for counter method names
 ```
 
-You can also provide typings for the LiveObjects state tree when calling the `liveObjects.getRoot` method, allowing you to have different state typings for different channels:
+You can also provide typings for the channel Objects when calling the `objects.getRoot` method, allowing you to have different typings for different channels:
 
 ```typescript
 type ReactionsRoot = {
@@ -908,8 +908,8 @@ type PollsRoot = {
   currentPoll: LiveMap;
 };
 
-const reactionsRoot = await reactionsChannel.liveObjects.getRoot<ReactionsRoot>();
-const pollsRoot = await pollsChannel.liveObjects.getRoot<PollsRoot>();
+const reactionsRoot = await reactionsChannel.objects.getRoot<ReactionsRoot>();
+const pollsRoot = await pollsChannel.objects.getRoot<PollsRoot>();
 ```
 
 ## Delta Plugin

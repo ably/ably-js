@@ -44,9 +44,9 @@ interface PluginInfo {
   external?: string[];
 }
 
-const buildablePlugins: Record<'push' | 'liveObjects', PluginInfo> = {
+const buildablePlugins: Record<'push' | 'objects', PluginInfo> = {
   push: { description: 'Push', path: './build/push.js', external: ['ulid'] },
-  liveObjects: { description: 'LiveObjects', path: './build/liveobjects.js', external: ['deep-equal'] },
+  objects: { description: 'Objects', path: './build/objects.js', external: ['deep-equal'] },
 };
 
 function formatBytes(bytes: number) {
@@ -215,8 +215,8 @@ async function calculatePushPluginSize(): Promise<Output> {
   return calculatePluginSize(buildablePlugins.push);
 }
 
-async function calculateLiveObjectsPluginSize(): Promise<Output> {
-  return calculatePluginSize(buildablePlugins.liveObjects);
+async function calculateObjectsPluginSize(): Promise<Output> {
+  return calculatePluginSize(buildablePlugins.objects);
 }
 
 async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Output> {
@@ -317,11 +317,11 @@ async function checkPushPluginFiles() {
   return checkBundleFiles(pushPluginBundleInfo, allowedFiles, 100);
 }
 
-async function checkLiveObjectsPluginFiles() {
-  const { path, external } = buildablePlugins.liveObjects;
+async function checkObjectsPluginFiles() {
+  const { path, external } = buildablePlugins.objects;
   const pluginBundleInfo = getBundleInfo(path, undefined, external);
 
-  // These are the files that are allowed to contribute >= `threshold` bytes to the LiveObjects bundle.
+  // These are the files that are allowed to contribute >= `threshold` bytes to the Objects bundle.
   const allowedFiles = new Set([
     'src/plugins/liveobjects/batchcontext.ts',
     'src/plugins/liveobjects/batchcontextlivecounter.ts',
@@ -391,7 +391,7 @@ async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string
       calculateAndCheckExportSizes(),
       calculateAndCheckFunctionSizes(),
       calculatePushPluginSize(),
-      calculateLiveObjectsPluginSize(),
+      calculateObjectsPluginSize(),
     ])
   ).reduce((accum, current) => ({
     tableRows: [...accum.tableRows, ...current.tableRows],
@@ -400,7 +400,7 @@ async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string
 
   output.errors.push(...(await checkBaseRealtimeFiles()));
   output.errors.push(...(await checkPushPluginFiles()));
-  output.errors.push(...(await checkLiveObjectsPluginFiles()));
+  output.errors.push(...(await checkObjectsPluginFiles()));
 
   const table = new Table({
     style: { head: ['green'] },

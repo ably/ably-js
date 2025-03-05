@@ -1,9 +1,9 @@
-import { LiveObjects } from './liveobjects';
+import { Objects } from './liveobjects';
 import { StateMessage } from './statemessage';
 
-export { LiveObjects, StateMessage };
+export { Objects, StateMessage };
 
 export default {
-  LiveObjects,
+  Objects,
   StateMessage,
 };

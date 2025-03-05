@@ -131,7 +131,7 @@ abstract class Transport extends EventEmitter {
           stringifyProtocolMessage(
             message,
             this.connectionManager.realtime._RealtimePresence,
-            this.connectionManager.realtime._LiveObjectsPlugin,
+            this.connectionManager.realtime._objectsPlugin,
           ) +
           '; connectionId = ' +
           this.connectionManager.connectionId,

@@ -1,10 +1,10 @@
 'use strict';
 
 /**
- * LiveObjects helper to create pre-determined state tree on channels
+ * Objects helper to create pre-determined state tree on channels
  */
-define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveObjectsPlugin) {
-  const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
+define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlugin) {
+  const createPM = Ably.makeProtocolMessageFromDeserialized({ ObjectsPlugin });
 
   const ACTIONS = {
     MAP_CREATE: 0,
@@ -19,7 +19,7 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     return Helper.randomString();
   }
 
-  class LiveObjectsHelper {
+  class ObjectsHelper {
     constructor(helper) {
       this._helper = helper;
       this._rest = helper.AblyRest({ useBinaryProtocol: false });
@@ -32,7 +32,7 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     }
 
     /**
-     * Sends REST STATE requests to create LiveObjects state tree on a provided channel name:
+     * Sends REST STATE requests to create Objects state tree on a provided channel name:
      *
      * root "emptyMap" -> Map#1 {} -- empty map
      * root "referencedMap" -> Map#2 { "counterKey": <object id Counter#3> }
@@ -311,7 +311,7 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
       }
 
       const method = 'post';
-      const path = `/channels/${channelName}/state`;
+      const path = `/channels/${channelName}/objects`;
 
       const response = await this._rest.request(method, path, 3, null, opBody, null);
 
@@ -329,5 +329,5 @@ define(['ably', 'shared_helper', 'live_objects'], function (Ably, Helper, LiveOb
     }
   }
 
-  return (module.exports = LiveObjectsHelper);
+  return (module.exports = ObjectsHelper);
 });

@@ -1,30 +1,30 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'], function (
+define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function (
   Ably,
   Helper,
   chai,
-  LiveObjectsPlugin,
-  LiveObjectsHelper,
+  ObjectsPlugin,
+  ObjectsHelper,
 ) {
   const expect = chai.expect;
   const BufferUtils = Ably.Realtime.Platform.BufferUtils;
   const Utils = Ably.Realtime.Utils;
   const MessageEncoding = Ably.Realtime._MessageEncoding;
-  const createPM = Ably.makeProtocolMessageFromDeserialized({ LiveObjectsPlugin });
-  const liveObjectsFixturesChannel = 'liveobjects_fixtures';
+  const createPM = Ably.makeProtocolMessageFromDeserialized({ ObjectsPlugin });
+  const objectsFixturesChannel = 'objects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
-  const gcIntervalOriginal = LiveObjectsPlugin.LiveObjects._DEFAULTS.gcInterval;
-  const gcGracePeriodOriginal = LiveObjectsPlugin.LiveObjects._DEFAULTS.gcGracePeriod;
+  const gcIntervalOriginal = ObjectsPlugin.Objects._DEFAULTS.gcInterval;
+  const gcGracePeriodOriginal = ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod;
 
-  function RealtimeWithLiveObjects(helper, options) {
-    return helper.AblyRealtime({ ...options, plugins: { LiveObjects: LiveObjectsPlugin } });
+  function RealtimeWithObjects(helper, options) {
+    return helper.AblyRealtime({ ...options, plugins: { Objects: ObjectsPlugin } });
   }
 
-  function channelOptionsWithLiveObjects(options) {
+  function channelOptionsWithObjects(options) {
     return {
       ...options,
-      modes: ['STATE_SUBSCRIBE', 'STATE_PUBLISH'],
+      modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'],
     };
   }
 
@@ -88,7 +88,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
   }
 
   function stateMessageFromValues(values) {
-    return LiveObjectsPlugin.StateMessage.fromValues(values, Utils, MessageEncoding);
+    return ObjectsPlugin.StateMessage.fromValues(values, Utils, MessageEncoding);
   }
 
   async function waitForMapKeyUpdate(map, key) {
@@ -136,21 +136,21 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
   }
 
   /**
-   * The channel with fixture data may not yet be populated by REST STATE requests made by LiveObjectsHelper.
+   * The channel with fixture data may not yet be populated by REST STATE requests made by ObjectsHelper.
    * This function waits for a channel to have all keys set.
    */
   async function waitFixtureChannelIsReady(client) {
-    const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
-    const liveObjects = channel.liveObjects;
-    const expectedKeys = LiveObjectsHelper.fixtureRootKeys();
+    const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
+    const objects = channel.objects;
+    const expectedKeys = ObjectsHelper.fixtureRootKeys();
 
     await channel.attach();
-    const root = await liveObjects.getRoot();
+    const root = await objects.getRoot();
 
     await Promise.all(expectedKeys.map((key) => (root.get(key) ? undefined : waitForMapKeyUpdate(root, key))));
   }
 
-  describe('realtime/live_objects', function () {
+  describe('realtime/objects', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
@@ -162,26 +162,26 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           return;
         }
 
-        new LiveObjectsHelper(helper)
-          .initForChannel(liveObjectsFixturesChannel)
+        new ObjectsHelper(helper)
+          .initForChannel(objectsFixturesChannel)
           .then(done)
           .catch((err) => done(err));
       });
     });
 
-    describe('Realtime without LiveObjects plugin', () => {
+    describe('Realtime without Objects plugin', () => {
       /** @nospec */
-      it("throws an error when attempting to access the channel's `liveObjects` property", async function () {
+      it("throws an error when attempting to access the channel's `objects` property", async function () {
         const helper = this.test.helper;
         const client = helper.AblyRealtime({ autoConnect: false });
         const channel = client.channels.get('channel');
-        expect(() => channel.liveObjects).to.throw('LiveObjects plugin not provided');
+        expect(() => channel.objects).to.throw('Objects plugin not provided');
       });
 
       /** @nospec */
       it(`doesn't break when it receives a STATE ProtocolMessage`, async function () {
         const helper = this.test.helper;
-        const liveObjectsHelper = new LiveObjectsHelper(helper);
+        const objectsHelper = new ObjectsHelper(helper);
         const testClient = helper.AblyRealtime();
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
@@ -193,20 +193,18 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           const publishClient = helper.AblyRealtime();
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
-            // inject STATE message that should be ignored and not break anything without LiveObjects plugin
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            // inject STATE message that should be ignored and not break anything without the plugin
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel: testChannel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [
-                liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'stringKey', data: { value: 'stringValue' } }),
-              ],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'stringKey', data: { value: 'stringValue' } })],
             });
 
             const publishChannel = publishClient.channels.get('channel');
             await publishChannel.publish(null, 'test');
 
-            // regular message subscriptions should still work after processing STATE_SYNC message without LiveObjects plugin
+            // regular message subscriptions should still work after processing STATE_SYNC message without the plugin
             await receivedMessagePromise;
           }, publishClient);
         }, testClient);
@@ -215,7 +213,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it(`doesn't break when it receives a STATE_SYNC ProtocolMessage`, async function () {
         const helper = this.test.helper;
-        const liveObjectsHelper = new LiveObjectsHelper(helper);
+        const objectsHelper = new ObjectsHelper(helper);
         const testClient = helper.AblyRealtime();
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
@@ -227,12 +225,12 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           const publishClient = helper.AblyRealtime();
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
-            // inject STATE_SYNC message that should be ignored and not break anything without LiveObjects plugin
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            // inject STATE_SYNC message that should be ignored and not break anything without the plugin
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel: testChannel,
               syncSerial: 'serial:',
               state: [
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                 }),
@@ -242,33 +240,33 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const publishChannel = publishClient.channels.get('channel');
             await publishChannel.publish(null, 'test');
 
-            // regular message subscriptions should still work after processing STATE_SYNC message without LiveObjects plugin
+            // regular message subscriptions should still work after processing STATE_SYNC message without the plugin
             await receivedMessagePromise;
           }, publishClient);
         }, testClient);
       });
     });
 
-    describe('Realtime with LiveObjects plugin', () => {
+    describe('Realtime with Objects plugin', () => {
       /** @nospec */
-      it("returns LiveObjects class instance when accessing channel's `liveObjects` property", async function () {
+      it("returns Objects class instance when accessing channel's `objects` property", async function () {
         const helper = this.test.helper;
-        const client = RealtimeWithLiveObjects(helper, { autoConnect: false });
+        const client = RealtimeWithObjects(helper, { autoConnect: false });
         const channel = client.channels.get('channel');
-        expectInstanceOf(channel.liveObjects, 'LiveObjects');
+        expectInstanceOf(channel.objects, 'Objects');
       });
 
       /** @nospec */
       it('getRoot() returns LiveMap instance', async function () {
         const helper = this.test.helper;
-        const client = RealtimeWithLiveObjects(helper);
+        const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
 
           await channel.attach();
-          const root = await liveObjects.getRoot();
+          const root = await objects.getRoot();
 
           expectInstanceOf(root, 'LiveMap', 'root object should be of LiveMap type');
         }, client);
@@ -277,14 +275,14 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it('getRoot() returns live object with id "root"', async function () {
         const helper = this.test.helper;
-        const client = RealtimeWithLiveObjects(helper);
+        const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
 
           await channel.attach();
-          const root = await liveObjects.getRoot();
+          const root = await objects.getRoot();
 
           helper.recordPrivateApi('call.LiveObject.getObjectId');
           expect(root.getObjectId()).to.equal('root', 'root object should have an object id "root"');
@@ -294,14 +292,14 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it('getRoot() returns empty root when no state exist on a channel', async function () {
         const helper = this.test.helper;
-        const client = RealtimeWithLiveObjects(helper);
+        const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
 
           await channel.attach();
-          const root = await liveObjects.getRoot();
+          const root = await objects.getRoot();
 
           expect(root.size()).to.equal(0, 'Check root has no keys');
         }, client);
@@ -310,13 +308,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it('getRoot() waits for initial STATE_SYNC to be completed before resolving', async function () {
         const helper = this.test.helper;
-        const client = RealtimeWithLiveObjects(helper);
+        const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
 
-          const getRootPromise = liveObjects.getRoot();
+          const getRootPromise = objects.getRoot();
 
           let getRootResolved = false;
           getRootPromise.then(() => {
@@ -338,18 +336,18 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it('getRoot() resolves immediately when STATE_SYNC sequence is completed', async function () {
         const helper = this.test.helper;
-        const client = RealtimeWithLiveObjects(helper);
+        const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
 
           await channel.attach();
           // wait for STATE_SYNC sequence to complete by accessing root for the first time
-          await liveObjects.getRoot();
+          await objects.getRoot();
 
           let resolvedImmediately = false;
-          liveObjects.getRoot().then(() => {
+          objects.getRoot().then(() => {
             resolvedImmediately = true;
           });
 
@@ -364,19 +362,19 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       it('getRoot() waits for STATE_SYNC with empty cursor before resolving', async function () {
         const helper = this.test.helper;
-        const liveObjectsHelper = new LiveObjectsHelper(helper);
-        const client = RealtimeWithLiveObjects(helper);
+        const objectsHelper = new ObjectsHelper(helper);
+        const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
 
           await channel.attach();
           // wait for initial STATE_SYNC sequence to complete
-          await liveObjects.getRoot();
+          await objects.getRoot();
 
           // inject STATE_SYNC message to emulate start of a new sequence
-          await liveObjectsHelper.processStateObjectMessageOnChannel({
+          await objectsHelper.processStateObjectMessageOnChannel({
             channel,
             // have cursor so client awaits for additional STATE_SYNC messages
             syncSerial: 'serial:cursor',
@@ -384,7 +382,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
           let getRootResolved = false;
           let root;
-          liveObjects.getRoot().then((value) => {
+          objects.getRoot().then((value) => {
             getRootResolved = true;
             root = value;
           });
@@ -396,12 +394,12 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           expect(getRootResolved, 'Check getRoot() is not resolved while STATE_SYNC is in progress').to.be.false;
 
           // inject final STATE_SYNC message
-          await liveObjectsHelper.processStateObjectMessageOnChannel({
+          await objectsHelper.processStateObjectMessageOnChannel({
             channel,
             // no cursor to indicate the end of STATE_SYNC messages
             syncSerial: 'serial:',
             state: [
-              liveObjectsHelper.mapObject({
+              objectsHelper.mapObject({
                 objectId: 'root',
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                 initialEntries: { key: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 1 } } },
@@ -425,16 +423,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         function (options, channelName) {
           return async function () {
             const helper = this.test.helper;
-            const client = RealtimeWithLiveObjects(helper, options);
+            const client = RealtimeWithObjects(helper, options);
 
             await helper.monitorConnectionThenCloseAndFinish(async () => {
               await waitFixtureChannelIsReady(client);
 
-              const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
-              const liveObjects = channel.liveObjects;
+              const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
+              const objects = channel.objects;
 
               await channel.attach();
-              const root = await liveObjects.getRoot();
+              const root = await objects.getRoot();
 
               const counterKeys = ['emptyCounter', 'initialValueCounter', 'referencedCounter'];
               const mapKeys = ['emptyMap', 'referencedMap', 'valuesMap'];
@@ -488,16 +486,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         function (options, channelName) {
           return async function () {
             const helper = this.test.helper;
-            const client = RealtimeWithLiveObjects(helper, options);
+            const client = RealtimeWithObjects(helper, options);
 
             await helper.monitorConnectionThenCloseAndFinish(async () => {
               await waitFixtureChannelIsReady(client);
 
-              const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
-              const liveObjects = channel.liveObjects;
+              const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
+              const objects = channel.objects;
 
               await channel.attach();
-              const root = await liveObjects.getRoot();
+              const root = await objects.getRoot();
 
               const counters = [
                 { key: 'emptyCounter', value: 0 },
@@ -521,16 +519,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         function (options, channelName) {
           return async function () {
             const helper = this.test.helper;
-            const client = RealtimeWithLiveObjects(helper, options);
+            const client = RealtimeWithObjects(helper, options);
 
             await helper.monitorConnectionThenCloseAndFinish(async () => {
               await waitFixtureChannelIsReady(client);
 
-              const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
-              const liveObjects = channel.liveObjects;
+              const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
+              const objects = channel.objects;
 
               await channel.attach();
-              const root = await liveObjects.getRoot();
+              const root = await objects.getRoot();
 
               const emptyMap = root.get('emptyMap');
               expect(emptyMap.size()).to.equal(0, 'Check empty map in root has no keys');
@@ -586,16 +584,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         function (options, channelName) {
           return async function () {
             const helper = this.test.helper;
-            const client = RealtimeWithLiveObjects(helper, options);
+            const client = RealtimeWithObjects(helper, options);
 
             await helper.monitorConnectionThenCloseAndFinish(async () => {
               await waitFixtureChannelIsReady(client);
 
-              const channel = client.channels.get(liveObjectsFixturesChannel, channelOptionsWithLiveObjects());
-              const liveObjects = channel.liveObjects;
+              const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
+              const objects = channel.objects;
 
               await channel.attach();
-              const root = await liveObjects.getRoot();
+              const root = await objects.getRoot();
 
               const referencedCounter = root.get('referencedCounter');
               const referencedMap = root.get('referencedMap');
@@ -661,16 +659,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'STATE_SYNC sequence with state object "tombstone" property creates tombstoned object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
-            const mapId = liveObjectsHelper.fakeMapObjectId();
-            const counterId = liveObjectsHelper.fakeCounterObjectId();
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            const mapId = objectsHelper.fakeMapObjectId();
+            const counterId = objectsHelper.fakeCounterObjectId();
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
               // add state objects with tombstone=true
               state: [
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: mapId,
                   siteTimeserials: {
                     aaa: lexicoTimeserial('aaa', 0, 0),
@@ -678,7 +676,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   tombstone: true,
                   initialEntries: {},
                 }),
-                liveObjectsHelper.counterObject({
+                objectsHelper.counterObject({
                   objectId: counterId,
                   siteTimeserials: {
                     aaa: lexicoTimeserial('aaa', 0, 0),
@@ -686,7 +684,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   tombstone: true,
                   initialCount: 1,
                 }),
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                   initialEntries: {
@@ -715,13 +713,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'STATE_SYNC sequence with state object "tombstone" property deletes existing object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const { objectId: counterId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp({ count: 1 }),
+              createOp: objectsHelper.counterCreateOp({ count: 1 }),
             });
             await counterCreatedPromise;
 
@@ -729,11 +727,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               .to.exist;
 
             // inject a STATE_SYNC sequence where a counter is now tombstoned
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
               state: [
-                liveObjectsHelper.counterObject({
+                objectsHelper.counterObject({
                   objectId: counterId,
                   siteTimeserials: {
                     aaa: lexicoTimeserial('aaa', 0, 0),
@@ -741,7 +739,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   tombstone: true,
                   initialCount: 1,
                 }),
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                   initialEntries: {
@@ -766,13 +764,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'STATE_SYNC sequence with state object "tombstone" property triggers subscription callback for existing object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const { objectId: counterId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp({ count: 1 }),
+              createOp: objectsHelper.counterCreateOp({ count: 1 }),
             });
             await counterCreatedPromise;
 
@@ -791,11 +789,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             );
 
             // inject a STATE_SYNC sequence where a counter is now tombstoned
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
               state: [
-                liveObjectsHelper.counterObject({
+                objectsHelper.counterObject({
                   objectId: counterId,
                   siteTimeserials: {
                     aaa: lexicoTimeserial('aaa', 0, 0),
@@ -803,7 +801,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   tombstone: true,
                   initialCount: 1,
                 }),
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                   initialEntries: {
@@ -823,9 +821,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can apply MAP_CREATE with primitives state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, helper } = ctx;
+            const { root, objectsHelper, channelName, helper } = ctx;
 
-            // LiveObjects public API allows us to check value of objects we've created based on MAP_CREATE ops
+            // Objects public API allows us to check value of objects we've created based on MAP_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
             // however, in this test we put heavy focus on the data that is being created as the result of the MAP_CREATE op.
 
@@ -840,10 +838,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // create new maps and set on root
             await Promise.all(
               primitiveMapsFixtures.map((fixture) =>
-                liveObjectsHelper.createAndSetOnMap(channelName, {
+                objectsHelper.createAndSetOnMap(channelName, {
                   mapObjectId: 'root',
                   key: fixture.name,
-                  createOp: liveObjectsHelper.mapCreateOp({ entries: fixture.entries }),
+                  createOp: objectsHelper.mapCreateOp({ entries: fixture.entries }),
                 }),
               ),
             );
@@ -887,10 +885,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can apply MAP_CREATE with object ids state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
             const withReferencesMapKey = 'withReferencesMap';
 
-            // LiveObjects public API allows us to check value of objects we've created based on MAP_CREATE ops
+            // Objects public API allows us to check value of objects we've created based on MAP_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
             // however, in this test we put heavy focus on the data that is being created as the result of the MAP_CREATE op.
 
@@ -902,18 +900,18 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             const mapCreatedPromise = waitForMapKeyUpdate(root, withReferencesMapKey);
             // create map with references. need to create referenced objects first to obtain their object ids
-            const { objectId: referencedMapObjectId } = await liveObjectsHelper.stateRequest(
+            const { objectId: referencedMapObjectId } = await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapCreateOp({ entries: { stringKey: { data: { value: 'stringValue' } } } }),
+              objectsHelper.mapCreateOp({ entries: { stringKey: { data: { value: 'stringValue' } } } }),
             );
-            const { objectId: referencedCounterObjectId } = await liveObjectsHelper.stateRequest(
+            const { objectId: referencedCounterObjectId } = await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.counterCreateOp({ count: 1 }),
+              objectsHelper.counterCreateOp({ count: 1 }),
             );
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: withReferencesMapKey,
-              createOp: liveObjectsHelper.mapCreateOp({
+              createOp: objectsHelper.mapCreateOp({
                 entries: {
                   mapReference: { data: { objectId: referencedMapObjectId } },
                   counterReference: { data: { objectId: referencedCounterObjectId } },
@@ -963,30 +961,30 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'MAP_CREATE state operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // need to use multiple maps as MAP_CREATE op can only be applied once to a map object
             const mapIds = [
-              liveObjectsHelper.fakeMapObjectId(),
-              liveObjectsHelper.fakeMapObjectId(),
-              liveObjectsHelper.fakeMapObjectId(),
-              liveObjectsHelper.fakeMapObjectId(),
-              liveObjectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
+              objectsHelper.fakeMapObjectId(),
             ];
             await Promise.all(
               mapIds.map(async (mapId, i) => {
                 // send a MAP_SET op first to create a zero-value map with forged site timeserials vector (from the op), and set it on a root.
-                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('bbb', 1, 0),
                   siteCode: 'bbb',
-                  state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: 'foo', data: { value: 'bar' } })],
+                  state: [objectsHelper.mapSetOp({ objectId: mapId, key: 'foo', data: { value: 'bar' } })],
                 });
-                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: mapId, data: { objectId: mapId } })],
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: mapId, data: { objectId: mapId } })],
                 });
               }),
             );
@@ -999,12 +997,12 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
             ].entries()) {
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
                 state: [
-                  liveObjectsHelper.mapCreateOp({
+                  objectsHelper.mapCreateOp({
                     objectId: mapIds[i],
                     entries: {
                       baz: { timeserial: serial, data: { value: 'qux' } },
@@ -1045,7 +1043,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can apply MAP_SET with primitives state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, helper } = ctx;
+            const { root, objectsHelper, channelName, helper } = ctx;
 
             // check root is empty before ops
             primitiveKeyData.forEach((keyData) => {
@@ -1059,9 +1057,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // apply MAP_SET ops
             await Promise.all(
               primitiveKeyData.map((keyData) =>
-                liveObjectsHelper.stateRequest(
+                objectsHelper.stateRequest(
                   channelName,
-                  liveObjectsHelper.mapSetOp({
+                  objectsHelper.mapSetOp({
                     objectId: 'root',
                     key: keyData.key,
                     data: keyData.data,
@@ -1094,7 +1092,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can apply MAP_SET with object ids state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             // check no object ids are set on root
             expect(
@@ -1109,16 +1107,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               waitForMapKeyUpdate(root, 'keyToMap'),
             ]);
             // create new objects and set on root
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'keyToCounter',
-              createOp: liveObjectsHelper.counterCreateOp({ count: 1 }),
+              createOp: objectsHelper.counterCreateOp({ count: 1 }),
             });
 
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'keyToMap',
-              createOp: liveObjectsHelper.mapCreateOp({
+              createOp: objectsHelper.mapCreateOp({
                 entries: {
                   stringKey: { data: { value: 'stringValue' } },
                 },
@@ -1152,16 +1150,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'MAP_SET state operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // create new map and set it on a root with forged timeserials
-            const mapId = liveObjectsHelper.fakeMapObjectId();
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            const mapId = objectsHelper.fakeMapObjectId();
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 1, 0),
               siteCode: 'bbb',
               state: [
-                liveObjectsHelper.mapCreateOp({
+                objectsHelper.mapCreateOp({
                   objectId: mapId,
                   entries: {
                     foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
@@ -1174,11 +1172,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                 }),
               ],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
             });
 
             // inject operations with various timeserial values
@@ -1190,11 +1188,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier entry CGO, not applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later entry CGO, applied
             ].entries()) {
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
-                state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
+                state: [objectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
               });
             }
 
@@ -1221,15 +1219,15 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can apply MAP_REMOVE state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
             const mapKey = 'map';
 
             const mapCreatedPromise = waitForMapKeyUpdate(root, mapKey);
             // create new map and set on root
-            const { objectId: mapObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: mapKey,
-              createOp: liveObjectsHelper.mapCreateOp({
+              createOp: objectsHelper.mapCreateOp({
                 entries: {
                   shouldStay: { data: { value: 'foo' } },
                   shouldDelete: { data: { value: 'bar' } },
@@ -1255,9 +1253,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             const keyRemovedPromise = waitForMapKeyUpdate(map, 'shouldDelete');
             // send MAP_REMOVE op
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapRemoveOp({
+              objectsHelper.mapRemoveOp({
                 objectId: mapObjectId,
                 key: 'shouldDelete',
               }),
@@ -1284,16 +1282,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'MAP_REMOVE state operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // create new map and set it on a root with forged timeserials
-            const mapId = liveObjectsHelper.fakeMapObjectId();
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            const mapId = objectsHelper.fakeMapObjectId();
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 1, 0),
               siteCode: 'bbb',
               state: [
-                liveObjectsHelper.mapCreateOp({
+                objectsHelper.mapCreateOp({
                   objectId: mapId,
                   entries: {
                     foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
@@ -1306,11 +1304,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                 }),
               ],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'map', data: { objectId: mapId } })],
             });
 
             // inject operations with various timeserial values
@@ -1322,11 +1320,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier entry CGO, not applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later entry CGO, applied
             ].entries()) {
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
-                state: [liveObjectsHelper.mapRemoveOp({ objectId: mapId, key: `foo${i + 1}` })],
+                state: [objectsHelper.mapRemoveOp({ objectId: mapId, key: `foo${i + 1}` })],
               });
             }
 
@@ -1356,9 +1354,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can apply COUNTER_CREATE state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
-            // LiveObjects public API allows us to check value of objects we've created based on COUNTER_CREATE ops
+            // Objects public API allows us to check value of objects we've created based on COUNTER_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
             // however, in this test we put heavy focus on the data that is being created as the result of the COUNTER_CREATE op.
 
@@ -1373,10 +1371,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // create new counters and set on root
             await Promise.all(
               countersFixtures.map((fixture) =>
-                liveObjectsHelper.createAndSetOnMap(channelName, {
+                objectsHelper.createAndSetOnMap(channelName, {
                   mapObjectId: 'root',
                   key: fixture.name,
-                  createOp: liveObjectsHelper.counterCreateOp({ count: fixture.count }),
+                  createOp: objectsHelper.counterCreateOp({ count: fixture.count }),
                 }),
               ),
             );
@@ -1409,32 +1407,30 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'COUNTER_CREATE state operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // need to use multiple counters as COUNTER_CREATE op can only be applied once to a counter object
             const counterIds = [
-              liveObjectsHelper.fakeCounterObjectId(),
-              liveObjectsHelper.fakeCounterObjectId(),
-              liveObjectsHelper.fakeCounterObjectId(),
-              liveObjectsHelper.fakeCounterObjectId(),
-              liveObjectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
             ];
             await Promise.all(
               counterIds.map(async (counterId, i) => {
                 // send a COUNTER_INC op first to create a zero-value counter with forged site timeserials vector (from the op), and set it on a root.
-                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('bbb', 1, 0),
                   siteCode: 'bbb',
-                  state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
+                  state: [objectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
                 });
-                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  state: [
-                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: counterId, data: { objectId: counterId } }),
-                  ],
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: counterId, data: { objectId: counterId } })],
                 });
               }),
             );
@@ -1447,11 +1443,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
             ].entries()) {
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
-                state: [liveObjectsHelper.counterCreateOp({ objectId: counterIds[i], count: 10 })],
+                state: [objectsHelper.counterCreateOp({ objectId: counterIds[i], count: 10 })],
               });
             }
 
@@ -1479,16 +1475,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can apply COUNTER_INC state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
             const counterKey = 'counter';
             let expectedCounterValue = 0;
 
             const counterCreated = waitForMapKeyUpdate(root, counterKey);
             // create new counter and set on root
-            const { objectId: counterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: counterKey,
-              createOp: liveObjectsHelper.counterCreateOp({ count: expectedCounterValue }),
+              createOp: objectsHelper.counterCreateOp({ count: expectedCounterValue }),
             });
             await counterCreated;
 
@@ -1522,9 +1518,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               expectedCounterValue += increment;
 
               const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await liveObjectsHelper.stateRequest(
+              await objectsHelper.stateRequest(
                 channelName,
-                liveObjectsHelper.counterIncOp({
+                objectsHelper.counterIncOp({
                   objectId: counterObjectId,
                   amount: increment,
                 }),
@@ -1543,21 +1539,21 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'COUNTER_INC state operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // create new counter and set it on a root with forged timeserials
-            const counterId = liveObjectsHelper.fakeCounterObjectId();
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            const counterId = objectsHelper.fakeCounterObjectId();
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 1, 0),
               siteCode: 'bbb',
-              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId, count: 1 })],
+              state: [objectsHelper.counterCreateOp({ objectId: counterId, count: 1 })],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
             });
 
             // inject operations with various timeserial values
@@ -1569,11 +1565,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // +100000   different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // +1000000  different site, later CGO, applied
             ].entries()) {
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
-                state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: Math.pow(10, i + 1) })],
+                state: [objectsHelper.counterIncOp({ objectId: counterId, amount: Math.pow(10, i + 1) })],
               });
             }
 
@@ -1588,22 +1584,22 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can apply OBJECT_DELETE state operation messages',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'map'),
               waitForMapKeyUpdate(root, 'counter'),
             ]);
             // create initial objects and set on root
-            const { objectId: mapObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: liveObjectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateOp(),
             });
-            const { objectId: counterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
             await objectsCreatedPromise;
 
@@ -1611,17 +1607,17 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             expect(root.get('counter'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: mapObjectId })],
+              state: [objectsHelper.objectDeleteOp({ objectId: mapObjectId })],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterObjectId })],
+              state: [objectsHelper.objectDeleteOp({ objectId: counterObjectId })],
             });
 
             expect(root.get('map'), 'Check map is not accessible on root after OBJECT_DELETE').to.not.exist;
@@ -1632,29 +1628,29 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'OBJECT_DELETE for unknown object id creates zero-value tombstoned object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
-            const counterId = liveObjectsHelper.fakeCounterObjectId();
+            const counterId = objectsHelper.fakeCounterObjectId();
             // inject OBJECT_DELETE. should create a zero-value tombstoned object which can't be modified
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterId })],
+              state: [objectsHelper.objectDeleteOp({ objectId: counterId })],
             });
 
             // try to create and set tombstoned object on root
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 0, 0),
               siteCode: 'bbb',
-              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+              state: [objectsHelper.counterCreateOp({ objectId: counterId })],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 1, 0),
               siteCode: 'bbb',
-              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
             });
 
             expect(root.get('counter'), 'Check counter is not accessible on root').to.not.exist;
@@ -1665,32 +1661,30 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'OBJECT_DELETE state operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // need to use multiple objects as OBJECT_DELETE op can only be applied once to an object
             const counterIds = [
-              liveObjectsHelper.fakeCounterObjectId(),
-              liveObjectsHelper.fakeCounterObjectId(),
-              liveObjectsHelper.fakeCounterObjectId(),
-              liveObjectsHelper.fakeCounterObjectId(),
-              liveObjectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
+              objectsHelper.fakeCounterObjectId(),
             ];
             await Promise.all(
               counterIds.map(async (counterId, i) => {
                 // create objects and set them on root with forged timeserials
-                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('bbb', 1, 0),
                   siteCode: 'bbb',
-                  state: [liveObjectsHelper.counterCreateOp({ objectId: counterId })],
+                  state: [objectsHelper.counterCreateOp({ objectId: counterId })],
                 });
-                await liveObjectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  state: [
-                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: counterId, data: { objectId: counterId } }),
-                  ],
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: counterId, data: { objectId: counterId } })],
                 });
               }),
             );
@@ -1703,11 +1697,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
             ].entries()) {
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
-                state: [liveObjectsHelper.objectDeleteOp({ objectId: counterIds[i] })],
+                state: [objectsHelper.objectDeleteOp({ objectId: counterIds[i] })],
               });
             }
 
@@ -1741,27 +1735,27 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'OBJECT_DELETE triggers subscription callback with deleted data',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'map'),
               waitForMapKeyUpdate(root, 'counter'),
             ]);
             // create initial objects and set on root
-            const { objectId: mapObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: liveObjectsHelper.mapCreateOp({
+              createOp: objectsHelper.mapCreateOp({
                 entries: {
                   foo: { data: { value: 'bar' } },
                   baz: { data: { value: 1 } },
                 },
               }),
             });
-            const { objectId: counterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp({ count: 1 }),
+              createOp: objectsHelper.counterCreateOp({ count: 1 }),
             });
             await objectsCreatedPromise;
 
@@ -1793,17 +1787,17 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             );
 
             // inject OBJECT_DELETE
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: mapObjectId })],
+              state: [objectsHelper.objectDeleteOp({ objectId: mapObjectId })],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterObjectId })],
+              state: [objectsHelper.objectDeleteOp({ objectId: counterObjectId })],
             });
 
             await Promise.all([mapSubPromise, counterSubPromise]);
@@ -1813,35 +1807,33 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'MAP_SET with reference to a tombstoned object results in undefined value on key',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel } = ctx;
 
             const objectCreatedPromise = waitForMapKeyUpdate(root, 'foo');
             // create initial objects and set on root
-            const { objectId: counterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'foo',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
             await objectCreatedPromise;
 
             expect(root.get('foo'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterObjectId })],
+              state: [objectsHelper.objectDeleteOp({ objectId: counterObjectId })],
             });
 
             // set tombstoned counter to another key on root
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [
-                liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'bar', data: { objectId: counterObjectId } }),
-              ],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'bar', data: { objectId: counterObjectId } })],
             });
 
             expect(root.get('bar'), 'Check counter is not accessible on new key in root after OBJECT_DELETE').to.not
@@ -1852,7 +1844,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'state operation message on a tombstoned object does not revive it',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'map1'),
@@ -1860,20 +1852,20 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               waitForMapKeyUpdate(root, 'counter1'),
             ]);
             // create initial objects and set on root
-            const { objectId: mapId1 } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: mapId1 } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map1',
-              createOp: liveObjectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateOp(),
             });
-            const { objectId: mapId2 } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: mapId2 } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map2',
-              createOp: liveObjectsHelper.mapCreateOp({ entries: { foo: { data: { value: 'bar' } } } }),
+              createOp: objectsHelper.mapCreateOp({ entries: { foo: { data: { value: 'bar' } } } }),
             });
-            const { objectId: counterId1 } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+            const { objectId: counterId1 } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter1',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
             await objectsCreatedPromise;
 
@@ -1882,43 +1874,43 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             expect(root.get('counter1'), 'Check counter1 exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: mapId1 })],
+              state: [objectsHelper.objectDeleteOp({ objectId: mapId1 })],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: mapId2 })],
+              state: [objectsHelper.objectDeleteOp({ objectId: mapId2 })],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 2, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId: counterId1 })],
+              state: [objectsHelper.objectDeleteOp({ objectId: counterId1 })],
             });
 
             // inject state ops on tombstoned objects
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 3, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.mapSetOp({ objectId: mapId1, key: 'baz', data: { value: 'qux' } })],
+              state: [objectsHelper.mapSetOp({ objectId: mapId1, key: 'baz', data: { value: 'qux' } })],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 4, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.mapRemoveOp({ objectId: mapId2, key: 'foo' })],
+              state: [objectsHelper.mapRemoveOp({ objectId: mapId2, key: 'foo' })],
             });
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 5, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.counterIncOp({ objectId: counterId1, amount: 1 })],
+              state: [objectsHelper.counterIncOp({ objectId: counterId1, amount: 1 })],
             });
 
             // objects should still be deleted
@@ -1938,10 +1930,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'state operation messages are buffered during STATE_SYNC sequence',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
             });
@@ -1949,14 +1941,12 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // inject operations, it should not be applied as sync is in progress
             await Promise.all(
               primitiveKeyData.map((keyData) =>
-                liveObjectsHelper.processStateOperationMessageOnChannel({
+                objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', 0, 0),
                   siteCode: 'aaa',
                   // copy data object as library will modify it
-                  state: [
-                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } }),
-                  ],
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } })],
                 }),
               ),
             );
@@ -1972,10 +1962,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'buffered state operation messages are applied when STATE_SYNC sequence ends',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel, helper } = ctx;
+            const { root, objectsHelper, channel, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
             });
@@ -1983,20 +1973,18 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // inject operations, they should be applied when sync ends
             await Promise.all(
               primitiveKeyData.map((keyData, i) =>
-                liveObjectsHelper.processStateOperationMessageOnChannel({
+                objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
                   // copy data object as library will modify it
-                  state: [
-                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } }),
-                  ],
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } })],
                 }),
               ),
             );
 
             // end the sync with empty cursor
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:',
             });
@@ -2023,10 +2011,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'buffered state operation messages are discarded when new STATE_SYNC sequence starts',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
             });
@@ -2034,34 +2022,32 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // inject operations, expect them to be discarded when sync with new sequence id starts
             await Promise.all(
               primitiveKeyData.map((keyData, i) =>
-                liveObjectsHelper.processStateOperationMessageOnChannel({
+                objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
                   // copy data object as library will modify it
-                  state: [
-                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } }),
-                  ],
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } })],
                 }),
               ),
             );
 
             // start new sync with new sequence id
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'otherserial:cursor',
             });
 
             // inject another operation that should be applied when latest sync ends
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 0, 0),
               siteCode: 'bbb',
-              state: [liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 'bar' } })],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 'bar' } })],
             });
 
             // end sync
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'otherserial:',
             });
@@ -2086,18 +2072,18 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'buffered state operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            const mapId = liveObjectsHelper.fakeMapObjectId();
-            const counterId = liveObjectsHelper.fakeCounterObjectId();
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            const mapId = objectsHelper.fakeMapObjectId();
+            const counterId = objectsHelper.fakeCounterObjectId();
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
               // add state object messages with non-empty site timeserials
               state: [
                 // next map and counter objects will be checked to have correct operations applied on them based on site timeserials
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: mapId,
                   siteTimeserials: {
                     bbb: lexicoTimeserial('bbb', 2, 0),
@@ -2114,7 +2100,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                     foo8: { timeserial: lexicoTimeserial('ccc', 0, 0), data: { value: 'bar' } },
                   },
                 }),
-                liveObjectsHelper.counterObject({
+                objectsHelper.counterObject({
                   objectId: counterId,
                   siteTimeserials: {
                     bbb: lexicoTimeserial('bbb', 1, 0),
@@ -2122,7 +2108,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   initialCount: 1,
                 }),
                 // add objects to the root so they're discoverable in the state tree
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                   initialEntries: {
@@ -2147,11 +2133,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               // different site with matching entry CGO case is not possible, as matching entry timeserial means that that timeserial is in the site timeserials vector
               { serial: lexicoTimeserial('ddd', 1, 0), siteCode: 'ddd' }, // different site, later entry CGO, applied
             ].entries()) {
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
-                state: [liveObjectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
+                state: [objectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
               });
             }
 
@@ -2164,16 +2150,16 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // +100000   different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // +1000000  different site, later CGO, applied
             ].entries()) {
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
-                state: [liveObjectsHelper.counterIncOp({ objectId: counterId, amount: Math.pow(10, i + 1) })],
+                state: [objectsHelper.counterIncOp({ objectId: counterId, amount: Math.pow(10, i + 1) })],
               });
             }
 
             // end sync
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:',
             });
@@ -2208,10 +2194,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'subsequent state operation messages are applied immediately after STATE_SYNC ended and buffers are applied',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel, channelName, helper } = ctx;
+            const { root, objectsHelper, channel, channelName, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
             });
@@ -2219,29 +2205,27 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             // inject operations, they should be applied when sync ends
             await Promise.all(
               primitiveKeyData.map((keyData, i) =>
-                liveObjectsHelper.processStateOperationMessageOnChannel({
+                objectsHelper.processStateOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
                   // copy data object as library will modify it
-                  state: [
-                    liveObjectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } }),
-                  ],
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } })],
                 }),
               ),
             );
 
             // end the sync with empty cursor
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:',
             });
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
             // send some more operations
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapSetOp({
+              objectsHelper.mapSetOp({
                 objectId: 'root',
                 key: 'foo',
                 data: { value: 'bar' },
@@ -2278,13 +2262,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'LiveCounter.increment sends COUNTER_INC operation',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
             await counterCreatedPromise;
 
@@ -2321,13 +2305,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'LiveCounter.increment throws on invalid input',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
             await counterCreatedPromise;
 
@@ -2388,13 +2372,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'LiveCounter.decrement sends COUNTER_INC operation',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
             await counterCreatedPromise;
 
@@ -2431,13 +2415,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'LiveCounter.decrement throws on invalid input',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
             await counterCreatedPromise;
 
@@ -2533,21 +2517,21 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'LiveMap.set sends MAP_SET operation with reference to another LiveObject',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: liveObjectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateOp(),
             });
             await objectsCreatedPromise;
 
@@ -2576,13 +2560,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'LiveMap.set throws on invalid input',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: liveObjectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateOp(),
             });
             await mapCreatedPromise;
 
@@ -2611,13 +2595,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'LiveMap.remove sends MAP_REMOVE operation',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: liveObjectsHelper.mapCreateOp({
+              createOp: objectsHelper.mapCreateOp({
                 entries: {
                   foo: { data: { value: 1 } },
                   bar: { data: { value: 1 } },
@@ -2646,13 +2630,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'LiveMap.remove throws on invalid input',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName } = ctx;
 
             const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: liveObjectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateOp(),
             });
             await mapCreatedPromise;
 
@@ -2672,11 +2656,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveObjects.createCounter sends COUNTER_CREATE operation',
+          description: 'Objects.createCounter sends COUNTER_CREATE operation',
           action: async (ctx) => {
-            const { liveObjects } = ctx;
+            const { objects } = ctx;
 
-            const counters = await Promise.all(countersFixtures.map(async (x) => liveObjects.createCounter(x.count)));
+            const counters = await Promise.all(countersFixtures.map(async (x) => objects.createCounter(x.count)));
 
             for (let i = 0; i < counters.length; i++) {
               const counter = counters[i];
@@ -2694,12 +2678,12 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveCounter created with LiveObjects.createCounter can be assigned to the state tree',
+          description: 'LiveCounter created with Objects.createCounter can be assigned to the state tree',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const counter = await liveObjects.createCounter(1);
+            const counter = await objects.createCounter(1);
             await root.set('counter', counter);
             await counterCreatedPromise;
 
@@ -2722,41 +2706,40 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         {
           description:
-            'LiveObjects.createCounter can return LiveCounter with initial value without applying CREATE operation',
+            'Objects.createCounter can return LiveCounter with initial value without applying CREATE operation',
           action: async (ctx) => {
-            const { liveObjects, helper } = ctx;
+            const { objects, helper } = ctx;
 
             // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
-            helper.recordPrivateApi('replace.LiveObjects.publish');
-            liveObjects.publish = () => {};
+            helper.recordPrivateApi('replace.Objects.publish');
+            objects.publish = () => {};
 
-            const counter = await liveObjects.createCounter(1);
+            const counter = await objects.createCounter(1);
             expect(counter.value()).to.equal(1, `Check counter has expected initial value`);
           },
         },
 
         {
           allTransportsAndProtocols: true,
-          description:
-            'LiveObjects.createCounter can return LiveCounter with initial value from applied CREATE operation',
+          description: 'Objects.createCounter can return LiveCounter with initial value from applied CREATE operation',
           action: async (ctx) => {
-            const { liveObjects, liveObjectsHelper, helper, channel } = ctx;
+            const { objects, objectsHelper, helper, channel } = ctx;
 
             // instead of sending CREATE op to the realtime, echo it immediately to the client
             // with forged initial value so we can check that counter gets initialized with a value from a CREATE op
-            helper.recordPrivateApi('replace.LiveObjects.publish');
-            liveObjects.publish = async (stateMessages) => {
+            helper.recordPrivateApi('replace.Objects.publish');
+            objects.publish = async (stateMessages) => {
               const counterId = stateMessages[0].operation.objectId;
-              // this should result in liveobjects' operation application procedure and create an object in the pool with forged initial value
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              // this should result execute regular operation application procedure and create an object in the pool with forged initial value
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial: lexicoTimeserial('aaa', 1, 1),
                 siteCode: 'aaa',
-                state: [liveObjectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
+                state: [objectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
               });
             };
 
-            const counter = await liveObjects.createCounter(1);
+            const counter = await objects.createCounter(1);
 
             // counter should be created with forged initial value instead of the actual one
             expect(counter.value()).to.equal(
@@ -2768,25 +2751,25 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         {
           description:
-            'initial value is not double counted for LiveCounter from LiveObjects.createCounter when CREATE op is received',
+            'initial value is not double counted for LiveCounter from Objects.createCounter when CREATE op is received',
           action: async (ctx) => {
-            const { liveObjects, liveObjectsHelper, helper, channel } = ctx;
+            const { objects, objectsHelper, helper, channel } = ctx;
 
             // prevent publishing of ops to realtime so we can guarantee order of operations
-            helper.recordPrivateApi('replace.LiveObjects.publish');
-            liveObjects.publish = () => {};
+            helper.recordPrivateApi('replace.Objects.publish');
+            objects.publish = () => {};
 
             // create counter locally, should have an initial value set
-            const counter = await liveObjects.createCounter(1);
+            const counter = await objects.createCounter(1);
             helper.recordPrivateApi('call.LiveObject.getObjectId');
             const counterId = counter.getObjectId();
 
             // now inject CREATE op for a counter with a forged value. it should not be applied
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 1),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
+              state: [objectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
             });
 
             expect(counter.value()).to.equal(
@@ -2797,62 +2780,47 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'LiveObjects.createCounter throws on invalid input',
+          description: 'Objects.createCounter throws on invalid input',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
+            await expectToThrowAsync(async () => objects.createCounter(null), 'Counter value should be a valid number');
             await expectToThrowAsync(
-              async () => liveObjects.createCounter(null),
+              async () => objects.createCounter(Number.NaN),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => liveObjects.createCounter(Number.NaN),
+              async () => objects.createCounter(Number.POSITIVE_INFINITY),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => liveObjects.createCounter(Number.POSITIVE_INFINITY),
+              async () => objects.createCounter(Number.NEGATIVE_INFINITY),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => liveObjects.createCounter(Number.NEGATIVE_INFINITY),
+              async () => objects.createCounter('foo'),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => liveObjects.createCounter('foo'),
+              async () => objects.createCounter(BigInt(1)),
               'Counter value should be a valid number',
             );
+            await expectToThrowAsync(async () => objects.createCounter(true), 'Counter value should be a valid number');
             await expectToThrowAsync(
-              async () => liveObjects.createCounter(BigInt(1)),
+              async () => objects.createCounter(Symbol()),
               'Counter value should be a valid number',
             );
-            await expectToThrowAsync(
-              async () => liveObjects.createCounter(true),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => liveObjects.createCounter(Symbol()),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => liveObjects.createCounter({}),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => liveObjects.createCounter([]),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => liveObjects.createCounter(root),
-              'Counter value should be a valid number',
-            );
+            await expectToThrowAsync(async () => objects.createCounter({}), 'Counter value should be a valid number');
+            await expectToThrowAsync(async () => objects.createCounter([]), 'Counter value should be a valid number');
+            await expectToThrowAsync(async () => objects.createCounter(root), 'Counter value should be a valid number');
           },
         },
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveObjects.createMap sends MAP_CREATE operation with primitive values',
+          description: 'Objects.createMap sends MAP_CREATE operation with primitive values',
           action: async (ctx) => {
-            const { liveObjects, helper } = ctx;
+            const { objects, helper } = ctx;
 
             const maps = await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
@@ -2867,7 +2835,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                     }, {})
                   : undefined;
 
-                return liveObjects.createMap(entries);
+                return objects.createMap(entries);
               }),
             );
 
@@ -2904,30 +2872,30 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveObjects.createMap sends MAP_CREATE operation with reference to another LiveObject',
+          description: 'Objects.createMap sends MAP_CREATE operation with reference to another LiveObject',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, liveObjects } = ctx;
+            const { root, objectsHelper, channelName, objects } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: liveObjectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateOp(),
             });
-            await liveObjectsHelper.createAndSetOnMap(channelName, {
+            await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: liveObjectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateOp(),
             });
             await objectsCreatedPromise;
 
             const counter = root.get('counter');
             const map = root.get('map');
 
-            const newMap = await liveObjects.createMap({ counter, map });
+            const newMap = await objects.createMap({ counter, map });
 
             expect(newMap, 'Check map exists').to.exist;
             expectInstanceOf(newMap, 'LiveMap', 'Check map instance is of an expected class');
@@ -2945,13 +2913,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveMap created with LiveObjects.createMap can be assigned to the state tree',
+          description: 'LiveMap created with Objects.createMap can be assigned to the state tree',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
-            const counter = await liveObjects.createCounter();
-            const map = await liveObjects.createMap({ foo: 'bar', baz: counter });
+            const counter = await objects.createCounter();
+            const map = await objects.createMap({ foo: 'bar', baz: counter });
             await root.set('map', map);
             await mapCreatedPromise;
 
@@ -2974,37 +2942,37 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'LiveObjects.createMap can return LiveMap with initial value without applying CREATE operation',
+          description: 'Objects.createMap can return LiveMap with initial value without applying CREATE operation',
           action: async (ctx) => {
-            const { liveObjects, helper } = ctx;
+            const { objects, helper } = ctx;
 
             // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
-            helper.recordPrivateApi('replace.LiveObjects.publish');
-            liveObjects.publish = () => {};
+            helper.recordPrivateApi('replace.Objects.publish');
+            objects.publish = () => {};
 
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const map = await objects.createMap({ foo: 'bar' });
             expect(map.get('foo')).to.equal('bar', `Check map has expected initial value`);
           },
         },
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveObjects.createMap can return LiveMap with initial value from applied CREATE operation',
+          description: 'Objects.createMap can return LiveMap with initial value from applied CREATE operation',
           action: async (ctx) => {
-            const { liveObjects, liveObjectsHelper, helper, channel } = ctx;
+            const { objects, objectsHelper, helper, channel } = ctx;
 
             // instead of sending CREATE op to the realtime, echo it immediately to the client
             // with forged initial value so we can check that map gets initialized with a value from a CREATE op
-            helper.recordPrivateApi('replace.LiveObjects.publish');
-            liveObjects.publish = async (stateMessages) => {
+            helper.recordPrivateApi('replace.Objects.publish');
+            objects.publish = async (stateMessages) => {
               const mapId = stateMessages[0].operation.objectId;
-              // this should result in liveobjects' operation application procedure and create an object in the pool with forged initial value
-              await liveObjectsHelper.processStateOperationMessageOnChannel({
+              // this should result execute regular operation application procedure and create an object in the pool with forged initial value
+              await objectsHelper.processStateOperationMessageOnChannel({
                 channel,
                 serial: lexicoTimeserial('aaa', 1, 1),
                 siteCode: 'aaa',
                 state: [
-                  liveObjectsHelper.mapCreateOp({
+                  objectsHelper.mapCreateOp({
                     objectId: mapId,
                     entries: { baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { value: 'qux' } } },
                   }),
@@ -3012,7 +2980,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               });
             };
 
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const map = await objects.createMap({ foo: 'bar' });
 
             // map should be created with forged initial value instead of the actual one
             expect(map.get('foo'), `Check key "foo" was not set on a map client-side`).to.not.exist;
@@ -3025,26 +2993,26 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
         {
           description:
-            'initial value is not double counted for LiveMap from LiveObjects.createMap when CREATE op is received',
+            'initial value is not double counted for LiveMap from Objects.createMap when CREATE op is received',
           action: async (ctx) => {
-            const { liveObjects, liveObjectsHelper, helper, channel } = ctx;
+            const { objects, objectsHelper, helper, channel } = ctx;
 
             // prevent publishing of ops to realtime so we can guarantee order of operations
-            helper.recordPrivateApi('replace.LiveObjects.publish');
-            liveObjects.publish = () => {};
+            helper.recordPrivateApi('replace.Objects.publish');
+            objects.publish = () => {};
 
             // create map locally, should have an initial value set
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const map = await objects.createMap({ foo: 'bar' });
             helper.recordPrivateApi('call.LiveObject.getObjectId');
             const mapId = map.getObjectId();
 
             // now inject CREATE op for a map with a forged value. it should not be applied
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 1),
               siteCode: 'aaa',
               state: [
-                liveObjectsHelper.mapCreateOp({
+                objectsHelper.mapCreateOp({
                   objectId: mapId,
                   entries: {
                     foo: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { value: 'qux' } },
@@ -3064,65 +3032,50 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         },
 
         {
-          description: 'LiveObjects.createMap throws on invalid input',
+          description: 'Objects.createMap throws on invalid input',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
+            await expectToThrowAsync(async () => objects.createMap(null), 'Map entries should be a key/value object');
+            await expectToThrowAsync(async () => objects.createMap('foo'), 'Map entries should be a key/value object');
+            await expectToThrowAsync(async () => objects.createMap(1), 'Map entries should be a key/value object');
             await expectToThrowAsync(
-              async () => liveObjects.createMap(null),
+              async () => objects.createMap(BigInt(1)),
               'Map entries should be a key/value object',
             );
+            await expectToThrowAsync(async () => objects.createMap(true), 'Map entries should be a key/value object');
             await expectToThrowAsync(
-              async () => liveObjects.createMap('foo'),
-              'Map entries should be a key/value object',
-            );
-            await expectToThrowAsync(async () => liveObjects.createMap(1), 'Map entries should be a key/value object');
-            await expectToThrowAsync(
-              async () => liveObjects.createMap(BigInt(1)),
-              'Map entries should be a key/value object',
-            );
-            await expectToThrowAsync(
-              async () => liveObjects.createMap(true),
-              'Map entries should be a key/value object',
-            );
-            await expectToThrowAsync(
-              async () => liveObjects.createMap(Symbol()),
+              async () => objects.createMap(Symbol()),
               'Map entries should be a key/value object',
             );
 
             await expectToThrowAsync(
-              async () => liveObjects.createMap({ key: undefined }),
+              async () => objects.createMap({ key: undefined }),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => liveObjects.createMap({ key: null }),
+              async () => objects.createMap({ key: null }),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => liveObjects.createMap({ key: BigInt(1) }),
+              async () => objects.createMap({ key: BigInt(1) }),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => liveObjects.createMap({ key: Symbol() }),
+              async () => objects.createMap({ key: Symbol() }),
               'Map value data type is unsupported',
             );
-            await expectToThrowAsync(
-              async () => liveObjects.createMap({ key: {} }),
-              'Map value data type is unsupported',
-            );
-            await expectToThrowAsync(
-              async () => liveObjects.createMap({ key: [] }),
-              'Map value data type is unsupported',
-            );
+            await expectToThrowAsync(async () => objects.createMap({ key: {} }), 'Map value data type is unsupported');
+            await expectToThrowAsync(async () => objects.createMap({ key: [] }), 'Map value data type is unsupported');
           },
         },
 
         {
           description: 'batch API getRoot method is synchronous',
           action: async (ctx) => {
-            const { liveObjects } = ctx;
+            const { objects } = ctx;
 
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const root = ctx.getRoot();
               expect(root, 'Check getRoot method in a BatchContext returns root object synchronously').to.exist;
               expectInstanceOf(root, 'LiveMap', 'root object obtained from a BatchContext is a LiveMap');
@@ -3133,19 +3086,19 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'batch API .get method on a map returns BatchContext* wrappers for live objects',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await liveObjects.createCounter(1);
-            const map = await liveObjects.createMap({ innerCounter: counter });
+            const counter = await objects.createCounter(1);
+            const map = await objects.createMap({ innerCounter: counter });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
 
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const ctxRoot = ctx.getRoot();
               const ctxCounter = ctxRoot.get('counter');
               const ctxMap = ctxRoot.get('map');
@@ -3176,19 +3129,19 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'batch API access API methods on live objects work and are synchronous',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await liveObjects.createCounter(1);
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const counter = await objects.createCounter(1);
+            const map = await objects.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
 
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const ctxRoot = ctx.getRoot();
               const ctxCounter = ctxRoot.get('counter');
               const ctxMap = ctxRoot.get('map');
@@ -3218,19 +3171,19 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'batch API write API methods on live objects do not mutate objects inside the batch callback',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await liveObjects.createCounter(1);
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const counter = await objects.createCounter(1);
+            const map = await objects.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
 
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const ctxRoot = ctx.getRoot();
               const ctxCounter = ctxRoot.get('counter');
               const ctxMap = ctxRoot.get('map');
@@ -3266,19 +3219,19 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'batch API scheduled operations are applied when batch callback is finished',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await liveObjects.createCounter(1);
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const counter = await objects.createCounter(1);
+            const map = await objects.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
 
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const ctxRoot = ctx.getRoot();
               const ctxCounter = ctxRoot.get('counter');
               const ctxMap = ctxRoot.get('map');
@@ -3299,11 +3252,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'batch API can be called without scheduling any operations',
           action: async (ctx) => {
-            const { liveObjects } = ctx;
+            const { objects } = ctx;
 
             let caughtError;
             try {
-              await liveObjects.batch((ctx) => {});
+              await objects.batch((ctx) => {});
             } catch (error) {
               caughtError = error;
             }
@@ -3317,14 +3270,14 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'batch API scheduled operations can be canceled by throwing an error in the batch callback',
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await liveObjects.createCounter(1);
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const counter = await objects.createCounter(1);
+            const map = await objects.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
@@ -3332,7 +3285,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const cancelError = new Error('cancel batch');
             let caughtError;
             try {
-              await liveObjects.batch((ctx) => {
+              await objects.batch((ctx) => {
                 const ctxRoot = ctx.getRoot();
                 const ctxCounter = ctxRoot.get('counter');
                 const ctxMap = ctxRoot.get('map');
@@ -3362,14 +3315,14 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: `batch API batch context and derived objects can't be interacted with after the batch call`,
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await liveObjects.createCounter(1);
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const counter = await objects.createCounter(1);
+            const map = await objects.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
@@ -3378,7 +3331,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             let savedCtxCounter;
             let savedCtxMap;
 
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const ctxRoot = ctx.getRoot();
               savedCtx = ctx;
               savedCtxCounter = ctxRoot.get('counter');
@@ -3403,14 +3356,14 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: `batch API batch context and derived objects can't be interacted with after error was thrown from batch callback`,
           action: async (ctx) => {
-            const { root, liveObjects } = ctx;
+            const { root, objects } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await liveObjects.createCounter(1);
-            const map = await liveObjects.createMap({ foo: 'bar' });
+            const counter = await objects.createCounter(1);
+            const map = await objects.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
@@ -3421,7 +3374,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             let caughtError;
             try {
-              await liveObjects.batch((ctx) => {
+              await objects.batch((ctx) => {
                 const ctxRoot = ctx.getRoot();
                 savedCtx = ctx;
                 savedCtxCounter = ctxRoot.get('counter');
@@ -3454,15 +3407,15 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: `LiveMap enumeration`,
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel } = ctx;
 
-            const counterId1 = liveObjectsHelper.fakeCounterObjectId();
-            const counterId2 = liveObjectsHelper.fakeCounterObjectId();
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            const counterId1 = objectsHelper.fakeCounterObjectId();
+            const counterId2 = objectsHelper.fakeCounterObjectId();
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
               state: [
-                liveObjectsHelper.counterObject({
+                objectsHelper.counterObject({
                   objectId: counterId1,
                   siteTimeserials: {
                     aaa: lexicoTimeserial('aaa', 0, 0),
@@ -3470,7 +3423,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   tombstone: false,
                   initialCount: 0,
                 }),
-                liveObjectsHelper.counterObject({
+                objectsHelper.counterObject({
                   objectId: counterId2,
                   siteTimeserials: {
                     aaa: lexicoTimeserial('aaa', 0, 0),
@@ -3478,7 +3431,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   tombstone: true,
                   initialCount: 0,
                 }),
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                   materialisedEntries: {
@@ -3512,15 +3465,15 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: `BatchContextLiveMap enumeration`,
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channel, liveObjects } = ctx;
+            const { root, objectsHelper, channel, objects } = ctx;
 
-            const counterId1 = liveObjectsHelper.fakeCounterObjectId();
-            const counterId2 = liveObjectsHelper.fakeCounterObjectId();
-            await liveObjectsHelper.processStateObjectMessageOnChannel({
+            const counterId1 = objectsHelper.fakeCounterObjectId();
+            const counterId2 = objectsHelper.fakeCounterObjectId();
+            await objectsHelper.processStateObjectMessageOnChannel({
               channel,
               syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
               state: [
-                liveObjectsHelper.counterObject({
+                objectsHelper.counterObject({
                   objectId: counterId1,
                   siteTimeserials: {
                     aaa: lexicoTimeserial('aaa', 0, 0),
@@ -3528,7 +3481,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   tombstone: false,
                   initialCount: 0,
                 }),
-                liveObjectsHelper.counterObject({
+                objectsHelper.counterObject({
                   objectId: counterId2,
                   siteTimeserials: {
                     aaa: lexicoTimeserial('aaa', 0, 0),
@@ -3536,7 +3489,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
                   tombstone: true,
                   initialCount: 0,
                 }),
-                liveObjectsHelper.mapObject({
+                objectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                   materialisedEntries: {
@@ -3551,7 +3504,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             const counter1 = await root.get('counter1');
 
-            await liveObjects.batch(async (ctx) => {
+            await objects.batch(async (ctx) => {
               const ctxRoot = ctx.getRoot();
 
               // enumeration methods should not count tombstoned entries
@@ -3587,17 +3540,17 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           ...liveMapEnumerationScenarios,
         ],
         async function (helper, scenario, clientOptions, channelName) {
-          const liveObjectsHelper = new LiveObjectsHelper(helper);
-          const client = RealtimeWithLiveObjects(helper, clientOptions);
+          const objectsHelper = new ObjectsHelper(helper);
+          const client = RealtimeWithObjects(helper, clientOptions);
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
-            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-            const liveObjects = channel.liveObjects;
+            const channel = client.channels.get(channelName, channelOptionsWithObjects());
+            const objects = channel.objects;
 
             await channel.attach();
-            const root = await liveObjects.getRoot();
+            const root = await objects.getRoot();
 
-            await scenario.action({ liveObjects, root, liveObjectsHelper, channelName, channel, client, helper });
+            await scenario.action({ objects, root, objectsHelper, channelName, channel, client, helper });
           }, client);
         },
       );
@@ -3607,7 +3560,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can subscribe to the incoming COUNTER_INC operation on a LiveCounter',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
 
             const counter = root.get(sampleCounterKey);
             const subscriptionPromise = new Promise((resolve, reject) =>
@@ -3624,9 +3577,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               }),
             );
 
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.counterIncOp({
+              objectsHelper.counterIncOp({
                 objectId: sampleCounterObjectId,
                 amount: 1,
               }),
@@ -3640,7 +3593,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can subscribe to multiple incoming operations on a LiveCounter',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
 
             const counter = root.get(sampleCounterKey);
             const expectedCounterIncrements = [100, -100, Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER];
@@ -3667,9 +3620,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             );
 
             for (const increment of expectedCounterIncrements) {
-              await liveObjectsHelper.stateRequest(
+              await objectsHelper.stateRequest(
                 channelName,
-                liveObjectsHelper.counterIncOp({
+                objectsHelper.counterIncOp({
                   objectId: sampleCounterObjectId,
                   amount: increment,
                 }),
@@ -3684,7 +3637,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can subscribe to the incoming MAP_SET operation on a LiveMap',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
 
             const map = root.get(sampleMapKey);
             const subscriptionPromise = new Promise((resolve, reject) =>
@@ -3701,9 +3654,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               }),
             );
 
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapSetOp({
+              objectsHelper.mapSetOp({
                 objectId: sampleMapObjectId,
                 key: 'stringKey',
                 data: { value: 'stringValue' },
@@ -3718,7 +3671,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can subscribe to the incoming MAP_REMOVE operation on a LiveMap',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
 
             const map = root.get(sampleMapKey);
             const subscriptionPromise = new Promise((resolve, reject) =>
@@ -3735,9 +3688,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               }),
             );
 
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapRemoveOp({
+              objectsHelper.mapRemoveOp({
                 objectId: sampleMapObjectId,
                 key: 'stringKey',
               }),
@@ -3751,7 +3704,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'can subscribe to multiple incoming operations on a LiveMap',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
 
             const map = root.get(sampleMapKey);
             const expectedMapUpdates = [
@@ -3782,44 +3735,44 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               }),
             );
 
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapSetOp({
+              objectsHelper.mapSetOp({
                 objectId: sampleMapObjectId,
                 key: 'foo',
                 data: { value: 'something' },
               }),
             );
 
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapSetOp({
+              objectsHelper.mapSetOp({
                 objectId: sampleMapObjectId,
                 key: 'bar',
                 data: { value: 'something' },
               }),
             );
 
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapRemoveOp({
+              objectsHelper.mapRemoveOp({
                 objectId: sampleMapObjectId,
                 key: 'foo',
               }),
             );
 
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapSetOp({
+              objectsHelper.mapSetOp({
                 objectId: sampleMapObjectId,
                 key: 'baz',
                 data: { value: 'something' },
               }),
             );
 
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapRemoveOp({
+              objectsHelper.mapRemoveOp({
                 objectId: sampleMapObjectId,
                 key: 'bar',
               }),
@@ -3832,7 +3785,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can unsubscribe from LiveCounter updates via returned "unsubscribe" callback',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
 
             const counter = root.get(sampleCounterKey);
             let callbackCalled = 0;
@@ -3848,9 +3801,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const increments = 3;
             for (let i = 0; i < increments; i++) {
               const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await liveObjectsHelper.stateRequest(
+              await objectsHelper.stateRequest(
                 channelName,
-                liveObjectsHelper.counterIncOp({
+                objectsHelper.counterIncOp({
                   objectId: sampleCounterObjectId,
                   amount: 1,
                 }),
@@ -3868,7 +3821,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can unsubscribe from LiveCounter updates via LiveCounter.unsubscribe() call',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
 
             const counter = root.get(sampleCounterKey);
             let callbackCalled = 0;
@@ -3886,9 +3839,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const increments = 3;
             for (let i = 0; i < increments; i++) {
               const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await liveObjectsHelper.stateRequest(
+              await objectsHelper.stateRequest(
                 channelName,
-                liveObjectsHelper.counterIncOp({
+                objectsHelper.counterIncOp({
                   objectId: sampleCounterObjectId,
                   amount: 1,
                 }),
@@ -3906,7 +3859,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can remove all LiveCounter update listeners via LiveCounter.unsubscribeAll() call',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
 
             const counter = root.get(sampleCounterKey);
             const callbacks = 3;
@@ -3926,9 +3879,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const increments = 3;
             for (let i = 0; i < increments; i++) {
               const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await liveObjectsHelper.stateRequest(
+              await objectsHelper.stateRequest(
                 channelName,
-                liveObjectsHelper.counterIncOp({
+                objectsHelper.counterIncOp({
                   objectId: sampleCounterObjectId,
                   amount: 1,
                 }),
@@ -3951,7 +3904,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can unsubscribe from LiveMap updates via returned "unsubscribe" callback',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
 
             const map = root.get(sampleMapKey);
             let callbackCalled = 0;
@@ -3967,9 +3920,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const mapSets = 3;
             for (let i = 0; i < mapSets; i++) {
               const mapUpdatedPromise = waitForMapKeyUpdate(map, `foo-${i}`);
-              await liveObjectsHelper.stateRequest(
+              await objectsHelper.stateRequest(
                 channelName,
-                liveObjectsHelper.mapSetOp({
+                objectsHelper.mapSetOp({
                   objectId: sampleMapObjectId,
                   key: `foo-${i}`,
                   data: { value: 'exists' },
@@ -3993,7 +3946,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can unsubscribe from LiveMap updates via LiveMap.unsubscribe() call',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
 
             const map = root.get(sampleMapKey);
             let callbackCalled = 0;
@@ -4011,9 +3964,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const mapSets = 3;
             for (let i = 0; i < mapSets; i++) {
               const mapUpdatedPromise = waitForMapKeyUpdate(map, `foo-${i}`);
-              await liveObjectsHelper.stateRequest(
+              await objectsHelper.stateRequest(
                 channelName,
-                liveObjectsHelper.mapSetOp({
+                objectsHelper.mapSetOp({
                   objectId: sampleMapObjectId,
                   key: `foo-${i}`,
                   data: { value: 'exists' },
@@ -4037,7 +3990,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'can remove all LiveMap update listeners via LiveMap.unsubscribeAll() call',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
 
             const map = root.get(sampleMapKey);
             const callbacks = 3;
@@ -4057,9 +4010,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             const mapSets = 3;
             for (let i = 0; i < mapSets; i++) {
               const mapUpdatedPromise = waitForMapKeyUpdate(map, `foo-${i}`);
-              await liveObjectsHelper.stateRequest(
+              await objectsHelper.stateRequest(
                 channelName,
-                liveObjectsHelper.mapSetOp({
+                objectsHelper.mapSetOp({
                   objectId: sampleMapObjectId,
                   key: `foo-${i}`,
                   data: { value: 'exists' },
@@ -4088,15 +4041,15 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
       /** @nospec */
       forScenarios(this, subscriptionCallbacksScenarios, async function (helper, scenario, clientOptions, channelName) {
-        const liveObjectsHelper = new LiveObjectsHelper(helper);
-        const client = RealtimeWithLiveObjects(helper, clientOptions);
+        const objectsHelper = new ObjectsHelper(helper);
+        const client = RealtimeWithObjects(helper, clientOptions);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get(channelName, channelOptionsWithObjects());
+          const objects = channel.objects;
 
           await channel.attach();
-          const root = await liveObjects.getRoot();
+          const root = await objects.getRoot();
 
           const sampleMapKey = 'sampleMap';
           const sampleCounterKey = 'sampleCounter';
@@ -4106,21 +4059,21 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             waitForMapKeyUpdate(root, sampleCounterKey),
           ]);
           // prepare map and counter objects for use by the scenario
-          const { objectId: sampleMapObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+          const { objectId: sampleMapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
             mapObjectId: 'root',
             key: sampleMapKey,
-            createOp: liveObjectsHelper.mapCreateOp(),
+            createOp: objectsHelper.mapCreateOp(),
           });
-          const { objectId: sampleCounterObjectId } = await liveObjectsHelper.createAndSetOnMap(channelName, {
+          const { objectId: sampleCounterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
             mapObjectId: 'root',
             key: sampleCounterKey,
-            createOp: liveObjectsHelper.counterCreateOp(),
+            createOp: objectsHelper.counterCreateOp(),
           });
           await objectsCreatedPromise;
 
           await scenario.action({
             root,
-            liveObjectsHelper,
+            objectsHelper,
             channelName,
             channel,
             sampleMapKey,
@@ -4132,45 +4085,40 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       });
 
       const tombstonesGCScenarios = [
-        // for the next tests we need to access the private API of LiveObjects plugin in order to verify that tombstoned entities were indeed deleted after the GC grace period.
+        // for the next tests we need to access the private API of Objects plugin in order to verify that tombstoned entities were indeed deleted after the GC grace period.
         // public API hides that kind of information from the user and returns undefined for tombstoned entities even if realtime client still keeps a reference to them.
         {
           description: 'tombstoned object is removed from the pool after the GC grace period',
           action: async (ctx) => {
-            const { liveObjectsHelper, channelName, channel, liveObjects, helper, waitForGCCycles, client } = ctx;
+            const { objectsHelper, channelName, channel, objects, helper, waitForGCCycles, client } = ctx;
 
-            const counterCreatedPromise = waitForStateOperation(
-              helper,
-              client,
-              LiveObjectsHelper.ACTIONS.COUNTER_CREATE,
-            );
+            const counterCreatedPromise = waitForStateOperation(helper, client, ObjectsHelper.ACTIONS.COUNTER_CREATE);
             // send a CREATE op, this adds an object to the pool
-            const { objectId } = await liveObjectsHelper.stateRequest(
+            const { objectId } = await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.counterCreateOp({ count: 1 }),
+              objectsHelper.counterCreateOp({ count: 1 }),
             );
             await counterCreatedPromise;
 
-            helper.recordPrivateApi('call.LiveObjects._liveObjectsPool.get');
-            expect(liveObjects._liveObjectsPool.get(objectId), 'Check object exists in the pool after creation').to
-              .exist;
+            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            expect(objects._objectsPool.get(objectId), 'Check object exists in the pool after creation').to.exist;
 
             // inject OBJECT_DELETE for the object. this should tombstone the object and make it inaccessible to the end user, but still keep it in memory in the local pool
-            await liveObjectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processStateOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [liveObjectsHelper.objectDeleteOp({ objectId })],
+              state: [objectsHelper.objectDeleteOp({ objectId })],
             });
 
-            helper.recordPrivateApi('call.LiveObjects._liveObjectsPool.get');
+            helper.recordPrivateApi('call.Objects._objectsPool.get');
             expect(
-              liveObjects._liveObjectsPool.get(objectId),
+              objects._objectsPool.get(objectId),
               'Check object exists in the pool immediately after OBJECT_DELETE',
             ).to.exist;
-            helper.recordPrivateApi('call.LiveObjects._liveObjectsPool.get');
+            helper.recordPrivateApi('call.Objects._objectsPool.get');
             helper.recordPrivateApi('call.LiveObject.isTombstoned');
-            expect(liveObjects._liveObjectsPool.get(objectId).isTombstoned()).to.equal(
+            expect(objects._objectsPool.get(objectId).isTombstoned()).to.equal(
               true,
               `Check object's "tombstone" flag is set to "true" after OBJECT_DELETE`,
             );
@@ -4179,9 +4127,9 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             await waitForGCCycles(2);
 
             // object should be removed from the local pool entirely now, as the GC grace period has passed
-            helper.recordPrivateApi('call.LiveObjects._liveObjectsPool.get');
+            helper.recordPrivateApi('call.Objects._objectsPool.get');
             expect(
-              liveObjects._liveObjectsPool.get(objectId),
+              objects._objectsPool.get(objectId),
               'Check object exists does not exist in the pool after the GC grace period expiration',
             ).to.not.exist;
           },
@@ -4191,13 +4139,13 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           allTransportsAndProtocols: true,
           description: 'tombstoned map entry is removed from the LiveMap after the GC grace period',
           action: async (ctx) => {
-            const { root, liveObjectsHelper, channelName, helper, waitForGCCycles } = ctx;
+            const { root, objectsHelper, channelName, helper, waitForGCCycles } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
             // set a key on a root
-            await liveObjectsHelper.stateRequest(
+            await objectsHelper.stateRequest(
               channelName,
-              liveObjectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 'bar' } }),
+              objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 'bar' } }),
             );
             await keyUpdatedPromise;
 
@@ -4205,10 +4153,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
             const keyUpdatedPromise2 = waitForMapKeyUpdate(root, 'foo');
             // remove the key from the root. this should tombstone the map entry and make it inaccessible to the end user, but still keep it in memory in the underlying map
-            await liveObjectsHelper.stateRequest(
-              channelName,
-              liveObjectsHelper.mapRemoveOp({ objectId: 'root', key: 'foo' }),
-            );
+            await objectsHelper.stateRequest(channelName, objectsHelper.mapRemoveOp({ objectId: 'root', key: 'foo' }));
             await keyUpdatedPromise2;
 
             expect(root.get('foo'), 'Check key "foo" is inaccessible via public API on root after MAP_REMOVE').to.not
@@ -4240,36 +4185,36 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
       /** @nospec */
       forScenarios(this, tombstonesGCScenarios, async function (helper, scenario, clientOptions, channelName) {
         try {
-          helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcInterval');
-          LiveObjectsPlugin.LiveObjects._DEFAULTS.gcInterval = 500;
-          helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcGracePeriod');
-          LiveObjectsPlugin.LiveObjects._DEFAULTS.gcGracePeriod = 250;
+          helper.recordPrivateApi('write.Objects._DEFAULTS.gcInterval');
+          ObjectsPlugin.Objects._DEFAULTS.gcInterval = 500;
+          helper.recordPrivateApi('write.Objects._DEFAULTS.gcGracePeriod');
+          ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod = 250;
 
-          const liveObjectsHelper = new LiveObjectsHelper(helper);
-          const client = RealtimeWithLiveObjects(helper, clientOptions);
+          const objectsHelper = new ObjectsHelper(helper);
+          const client = RealtimeWithObjects(helper, clientOptions);
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
-            const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-            const liveObjects = channel.liveObjects;
+            const channel = client.channels.get(channelName, channelOptionsWithObjects());
+            const objects = channel.objects;
 
             await channel.attach();
-            const root = await liveObjects.getRoot();
+            const root = await objects.getRoot();
 
             // helper function to spy on the GC interval callback and wait for a specific number of GC cycles.
             // returns a promise which will resolve when required number of cycles have happened.
             const waitForGCCycles = (cycles) => {
-              const onGCIntervalOriginal = liveObjects._liveObjectsPool._onGCInterval;
+              const onGCIntervalOriginal = objects._objectsPool._onGCInterval;
               let gcCalledTimes = 0;
               return new Promise((resolve) => {
-                helper.recordPrivateApi('replace.LiveObjects._liveObjectsPool._onGCInterval');
-                liveObjects._liveObjectsPool._onGCInterval = function () {
-                  helper.recordPrivateApi('call.LiveObjects._liveObjectsPool._onGCInterval');
+                helper.recordPrivateApi('replace.Objects._objectsPool._onGCInterval');
+                objects._objectsPool._onGCInterval = function () {
+                  helper.recordPrivateApi('call.Objects._objectsPool._onGCInterval');
                   onGCIntervalOriginal.call(this);
 
                   gcCalledTimes++;
                   if (gcCalledTimes >= cycles) {
                     resolve();
-                    liveObjects._liveObjectsPool._onGCInterval = onGCIntervalOriginal;
+                    objects._objectsPool._onGCInterval = onGCIntervalOriginal;
                   }
                 };
               });
@@ -4278,24 +4223,24 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             await scenario.action({
               client,
               root,
-              liveObjectsHelper,
+              objectsHelper,
               channelName,
               channel,
-              liveObjects,
+              objects,
               helper,
               waitForGCCycles,
             });
           }, client);
         } finally {
-          helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcInterval');
-          LiveObjectsPlugin.LiveObjects._DEFAULTS.gcInterval = gcIntervalOriginal;
-          helper.recordPrivateApi('write.LiveObjects._DEFAULTS.gcGracePeriod');
-          LiveObjectsPlugin.LiveObjects._DEFAULTS.gcGracePeriod = gcGracePeriodOriginal;
+          helper.recordPrivateApi('write.Objects._DEFAULTS.gcInterval');
+          ObjectsPlugin.Objects._DEFAULTS.gcInterval = gcIntervalOriginal;
+          helper.recordPrivateApi('write.Objects._DEFAULTS.gcGracePeriod');
+          ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod = gcGracePeriodOriginal;
         }
       });
 
-      const expectAccessApiToThrow = async ({ liveObjects, map, counter, errorMsg }) => {
-        await expectToThrowAsync(async () => liveObjects.getRoot(), errorMsg);
+      const expectAccessApiToThrow = async ({ objects, map, counter, errorMsg }) => {
+        await expectToThrowAsync(async () => objects.getRoot(), errorMsg);
 
         expect(() => counter.value()).to.throw(errorMsg);
 
@@ -4312,10 +4257,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         }
       };
 
-      const expectWriteApiToThrow = async ({ liveObjects, map, counter, errorMsg }) => {
-        await expectToThrowAsync(async () => liveObjects.batch(), errorMsg);
-        await expectToThrowAsync(async () => liveObjects.createMap(), errorMsg);
-        await expectToThrowAsync(async () => liveObjects.createCounter(), errorMsg);
+      const expectWriteApiToThrow = async ({ objects, map, counter, errorMsg }) => {
+        await expectToThrowAsync(async () => objects.batch(), errorMsg);
+        await expectToThrowAsync(async () => objects.createMap(), errorMsg);
+        await expectToThrowAsync(async () => objects.createCounter(), errorMsg);
 
         await expectToThrowAsync(async () => counter.increment(), errorMsg);
         await expectToThrowAsync(async () => counter.decrement(), errorMsg);
@@ -4355,21 +4300,21 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         {
           description: 'public API throws missing state modes error when attached without correct state modes',
           action: async (ctx) => {
-            const { liveObjects, channel, map, counter } = ctx;
+            const { objects, channel, map, counter } = ctx;
 
             // obtain batch context with valid modes first
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const map = ctx.getRoot().get('map');
               const counter = ctx.getRoot().get('counter');
               // now simulate missing modes
               channel.modes = [];
 
-              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: '"state_subscribe" channel mode' });
-              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"state_publish" channel mode' });
+              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_subscribe" channel mode' });
+              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_publish" channel mode' });
             });
 
-            await expectAccessApiToThrow({ liveObjects, map, counter, errorMsg: '"state_subscribe" channel mode' });
-            await expectWriteApiToThrow({ liveObjects, map, counter, errorMsg: '"state_publish" channel mode' });
+            await expectAccessApiToThrow({ objects, map, counter, errorMsg: '"object_subscribe" channel mode' });
+            await expectWriteApiToThrow({ objects, map, counter, errorMsg: '"object_publish" channel mode' });
           },
         },
 
@@ -4377,10 +4322,10 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           description:
             'public API throws missing state modes error when not yet attached but client options are missing correct modes',
           action: async (ctx) => {
-            const { liveObjects, channel, map, counter, helper } = ctx;
+            const { objects, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid modes first
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const map = ctx.getRoot().get('map');
               const counter = ctx.getRoot().get('counter');
               // now simulate a situation where we're not yet attached/modes are not received on ATTACHED event
@@ -4388,22 +4333,22 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
               helper.recordPrivateApi('write.channel.channelOptions.modes');
               channel.channelOptions.modes = [];
 
-              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: '"state_subscribe" channel mode' });
-              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"state_publish" channel mode' });
+              expectAccessBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_subscribe" channel mode' });
+              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_publish" channel mode' });
             });
 
-            await expectAccessApiToThrow({ liveObjects, map, counter, errorMsg: '"state_subscribe" channel mode' });
-            await expectWriteApiToThrow({ liveObjects, map, counter, errorMsg: '"state_publish" channel mode' });
+            await expectAccessApiToThrow({ objects, map, counter, errorMsg: '"object_subscribe" channel mode' });
+            await expectWriteApiToThrow({ objects, map, counter, errorMsg: '"object_publish" channel mode' });
           },
         },
 
         {
           description: 'public API throws invalid channel state error when channel DETACHED',
           action: async (ctx) => {
-            const { liveObjects, channel, map, counter, helper } = ctx;
+            const { objects, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const map = ctx.getRoot().get('map');
               const counter = ctx.getRoot().get('counter');
               // now simulate channel state change
@@ -4415,22 +4360,22 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             });
 
             await expectAccessApiToThrow({
-              liveObjects,
+              objects,
               map,
               counter,
               errorMsg: 'failed as channel state is detached',
             });
-            await expectWriteApiToThrow({ liveObjects, map, counter, errorMsg: 'failed as channel state is detached' });
+            await expectWriteApiToThrow({ objects, map, counter, errorMsg: 'failed as channel state is detached' });
           },
         },
 
         {
           description: 'public API throws invalid channel state error when channel FAILED',
           action: async (ctx) => {
-            const { liveObjects, channel, map, counter, helper } = ctx;
+            const { objects, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const map = ctx.getRoot().get('map');
               const counter = ctx.getRoot().get('counter');
               // now simulate channel state change
@@ -4442,22 +4387,22 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             });
 
             await expectAccessApiToThrow({
-              liveObjects,
+              objects,
               map,
               counter,
               errorMsg: 'failed as channel state is failed',
             });
-            await expectWriteApiToThrow({ liveObjects, map, counter, errorMsg: 'failed as channel state is failed' });
+            await expectWriteApiToThrow({ objects, map, counter, errorMsg: 'failed as channel state is failed' });
           },
         },
 
         {
           description: 'public write API throws invalid channel state error when channel SUSPENDED',
           action: async (ctx) => {
-            const { liveObjects, channel, map, counter, helper } = ctx;
+            const { objects, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await liveObjects.batch((ctx) => {
+            await objects.batch((ctx) => {
               const map = ctx.getRoot().get('map');
               const counter = ctx.getRoot().get('counter');
               // now simulate channel state change
@@ -4468,7 +4413,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
             });
 
             await expectWriteApiToThrow({
-              liveObjects,
+              objects,
               map,
               counter,
               errorMsg: 'failed as channel state is suspended',
@@ -4479,29 +4424,29 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
 
       /** @nospec */
       forScenarios(this, channelConfigurationScenarios, async function (helper, scenario, clientOptions, channelName) {
-        const liveObjectsHelper = new LiveObjectsHelper(helper);
-        const client = RealtimeWithLiveObjects(helper, clientOptions);
+        const objectsHelper = new ObjectsHelper(helper);
+        const client = RealtimeWithObjects(helper, clientOptions);
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
-          // attach with correct channel modes so we can create liveobjects on the root for testing.
+          // attach with correct channel modes so we can create Objects on the root for testing.
           // some scenarios will modify the underlying modes array to test specific behavior
-          const channel = client.channels.get(channelName, channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get(channelName, channelOptionsWithObjects());
+          const objects = channel.objects;
 
           await channel.attach();
-          const root = await liveObjects.getRoot();
+          const root = await objects.getRoot();
 
           const objectsCreatedPromise = Promise.all([
             waitForMapKeyUpdate(root, 'map'),
             waitForMapKeyUpdate(root, 'counter'),
           ]);
-          const map = await liveObjects.createMap();
-          const counter = await liveObjects.createCounter();
+          const map = await objects.createMap();
+          const counter = await objects.createCounter();
           await root.set('map', map);
           await root.set('counter', counter);
           await objectsCreatedPromise;
 
-          await scenario.action({ liveObjects, liveObjectsHelper, channelName, channel, root, map, counter, helper });
+          await scenario.action({ objects, objectsHelper, channelName, channel, root, map, counter, helper });
         }, client);
       });
 
@@ -4511,7 +4456,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
        */
       it('state message publish respects connectionDetails.maxMessageSize', async function () {
         const helper = this.test.helper;
-        const client = RealtimeWithLiveObjects(helper, { clientId: 'test' });
+        const client = RealtimeWithObjects(helper, { clientId: 'test' });
 
         await helper.monitorConnectionThenCloseAndFinish(async () => {
           await client.connection.once('connected');
@@ -4537,11 +4482,11 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
           helper.recordPrivateApi('listen.connectionManager.connectiondetails');
           await connectionDetailsPromise;
 
-          const channel = client.channels.get('channel', channelOptionsWithLiveObjects());
-          const liveObjects = channel.liveObjects;
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
 
           await channel.attach();
-          const root = await liveObjects.getRoot();
+          const root = await objects.getRoot();
 
           const data = new Array(100).fill('a').join('');
           const error = await expectToThrowAsync(
@@ -4767,7 +4712,7 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
         /** @nospec */
         forScenarios(this, stateMessageSizeScenarios, function (helper, scenario) {
           helper.recordPrivateApi('call.StateMessage.encode');
-          LiveObjectsPlugin.StateMessage.encode(scenario.message);
+          ObjectsPlugin.StateMessage.encode(scenario.message);
           helper.recordPrivateApi('call.BufferUtils.utf8Encode'); // was called by a scenario to create buffers
           helper.recordPrivateApi('call.StateMessage.fromValues'); // was called by a scenario to create a StateMessage instance
           helper.recordPrivateApi('call.Utils.dataSizeBytes'); // was called by a scenario to calculated the expected byte size
@@ -4778,20 +4723,20 @@ define(['ably', 'shared_helper', 'chai', 'live_objects', 'live_objects_helper'],
     });
 
     /** @nospec */
-    it('can attach to channel with LiveObjects state modes', async function () {
+    it('can attach to channel with Objects state modes', async function () {
       const helper = this.test.helper;
       const client = helper.AblyRealtime();
 
       await helper.monitorConnectionThenCloseAndFinish(async () => {
-        const liveObjectsModes = ['state_subscribe', 'state_publish'];
-        const channelOptions = { modes: liveObjectsModes };
+        const objectsModes = ['object_subscribe', 'object_publish'];
+        const channelOptions = { modes: objectsModes };
         const channel = client.channels.get('channel', channelOptions);
 
         await channel.attach();
 
         helper.recordPrivateApi('read.channel.channelOptions');
         expect(channel.channelOptions).to.deep.equal(channelOptions, 'Check expected channel options');
-        expect(channel.modes).to.deep.equal(liveObjectsModes, 'Check expected modes');
+        expect(channel.modes).to.deep.equal(objectsModes, 'Check expected modes');
       }, client);
     });
   });

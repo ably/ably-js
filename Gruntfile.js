@@ -73,7 +73,7 @@ module.exports = function (grunt) {
     });
   });
 
-  grunt.registerTask('build', ['webpack:all', 'build:browser', 'build:node', 'build:push', 'build:liveobjects']);
+  grunt.registerTask('build', ['webpack:all', 'build:browser', 'build:node', 'build:push', 'build:objects']);
 
   grunt.registerTask('all', ['build', 'requirejs']);
 
@@ -138,13 +138,13 @@ module.exports = function (grunt) {
       });
   });
 
-  grunt.registerTask('build:liveobjects', function () {
+  grunt.registerTask('build:objects', function () {
     var done = this.async();
 
     Promise.all([
-      esbuild.build(esbuildConfig.liveObjectsPluginConfig),
-      esbuild.build(esbuildConfig.liveObjectsPluginCdnConfig),
-      esbuild.build(esbuildConfig.minifiedLiveObjectsPluginCdnConfig),
+      esbuild.build(esbuildConfig.objectsPluginConfig),
+      esbuild.build(esbuildConfig.objectsPluginCdnConfig),
+      esbuild.build(esbuildConfig.minifiedObjectsPluginCdnConfig),
     ])
       .then(() => {
         done(true);
@@ -157,7 +157,7 @@ module.exports = function (grunt) {
   grunt.registerTask('test:webserver', 'Launch the Mocha test web server on http://localhost:3000/', [
     'build:browser',
     'build:push',
-    'build:liveobjects',
+    'build:objects',
     'checkGitSubmodules',
     'mocha:webserver',
   ]);
