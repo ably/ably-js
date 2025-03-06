@@ -66,7 +66,7 @@ const client = new Ably.Realtime({
       const response = await fetch(BACKEND_URL, {
         method: "POST",
       });
-      const token = response.json(); // adjust it based on your backend data structure
+      token = await response.json(); // adjust it based on your backend data structure
     } catch (e) {
       callback(e instanceof Error ? e.message : "Unknown error occurred", null);
       return;
