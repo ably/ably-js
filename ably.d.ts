@@ -2570,6 +2570,10 @@ export interface Annotation {
    * The kind of annotation it is (for example, an emoji reaction)
    */
   refType: string;
+  /**
+   * A JSON object for metadata and/or ancillary payloads.
+   */
+  extras: any;
 }
 
 /**
