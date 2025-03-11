@@ -3,8 +3,8 @@ import deepEqual from 'deep-equal';
 import type * as API from '../../../ably';
 import { DEFAULTS } from './defaults';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { LiveObjects } from './liveobjects';
 import { ObjectId } from './objectid';
+import { Objects } from './objects';
 import {
   MapSemantics,
   StateMapEntry,
@@ -53,11 +53,11 @@ export interface LiveMapUpdate extends LiveObjectUpdate {
 
 export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate> {
   constructor(
-    liveObjects: LiveObjects,
+    objects: Objects,
     private _semantics: MapSemantics,
     objectId: string,
   ) {
-    super(liveObjects, objectId);
+    super(objects, objectId);
   }
 
   /**
@@ -65,8 +65,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  static zeroValue<T extends API.LiveMapType>(liveobjects: LiveObjects, objectId: string): LiveMap<T> {
-    return new LiveMap<T>(liveobjects, MapSemantics.LWW, objectId);
+  static zeroValue<T extends API.LiveMapType>(objects: Objects, objectId: string): LiveMap<T> {
+    return new LiveMap<T>(objects, MapSemantics.LWW, objectId);
   }
 
   /**
@@ -75,8 +75,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  static fromStateObject<T extends API.LiveMapType>(liveobjects: LiveObjects, stateObject: StateObject): LiveMap<T> {
-    const obj = new LiveMap<T>(liveobjects, stateObject.map?.semantics!, stateObject.objectId);
+  static fromStateObject<T extends API.LiveMapType>(objects: Objects, stateObject: StateObject): LiveMap<T> {
+    const obj = new LiveMap<T>(objects, stateObject.map?.semantics!, stateObject.objectId);
     obj.overrideWithStateObject(stateObject);
     return obj;
   }
@@ -87,11 +87,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  static fromStateOperation<T extends API.LiveMapType>(
-    liveobjects: LiveObjects,
-    stateOperation: StateOperation,
-  ): LiveMap<T> {
-    const obj = new LiveMap<T>(liveobjects, stateOperation.map?.semantics!, stateOperation.objectId);
+  static fromStateOperation<T extends API.LiveMapType>(objects: Objects, stateOperation: StateOperation): LiveMap<T> {
+    const obj = new LiveMap<T>(objects, stateOperation.map?.semantics!, stateOperation.objectId);
     obj._mergeInitialDataFromCreateOperation(stateOperation);
     return obj;
   }
@@ -100,14 +97,14 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    */
   static createMapSetMessage<TKey extends keyof API.LiveMapType & string>(
-    liveObjects: LiveObjects,
+    objects: Objects,
     objectId: string,
     key: TKey,
     value: API.LiveMapType[TKey],
   ): StateMessage {
-    const client = liveObjects.getClient();
+    const client = objects.getClient();
 
-    LiveMap.validateKeyValue(liveObjects, key, value);
+    LiveMap.validateKeyValue(objects, key, value);
 
     const stateData: StateData =
       value instanceof LiveObject
@@ -136,11 +133,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    */
   static createMapRemoveMessage<TKey extends keyof API.LiveMapType & string>(
-    liveObjects: LiveObjects,
+    objects: Objects,
     objectId: string,
     key: TKey,
   ): StateMessage {
-    const client = liveObjects.getClient();
+    const client = objects.getClient();
 
     if (typeof key !== 'string') {
       throw new client.ErrorInfo('Map key should be string', 40003, 400);
@@ -165,11 +162,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    */
   static validateKeyValue<TKey extends keyof API.LiveMapType & string>(
-    liveObjects: LiveObjects,
+    objects: Objects,
     key: TKey,
     value: API.LiveMapType[TKey],
   ): void {
-    const client = liveObjects.getClient();
+    const client = objects.getClient();
 
     if (typeof key !== 'string') {
       throw new client.ErrorInfo('Map key should be string', 40003, 400);
@@ -189,14 +186,14 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  static async createMapCreateMessage(liveObjects: LiveObjects, entries?: API.LiveMapType): Promise<StateMessage> {
-    const client = liveObjects.getClient();
+  static async createMapCreateMessage(objects: Objects, entries?: API.LiveMapType): Promise<StateMessage> {
+    const client = objects.getClient();
 
     if (entries !== undefined && (entries === null || typeof entries !== 'object')) {
       throw new client.ErrorInfo('Map entries should be a key/value object', 40003, 400);
     }
 
-    Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(liveObjects, key, value));
+    Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(objects, key, value));
 
     const initialValueObj = LiveMap.createInitialValueObject(entries);
     const { encodedInitialValue, format } = StateMessage.encodeInitialValue(initialValueObj, client);
@@ -266,7 +263,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    */
   // force the key to be of type string as we only allow strings as key in a map
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined {
-    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration();
 
     if (this.isTombstoned()) {
       return undefined as T[TKey];
@@ -287,7 +284,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   size(): number {
-    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration();
 
     let size = 0;
     for (const value of this._dataRef.data.values()) {
@@ -303,7 +300,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   *entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]> {
-    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration();
 
     for (const [key, entry] of this._dataRef.data.entries()) {
       if (this._isMapEntryTombstoned(entry)) {
@@ -339,9 +336,9 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void> {
-    this._liveObjects.throwIfInvalidWriteApiConfiguration();
-    const stateMessage = LiveMap.createMapSetMessage(this._liveObjects, this.getObjectId(), key, value);
-    return this._liveObjects.publish([stateMessage]);
+    this._objects.throwIfInvalidWriteApiConfiguration();
+    const stateMessage = LiveMap.createMapSetMessage(this._objects, this.getObjectId(), key, value);
+    return this._objects.publish([stateMessage]);
   }
 
   /**
@@ -354,9 +351,9 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async remove<TKey extends keyof T & string>(key: TKey): Promise<void> {
-    this._liveObjects.throwIfInvalidWriteApiConfiguration();
-    const stateMessage = LiveMap.createMapRemoveMessage(this._liveObjects, this.getObjectId(), key);
-    return this._liveObjects.publish([stateMessage]);
+    this._objects.throwIfInvalidWriteApiConfiguration();
+    const stateMessage = LiveMap.createMapRemoveMessage(this._objects, this.getObjectId(), key);
+    return this._objects.publish([stateMessage]);
   }
 
   /**
@@ -679,7 +676,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       // but it is possible that we don't have the corresponding object in the pool yet (for example, we haven't seen the *_CREATE op for it).
       // we don't want to return undefined from this map's .get() method even if we don't have the object,
       // so instead we create a zero-value object for that object id if it not exists.
-      this._liveObjects.getPool().createZeroValueObjectIfNotExists(op.data.objectId);
+      this._objects.getPool().createZeroValueObjectIfNotExists(op.data.objectId);
     } else {
       liveData = { encoding: op.data.encoding, value: op.data.value } as ValueStateData;
     }
@@ -801,7 +798,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     // state data points to another object, get it from the pool
-    const refObject: LiveObject | undefined = this._liveObjects.getPool().get(data.objectId);
+    const refObject: LiveObject | undefined = this._objects.getPool().get(data.objectId);
     if (!refObject) {
       return undefined;
     }
@@ -822,7 +819,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // data always exists for non-tombstoned entries
     const data = entry.data!;
     if ('objectId' in data) {
-      const refObject = this._liveObjects.getPool().get(data.objectId);
+      const refObject = this._objects.getPool().get(data.objectId);
 
       if (refObject?.isTombstoned()) {
         // entry that points to tombstoned object should be considered tombstoned as well

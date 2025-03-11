@@ -1,6 +1,6 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { LiveObjects } from './liveobjects';
 import { ObjectId } from './objectid';
+import { Objects } from './objects';
 import { StateCounterOp, StateMessage, StateObject, StateOperation, StateOperationAction } from './statemessage';
 
 export interface LiveCounterData extends LiveObjectData {
@@ -17,8 +17,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static zeroValue(liveobjects: LiveObjects, objectId: string): LiveCounter {
-    return new LiveCounter(liveobjects, objectId);
+  static zeroValue(objects: Objects, objectId: string): LiveCounter {
+    return new LiveCounter(objects, objectId);
   }
 
   /**
@@ -27,8 +27,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromStateObject(liveobjects: LiveObjects, stateObject: StateObject): LiveCounter {
-    const obj = new LiveCounter(liveobjects, stateObject.objectId);
+  static fromStateObject(objects: Objects, stateObject: StateObject): LiveCounter {
+    const obj = new LiveCounter(objects, stateObject.objectId);
     obj.overrideWithStateObject(stateObject);
     return obj;
   }
@@ -39,8 +39,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromStateOperation(liveobjects: LiveObjects, stateOperation: StateOperation): LiveCounter {
-    const obj = new LiveCounter(liveobjects, stateOperation.objectId);
+  static fromStateOperation(objects: Objects, stateOperation: StateOperation): LiveCounter {
+    const obj = new LiveCounter(objects, stateOperation.objectId);
     obj._mergeInitialDataFromCreateOperation(stateOperation);
     return obj;
   }
@@ -48,8 +48,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  static createCounterIncMessage(liveObjects: LiveObjects, objectId: string, amount: number): StateMessage {
-    const client = liveObjects.getClient();
+  static createCounterIncMessage(objects: Objects, objectId: string, amount: number): StateMessage {
+    const client = objects.getClient();
 
     if (typeof amount !== 'number' || !isFinite(amount)) {
       throw new client.ErrorInfo('Counter value increment should be a valid number', 40003, 400);
@@ -73,8 +73,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  static async createCounterCreateMessage(liveObjects: LiveObjects, count?: number): Promise<StateMessage> {
-    const client = liveObjects.getClient();
+  static async createCounterCreateMessage(objects: Objects, count?: number): Promise<StateMessage> {
+    const client = objects.getClient();
 
     if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
       throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
@@ -123,7 +123,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   value(): number {
-    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration();
     return this._dataRef.data;
   }
 
@@ -137,16 +137,16 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async increment(amount: number): Promise<void> {
-    this._liveObjects.throwIfInvalidWriteApiConfiguration();
-    const stateMessage = LiveCounter.createCounterIncMessage(this._liveObjects, this.getObjectId(), amount);
-    return this._liveObjects.publish([stateMessage]);
+    this._objects.throwIfInvalidWriteApiConfiguration();
+    const stateMessage = LiveCounter.createCounterIncMessage(this._objects, this.getObjectId(), amount);
+    return this._objects.publish([stateMessage]);
   }
 
   /**
    * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
    */
   async decrement(amount: number): Promise<void> {
-    this._liveObjects.throwIfInvalidWriteApiConfiguration();
+    this._objects.throwIfInvalidWriteApiConfiguration();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
     if (typeof amount !== 'number' || !isFinite(amount)) {

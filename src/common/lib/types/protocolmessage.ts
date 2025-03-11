@@ -12,7 +12,7 @@ import PresenceMessage, {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
 } from './presencemessage';
-import type * as LiveObjectsPlugin from 'plugins/liveobjects';
+import type * as ObjectsPlugin from 'plugins/objects';
 
 export const actions = {
   HEARTBEAT: 0,
@@ -55,8 +55,8 @@ const flags: { [key: string]: number } = {
   PUBLISH: 1 << 17,
   SUBSCRIBE: 1 << 18,
   PRESENCE_SUBSCRIBE: 1 << 19,
-  STATE_SUBSCRIBE: 1 << 24,
-  STATE_PUBLISH: 1 << 25,
+  OBJECT_SUBSCRIBE: 1 << 24,
+  OBJECT_PUBLISH: 1 << 25,
   HAS_STATE: 1 << 26,
 };
 const flagNames = Object.keys(flags);
@@ -65,8 +65,8 @@ flags.MODE_ALL =
   flags.PUBLISH |
   flags.SUBSCRIBE |
   flags.PRESENCE_SUBSCRIBE |
-  flags.STATE_SUBSCRIBE |
-  flags.STATE_PUBLISH;
+  flags.OBJECT_SUBSCRIBE |
+  flags.OBJECT_PUBLISH;
 
 function toStringArray(array?: any[]): string {
   const result = [];
@@ -83,8 +83,8 @@ export const channelModes = [
   'PUBLISH',
   'SUBSCRIBE',
   'PRESENCE_SUBSCRIBE',
-  'STATE_SUBSCRIBE',
-  'STATE_PUBLISH',
+  'OBJECT_SUBSCRIBE',
+  'OBJECT_PUBLISH',
 ];
 
 export const serialize = Utils.encodeBody;
@@ -93,17 +93,17 @@ export function deserialize(
   serialized: unknown,
   MsgPack: MsgPack | null,
   presenceMessagePlugin: PresenceMessagePlugin | null,
-  liveObjectsPlugin: typeof LiveObjectsPlugin | null,
+  objectsPlugin: typeof ObjectsPlugin | null,
   format?: Utils.Format,
 ): ProtocolMessage {
   const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, MsgPack, format);
-  return fromDeserialized(deserialized, presenceMessagePlugin, liveObjectsPlugin);
+  return fromDeserialized(deserialized, presenceMessagePlugin, objectsPlugin);
 }
 
 export function fromDeserialized(
   deserialized: Record<string, unknown>,
   presenceMessagePlugin: PresenceMessagePlugin | null,
-  liveObjectsPlugin: typeof LiveObjectsPlugin | null,
+  objectsPlugin: typeof ObjectsPlugin | null,
 ): ProtocolMessage {
   const error = deserialized.error;
   if (error) {
@@ -126,12 +126,12 @@ export function fromDeserialized(
     }
   }
 
-  let state: LiveObjectsPlugin.StateMessage[] | undefined = undefined;
-  if (liveObjectsPlugin) {
-    state = deserialized.state as LiveObjectsPlugin.StateMessage[];
+  let state: ObjectsPlugin.StateMessage[] | undefined = undefined;
+  if (objectsPlugin) {
+    state = deserialized.state as ObjectsPlugin.StateMessage[];
     if (state) {
       for (let i = 0; i < state.length; i++) {
-        state[i] = liveObjectsPlugin.StateMessage.fromValues(state[i], Utils, MessageEncoding);
+        state[i] = objectsPlugin.StateMessage.fromValues(state[i], Utils, MessageEncoding);
       }
     }
   }
@@ -142,17 +142,15 @@ export function fromDeserialized(
 /**
  * Used internally by the tests.
  *
- * LiveObjectsPlugin code can't be included as part of the core library to prevent size growth,
- * so if a test needs to build Live Object state messages, then it must provide LiveObjectsPlugin.
+ * ObjectsPlugin code can't be included as part of the core library to prevent size growth,
+ * so if a test needs to build state messages, then it must provide the plugin upon call.
  */
-export function makeFromDeserializedWithDependencies(dependencies?: {
-  LiveObjectsPlugin: typeof LiveObjectsPlugin | null;
-}) {
+export function makeFromDeserializedWithDependencies(dependencies?: { ObjectsPlugin: typeof ObjectsPlugin | null }) {
   return (deserialized: Record<string, unknown>): ProtocolMessage => {
     return fromDeserialized(
       deserialized,
       { presenceMessageFromValues, presenceMessagesFromValuesArray },
-      dependencies?.LiveObjectsPlugin ?? null,
+      dependencies?.ObjectsPlugin ?? null,
     );
   };
 }
@@ -164,7 +162,7 @@ export function fromValues(values: unknown): ProtocolMessage {
 export function stringify(
   msg: any,
   presenceMessagePlugin: PresenceMessagePlugin | null,
-  liveObjectsPlugin: typeof LiveObjectsPlugin | null,
+  objectsPlugin: typeof ObjectsPlugin | null,
 ): string {
   let result = '[ProtocolMessage';
   if (msg.action !== undefined) result += '; action=' + ActionName[msg.action] || msg.action;
@@ -179,9 +177,8 @@ export function stringify(
   if (msg.messages) result += '; messages=' + toStringArray(messagesFromValuesArray(msg.messages));
   if (msg.presence && presenceMessagePlugin)
     result += '; presence=' + toStringArray(presenceMessagePlugin.presenceMessagesFromValuesArray(msg.presence));
-  if (msg.state && liveObjectsPlugin) {
-    result +=
-      '; state=' + toStringArray(liveObjectsPlugin.StateMessage.fromValuesArray(msg.state, Utils, MessageEncoding));
+  if (msg.state && objectsPlugin) {
+    result += '; state=' + toStringArray(objectsPlugin.StateMessage.fromValuesArray(msg.state, Utils, MessageEncoding));
   }
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
@@ -219,9 +216,9 @@ class ProtocolMessage {
    */
   presence?: PresenceMessage[];
   /**
-   * This will be undefined if we skipped decoding this property due to user not requesting LiveObjects functionality — see {@link fromDeserialized}
+   * This will be undefined if we skipped decoding this property due to user not requesting Objects functionality — see {@link fromDeserialized}
    */
-  state?: LiveObjectsPlugin.StateMessage[];
+  state?: ObjectsPlugin.StateMessage[];
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
 
