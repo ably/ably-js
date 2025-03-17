@@ -2,6 +2,17 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.6.4](https://github.com/ably/ably-js/tree/2.6.4) (2025-03-17)
+
+- Adds new capabilities to control the upcoming message operations. [\#1949](https://github.com/ably/ably-js/pull/1949)
+- These include:
+  - `message-update-any` - the ability to edit a message created by any client on a given channel.
+  - `message-update-own` - the ability to edit only the messages created by the requesting client on a given channel.
+  - `message-delete-any` - the ability to delete a message created by any client on a given channel.
+  - `message-delete-own` - the ability to delete only the messages created by the requesting client on a given channel.
+
+This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
+
 ## [2.6.3](https://github.com/ably/ably-js/tree/2.6.3) (2025-01-28)
 
 - Fixed `useChannel` hook can throw exception in the effect if connection is closed [\#1938](https://github.com/ably/ably-js/issues/1938)
