@@ -2543,11 +2543,24 @@ export interface Annotation {
    */
   clientId?: string;
   /**
-   * The annotation payload, if provided.
+   * The name of this annotation. This is the field that most annotation aggregations will
+   * operate on. For example, using "distinct.v1" aggregation (specified in the type), the
+   * message summary will show a list of clients who have published an annotation with
+   * each distinct annotation.name.
+   */
+  name?: string;
+  /**
+   * An optional count, only relevant to certain aggregation types, see aggregation types
+   * documentation for more info.
+   */
+  count?: number;
+  /**
+   * An arbitrary publisher-provided payload, if provided. Not aggregated.
    */
   data?: any;
   /**
-   * This is typically empty, as all annotations received from Ably are automatically decoded client-side using this value. However, if the annotation encoding cannot be processed, this attribute contains the remaining transformations not applied to the `data` payload.
+   * The encoding of the payload; typically empty as the data is decoded client-side back
+   * into the original data type.
    */
   encoding?: string;
   /**
@@ -2565,11 +2578,12 @@ export interface Annotation {
   /**
    * The serial of the message (of type message.create) that this annotation is annotating.
    */
-  refSerial: string;
+  messageSerial: string;
   /**
-   * The kind of annotation it is (for example, an emoji reaction)
+   * The type of annotation it is, typically some name together with an aggregation
+   * method; for example: "emoji:distinct.v1". Handled opaquely by the SDK and validated serverside.
    */
-  refType: string;
+  type: string;
   /**
    * A JSON object for metadata and/or ancillary payloads.
    */
