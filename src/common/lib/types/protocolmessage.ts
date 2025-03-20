@@ -50,6 +50,7 @@ const flags: { [key: string]: number } = {
   RESUMED: 1 << 2,
   TRANSIENT: 1 << 4,
   ATTACH_RESUME: 1 << 5,
+  HAS_STATE: 1 << 7,
   /* Channel mode flags */
   PRESENCE: 1 << 16,
   PUBLISH: 1 << 17,
@@ -57,7 +58,6 @@ const flags: { [key: string]: number } = {
   PRESENCE_SUBSCRIBE: 1 << 19,
   OBJECT_SUBSCRIBE: 1 << 24,
   OBJECT_PUBLISH: 1 << 25,
-  HAS_STATE: 1 << 26,
 };
 const flagNames = Object.keys(flags);
 flags.MODE_ALL =
