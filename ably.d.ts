@@ -2287,7 +2287,7 @@ export type PublishOptions = {
    * Support any publish options that may be added serverside without needing
    * typings changes.
    */
-  [k: string]: string | number | boolean;
+  [k: string]: string | number | boolean | undefined;
 };
 
 /**
