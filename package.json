@@ -156,7 +156,6 @@
     "requirejs": "grunt requirejs",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "prepare": "npm run build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "sourcemap": "source-map-explorer build/ably.min.js",

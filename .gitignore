@@ -4,7 +4,6 @@ ably-js.iml
 node_modules
 npm-debug.log
 .tool-versions
-build/
 react/
 typedoc/generated/
 junit/

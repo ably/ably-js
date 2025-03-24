@@ -32,6 +32,7 @@ export function constructValidateAnnotation(msgOrSerial: string | Message, annot
   }
 
   const annotation = Annotation.fromValues(annotationValues);
+  annotation.messageSerial = messageSerial;
   if (!annotation.action) {
     annotation.action = 'annotation.create';
   }
