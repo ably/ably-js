@@ -2086,11 +2086,20 @@ export declare interface RealtimeAnnotations {
   /**
    * Publish a new annotation for a message.
    *
-   * @param refSerial - The `serial` of the message to annotate.
-   * @param refType - What type of annotation you want.
-   * @param data - The contents of the annotation.
+   * @param message - The message to annotate.
+   * @param annotation - The annotation to publish. (Must include at least the `type`.
+   * Assumed to be an annotation.create if no action is specified)
    */
-  publish(refSerial: string, refType: string, data: string | ArrayBuffer | Uint8Array): Promise<void>;
+  publish(message: Message, annotation: OutgoingAnnotation): Promise<void>;
+  /**
+   * Publish a new annotation for a message (alternative form where you only have the
+   * serial of the message, not a complete Message object)
+   *
+   * @param messageSerial - The serial field of the message to annotate.
+   * @param annotation - The annotation to publish. (Must include at least the `type`.
+   * Assumed to be an annotation.create if no action is specified)
+   */
+  publish(messageSerial: string, annotation: OutgoingAnnotation): Promise<void>;
   /**
    * Get all annotations for a given message (as a paginated result)
    *
@@ -2202,11 +2211,20 @@ export declare interface RestAnnotations {
   /**
    * Publish a new annotation for a message.
    *
-   * @param refSerial - The `serial` of the message to annotate.
-   * @param refType - What type of annotation you want.
-   * @param data - The contents of the annotation.
+   * @param message - The message to annotate.
+   * @param annotation - The annotation to publish. (Must include at least the `type`.
+   * Assumed to be an annotation.create if no action is specified)
    */
-  publish(refSerial: string, refType: string, data: string | ArrayBuffer | Uint8Array): Promise<void>;
+  publish(message: Message, annotation: OutgoingAnnotation): Promise<void>;
+  /**
+   * Publish a new annotation for a message (alternative form where you only have the
+   * serial of the message, not a complete Message object)
+   *
+   * @param messageSerial - The serial field of the message to annotate.
+   * @param annotation - The annotation to publish. (Must include at least the `type`.
+   * Assumed to be an annotation.create if no action is specified)
+   */
+  publish(messageSerial: string, annotation: OutgoingAnnotation): Promise<void>;
   /**
    * Get all annotations for a given message (as a paginated result)
    *
@@ -2589,6 +2607,10 @@ export interface Annotation {
    */
   extras: any;
 }
+
+export type OutgoingAnnotation = Partial<Annotation> & {
+  type: string;
+};
 
 /**
  * Contains the details of an operation, such as update or deletion, supplied by the actioning client.

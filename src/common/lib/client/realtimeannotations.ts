@@ -5,8 +5,10 @@ import { actions, flags } from '../types/protocolmessagecommon';
 import { fromValues as protocolMessageFromValues } from '../types/protocolmessage';
 import ErrorInfo from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
-import RestAnnotations, { RestGetAnnotationsParams } from './restannotations';
+import RestAnnotations, { RestGetAnnotationsParams, constructValidateAnnotation } from './restannotations';
 import type { PaginatedResult } from './paginatedresource';
+import type Message from '../types/message';
+import type { Properties } from '../util/utils';
 
 class RealtimeAnnotations {
   private channel: RealtimeChannel;
@@ -19,15 +21,9 @@ class RealtimeAnnotations {
     this.subscriptions = new EventEmitter(this.logger);
   }
 
-  async publish(refSerial: string, refType: string, data: any): Promise<void> {
+  async publish(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
     const channelName = this.channel.name;
-    const annotation = Annotation.fromValues({
-      action: 'annotation.create',
-      refSerial,
-      refType,
-      data,
-    });
-
+    const annotation = constructValidateAnnotation(msgOrSerial, annotationValues);
     const wireAnnotation = await annotation.encode();
 
     this.channel._throwIfUnpublishableState();
@@ -36,7 +32,7 @@ class RealtimeAnnotations {
       this.logger,
       Logger.LOG_MICRO,
       'RealtimeAnnotations.publish()',
-      'channelName = ' + channelName + ', sending annotation with refSerial = ' + refSerial + ', refType = ' + refType,
+      'channelName = ' + channelName + ', sending annotation with messageSerial = ' + annotation.messageSerial + ', type = ' + annotation.type,
     );
 
     const pm = protocolMessageFromValues({

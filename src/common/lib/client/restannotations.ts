@@ -1,13 +1,41 @@
 import * as Utils from '../util/utils';
 import Annotation, { WireAnnotation, _fromEncodedArray } from '../types/annotation';
+import type Message from '../types/message';
 import type RestChannel from './restchannel';
 import type RealtimeChannel from './realtimechannel';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
+import type { Properties } from '../util/utils';
+import ErrorInfo from '../types/errorinfo';
 
 export interface RestGetAnnotationsParams {
   limit?: number;
+}
+
+export function constructValidateAnnotation(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Annotation {
+  let messageSerial: string | undefined;
+  switch (typeof msgOrSerial) {
+    case 'string':
+      messageSerial = msgOrSerial;
+    break;
+    case 'object':
+      messageSerial = msgOrSerial.serial;
+    break;
+  }
+  if (!messageSerial || typeof messageSerial !== 'string') {
+    throw new ErrorInfo('First argument of annotation.publish() must be either a Message (or at least an object with a string `serial` property) or a message serial (string)', 40003, 400);
+  }
+
+  if (!annotationValues || typeof annotationValues !== 'object') {
+    throw new ErrorInfo('Second argument of annotation.publish() must be an object (the intended annotation to publish)', 40003, 400);
+  }
+
+  const annotation = Annotation.fromValues(annotationValues);
+  if (!annotation.action) {
+    annotation.action = 'annotation.create';
+  }
+  return annotation;
 }
 
 function basePathForSerial(channel: RestChannel | RealtimeChannel, serial: string) {
@@ -23,14 +51,8 @@ class RestAnnotations {
     this.channel = channel;
   }
 
-  async publish(refSerial: string, refType: string, data: any): Promise<void> {
-    const annotation = Annotation.fromValues({
-      action: 'annotation.create',
-      refSerial,
-      refType,
-      data,
-    });
-
+  async publish(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
+    const annotation = constructValidateAnnotation(msgOrSerial, annotationValues);
     const wireAnnotation = await annotation.encode();
 
     const client = this.channel.client,
@@ -41,7 +63,7 @@ class RestAnnotations {
 
     const requestBody = Utils.encodeBody([wireAnnotation], client._MsgPack, format);
 
-    await Resource.post(client, basePathForSerial(this.channel, refSerial), requestBody, headers, params, null, true);
+    await Resource.post(client, basePathForSerial(this.channel, messageSerial), requestBody, headers, params, null, true);
   }
 
   async get(serial: string, params: RestGetAnnotationsParams | null): Promise<PaginatedResult<Annotation>> {

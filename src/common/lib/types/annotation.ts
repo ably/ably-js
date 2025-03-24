@@ -57,8 +57,8 @@ export function fromValues(values: Properties<Annotation>) {
 class Annotation extends BaseMessage {
   action?: API.AnnotationAction;
   serial?: string;
-  refSerial?: string;
-  refType?: string;
+  messageSerial?: string;
+  type?: string;
 
   async encode(): Promise<WireAnnotation> {
     const res = Object.assign(new WireAnnotation(), this, {
@@ -85,8 +85,8 @@ class Annotation extends BaseMessage {
 export class WireAnnotation extends BaseMessage {
   action?: number;
   serial?: string;
-  refSerial?: string;
-  refType?: string;
+  messageSerial?: string;
+  type?: string;
 
   toJSON(...args: any[]) {
     return wireToJSON.call(this, ...args);
