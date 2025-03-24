@@ -63,7 +63,7 @@ class RestAnnotations {
 
     const requestBody = Utils.encodeBody([wireAnnotation], client._MsgPack, format);
 
-    await Resource.post(client, basePathForSerial(this.channel, messageSerial), requestBody, headers, params, null, true);
+    await Resource.post(client, basePathForSerial(this.channel, annotation.messageSerial!), requestBody, headers, params, null, true);
   }
 
   async get(serial: string, params: RestGetAnnotationsParams | null): Promise<PaginatedResult<Annotation>> {
