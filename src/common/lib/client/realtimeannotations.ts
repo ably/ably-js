@@ -43,7 +43,7 @@ class RealtimeAnnotations {
     return this.channel.sendMessage(pm);
   }
 
-  async subscribe(..._args: unknown[] /* [refType], listener */): Promise<void> {
+  async subscribe(..._args: unknown[] /* [type], listener */): Promise<void> {
     const args = RealtimeChannel.processListenerArgs(_args);
     const event = args[0];
     const listener = args[1];
@@ -75,7 +75,7 @@ class RealtimeAnnotations {
 
   _processIncoming(annotations: Annotation[]): void {
     for (const annotation of annotations) {
-      this.subscriptions.emit(annotation.refType || '', annotation);
+      this.subscriptions.emit(annotation.type || '', annotation);
     }
   }
 

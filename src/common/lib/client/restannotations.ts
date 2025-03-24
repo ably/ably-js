@@ -32,6 +32,7 @@ export function constructValidateAnnotation(msgOrSerial: string | Message, annot
   }
 
   const annotation = Annotation.fromValues(annotationValues);
+  annotation.messageSerial = messageSerial;
   if (!annotation.action) {
     annotation.action = 'annotation.create';
   }
@@ -63,7 +64,7 @@ class RestAnnotations {
 
     const requestBody = Utils.encodeBody([wireAnnotation], client._MsgPack, format);
 
-    await Resource.post(client, basePathForSerial(this.channel, messageSerial), requestBody, headers, params, null, true);
+    await Resource.post(client, basePathForSerial(this.channel, annotation.messageSerial!), requestBody, headers, params, null, true);
   }
 
   async get(serial: string, params: RestGetAnnotationsParams | null): Promise<PaginatedResult<Annotation>> {
