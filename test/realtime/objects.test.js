@@ -778,7 +778,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               root.get('counter').subscribe((update) => {
                 try {
                   expect(update).to.deep.equal(
-                    { update: { inc: -1 } },
+                    { update: { amount: -1 } },
                     'Check counter subscription callback is called with an expected update object after STATE_SYNC sequence with "tombstone=true"',
                   );
                   resolve();
@@ -1776,7 +1776,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               root.get('counter').subscribe((update) => {
                 try {
                   expect(update).to.deep.equal(
-                    { update: { inc: -1 } },
+                    { update: { amount: -1 } },
                     'Check counter subscription callback is called with an expected update object after OBJECT_DELETE operation',
                   );
                   resolve();
@@ -3567,7 +3567,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               counter.subscribe((update) => {
                 try {
                   expect(update).to.deep.equal(
-                    { update: { inc: 1 } },
+                    { update: { amount: 1 } },
                     'Check counter subscription callback is called with an expected update object for COUNTER_INC operation',
                   );
                   resolve();
@@ -3604,7 +3604,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 try {
                   const expectedInc = expectedCounterIncrements[currentUpdateIndex];
                   expect(update).to.deep.equal(
-                    { update: { inc: expectedInc } },
+                    { update: { amount: expectedInc } },
                     `Check counter subscription callback is called with an expected update object for ${currentUpdateIndex + 1} times`,
                   );
 
