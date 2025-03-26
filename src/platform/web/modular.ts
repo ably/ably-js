@@ -39,6 +39,7 @@ export * from './modular/message';
 export * from './modular/presencemessage';
 export * from './modular/msgpack';
 export * from './modular/realtimepresence';
+export * from './modular/annotations';
 export * from './modular/transports';
 export * from './modular/http';
 export { Rest } from '../../common/lib/client/rest';
