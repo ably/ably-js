@@ -13,14 +13,14 @@ import { ModularPlugins, RealtimePresencePlugin } from './modularplugins';
 import { TransportNames } from 'common/constants/TransportName';
 import { TransportImplementations } from 'common/platform';
 import Defaults from '../util/defaults';
-import type * as LiveObjectsPlugin from 'plugins/liveobjects';
+import type * as ObjectsPlugin from 'plugins/objects';
 
 /**
  `BaseRealtime` is an export of the tree-shakable version of the SDK, and acts as the base class for the `DefaultRealtime` class exported by the non tree-shakable version.
  */
 class BaseRealtime extends BaseClient {
   readonly _RealtimePresence: RealtimePresencePlugin | null;
-  readonly _LiveObjectsPlugin: typeof LiveObjectsPlugin | null;
+  readonly _objectsPlugin: typeof ObjectsPlugin | null;
   // Extra transport implementations available to this client, in addition to those in Platform.Transports.bundledImplementations
   readonly _additionalTransportImplementations: TransportImplementations;
   _channels: any;
@@ -60,7 +60,7 @@ class BaseRealtime extends BaseClient {
 
     this._additionalTransportImplementations = BaseRealtime.transportImplementationsFromPlugins(this.options.plugins);
     this._RealtimePresence = this.options.plugins?.RealtimePresence ?? null;
-    this._LiveObjectsPlugin = this.options.plugins?.LiveObjects ?? null;
+    this._objectsPlugin = this.options.plugins?.Objects ?? null;
     this.connection = new Connection(this, this.options);
     this._channels = new Channels(this);
     if (this.options.autoConnect !== false) this.connect();

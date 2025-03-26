@@ -1,6 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import { LiveObjects } from './liveobjects';
+import { Objects } from './objects';
 import { StateMessage, StateObject, StateOperation } from './statemessage';
 
 export enum LiveObjectSubscriptionEvent {
@@ -62,10 +62,10 @@ export abstract class LiveObject<
   private _tombstonedAt: number | undefined;
 
   protected constructor(
-    protected _liveObjects: LiveObjects,
+    protected _objects: Objects,
     objectId: string,
   ) {
-    this._client = this._liveObjects.getClient();
+    this._client = this._objects.getClient();
     this._subscriptions = new this._client.EventEmitter(this._client.logger);
     this._lifecycleEvents = new this._client.EventEmitter(this._client.logger);
     this._objectId = objectId;
@@ -77,7 +77,7 @@ export abstract class LiveObject<
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
-    this._liveObjects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration();
 
     this._subscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
 
@@ -235,7 +235,7 @@ export abstract class LiveObject<
    */
   protected abstract _updateFromDataDiff(prevDataRef: TData, newDataRef: TData): TUpdate;
   /**
-   * Merges the initial data from the create operation into the live object state.
+   * Merges the initial data from the create operation into the live object.
    *
    * Client SDKs do not need to keep around the state operation that created the object,
    * so we can merge the initial data the first time we receive it for the object,
