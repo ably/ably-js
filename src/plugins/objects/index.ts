@@ -1,5 +1,5 @@
+import { ObjectMessage } from './objectmessage';
 import { Objects } from './objects';
-import { ObjectMessage } from './statemessage';
 
 export { Objects, ObjectMessage };
 

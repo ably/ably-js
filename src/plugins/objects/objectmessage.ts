@@ -148,6 +148,7 @@ export class ObjectMessage {
   timestamp?: number;
   clientId?: string;
   connectionId?: string;
+  // TODO: remove, see Simon's comment in PR: https://github.com/ably/specification/pull/279#discussion_r1996035652
   channel?: string;
   extras?: any;
   /**
@@ -301,6 +302,11 @@ export class ObjectMessage {
     inputContext: ChannelOptions,
     messageEncoding: typeof MessageEncoding,
   ): Promise<void> {
+    // TODO: fix for root with deleted keys, "data" field (ObjectData) can be undefined, so it throws here
+    if (!objectData) {
+      return;
+    }
+
     const { data, encoding, error } = await messageEncoding.decodeData(
       objectData.value,
       objectData.encoding,

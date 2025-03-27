@@ -1,7 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
+import { ObjectMessage, ObjectState } from './objectmessage';
 import { Objects } from './objects';
-import { ObjectMessage, ObjectState } from './statemessage';
 
 export interface LiveObjectDataEntry {
   objectState: ObjectState;
