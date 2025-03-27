@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Objects helper to create pre-determined state tree on channels
+ * Helper class to create pre-determined objects tree on channels and create object messages.
  */
 define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlugin) {
   const createPM = Ably.makeProtocolMessageFromDeserialized({ ObjectsPlugin });
@@ -32,7 +32,7 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
     }
 
     /**
-     * Sends REST STATE requests to create Objects state tree on a provided channel name:
+     * Sends Objects REST API requests to create objects tree on a provided channel:
      *
      * root "emptyMap" -> Map#1 {} -- empty map
      * root "referencedMap" -> Map#2 { "counterKey": <object id Counter#3> }
@@ -240,41 +240,41 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
       return obj;
     }
 
-    stateOperationMessage(opts) {
+    objectOperationMessage(opts) {
       const { channelName, serial, siteCode, state } = opts;
 
-      state?.forEach((stateMessage, i) => {
-        stateMessage.serial = serial;
-        stateMessage.siteCode = siteCode;
+      state?.forEach((objectMessage, i) => {
+        objectMessage.serial = serial;
+        objectMessage.siteCode = siteCode;
       });
 
       return {
-        action: 19, // STATE
+        action: 19, // OBJECT
         channel: channelName,
         channelSerial: serial,
         state: state ?? [],
       };
     }
 
-    stateObjectMessage(opts) {
+    objectStateMessage(opts) {
       const { channelName, syncSerial, state } = opts;
 
       return {
-        action: 20, // STATE_SYNC
+        action: 20, // OBJECT_SYNC
         channel: channelName,
         channelSerial: syncSerial,
         state: state ?? [],
       };
     }
 
-    async processStateOperationMessageOnChannel(opts) {
+    async processObjectOperationMessageOnChannel(opts) {
       const { channel, ...rest } = opts;
 
       this._helper.recordPrivateApi('call.channel.processMessage');
       this._helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
       await channel.processMessage(
         createPM(
-          this.stateOperationMessage({
+          this.objectOperationMessage({
             ...rest,
             channelName: channel.name,
           }),
@@ -282,14 +282,14 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
       );
     }
 
-    async processStateObjectMessageOnChannel(opts) {
+    async processObjectStateMessageOnChannel(opts) {
       const { channel, ...rest } = opts;
 
       this._helper.recordPrivateApi('call.channel.processMessage');
       this._helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
       await channel.processMessage(
         createPM(
-          this.stateObjectMessage({
+          this.objectStateMessage({
             ...rest,
             channelName: channel.name,
           }),

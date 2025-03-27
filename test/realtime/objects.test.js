@@ -87,8 +87,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     return savedError;
   }
 
-  function stateMessageFromValues(values) {
-    return ObjectsPlugin.StateMessage.fromValues(values, Utils, MessageEncoding);
+  function objectMessageFromValues(values) {
+    return ObjectsPlugin.ObjectMessage.fromValues(values, Utils, MessageEncoding);
   }
 
   async function waitForMapKeyUpdate(map, key) {
@@ -111,7 +111,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     });
   }
 
-  async function waitForStateOperation(helper, client, waitForAction) {
+  async function waitForObjectOperation(helper, client, waitForAction) {
     return new Promise((resolve, reject) => {
       helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
       const transport = client.connection.connectionManager.activeProtocol.getTransport();
@@ -136,7 +136,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
   }
 
   /**
-   * The channel with fixture data may not yet be populated by REST STATE requests made by ObjectsHelper.
+   * The channel with fixture data may not yet be populated by REST API requests made by ObjectsHelper.
    * This function waits for a channel to have all keys set.
    */
   async function waitFixtureChannelIsReady(client) {
@@ -179,7 +179,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       /** @nospec */
-      it(`doesn't break when it receives a STATE ProtocolMessage`, async function () {
+      it(`doesn't break when it receives an OBJECT ProtocolMessage`, async function () {
         const helper = this.test.helper;
         const objectsHelper = new ObjectsHelper(helper);
         const testClient = helper.AblyRealtime();
@@ -193,8 +193,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const publishClient = helper.AblyRealtime();
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
-            // inject STATE message that should be ignored and not break anything without the plugin
-            await objectsHelper.processStateOperationMessageOnChannel({
+            // inject OBJECT message that should be ignored and not break anything without the plugin
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel: testChannel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
@@ -204,14 +204,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const publishChannel = publishClient.channels.get('channel');
             await publishChannel.publish(null, 'test');
 
-            // regular message subscriptions should still work after processing STATE_SYNC message without the plugin
+            // regular message subscriptions should still work after processing OBJECT_SYNC message without the plugin
             await receivedMessagePromise;
           }, publishClient);
         }, testClient);
       });
 
       /** @nospec */
-      it(`doesn't break when it receives a STATE_SYNC ProtocolMessage`, async function () {
+      it(`doesn't break when it receives an OBJECT_SYNC ProtocolMessage`, async function () {
         const helper = this.test.helper;
         const objectsHelper = new ObjectsHelper(helper);
         const testClient = helper.AblyRealtime();
@@ -225,8 +225,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const publishClient = helper.AblyRealtime();
 
           await helper.monitorConnectionThenCloseAndFinish(async () => {
-            // inject STATE_SYNC message that should be ignored and not break anything without the plugin
-            await objectsHelper.processStateObjectMessageOnChannel({
+            // inject OBJECT_SYNC message that should be ignored and not break anything without the plugin
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel: testChannel,
               syncSerial: 'serial:',
               state: [
@@ -240,7 +240,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const publishChannel = publishClient.channels.get('channel');
             await publishChannel.publish(null, 'test');
 
-            // regular message subscriptions should still work after processing STATE_SYNC message without the plugin
+            // regular message subscriptions should still work after processing OBJECT_SYNC message without the plugin
             await receivedMessagePromise;
           }, publishClient);
         }, testClient);
@@ -273,7 +273,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       /** @nospec */
-      it('getRoot() returns live object with id "root"', async function () {
+      it('getRoot() returns LiveObject with id "root"', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
@@ -290,7 +290,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       /** @nospec */
-      it('getRoot() returns empty root when no state exist on a channel', async function () {
+      it('getRoot() returns empty root when no objects exist on a channel', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
@@ -306,7 +306,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       /** @nospec */
-      it('getRoot() waits for initial STATE_SYNC to be completed before resolving', async function () {
+      it('getRoot() waits for initial OBJECT_SYNC to be completed before resolving', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
@@ -324,7 +324,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           // give a chance for getRoot() to resolve and proc its handler. it should not
           helper.recordPrivateApi('call.Platform.nextTick');
           await new Promise((res) => nextTick(res));
-          expect(getRootResolved, 'Check getRoot() is not resolved until STATE_SYNC sequence is completed').to.be.false;
+          expect(getRootResolved, 'Check getRoot() is not resolved until OBJECT_SYNC sequence is completed').to.be
+            .false;
 
           await channel.attach();
 
@@ -334,7 +335,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       /** @nospec */
-      it('getRoot() resolves immediately when STATE_SYNC sequence is completed', async function () {
+      it('getRoot() resolves immediately when OBJECT_SYNC sequence is completed', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
@@ -343,7 +344,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const objects = channel.objects;
 
           await channel.attach();
-          // wait for STATE_SYNC sequence to complete by accessing root for the first time
+          // wait for sync sequence to complete by accessing root for the first time
           await objects.getRoot();
 
           let resolvedImmediately = false;
@@ -360,7 +361,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       /** @nospec */
-      it('getRoot() waits for STATE_SYNC with empty cursor before resolving', async function () {
+      it('getRoot() waits for OBJECT_SYNC with empty cursor before resolving', async function () {
         const helper = this.test.helper;
         const objectsHelper = new ObjectsHelper(helper);
         const client = RealtimeWithObjects(helper);
@@ -370,13 +371,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const objects = channel.objects;
 
           await channel.attach();
-          // wait for initial STATE_SYNC sequence to complete
+          // wait for initial sync sequence to complete
           await objects.getRoot();
 
-          // inject STATE_SYNC message to emulate start of a new sequence
-          await objectsHelper.processStateObjectMessageOnChannel({
+          // inject OBJECT_SYNC message to emulate start of a new sequence
+          await objectsHelper.processObjectStateMessageOnChannel({
             channel,
-            // have cursor so client awaits for additional STATE_SYNC messages
+            // have cursor so client awaits for additional OBJECT_SYNC messages
             syncSerial: 'serial:cursor',
           });
 
@@ -391,12 +392,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           helper.recordPrivateApi('call.Platform.nextTick');
           await new Promise((res) => nextTick(res));
 
-          expect(getRootResolved, 'Check getRoot() is not resolved while STATE_SYNC is in progress').to.be.false;
+          expect(getRootResolved, 'Check getRoot() is not resolved while OBJECT_SYNC is in progress').to.be.false;
 
-          // inject final STATE_SYNC message
-          await objectsHelper.processStateObjectMessageOnChannel({
+          // inject final OBJECT_SYNC message
+          await objectsHelper.processObjectStateMessageOnChannel({
             channel,
-            // no cursor to indicate the end of STATE_SYNC messages
+            // no cursor to indicate the end of OBJECT_SYNC messages
             syncSerial: 'serial:',
             state: [
               objectsHelper.mapObject({
@@ -411,15 +412,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           helper.recordPrivateApi('call.Platform.nextTick');
           await new Promise((res) => nextTick(res));
 
-          expect(getRootResolved, 'Check getRoot() is resolved when STATE_SYNC sequence has ended').to.be.true;
-          expect(root.get('key')).to.equal(1, 'Check new root after STATE_SYNC sequence has expected key');
+          expect(getRootResolved, 'Check getRoot() is resolved when OBJECT_SYNC sequence has ended').to.be.true;
+          expect(root.get('key')).to.equal(1, 'Check new root after OBJECT_SYNC sequence has expected key');
         }, client);
       });
 
       /** @nospec */
       Helper.testOnAllTransportsAndProtocols(
         this,
-        'builds state object tree from STATE_SYNC sequence on channel attachment',
+        'builds object tree from OBJECT_SYNC sequence on channel attachment',
         function (options, channelName) {
           return async function () {
             const helper = this.test.helper;
@@ -438,7 +439,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               const mapKeys = ['emptyMap', 'referencedMap', 'valuesMap'];
               const rootKeysCount = counterKeys.length + mapKeys.length;
 
-              expect(root, 'Check getRoot() is resolved when STATE_SYNC sequence ends').to.exist;
+              expect(root, 'Check getRoot() is resolved when OBJECT_SYNC sequence ends').to.exist;
               expect(root.size()).to.equal(rootKeysCount, 'Check root has correct number of keys');
 
               counterKeys.forEach((key) => {
@@ -482,7 +483,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       /** @nospec */
       Helper.testOnAllTransportsAndProtocols(
         this,
-        'LiveCounter is initialized with initial value from STATE_SYNC sequence',
+        'LiveCounter is initialized with initial value from OBJECT_SYNC sequence',
         function (options, channelName) {
           return async function () {
             const helper = this.test.helper;
@@ -515,7 +516,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       /** @nospec */
       Helper.testOnAllTransportsAndProtocols(
         this,
-        'LiveMap is initialized with initial value from STATE_SYNC sequence',
+        'LiveMap is initialized with initial value from OBJECT_SYNC sequence',
         function (options, channelName) {
           return async function () {
             const helper = this.test.helper;
@@ -655,18 +656,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         { name: 'negativeMaxSafeIntegerCounter', count: -Number.MAX_SAFE_INTEGER },
       ];
 
-      const stateSyncSequenceScenarios = [
+      const objectSyncSequenceScenarios = [
         {
-          description: 'STATE_SYNC sequence with state object "tombstone" property creates tombstoned object',
+          description: 'OBJECT_SYNC sequence with object state "tombstone" property creates tombstoned object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
             const mapId = objectsHelper.fakeMapObjectId();
             const counterId = objectsHelper.fakeCounterObjectId();
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
-              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
-              // add state objects with tombstone=true
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
+              // add object states with tombstone=true
               state: [
                 objectsHelper.mapObject({
                   objectId: mapId,
@@ -698,20 +699,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             expect(
               root.get('map'),
-              'Check map does not exist on root after STATE_SYNC with "tombstone=true" for a map object',
+              'Check map does not exist on root after OBJECT_SYNC with "tombstone=true" for a map object',
             ).to.not.exist;
             expect(
               root.get('counter'),
-              'Check counter does not exist on root after STATE_SYNC with "tombstone=true" for a counter object',
+              'Check counter does not exist on root after OBJECT_SYNC with "tombstone=true" for a counter object',
             ).to.not.exist;
-            // control check that STATE_SYNC was applied at all
-            expect(root.get('foo'), 'Check property exists on root after STATE_SYNC').to.exist;
+            // control check that OBJECT_SYNC was applied at all
+            expect(root.get('foo'), 'Check property exists on root after OBJECT_SYNC').to.exist;
           },
         },
 
         {
           allTransportsAndProtocols: true,
-          description: 'STATE_SYNC sequence with state object "tombstone" property deletes existing object',
+          description: 'OBJECT_SYNC sequence with object state "tombstone" property deletes existing object',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, channel } = ctx;
 
@@ -723,13 +724,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await counterCreatedPromise;
 
-            expect(root.get('counter'), 'Check counter exists on root before STATE_SYNC sequence with "tombstone=true"')
-              .to.exist;
+            expect(
+              root.get('counter'),
+              'Check counter exists on root before OBJECT_SYNC sequence with "tombstone=true"',
+            ).to.exist;
 
-            // inject a STATE_SYNC sequence where a counter is now tombstoned
-            await objectsHelper.processStateObjectMessageOnChannel({
+            // inject an OBJECT_SYNC message where a counter is now tombstoned
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
-              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
               state: [
                 objectsHelper.counterObject({
                   objectId: counterId,
@@ -752,17 +755,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             expect(
               root.get('counter'),
-              'Check counter does not exist on root after STATE_SYNC with "tombstone=true" for an existing counter object',
+              'Check counter does not exist on root after OBJECT_SYNC with "tombstone=true" for an existing counter object',
             ).to.not.exist;
-            // control check that STATE_SYNC was applied at all
-            expect(root.get('foo'), 'Check property exists on root after STATE_SYNC').to.exist;
+            // control check that OBJECT_SYNC was applied at all
+            expect(root.get('foo'), 'Check property exists on root after OBJECT_SYNC').to.exist;
           },
         },
 
         {
           allTransportsAndProtocols: true,
           description:
-            'STATE_SYNC sequence with state object "tombstone" property triggers subscription callback for existing object',
+            'OBJECT_SYNC sequence with object state "tombstone" property triggers subscription callback for existing object',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, channel } = ctx;
 
@@ -779,7 +782,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 try {
                   expect(update).to.deep.equal(
                     { update: { amount: -1 } },
-                    'Check counter subscription callback is called with an expected update object after STATE_SYNC sequence with "tombstone=true"',
+                    'Check counter subscription callback is called with an expected update object after OBJECT_SYNC sequence with "tombstone=true"',
                   );
                   resolve();
                 } catch (error) {
@@ -788,10 +791,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               }),
             );
 
-            // inject a STATE_SYNC sequence where a counter is now tombstoned
-            await objectsHelper.processStateObjectMessageOnChannel({
+            // inject an OBJECT_SYNC message where a counter is now tombstoned
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
-              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
               state: [
                 objectsHelper.counterObject({
                   objectId: counterId,
@@ -819,7 +822,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       const applyOperationsScenarios = [
         {
           allTransportsAndProtocols: true,
-          description: 'can apply MAP_CREATE with primitives state operation messages',
+          description: 'can apply MAP_CREATE with primitives object operation messages',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, helper } = ctx;
 
@@ -883,7 +886,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'can apply MAP_CREATE with object ids state operation messages',
+          description: 'can apply MAP_CREATE with object ids object operation messages',
           action: async (ctx) => {
             const { root, objectsHelper, channelName } = ctx;
             const withReferencesMapKey = 'withReferencesMap';
@@ -959,7 +962,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'MAP_CREATE state operation messages are applied based on the site timeserials vector of the object',
+            'MAP_CREATE object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
@@ -974,13 +977,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await Promise.all(
               mapIds.map(async (mapId, i) => {
                 // send a MAP_SET op first to create a zero-value map with forged site timeserials vector (from the op), and set it on a root.
-                await objectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('bbb', 1, 0),
                   siteCode: 'bbb',
                   state: [objectsHelper.mapSetOp({ objectId: mapId, key: 'foo', data: { value: 'bar' } })],
                 });
-                await objectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
@@ -997,7 +1000,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
             ].entries()) {
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
@@ -1041,7 +1044,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'can apply MAP_SET with primitives state operation messages',
+          description: 'can apply MAP_SET with primitives object operation messages',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, helper } = ctx;
 
@@ -1090,7 +1093,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'can apply MAP_SET with object ids state operation messages',
+          description: 'can apply MAP_SET with object ids object operation messages',
           action: async (ctx) => {
             const { root, objectsHelper, channelName } = ctx;
 
@@ -1148,13 +1151,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'MAP_SET state operation messages are applied based on the site timeserials vector of the object',
+            'MAP_SET object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
             // create new map and set it on a root with forged timeserials
             const mapId = objectsHelper.fakeMapObjectId();
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 1, 0),
               siteCode: 'bbb',
@@ -1172,7 +1175,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 }),
               ],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
@@ -1188,7 +1191,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier entry CGO, not applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later entry CGO, applied
             ].entries()) {
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
@@ -1217,7 +1220,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'can apply MAP_REMOVE state operation messages',
+          description: 'can apply MAP_REMOVE object operation messages',
           action: async (ctx) => {
             const { root, objectsHelper, channelName } = ctx;
             const mapKey = 'map';
@@ -1280,13 +1283,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'MAP_REMOVE state operation messages are applied based on the site timeserials vector of the object',
+            'MAP_REMOVE object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
             // create new map and set it on a root with forged timeserials
             const mapId = objectsHelper.fakeMapObjectId();
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 1, 0),
               siteCode: 'bbb',
@@ -1304,7 +1307,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 }),
               ],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
@@ -1320,7 +1323,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier entry CGO, not applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later entry CGO, applied
             ].entries()) {
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
@@ -1352,7 +1355,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'can apply COUNTER_CREATE state operation messages',
+          description: 'can apply COUNTER_CREATE object operation messages',
           action: async (ctx) => {
             const { root, objectsHelper, channelName } = ctx;
 
@@ -1405,7 +1408,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'COUNTER_CREATE state operation messages are applied based on the site timeserials vector of the object',
+            'COUNTER_CREATE object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
@@ -1420,13 +1423,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await Promise.all(
               counterIds.map(async (counterId, i) => {
                 // send a COUNTER_INC op first to create a zero-value counter with forged site timeserials vector (from the op), and set it on a root.
-                await objectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('bbb', 1, 0),
                   siteCode: 'bbb',
                   state: [objectsHelper.counterIncOp({ objectId: counterId, amount: 1 })],
                 });
-                await objectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
@@ -1443,7 +1446,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
             ].entries()) {
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
@@ -1473,7 +1476,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'can apply COUNTER_INC state operation messages',
+          description: 'can apply COUNTER_INC object operation messages',
           action: async (ctx) => {
             const { root, objectsHelper, channelName } = ctx;
             const counterKey = 'counter';
@@ -1537,19 +1540,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'COUNTER_INC state operation messages are applied based on the site timeserials vector of the object',
+            'COUNTER_INC object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
             // create new counter and set it on a root with forged timeserials
             const counterId = objectsHelper.fakeCounterObjectId();
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 1, 0),
               siteCode: 'bbb',
               state: [objectsHelper.counterCreateOp({ objectId: counterId, count: 1 })],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
@@ -1565,7 +1568,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // +100000   different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // +1000000  different site, later CGO, applied
             ].entries()) {
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
@@ -1582,7 +1585,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'can apply OBJECT_DELETE state operation messages',
+          description: 'can apply OBJECT_DELETE object operation messages',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, channel } = ctx;
 
@@ -1607,13 +1610,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(root.get('counter'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
               state: [objectsHelper.objectDeleteOp({ objectId: mapObjectId })],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 0),
               siteCode: 'aaa',
@@ -1632,7 +1635,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const counterId = objectsHelper.fakeCounterObjectId();
             // inject OBJECT_DELETE. should create a zero-value tombstoned object which can't be modified
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
@@ -1640,13 +1643,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // try to create and set tombstoned object on root
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 0, 0),
               siteCode: 'bbb',
               state: [objectsHelper.counterCreateOp({ objectId: counterId })],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 1, 0),
               siteCode: 'bbb',
@@ -1659,7 +1662,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'OBJECT_DELETE state operation messages are applied based on the site timeserials vector of the object',
+            'OBJECT_DELETE object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
@@ -1674,13 +1677,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await Promise.all(
               counterIds.map(async (counterId, i) => {
                 // create objects and set them on root with forged timeserials
-                await objectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('bbb', 1, 0),
                   siteCode: 'bbb',
                   state: [objectsHelper.counterCreateOp({ objectId: counterId })],
                 });
-                await objectsHelper.processStateOperationMessageOnChannel({
+                await objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
@@ -1697,7 +1700,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // different site, later CGO, applied
             ].entries()) {
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
@@ -1787,13 +1790,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
 
             // inject OBJECT_DELETE
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
               state: [objectsHelper.objectDeleteOp({ objectId: mapObjectId })],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 0),
               siteCode: 'aaa',
@@ -1821,7 +1824,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(root.get('foo'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
@@ -1829,7 +1832,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // set tombstoned counter to another key on root
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
@@ -1842,7 +1845,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'state operation message on a tombstoned object does not revive it',
+          description: 'object operation message on a tombstoned object does not revive it',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, channel } = ctx;
 
@@ -1874,39 +1877,39 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(root.get('counter1'), 'Check counter1 exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
               state: [objectsHelper.objectDeleteOp({ objectId: mapId1 })],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 0),
               siteCode: 'aaa',
               state: [objectsHelper.objectDeleteOp({ objectId: mapId2 })],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 2, 0),
               siteCode: 'aaa',
               state: [objectsHelper.objectDeleteOp({ objectId: counterId1 })],
             });
 
-            // inject state ops on tombstoned objects
-            await objectsHelper.processStateOperationMessageOnChannel({
+            // inject object operations on tombstoned objects
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 3, 0),
               siteCode: 'aaa',
               state: [objectsHelper.mapSetOp({ objectId: mapId1, key: 'baz', data: { value: 'qux' } })],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 4, 0),
               siteCode: 'aaa',
               state: [objectsHelper.mapRemoveOp({ objectId: mapId2, key: 'foo' })],
             });
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 5, 0),
               siteCode: 'aaa',
@@ -1914,13 +1917,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // objects should still be deleted
-            expect(root.get('map1'), 'Check map1 does not exist on root after OBJECT_DELETE and another state op').to
+            expect(root.get('map1'), 'Check map1 does not exist on root after OBJECT_DELETE and another object op').to
               .not.exist;
-            expect(root.get('map2'), 'Check map2 does not exist on root after OBJECT_DELETE and another state op').to
+            expect(root.get('map2'), 'Check map2 does not exist on root after OBJECT_DELETE and another object op').to
               .not.exist;
             expect(
               root.get('counter1'),
-              'Check counter1 does not exist on root after OBJECT_DELETE and another state op',
+              'Check counter1 does not exist on root after OBJECT_DELETE and another object op',
             ).to.not.exist;
           },
         },
@@ -1928,12 +1931,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
       const applyOperationsDuringSyncScenarios = [
         {
-          description: 'state operation messages are buffered during STATE_SYNC sequence',
+          description: 'object operation messages are buffered during OBJECT_SYNC sequence',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
-            // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            await objectsHelper.processStateObjectMessageOnChannel({
+            // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
             });
@@ -1941,7 +1944,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // inject operations, it should not be applied as sync is in progress
             await Promise.all(
               primitiveKeyData.map((keyData) =>
-                objectsHelper.processStateOperationMessageOnChannel({
+                objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', 0, 0),
                   siteCode: 'aaa',
@@ -1953,19 +1956,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check root doesn't have data from operations
             primitiveKeyData.forEach((keyData) => {
-              expect(root.get(keyData.key), `Check "${keyData.key}" key doesn't exist on root during STATE_SYNC`).to.not
-                .exist;
+              expect(root.get(keyData.key), `Check "${keyData.key}" key doesn't exist on root during OBJECT_SYNC`).to
+                .not.exist;
             });
           },
         },
 
         {
-          description: 'buffered state operation messages are applied when STATE_SYNC sequence ends',
+          description: 'buffered object operation messages are applied when OBJECT_SYNC sequence ends',
           action: async (ctx) => {
             const { root, objectsHelper, channel, helper } = ctx;
 
-            // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            await objectsHelper.processStateObjectMessageOnChannel({
+            // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
             });
@@ -1973,7 +1976,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // inject operations, they should be applied when sync ends
             await Promise.all(
               primitiveKeyData.map((keyData, i) =>
-                objectsHelper.processStateOperationMessageOnChannel({
+                objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
@@ -1984,7 +1987,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
 
             // end the sync with empty cursor
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:',
             });
@@ -1996,12 +1999,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
-                  `Check root has correct value for "${keyData.key}" key after STATE_SYNC has ended and buffered operations are applied`,
+                  `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
                 ).to.be.true;
               } else {
                 expect(root.get(keyData.key)).to.equal(
                   keyData.data.value,
-                  `Check root has correct value for "${keyData.key}" key after STATE_SYNC has ended and buffered operations are applied`,
+                  `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
                 );
               }
             });
@@ -2009,12 +2012,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'buffered state operation messages are discarded when new STATE_SYNC sequence starts',
+          description: 'buffered object operation messages are discarded when new OBJECT_SYNC sequence starts',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
-            // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            await objectsHelper.processStateObjectMessageOnChannel({
+            // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
             });
@@ -2022,7 +2025,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // inject operations, expect them to be discarded when sync with new sequence id starts
             await Promise.all(
               primitiveKeyData.map((keyData, i) =>
-                objectsHelper.processStateOperationMessageOnChannel({
+                objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
@@ -2033,13 +2036,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
 
             // start new sync with new sequence id
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'otherserial:cursor',
             });
 
             // inject another operation that should be applied when latest sync ends
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('bbb', 0, 0),
               siteCode: 'bbb',
@@ -2047,7 +2050,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // end sync
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'otherserial:',
             });
@@ -2056,31 +2059,31 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             primitiveKeyData.forEach((keyData) => {
               expect(
                 root.get(keyData.key),
-                `Check "${keyData.key}" key doesn't exist on root when STATE_SYNC has ended`,
+                `Check "${keyData.key}" key doesn't exist on root when OBJECT_SYNC has ended`,
               ).to.not.exist;
             });
 
             // check root has data from operations received during second sync
             expect(root.get('foo')).to.equal(
               'bar',
-              'Check root has data from operations received during second STATE_SYNC sequence',
+              'Check root has data from operations received during second OBJECT_SYNC sequence',
             );
           },
         },
 
         {
           description:
-            'buffered state operation messages are applied based on the site timeserials vector of the object',
+            'buffered object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
-            // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
+            // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             const mapId = objectsHelper.fakeMapObjectId();
             const counterId = objectsHelper.fakeCounterObjectId();
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
-              // add state object messages with non-empty site timeserials
+              // add object state messages with non-empty site timeserials
               state: [
                 // next map and counter objects will be checked to have correct operations applied on them based on site timeserials
                 objectsHelper.mapObject({
@@ -2107,7 +2110,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   },
                   initialCount: 1,
                 }),
-                // add objects to the root so they're discoverable in the state tree
+                // add objects to the root so they're discoverable in the object tree
                 objectsHelper.mapObject({
                   objectId: 'root',
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
@@ -2133,7 +2136,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               // different site with matching entry CGO case is not possible, as matching entry timeserial means that that timeserial is in the site timeserials vector
               { serial: lexicoTimeserial('ddd', 1, 0), siteCode: 'ddd' }, // different site, later entry CGO, applied
             ].entries()) {
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
@@ -2150,7 +2153,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               { serial: lexicoTimeserial('aaa', 0, 0), siteCode: 'aaa' }, // +100000   different site, earlier CGO, applied
               { serial: lexicoTimeserial('ccc', 9, 0), siteCode: 'ccc' }, // +1000000  different site, later CGO, applied
             ].entries()) {
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial,
                 siteCode,
@@ -2159,7 +2162,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             }
 
             // end sync
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:',
             });
@@ -2179,25 +2182,25 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expectedMapKeys.forEach(({ key, value }) => {
               expect(root.get('map').get(key)).to.equal(
                 value,
-                `Check "${key}" key on map has expected value after STATE_SYNC has ended`,
+                `Check "${key}" key on map has expected value after OBJECT_SYNC has ended`,
               );
             });
 
             expect(root.get('counter').value()).to.equal(
               1 + 1000 + 100000 + 1000000, // sum of passing operations and the initial value
-              `Check counter has expected value after STATE_SYNC has ended`,
+              `Check counter has expected value after OBJECT_SYNC has ended`,
             );
           },
         },
 
         {
           description:
-            'subsequent state operation messages are applied immediately after STATE_SYNC ended and buffers are applied',
+            'subsequent object operation messages are applied immediately after OBJECT_SYNC ended and buffers are applied',
           action: async (ctx) => {
             const { root, objectsHelper, channel, channelName, helper } = ctx;
 
-            // start new sync sequence with a cursor so client will wait for the next STATE_SYNC messages
-            await objectsHelper.processStateObjectMessageOnChannel({
+            // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:cursor',
             });
@@ -2205,7 +2208,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // inject operations, they should be applied when sync ends
             await Promise.all(
               primitiveKeyData.map((keyData, i) =>
-                objectsHelper.processStateOperationMessageOnChannel({
+                objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
@@ -2216,7 +2219,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
 
             // end the sync with empty cursor
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:',
             });
@@ -2233,25 +2236,25 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
             await keyUpdatedPromise;
 
-            // check buffered operations are applied, as well as the most recent operation outside of the STATE_SYNC is applied
+            // check buffered operations are applied, as well as the most recent operation outside of the sync sequence is applied
             primitiveKeyData.forEach((keyData) => {
               if (keyData.data.encoding) {
                 helper.recordPrivateApi('call.BufferUtils.base64Decode');
                 helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
                   BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
-                  `Check root has correct value for "${keyData.key}" key after STATE_SYNC has ended and buffered operations are applied`,
+                  `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
                 ).to.be.true;
               } else {
                 expect(root.get(keyData.key)).to.equal(
                   keyData.data.value,
-                  `Check root has correct value for "${keyData.key}" key after STATE_SYNC has ended and buffered operations are applied`,
+                  `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
                 );
               }
             });
             expect(root.get('foo')).to.equal(
               'bar',
-              'Check root has correct value for "foo" key from operation received outside of STATE_SYNC after other buffered operations were applied',
+              'Check root has correct value for "foo" key from operation received outside of OBJECT_SYNC after other buffered operations were applied',
             );
           },
         },
@@ -2678,7 +2681,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveCounter created with Objects.createCounter can be assigned to the state tree',
+          description: 'LiveCounter created with Objects.createCounter can be assigned to the object tree',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -2699,7 +2702,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
             expect(root.get('counter').value()).to.equal(
               1,
-              'Check counter assigned to the state tree has the expected value',
+              'Check counter assigned to the object tree has the expected value',
             );
           },
         },
@@ -2728,10 +2731,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // instead of sending CREATE op to the realtime, echo it immediately to the client
             // with forged initial value so we can check that counter gets initialized with a value from a CREATE op
             helper.recordPrivateApi('replace.Objects.publish');
-            objects.publish = async (stateMessages) => {
-              const counterId = stateMessages[0].operation.objectId;
+            objects.publish = async (objectMessages) => {
+              const counterId = objectMessages[0].operation.objectId;
               // this should result execute regular operation application procedure and create an object in the pool with forged initial value
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial: lexicoTimeserial('aaa', 1, 1),
                 siteCode: 'aaa',
@@ -2765,7 +2768,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const counterId = counter.getObjectId();
 
             // now inject CREATE op for a counter with a forged value. it should not be applied
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 1),
               siteCode: 'aaa',
@@ -2913,7 +2916,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveMap created with Objects.createMap can be assigned to the state tree',
+          description: 'LiveMap created with Objects.createMap can be assigned to the object tree',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -2928,15 +2931,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(root.get('map')).to.equal(map, 'Check map object on root is the same as from create method');
             expect(root.get('map').size()).to.equal(
               2,
-              'Check map assigned to the state tree has the expected number of keys',
+              'Check map assigned to the object tree has the expected number of keys',
             );
             expect(root.get('map').get('foo')).to.equal(
               'bar',
-              'Check map assigned to the state tree has the expected value for its string key',
+              'Check map assigned to the object tree has the expected value for its string key',
             );
             expect(root.get('map').get('baz')).to.equal(
               counter,
-              'Check map assigned to the state tree has the expected value for its LiveCounter key',
+              'Check map assigned to the object tree has the expected value for its LiveCounter key',
             );
           },
         },
@@ -2964,10 +2967,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // instead of sending CREATE op to the realtime, echo it immediately to the client
             // with forged initial value so we can check that map gets initialized with a value from a CREATE op
             helper.recordPrivateApi('replace.Objects.publish');
-            objects.publish = async (stateMessages) => {
-              const mapId = stateMessages[0].operation.objectId;
+            objects.publish = async (objectMessages) => {
+              const mapId = objectMessages[0].operation.objectId;
               // this should result execute regular operation application procedure and create an object in the pool with forged initial value
-              await objectsHelper.processStateOperationMessageOnChannel({
+              await objectsHelper.processObjectOperationMessageOnChannel({
                 channel,
                 serial: lexicoTimeserial('aaa', 1, 1),
                 siteCode: 'aaa',
@@ -3007,7 +3010,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const mapId = map.getObjectId();
 
             // now inject CREATE op for a map with a forged value. it should not be applied
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 1, 1),
               siteCode: 'aaa',
@@ -3036,17 +3039,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           action: async (ctx) => {
             const { root, objects } = ctx;
 
-            await expectToThrowAsync(async () => objects.createMap(null), 'Map entries should be a key/value object');
-            await expectToThrowAsync(async () => objects.createMap('foo'), 'Map entries should be a key/value object');
-            await expectToThrowAsync(async () => objects.createMap(1), 'Map entries should be a key/value object');
+            await expectToThrowAsync(async () => objects.createMap(null), 'Map entries should be a key-value object');
+            await expectToThrowAsync(async () => objects.createMap('foo'), 'Map entries should be a key-value object');
+            await expectToThrowAsync(async () => objects.createMap(1), 'Map entries should be a key-value object');
             await expectToThrowAsync(
               async () => objects.createMap(BigInt(1)),
-              'Map entries should be a key/value object',
+              'Map entries should be a key-value object',
             );
-            await expectToThrowAsync(async () => objects.createMap(true), 'Map entries should be a key/value object');
+            await expectToThrowAsync(async () => objects.createMap(true), 'Map entries should be a key-value object');
             await expectToThrowAsync(
               async () => objects.createMap(Symbol()),
-              'Map entries should be a key/value object',
+              'Map entries should be a key-value object',
             );
 
             await expectToThrowAsync(
@@ -3084,7 +3087,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'batch API .get method on a map returns BatchContext* wrappers for live objects',
+          description: 'batch API .get method on a map returns BatchContext* wrappers for objects',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -3127,7 +3130,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'batch API access API methods on live objects work and are synchronous',
+          description: 'batch API access API methods on objects work and are synchronous',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -3169,7 +3172,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'batch API write API methods on live objects do not mutate objects inside the batch callback',
+          description: 'batch API write API methods on objects do not mutate objects inside the batch callback',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -3411,9 +3414,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const counterId1 = objectsHelper.fakeCounterObjectId();
             const counterId2 = objectsHelper.fakeCounterObjectId();
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
-              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
               state: [
                 objectsHelper.counterObject({
                   objectId: counterId1,
@@ -3469,9 +3472,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const counterId1 = objectsHelper.fakeCounterObjectId();
             const counterId2 = objectsHelper.fakeCounterObjectId();
-            await objectsHelper.processStateObjectMessageOnChannel({
+            await objectsHelper.processObjectStateMessageOnChannel({
               channel,
-              syncSerial: 'serial:', // empty serial so STATE_SYNC ends immediately
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
               state: [
                 objectsHelper.counterObject({
                   objectId: counterId1,
@@ -3533,7 +3536,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       forScenarios(
         this,
         [
-          ...stateSyncSequenceScenarios,
+          ...objectSyncSequenceScenarios,
           ...applyOperationsScenarios,
           ...applyOperationsDuringSyncScenarios,
           ...writeApiScenarios,
@@ -4092,7 +4095,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           action: async (ctx) => {
             const { objectsHelper, channelName, channel, objects, helper, waitForGCCycles, client } = ctx;
 
-            const counterCreatedPromise = waitForStateOperation(helper, client, ObjectsHelper.ACTIONS.COUNTER_CREATE);
+            const counterCreatedPromise = waitForObjectOperation(helper, client, ObjectsHelper.ACTIONS.COUNTER_CREATE);
             // send a CREATE op, this adds an object to the pool
             const { objectId } = await objectsHelper.stateRequest(
               channelName,
@@ -4104,7 +4107,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(objects._objectsPool.get(objectId), 'Check object exists in the pool after creation').to.exist;
 
             // inject OBJECT_DELETE for the object. this should tombstone the object and make it inaccessible to the end user, but still keep it in memory in the local pool
-            await objectsHelper.processStateOperationMessageOnChannel({
+            await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
@@ -4298,7 +4301,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
       const channelConfigurationScenarios = [
         {
-          description: 'public API throws missing state modes error when attached without correct state modes',
+          description: 'public API throws missing object modes error when attached without correct modes',
           action: async (ctx) => {
             const { objects, channel, map, counter } = ctx;
 
@@ -4320,7 +4323,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'public API throws missing state modes error when not yet attached but client options are missing correct modes',
+            'public API throws missing object modes error when not yet attached but client options are missing correct modes',
           action: async (ctx) => {
             const { objects, channel, map, counter, helper } = ctx;
 
@@ -4454,7 +4457,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
        * @spec TO3l8
        * @spec RSL1i
        */
-      it('state message publish respects connectionDetails.maxMessageSize', async function () {
+      it('object message publish respects connectionDetails.maxMessageSize', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper, { clientId: 'test' });
 
@@ -4491,46 +4494,46 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const data = new Array(100).fill('a').join('');
           const error = await expectToThrowAsync(
             async () => root.set('key', data),
-            'Maximum size of state messages that can be published at once exceeded',
+            'Maximum size of object messages that can be published at once exceeded',
           );
 
           expect(error.code).to.equal(40009, 'Check maximum size of messages error has correct error code');
         }, client);
       });
 
-      describe('StateMessage message size', () => {
-        const stateMessageSizeScenarios = [
+      describe('ObjectMessage message size', () => {
+        const objectMessageSizeScenarios = [
           {
             description: 'client id',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               clientId: 'my-client',
             }),
             expected: Utils.dataSizeBytes('my-client'),
           },
           {
             description: 'extras',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               extras: { foo: 'bar' },
             }),
             expected: Utils.dataSizeBytes('{"foo":"bar"}'),
           },
           {
             description: 'object id',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { objectId: 'object-id' },
             }),
             expected: 0,
           },
           {
             description: 'map create op no payload',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { action: 0, objectId: 'object-id' },
             }),
             expected: 0,
           },
           {
             description: 'map create op with object payload',
-            message: stateMessageFromValues(
+            message: objectMessageFromValues(
               {
                 operation: {
                   action: 0,
@@ -4547,7 +4550,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           },
           {
             description: 'map create op with string payload',
-            message: stateMessageFromValues(
+            message: objectMessageFromValues(
               {
                 operation: {
                   action: 0,
@@ -4561,7 +4564,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           },
           {
             description: 'map create op with bytes payload',
-            message: stateMessageFromValues(
+            message: objectMessageFromValues(
               {
                 operation: {
                   action: 0,
@@ -4578,7 +4581,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           },
           {
             description: 'map create op with boolean payload',
-            message: stateMessageFromValues(
+            message: objectMessageFromValues(
               {
                 operation: {
                   action: 0,
@@ -4592,14 +4595,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           },
           {
             description: 'map remove op',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { action: 2, objectId: 'object-id', mapOp: { key: 'my-key' } },
             }),
             expected: Utils.dataSizeBytes('my-key'),
           },
           {
             description: 'map set operation value=object',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: {
                 action: 1,
                 objectId: 'object-id',
@@ -4610,14 +4613,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           },
           {
             description: 'map set operation value=string',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 'my-value' } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes('my-value'),
           },
           {
             description: 'map set operation value=bytes',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: {
                 action: 1,
                 objectId: 'object-id',
@@ -4628,21 +4631,21 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           },
           {
             description: 'map set operation value=boolean',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: true } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=double',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 123.456 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
           {
             description: 'map object',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               object: {
                 objectId: 'object-id',
                 map: {
@@ -4671,28 +4674,28 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           },
           {
             description: 'counter create op no payload',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { action: 3, objectId: 'object-id' },
             }),
             expected: 0,
           },
           {
             description: 'counter create op with payload',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { action: 3, objectId: 'object-id', counter: { count: 1234567 } },
             }),
             expected: 8,
           },
           {
             description: 'counter inc op',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               operation: { action: 4, objectId: 'object-id', counterOp: { amount: 123.456 } },
             }),
             expected: 8,
           },
           {
             description: 'counter object',
-            message: stateMessageFromValues({
+            message: objectMessageFromValues({
               object: {
                 objectId: 'object-id',
                 counter: { count: 1234567 },
@@ -4710,20 +4713,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         ];
 
         /** @nospec */
-        forScenarios(this, stateMessageSizeScenarios, function (helper, scenario) {
-          helper.recordPrivateApi('call.StateMessage.encode');
-          ObjectsPlugin.StateMessage.encode(scenario.message);
+        forScenarios(this, objectMessageSizeScenarios, function (helper, scenario) {
+          helper.recordPrivateApi('call.ObjectMessage.encode');
+          ObjectsPlugin.ObjectMessage.encode(scenario.message);
           helper.recordPrivateApi('call.BufferUtils.utf8Encode'); // was called by a scenario to create buffers
-          helper.recordPrivateApi('call.StateMessage.fromValues'); // was called by a scenario to create a StateMessage instance
+          helper.recordPrivateApi('call.ObjectMessage.fromValues'); // was called by a scenario to create an ObjectMessage instance
           helper.recordPrivateApi('call.Utils.dataSizeBytes'); // was called by a scenario to calculated the expected byte size
-          helper.recordPrivateApi('call.StateMessage.getMessageSize');
+          helper.recordPrivateApi('call.ObjectMessage.getMessageSize');
           expect(scenario.message.getMessageSize()).to.equal(scenario.expected);
         });
       });
     });
 
     /** @nospec */
-    it('can attach to channel with Objects state modes', async function () {
+    it('can attach to channel with Objects modes', async function () {
       const helper = this.test.helper;
       const client = helper.AblyRealtime();
 

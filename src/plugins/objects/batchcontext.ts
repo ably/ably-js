@@ -6,13 +6,13 @@ import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { Objects } from './objects';
 import { ROOT_OBJECT_ID } from './objectspool';
-import { StateMessage } from './statemessage';
+import { ObjectMessage } from './statemessage';
 
 export class BatchContext {
   private _client: BaseClient;
-  /** Maps live object ids to the corresponding batch context object wrappers  */
+  /** Maps object ids to the corresponding batch context object wrappers  */
   private _wrappedObjects: Map<string, BatchContextLiveCounter | BatchContextLiveMap<API.LiveMapType>> = new Map();
-  private _queuedMessages: StateMessage[] = [];
+  private _queuedMessages: ObjectMessage[] = [];
   private _isClosed = false;
 
   constructor(
@@ -49,7 +49,7 @@ export class BatchContext {
       wrappedObject = new BatchContextLiveCounter(this, this._objects, originObject);
     } else {
       throw new this._client.ErrorInfo(
-        `Unknown Live Object instance type: objectId=${originObject.getObjectId()}`,
+        `Unknown LiveObject instance type: objectId=${originObject.getObjectId()}`,
         50000,
         500,
       );
@@ -85,8 +85,8 @@ export class BatchContext {
   /**
    * @internal
    */
-  queueStateMessage(stateMessage: StateMessage): void {
-    this._queuedMessages.push(stateMessage);
+  queueMessage(msg: ObjectMessage): void {
+    this._queuedMessages.push(msg);
   }
 
   /**

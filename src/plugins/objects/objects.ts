@@ -8,7 +8,7 @@ import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectsPool, ROOT_OBJECT_ID } from './objectspool';
-import { StateMessage, StateOperationAction } from './statemessage';
+import { ObjectMessage, ObjectOperationAction } from './statemessage';
 import { SyncObjectsDataPool } from './syncobjectsdatapool';
 
 export enum ObjectsEvent {
@@ -49,7 +49,7 @@ export class Objects {
   private _syncObjectsDataPool: SyncObjectsDataPool;
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
-  private _bufferedStateOperations: StateMessage[];
+  private _bufferedObjectOperations: ObjectMessage[];
 
   // Used by tests
   static _DEFAULTS = DEFAULTS;
@@ -62,7 +62,7 @@ export class Objects {
     this._eventEmitterPublic = new this._client.EventEmitter(this._client.logger);
     this._objectsPool = new ObjectsPool(this);
     this._syncObjectsDataPool = new SyncObjectsDataPool(this);
-    this._bufferedStateOperations = [];
+    this._bufferedObjectOperations = [];
   }
 
   /**
@@ -73,7 +73,7 @@ export class Objects {
   async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
     this.throwIfInvalidAccessApiConfiguration();
 
-    // if we're not synced yet, wait for SYNC sequence to finish before returning root
+    // if we're not synced yet, wait for sync sequence to finish before returning root
     if (this._state !== ObjectsState.synced) {
       await this._eventEmitterInternal.once(ObjectsEvent.synced);
     }
@@ -109,10 +109,10 @@ export class Objects {
   async createMap<T extends API.LiveMapType>(entries?: T): Promise<LiveMap<T>> {
     this.throwIfInvalidWriteApiConfiguration();
 
-    const stateMessage = await LiveMap.createMapCreateMessage(this, entries);
-    const objectId = stateMessage.operation?.objectId!;
+    const msg = await LiveMap.createMapCreateMessage(this, entries);
+    const objectId = msg.operation?.objectId!;
 
-    await this.publish([stateMessage]);
+    await this.publish([msg]);
 
     // we may have already received the CREATE operation at this point, as it could arrive before the ACK for our publish message.
     // this means the object might already exist in the local pool, having been added during the usual CREATE operation process.
@@ -121,10 +121,10 @@ export class Objects {
       return this._objectsPool.get(objectId) as LiveMap<T>;
     }
 
-    // we haven't received the CREATE operation yet, so we can create a new map object using the locally constructed state operation.
+    // we haven't received the CREATE operation yet, so we can create a new map object using the locally constructed object operation.
     // we don't know the timeserials for map entries, so we assign an "earliest possible" timeserial to each entry, so that any subsequent operation can be applied to them.
     // we mark the CREATE operation as merged for the object, guaranteeing its idempotency and preventing it from being applied again when the operation arrives.
-    const map = LiveMap.fromStateOperation<T>(this, stateMessage.operation!);
+    const map = LiveMap.fromObjectOperation<T>(this, msg.operation!);
     this._objectsPool.set(objectId, map);
 
     return map;
@@ -141,10 +141,10 @@ export class Objects {
   async createCounter(count?: number): Promise<LiveCounter> {
     this.throwIfInvalidWriteApiConfiguration();
 
-    const stateMessage = await LiveCounter.createCounterCreateMessage(this, count);
-    const objectId = stateMessage.operation?.objectId!;
+    const msg = await LiveCounter.createCounterCreateMessage(this, count);
+    const objectId = msg.operation?.objectId!;
 
-    await this.publish([stateMessage]);
+    await this.publish([msg]);
 
     // we may have already received the CREATE operation at this point, as it could arrive before the ACK for our publish message.
     // this means the object might already exist in the local pool, having been added during the usual CREATE operation process.
@@ -153,9 +153,9 @@ export class Objects {
       return this._objectsPool.get(objectId) as LiveCounter;
     }
 
-    // we haven't received the CREATE operation yet, so we can create a new counter object using the locally constructed state operation.
+    // we haven't received the CREATE operation yet, so we can create a new counter object using the locally constructed object operation.
     // we mark the CREATE operation as merged for the object, guaranteeing its idempotency. this ensures we don't double count the initial counter value when the operation arrives.
-    const counter = LiveCounter.fromStateOperation(this, stateMessage.operation!);
+    const counter = LiveCounter.fromObjectOperation(this, msg.operation!);
     this._objectsPool.set(objectId, counter);
 
     return counter;
@@ -212,14 +212,14 @@ export class Objects {
   /**
    * @internal
    */
-  handleStateSyncMessages(stateMessages: StateMessage[], syncChannelSerial: string | null | undefined): void {
+  handleObjectSyncMessages(objectMessages: ObjectMessage[], syncChannelSerial: string | null | undefined): void {
     const { syncId, syncCursor } = this._parseSyncChannelSerial(syncChannelSerial);
     const newSyncSequence = this._currentSyncId !== syncId;
     if (newSyncSequence) {
       this._startNewSync(syncId, syncCursor);
     }
 
-    this._syncObjectsDataPool.applyStateSyncMessages(stateMessages);
+    this._syncObjectsDataPool.applyObjectSyncMessages(objectMessages);
 
     // if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
@@ -232,39 +232,39 @@ export class Objects {
   /**
    * @internal
    */
-  handleStateMessages(stateMessages: StateMessage[]): void {
+  handleObjectMessages(objectMessages: ObjectMessage[]): void {
     if (this._state !== ObjectsState.synced) {
-      // The client receives state messages in realtime over the channel concurrently with the SYNC sequence.
-      // Some of the incoming state messages may have already been applied to the state objects described in
-      // the SYNC sequence, but others may not; therefore we must buffer these messages so that we can apply
-      // them to the state objects once the SYNC is complete.
-      this._bufferedStateOperations.push(...stateMessages);
+      // The client receives object messages in realtime over the channel concurrently with the sync sequence.
+      // Some of the incoming object messages may have already been applied to the objects described in
+      // the sync sequence, but others may not; therefore we must buffer these messages so that we can apply
+      // them to the objects once the sync is complete.
+      this._bufferedObjectOperations.push(...objectMessages);
       return;
     }
 
-    this._applyStateMessages(stateMessages);
+    this._applyObjectMessages(objectMessages);
   }
 
   /**
    * @internal
    */
-  onAttached(hasState?: boolean): void {
+  onAttached(hasObjects?: boolean): void {
     this._client.Logger.logAction(
       this._client.logger,
       this._client.Logger.LOG_MINOR,
       'Objects.onAttached()',
-      `channel=${this._channel.name}, hasState=${hasState}`,
+      `channel=${this._channel.name}, hasObjects=${hasObjects}`,
     );
 
     const fromInitializedState = this._state === ObjectsState.initialized;
-    if (hasState || fromInitializedState) {
-      // should always start a new sync sequence if we're in the initialized state, no matter the HAS_STATE flag value.
+    if (hasObjects || fromInitializedState) {
+      // should always start a new sync sequence if we're in the initialized state, no matter the HAS_OBJECTS flag value.
       // this guarantees we emit both "syncing" -> "synced" events in that order.
       this._startNewSync();
     }
 
-    if (!hasState) {
-      // if no HAS_STATE flag received on attach, we can end SYNC sequence immediately and treat it as no state on a channel.
+    if (!hasObjects) {
+      // if no HAS_OBJECTS flag received on attach, we can end sync sequence immediately and treat it as no objects on a channel.
       this._objectsPool.reset();
       this._syncObjectsDataPool.reset();
       // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
@@ -276,10 +276,10 @@ export class Objects {
   /**
    * @internal
    */
-  actOnChannelState(state: API.ChannelState, hasState?: boolean): void {
+  actOnChannelState(state: API.ChannelState, hasObjects?: boolean): void {
     switch (state) {
       case 'attached':
-        this.onAttached(hasState);
+        this.onAttached(hasObjects);
         break;
 
       case 'detached':
@@ -293,7 +293,7 @@ export class Objects {
   /**
    * @internal
    */
-  async publish(stateMessages: StateMessage[]): Promise<void> {
+  async publish(objectMessages: ObjectMessage[]): Promise<void> {
     if (!this._channel.connectionManager.activeState()) {
       throw this._channel.connectionManager.getError();
     }
@@ -302,18 +302,18 @@ export class Objects {
       throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
     }
 
-    stateMessages.forEach((x) => StateMessage.encode(x, this._client.MessageEncoding));
+    objectMessages.forEach((x) => ObjectMessage.encode(x, this._client.MessageEncoding));
     const maxMessageSize = this._client.options.maxMessageSize;
-    const size = stateMessages.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
+    const size = objectMessages.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
     if (size > maxMessageSize) {
       throw new this._client.ErrorInfo(
-        `Maximum size of state messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
+        `Maximum size of object messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
         40009,
         400,
       );
     }
 
-    return this._channel.sendState(stateMessages);
+    return this._channel.sendState(objectMessages);
   }
 
   /**
@@ -333,8 +333,8 @@ export class Objects {
   }
 
   private _startNewSync(syncId?: string, syncCursor?: string): void {
-    // need to discard all buffered state operation messages on new sync start
-    this._bufferedStateOperations = [];
+    // need to discard all buffered object operation messages on new sync start
+    this._bufferedObjectOperations = [];
     this._syncObjectsDataPool.reset();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
@@ -343,11 +343,11 @@ export class Objects {
 
   private _endSync(deferStateEvent: boolean): void {
     this._applySync();
-    // should apply buffered state operations after we applied the SYNC data.
-    // can use regular state messages application logic
-    this._applyStateMessages(this._bufferedStateOperations);
+    // should apply buffered object operations after we applied the sync.
+    // can use regular object messages application logic
+    this._applyObjectMessages(this._bufferedObjectOperations);
 
-    this._bufferedStateOperations = [];
+    this._bufferedObjectOperations = [];
     this._syncObjectsDataPool.reset();
     this._currentSyncId = undefined;
     this._currentSyncCursor = undefined;
@@ -385,8 +385,8 @@ export class Objects {
       const existingObject = this._objectsPool.get(objectId);
 
       if (existingObject) {
-        const update = existingObject.overrideWithStateObject(entry.stateObject);
-        // store updates to call subscription callbacks for all of them once the SYNC sequence is completed.
+        const update = existingObject.overrideWithObjectState(entry.objectState);
+        // store updates to call subscription callbacks for all of them once the sync sequence is completed.
         // this will ensure that clients get notified about the changes only once everything has been applied.
         existingObjectUpdates.push({ object: existingObject, update });
         continue;
@@ -397,64 +397,64 @@ export class Objects {
       const objectType = entry.objectType;
       switch (objectType) {
         case 'LiveCounter':
-          newObject = LiveCounter.fromStateObject(this, entry.stateObject);
+          newObject = LiveCounter.fromObjectState(this, entry.objectState);
           break;
 
         case 'LiveMap':
-          newObject = LiveMap.fromStateObject(this, entry.stateObject);
+          newObject = LiveMap.fromObjectState(this, entry.objectState);
           break;
 
         default:
-          throw new this._client.ErrorInfo(`Unknown Live Object type: ${objectType}`, 50000, 500);
+          throw new this._client.ErrorInfo(`Unknown LiveObject type: ${objectType}`, 50000, 500);
       }
 
       this._objectsPool.set(objectId, newObject);
     }
 
-    // need to remove Live Object instances from the ObjectsPool for which objectIds were not received during the SYNC sequence
+    // need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
     this._objectsPool.deleteExtraObjectIds([...receivedObjectIds]);
 
     // call subscription callbacks for all updated existing objects
     existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
   }
 
-  private _applyStateMessages(stateMessages: StateMessage[]): void {
-    for (const stateMessage of stateMessages) {
-      if (!stateMessage.operation) {
+  private _applyObjectMessages(objectMessages: ObjectMessage[]): void {
+    for (const objectMessage of objectMessages) {
+      if (!objectMessage.operation) {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'Objects._applyStateMessages()',
-          `state operation message is received without 'operation' field, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+          'Objects._applyObjectMessages()',
+          `object operation message is received without 'operation' field, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
       }
 
-      const stateOperation = stateMessage.operation;
+      const objectOperation = objectMessage.operation;
 
-      switch (stateOperation.action) {
-        case StateOperationAction.MAP_CREATE:
-        case StateOperationAction.COUNTER_CREATE:
-        case StateOperationAction.MAP_SET:
-        case StateOperationAction.MAP_REMOVE:
-        case StateOperationAction.COUNTER_INC:
-        case StateOperationAction.OBJECT_DELETE:
+      switch (objectOperation.action) {
+        case ObjectOperationAction.MAP_CREATE:
+        case ObjectOperationAction.COUNTER_CREATE:
+        case ObjectOperationAction.MAP_SET:
+        case ObjectOperationAction.MAP_REMOVE:
+        case ObjectOperationAction.COUNTER_INC:
+        case ObjectOperationAction.OBJECT_DELETE:
           // we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
           // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
           // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
           // since they need to be able to eventually initialize themselves from that *_CREATE op.
           // so to simplify operations handling, we always try to create a zero-value object in the pool first,
           // and then we can always apply the operation on the existing object in the pool.
-          this._objectsPool.createZeroValueObjectIfNotExists(stateOperation.objectId);
-          this._objectsPool.get(stateOperation.objectId)!.applyOperation(stateOperation, stateMessage);
+          this._objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId);
+          this._objectsPool.get(objectOperation.objectId)!.applyOperation(objectOperation, objectMessage);
           break;
 
         default:
           this._client.Logger.logAction(
             this._client.logger,
             this._client.Logger.LOG_MAJOR,
-            'Objects._applyStateMessages()',
-            `received unsupported action in state operation message: ${stateOperation.action}, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+            'Objects._applyObjectMessages()',
+            `received unsupported action in object operation message: ${objectOperation.action}, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
           );
       }
     }

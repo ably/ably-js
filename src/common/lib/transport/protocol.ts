@@ -21,7 +21,7 @@ export class PendingMessage {
     const action = message.action;
     this.sendAttempted = false;
     this.ackRequired =
-      typeof action === 'number' && [actions.MESSAGE, actions.PRESENCE, actions.STATE].includes(action);
+      typeof action === 'number' && [actions.MESSAGE, actions.PRESENCE, actions.OBJECT].includes(action);
   }
 }
 

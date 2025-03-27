@@ -872,11 +872,11 @@ declare namespace ChannelModes {
    */
   type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
   /**
-   * The client can publish Objects messages.
+   * The client can publish object messages.
    */
   type OBJECT_PUBLISH = 'OBJECT_PUBLISH';
   /**
-   * The client can receive Objects messages.
+   * The client can receive object messages.
    */
   type OBJECT_SUBSCRIBE = 'OBJECT_SUBSCRIBE';
   /**
@@ -1560,9 +1560,9 @@ export type DeregisterCallback = (device: DeviceDetails, callback: StandardCallb
 export type ErrorCallback = (error: ErrorInfo | null) => void;
 
 /**
- * A callback used in {@link LiveObject} to listen for updates to the Live Object.
+ * A callback used in {@link LiveObject} to listen for updates to the object.
  *
- * @param update - The update object describing the changes made to the Live Object.
+ * @param update - The update object describing the changes made to the object.
  */
 export type LiveObjectUpdateCallback<T> = (update: T) => void;
 
@@ -2181,9 +2181,9 @@ declare global {
 
 /**
  * Represents the type of data stored in a {@link LiveMap}.
- * It maps string keys to scalar values ({@link StateValue}), or other Live Objects.
+ * It maps string keys to scalar values ({@link ObjectValue}), or other {@link LiveObject | LiveObjects}.
  */
-export type LiveMapType = { [key: string]: StateValue | LiveMap<LiveMapType> | LiveCounter | undefined };
+export type LiveMapType = { [key: string]: ObjectValue | LiveMap<LiveMapType> | LiveCounter | undefined };
 
 /**
  * The default type for the `root` object for Objects on a channel, based on the globally defined {@link ObjectsTypes} interface.
@@ -2236,7 +2236,7 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
 
   /**
-   * Returns the number of key/value pairs in the map.
+   * Returns the number of key-value pairs in the map.
    */
   size(): number;
 
@@ -2293,10 +2293,11 @@ export declare interface BatchContextLiveCounter {
 }
 
 /**
- * The `LiveMap` class represents a key/value map data structure, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
- * Conflict-free resolution for updates follows Last Write Wins (LWW) semantics, meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
+ * The `LiveMap` class represents a key-value map data structure, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
+ * Conflicts in a LiveMap are automatically resolved with last-write-wins (LWW) semantics,
+ * meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
  *
- * Keys must be strings. Values can be another Live Object, or a primitive type, such as a string, number, boolean, or binary data (see {@link StateValue}).
+ * Keys must be strings. Values can be another {@link LiveObject}, or a primitive type, such as a string, number, boolean, or binary data (see {@link ObjectValue}).
  */
 export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate> {
   /**
@@ -2310,12 +2311,12 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
 
   /**
-   * Returns the number of key/value pairs in the map.
+   * Returns the number of key-value pairs in the map.
    */
   size(): number;
 
   /**
-   * Returns an iterable of key/value pairs for every entry in the map.
+   * Returns an iterable of key-value pairs for every entry in the map.
    */
   entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]>;
 
@@ -2372,7 +2373,7 @@ export declare interface LiveMapUpdate extends LiveObjectUpdate {
  *
  * For binary data, the resulting type depends on the platform (`Buffer` in Node.js, `ArrayBuffer` elsewhere).
  */
-export type StateValue = string | number | boolean | Buffer | ArrayBuffer;
+export type ObjectValue = string | number | boolean | Buffer | ArrayBuffer;
 
 /**
  * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.
@@ -2424,22 +2425,22 @@ export declare interface LiveCounterUpdate extends LiveObjectUpdate {
  */
 export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjectUpdate> {
   /**
-   * Registers a listener that is called each time this Live Object is updated.
+   * Registers a listener that is called each time this LiveObject is updated.
    *
-   * @param listener - An event listener function that is called with an update object whenever this Live Object is updated.
+   * @param listener - An event listener function that is called with an update object whenever this LiveObject is updated.
    * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
    */
   subscribe(listener: LiveObjectUpdateCallback<TUpdate>): SubscribeResponse;
 
   /**
-   * Deregisters the given listener from updates for this Live Object.
+   * Deregisters the given listener from updates for this LiveObject.
    *
    * @param listener - An event listener function.
    */
   unsubscribe(listener: LiveObjectUpdateCallback<TUpdate>): void;
 
   /**
-   * Deregisters all listeners from updates for this Live Object.
+   * Deregisters all listeners from updates for this LiveObject.
    */
   unsubscribeAll(): void;
 
@@ -2467,7 +2468,7 @@ export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjec
 }
 
 /**
- * Represents a generic update object describing the changes that occurred on a Live Object.
+ * Represents a generic update object describing the changes that occurred on a LiveObject.
  */
 export declare interface LiveObjectUpdate {
   /**
@@ -2626,7 +2627,7 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   presence: RealtimePresence;
   /**
-   * A {@link Objects} object.
+   * An {@link Objects} object.
    */
   objects: Objects;
   /**
