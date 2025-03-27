@@ -31,7 +31,7 @@ globalThis.testAblyPackage = async function () {
   const aString: string | undefined = root.get('stringKey');
   const aBoolean: boolean | undefined = root.get('booleanKey');
   const userProvidedUndefined: string | undefined = root.get('couldBeUndefined');
-  // live objects on a root:
+  // objects on a root:
   const counter: Ably.LiveCounter | undefined = root.get('counterKey');
   const map: ObjectsTypes['root']['mapKey'] | undefined = root.get('mapKey');
   // check string literal types works

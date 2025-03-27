@@ -23,8 +23,8 @@ export class BatchContextLiveCounter {
   increment(amount: number): void {
     this._objects.throwIfInvalidWriteApiConfiguration();
     this._batchContext.throwIfClosed();
-    const stateMessage = LiveCounter.createCounterIncMessage(this._objects, this._counter.getObjectId(), amount);
-    this._batchContext.queueStateMessage(stateMessage);
+    const msg = LiveCounter.createCounterIncMessage(this._objects, this._counter.getObjectId(), amount);
+    this._batchContext.queueMessage(msg);
   }
 
   decrement(amount: number): void {

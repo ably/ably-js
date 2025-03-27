@@ -1934,9 +1934,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             channelSerial: 'PRESENCE',
           }),
           createPM({
-            action: 19, // STATE
+            action: 19, // OBJECT
             channel: channel.name,
-            channelSerial: 'STATE',
+            channelSerial: 'OBJECT',
           }),
         ];
 
