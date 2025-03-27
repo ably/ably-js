@@ -1,7 +1,7 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
+import { CounterOp, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectState } from './objectmessage';
 import { Objects } from './objects';
-import { CounterOp, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectState } from './statemessage';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number;

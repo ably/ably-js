@@ -4,9 +4,9 @@ import { BatchContextLiveCounter } from './batchcontextlivecounter';
 import { BatchContextLiveMap } from './batchcontextlivemap';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
+import { ObjectMessage } from './objectmessage';
 import { Objects } from './objects';
 import { ROOT_OBJECT_ID } from './objectspool';
-import { ObjectMessage } from './statemessage';
 
 export class BatchContext {
   private _client: BaseClient;
