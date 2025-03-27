@@ -4,17 +4,17 @@ import type * as API from '../../../ably';
 import { DEFAULTS } from './defaults';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
-import { Objects } from './objects';
 import {
-  MapSemantics,
   MapEntry,
   MapOp,
+  MapSemantics,
   ObjectMessage,
-  ObjectState,
   ObjectOperation,
   ObjectOperationAction,
+  ObjectState,
   ObjectValue,
-} from './statemessage';
+} from './objectmessage';
+import { Objects } from './objects';
 
 export interface ObjectIdObjectData {
   /** A reference to another object, used to support composable object structures. */
