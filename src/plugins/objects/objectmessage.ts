@@ -54,10 +54,10 @@ export interface MapEntry {
   /** Indicates whether the map entry has been removed. */
   tombstone?: boolean;
   /**
-   * The *origin* timeserial of the last operation that was applied to the map entry.
+   * The {@link ObjectMessage.serial} value of the last operation that was applied to the map entry.
    *
    * It is optional in a MAP_CREATE operation and might be missing, in which case the client should use a nullish value for it
-   * and treat it as the "earliest possible" timeserial for comparison purposes.
+   * and treat it as the "earliest possible" serial for comparison purposes.
    */
   timeserial?: string;
   /** The data that represents the value of the map entry. */
@@ -118,7 +118,7 @@ export interface ObjectOperation {
 export interface ObjectState {
   /** The identifier of the object. */
   objectId: string;
-  /** A vector of origin timeserials keyed by site code of the last operation that was applied to this object. */
+  /** A map of serials keyed by a {@link ObjectMessage.siteCode}, representing the last operations applied to this object */
   siteTimeserials: Record<string, string>;
   /** True if the object has been tombstoned. */
   tombstone: boolean;
@@ -162,9 +162,9 @@ export class ObjectMessage {
    * Mutually exclusive with the `operation` field. This field is only set on object messages if the `action` field of the `ProtocolMessage` encapsulating it is `OBJECT_SYNC`.
    */
   object?: ObjectState;
-  /** Timeserial format. Contains the origin timeserial for this object message. */
+  /** An opaque string that uniquely identifies this object message. */
   serial?: string;
-  /** Site code corresponding to this message's timeserial */
+  /** An opaque string used as a key to update the map of serial values on an object. */
   siteCode?: string;
 
   constructor(
