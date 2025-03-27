@@ -747,11 +747,11 @@ await root.remove('name');
 
 await counter.increment(5);
 // LiveCounter new value: 5
-// LiveCounter update details: { update: { inc: 5 } }
+// LiveCounter update details: { update: { amount: 5 } }
 
 await counter.decrement(2);
 // LiveCounter new value: 3
-// LiveCounter update details: { update: { inc: -2 } }
+// LiveCounter update details: { update: { amount: -2 } }
 ```
 
 You can deregister subscription listeners as follows:

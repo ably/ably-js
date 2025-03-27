@@ -8,7 +8,7 @@ export interface LiveCounterData extends LiveObjectData {
 }
 
 export interface LiveCounterUpdate extends LiveObjectUpdate {
-  update: { inc: number };
+  update: { amount: number };
 }
 
 export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> {
@@ -291,7 +291,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   protected _updateFromDataDiff(prevDataRef: LiveCounterData, newDataRef: LiveCounterData): LiveCounterUpdate {
     const counterDiff = newDataRef.data - prevDataRef.data;
-    return { update: { inc: counterDiff } };
+    return { update: { amount: counterDiff } };
   }
 
   protected _mergeInitialDataFromCreateOperation(stateOperation: StateOperation): LiveCounterUpdate {
@@ -302,7 +302,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._dataRef.data += stateOperation.counter?.count ?? 0;
     this._createOperationIsMerged = true;
 
-    return { update: { inc: stateOperation.counter?.count ?? 0 } };
+    return { update: { amount: stateOperation.counter?.count ?? 0 } };
   }
 
   private _throwNoPayloadError(op: StateOperation): void {
@@ -332,6 +332,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   private _applyCounterInc(op: StateCounterOp): LiveCounterUpdate {
     this._dataRef.data += op.amount;
-    return { update: { inc: op.amount } };
+    return { update: { amount: op.amount } };
   }
 }

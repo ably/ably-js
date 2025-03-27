@@ -2415,7 +2415,7 @@ export declare interface LiveCounterUpdate extends LiveObjectUpdate {
     /**
      * The value by which the counter was incremented or decremented.
      */
-    inc: number;
+    amount: number;
   };
 }
 

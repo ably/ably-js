@@ -57,7 +57,7 @@ globalThis.testAblyPackage = async function () {
   // same deal with nullish coalescing
   const value: number = counter?.value()!;
   const counterSubscribeResponse = counter?.subscribe(({ update }) => {
-    const shouldBeANumber: number = update.inc;
+    const shouldBeANumber: number = update.amount;
   });
   counterSubscribeResponse?.unsubscribe();
 
