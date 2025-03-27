@@ -645,7 +645,7 @@ The authentication token must include corresponding capabilities for the client 
 
 #### Getting the Root Object
 
-The root object represents the top-level entry point for Objects within a channel. It gives access to all other nested Live Objects.
+The root object represents the top-level entry point for objects within a channel. It gives access to all other nested objects.
 
 ```typescript
 const root = await objects.getRoot();
@@ -653,11 +653,11 @@ const root = await objects.getRoot();
 
 The root object is a `LiveMap` instance and serves as the starting point for storing and organizing Objects on a channel.
 
-#### Live Object Types
+#### Object Types
 
 LiveObjects currently supports two primary data structures; `LiveMap` and `LiveCounter`.
 
-`LiveMap` - A key/value map data structure, similar to a JavaScript `Map`, where all changes are synchronized across clients in realtime. It allows you to store primitive values and other Live Objects, enabling composability.
+`LiveMap` - A key/value map data structure, similar to a JavaScript `Map`, where all changes are synchronized across clients in realtime. It enables you to store primitive values and other objects, enabling composability.
 
 You can use `LiveMap` as follows:
 
@@ -689,7 +689,7 @@ await root.set('foo', 'Alice');
 await root.set('bar', 1);
 await root.set('baz', true);
 await root.set('qux', new Uint8Array([21, 31]));
-// as well as other live objects
+// as well as other objects
 const counter = await objects.createCounter();
 await root.set('quux', counter);
 
@@ -714,11 +714,11 @@ await counter.decrement(2);
 
 #### Subscribing to Updates
 
-Subscribing to updates on Live Objects allows you to receive changes made by other clients in realtime. Since multiple clients may modify the same Live Objects, subscribing ensures that your application reacts to external updates as soon as they are received.
+Subscribing to updates on objects enables you to receive changes made by other clients in realtime. Since multiple clients may modify the same objects, subscribing ensures that your application reacts to external updates as soon as they are received.
 
 Additionally, mutation methods such as `LiveMap.set`, `LiveCounter.increment`, and `LiveCounter.decrement` do not directly edit the current state of the object locally. Instead, they send the intended operation to the Ably system, and the change is applied to the local object only when the corresponding realtime operation is echoed back to the client. This means that the state you retrieve immediately after a mutation may not reflect the latest updates yet.
 
-You can subscribe to updates on all Live Objects using subscription listeners as follows:
+You can subscribe to updates on all objects using subscription listeners as follows:
 
 ```typescript
 const root = await objects.getRoot();
@@ -772,14 +772,14 @@ root.unsubscribeAll();
 
 #### Creating New Objects
 
-New `LiveMap` and `LiveCounter` instances can be created as follows:
+New `LiveMap` and `LiveCounter` objects can be created as follows:
 
 ```typescript
 const counter = await objects.createCounter(123); // with optional initial counter value
 const map = await objects.createMap({ key: 'value' }); // with optional initial map entries
 ```
 
-To persist them within the Objects state, they must be assigned to a parent `LiveMap` that is connected to the root object through the object hierarchy:
+To persist them on a channel and share them between clients, they must be assigned to a parent `LiveMap` that is connected to the root object through the object hierarchy:
 
 ```typescript
 const root = await objects.getRoot();
@@ -799,9 +799,9 @@ await root.set('outerMap', outerMap);
 
 #### Batch Operations
 
-Batching allows multiple operations to be grouped into a single message that is sent to the Ably service. This allows batched operations to be applied atomically together.
+Batching enables multiple operations to be grouped into a single channel message that is sent to the Ably service. This guarantees that all changes are applied atomically.
 
-Within a batch callback, the `BatchContext` instance provides wrapper objects around regular Live Objects with a synchronous API for storing changes in the batch context.
+Within a batch callback, the `BatchContext` instance provides wrapper objects around regular `LiveMap` and `LiveCounter` objects with a synchronous API for storing changes in the batch context.
 
 ```typescript
 await objects.batch((ctx) => {
@@ -819,9 +819,9 @@ await objects.batch((ctx) => {
 
 #### Lifecycle Events
 
-Live Objects emit lifecycle events to signal critical state changes, such as synchronization progress and object deletions.
+LiveObjects emit events that allow you to monitor objects' lifecycle changes, such as synchronization progress and object deletions.
 
-**Synchronization Events** - the `syncing` and `synced` events notify when the Objects state is being synchronized with the Ably service. These events can be useful for displaying loading indicators, preventing user edits during synchronization, or triggering application logic when the data was loaded for the first time.
+**Synchronization Events** - the `syncing` and `synced` events notify when the local Objects state on a client is being synchronized with the Ably service. These events can be useful for displaying loading indicators, preventing user edits during synchronization, or triggering application logic when the data was loaded for the first time.
 
 ```typescript
 objects.on('syncing', () => {
@@ -835,14 +835,14 @@ objects.on('synced', () => {
 });
 ```
 
-**Object Deletion Events** - objects that have been orphaned for a long period (i.e., not connected to the state tree graph by being set as a key in a map accessible from the root map object) will eventually be deleted. Once a Live Object is deleted, it can no longer be interacted with. You should avoid accessing its data or trying to update its value and you should remove all references to the deleted object in your application.
+**Object Deletion Events** - objects that have been orphaned for a long period (i.e., not connected to the object tree by being set as a key in a map accessible from the root map object) will eventually be deleted. Once an object is deleted, it can no longer be interacted with. You should avoid accessing its data or trying to update its value and you should remove all references to the deleted object in your application.
 
 ```typescript
 const root = await objects.getRoot();
 const counter = root.get('counter');
 
 counter.on('deleted', () => {
-  console.log('Live Object has been deleted.');
+  console.log('Object has been deleted.');
   // Example: Remove references to the object from the application
 });
 ```

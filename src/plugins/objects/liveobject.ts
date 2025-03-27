@@ -1,7 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
+import { ObjectMessage, ObjectOperation, ObjectState } from './objectmessage';
 import { Objects } from './objects';
-import { StateMessage, StateObject, StateOperation } from './statemessage';
 
 export enum LiveObjectSubscriptionEvent {
   updated = 'updated',
@@ -45,7 +45,7 @@ export abstract class LiveObject<
   protected _objectId: string;
   /**
    * Represents an aggregated value for an object, which combines the initial value for an object from the create operation,
-   * and all state operations applied to the object.
+   * and all object operations applied to the object.
    */
   protected _dataRef: TData;
   protected _siteTimeserials: Record<string, string>;
@@ -155,7 +155,7 @@ export abstract class LiveObject<
   }
 
   /**
-   * Clears the object's state, cancels any buffered operations and sets the tombstone flag to `true`.
+   * Clears the object's data, cancels any buffered operations and sets the tombstone flag to `true`.
    *
    * @internal
    */
@@ -206,24 +206,24 @@ export abstract class LiveObject<
   }
 
   /**
-   * Apply state operation message on live object.
+   * Apply object operation message on this LiveObject.
    *
    * @internal
    */
-  abstract applyOperation(op: StateOperation, msg: StateMessage): void;
+  abstract applyOperation(op: ObjectOperation, msg: ObjectMessage): void;
   /**
-   * Overrides internal data for live object with data from the given state object.
-   * Provided state object should hold a valid data for current live object, e.g. counter data for LiveCounter, map data for LiveMap.
+   * Overrides internal data for this LiveObject with data from the given object state.
+   * Provided object state should hold a valid data for current LiveObject, e.g. counter data for LiveCounter, map data for LiveMap.
    *
-   * State objects are received during SYNC sequence, and SYNC sequence is a source of truth for the current state of the objects,
-   * so we can use the data received from the SYNC sequence directly and override any data values or site timeserials this live object has
+   * Object states are received during sync sequence, and sync sequence is a source of truth for the current state of the objects,
+   * so we can use the data received from the sync sequence directly and override any data values or site timeserials this LiveObject has
    * without the need to merge them.
    *
    * Returns an update object that describes the changes applied based on the object's previous value.
    *
    * @internal
    */
-  abstract overrideWithStateObject(stateObject: StateObject): TUpdate | LiveObjectUpdateNoop;
+  abstract overrideWithObjectState(objectState: ObjectState): TUpdate | LiveObjectUpdateNoop;
   /**
    * @internal
    */
@@ -231,18 +231,18 @@ export abstract class LiveObject<
 
   protected abstract _getZeroValueData(): TData;
   /**
-   * Calculate the update object based on the current Live Object data and incoming new data.
+   * Calculate the update object based on the current LiveObject data and incoming new data.
    */
   protected abstract _updateFromDataDiff(prevDataRef: TData, newDataRef: TData): TUpdate;
   /**
-   * Merges the initial data from the create operation into the live object.
+   * Merges the initial data from the create operation into the LiveObject.
    *
-   * Client SDKs do not need to keep around the state operation that created the object,
+   * Client SDKs do not need to keep around the object operation that created the object,
    * so we can merge the initial data the first time we receive it for the object,
    * and work with aggregated value after that.
    *
    * This saves us from needing to merge the initial value with operations applied to
    * the object every time the object is read.
    */
-  protected abstract _mergeInitialDataFromCreateOperation(stateOperation: StateOperation): TUpdate;
+  protected abstract _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation): TUpdate;
 }
