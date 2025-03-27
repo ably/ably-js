@@ -168,20 +168,20 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       );
     }
 
-    const opOriginTimeserial = msg.serial!;
+    const opSerial = msg.serial!;
     const opSiteCode = msg.siteCode!;
-    if (!this._canApplyOperation(opOriginTimeserial, opSiteCode)) {
+    if (!this._canApplyOperation(opSerial, opSiteCode)) {
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
         'LiveCounter.applyOperation()',
-        `skipping ${op.action} op: op timeserial ${opOriginTimeserial.toString()} <= site timeserial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
+        `skipping ${op.action} op: op serial ${opSerial.toString()} <= site serial ${this._siteTimeserials[opSiteCode]?.toString()}; objectId=${this.getObjectId()}`,
       );
       return;
     }
-    // should update stored site timeserial immediately. doesn't matter if we successfully apply the op,
+    // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    this._siteTimeserials[opSiteCode] = opOriginTimeserial;
+    this._siteTimeserials[opSiteCode] = opSerial;
 
     if (this.isTombstoned()) {
       // this object is tombstoned so the operation cannot be applied
@@ -250,8 +250,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       }
     }
 
-    // object's site timeserials are still updated even if it is tombstoned, so always use the site timeserials received from the op.
-    // should default to empty map if site timeserials do not exist on the object state, so that any future operation may be applied to this object.
+    // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
+    // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
     this._siteTimeserials = objectState.siteTimeserials ?? {};
 
     if (this.isTombstoned()) {
