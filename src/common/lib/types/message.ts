@@ -20,13 +20,7 @@ import type RealtimeChannel from '../client/realtimechannel';
 import type ErrorInfo from './errorinfo';
 type Channel = RestChannel | RealtimeChannel;
 
-const actions: API.MessageAction[] = [
-  'message.create',
-  'message.update',
-  'message.delete',
-  'meta.occupancy',
-  'message.summary',
-];
+const actions: API.MessageAction[] = ['message.create', 'message.update', 'message.delete', 'meta', 'message.summary'];
 
 function stringifyAction(action: number | undefined): string {
   return actions[action || 0] || 'unknown';

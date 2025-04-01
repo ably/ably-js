@@ -2763,21 +2763,25 @@ declare namespace MessageActions {
    */
   type MESSAGE_CREATE = 'message.create';
   /**
-   * Message action for an updated message.
+   * Message action for an updated message. The `serial` field identifies the message of which this is
+   * an update. The update will have a newer `version` compared with the original message.create message.
    */
   type MESSAGE_UPDATE = 'message.update';
   /**
-   * Message action for a deleted message.
+   * Message action for a deleted message. The `serial` field identifies the message which is being deleted.
+   * The delete will have a newer `version` compared with the original message.create message.
    */
   type MESSAGE_DELETE = 'message.delete';
   /**
-   * Message action for a meta-message that contains channel occupancy information.
+   * Message action for a meta-message (a message originating from ably rather than being explicitly
+   * published on a channel), containing eg inband channel occupancy events or some other information
+   * requested by channel param.
    */
-  type META_OCCUPANCY = 'meta.occupancy';
+  type META = 'meta';
   /**
    * Message action for a message containing the latest rolled-up summary of annotations
-   * that have been made to this message. The message.refSerial is the serial of the
-   * message for which this is a summary.
+   * that have been made to this message. Like an update, but only updates the summary, so
+   * the message.serial is the serial of the message for which this is a summary.
    */
   type MESSAGE_SUMMARY = 'message.summary';
 }
@@ -2789,7 +2793,7 @@ export type MessageAction =
   | MessageActions.MESSAGE_CREATE
   | MessageActions.MESSAGE_UPDATE
   | MessageActions.MESSAGE_DELETE
-  | MessageActions.META_OCCUPANCY
+  | MessageActions.META
   | MessageActions.MESSAGE_SUMMARY;
 
 /**
