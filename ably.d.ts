@@ -2091,8 +2091,8 @@ export declare interface RealtimeAnnotations {
    * Publish a new annotation for a message.
    *
    * @param message - The message to annotate.
-   * @param annotation - The annotation to publish. (Must include at least the `type`.
-   * Assumed to be an annotation.create if no action is specified)
+   * @param annotation - The annotation to publish. (Must include at least the `type`;
+   * other required fields depend on the annotation type).
    */
   publish(message: Message, annotation: OutboundAnnotation): Promise<void>;
   /**
@@ -2100,10 +2100,31 @@ export declare interface RealtimeAnnotations {
    * serial of the message, not a complete Message object)
    *
    * @param messageSerial - The serial field of the message to annotate.
-   * @param annotation - The annotation to publish. (Must include at least the `type`.
-   * Assumed to be an annotation.create if no action is specified)
+   * @param annotation - The annotation to publish. (Must include at least the `type`;
+   * other required fields depend on the annotation type).
    */
   publish(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Publish an annotation removal request for a message, to remove it from the summary
+   * summaries. The semantics of the delete (and what fields are required) are different
+   * for each annotation type; see annotation types documentation for more details.
+   *
+   * @param message - The message which has an annotation that you want to delete.
+   * @param annotation - The annotation deletion request. (Must include at least the
+   * `type`, other required fields depend on the type).
+   */
+  delete(message: Message, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Publish an annotation removal request for a message, to remove it from the summary
+   * summaries. The semantics of the delete (and what fields are required) are different
+   * for each annotation type; see annotation types documentation for more details.
+   *
+   * @param messageSerial - The serial field of the message which has an annotation that
+   * you want to delete.
+   * @param annotation - The annotation deletion request. (Must include at least the
+   * `type`, other required fields depend on the type).
+   */
+  delete(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
   /**
    * Get all annotations for a given message (as a paginated result)
    *

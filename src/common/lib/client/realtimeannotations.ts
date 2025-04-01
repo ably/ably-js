@@ -48,6 +48,11 @@ class RealtimeAnnotations {
     return this.channel.sendMessage(pm);
   }
 
+  async delete(msgOrSerial: string | Message, annotationValues: Partial<Properties<Annotation>>): Promise<void> {
+    annotationValues.action = 'annotation.delete';
+    return this.publish(msgOrSerial, annotationValues);
+  }
+
   async subscribe(..._args: unknown[] /* [type], listener */): Promise<void> {
     const args = RealtimeChannel.processListenerArgs(_args);
     const event = args[0];
