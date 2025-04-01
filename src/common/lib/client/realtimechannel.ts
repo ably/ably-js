@@ -30,7 +30,7 @@ import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
-import type { Objects, StateMessage } from 'plugins/objects';
+import type { Objects, ObjectMessage } from 'plugins/objects';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -507,12 +507,12 @@ class RealtimeChannel extends EventEmitter {
     this.sendMessage(msg, callback);
   }
 
-  sendState(state: StateMessage[]): Promise<void> {
+  sendState(objectMessages: ObjectMessage[]): Promise<void> {
     return new Promise((resolve, reject) => {
       const msg = protocolMessageFromValues({
-        action: actions.STATE,
+        action: actions.OBJECT,
         channel: this.name,
-        state,
+        state: objectMessages,
       });
       this.sendMessage(msg, (err) => (err ? reject(err) : resolve()));
     });
@@ -524,7 +524,7 @@ class RealtimeChannel extends EventEmitter {
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||
       message.action === actions.PRESENCE ||
-      message.action === actions.STATE
+      message.action === actions.OBJECT
     ) {
       // RTL15b
       this.setChannelSerial(message.channelSerial);
@@ -542,7 +542,7 @@ class RealtimeChannel extends EventEmitter {
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         const hasBacklog = message.hasFlag('HAS_BACKLOG');
-        const hasState = message.hasFlag('HAS_STATE');
+        const hasObjects = message.hasFlag('HAS_OBJECTS');
         if (this.state === 'attached') {
           if (!resumed) {
             // we have lost continuity.
@@ -550,9 +550,9 @@ class RealtimeChannel extends EventEmitter {
             if (this._presence) {
               this._presence.onAttached(hasPresence);
             }
-            // the Objects state needs to be re-synced
+            // the Objects tree needs to be re-synced
             if (this._objects) {
-              this._objects.onAttached(hasState);
+              this._objects.onAttached(hasObjects);
             }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
@@ -564,7 +564,7 @@ class RealtimeChannel extends EventEmitter {
           /* RTL5i: re-send DETACH and remain in the 'detaching' state */
           this.checkPendingState();
         } else {
-          this.notifyState('attached', message.error, resumed, hasPresence, hasBacklog, hasState);
+          this.notifyState('attached', message.error, resumed, hasPresence, hasBacklog, hasObjects);
         }
         break;
       }
@@ -612,25 +612,25 @@ class RealtimeChannel extends EventEmitter {
         break;
       }
 
-      // STATE and STATE_SYNC message processing share most of the logic, so group them together
-      case actions.STATE:
-      case actions.STATE_SYNC: {
+      // OBJECT and OBJECT_SYNC message processing share most of the logic, so group them together
+      case actions.OBJECT:
+      case actions.OBJECT_SYNC: {
         if (!this._objects) {
           return;
         }
 
-        const stateMessages = message.state ?? [];
+        const objectMessages = message.state ?? [];
         const options = this.channelOptions;
-        await this._decodeAndPrepareMessages(message, stateMessages, (msg) =>
+        await this._decodeAndPrepareMessages(message, objectMessages, (msg) =>
           this.client._objectsPlugin
-            ? this.client._objectsPlugin.StateMessage.decode(msg, options, MessageEncoding)
+            ? this.client._objectsPlugin.ObjectMessage.decode(msg, options, MessageEncoding)
             : Utils.throwMissingPluginError('Objects'),
         );
 
-        if (message.action === actions.STATE) {
-          this._objects.handleStateMessages(stateMessages);
+        if (message.action === actions.OBJECT) {
+          this._objects.handleObjectMessages(objectMessages);
         } else {
-          this._objects.handleStateSyncMessages(stateMessages, message.channelSerial);
+          this._objects.handleObjectSyncMessages(objectMessages, message.channelSerial);
         }
 
         break;
@@ -740,7 +740,7 @@ class RealtimeChannel extends EventEmitter {
    * @returns `unrecoverableError` flag. If `true` indicates that unrecoverable error was encountered during message decoding
    * and any further message processing should be stopped. Always equals to `false` if `decodeErrorRecoveryHandler` was not provided
    */
-  private async _decodeAndPrepareMessages<T extends Message | PresenceMessage | StateMessage>(
+  private async _decodeAndPrepareMessages<T extends Message | PresenceMessage | ObjectMessage>(
     protocolMessage: ProtocolMessage,
     messages: T[],
     decodeFn: (msg: T) => Promise<void>,
@@ -809,7 +809,7 @@ class RealtimeChannel extends EventEmitter {
     resumed?: boolean,
     hasPresence?: boolean,
     hasBacklog?: boolean,
-    hasState?: boolean,
+    hasObjects?: boolean,
   ): void {
     Logger.logAction(
       this.logger,
@@ -831,7 +831,7 @@ class RealtimeChannel extends EventEmitter {
       this._presence.actOnChannelState(state, hasPresence, reason);
     }
     if (this._objects) {
-      this._objects.actOnChannelState(state, hasState);
+      this._objects.actOnChannelState(state, hasObjects);
     }
     if (state === 'suspended' && this.connectionManager.state.sendEvents) {
       this.startRetryTimer();

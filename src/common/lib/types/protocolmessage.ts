@@ -34,8 +34,8 @@ export const actions = {
   SYNC: 16,
   AUTH: 17,
   ACTIVATE: 18,
-  STATE: 19,
-  STATE_SYNC: 20,
+  OBJECT: 19,
+  OBJECT_SYNC: 20,
 };
 
 export const ActionName: string[] = [];
@@ -50,7 +50,7 @@ const flags: { [key: string]: number } = {
   RESUMED: 1 << 2,
   TRANSIENT: 1 << 4,
   ATTACH_RESUME: 1 << 5,
-  HAS_STATE: 1 << 7,
+  HAS_OBJECTS: 1 << 7,
   /* Channel mode flags */
   PRESENCE: 1 << 16,
   PUBLISH: 1 << 17,
@@ -126,12 +126,12 @@ export function fromDeserialized(
     }
   }
 
-  let state: ObjectsPlugin.StateMessage[] | undefined = undefined;
+  let state: ObjectsPlugin.ObjectMessage[] | undefined = undefined;
   if (objectsPlugin) {
-    state = deserialized.state as ObjectsPlugin.StateMessage[];
+    state = deserialized.state as ObjectsPlugin.ObjectMessage[];
     if (state) {
       for (let i = 0; i < state.length; i++) {
-        state[i] = objectsPlugin.StateMessage.fromValues(state[i], Utils, MessageEncoding);
+        state[i] = objectsPlugin.ObjectMessage.fromValues(state[i], Utils, MessageEncoding);
       }
     }
   }
@@ -143,7 +143,7 @@ export function fromDeserialized(
  * Used internally by the tests.
  *
  * ObjectsPlugin code can't be included as part of the core library to prevent size growth,
- * so if a test needs to build state messages, then it must provide the plugin upon call.
+ * so if a test needs to build object messages, then it must provide the plugin upon call.
  */
 export function makeFromDeserializedWithDependencies(dependencies?: { ObjectsPlugin: typeof ObjectsPlugin | null }) {
   return (deserialized: Record<string, unknown>): ProtocolMessage => {
@@ -178,7 +178,8 @@ export function stringify(
   if (msg.presence && presenceMessagePlugin)
     result += '; presence=' + toStringArray(presenceMessagePlugin.presenceMessagesFromValuesArray(msg.presence));
   if (msg.state && objectsPlugin) {
-    result += '; state=' + toStringArray(objectsPlugin.StateMessage.fromValuesArray(msg.state, Utils, MessageEncoding));
+    result +=
+      '; state=' + toStringArray(objectsPlugin.ObjectMessage.fromValuesArray(msg.state, Utils, MessageEncoding));
   }
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
@@ -218,7 +219,7 @@ class ProtocolMessage {
   /**
    * This will be undefined if we skipped decoding this property due to user not requesting Objects functionality — see {@link fromDeserialized}
    */
-  state?: ObjectsPlugin.StateMessage[];
+  state?: ObjectsPlugin.ObjectMessage[];
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
 
