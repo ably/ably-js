@@ -391,6 +391,11 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   echoMessages?: boolean;
 
   /**
+   * Set a routing policy or FQDN to connect to Ably. See [platform customization](https://ably.com/docs/platform-customization).
+   */
+  endpoint?: string;
+
+  /**
    * Enables a [custom environment](https://ably.com/docs/platform-customization) to be used with the Ably service.
    */
   environment?: string;
