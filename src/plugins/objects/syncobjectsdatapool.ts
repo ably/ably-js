@@ -1,10 +1,10 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
+import { ObjectMessage, ObjectState } from './objectmessage';
 import { Objects } from './objects';
-import { StateMessage, StateObject } from './statemessage';
 
 export interface LiveObjectDataEntry {
-  stateObject: StateObject;
+  objectState: ObjectState;
   objectType: 'LiveMap' | 'LiveCounter';
 }
 
@@ -49,47 +49,47 @@ export class SyncObjectsDataPool {
     this._pool.clear();
   }
 
-  applyStateSyncMessages(stateMessages: StateMessage[]): void {
-    for (const stateMessage of stateMessages) {
-      if (!stateMessage.object) {
+  applyObjectSyncMessages(objectMessages: ObjectMessage[]): void {
+    for (const objectMessage of objectMessages) {
+      if (!objectMessage.object) {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'SyncObjectsDataPool.applyStateSyncMessages()',
-          `state object message is received during SYNC without 'object' field, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+          'SyncObjectsDataPool.applyObjectSyncMessages()',
+          `object message is received during OBJECT_SYNC without 'object' field, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
       }
 
-      const stateObject = stateMessage.object;
+      const objectState = objectMessage.object;
 
-      if (stateObject.counter) {
-        this._pool.set(stateObject.objectId, this._createLiveCounterDataEntry(stateObject));
-      } else if (stateObject.map) {
-        this._pool.set(stateObject.objectId, this._createLiveMapDataEntry(stateObject));
+      if (objectState.counter) {
+        this._pool.set(objectState.objectId, this._createLiveCounterDataEntry(objectState));
+      } else if (objectState.map) {
+        this._pool.set(objectState.objectId, this._createLiveMapDataEntry(objectState));
       } else {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'SyncObjectsDataPool.applyStateSyncMessages()',
-          `received unsupported state object message during SYNC, expected 'counter' or 'map' to be present, skipping message; message id: ${stateMessage.id}, channel: ${this._channel.name}`,
+          'SyncObjectsDataPool.applyObjectSyncMessages()',
+          `received unsupported object state message during OBJECT_SYNC, expected 'counter' or 'map' to be present, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
         );
       }
     }
   }
 
-  private _createLiveCounterDataEntry(stateObject: StateObject): LiveCounterDataEntry {
+  private _createLiveCounterDataEntry(objectState: ObjectState): LiveCounterDataEntry {
     const newEntry: LiveCounterDataEntry = {
-      stateObject,
+      objectState,
       objectType: 'LiveCounter',
     };
 
     return newEntry;
   }
 
-  private _createLiveMapDataEntry(stateObject: StateObject): LiveMapDataEntry {
+  private _createLiveMapDataEntry(objectState: ObjectState): LiveMapDataEntry {
     const newEntry: LiveMapDataEntry = {
-      stateObject,
+      objectState,
       objectType: 'LiveMap',
     };
 

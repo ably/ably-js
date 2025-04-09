@@ -1,9 +1,9 @@
+import { ObjectMessage } from './objectmessage';
 import { Objects } from './objects';
-import { StateMessage } from './statemessage';
 
-export { Objects, StateMessage };
+export { Objects, ObjectMessage };
 
 export default {
   Objects,
-  StateMessage,
+  ObjectMessage,
 };

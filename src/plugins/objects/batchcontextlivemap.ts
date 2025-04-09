@@ -49,14 +49,14 @@ export class BatchContextLiveMap<T extends API.LiveMapType> {
   set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): void {
     this._objects.throwIfInvalidWriteApiConfiguration();
     this._batchContext.throwIfClosed();
-    const stateMessage = LiveMap.createMapSetMessage(this._objects, this._map.getObjectId(), key, value);
-    this._batchContext.queueStateMessage(stateMessage);
+    const msg = LiveMap.createMapSetMessage(this._objects, this._map.getObjectId(), key, value);
+    this._batchContext.queueMessage(msg);
   }
 
   remove<TKey extends keyof T & string>(key: TKey): void {
     this._objects.throwIfInvalidWriteApiConfiguration();
     this._batchContext.throwIfClosed();
-    const stateMessage = LiveMap.createMapRemoveMessage(this._objects, this._map.getObjectId(), key);
-    this._batchContext.queueStateMessage(stateMessage);
+    const msg = LiveMap.createMapRemoveMessage(this._objects, this._map.getObjectId(), key);
+    this._batchContext.queueMessage(msg);
   }
 }

@@ -1,7 +1,7 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
+import { CounterOp, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectState } from './objectmessage';
 import { Objects } from './objects';
-import { StateCounterOp, StateMessage, StateObject, StateOperation, StateOperationAction } from './statemessage';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number;
@@ -22,58 +22,58 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   /**
-   * Returns a {@link LiveCounter} instance based on the provided state object.
-   * The provided state object must hold a valid counter object data.
+   * Returns a {@link LiveCounter} instance based on the provided object state.
+   * The provided object state must hold a valid counter object data.
    *
    * @internal
    */
-  static fromStateObject(objects: Objects, stateObject: StateObject): LiveCounter {
-    const obj = new LiveCounter(objects, stateObject.objectId);
-    obj.overrideWithStateObject(stateObject);
+  static fromObjectState(objects: Objects, objectState: ObjectState): LiveCounter {
+    const obj = new LiveCounter(objects, objectState.objectId);
+    obj.overrideWithObjectState(objectState);
     return obj;
   }
 
   /**
-   * Returns a {@link LiveCounter} instance based on the provided COUNTER_CREATE state operation.
-   * The provided state operation must hold a valid counter object data.
+   * Returns a {@link LiveCounter} instance based on the provided COUNTER_CREATE object operation.
+   * The provided object operation must hold a valid counter object data.
    *
    * @internal
    */
-  static fromStateOperation(objects: Objects, stateOperation: StateOperation): LiveCounter {
-    const obj = new LiveCounter(objects, stateOperation.objectId);
-    obj._mergeInitialDataFromCreateOperation(stateOperation);
+  static fromObjectOperation(objects: Objects, objectOperation: ObjectOperation): LiveCounter {
+    const obj = new LiveCounter(objects, objectOperation.objectId);
+    obj._mergeInitialDataFromCreateOperation(objectOperation);
     return obj;
   }
 
   /**
    * @internal
    */
-  static createCounterIncMessage(objects: Objects, objectId: string, amount: number): StateMessage {
+  static createCounterIncMessage(objects: Objects, objectId: string, amount: number): ObjectMessage {
     const client = objects.getClient();
 
-    if (typeof amount !== 'number' || !isFinite(amount)) {
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) {
       throw new client.ErrorInfo('Counter value increment should be a valid number', 40003, 400);
     }
 
-    const stateMessage = StateMessage.fromValues(
+    const msg = ObjectMessage.fromValues(
       {
         operation: {
-          action: StateOperationAction.COUNTER_INC,
+          action: ObjectOperationAction.COUNTER_INC,
           objectId,
           counterOp: { amount },
-        } as StateOperation,
+        } as ObjectOperation,
       },
       client.Utils,
       client.MessageEncoding,
     );
 
-    return stateMessage;
+    return msg;
   }
 
   /**
    * @internal
    */
-  static async createCounterCreateMessage(objects: Objects, count?: number): Promise<StateMessage> {
+  static async createCounterCreateMessage(objects: Objects, count?: number): Promise<ObjectMessage> {
     const client = objects.getClient();
 
     if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
@@ -81,7 +81,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     }
 
     const initialValueObj = LiveCounter.createInitialValueObject(count);
-    const { encodedInitialValue, format } = StateMessage.encodeInitialValue(initialValueObj, client);
+    const { encodedInitialValue, format } = ObjectMessage.encodeInitialValue(initialValueObj, client);
     const nonce = client.Utils.cheapRandStr();
     const msTimestamp = await client.getTimestamp(true);
 
@@ -93,28 +93,28 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       msTimestamp,
     ).toString();
 
-    const stateMessage = StateMessage.fromValues(
+    const msg = ObjectMessage.fromValues(
       {
         operation: {
           ...initialValueObj,
-          action: StateOperationAction.COUNTER_CREATE,
+          action: ObjectOperationAction.COUNTER_CREATE,
           objectId,
           nonce,
           initialValue: encodedInitialValue,
           initialValueEncoding: format,
-        } as StateOperation,
+        } as ObjectOperation,
       },
       client.Utils,
       client.MessageEncoding,
     );
 
-    return stateMessage;
+    return msg;
   }
 
   /**
    * @internal
    */
-  static createInitialValueObject(count?: number): Pick<StateOperation, 'counter'> {
+  static createInitialValueObject(count?: number): Pick<ObjectOperation, 'counter'> {
     return {
       counter: {
         count: count ?? 0,
@@ -138,8 +138,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    */
   async increment(amount: number): Promise<void> {
     this._objects.throwIfInvalidWriteApiConfiguration();
-    const stateMessage = LiveCounter.createCounterIncMessage(this._objects, this.getObjectId(), amount);
-    return this._objects.publish([stateMessage]);
+    const msg = LiveCounter.createCounterIncMessage(this._objects, this.getObjectId(), amount);
+    return this._objects.publish([msg]);
   }
 
   /**
@@ -149,7 +149,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._objects.throwIfInvalidWriteApiConfiguration();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
-    if (typeof amount !== 'number' || !isFinite(amount)) {
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) {
       throw new this._client.ErrorInfo('Counter value decrement should be a valid number', 40003, 400);
     }
 
@@ -159,10 +159,10 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  applyOperation(op: StateOperation, msg: StateMessage): void {
+  applyOperation(op: ObjectOperation, msg: ObjectMessage): void {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
-        `Cannot apply state operation with objectId=${op.objectId}, to this LiveCounter with objectId=${this.getObjectId()}`,
+        `Cannot apply object operation with objectId=${op.objectId}, to this LiveCounter with objectId=${this.getObjectId()}`,
         92000,
         500,
       );
@@ -190,11 +190,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
     let update: LiveCounterUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
-      case StateOperationAction.COUNTER_CREATE:
+      case ObjectOperationAction.COUNTER_CREATE:
         update = this._applyCounterCreate(op);
         break;
 
-      case StateOperationAction.COUNTER_INC:
+      case ObjectOperationAction.COUNTER_INC:
         if (this._client.Utils.isNil(op.counterOp)) {
           this._throwNoPayloadError(op);
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
@@ -204,7 +204,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         }
         break;
 
-      case StateOperationAction.OBJECT_DELETE:
+      case ObjectOperationAction.OBJECT_DELETE:
         update = this._applyObjectDelete();
         break;
 
@@ -222,28 +222,28 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  overrideWithStateObject(stateObject: StateObject): LiveCounterUpdate | LiveObjectUpdateNoop {
-    if (stateObject.objectId !== this.getObjectId()) {
+  overrideWithObjectState(objectState: ObjectState): LiveCounterUpdate | LiveObjectUpdateNoop {
+    if (objectState.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
-        `Invalid state object: state object objectId=${stateObject.objectId}; LiveCounter objectId=${this.getObjectId()}`,
+        `Invalid object state: object state objectId=${objectState.objectId}; LiveCounter objectId=${this.getObjectId()}`,
         92000,
         500,
       );
     }
 
-    if (!this._client.Utils.isNil(stateObject.createOp)) {
-      // it is expected that create operation can be missing in the state object, so only validate it when it exists
-      if (stateObject.createOp.objectId !== this.getObjectId()) {
+    if (!this._client.Utils.isNil(objectState.createOp)) {
+      // it is expected that create operation can be missing in the object state, so only validate it when it exists
+      if (objectState.createOp.objectId !== this.getObjectId()) {
         throw new this._client.ErrorInfo(
-          `Invalid state object: state object createOp objectId=${stateObject.createOp?.objectId}; LiveCounter objectId=${this.getObjectId()}`,
+          `Invalid object state: object state createOp objectId=${objectState.createOp?.objectId}; LiveCounter objectId=${this.getObjectId()}`,
           92000,
           500,
         );
       }
 
-      if (stateObject.createOp.action !== StateOperationAction.COUNTER_CREATE) {
+      if (objectState.createOp.action !== ObjectOperationAction.COUNTER_CREATE) {
         throw new this._client.ErrorInfo(
-          `Invalid state object: state object createOp action=${stateObject.createOp?.action}; LiveCounter objectId=${this.getObjectId()}`,
+          `Invalid object state: object state createOp action=${objectState.createOp?.action}; LiveCounter objectId=${this.getObjectId()}`,
           92000,
           500,
         );
@@ -251,29 +251,29 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     }
 
     // object's site timeserials are still updated even if it is tombstoned, so always use the site timeserials received from the op.
-    // should default to empty map if site timeserials do not exist on the state object, so that any future operation may be applied to this object.
-    this._siteTimeserials = stateObject.siteTimeserials ?? {};
+    // should default to empty map if site timeserials do not exist on the object state, so that any future operation may be applied to this object.
+    this._siteTimeserials = objectState.siteTimeserials ?? {};
 
     if (this.isTombstoned()) {
-      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of state object message processing
+      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
       return { noop: true };
     }
 
     const previousDataRef = this._dataRef;
-    if (stateObject.tombstone) {
-      // tombstone this object and ignore the data from the state object message
+    if (objectState.tombstone) {
+      // tombstone this object and ignore the data from the object state message
       this.tombstone();
     } else {
-      // override data for this object with data from the state object
+      // override data for this object with data from the object state
       this._createOperationIsMerged = false;
-      this._dataRef = { data: stateObject.counter?.count ?? 0 };
-      if (!this._client.Utils.isNil(stateObject.createOp)) {
-        this._mergeInitialDataFromCreateOperation(stateObject.createOp);
+      this._dataRef = { data: objectState.counter?.count ?? 0 };
+      if (!this._client.Utils.isNil(objectState.createOp)) {
+        this._mergeInitialDataFromCreateOperation(objectState.createOp);
       }
     }
 
     // if object got tombstoned, the update object will include all data that got cleared.
-    // otherwise it is a diff between previous value and new value from state object.
+    // otherwise it is a diff between previous value and new value from object state.
     return this._updateFromDataDiff(previousDataRef, this._dataRef);
   }
 
@@ -294,18 +294,18 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return { update: { amount: counterDiff } };
   }
 
-  protected _mergeInitialDataFromCreateOperation(stateOperation: StateOperation): LiveCounterUpdate {
+  protected _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation): LiveCounterUpdate {
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    this._dataRef.data += stateOperation.counter?.count ?? 0;
+    this._dataRef.data += objectOperation.counter?.count ?? 0;
     this._createOperationIsMerged = true;
 
-    return { update: { amount: stateOperation.counter?.count ?? 0 } };
+    return { update: { amount: objectOperation.counter?.count ?? 0 } };
   }
 
-  private _throwNoPayloadError(op: StateOperation): void {
+  private _throwNoPayloadError(op: ObjectOperation): void {
     throw new this._client.ErrorInfo(
       `No payload found for ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
       92000,
@@ -313,7 +313,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     );
   }
 
-  private _applyCounterCreate(op: StateOperation): LiveCounterUpdate | LiveObjectUpdateNoop {
+  private _applyCounterCreate(op: ObjectOperation): LiveCounterUpdate | LiveObjectUpdateNoop {
     if (this._createOperationIsMerged) {
       // There can't be two different create operation for the same object id, because the object id
       // fully encodes that operation. This means we can safely ignore any new incoming create operations
@@ -330,7 +330,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return this._mergeInitialDataFromCreateOperation(op);
   }
 
-  private _applyCounterInc(op: StateCounterOp): LiveCounterUpdate {
+  private _applyCounterInc(op: CounterOp): LiveCounterUpdate {
     this._dataRef.data += op.amount;
     return { update: { amount: op.amount } };
   }
