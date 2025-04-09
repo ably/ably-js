@@ -2299,7 +2299,7 @@ export declare interface BatchContextLiveCounter {
  *
  * Keys must be strings. Values can be another {@link LiveObject}, or a primitive type, such as a string, number, boolean, or binary data (see {@link ObjectValue}).
  */
-export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate> {
+export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate<T>> {
   /**
    * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map or if the associated {@link LiveObject} has been deleted.
    *
@@ -2359,13 +2359,13 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
 /**
  * Represents an update to a {@link LiveMap} object, describing the keys that were updated or removed.
  */
-export declare interface LiveMapUpdate extends LiveObjectUpdate {
+export declare interface LiveMapUpdate<T extends LiveMapType> extends LiveObjectUpdate {
   /**
    * An object containing keys from a `LiveMap` that have changed, along with their change status:
    * - `updated` - the value of a key in the map was updated.
    * - `removed` - the key was removed from the map.
    */
-  update: { [keyName: string]: 'updated' | 'removed' };
+  update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
 }
 
 /**

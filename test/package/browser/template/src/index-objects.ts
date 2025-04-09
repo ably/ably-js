@@ -42,13 +42,16 @@ globalThis.testAblyPackage = async function () {
 
   // check LiveMap subscription callback has correct TypeScript types
   const { unsubscribe } = root.subscribe(({ update }) => {
-    switch (update.someKey) {
+    // check update object infers keys from map type
+    const typedKeyOnMap = update.stringKey;
+    switch (typedKeyOnMap) {
       case 'removed':
       case 'updated':
+      case undefined:
         break;
       default:
         // check all possible types are exhausted
-        const shouldExhaustAllTypes: never = update.someKey;
+        const shouldExhaustAllTypes: never = typedKeyOnMap;
     }
   });
   unsubscribe();
