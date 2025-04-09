@@ -249,6 +249,72 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
     describe('Realtime with Objects plugin', () => {
       /** @nospec */
+      it.only('OBJECT_SYNC should be always sent on attachment with OBJECT_SUBSCRIBE', async function () {
+        // disable global timeouts for this test
+        this.timeout(0);
+        const helper = this.test.helper;
+
+        const attemptObjectSyncHangUp = async (attempt) => {
+          console.log();
+          console.log(`Attempt #${attempt + 1}`);
+
+          // create a client with OBJECTS plugin
+          const client = RealtimeWithObjects(helper);
+
+          await helper.monitorConnectionThenCloseAndFinish(async () => {
+            // get a channel with OBJECT_SUBSCRIBE mode so we expect OBJECT_SYNC from realtime.
+            // also need PUBLISH mode to be able to publish a message later.
+            const channel = client.channels.get('channel', { modes: ['OBJECT_SUBSCRIBE', 'PUBLISH'] });
+
+            // spy on processMessage method to log ATTACHED and OBJECT_SYNC messages.
+            // you can comment this out if don't need these logs.
+            const processMessageOriginal = channel.processMessage.bind(channel);
+            channel.processMessage = async function (message) {
+              // log ATTACHED=11 and OBJECT_SYNC=20 messages
+              if (message.action === 11 || message.action === 20) {
+                console.log(`Got message:`, JSON.stringify(message));
+                // also I noticed that HAS_OBJECTS flag is not always set in ATTACHED message, even though it should be, so log it too to check
+                if (message.action === 11) {
+                  console.log(`HAS_OBJECTS flag: ${(message.flags & (1 << 7)) > 0}`); // this should always log "true"
+                }
+              }
+              await processMessageOriginal(message);
+            };
+
+            // now attach to a channel
+            await channel.attach();
+            console.log(`Attached to a channel with connection id: ${client.connection.id}`);
+
+            // now call getRoot() which will wait for OBJECT_SYNC message.
+            // this will occasionally hang up as OBJECT_SYNC is not sent by realtime server.
+            // seems to only happen if we published a message on previous connection.
+            const root = await channel.objects.getRoot();
+            console.log(`OBJECT_SYNC received (resolved getRoot() promise)`);
+
+            // publish a message on a channel, this seems to be causing OBJECT_SYNC to not be sent sometimes for later connections.
+            // for example, if you comment the next line, the later connections seem to always receive OBJECT_SYNC message.
+            await channel.publish(null, 'test');
+            console.log(`Published a message on a channel`);
+          }, client);
+        };
+
+        let i = 0;
+        while (true) {
+          await Promise.race([
+            attemptObjectSyncHangUp(i),
+            // allow up to 15 seconds for each attempt to receive OBJECT_SYNC
+            new Promise((res, rej) =>
+              setTimeout(
+                () => rej(new Error(`Attempt #${i + 1} took too long to receive OBJECT_SYNC message`)),
+                1000 * 15,
+              ),
+            ),
+          ]);
+          i++;
+        }
+      });
+
+      /** @nospec */
       it("returns Objects class instance when accessing channel's `objects` property", async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper, { autoConnect: false });

@@ -50,49 +50,49 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
      * root "referencedCounter" -> Counter#3 count=20
      */
     async initForChannel(channelName) {
-      const emptyCounter = await this.createAndSetOnMap(channelName, {
-        mapObjectId: 'root',
-        key: 'emptyCounter',
-        createOp: this.counterCreateRestOp(),
-      });
-      const initialValueCounter = await this.createAndSetOnMap(channelName, {
-        mapObjectId: 'root',
-        key: 'initialValueCounter',
-        createOp: this.counterCreateRestOp({ number: 10 }),
-      });
-      const referencedCounter = await this.createAndSetOnMap(channelName, {
-        mapObjectId: 'root',
-        key: 'referencedCounter',
-        createOp: this.counterCreateRestOp({ number: 20 }),
-      });
+      // const emptyCounter = await this.createAndSetOnMap(channelName, {
+      //   mapObjectId: 'root',
+      //   key: 'emptyCounter',
+      //   createOp: this.counterCreateRestOp(),
+      // });
+      // const initialValueCounter = await this.createAndSetOnMap(channelName, {
+      //   mapObjectId: 'root',
+      //   key: 'initialValueCounter',
+      //   createOp: this.counterCreateRestOp({ number: 10 }),
+      // });
+      // const referencedCounter = await this.createAndSetOnMap(channelName, {
+      //   mapObjectId: 'root',
+      //   key: 'referencedCounter',
+      //   createOp: this.counterCreateRestOp({ number: 20 }),
+      // });
 
-      const emptyMap = await this.createAndSetOnMap(channelName, {
-        mapObjectId: 'root',
-        key: 'emptyMap',
-        createOp: this.mapCreateRestOp(),
-      });
-      const referencedMap = await this.createAndSetOnMap(channelName, {
-        mapObjectId: 'root',
-        key: 'referencedMap',
-        createOp: this.mapCreateRestOp({ data: { counterKey: { objectId: referencedCounter.objectId } } }),
-      });
-      const valuesMap = await this.createAndSetOnMap(channelName, {
-        mapObjectId: 'root',
-        key: 'valuesMap',
-        createOp: this.mapCreateRestOp({
-          data: {
-            stringKey: { string: 'stringValue' },
-            emptyStringKey: { string: '' },
-            bytesKey: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
-            emptyBytesKey: { bytes: '' },
-            numberKey: { number: 1 },
-            zeroKey: { number: 0 },
-            trueKey: { boolean: true },
-            falseKey: { boolean: false },
-            mapKey: { objectId: referencedMap.objectId },
-          },
-        }),
-      });
+      // const emptyMap = await this.createAndSetOnMap(channelName, {
+      //   mapObjectId: 'root',
+      //   key: 'emptyMap',
+      //   createOp: this.mapCreateRestOp(),
+      // });
+      // const referencedMap = await this.createAndSetOnMap(channelName, {
+      //   mapObjectId: 'root',
+      //   key: 'referencedMap',
+      //   createOp: this.mapCreateRestOp({ data: { counterKey: { objectId: referencedCounter.objectId } } }),
+      // });
+      // const valuesMap = await this.createAndSetOnMap(channelName, {
+      //   mapObjectId: 'root',
+      //   key: 'valuesMap',
+      //   createOp: this.mapCreateRestOp({
+      //     data: {
+      //       stringKey: { string: 'stringValue' },
+      //       emptyStringKey: { string: '' },
+      //       bytesKey: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
+      //       emptyBytesKey: { bytes: '' },
+      //       numberKey: { number: 1 },
+      //       zeroKey: { number: 0 },
+      //       trueKey: { boolean: true },
+      //       falseKey: { boolean: false },
+      //       mapKey: { objectId: referencedMap.objectId },
+      //     },
+      //   }),
+      // });
     }
 
     // #region Wire Object Messages
