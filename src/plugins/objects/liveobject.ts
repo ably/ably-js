@@ -52,8 +52,8 @@ export abstract class LiveObject<
   protected _createOperationIsMerged: boolean;
   private _tombstone: boolean;
   /**
-   * Even though the `timeserial` from the operation that deleted the object contains the timestamp value,
-   * the `timeserial` should be treated as an opaque string on the client, meaning we should not attempt to parse it.
+   * Even though the {@link ObjectMessage.serial} value from the operation that deleted the object contains the timestamp value,
+   * the serial should be treated as an opaque string on the client, meaning we should not attempt to parse it.
    *
    * Therefore, we need to set our own timestamp using local clock when the object is deleted client-side.
    * Strictly speaking, this does make an assumption about the client clock not being too heavily skewed behind the server,
@@ -70,7 +70,7 @@ export abstract class LiveObject<
     this._lifecycleEvents = new this._client.EventEmitter(this._client.logger);
     this._objectId = objectId;
     this._dataRef = this._getZeroValueData();
-    // use empty timeserials vector by default, so any future operation can be applied to this object
+    // use empty map of serials by default, so any future operation can be applied to this object
     this._siteTimeserials = {};
     this._createOperationIsMerged = false;
     this._tombstone = false;
@@ -181,22 +181,22 @@ export abstract class LiveObject<
   }
 
   /**
-   * Returns true if the given origin timeserial indicates that the operation to which it belongs should be applied to the object.
+   * Returns true if the given serial indicates that the operation to which it belongs should be applied to the object.
    *
-   * An operation should be applied if the origin timeserial is strictly greater than the timeserial in the site timeserials for the same site.
-   * If the site timeserials do not contain a timeserial for the site of the origin timeserial, the operation should be applied.
+   * An operation should be applied if its serial is strictly greater than the serial in the `siteTimeserials` map for the same site.
+   * If `siteTimeserials` map does not contain a serial for the same site, the operation should be applied.
    */
-  protected _canApplyOperation(opOriginTimeserial: string | undefined, opSiteCode: string | undefined): boolean {
-    if (!opOriginTimeserial) {
-      throw new this._client.ErrorInfo(`Invalid timeserial: ${opOriginTimeserial}`, 92000, 500);
+  protected _canApplyOperation(opSerial: string | undefined, opSiteCode: string | undefined): boolean {
+    if (!opSerial) {
+      throw new this._client.ErrorInfo(`Invalid serial: ${opSerial}`, 92000, 500);
     }
 
     if (!opSiteCode) {
       throw new this._client.ErrorInfo(`Invalid site code: ${opSiteCode}`, 92000, 500);
     }
 
-    const siteTimeserial = this._siteTimeserials[opSiteCode];
-    return !siteTimeserial || opOriginTimeserial > siteTimeserial;
+    const siteSerial = this._siteTimeserials[opSiteCode];
+    return !siteSerial || opSerial > siteSerial;
   }
 
   protected _applyObjectDelete(): TUpdate {
@@ -216,7 +216,7 @@ export abstract class LiveObject<
    * Provided object state should hold a valid data for current LiveObject, e.g. counter data for LiveCounter, map data for LiveMap.
    *
    * Object states are received during sync sequence, and sync sequence is a source of truth for the current state of the objects,
-   * so we can use the data received from the sync sequence directly and override any data values or site timeserials this LiveObject has
+   * so we can use the data received from the sync sequence directly and override any data values or site serials this LiveObject has
    * without the need to merge them.
    *
    * Returns an update object that describes the changes applied based on the object's previous value.
