@@ -2,6 +2,12 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.6.6](https://github.com/ably/ably-js/tree/2.6.6) (2025-04-10)
+
+- Adds `ANNOTATION_PUBLISH` and `ANNOTATION_SUBSCRIBE` channel modes.
+- Adds support for message annotations via `channel.annotations`.
+- The message action `meta.occupancy` is now renamed to `meta`. Similarly, `MessageActions.META` is now `MessageActions.META`.
+
 ## [2.6.5](https://github.com/ably/ably-js/tree/2.6.5) (2025-03-24)
 
 - Fixed type issue in `PublishOptions` [\#1988](https://github.com/ably/ably-js/pull/1988)
