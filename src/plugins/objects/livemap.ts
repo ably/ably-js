@@ -47,11 +47,11 @@ export interface LiveMapData extends LiveObjectData {
   data: Map<string, LiveMapEntry>;
 }
 
-export interface LiveMapUpdate extends LiveObjectUpdate {
-  update: { [keyName: string]: 'updated' | 'removed' };
+export interface LiveMapUpdate<T extends API.LiveMapType> extends LiveObjectUpdate {
+  update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
 }
 
-export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate> {
+export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate<T>> {
   constructor(
     objects: Objects,
     private _semantics: MapSemantics,
@@ -391,7 +391,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return;
     }
 
-    let update: LiveMapUpdate | LiveObjectUpdateNoop;
+    let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
     switch (op.action) {
       case ObjectOperationAction.MAP_CREATE:
         update = this._applyMapCreate(op);
@@ -435,7 +435,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  overrideWithObjectState(objectState: ObjectState): LiveMapUpdate | LiveObjectUpdateNoop {
+  overrideWithObjectState(objectState: ObjectState): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     if (objectState.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Invalid object state: object state objectId=${objectState.objectId}; LiveMap objectId=${this.getObjectId()}`,
@@ -526,21 +526,23 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return { data: new Map<string, LiveMapEntry>() };
   }
 
-  protected _updateFromDataDiff(prevDataRef: LiveMapData, newDataRef: LiveMapData): LiveMapUpdate {
-    const update: LiveMapUpdate = { update: {} };
+  protected _updateFromDataDiff(prevDataRef: LiveMapData, newDataRef: LiveMapData): LiveMapUpdate<T> {
+    const update: LiveMapUpdate<T> = { update: {} };
 
     for (const [key, currentEntry] of prevDataRef.data.entries()) {
+      const typedKey: keyof T & string = key;
       // any non-tombstoned properties that exist on a current map, but not in the new data - got removed
-      if (currentEntry.tombstone === false && !newDataRef.data.has(key)) {
-        update.update[key] = 'removed';
+      if (currentEntry.tombstone === false && !newDataRef.data.has(typedKey)) {
+        update.update[typedKey] = 'removed';
       }
     }
 
     for (const [key, newEntry] of newDataRef.data.entries()) {
-      if (!prevDataRef.data.has(key)) {
+      const typedKey: keyof T & string = key;
+      if (!prevDataRef.data.has(typedKey)) {
         // if property does not exist in the current map, but new data has it as a non-tombstoned property - got updated
         if (newEntry.tombstone === false) {
-          update.update[key] = 'updated';
+          update.update[typedKey] = 'updated';
           continue;
         }
 
@@ -551,17 +553,17 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       }
 
       // properties that exist both in current and new map data need to have their values compared to decide on the update type
-      const currentEntry = prevDataRef.data.get(key)!;
+      const currentEntry = prevDataRef.data.get(typedKey)!;
 
       // compare tombstones first
       if (currentEntry.tombstone === true && newEntry.tombstone === false) {
         // current prop is tombstoned, but new is not. it means prop was updated to a meaningful value
-        update.update[key] = 'updated';
+        update.update[typedKey] = 'updated';
         continue;
       }
       if (currentEntry.tombstone === false && newEntry.tombstone === true) {
         // current prop is not tombstoned, but new is. it means prop was removed
-        update.update[key] = 'removed';
+        update.update[typedKey] = 'removed';
         continue;
       }
       if (currentEntry.tombstone === true && newEntry.tombstone === true) {
@@ -572,7 +574,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       // both props exist and are not tombstoned, need to compare values with deep equals to see if it was changed
       const valueChanged = !deepEqual(currentEntry.data, newEntry.data, { strict: true });
       if (valueChanged) {
-        update.update[key] = 'updated';
+        update.update[typedKey] = 'updated';
         continue;
       }
     }
@@ -580,20 +582,20 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return update;
   }
 
-  protected _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation): LiveMapUpdate {
+  protected _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation): LiveMapUpdate<T> {
     if (this._client.Utils.isNil(objectOperation.map)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
       return { update: {} };
     }
 
-    const aggregatedUpdate: LiveMapUpdate | LiveObjectUpdateNoop = { update: {} };
+    const aggregatedUpdate: LiveMapUpdate<T> = { update: {} };
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
     Object.entries(objectOperation.map.entries ?? {}).forEach(([key, entry]) => {
       // for a MAP_CREATE operation we must use the serial value available on an entry, instead of a serial on a message
       const opSerial = entry.timeserial;
-      let update: LiveMapUpdate | LiveObjectUpdateNoop;
+      let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
       if (entry.tombstone === true) {
         // entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
         update = this._applyMapRemove({ key }, opSerial);
@@ -624,7 +626,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     );
   }
 
-  private _applyMapCreate(op: ObjectOperation): LiveMapUpdate | LiveObjectUpdateNoop {
+  private _applyMapCreate(op: ObjectOperation): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     if (this._createOperationIsMerged) {
       // There can't be two different create operation for the same object id, because the object id
       // fully encodes that operation. This means we can safely ignore any new incoming create operations
@@ -649,7 +651,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return this._mergeInitialDataFromCreateOperation(op);
   }
 
-  private _applyMapSet(op: MapOp, opSerial: string | undefined): LiveMapUpdate | LiveObjectUpdateNoop {
+  private _applyMapSet(op: MapOp, opSerial: string | undefined): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     const { ErrorInfo, Utils } = this._client;
 
     const existingEntry = this._dataRef.data.get(op.key);
@@ -698,10 +700,15 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       };
       this._dataRef.data.set(op.key, newEntry);
     }
-    return { update: { [op.key]: 'updated' } };
+
+    const update: LiveMapUpdate<T> = { update: {} };
+    const typedKey: keyof T & string = op.key;
+    update.update[typedKey] = 'updated';
+
+    return update;
   }
 
-  private _applyMapRemove(op: MapOp, opSerial: string | undefined): LiveMapUpdate | LiveObjectUpdateNoop {
+  private _applyMapRemove(op: MapOp, opSerial: string | undefined): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     const existingEntry = this._dataRef.data.get(op.key);
     if (existingEntry && !this._canApplyMapOperation(existingEntry.timeserial, opSerial)) {
       // the operation's serial <= the entry's serial, ignore the operation.
@@ -729,7 +736,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       this._dataRef.data.set(op.key, newEntry);
     }
 
-    return { update: { [op.key]: 'removed' } };
+    const update: LiveMapUpdate<T> = { update: {} };
+    const typedKey: keyof T & string = op.key;
+    update.update[typedKey] = 'removed';
+
+    return update;
   }
 
   /**
