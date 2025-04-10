@@ -2113,6 +2113,7 @@ export declare interface Objects {
    * ```
    *
    * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @experimental
    */
   getRoot<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>>;
 
@@ -2121,6 +2122,7 @@ export declare interface Objects {
    *
    * @param entries - The initial entries for the new {@link LiveMap} object.
    * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @experimental
    */
   createMap<T extends LiveMapType>(entries?: T): Promise<LiveMap<T>>;
 
@@ -2129,6 +2131,7 @@ export declare interface Objects {
    *
    * @param count - The initial value for the new {@link LiveCounter} object.
    * @returns A promise which, upon success, will be fulfilled with a {@link LiveCounter} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @experimental
    */
   createCounter(count?: number): Promise<LiveCounter>;
 
@@ -2144,6 +2147,7 @@ export declare interface Objects {
    *
    * @param callback - A batch callback function used to group operations together. Cannot be an `async` function.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
    */
   batch(callback: BatchCallback): Promise<void>;
 
@@ -2153,6 +2157,7 @@ export declare interface Objects {
    * @param event - The named event to listen for.
    * @param callback - The event listener.
    * @returns A {@link OnObjectsEventResponse} object that allows the provided listener to be deregistered from future updates.
+   * @experimental
    */
   on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse;
 
@@ -2161,11 +2166,14 @@ export declare interface Objects {
    *
    * @param event - The named event.
    * @param callback - The event listener.
+   * @experimental
    */
   off(event: ObjectsEvent, callback: ObjectsEventCallback): void;
 
   /**
    * Deregisters all registrations, for all events and listeners.
+   *
+   * @experimental
    */
   offAll(): void;
 }
@@ -2207,6 +2215,8 @@ export type DefaultRoot =
 export declare interface OnObjectsEventResponse {
   /**
    * Deregisters the listener passed to the `on` call.
+   *
+   * @experimental
    */
   off(): void;
 }
@@ -2219,6 +2229,7 @@ export declare interface BatchContext {
    * Mirrors the {@link Objects.getRoot} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
    *
    * @returns A {@link BatchContextLiveMap} object.
+   * @experimental
    */
   getRoot<T extends LiveMapType = DefaultRoot>(): BatchContextLiveMap<T>;
 }
@@ -2232,11 +2243,14 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    *
    * @param key - The key to retrieve the value for.
    * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @experimental
    */
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
 
   /**
    * Returns the number of key-value pairs in the map.
+   *
+   * @experimental
    */
   size(): number;
 
@@ -2249,6 +2263,7 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
+   * @experimental
    */
   set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): void;
 
@@ -2260,6 +2275,7 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
    *
    * @param key - The key to set the value for.
+   * @experimental
    */
   remove<TKey extends keyof T & string>(key: TKey): void;
 }
@@ -2270,6 +2286,8 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
 export declare interface BatchContextLiveCounter {
   /**
    * Returns the current value of the counter.
+   *
+   * @experimental
    */
   value(): number;
 
@@ -2281,6 +2299,7 @@ export declare interface BatchContextLiveCounter {
    * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
    *
    * @param amount - The amount by which to increase the counter value.
+   * @experimental
    */
   increment(amount: number): void;
 
@@ -2288,6 +2307,7 @@ export declare interface BatchContextLiveCounter {
    * An alias for calling {@link BatchContextLiveCounter.increment | BatchContextLiveCounter.increment(-amount)}
    *
    * @param amount - The amount by which to decrease the counter value.
+   * @experimental
    */
   decrement(amount: number): void;
 }
@@ -2307,26 +2327,35 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
    *
    * @param key - The key to retrieve the value for.
    * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @experimental
    */
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
 
   /**
    * Returns the number of key-value pairs in the map.
+   *
+   * @experimental
    */
   size(): number;
 
   /**
    * Returns an iterable of key-value pairs for every entry in the map.
+   *
+   * @experimental
    */
   entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]>;
 
   /**
    * Returns an iterable of keys in the map.
+   *
+   * @experimental
    */
   keys<TKey extends keyof T & string>(): IterableIterator<TKey>;
 
   /**
    * Returns an iterable of values in the map.
+   *
+   * @experimental
    */
   values<TKey extends keyof T & string>(): IterableIterator<T[TKey]>;
 
@@ -2340,6 +2369,7 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
    */
   set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void>;
 
@@ -2352,6 +2382,7 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
    */
   remove<TKey extends keyof T & string>(key: TKey): Promise<void>;
 }
@@ -2381,6 +2412,8 @@ export type ObjectValue = string | number | boolean | Buffer | ArrayBuffer;
 export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
   /**
    * Returns the current value of the counter.
+   *
+   * @experimental
    */
   value(): number;
 
@@ -2393,6 +2426,7 @@ export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
    *
    * @param amount - The amount by which to increase the counter value.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
    */
   increment(amount: number): Promise<void>;
 
@@ -2401,6 +2435,7 @@ export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
    *
    * @param amount - The amount by which to decrease the counter value.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
    */
   decrement(amount: number): Promise<void>;
 }
@@ -2429,6 +2464,7 @@ export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjec
    *
    * @param listener - An event listener function that is called with an update object whenever this LiveObject is updated.
    * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
+   * @experimental
    */
   subscribe(listener: LiveObjectUpdateCallback<TUpdate>): SubscribeResponse;
 
@@ -2436,11 +2472,14 @@ export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjec
    * Deregisters the given listener from updates for this LiveObject.
    *
    * @param listener - An event listener function.
+   * @experimental
    */
   unsubscribe(listener: LiveObjectUpdateCallback<TUpdate>): void;
 
   /**
    * Deregisters all listeners from updates for this LiveObject.
+   *
+   * @experimental
    */
   unsubscribeAll(): void;
 
@@ -2450,6 +2489,7 @@ export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjec
    * @param event - The named event to listen for.
    * @param callback - The event listener.
    * @returns A {@link OnLiveObjectLifecycleEventResponse} object that allows the provided listener to be deregistered from future updates.
+   * @experimental
    */
   on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse;
 
@@ -2458,11 +2498,14 @@ export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjec
    *
    * @param event - The named event.
    * @param callback - The event listener.
+   * @experimental
    */
   off(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): void;
 
   /**
    * Deregisters all registrations, for all events and listeners.
+   *
+   * @experimental
    */
   offAll(): void;
 }
@@ -2483,6 +2526,8 @@ export declare interface LiveObjectUpdate {
 export declare interface SubscribeResponse {
   /**
    * Deregisters the listener passed to the `subscribe` call.
+   *
+   * @experimental
    */
   unsubscribe(): void;
 }
@@ -2493,6 +2538,8 @@ export declare interface SubscribeResponse {
 export declare interface OnLiveObjectLifecycleEventResponse {
   /**
    * Deregisters the listener passed to the `on` call.
+   *
+   * @experimental
    */
   off(): void;
 }
