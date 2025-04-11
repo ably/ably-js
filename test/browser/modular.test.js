@@ -907,6 +907,7 @@ function registerAblyModularTests(Helper) {
                   FetchRequest,
                   Annotations,
                 },
+                clientId: Helper.randomString(),
               }),
             );
 
@@ -954,6 +955,7 @@ function registerAblyModularTests(Helper) {
                   FetchRequest,
                   Annotations,
                 },
+                clientId: Helper.randomString(),
               }),
             );
             const txRest = new BaseRest(
