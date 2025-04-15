@@ -266,14 +266,19 @@ export class ActivationStateMachine {
 
       if (rest.options.headers) this.client.Utils.mixin(headers, rest.options.headers);
 
-      this.client.Utils.mixin(headers, this.client.push._getPushAuthHeaders());
-
       const authDetails = this.client.device.getAuthDetails(this.client, headers, params);
 
       if (rest.options.pushFullWait) this.client.Utils.mixin(params, { fullWait: 'true' });
 
       try {
-        await this.client.rest.Resource.delete(rest, '/push/deviceRegistrations', authDetails.headers, authDetails.params, format, true);
+        await this.client.rest.Resource.delete(
+          rest,
+          '/push/deviceRegistrations',
+          authDetails.headers,
+          authDetails.params,
+          format,
+          true,
+        );
         this.handleEvent(new Deregistered());
       } catch (err) {
         this.handleEvent(new DeregistrationFailed(err as ErrorInfo));

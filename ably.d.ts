@@ -2641,7 +2641,7 @@ export declare interface Push {
    *
    * @param deregisterCallback - A function passed to override the default implementation to deregister the local device for push activation.
    */
-  deactivate(deregisterCallback: DeregisterCallback): Promise<void>;
+  deactivate(deregisterCallback?: DeregisterCallback): Promise<void>;
 }
 
 /**
