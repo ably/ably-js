@@ -7,6 +7,8 @@ This contains only the most important and/or user-facing changes; for a full cha
 - Adds `ANNOTATION_PUBLISH` and `ANNOTATION_SUBSCRIBE` channel modes.
 - Adds support for message annotations via `channel.annotations`.
 - The message action `meta.occupancy` is now renamed to `meta`. Similarly, `MessageActions.META` is now `MessageActions.META`.
+- Fixes a bug where `deactivate` would not use device auth, meaning clients would only be able to use it with the `push-admin` capability.
+- The push `deactivate` method's callback type is now optional when using TypeScript.
 
 ## [2.6.5](https://github.com/ably/ably-js/tree/2.6.5) (2025-03-24)
 
