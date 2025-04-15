@@ -623,19 +623,28 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       );
 
       const primitiveKeyData = [
-        { key: 'stringKey', data: { value: 'stringValue' } },
-        { key: 'emptyStringKey', data: { value: '' } },
+        { key: 'stringKey', data: { value: 'stringValue' }, restData: { string: 'stringValue' } },
+        { key: 'emptyStringKey', data: { value: '' }, restData: { string: '' } },
         {
           key: 'bytesKey',
           data: { value: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9', encoding: 'base64' },
+          restData: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
         },
-        { key: 'emptyBytesKey', data: { value: '', encoding: 'base64' } },
-        { key: 'maxSafeIntegerKey', data: { value: Number.MAX_SAFE_INTEGER } },
-        { key: 'negativeMaxSafeIntegerKey', data: { value: -Number.MAX_SAFE_INTEGER } },
-        { key: 'numberKey', data: { value: 1 } },
-        { key: 'zeroKey', data: { value: 0 } },
-        { key: 'trueKey', data: { value: true } },
-        { key: 'falseKey', data: { value: false } },
+        { key: 'emptyBytesKey', data: { value: '', encoding: 'base64' }, restData: { bytes: '' } },
+        {
+          key: 'maxSafeIntegerKey',
+          data: { value: Number.MAX_SAFE_INTEGER },
+          restData: { number: Number.MAX_SAFE_INTEGER },
+        },
+        {
+          key: 'negativeMaxSafeIntegerKey',
+          data: { value: -Number.MAX_SAFE_INTEGER },
+          restData: { number: -Number.MAX_SAFE_INTEGER },
+        },
+        { key: 'numberKey', data: { value: 1 }, restData: { number: 1 } },
+        { key: 'zeroKey', data: { value: 0 }, restData: { number: 0 } },
+        { key: 'trueKey', data: { value: true }, restData: { boolean: true } },
+        { key: 'falseKey', data: { value: false }, restData: { boolean: false } },
       ];
       const primitiveMapsFixtures = [
         { name: 'emptyMap' },
@@ -643,6 +652,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           name: 'valuesMap',
           entries: primitiveKeyData.reduce((acc, v) => {
             acc[v.key] = { data: v.data };
+            return acc;
+          }, {}),
+          restData: primitiveKeyData.reduce((acc, v) => {
+            acc[v.key] = v.restData;
             return acc;
           }, {}),
         },
@@ -720,7 +733,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp({ count: 1 }),
+              createOp: objectsHelper.counterCreateRestOp({ number: 1 }),
             });
             await counterCreatedPromise;
 
@@ -773,7 +786,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp({ count: 1 }),
+              createOp: objectsHelper.counterCreateRestOp({ number: 1 }),
             });
             await counterCreatedPromise;
 
@@ -844,7 +857,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 objectsHelper.createAndSetOnMap(channelName, {
                   mapObjectId: 'root',
                   key: fixture.name,
-                  createOp: objectsHelper.mapCreateOp({ entries: fixture.entries }),
+                  createOp: objectsHelper.mapCreateRestOp({ data: fixture.restData }),
                 }),
               ),
             );
@@ -903,21 +916,21 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const mapCreatedPromise = waitForMapKeyUpdate(root, withReferencesMapKey);
             // create map with references. need to create referenced objects first to obtain their object ids
-            const { objectId: referencedMapObjectId } = await objectsHelper.stateRequest(
+            const { objectId: referencedMapObjectId } = await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapCreateOp({ entries: { stringKey: { data: { value: 'stringValue' } } } }),
+              objectsHelper.mapCreateRestOp({ data: { stringKey: { string: 'stringValue' } } }),
             );
-            const { objectId: referencedCounterObjectId } = await objectsHelper.stateRequest(
+            const { objectId: referencedCounterObjectId } = await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.counterCreateOp({ count: 1 }),
+              objectsHelper.counterCreateRestOp({ number: 1 }),
             );
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: withReferencesMapKey,
-              createOp: objectsHelper.mapCreateOp({
-                entries: {
-                  mapReference: { data: { objectId: referencedMapObjectId } },
-                  counterReference: { data: { objectId: referencedCounterObjectId } },
+              createOp: objectsHelper.mapCreateRestOp({
+                data: {
+                  mapReference: { objectId: referencedMapObjectId },
+                  counterReference: { objectId: referencedCounterObjectId },
                 },
               }),
             });
@@ -1060,12 +1073,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // apply MAP_SET ops
             await Promise.all(
               primitiveKeyData.map((keyData) =>
-                objectsHelper.stateRequest(
+                objectsHelper.operationRequest(
                   channelName,
-                  objectsHelper.mapSetOp({
+                  objectsHelper.mapSetRestOp({
                     objectId: 'root',
                     key: keyData.key,
-                    data: keyData.data,
+                    value: keyData.restData,
                   }),
                 ),
               ),
@@ -1113,15 +1126,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'keyToCounter',
-              createOp: objectsHelper.counterCreateOp({ count: 1 }),
+              createOp: objectsHelper.counterCreateRestOp({ number: 1 }),
             });
 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'keyToMap',
-              createOp: objectsHelper.mapCreateOp({
-                entries: {
-                  stringKey: { data: { value: 'stringValue' } },
+              createOp: objectsHelper.mapCreateRestOp({
+                data: {
+                  stringKey: { string: 'stringValue' },
                 },
               }),
             });
@@ -1230,10 +1243,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: mapKey,
-              createOp: objectsHelper.mapCreateOp({
-                entries: {
-                  shouldStay: { data: { value: 'foo' } },
-                  shouldDelete: { data: { value: 'bar' } },
+              createOp: objectsHelper.mapCreateRestOp({
+                data: {
+                  shouldStay: { string: 'foo' },
+                  shouldDelete: { string: 'bar' },
                 },
               }),
             });
@@ -1256,9 +1269,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const keyRemovedPromise = waitForMapKeyUpdate(map, 'shouldDelete');
             // send MAP_REMOVE op
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapRemoveOp({
+              objectsHelper.mapRemoveRestOp({
                 objectId: mapObjectId,
                 key: 'shouldDelete',
               }),
@@ -1377,7 +1390,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 objectsHelper.createAndSetOnMap(channelName, {
                   mapObjectId: 'root',
                   key: fixture.name,
-                  createOp: objectsHelper.counterCreateOp({ count: fixture.count }),
+                  createOp: objectsHelper.counterCreateRestOp({ number: fixture.count }),
                 }),
               ),
             );
@@ -1487,7 +1500,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: counterKey,
-              createOp: objectsHelper.counterCreateOp({ count: expectedCounterValue }),
+              createOp: objectsHelper.counterCreateRestOp({ number: expectedCounterValue }),
             });
             await counterCreated;
 
@@ -1521,11 +1534,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               expectedCounterValue += increment;
 
               const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await objectsHelper.stateRequest(
+              await objectsHelper.operationRequest(
                 channelName,
-                objectsHelper.counterIncOp({
+                objectsHelper.counterIncRestOp({
                   objectId: counterObjectId,
-                  amount: increment,
+                  number: increment,
                 }),
               );
               await counterUpdatedPromise;
@@ -1597,12 +1610,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: objectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateRestOp(),
             });
             const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await objectsCreatedPromise;
 
@@ -1748,17 +1761,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: objectsHelper.mapCreateOp({
-                entries: {
-                  foo: { data: { value: 'bar' } },
-                  baz: { data: { value: 1 } },
+              createOp: objectsHelper.mapCreateRestOp({
+                data: {
+                  foo: { string: 'bar' },
+                  baz: { number: 1 },
                 },
               }),
             });
             const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp({ count: 1 }),
+              createOp: objectsHelper.counterCreateRestOp({ number: 1 }),
             });
             await objectsCreatedPromise;
 
@@ -1817,7 +1830,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'foo',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await objectCreatedPromise;
 
@@ -1858,17 +1871,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const { objectId: mapId1 } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map1',
-              createOp: objectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateRestOp(),
             });
             const { objectId: mapId2 } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map2',
-              createOp: objectsHelper.mapCreateOp({ entries: { foo: { data: { value: 'bar' } } } }),
+              createOp: objectsHelper.mapCreateRestOp({ data: { foo: { string: 'bar' } } }),
             });
             const { objectId: counterId1 } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter1',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await objectsCreatedPromise;
 
@@ -2226,12 +2239,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
             // send some more operations
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapSetOp({
+              objectsHelper.mapSetRestOp({
                 objectId: 'root',
                 key: 'foo',
-                data: { value: 'bar' },
+                value: { string: 'bar' },
               }),
             );
             await keyUpdatedPromise;
@@ -2271,7 +2284,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await counterCreatedPromise;
 
@@ -2314,7 +2327,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await counterCreatedPromise;
 
@@ -2381,7 +2394,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await counterCreatedPromise;
 
@@ -2424,7 +2437,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await counterCreatedPromise;
 
@@ -2529,12 +2542,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: objectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateRestOp(),
             });
             await objectsCreatedPromise;
 
@@ -2569,7 +2582,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: objectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateRestOp(),
             });
             await mapCreatedPromise;
 
@@ -2604,11 +2617,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: objectsHelper.mapCreateOp({
-                entries: {
-                  foo: { data: { value: 1 } },
-                  bar: { data: { value: 1 } },
-                  baz: { data: { value: 1 } },
+              createOp: objectsHelper.mapCreateRestOp({
+                data: {
+                  foo: { number: 1 },
+                  bar: { number: 1 },
+                  baz: { number: 1 },
                 },
               }),
             });
@@ -2639,7 +2652,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: objectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateRestOp(),
             });
             await mapCreatedPromise;
 
@@ -2886,12 +2899,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
-              createOp: objectsHelper.counterCreateOp(),
+              createOp: objectsHelper.counterCreateRestOp(),
             });
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
-              createOp: objectsHelper.mapCreateOp(),
+              createOp: objectsHelper.mapCreateRestOp(),
             });
             await objectsCreatedPromise;
 
@@ -3580,11 +3593,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               }),
             );
 
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.counterIncOp({
+              objectsHelper.counterIncRestOp({
                 objectId: sampleCounterObjectId,
-                amount: 1,
+                number: 1,
               }),
             );
 
@@ -3623,11 +3636,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
 
             for (const increment of expectedCounterIncrements) {
-              await objectsHelper.stateRequest(
+              await objectsHelper.operationRequest(
                 channelName,
-                objectsHelper.counterIncOp({
+                objectsHelper.counterIncRestOp({
                   objectId: sampleCounterObjectId,
-                  amount: increment,
+                  number: increment,
                 }),
               );
             }
@@ -3657,12 +3670,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               }),
             );
 
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapSetOp({
+              objectsHelper.mapSetRestOp({
                 objectId: sampleMapObjectId,
                 key: 'stringKey',
-                data: { value: 'stringValue' },
+                value: { string: 'stringValue' },
               }),
             );
 
@@ -3691,9 +3704,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               }),
             );
 
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapRemoveOp({
+              objectsHelper.mapRemoveRestOp({
                 objectId: sampleMapObjectId,
                 key: 'stringKey',
               }),
@@ -3738,44 +3751,44 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               }),
             );
 
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapSetOp({
+              objectsHelper.mapSetRestOp({
                 objectId: sampleMapObjectId,
                 key: 'foo',
-                data: { value: 'something' },
+                value: { string: 'something' },
               }),
             );
 
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapSetOp({
+              objectsHelper.mapSetRestOp({
                 objectId: sampleMapObjectId,
                 key: 'bar',
-                data: { value: 'something' },
+                value: { string: 'something' },
               }),
             );
 
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapRemoveOp({
+              objectsHelper.mapRemoveRestOp({
                 objectId: sampleMapObjectId,
                 key: 'foo',
               }),
             );
 
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapSetOp({
+              objectsHelper.mapSetRestOp({
                 objectId: sampleMapObjectId,
                 key: 'baz',
-                data: { value: 'something' },
+                value: { string: 'something' },
               }),
             );
 
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapRemoveOp({
+              objectsHelper.mapRemoveRestOp({
                 objectId: sampleMapObjectId,
                 key: 'bar',
               }),
@@ -3804,11 +3817,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const increments = 3;
             for (let i = 0; i < increments; i++) {
               const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await objectsHelper.stateRequest(
+              await objectsHelper.operationRequest(
                 channelName,
-                objectsHelper.counterIncOp({
+                objectsHelper.counterIncRestOp({
                   objectId: sampleCounterObjectId,
-                  amount: 1,
+                  number: 1,
                 }),
               );
               await counterUpdatedPromise;
@@ -3842,11 +3855,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const increments = 3;
             for (let i = 0; i < increments; i++) {
               const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await objectsHelper.stateRequest(
+              await objectsHelper.operationRequest(
                 channelName,
-                objectsHelper.counterIncOp({
+                objectsHelper.counterIncRestOp({
                   objectId: sampleCounterObjectId,
-                  amount: 1,
+                  number: 1,
                 }),
               );
               await counterUpdatedPromise;
@@ -3882,11 +3895,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const increments = 3;
             for (let i = 0; i < increments; i++) {
               const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await objectsHelper.stateRequest(
+              await objectsHelper.operationRequest(
                 channelName,
-                objectsHelper.counterIncOp({
+                objectsHelper.counterIncRestOp({
                   objectId: sampleCounterObjectId,
-                  amount: 1,
+                  number: 1,
                 }),
               );
               await counterUpdatedPromise;
@@ -3923,12 +3936,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const mapSets = 3;
             for (let i = 0; i < mapSets; i++) {
               const mapUpdatedPromise = waitForMapKeyUpdate(map, `foo-${i}`);
-              await objectsHelper.stateRequest(
+              await objectsHelper.operationRequest(
                 channelName,
-                objectsHelper.mapSetOp({
+                objectsHelper.mapSetRestOp({
                   objectId: sampleMapObjectId,
                   key: `foo-${i}`,
-                  data: { value: 'exists' },
+                  value: { string: 'exists' },
                 }),
               );
               await mapUpdatedPromise;
@@ -3967,12 +3980,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const mapSets = 3;
             for (let i = 0; i < mapSets; i++) {
               const mapUpdatedPromise = waitForMapKeyUpdate(map, `foo-${i}`);
-              await objectsHelper.stateRequest(
+              await objectsHelper.operationRequest(
                 channelName,
-                objectsHelper.mapSetOp({
+                objectsHelper.mapSetRestOp({
                   objectId: sampleMapObjectId,
                   key: `foo-${i}`,
-                  data: { value: 'exists' },
+                  value: { string: 'exists' },
                 }),
               );
               await mapUpdatedPromise;
@@ -4013,12 +4026,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const mapSets = 3;
             for (let i = 0; i < mapSets; i++) {
               const mapUpdatedPromise = waitForMapKeyUpdate(map, `foo-${i}`);
-              await objectsHelper.stateRequest(
+              await objectsHelper.operationRequest(
                 channelName,
-                objectsHelper.mapSetOp({
+                objectsHelper.mapSetRestOp({
                   objectId: sampleMapObjectId,
                   key: `foo-${i}`,
-                  data: { value: 'exists' },
+                  value: { string: 'exists' },
                 }),
               );
               await mapUpdatedPromise;
@@ -4065,12 +4078,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const { objectId: sampleMapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
             mapObjectId: 'root',
             key: sampleMapKey,
-            createOp: objectsHelper.mapCreateOp(),
+            createOp: objectsHelper.mapCreateRestOp(),
           });
           const { objectId: sampleCounterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
             mapObjectId: 'root',
             key: sampleCounterKey,
-            createOp: objectsHelper.counterCreateOp(),
+            createOp: objectsHelper.counterCreateRestOp(),
           });
           await objectsCreatedPromise;
 
@@ -4097,9 +4110,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const counterCreatedPromise = waitForObjectOperation(helper, client, ObjectsHelper.ACTIONS.COUNTER_CREATE);
             // send a CREATE op, this adds an object to the pool
-            const { objectId } = await objectsHelper.stateRequest(
+            const { objectId } = await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.counterCreateOp({ count: 1 }),
+              objectsHelper.counterCreateRestOp({ number: 1 }),
             );
             await counterCreatedPromise;
 
@@ -4146,9 +4159,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
             // set a key on a root
-            await objectsHelper.stateRequest(
+            await objectsHelper.operationRequest(
               channelName,
-              objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 'bar' } }),
+              objectsHelper.mapSetRestOp({ objectId: 'root', key: 'foo', value: { string: 'bar' } }),
             );
             await keyUpdatedPromise;
 
@@ -4156,7 +4169,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const keyUpdatedPromise2 = waitForMapKeyUpdate(root, 'foo');
             // remove the key from the root. this should tombstone the map entry and make it inaccessible to the end user, but still keep it in memory in the underlying map
-            await objectsHelper.stateRequest(channelName, objectsHelper.mapRemoveOp({ objectId: 'root', key: 'foo' }));
+            await objectsHelper.operationRequest(
+              channelName,
+              objectsHelper.mapRemoveRestOp({ objectId: 'root', key: 'foo' }),
+            );
             await keyUpdatedPromise2;
 
             expect(root.get('foo'), 'Check key "foo" is inaccessible via public API on root after MAP_REMOVE').to.not

@@ -14,6 +14,14 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
     COUNTER_INC: 4,
     OBJECT_DELETE: 5,
   };
+  const ACTION_STRINGS = {
+    MAP_CREATE: 'MAP_CREATE',
+    MAP_SET: 'MAP_SET',
+    MAP_REMOVE: 'MAP_REMOVE',
+    COUNTER_CREATE: 'COUNTER_CREATE',
+    COUNTER_INC: 'COUNTER_INC',
+    OBJECT_DELETE: 'OBJECT_DELETE',
+  };
 
   function nonce() {
     return Helper.randomString();
@@ -45,61 +53,49 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
       const emptyCounter = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'emptyCounter',
-        createOp: this.counterCreateOp(),
+        createOp: this.counterCreateRestOp(),
       });
       const initialValueCounter = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'initialValueCounter',
-        createOp: this.counterCreateOp({ count: 10 }),
+        createOp: this.counterCreateRestOp({ number: 10 }),
       });
       const referencedCounter = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'referencedCounter',
-        createOp: this.counterCreateOp({ count: 20 }),
+        createOp: this.counterCreateRestOp({ number: 20 }),
       });
 
       const emptyMap = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'emptyMap',
-        createOp: this.mapCreateOp(),
+        createOp: this.mapCreateRestOp(),
       });
       const referencedMap = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'referencedMap',
-        createOp: this.mapCreateOp({ entries: { counterKey: { data: { objectId: referencedCounter.objectId } } } }),
+        createOp: this.mapCreateRestOp({ data: { counterKey: { objectId: referencedCounter.objectId } } }),
       });
       const valuesMap = await this.createAndSetOnMap(channelName, {
         mapObjectId: 'root',
         key: 'valuesMap',
-        createOp: this.mapCreateOp({
-          entries: {
-            stringKey: { data: { value: 'stringValue' } },
-            emptyStringKey: { data: { value: '' } },
-            bytesKey: {
-              data: { value: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9', encoding: 'base64' },
-            },
-            emptyBytesKey: { data: { value: '', encoding: 'base64' } },
-            numberKey: { data: { value: 1 } },
-            zeroKey: { data: { value: 0 } },
-            trueKey: { data: { value: true } },
-            falseKey: { data: { value: false } },
-            mapKey: { data: { objectId: referencedMap.objectId } },
+        createOp: this.mapCreateRestOp({
+          data: {
+            stringKey: { string: 'stringValue' },
+            emptyStringKey: { string: '' },
+            bytesKey: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
+            emptyBytesKey: { bytes: '' },
+            numberKey: { number: 1 },
+            zeroKey: { number: 0 },
+            trueKey: { boolean: true },
+            falseKey: { boolean: false },
+            mapKey: { objectId: referencedMap.objectId },
           },
         }),
       });
     }
 
-    async createAndSetOnMap(channelName, opts) {
-      const { mapObjectId, key, createOp } = opts;
-
-      const createResult = await this.stateRequest(channelName, createOp);
-      await this.stateRequest(
-        channelName,
-        this.mapSetOp({ objectId: mapObjectId, key, data: { objectId: createResult.objectId } }),
-      );
-
-      return createResult;
-    }
+    // #region Wire Object Messages
 
     mapCreateOp(opts) {
       const { objectId, entries } = opts ?? {};
@@ -297,17 +293,97 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
       );
     }
 
-    fakeMapObjectId() {
-      return `map:${Helper.randomString()}@${Date.now()}`;
+    // #endregion
+
+    // #region REST API Operations
+
+    async createAndSetOnMap(channelName, opts) {
+      const { mapObjectId, key, createOp } = opts;
+
+      const createResult = await this.operationRequest(channelName, createOp);
+      const objectId = createResult.objectId;
+      await this.operationRequest(channelName, this.mapSetRestOp({ objectId: mapObjectId, key, value: { objectId } }));
+
+      return createResult;
     }
 
-    fakeCounterObjectId() {
-      return `counter:${Helper.randomString()}@${Date.now()}`;
+    mapCreateRestOp(opts) {
+      const { objectId, nonce, data } = opts ?? {};
+      const opBody = {
+        operation: ACTION_STRINGS.MAP_CREATE,
+      };
+
+      if (data) {
+        opBody.data = data;
+      }
+
+      if (objectId != null) {
+        opBody.objectId = objectId;
+        opBody.nonce = nonce;
+      }
+
+      return opBody;
     }
 
-    async stateRequest(channelName, opBody) {
+    mapSetRestOp(opts) {
+      const { objectId, key, value } = opts ?? {};
+      const opBody = {
+        operation: ACTION_STRINGS.MAP_SET,
+        objectId,
+        data: {
+          key,
+          value,
+        },
+      };
+
+      return opBody;
+    }
+
+    mapRemoveRestOp(opts) {
+      const { objectId, key } = opts ?? {};
+      const opBody = {
+        operation: ACTION_STRINGS.MAP_REMOVE,
+        objectId,
+        data: {
+          key,
+        },
+      };
+
+      return opBody;
+    }
+
+    counterCreateRestOp(opts) {
+      const { objectId, nonce, number } = opts ?? {};
+      const opBody = {
+        operation: ACTION_STRINGS.COUNTER_CREATE,
+      };
+
+      if (number != null) {
+        opBody.data = { number };
+      }
+
+      if (objectId != null) {
+        opBody.objectId = objectId;
+        opBody.nonce = nonce;
+      }
+
+      return opBody;
+    }
+
+    counterIncRestOp(opts) {
+      const { objectId, number } = opts ?? {};
+      const opBody = {
+        operation: ACTION_STRINGS.COUNTER_INC,
+        objectId,
+        data: { number },
+      };
+
+      return opBody;
+    }
+
+    async operationRequest(channelName, opBody) {
       if (Array.isArray(opBody)) {
-        throw new Error(`Only single object state requests are supported`);
+        throw new Error(`Only single object operation requests are supported`);
       }
 
       const method = 'post';
@@ -316,9 +392,9 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
       const response = await this._rest.request(method, path, 3, null, opBody, null);
 
       if (response.success) {
-        // only one operation in request, so need only first item.
+        // only one operation in the request, so need only the first item.
         const result = response.items[0];
-        // extract object id if present
+        // extract objectId if present
         result.objectId = result.objectIds?.[0];
         return result;
       }
@@ -326,6 +402,16 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
       throw new Error(
         `${method}: ${path} FAILED; http code = ${response.statusCode}, error code = ${response.errorCode}, message = ${response.errorMessage}; operation = ${JSON.stringify(opBody)}`,
       );
+    }
+
+    // #endregion
+
+    fakeMapObjectId() {
+      return `map:${Helper.randomString()}@${Date.now()}`;
+    }
+
+    fakeCounterObjectId() {
+      return `counter:${Helper.randomString()}@${Date.now()}`;
     }
   }
 
