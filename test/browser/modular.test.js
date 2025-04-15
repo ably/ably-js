@@ -889,7 +889,10 @@ function registerAblyModularTests(Helper) {
         it('doesn’t break when it receives an ANNOTATION ProtocolMessage', async function () {
           const helper = this.test.helper;
           const rxClient = new BaseRealtime(
-            helper.ablyClientOptions({ plugins: { WebSocketTransport, FetchRequest } }),
+            helper.ablyClientOptions({
+              clientId: Helper.randomString(10),
+              plugins: { WebSocketTransport, FetchRequest },
+            }),
           );
           const channelName = 'mutable:annotation-1';
 
@@ -902,6 +905,7 @@ function registerAblyModularTests(Helper) {
 
             const txClient = new BaseRealtime(
               this.test.helper.ablyClientOptions({
+                clientId: Helper.randomString(10),
                 plugins: {
                   WebSocketTransport,
                   FetchRequest,
@@ -935,6 +939,7 @@ function registerAblyModularTests(Helper) {
           const channelName = 'mutable:annotation-2';
           const rxClient = new BaseRealtime(
             helper.ablyClientOptions({
+              clientId: Helper.randomString(10),
               plugins: {
                 WebSocketTransport,
                 FetchRequest,
@@ -949,6 +954,7 @@ function registerAblyModularTests(Helper) {
           await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
             const txRealtime = new BaseRealtime(
               this.test.helper.ablyClientOptions({
+                clientId: Helper.randomString(10),
                 plugins: {
                   WebSocketTransport,
                   FetchRequest,
@@ -958,6 +964,7 @@ function registerAblyModularTests(Helper) {
             );
             const txRest = new BaseRest(
               this.test.helper.ablyClientOptions({
+                clientId: Helper.randomString(10),
                 plugins: {
                   FetchRequest,
                   Annotations,

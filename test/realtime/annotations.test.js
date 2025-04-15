@@ -14,13 +14,13 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           done(err);
           return;
         }
-        rest = helper.AblyRest();
+        rest = helper.AblyRest({ clientId: Helper.randomString(10) });
         done();
       });
     });
 
     beforeEach(async () => {
-      realtime = helper.AblyRealtime();
+      realtime = helper.AblyRealtime({ clientId: Helper.randomString(10) });
     });
 
     afterEach(async () => {

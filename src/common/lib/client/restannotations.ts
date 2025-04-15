@@ -78,6 +78,8 @@ class RestAnnotations {
       headers = Defaults.defaultPostHeaders(client.options, { format }),
       params = {};
 
+    Utils.mixin(headers, client.options.headers);
+
     const requestBody = Utils.encodeBody([wireAnnotation], client._MsgPack, format);
 
     await Resource.post(
