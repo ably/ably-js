@@ -370,7 +370,7 @@ export function strMsg(m: any, cls: string) {
         result += '; data=' + m.data;
       } else if (Platform.BufferUtils.isBuffer(m.data)) {
         result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(m.data);
-      } else {
+      } else if (typeof m.data !== 'undefined') {
         result += '; data (json)=' + JSON.stringify(m.data);
       }
     } else if (attr && (attr === 'extras' || attr === 'operation')) {
