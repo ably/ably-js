@@ -59,6 +59,8 @@ class Annotation extends BaseMessage {
   serial?: string;
   messageSerial?: string;
   type?: string;
+  name?: string;
+  count?: number;
 
   async encode(): Promise<WireAnnotation> {
     const res = Object.assign(new WireAnnotation(), this, {
@@ -87,6 +89,8 @@ export class WireAnnotation extends BaseMessage {
   serial?: string;
   messageSerial?: string;
   type?: string;
+  name?: string;
+  count?: number;
 
   toJSON(...args: any[]) {
     return wireToJSON.call(this, ...args);
