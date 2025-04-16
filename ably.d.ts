@@ -550,7 +550,7 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   /**
    * A set of key-value pairs that can be used to pass in arbitrary connection parameters, such as [`heartbeatInterval`](https://ably.com/docs/realtime/connection#heartbeats) or [`remainPresentFor`](https://ably.com/docs/realtime/presence#unstable-connections).
    */
-  transportParams?: { [k: string]: string | number };
+  transportParams?: { [k: string]: string | number | boolean };
 
   /**
    * An array of transports to use, in descending order of preference. In the browser environment the available transports are: `web_socket` and `xhr`.
@@ -716,6 +716,10 @@ export type capabilityOp =
   | 'publish'
   | 'subscribe'
   | 'presence'
+  | 'message-update-any'
+  | 'message-update-own'
+  | 'message-delete-any'
+  | 'message-delete-own'
   | 'history'
   | 'stats'
   | 'channel-metadata'
@@ -858,31 +862,41 @@ declare namespace ChannelModes {
   /**
    * The client can publish messages.
    */
-  type PUBLISH = 'PUBLISH';
+  type PUBLISH = 'PUBLISH' | 'publish';
   /**
-   * The client can subscribe to messages.
+   * The client will receive messages.
    */
-  type SUBSCRIBE = 'SUBSCRIBE';
+  type SUBSCRIBE = 'SUBSCRIBE' | 'subscribe';
   /**
    * The client can enter the presence set.
    */
-  type PRESENCE = 'PRESENCE';
+  type PRESENCE = 'PRESENCE' | 'presence';
   /**
-   * The client can receive presence messages.
+   * The client will receive presence messages.
    */
-  type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE';
+  type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE' | 'presence_subscribe';
   /**
    * The client can publish object messages.
    */
-  type OBJECT_PUBLISH = 'OBJECT_PUBLISH';
+  type OBJECT_PUBLISH = 'OBJECT_PUBLISH' | 'object_publish';
   /**
    * The client can receive object messages.
    */
-  type OBJECT_SUBSCRIBE = 'OBJECT_SUBSCRIBE';
+  type OBJECT_SUBSCRIBE = 'OBJECT_SUBSCRIBE' | 'object_subscribe';
+  /**
+   * The client can publish annotations.
+   */
+  type ANNOTATION_PUBLISH = 'ANNOTATION_PUBLISH' | 'annotation_publish';
+  /**
+   * The client will receive annotations.
+   */
+  type ANNOTATION_SUBSCRIBE = 'ANNOTATION_SUBSCRIBE' | 'annotation_subscribe';
 }
 
 /**
  * Describes the possible flags used to configure client capabilities, using {@link ChannelOptions}.
+ *
+ * **Note:** This type admits uppercase or lowercase values for reasons of backwards compatibility. In the next major release of this SDK, it will be merged with {@link ResolvedChannelMode} and only admit lowercase values; see [this GitHub issue](https://github.com/ably/ably-js/issues/1954).
  */
 export type ChannelMode =
   | ChannelModes.PUBLISH
@@ -890,7 +904,54 @@ export type ChannelMode =
   | ChannelModes.PRESENCE
   | ChannelModes.PRESENCE_SUBSCRIBE
   | ChannelModes.OBJECT_PUBLISH
-  | ChannelModes.OBJECT_SUBSCRIBE;
+  | ChannelModes.OBJECT_SUBSCRIBE
+  | ChannelModes.ANNOTATION_PUBLISH
+  | ChannelModes.ANNOTATION_SUBSCRIBE;
+
+/**
+ * The `ResolvedChannelModes` namespace describes the possible values of the {@link ResolvedChannelMode} type.
+ */
+declare namespace ResolvedChannelModes {
+  /**
+   * The client can publish messages.
+   */
+  type PUBLISH = 'publish';
+  /**
+   * The client can subscribe to messages.
+   */
+  type SUBSCRIBE = 'subscribe';
+  /**
+   * The client can enter the presence set.
+   */
+  type PRESENCE = 'presence';
+  /**
+   * The client can receive presence messages.
+   */
+  type PRESENCE_SUBSCRIBE = 'presence_subscribe';
+  /**
+   * The client can publish object messages.
+   */
+  type OBJECT_PUBLISH = 'object_publish';
+  /**
+   * The client can receive object messages.
+   */
+  type OBJECT_SUBSCRIBE = 'object_subscribe';
+}
+
+/**
+ * Describes the configuration that a {@link RealtimeChannel} is using, as returned by {@link RealtimeChannel.modes}.
+ *
+ * This type is the same as the {@link ChannelMode} type but with all of the values lowercased.
+ *
+ * **Note:** This type exists for reasons of backwards compatibility. In the next major release of this SDK, it will be merged with {@link ChannelMode}; see [this GitHub issue](https://github.com/ably/ably-js/issues/1954).
+ */
+export type ResolvedChannelMode =
+  | ResolvedChannelModes.PUBLISH
+  | ResolvedChannelModes.SUBSCRIBE
+  | ResolvedChannelModes.PRESENCE
+  | ResolvedChannelModes.PRESENCE_SUBSCRIBE
+  | ResolvedChannelModes.OBJECT_PUBLISH
+  | ResolvedChannelModes.OBJECT_SUBSCRIBE;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
@@ -908,6 +969,13 @@ export interface ChannelOptions {
    * An array of {@link ChannelMode} objects.
    */
   modes?: ChannelMode[];
+  /**
+   *  A boolean which determines whether calling subscribe
+   *  on a channel or presence object should trigger an implicit attach. Defaults to `true`
+   *
+   *  Note: this option is for realtime client libraries only
+   */
+  attachOnSubscribe?: boolean;
 }
 
 /**
@@ -945,6 +1013,18 @@ export interface RestHistoryParams {
   direction?: 'forwards' | 'backwards';
   /**
    * An upper limit on the number of messages returned. The default is 100, and the maximum is 1000.
+   *
+   * @defaultValue 100
+   */
+  limit?: number;
+}
+
+/**
+ * Describes the parameters accepted by {@link RestAnnotations.get}.
+ */
+export interface GetAnnotationsParams {
+  /**
+   * An upper limit on the number of annotations returned. The default is 100, and the maximum is 1000.
    *
    * @defaultValue 100
    */
@@ -2014,6 +2094,106 @@ export declare interface RealtimePresence {
 }
 
 /**
+ * Functionality for annotating messages with small pieces of data, such as emoji
+ * reactions, that the server will roll up into the message as a summary.
+ */
+export declare interface RealtimeAnnotations {
+  /**
+   * Registers a listener that is called each time an {@link Annotation} matching a given type is received on the channel.
+   * Note that if you want to receive individual realtime annotations (instead of just the rolled-up summaries), you will need to request the annotation_subscribe ChannelMode in ChannelOptions, since they are not delivered by default. In general, most clients will not bother with subscribing to individual annotations, and will instead just look at the summary updates.
+   *
+   * @param type - A specific type string or an array of them to register the listener for.
+   * @param listener - An event listener function.
+   * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  subscribe(type: string | Array<string>, listener?: messageCallback<PresenceMessage>): Promise<void>;
+  /**
+   * Registers a listener that is called each time an {@link Annotation} is received on the channel.
+   * Note that if you want to receive individual realtime annotations (instead of just the rolled-up summaries), you will need to request the annotation_subscribe ChannelMode in ChannelOptions, since they are not delivered by default. In general, most clients will not bother with subscribing to individual annotations, and will instead just look at the summary updates.
+   *
+   * @param listener - An event listener function.
+   * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  subscribe(listener?: messageCallback<Annotation>): Promise<void>;
+  /**
+   * Deregisters a specific listener that is registered to receive {@link Annotation} on the channel for a given type.
+   *
+   * @param type - A specific annotation type (or array of types) to deregister the listener for.
+   * @param listener - An event listener function.
+   */
+  unsubscribe(type: string | Array<string>, listener: messageCallback<Annotation>): void;
+  /**
+   * Deregisters any listener that is registered to receive {@link Annotation} on the channel for a specific type.
+   *
+   * @param type - A specific annotation type (or array of types) to deregister the listeners for.
+   */
+  unsubscribe(type: string | Array<string>): void;
+  /**
+   * Deregisters a specific listener that is registered to receive {@link Annotation} on the channel.
+   *
+   * @param listener - An event listener function.
+   */
+  unsubscribe(listener: messageCallback<Annotation>): void;
+  /**
+   * Deregisters all listeners currently receiving {@link Annotation} for the channel.
+   */
+  unsubscribe(): void;
+  /**
+   * Publish a new annotation for a message.
+   *
+   * @param message - The message to annotate.
+   * @param annotation - The annotation to publish. (Must include at least the `type`;
+   * other required fields depend on the annotation type).
+   */
+  publish(message: Message, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Publish a new annotation for a message (alternative form where you only have the
+   * serial of the message, not a complete Message object)
+   *
+   * @param messageSerial - The serial field of the message to annotate.
+   * @param annotation - The annotation to publish. (Must include at least the `type`;
+   * other required fields depend on the annotation type).
+   */
+  publish(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Publish an annotation removal request for a message, to remove it from the summary
+   * summaries. The semantics of the delete (and what fields are required) are different
+   * for each annotation type; see annotation types documentation for more details.
+   *
+   * @param message - The message which has an annotation that you want to delete.
+   * @param annotation - The annotation deletion request. (Must include at least the
+   * `type`, other required fields depend on the type).
+   */
+  delete(message: Message, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Publish an annotation removal request for a message, to remove it from the summary
+   * summaries. The semantics of the delete (and what fields are required) are different
+   * for each annotation type; see annotation types documentation for more details.
+   *
+   * @param messageSerial - The serial field of the message which has an annotation that
+   * you want to delete.
+   * @param annotation - The annotation deletion request. (Must include at least the
+   * `type`, other required fields depend on the type).
+   */
+  delete(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Get all annotations for a given message (as a paginated result)
+   *
+   * @param message - The message to get annotations for.
+   * @param params - Restrictions on which annotations to get (in particular a limit)
+   */
+  get(message: Message, params: GetAnnotationsParams | null): Promise<PaginatedResult<Annotation>>;
+  /**
+   * Get all annotations for a given message (as a paginated result) (alternative form
+   * where you only have the serial of the message, not a complete Message object)
+   *
+   * @param messageSerial - The `serial` of the message to get annotations for.
+   * @param params - Restrictions on which annotations to get (in particular a limit)
+   */
+  get(messageSerial: string, params: GetAnnotationsParams | null): Promise<PaginatedResult<Annotation>>;
+}
+
+/**
  * Enables devices to subscribe to push notifications for a channel.
  */
 export declare interface PushChannel {
@@ -2553,6 +2733,10 @@ export declare interface Channel {
    */
   presence: Presence;
   /**
+   * {@link RestAnnotations}
+   */
+  annotations: RestAnnotations;
+  /**
    * A {@link PushChannel} object.
    */
   push: PushChannel;
@@ -2597,6 +2781,45 @@ export declare interface Channel {
 }
 
 /**
+ * Functionality for annotating messages with small pieces of data, such as emoji
+ * reactions, that the server will roll up into the message as a summary.
+ */
+export declare interface RestAnnotations {
+  /**
+   * Publish a new annotation for a message.
+   *
+   * @param message - The message to annotate.
+   * @param annotation - The annotation to publish. (Must include at least the `type`.
+   * Assumed to be an annotation.create if no action is specified)
+   */
+  publish(message: Message, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Publish a new annotation for a message (alternative form where you only have the
+   * serial of the message, not a complete Message object)
+   *
+   * @param messageSerial - The serial field of the message to annotate.
+   * @param annotation - The annotation to publish. (Must include at least the `type`.
+   * Assumed to be an annotation.create if no action is specified)
+   */
+  publish(messageSerial: string, annotation: OutboundAnnotation): Promise<void>;
+  /**
+   * Get all annotations for a given message (as a paginated result)
+   *
+   * @param message - The message to get annotations for.
+   * @param params - Restrictions on which annotations to get (in particular a limit)
+   */
+  get(message: Message, params: GetAnnotationsParams | null): Promise<PaginatedResult<Annotation>>;
+  /**
+   * Get all annotations for a given message (as a paginated result) (alternative form
+   * where you only have the serial of the message, not a complete Message object)
+   *
+   * @param messageSerial - The `serial` of the message to get annotations for.
+   * @param params - Restrictions on which annotations to get (in particular a limit)
+   */
+  get(messageSerial: string, params: GetAnnotationsParams | null): Promise<PaginatedResult<Annotation>>;
+}
+
+/**
  * Enables messages to be published and subscribed to. Also enables historic messages to be retrieved and provides access to the {@link RealtimePresence} object of a channel.
  */
 export declare interface RealtimeChannel extends EventEmitter<channelEventCallback, ChannelStateChange, ChannelEvent> {
@@ -2617,9 +2840,9 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   params: ChannelParams;
   /**
-   * An array of {@link ChannelMode} objects.
+   * An array of {@link ResolvedChannelMode} objects.
    */
-  modes: ChannelMode[];
+  modes: ResolvedChannelMode[];
   /**
    * Deregisters the given listener for the specified event name. This removes an earlier event-specific subscription.
    *
@@ -2668,6 +2891,14 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * A {@link RealtimePresence} object.
    */
   presence: RealtimePresence;
+  /**
+   * A {@link PushChannel} object.
+   */
+  push: PushChannel;
+  /**
+   * A {@link RealtimeAnnotations} object.
+   */
+  annotations: RealtimeAnnotations;
   /**
    * An {@link Objects} object.
    */
@@ -2769,6 +3000,11 @@ export type PublishOptions = {
    * See [here](https://faqs.ably.com/why-are-some-rest-publishes-on-a-channel-slow-and-then-typically-faster-on-subsequent-publishes).
    */
   quickAck?: boolean;
+  /**
+   * Support any publish options that may be added serverside without needing
+   * typings changes.
+   */
+  [k: string]: string | number | boolean | undefined;
 };
 
 /**
@@ -2830,6 +3066,64 @@ export declare interface Channels<T> {
    */
   release(name: string): void;
 }
+
+/** The summary entry for aggregated annotations that use the distinct.v1
+ * aggregation method. */
+export interface SummaryDistinctValues {
+  [key: string]: SummaryClientIdList;
+}
+
+/** The summary entry for aggregated annotations that use the unique.v1
+ * aggregation method. */
+interface SummaryUniqueValues {
+  [key: string]: SummaryClientIdList;
+}
+
+/** The summary entry for aggregated annotations that use the multiple.v1
+ * aggregation method. */
+export interface SummaryMultipleValues {
+  [key: string]: SummaryClientIdCounts;
+}
+
+/** The summary entry for aggregated annotations that use the flag.v1
+ * aggregation method; also the per-name value for some other aggregation methods. */
+export interface SummaryClientIdList {
+  /** The total number of clients who have published an annotation with this name (or
+   * type, depending on context). */
+  total: number;
+  /** A list of the clientIds of all clients who have published an annotation with this name (or
+   * type, depending on context). */
+  clientIds: string[];
+}
+
+/** The per-name value for the multiple.v1 aggregation method. */
+export interface SummaryClientIdCounts {
+  /** The sum of the counts from all clients who have published an annotation with this
+   * name */
+  total: number;
+  /** A list of the clientIds of all clients who have published an annotation with this
+   * name, and the count each of them have contributed. */
+  clientIds: { [key: string]: number };
+  /** The sum of the counts from all unidentified clients who have published an annotation with this
+   * name, and so who are not included in the clientIds list */
+  totalUnidentified: number;
+}
+
+/** The summary entry for aggregated annotations that use the total.v1
+ * aggregation method. */
+export interface SummaryTotal {
+  /** The total number of clients who have published an annotation with this name (or
+   * type, depending on context). */
+  total: number;
+}
+
+/** The different possible values of the Message.summary map. */
+export type SummaryEntry =
+  | SummaryDistinctValues
+  | SummaryUniqueValues
+  | SummaryMultipleValues
+  | SummaryClientIdList
+  | SummaryTotal;
 
 /**
  * Contains an individual message that is sent to, or received from, Ably.
@@ -2901,7 +3195,94 @@ export interface Message {
    * update or delete operation.
    */
   operation?: Operation;
+  /**
+   * Allows a REST client to publish a message on behalf of a Realtime client. If you set this to the {@link Connection.key | private connection key} of a Realtime connection when publishing a message using a {@link RestClient}, the message will be published on behalf of that Realtime client. This property is only populated by a client performing a publish, and will never be populated on an inbound message.
+   */
+  connectionKey?: string;
+  /**
+   * A summary of all the annotations that have been made to the message. Will always be
+   * populated for a message.summary, and may be populated for any other type (in
+   * particular a message retrieved from REST history will have its latest summary
+   * included).
+   * The keys of the map are the annotation types. The exact structure of the value of
+   * each key depends on the aggregation part of the annotation type, e.g. for a type of
+   * reaction:distinct.v1, the value will be a DistinctValues object. New aggregation
+   * methods might be added serverside, hence the 'unknown' part of the sum type.
+   */
+  summary?: Record<string, SummaryEntry>;
 }
+
+/**
+ * An annotation to a message, received from Ably
+ */
+export interface Annotation {
+  /**
+   * Unique ID assigned by Ably to this annotation.
+   */
+  id: string;
+  /**
+   * The client ID of the publisher of this annotation (if any).
+   */
+  clientId?: string;
+  /**
+   * The name of this annotation. This is the field that most annotation aggregations will
+   * operate on. For example, using "distinct.v1" aggregation (specified in the type), the
+   * message summary will show a list of clients who have published an annotation with
+   * each distinct annotation.name.
+   */
+  name?: string;
+  /**
+   * An optional count, only relevant to certain aggregation types, see aggregation types
+   * documentation for more info.
+   */
+  count?: number;
+  /**
+   * An arbitrary publisher-provided payload, if provided. Not aggregated.
+   */
+  data?: any;
+  /**
+   * The encoding of the payload; typically empty as the data is decoded client-side back
+   * into the original data type.
+   */
+  encoding?: string;
+  /**
+   * Timestamp of when the annotation was received by Ably, as milliseconds since the Unix epoch.
+   */
+  timestamp: number;
+  /**
+   * The action, whether this is an annotation being added or removed, one of the {@link AnnotationAction} enum values.
+   */
+  action: AnnotationAction;
+  /**
+   * This message's unique serial (lexicographically totally ordered).
+   */
+  serial: string;
+  /**
+   * The serial of the message (of type message.create) that this annotation is annotating.
+   */
+  messageSerial: string;
+  /**
+   * The type of annotation it is, typically some name together with an aggregation
+   * method; for example: "emoji:distinct.v1". Handled opaquely by the SDK and validated serverside.
+   */
+  type: string;
+  /**
+   * A JSON object for metadata and/or ancillary payloads.
+   */
+  extras: any;
+}
+
+/**
+ * A variant of the Annotation type customised for those fields which need to be populated
+ * by the user when publishing an annotation.
+ */
+export type OutboundAnnotation = Partial<Annotation> & {
+  /**
+   * The type of annotation it is, typically some name together with an aggregation
+   * method; for example: "emoji:distinct.v1". Handled opaquely by the SDK and validated serverside.
+   */
+  type: string;
+};
 
 /**
  * Contains the details of an operation, such as update or deletion, supplied by the actioning client.
@@ -2930,20 +3311,25 @@ declare namespace MessageActions {
    */
   type MESSAGE_CREATE = 'message.create';
   /**
-   * Message action for an updated message.
+   * Message action for an updated message. The `serial` field identifies the message of which this is
+   * an update. The update will have a newer `version` compared with the original message.create message.
    */
   type MESSAGE_UPDATE = 'message.update';
   /**
-   * Message action for a deleted message.
+   * Message action for a deleted message. The `serial` field identifies the message which is being deleted.
+   * The delete will have a newer `version` compared with the original message.create message.
    */
   type MESSAGE_DELETE = 'message.delete';
   /**
-   * Message action for a meta-message that contains channel occupancy information.
+   * Message action for a meta-message (a message originating from ably rather than being explicitly
+   * published on a channel), containing eg inband channel occupancy events or some other information
+   * requested by channel param.
    */
-  type META_OCCUPANCY = 'meta.occupancy';
+  type META = 'meta';
   /**
    * Message action for a message containing the latest rolled-up summary of annotations
-   * that have been made to this message.
+   * that have been made to this message. Like an update, but only updates the summary, so
+   * the message.serial is the serial of the message for which this is a summary.
    */
   type MESSAGE_SUMMARY = 'message.summary';
 }
@@ -2955,13 +3341,33 @@ export type MessageAction =
   | MessageActions.MESSAGE_CREATE
   | MessageActions.MESSAGE_UPDATE
   | MessageActions.MESSAGE_DELETE
-  | MessageActions.META_OCCUPANCY
+  | MessageActions.META
   | MessageActions.MESSAGE_SUMMARY;
+
+/**
+ * The namespace containing the different types of annotation actions.
+ */
+declare namespace AnnotationActions {
+  /**
+   * Annotation action for a created annotation.
+   */
+  type ANNOTATION_CREATE = 'annotation.create';
+  /**
+   * Annotation action for a deleted annotation.
+   */
+  type ANNOTATION_DELETE = 'annotation.delete';
+}
+
+/**
+ * The possible values of the 'action' field of an {@link Annotation}.
+ */
+export type AnnotationAction = AnnotationActions.ANNOTATION_CREATE | AnnotationActions.ANNOTATION_DELETE;
 
 /**
  * A message received from Ably.
  */
-export type InboundMessage = Message & Required<Pick<Message, 'id' | 'timestamp' | 'serial' | 'action'>>;
+export type InboundMessage = Omit<Message, 'connectionKey'> &
+  Required<Pick<Message, 'id' | 'timestamp' | 'serial' | 'action'>>;
 
 /**
  * Static utilities related to messages.
@@ -3048,6 +3454,26 @@ export interface PresenceMessageStatic {
    * @param values - The values to intialise the `PresenceMessage` from.
    */
   fromValues(values: Partial<Pick<PresenceMessage, 'clientId' | 'data' | 'extras'>>): PresenceMessage;
+}
+
+/**
+ * Static utilities related to annotations.
+ */
+export interface AnnotationStatic {
+  /**
+   * Decodes a deserialized `Annotation`-like object. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+   *
+   * @param JsonObject - The deserialized `Annotation`-like object to decode and decrypt.
+   * @param channelOptions - A {@link ChannelOptions} object containing the current channel options.
+   */
+  fromEncoded: (JsonObject: any, channelOptions?: ChannelOptions) => Promise<Annotation>;
+  /**
+   * Decodes an array of deserialized `Annotation`-like objects. Any residual transforms that cannot be decoded or decrypted will be in the `encoding` property. Intended for users receiving messages from a source other than a REST or Realtime channel (for example a queue) to avoid having to parse the encoding string.
+   *
+   * @param JsonArray - An array of deserialized `Annotation`-like objects to decode and decrypt.
+   * @param channelOptions - A {@link ChannelOptions} object containing the current channel options.
+   */
+  fromEncodedArray: (JsonArray: any[], channelOptions?: ChannelOptions) => Promise<Annotation[]>;
 }
 
 /**
@@ -3261,7 +3687,7 @@ export declare interface Push {
    *
    * @param deregisterCallback - A function passed to override the default implementation to deregister the local device for push activation.
    */
-  deactivate(deregisterCallback: DeregisterCallback): Promise<void>;
+  deactivate(deregisterCallback?: DeregisterCallback): Promise<void>;
 }
 
 /**
@@ -3410,6 +3836,10 @@ export declare class Rest implements RestClient {
    * Static utilities related to presence messages.
    */
   static PresenceMessage: PresenceMessageStatic;
+  /**
+   * Static utilities related to annotations.
+   */
+  static Annotation: AnnotationStatic;
 
   // Requirements of RestClient
 
@@ -3461,6 +3891,10 @@ export declare class Realtime implements RealtimeClient {
    * Static utilities related to presence messages.
    */
   static PresenceMessage: PresenceMessageStatic;
+  /**
+   * Static utilities related to annotations.
+   */
+  static Annotation: AnnotationStatic;
 
   // Requirements of RealtimeClient
 

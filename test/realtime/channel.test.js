@@ -1002,7 +1002,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     it('attachWithInvalidChannelParams', function (done) {
       const helper = this.test.helper;
       var testName = 'attachWithInvalidChannelParams';
-      var defaultChannelModes = 'presence,publish,subscribe,presence_subscribe';
+      var defaultChannelModes = 'presence,publish,subscribe,presence_subscribe,annotation_publish';
       try {
         var realtime = helper.AblyRealtime();
         realtime.connection.on('connected', function () {
@@ -1253,7 +1253,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           function (cb) {
             /* Sabotage the reattach attempt, then simulate a server-sent detach */
             helper.recordPrivateApi('replace.channel.sendMessage');
-            channel.sendMessage = function () {};
+            channel.sendMessage = async function () {};
             helper.recordPrivateApi('write.realtime.options.timeouts.realtimeRequestTimeout');
             realtime.options.timeouts.realtimeRequestTimeout = 100;
             channel.once(function (stateChange) {
@@ -1304,7 +1304,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
         /* Mock sendMessage to respond to attaches with a DETACHED */
         helper.recordPrivateApi('replace.channel.sendMessage');
-        channel.sendMessage = function (msg) {
+        channel.sendMessage = async function (msg) {
           try {
             expect(msg.action).to.equal(10, 'check attach action');
           } catch (err) {
@@ -1469,7 +1469,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       /* Stub out the channel's ability to communicate */
       helper.recordPrivateApi('replace.channel.sendMessage');
-      channel.sendMessage = function () {};
+      channel.sendMessage = async function () {};
 
       async.series(
         [
@@ -1536,7 +1536,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
              * channel goes into the suspended state and doesn't try to reattach
              * until the connection reconnects */
             helper.recordPrivateApi('replace.channel.sendMessage');
-            channel.sendMessage = function (msg) {
+            channel.sendMessage = async function (msg) {
               expect(false, 'Channel tried to send a message ' + JSON.stringify(msg)).to.be.ok;
             };
             helper.recordPrivateApi('write.realtime.options.timeouts.realtimeRequestTimeout');
@@ -1556,7 +1556,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               expect(stateChange.current).to.equal('connecting', 'Check we try to connect again');
               /* We no longer want to fail the test for an attach, but still want to sabotage it */
               helper.recordPrivateApi('replace.channel.sendMessage');
-              channel.sendMessage = function () {};
+              channel.sendMessage = async function () {};
               cb();
             });
           },
@@ -1605,7 +1605,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
              * the detach is ongoing. Expect to see the library reassert the detach */
             let detachCount = 0;
             helper.recordPrivateApi('replace.channel.sendMessage');
-            channel.sendMessage = function (msg) {
+            channel.sendMessage = async function (msg) {
               expect(msg.action).to.equal(12, 'Check we only see a detach. No attaches!');
               expect(channel.state).to.equal('detaching', 'Check still in detaching state after both detaches');
               detachCount++;

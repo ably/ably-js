@@ -1,6 +1,6 @@
 'use strict';
 
-define(['shared_helper', 'chai'], function (Helper, chai) {
+define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
   var { expect, assert } = chai;
   var transportPreferenceName = 'ably-transport-preference';
 
@@ -213,26 +213,6 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         });
       });
 
-      // strip instanceID and handleID from connectionKey */
-      function connectionHmac(key) {
-        /* connectionKey has the form <instanceID>!<hmac>-<handleID> */
-
-        /* remove the handleID from the end of key */
-        let k = key.split('-')[0];
-
-        /* skip the server instanceID if present, as reconnects may be routed to different frontends */
-        if (k.includes('!')) {
-          k = k.split('!')[1];
-        }
-        return k;
-      }
-
-      /* uses internal realtime knowledge of the format of the connection key to
-       * check if a connection key is the result of a successful recovery of another */
-      function sameConnection(keyA, keyB) {
-        return connectionHmac(keyA) === connectionHmac(keyB);
-      }
-
       /**
        * @specpartial RTN16 test
        * @specpartial RTN16d
@@ -251,7 +231,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
-          var connectionKey = realtime.connection.key;
+          var connectionId = realtime.connection.id;
           document.dispatchEvent(refreshEvent);
           try {
             expect(realtime.connection.state).to.equal(
@@ -267,10 +247,10 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           var newRealtime = helper.AblyRealtime(realtimeOpts);
           newRealtime.connection.once('connected', function () {
             try {
-              expect(
-                sameConnection(connectionKey, newRealtime.connection.key),
+              expect(newRealtime.connection.id).to.equal(
+                connectionId,
                 'Check new realtime recovered the connection from the cookie',
-              ).to.be.ok;
+              );
             } catch (err) {
               helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
@@ -295,7 +275,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
-          var connectionKey = realtime.connection.key;
+          var connectionId = realtime.connection.id;
           document.dispatchEvent(refreshEvent);
           try {
             expect(realtime.connection.state).to.equal(
@@ -311,10 +291,10 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           var newRealtime = helper.AblyRealtime(realtimeOpts);
           newRealtime.connection.once('connected', function () {
             try {
-              expect(
-                !sameConnection(connectionKey, newRealtime.connection.key),
+              expect(newRealtime.connection.id).not.to.equal(
+                connectionId,
                 'Check new realtime created a new connection',
-              ).to.be.ok;
+              );
             } catch (err) {
               helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
@@ -359,7 +339,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         helper.monitorConnection(done, realtime);
 
         realtime.connection.once('connected', function () {
-          var connectionKey = realtime.connection.key,
+          var connectionId = realtime.connection.id,
             recoveryKey = realtime.connection.recoveryKey;
 
           document.dispatchEvent(refreshEvent);
@@ -377,8 +357,7 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
           var newRealtime = helper.AblyRealtime({ recover: recoveryKey });
           newRealtime.connection.once('connected', function () {
             try {
-              expect(sameConnection(connectionKey, newRealtime.connection.key), 'Check new realtime recovered the old')
-                .to.be.ok;
+              expect(newRealtime.connection.id).to.equal(connectionId, 'Check new realtime recovered the old');
             } catch (err) {
               helper.closeAndFinish(done, [realtime, newRealtime], err);
               return;
@@ -453,6 +432,62 @@ define(['shared_helper', 'chai'], function (Helper, chai) {
         }
         this.test.helper.closeAndFinish(done, realtime);
       });
+
+      // this is identical to disable_connectivity_check test in connectivity, but here we specifically test browser supported request implementations
+      for (const scenario of [
+        {
+          description: 'XHR request disable connectivity check',
+          ctx: { initialFetchSupported: Ably.Rest.Platform.Config.fetchSupported },
+          before: (ctx) => {
+            Ably.Rest.Platform.Config.fetchSupported = false;
+          },
+          after: (ctx) => {
+            Ably.Rest.Platform.Config.fetchSupported = ctx.initialFetchSupported;
+          },
+        },
+        {
+          description: 'Fetch request disable connectivity check',
+          ctx: { initialXhrSupported: Ably.Rest.Platform.Config.xhrSupported },
+          before: (ctx) => {
+            Ably.Rest.Platform.Config.xhrSupported = false;
+          },
+          after: (ctx) => {
+            Ably.Rest.Platform.Config.xhrSupported = ctx.initialXhrSupported;
+          },
+        },
+      ]) {
+        /** @nospec */
+        it(scenario.description, async function () {
+          const helper = this.test.helper;
+          scenario.before(scenario.ctx);
+          let thrownError = null;
+          let res = null;
+
+          try {
+            helper.recordPrivateApi('pass.clientOption.connectivityCheckUrl');
+            helper.recordPrivateApi('pass.clientOption.disableConnectivityCheck');
+            const options = {
+              connectivityCheckUrl: helper.unroutableHost,
+              disableConnectivityCheck: true,
+              autoConnect: false,
+            };
+
+            helper.recordPrivateApi('call.http.checkConnectivity');
+            res = await helper.AblyRealtime(options).http.checkConnectivity();
+          } catch (error) {
+            thrownError = error;
+          } finally {
+            scenario.after(scenario.ctx);
+          }
+
+          expect(
+            res && !thrownError,
+            'Connectivity check completed ' +
+              (thrownError &&
+                (helper.recordPrivateApi('call.Utils.inspectError'), helper.Utils.inspectError(thrownError))),
+          ).to.be.ok;
+        });
+      }
     });
   }
 });

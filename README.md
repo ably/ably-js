@@ -71,10 +71,10 @@ If you are using a version older than 1.2.5 you will need to add 'ably' to `exte
 Include the Ably library in your HTML:
 
 ```html
-<script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 ```
 
-The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.com/lib/ably.min-1.js for all v1._ versions, or https://cdn.ably.com/lib/ably.min-1.0.js for all v1.0._ versions, or you can lock into a single release with https://cdn.ably.com/lib/ably.min-1.0.9.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/ably-1.0.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
+The Ably client library follows [Semantic Versioning](http://semver.org/). To lock into a major or minor version of the client library, you can specify a specific version number such as https://cdn.ably.com/lib/ably.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/ably.min-2.6.js for all v2.6._ versions, or you can lock into a single release with https://cdn.ably.com/lib/ably.min-2.6.3.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/ably-2.js. See https://github.com/ably/ably-js/tags for a list of tagged releases.
 
 For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
 

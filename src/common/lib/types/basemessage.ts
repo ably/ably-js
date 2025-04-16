@@ -94,13 +94,13 @@ export async function encryptData(
  * Encodes and encrypts message's payload. Mutates the message object.
  * Implements RSL4 and RSL5.
  */
-export async function encode<T extends BaseMessage>(msg: T, cipherOptions: CipherOptions): Promise<T> {
+export async function encode<T extends BaseMessage>(msg: T, options: unknown): Promise<T> {
   const { data, encoding } = encodeData(msg.data, msg.encoding);
   msg.data = data;
   msg.encoding = encoding;
 
-  if (cipherOptions != null && cipherOptions.cipher) {
-    return encrypt(msg, cipherOptions);
+  if (options != null && (options as CipherOptions).cipher) {
+    return encrypt(msg, options as CipherOptions);
   } else {
     return msg;
   }
@@ -325,14 +325,20 @@ export const MessageEncoding = {
 
 // in-place, generally called on the protocol message before decoding
 export function populateFieldsFromParent(parent: ProtocolMessage) {
+  const { id, connectionId, timestamp } = parent;
+
   let msgs: BaseMessage[];
   switch (parent.action) {
-    case actions.MESSAGE:
+    case actions.MESSAGE: {
       msgs = parent.messages!;
       break;
+    }
     case actions.PRESENCE:
     case actions.SYNC:
       msgs = parent.presence!;
+      break;
+    case actions.ANNOTATION:
+      msgs = parent.annotations!;
       break;
     case actions.OBJECT:
     case actions.OBJECT_SYNC:
@@ -342,12 +348,17 @@ export function populateFieldsFromParent(parent: ProtocolMessage) {
       throw new ErrorInfo('Unexpected action ' + parent.action, 40000, 400);
   }
 
-  const { id, connectionId, timestamp } = parent;
   for (let i = 0; i < msgs.length; i++) {
     const msg = msgs[i];
-    if (!msg.connectionId) msg.connectionId = connectionId;
-    if (!msg.timestamp) msg.timestamp = timestamp;
-    if (id && !msg.id) msg.id = id + ':' + i;
+    if (!msg.connectionId) {
+      msg.connectionId = connectionId;
+    }
+    if (!msg.timestamp) {
+      msg.timestamp = timestamp;
+    }
+    if (id && !msg.id) {
+      msg.id = id + ':' + i;
+    }
   }
 }
 

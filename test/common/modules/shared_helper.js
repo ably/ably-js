@@ -171,14 +171,6 @@ define([
       return result;
     }
 
-    async monitorConnectionThenCloseAndFinish(action, realtime, states) {
-      try {
-        await this.monitorConnectionAsync(action, realtime, states);
-      } finally {
-        await this.closeAndFinishAsync(realtime);
-      }
-    }
-
     monitorConnection(done, realtime, states) {
       (states || ['failed', 'suspended']).forEach(function (state) {
         realtime.connection.on(state, function () {
@@ -514,6 +506,20 @@ define([
       }
       await this.setTimeoutAsync(100);
       return this.waitFor(condition, remaining - 100);
+    }
+
+    async setTimeoutAsync(ms) {
+      return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    async monitorConnectionThenCloseAndFinishAsync(action, realtime, states) {
+      try {
+        await this.monitorConnectionAsync(action, realtime, states);
+      } finally {
+        await this.closeAndFinishAsync(realtime);
+      }
     }
   }
 

@@ -23,6 +23,7 @@ export const actions = {
   ACTIVATE: 18,
   OBJECT: 19,
   OBJECT_SYNC: 20,
+  ANNOTATION: 21,
 };
 
 export const ActionName: string[] = [];
@@ -43,6 +44,8 @@ export const flags: { [key: string]: number } = {
   PUBLISH: 1 << 17,
   SUBSCRIBE: 1 << 18,
   PRESENCE_SUBSCRIBE: 1 << 19,
+  ANNOTATION_PUBLISH: 1 << 21,
+  ANNOTATION_SUBSCRIBE: 1 << 22,
   OBJECT_SUBSCRIBE: 1 << 24,
   OBJECT_PUBLISH: 1 << 25,
 };
@@ -54,6 +57,8 @@ flags.MODE_ALL =
   flags.PUBLISH |
   flags.SUBSCRIBE |
   flags.PRESENCE_SUBSCRIBE |
+  flags.ANNOTATION_PUBLISH |
+  flags.ANNOTATION_SUBSCRIBE |
   flags.OBJECT_SUBSCRIBE |
   flags.OBJECT_PUBLISH;
 
@@ -62,6 +67,8 @@ export const channelModes = [
   'PUBLISH',
   'SUBSCRIBE',
   'PRESENCE_SUBSCRIBE',
+  'ANNOTATION_PUBLISH',
+  'ANNOTATION_SUBSCRIBE',
   'OBJECT_SUBSCRIBE',
   'OBJECT_PUBLISH',
 ];

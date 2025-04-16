@@ -294,13 +294,7 @@ export class Objects {
    * @internal
    */
   async publish(objectMessages: ObjectMessage[]): Promise<void> {
-    if (!this._channel.connectionManager.activeState()) {
-      throw this._channel.connectionManager.getError();
-    }
-
-    if (this._channel.state === 'failed' || this._channel.state === 'suspended') {
-      throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
-    }
+    this._channel.throwIfUnpublishableState();
 
     objectMessages.forEach((x) => ObjectMessage.encode(x, this._client.MessageEncoding));
     const maxMessageSize = this._client.options.maxMessageSize;

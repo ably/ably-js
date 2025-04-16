@@ -1439,36 +1439,43 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
               // Subscription to check all messages were received as expected
               rtUnfilteredChannel.subscribe('end', function (msg) {
-                try {
-                  expect(msg.data).to.equal(testData[testData.length - 1].data, 'Unexpected msg data received');
+                // Ensure all pending I/O operations complete and messages are processed
+                // before running assertions to avoid race conditions
+                //
+                // Using setTimeout with 0 timeout as setImmediate is not available
+                // in browsers.
+                setTimeout(() => {
+                  try {
+                    expect(msg.data).to.equal(testData[testData.length - 1].data, 'Unexpected msg data received');
 
-                  // Check that we receive expected messages on filtered channel
-                  expect(filteredMessages.length).to.equal(2, 'Expect only two filtered message to be received');
-                  expect(filteredMessages[0].data).to.equal(testData[0].data, 'Unexpected data received');
-                  expect(filteredMessages[1].data).to.equal(testData[2].data, 'Unexpected data received');
-                  expect(filteredMessages[0].extras.headers.name).to.equal(
-                    testData[0].extras.headers.name,
-                    'Unexpected header value received',
-                  );
-                  expect(filteredMessages[1].extras.headers.name).to.equal(
-                    testData[2].extras.headers.name,
-                    'Unexpected header value received',
-                  );
-                  // Check that message with header that doesn't meet filtering condition is not received.
-                  for (msg of filteredMessages) {
-                    expect(msg.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
-                  }
+                    // Check that we receive expected messages on filtered channel
+                    expect(filteredMessages.length).to.equal(2, 'Expect only two filtered message to be received');
+                    expect(filteredMessages[0].data).to.equal(testData[0].data, 'Unexpected data received');
+                    expect(filteredMessages[1].data).to.equal(testData[2].data, 'Unexpected data received');
+                    expect(filteredMessages[0].extras.headers.name).to.equal(
+                      testData[0].extras.headers.name,
+                      'Unexpected header value received',
+                    );
+                    expect(filteredMessages[1].extras.headers.name).to.equal(
+                      testData[2].extras.headers.name,
+                      'Unexpected header value received',
+                    );
+                    // Check that message with header that doesn't meet filtering condition is not received.
+                    for (msg of filteredMessages) {
+                      expect(msg.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
+                    }
 
-                  // Check that we receive expected messages on unfiltered channel, including the `end` event message
-                  expect(unFilteredMessages.length).to.equal(6, 'Expect only 6 unfiltered message to be received');
-                  for (var i = 0; i < unFilteredMessages.length; i++) {
-                    expect(unFilteredMessages[i].data).to.equal(testData[i].data, 'Unexpected data received');
+                    // Check that we receive expected messages on unfiltered channel, including the `end` event message
+                    expect(unFilteredMessages.length).to.equal(6, 'Expect only 6 unfiltered message to be received');
+                    for (var i = 0; i < unFilteredMessages.length; i++) {
+                      expect(unFilteredMessages[i].data).to.equal(testData[i].data, 'Unexpected data received');
+                    }
+                  } catch (err) {
+                    helper.closeAndFinish(done, realtime, err);
+                    return;
                   }
-                } catch (err) {
-                  helper.closeAndFinish(done, realtime, err);
-                  return;
-                }
-                helper.closeAndFinish(done, realtime);
+                  helper.closeAndFinish(done, realtime);
+                }, 0);
               });
               var restChannel = rest.channels.get('chan');
               restChannel.publish(testData);
@@ -1479,6 +1486,46 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       } catch (err) {
         helper.closeAndFinish(done, realtime, err);
       }
+    });
+
+    /** @spec RSF1 */
+    it('unrecognized message action', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime();
+
+      let caughtError;
+      try {
+        await helper.monitorConnectionAsync(async () => {
+          const channel = realtime.channels.get('unknown_action');
+          await channel.attach();
+
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          realtime.connection.connectionManager.activeProtocol
+            .getTransport()
+            .onProtocolMessage({ action: Number.MAX_SAFE_INTEGER, channel: channel.name });
+
+          // wait for the next event loop so connection can process any pending callbacks and go to a failed state
+          await new Promise((res, rej) =>
+            setTimeout(() => {
+              try {
+                expect(realtime.connection.state).to.equal(
+                  'connected',
+                  'Check still connected after unrecognized action field',
+                );
+                res();
+              } catch (error) {
+                rej(error);
+              }
+            }, 0),
+          );
+        }, realtime);
+      } catch (error) {
+        caughtError = error;
+      }
+
+      expect(caughtError, 'Check connection was not closed after receiving unrecognized message action').to.not.exist;
+      await helper.closeAndFinishAsync(realtime);
     });
   });
 });

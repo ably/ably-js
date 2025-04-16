@@ -1,10 +1,14 @@
 import { MsgPack } from 'common/types/msgpack';
 import * as API from '../../../../ably';
 import { PresenceMessagePlugin } from '../client/modularplugins';
+import { AnnotationsPlugin } from '../client/modularplugins';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import { WireMessage } from './message';
 import PresenceMessage, { WirePresenceMessage } from './presencemessage';
+import Annotation, { WireAnnotation } from './annotation';
+import RealtimeAnnotations from '../client/realtimeannotations';
+import RestAnnotations from '../client/restannotations';
 import { flags, flagNames, channelModes, ActionName } from './protocolmessagecommon';
 import type { Properties } from '../util/utils';
 import type * as ObjectsPlugin from 'plugins/objects';
@@ -26,16 +30,18 @@ export function deserialize(
   serialized: unknown,
   MsgPack: MsgPack | null,
   presenceMessagePlugin: PresenceMessagePlugin | null,
+  annotationsPlugin: AnnotationsPlugin | null,
   objectsPlugin: typeof ObjectsPlugin | null,
   format?: Utils.Format,
 ): ProtocolMessage {
   const deserialized = Utils.decodeBody<Record<string, unknown>>(serialized, MsgPack, format);
-  return fromDeserialized(deserialized, presenceMessagePlugin, objectsPlugin);
+  return fromDeserialized(deserialized, presenceMessagePlugin, annotationsPlugin, objectsPlugin);
 }
 
 export function fromDeserialized(
   deserialized: Record<string, unknown>,
   presenceMessagePlugin: PresenceMessagePlugin | null,
+  annotationsPlugin: AnnotationsPlugin | null,
   objectsPlugin: typeof ObjectsPlugin | null,
 ): ProtocolMessage {
   let error: ErrorInfo | undefined;
@@ -55,6 +61,13 @@ export function fromDeserialized(
     );
   }
 
+  let annotations: WireAnnotation[] | undefined;
+  if (annotationsPlugin && deserialized.annotations) {
+    annotations = annotationsPlugin.WireAnnotation.fromValuesArray(
+      deserialized.annotations as Array<Properties<WireAnnotation>>,
+    );
+  }
+
   let state: ObjectsPlugin.ObjectMessage[] | undefined;
   if (objectsPlugin && deserialized.state) {
     state = objectsPlugin.ObjectMessage.fromValuesArray(
@@ -64,7 +77,7 @@ export function fromDeserialized(
     );
   }
 
-  return Object.assign(new ProtocolMessage(), { ...deserialized, presence, messages, error, state });
+  return Object.assign(new ProtocolMessage(), { ...deserialized, presence, messages, annotations, state, error });
 }
 
 /**
@@ -81,18 +94,20 @@ export function makeFromDeserializedWithDependencies(dependencies?: { ObjectsPlu
         PresenceMessage,
         WirePresenceMessage,
       },
+      { Annotation, WireAnnotation, RealtimeAnnotations, RestAnnotations },
       dependencies?.ObjectsPlugin ?? null,
     );
   };
 }
 
-export function fromValues(values: unknown): ProtocolMessage {
+export function fromValues(values: Properties<ProtocolMessage>): ProtocolMessage {
   return Object.assign(new ProtocolMessage(), values);
 }
 
 export function stringify(
   msg: any,
   presenceMessagePlugin: PresenceMessagePlugin | null,
+  annotationsPlugin: AnnotationsPlugin | null,
   objectsPlugin: typeof ObjectsPlugin | null,
 ): string {
   let result = '[ProtocolMessage';
@@ -108,9 +123,13 @@ export function stringify(
   if (msg.messages) result += '; messages=' + toStringArray(WireMessage.fromValuesArray(msg.messages));
   if (msg.presence && presenceMessagePlugin)
     result += '; presence=' + toStringArray(presenceMessagePlugin.WirePresenceMessage.fromValuesArray(msg.presence));
-  if (msg.state && objectsPlugin)
+  if (msg.annotations && annotationsPlugin) {
+    result += '; annotations=' + toStringArray(annotationsPlugin.WireAnnotation.fromValuesArray(msg.annotations));
+  }
+  if (msg.state && objectsPlugin) {
     result +=
       '; state=' + toStringArray(objectsPlugin.ObjectMessage.fromValuesArray(msg.state, Utils, MessageEncoding));
+  }
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
   if (msg.flags) result += '; flags=' + flagNames.filter(msg.hasFlag).join(',');
@@ -146,12 +165,14 @@ class ProtocolMessage {
    * This will be undefined if we skipped decoding this property due to user not requesting Presence functionality — see {@link fromDeserialized}
    */
   presence?: WirePresenceMessage[];
+  annotations?: WireAnnotation[];
   /**
    * This will be undefined if we skipped decoding this property due to user not requesting Objects functionality — see {@link fromDeserialized}
    */
   state?: ObjectsPlugin.ObjectMessage[];
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
+  params?: Record<string, string>;
 
   hasFlag = (flag: string): boolean => {
     return ((this.flags as number) & flags[flag]) > 0;
@@ -161,8 +182,8 @@ class ProtocolMessage {
     return (this.flags = (this.flags as number) | flags[flag]);
   }
 
-  getMode(): number | undefined {
-    return this.flags && this.flags & flags.MODE_ALL;
+  getMode(): number {
+    return (this.flags || 0) & flags.MODE_ALL;
   }
 
   encodeModesToFlags(modes: API.ChannelMode[]): void {

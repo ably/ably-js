@@ -356,6 +356,7 @@ abstract class CometTransport extends Transport {
             protocolMessageFromDeserialized(
               items[i],
               this.connectionManager.realtime._RealtimePresence,
+              this.connectionManager.realtime._Annotations,
               this.connectionManager.realtime._objectsPlugin,
             ),
           );

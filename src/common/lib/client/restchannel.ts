@@ -17,6 +17,7 @@ import Defaults, { normaliseChannelOptions } from '../util/defaults';
 import { RestHistoryParams } from './restchannelmixin';
 import { RequestBody } from 'common/types/http';
 import type { PushChannel } from 'plugins/push';
+import type RestAnnotations from './restannotations';
 
 const MSG_ID_ENTROPY_BYTES = 9;
 
@@ -32,6 +33,13 @@ class RestChannel {
   presence: RestPresence;
   channelOptions: ChannelOptions;
   _push?: PushChannel;
+  private _annotations: RestAnnotations | null = null;
+  get annotations(): RestAnnotations {
+    if (!this._annotations) {
+      Utils.throwMissingPluginError('Annotations');
+    }
+    return this._annotations;
+  }
 
   constructor(client: BaseRest, name: string, channelOptions?: ChannelOptions) {
     Logger.logAction(client.logger, Logger.LOG_MINOR, 'RestChannel()', 'started; name = ' + name);
@@ -41,6 +49,9 @@ class RestChannel {
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, this.logger, channelOptions);
     if (client.options.plugins?.Push) {
       this._push = new client.options.plugins.Push.PushChannel(this);
+    }
+    if (client._Annotations) {
+      this._annotations = new client._Annotations.RestAnnotations(this);
     }
   }
 
