@@ -89,7 +89,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   };
 
   describe('realtime/presence', function () {
-    this.timeout(60 * 1000);
+    this.timeout(20 * 1000);
     before(function (done) {
       const helper = Helper.forHook(this);
       helper.setupApp(function (err) {
@@ -1633,13 +1633,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const connId = realtime.connection.connectionManager.connectionId;
 
       helper.recordPrivateApi('call.presence._myMembers.put');
-      channel.presence._myMembers.put({
-        action: 'enter',
-        clientId: 'two',
-        connectionId: connId,
-        id: connId + ':0:0',
-        data: 'twodata',
-      });
+      channel.presence._myMembers.put(
+        PresenceMessage.fromValues({
+          action: 'present',
+          clientId: 'two',
+          connectionId: connId,
+          id: connId + ':0:0',
+          data: 'twodata',
+        }),
+      );
 
       await helper.becomeSuspended(realtime);
 
@@ -1787,12 +1789,14 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             helper.recordPrivateApi('read.connectionManager.connectionId');
             var connId = realtime.connection.connectionManager.connectionId;
             helper.recordPrivateApi('call.presence._myMembers.put');
-            channel.presence._myMembers.put({
-              action: 'enter',
-              clientId: 'me',
-              connectionId: connId,
-              id: connId + ':0:0',
-            });
+            channel.presence._myMembers.put(
+              PresenceMessage.fromValues({
+                action: 2,
+                clientId: 'me',
+                connectionId: connId,
+                id: connId + ':0:0',
+              }),
+            );
             helper.becomeSuspended(realtime, cb);
           },
           function (cb) {
@@ -1948,18 +1952,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             /* Inject an additional member locally */
             helper.recordPrivateApi('call.channel.processMessage');
             channel
-              .processMessage({
-                action: 14,
-                id: 'messageid:0',
-                connectionId: 'connid',
-                timestamp: Date.now(),
-                presence: [
-                  {
-                    clientId: goneClientId,
-                    action: 'enter',
-                  },
-                ],
-              })
+              .processMessage(
+                createPM({
+                  action: 14,
+                  id: 'messageid:0',
+                  connectionId: 'connid',
+                  timestamp: Date.now(),
+                  presence: [
+                    {
+                      clientId: goneClientId,
+                      action: 2,
+                    },
+                  ],
+                }),
+              )
               .then(function () {
                 cb(null);
               })
@@ -2043,18 +2049,20 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             /* Inject a member locally */
             helper.recordPrivateApi('call.channel.processMessage');
             channel
-              .processMessage({
-                action: 14,
-                id: 'messageid:0',
-                connectionId: 'connid',
-                timestamp: Date.now(),
-                presence: [
-                  {
-                    clientId: fakeClientId,
-                    action: 'enter',
-                  },
-                ],
-              })
+              .processMessage(
+                createPM({
+                  action: 14,
+                  id: 'messageid:0',
+                  connectionId: 'connid',
+                  timestamp: Date.now(),
+                  presence: [
+                    {
+                      clientId: fakeClientId,
+                      action: 2,
+                    },
+                  ],
+                }),
+              )
               .then(function () {
                 cb();
               })

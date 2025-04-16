@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import PresenceMessage, { fromValues as presenceMessageFromValues } from '../types/presencemessage';
+import PresenceMessage from '../types/presencemessage';
 
 import type RealtimePresence from './realtimepresence';
 
@@ -80,7 +80,7 @@ export class PresenceMap extends EventEmitter {
 
   put(item: PresenceMessage) {
     if (item.action === 'enter' || item.action === 'update') {
-      item = presenceMessageFromValues(item);
+      item = PresenceMessage.fromValues(item);
       item.action = 'present';
     }
     const map = this.map,
@@ -118,7 +118,7 @@ export class PresenceMap extends EventEmitter {
 
     /* RTP2f */
     if (this.syncInProgress) {
-      item = presenceMessageFromValues(item);
+      item = PresenceMessage.fromValues(item);
       item.action = 'absent';
       map[key] = item;
     } else {

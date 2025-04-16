@@ -5,19 +5,14 @@ import RealtimePresence from './realtimepresence';
 import XHRRequest from 'platform/web/lib/http/request/xhrrequest';
 import fetchRequest from 'platform/web/lib/http/request/fetchrequest';
 import { FilteredSubscriptions } from './filteredsubscriptions';
-import {
-  fromValues as presenceMessageFromValues,
-  fromValuesArray as presenceMessagesFromValuesArray,
-  fromWireProtocol as presenceMessageFromWireProtocol,
-} from '../types/presencemessage';
+import PresenceMessage, { WirePresenceMessage } from '../types/presencemessage';
 import { TransportCtor } from '../transport/transport';
 import type * as PushPlugin from 'plugins/push';
 import type * as ObjectsPlugin from 'plugins/objects';
 
 export interface PresenceMessagePlugin {
-  presenceMessageFromValues: typeof presenceMessageFromValues;
-  presenceMessagesFromValuesArray: typeof presenceMessagesFromValuesArray;
-  presenceMessageFromWireProtocol: typeof presenceMessageFromWireProtocol;
+  PresenceMessage: typeof PresenceMessage;
+  WirePresenceMessage: typeof WirePresenceMessage;
 }
 
 export type RealtimePresencePlugin = PresenceMessagePlugin & {

@@ -879,10 +879,6 @@ declare namespace ChannelModes {
    * The client can receive object messages.
    */
   type OBJECT_SUBSCRIBE = 'OBJECT_SUBSCRIBE';
-  /**
-   * The client is resuming an existing connection.
-   */
-  type ATTACH_RESUME = 'ATTACH_RESUME';
 }
 
 /**
@@ -894,8 +890,7 @@ export type ChannelMode =
   | ChannelModes.PRESENCE
   | ChannelModes.PRESENCE_SUBSCRIBE
   | ChannelModes.OBJECT_PUBLISH
-  | ChannelModes.OBJECT_SUBSCRIBE
-  | ChannelModes.ATTACH_RESUME;
+  | ChannelModes.OBJECT_SUBSCRIBE;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
@@ -2931,10 +2926,6 @@ export interface Operation {
  */
 declare namespace MessageActions {
   /**
-   * Message action has not been set.
-   */
-  type MESSAGE_UNSET = 'message.unset';
-  /**
    * Message action for a newly created message.
    */
   type MESSAGE_CREATE = 'message.create';
@@ -2947,30 +2938,25 @@ declare namespace MessageActions {
    */
   type MESSAGE_DELETE = 'message.delete';
   /**
-   * Message action for a newly created annotation.
-   */
-  type ANNOTATION_CREATE = 'annotation.create';
-  /**
-   * Message action for a deleted annotation.
-   */
-  type ANNOTATION_DELETE = 'annotation.delete';
-  /**
    * Message action for a meta-message that contains channel occupancy information.
    */
   type META_OCCUPANCY = 'meta.occupancy';
+  /**
+   * Message action for a message containing the latest rolled-up summary of annotations
+   * that have been made to this message.
+   */
+  type MESSAGE_SUMMARY = 'message.summary';
 }
 
 /**
  * Describes the possible action types used on an {@link Message}.
  */
 export type MessageAction =
-  | MessageActions.MESSAGE_UNSET
   | MessageActions.MESSAGE_CREATE
   | MessageActions.MESSAGE_UPDATE
   | MessageActions.MESSAGE_DELETE
-  | MessageActions.ANNOTATION_CREATE
-  | MessageActions.ANNOTATION_DELETE
-  | MessageActions.META_OCCUPANCY;
+  | MessageActions.META_OCCUPANCY
+  | MessageActions.MESSAGE_SUMMARY;
 
 /**
  * A message received from Ably.

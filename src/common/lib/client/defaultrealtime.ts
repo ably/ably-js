@@ -12,15 +12,11 @@ import { DefaultPresenceMessage } from '../types/defaultpresencemessage';
 import WebSocketTransport from '../transport/websockettransport';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import { PresenceMap } from './presencemap';
-import {
-  fromValues as presenceMessageFromValues,
-  fromValuesArray as presenceMessagesFromValuesArray,
-  fromWireProtocol as presenceMessageFromWireProtocol,
-} from '../types/presencemessage';
+import PresenceMessage, { WirePresenceMessage } from '../types/presencemessage';
 import { Http } from 'common/types/http';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
-import { MessageEncoding } from '../types/message';
+import { MessageEncoding } from '../types/basemessage';
 
 /**
  `DefaultRealtime` is the class that the non tree-shakable version of the SDK exports as `Realtime`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
@@ -40,9 +36,8 @@ export class DefaultRealtime extends BaseRealtime {
         MsgPack,
         RealtimePresence: {
           RealtimePresence,
-          presenceMessageFromValues,
-          presenceMessagesFromValuesArray,
-          presenceMessageFromWireProtocol,
+          PresenceMessage,
+          WirePresenceMessage,
         },
         WebSocketTransport,
         MessageInteractions: FilteredSubscriptions,

@@ -18,7 +18,7 @@ import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import type { LocalDevice } from 'plugins/push/pushactivation';
 import EventEmitter from '../util/eventemitter';
-import { MessageEncoding } from '../types/message';
+import { MessageEncoding } from '../types/basemessage';
 
 type BatchResult<T> = API.BatchResult<T>;
 type BatchPublishSpec = API.BatchPublishSpec;

@@ -1,5 +1,5 @@
+import { actions } from '../types/protocolmessagecommon';
 import ProtocolMessage, {
-  actions,
   fromValues as protocolMessageFromValues,
   stringify as stringifyProtocolMessage,
 } from '../types/protocolmessage';

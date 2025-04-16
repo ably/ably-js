@@ -1,4 +1,5 @@
-import ProtocolMessage, { actions, stringify as stringifyProtocolMessage } from '../types/protocolmessage';
+import { actions } from '../types/protocolmessagecommon';
+import ProtocolMessage, { stringify as stringifyProtocolMessage } from '../types/protocolmessage';
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';

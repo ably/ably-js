@@ -1275,39 +1275,40 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     /**
      * @spec TM2j
      */
-    describe('DefaultMessage.fromWireProtocol', function () {
+    describe('DefaultMessage.fromEncoded', function () {
       const testCases = [
         {
           description: 'should stringify the numeric action',
-          action: 1,
+          action: 0,
           expectedString: '[Message; action=message.create]',
-          expectedJSON: { action: 1 },
+          expectedJSON: { action: 0 },
         },
         {
-          description: 'should accept an already stringified action',
-          action: 'message.update',
+          description: 'should stringify the numeric action',
+          action: 1,
           expectedString: '[Message; action=message.update]',
-          expectedJSON: { action: 2 },
+          expectedJSON: { action: 1 },
         },
         {
           description: 'should handle no action provided',
           action: undefined,
-          expectedString: '[Message]',
-          expectedJSON: { action: undefined },
+          expectedString: '[Message; action=message.create]',
+          expectedJSON: { action: 0 },
         },
         {
           description: 'should handle unknown action provided',
           action: 10,
-          expectedString: '[Message; action=10]',
-          expectedJSON: { action: 10 },
+          expectedString: '[Message; action=unknown]',
         },
       ];
       testCases.forEach(({ description, action, options, expectedString, expectedJSON }) => {
-        it(description, function () {
+        it(description, async function () {
           const values = { action };
-          const message = Message.fromWireProtocol(values);
+          const message = await Message.fromEncoded(values, {});
           expect(message.toString()).to.equal(expectedString);
-          expect(message.toJSON()).to.deep.contains(expectedJSON);
+          if (expectedJSON) {
+            expect((await message.encode({})).toJSON()).to.deep.contains(expectedJSON);
+          }
         });
       });
 
@@ -1315,17 +1316,17 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
        * @spec TM2k
        * @spec TM2o
        */
-      it('create message should fill out serial and createdAt from version/timestamp', function () {
-        const values = { action: 1, timestamp: 12345, version: 'foo' };
-        const message = Message.fromWireProtocol(values);
+      it('create message should fill out serial and createdAt from version/timestamp', async function () {
+        const values = { action: 0, timestamp: 12345, version: 'foo' };
+        const message = await Message.fromEncoded(values);
         expect(message.timestamp).to.equal(12345);
         expect(message.createdAt).to.equal(12345);
         expect(message.version).to.equal('foo');
         expect(message.serial).to.equal('foo');
 
         // should only apply to creates
-        const update = { action: 2, timestamp: 12345, version: 'foo' };
-        const updateMessage = Message.fromWireProtocol(update);
+        const update = { action: 1, timestamp: 12345, version: 'foo' };
+        const updateMessage = await Message.fromEncoded(update);
         expect(updateMessage.createdAt).to.equal(undefined);
         expect(updateMessage.serial).to.equal(undefined);
       });

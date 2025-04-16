@@ -1,5 +1,5 @@
 import * as API from '../../../../ably';
-import { fromEncoded, fromEncodedArray, fromValues } from '../../../common/lib/types/presencemessage';
+import { fromValues, fromEncoded, fromEncodedArray } from '../../../common/lib/types/presencemessage';
 import { Crypto } from './crypto';
 import Logger from '../../../common/lib/util/logger';
 
