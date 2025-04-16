@@ -2055,7 +2055,7 @@ export declare interface RealtimeAnnotations {
    * @param listener - An event listener function.
    * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
    */
-  subscribe(type: string | Array<string>, listener?: messageCallback<PresenceMessage>): Promise<void>;
+  subscribe(type: string | Array<string>, listener?: messageCallback<Annotation>): Promise<void>;
   /**
    * Registers a listener that is called each time an {@link Annotation} is received on the channel.
    * Note that if you want to receive individual realtime annotations (instead of just the rolled-up summaries), you will need to request the annotation_subscribe ChannelMode in ChannelOptions, since they are not delivered by default. In general, most clients will not bother with subscribing to individual annotations, and will instead just look at the summary updates.
