@@ -656,7 +656,8 @@ class RealtimeChannel extends EventEmitter {
 
         const messages = message.messages as Array<Message>,
           firstMessage = messages[0],
-          lastMessage = messages[messages.length - 1];
+          lastMessage = messages[messages.length - 1],
+          channelSerial = message.channelSerial;
 
         if (
           firstMessage.extras &&
@@ -703,6 +704,16 @@ class RealtimeChannel extends EventEmitter {
         );
         if (unrecoverableError) {
           return;
+        }
+
+        for (let i = 0; i < messages.length; i++) {
+          const msg = messages[i];
+          if (channelSerial && !msg.version) {
+            msg.version = channelSerial + ':' + i.toString().padStart(3, '0');
+            // already done in fromWireProtocol -- but for realtime messages the source
+            // fields might be copied from the protocolmessage, so need to do it again
+            msg.expandFields();
+          }
         }
 
         this._lastPayload.messageId = lastMessage.id;
@@ -773,7 +784,7 @@ class RealtimeChannel extends EventEmitter {
 
       if (!msg.connectionId) msg.connectionId = connectionId;
       if (!msg.timestamp) msg.timestamp = timestamp;
-      if (!msg.id) msg.id = id + ':' + i;
+      if (id && !msg.id) msg.id = id + ':' + i;
     }
 
     return { unrecoverableError: false };

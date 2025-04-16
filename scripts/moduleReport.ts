@@ -34,6 +34,8 @@ const functions = [
   { name: 'decodeEncryptedMessages', transitiveImports: ['Crypto'] },
   { name: 'decodePresenceMessage', transitiveImports: [] },
   { name: 'decodePresenceMessages', transitiveImports: [] },
+  { name: 'decodeEncryptedPresenceMessage', transitiveImports: ['Crypto'] },
+  { name: 'decodeEncryptedPresenceMessages', transitiveImports: ['Crypto'] },
   { name: 'constructPresenceMessage', transitiveImports: [] },
 ];
 

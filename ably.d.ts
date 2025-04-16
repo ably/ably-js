@@ -2870,6 +2870,7 @@ export interface Message {
   name?: string;
   /**
    * Timestamp of when the message was received by Ably, as milliseconds since the Unix epoch.
+   * (This is the timestamp of the current version of the message)
    */
   timestamp?: number;
   /**
@@ -2877,27 +2878,32 @@ export interface Message {
    */
   action?: MessageAction;
   /**
-   * This message's unique serial.
+   * This message's unique serial (an identifier that will be the same in all future
+   * updates of this message).
    */
   serial?: string;
   /**
-   * The serial of the message that this message is a reference to.
+   * If this message references another, the serial of that message.
    */
   refSerial?: string;
   /**
-   * The type of reference this message is, in relation to the message it references.
+   * If this message references another, the type of reference that is.
    */
   refType?: string;
   /**
-   * If an `update` operation was applied to this message, this will be the timestamp the update occurred.
+   * The timestamp of the very first version of a given message (will differ from
+   * createdAt only if the message has been updated or deleted).
    */
-  updatedAt?: number;
+  createdAt?: number;
   /**
-   * The serial of the operation that updated this message.
+   * The version of the message, lexicographically-comparable with other versions (that
+   * share the same serial) Will differ from the serial only if the message has been
+   * updated or deleted.
    */
-  updateSerial?: string;
+  version?: string;
   /**
-   * If this message resulted from an operation, this will contain the operation details.
+   * In the case of an updated or deleted message, this will contain metadata about the
+   * update or delete operation.
    */
   operation?: Operation;
 }
@@ -3054,9 +3060,8 @@ export interface PresenceMessageStatic {
    * Initialises a `PresenceMessage` from a `PresenceMessage`-like object.
    *
    * @param values - The values to intialise the `PresenceMessage` from.
-   * @param stringifyAction - Whether to convert the `action` field from a number to a string.
    */
-  fromValues(values: PresenceMessage | Record<string, unknown>, stringifyAction?: boolean): PresenceMessage;
+  fromValues(values: Partial<Pick<PresenceMessage, 'clientId' | 'data' | 'extras'>>): PresenceMessage;
 }
 
 /**

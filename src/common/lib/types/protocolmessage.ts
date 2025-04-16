@@ -4,13 +4,16 @@ import { PresenceMessagePlugin } from '../client/modularplugins';
 import * as Utils from '../util/utils';
 import ErrorInfo from './errorinfo';
 import Message, {
-  fromValues as messageFromValues,
+  fromWireProtocol as messageFromWireProtocol,
   fromValuesArray as messagesFromValuesArray,
+  WireProtocolMessage,
   MessageEncoding,
 } from './message';
 import PresenceMessage, {
+  fromWireProtocol as presenceMessageFromWireProtocol,
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
+  WireProtocolPresenceMessage,
 } from './presencemessage';
 import type * as ObjectsPlugin from 'plugins/objects';
 
@@ -110,33 +113,25 @@ export function fromDeserialized(
     deserialized.error = ErrorInfo.fromValues(error as ErrorInfo);
   }
 
-  const messages = deserialized.messages as Message[];
-  if (messages) {
-    for (let i = 0; i < messages.length; i++) {
-      messages[i] = messageFromValues(messages[i], { stringifyAction: true });
-    }
+  let messages: Message[] | undefined;
+  if (deserialized.messages) {
+    const dm = deserialized.messages as WireProtocolMessage[];
+    messages = dm.map((m) => messageFromWireProtocol(m));
   }
 
-  const presence = presenceMessagePlugin ? (deserialized.presence as PresenceMessage[]) : undefined;
-  if (presenceMessagePlugin) {
-    if (presence && presenceMessagePlugin) {
-      for (let i = 0; i < presence.length; i++) {
-        presence[i] = presenceMessagePlugin.presenceMessageFromValues(presence[i], true);
-      }
-    }
+  let presence: PresenceMessage[] | undefined;
+  if (presenceMessagePlugin && deserialized.presence) {
+    const dp = deserialized.presence as WireProtocolPresenceMessage[];
+    presence = dp.map((pm) => presenceMessagePlugin.presenceMessageFromWireProtocol(pm));
   }
 
-  let state: ObjectsPlugin.ObjectMessage[] | undefined = undefined;
-  if (objectsPlugin) {
-    state = deserialized.state as ObjectsPlugin.ObjectMessage[];
-    if (state) {
-      for (let i = 0; i < state.length; i++) {
-        state[i] = objectsPlugin.ObjectMessage.fromValues(state[i], Utils, MessageEncoding);
-      }
-    }
+  let state: ObjectsPlugin.ObjectMessage[] | undefined;
+  if (objectsPlugin && deserialized.state) {
+    const ds = deserialized.state as ObjectsPlugin.ObjectMessage[];
+    state = ds.map((om) => objectsPlugin.ObjectMessage.fromValues(om, Utils, MessageEncoding));
   }
 
-  return Object.assign(new ProtocolMessage(), { ...deserialized, presence, state });
+  return Object.assign(new ProtocolMessage(), { ...deserialized, presence, messages, state });
 }
 
 /**
@@ -149,7 +144,11 @@ export function makeFromDeserializedWithDependencies(dependencies?: { ObjectsPlu
   return (deserialized: Record<string, unknown>): ProtocolMessage => {
     return fromDeserialized(
       deserialized,
-      { presenceMessageFromValues, presenceMessagesFromValuesArray },
+      {
+        presenceMessageFromValues,
+        presenceMessagesFromValuesArray,
+        presenceMessageFromWireProtocol,
+      },
       dependencies?.ObjectsPlugin ?? null,
     );
   };

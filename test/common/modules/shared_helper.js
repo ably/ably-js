@@ -506,6 +506,15 @@ define([
     dumpPrivateApiUsage() {
       privateApiRecorder.dump();
     }
+
+    async waitFor(condition, remaining) {
+      const success = await condition();
+      if (success || remaining <= 0) {
+        return success;
+      }
+      await this.setTimeoutAsync(100);
+      return this.waitFor(condition, remaining - 100);
+    }
   }
 
   SharedHelper.testOnAllTransportsAndProtocols.skip = function (thisInDescribe, testName, testFn) {

@@ -8,6 +8,7 @@ import { FilteredSubscriptions } from './filteredsubscriptions';
 import {
   fromValues as presenceMessageFromValues,
   fromValuesArray as presenceMessagesFromValuesArray,
+  fromWireProtocol as presenceMessageFromWireProtocol,
 } from '../types/presencemessage';
 import { TransportCtor } from '../transport/transport';
 import type * as PushPlugin from 'plugins/push';
@@ -16,6 +17,7 @@ import type * as ObjectsPlugin from 'plugins/objects';
 export interface PresenceMessagePlugin {
   presenceMessageFromValues: typeof presenceMessageFromValues;
   presenceMessagesFromValuesArray: typeof presenceMessagesFromValuesArray;
+  presenceMessageFromWireProtocol: typeof presenceMessageFromWireProtocol;
 }
 
 export type RealtimePresencePlugin = PresenceMessagePlugin & {

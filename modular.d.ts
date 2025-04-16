@@ -16,6 +16,8 @@
  * | `MessageStatic.fromEncodedArray()`         | [`decodeMessages()`](../functions/modular.decodeMessages.html)                     |
  * | `MessageStatic.fromEncodedArray()`         | [`decodeEncryptedMessages()`](../functions/modular.decodeEncryptedMessages.html)   |
  * | `PresenceMessageStatic.fromEncoded()`      | [`decodePresenceMessage()`](../functions/modular.decodePresenceMessage.html)       |
+ * | `PresenceMessageStatic.fromEncoded()`      | [`decodeEncryptedPresenceMessage()`](../functions/modular.decodeEncryptedPresenceMessage.html)       |
+ * | `PresenceMessageStatic.fromEncodedArray()` | [`decodeEncryptedPresenceMessages()`](../functions/modular.decodeEncryptedPresenceMessages.html)     |
  * | `PresenceMessageStatic.fromEncodedArray()` | [`decodePresenceMessages()`](../functions/modular.decodePresenceMessages.html)     |
  * | `PresenceMessageStatic.fromValues()`       | [`constructPresenceMessage()`](../functions/modular.constructPresenceMessage.html) |
  *
@@ -60,6 +62,8 @@ export declare const decodeMessages: MessageStatic['fromEncodedArray'];
 export declare const decodeEncryptedMessages: MessageStatic['fromEncodedArray'];
 export declare const decodePresenceMessage: PresenceMessageStatic['fromEncoded'];
 export declare const decodePresenceMessages: PresenceMessageStatic['fromEncodedArray'];
+export declare const decodeEncryptedPresenceMessage: PresenceMessageStatic['fromEncoded'];
+export declare const decodeEncryptedPresenceMessages: PresenceMessageStatic['fromEncodedArray'];
 export declare const constructPresenceMessage: PresenceMessageStatic['fromValues'];
 
 /**
