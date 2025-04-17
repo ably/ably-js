@@ -3153,6 +3153,16 @@ export declare interface Push {
 }
 
 /**
+ * Represents the local device as activated as a target for push notifications.
+ */
+export declare interface LocalDevice {
+  /**
+   * Returns a {@link PaginatedResult} object containing {@link PushChannelSubscription} objects for each push channel subscription active for the local device.
+   */
+  async listSubscriptions(): Promise<PaginatedResult<PushChannelSubscription>>;
+}
+
+/**
  * Enables the management of device registrations and push notification subscriptions. Also enables the publishing of push notifications to devices.
  */
 export declare interface PushAdmin {
@@ -3323,6 +3333,11 @@ export declare class Rest implements RestClient {
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
+
+  /**
+   * An optional {@link LocalDevice} object representing the local device if activated as a target for push notifications. This field is only accessible when using the `Push` plugin.
+   */
+  device?: LocalDevice;
 }
 
 /**
