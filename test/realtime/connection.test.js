@@ -1,6 +1,12 @@
 'use strict';
 
-define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
+define(['ably', 'shared_helper', 'async', 'chai', 'interception_proxy_client'], function (
+  Ably,
+  Helper,
+  async,
+  chai,
+  interceptionProxyClient,
+) {
   var expect = chai.expect;
   var createPM = Ably.protocolMessageFromDeserialized;
 
@@ -185,119 +191,123 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTN19a2
      */
     it('connectionQueuing', function (done) {
-      var helper = this.test.helper,
-        realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
-        channel = realtime.channels.get('connectionQueuing'),
-        connectionManager = realtime.connection.connectionManager;
+      interceptionProxyClient.intercept(done, (done, interceptionContext) => {
+        var helper = this.test.helper,
+          realtime = helper.AblyRealtime({ transports: [helper.bestTransport] }),
+          channel = realtime.channels.get('connectionQueuing'),
+          connectionManager = realtime.connection.connectionManager;
 
-      realtime.connection.once('connected', function () {
-        helper.recordPrivateApi('read.connectionManager.activeProtocol.transport');
-        var transport = connectionManager.activeProtocol.transport;
-        Helper.whenPromiseSettles(channel.attach(), function (err) {
-          if (err) {
-            helper.closeAndFinish(done, realtime, err);
-            return;
-          }
-
-          let transportSendCallback;
-
-          helper.recordPrivateApi('replace.transport.send');
-          /* Sabotage sending the message */
-          transport.send = function (msg) {
-            if (msg.action == 15) {
-              expect(msg.msgSerial).to.equal(0, 'Expect msgSerial to be 0');
-
-              if (!transportSendCallback) {
-                done(new Error('transport.send override called before transportSendCallback populated'));
-              }
-
-              transportSendCallback(null);
-            }
-          };
-
-          let publishCallback;
-
-          async.series(
-            [
-              function (cb) {
-                transportSendCallback = cb;
-
-                /* Sabotaged publish */
-                Helper.whenPromiseSettles(channel.publish('first', null), function (err) {
-                  if (!publishCallback) {
-                    done(new Error('publish completed before publishCallback populated'));
-                  }
-                  publishCallback(err);
-                });
-              },
-
-              // We wait for transport.send to recieve the message that we just
-              // published before we proceed to disconnecting the transport, to
-              // make sure that the message got marked as `sendAttempted`.
-
-              function (cb) {
-                async.parallel(
-                  [
-                    function (cb) {
-                      publishCallback = function (err) {
-                        try {
-                          expect(!err, 'Check publish happened (eventually) without err').to.be.ok;
-                        } catch (err) {
-                          cb(err);
-                          return;
-                        }
-                        cb();
-                      };
-                    },
-                    function (cb) {
-                      /* After the disconnect, on reconnect, spy on transport.send again */
-                      helper.recordPrivateApi('listen.connectionManager.transport.pending');
-                      connectionManager.once('transport.pending', function (transport) {
-                        var oldSend = transport.send;
-
-                        helper.recordPrivateApi('replace.transport.send');
-                        transport.send = function (msg, msgCb) {
-                          if (msg.action === 15) {
-                            if (msg.messages[0].name === 'first') {
-                              try {
-                                expect(msg.msgSerial).to.equal(0, 'Expect msgSerial of original message to still be 0');
-                                expect(msg.messages.length).to.equal(
-                                  1,
-                                  'Expect second message to not have been merged with the attempted message',
-                                );
-                              } catch (err) {
-                                cb(err);
-                                return;
-                              }
-                            } else if (msg.messages[0].name === 'second') {
-                              try {
-                                expect(msg.msgSerial).to.equal(1, 'Expect msgSerial of new message to be 1');
-                              } catch (err) {
-                                cb(err);
-                                return;
-                              }
-                              cb();
-                            }
-                          }
-                          helper.recordPrivateApi('call.transport.send');
-                          oldSend.call(transport, msg, msgCb);
-                        };
-                        channel.publish('second', null);
-                      });
-
-                      /* Disconnect the transport (will automatically reconnect and resume) () */
-                      helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
-                      connectionManager.disconnectAllTransports();
-                    },
-                  ],
-                  cb,
-                );
-              },
-            ],
-            function (err) {
+        realtime.connection.once('connected', function () {
+          Helper.whenPromiseSettles(channel.attach(), function (err) {
+            if (err) {
               helper.closeAndFinish(done, realtime, err);
-            },
-          );
+              return;
+            }
+
+            let transportSendCallback;
+
+            /* Sabotage sending the message */
+            interceptionContext.transformClientMessage = (msg) => {
+              if (msg.deserialized.action == 15) {
+                expect(msg.deserialized.msgSerial).to.equal(0, 'Expect msgSerial to be 0');
+
+                if (!transportSendCallback) {
+                  done(new Error('transport.send override called before transportSendCallback populated'));
+                }
+
+                transportSendCallback(null);
+              }
+            };
+
+            let publishCallback;
+
+            async.series(
+              [
+                function (cb) {
+                  transportSendCallback = cb;
+
+                  /* Sabotaged publish */
+                  Helper.whenPromiseSettles(channel.publish('first', null), function (err) {
+                    if (!publishCallback) {
+                      done(new Error('publish completed before publishCallback populated'));
+                    }
+                    publishCallback(err);
+                  });
+                },
+
+                // We wait for transport.send to recieve the message that we just
+                // published before we proceed to disconnecting the transport, to
+                // make sure that the message got marked as `sendAttempted`.
+
+                function (cb) {
+                  async.parallel(
+                    [
+                      function (cb) {
+                        publishCallback = function (err) {
+                          try {
+                            expect(!err, 'Check publish happened (eventually) without err').to.be.ok;
+                          } catch (err) {
+                            cb(err);
+                            return;
+                          }
+                          cb();
+                        };
+                      },
+                      function (cb) {
+                        /* After the disconnect, on reconnect, spy on transport.send again */
+                        helper.recordPrivateApi('listen.connectionManager.transport.pending');
+                        connectionManager.once('transport.pending', function (transport) {
+                          // TODO does the identity of this transport matter, and can we replace the `transport.pending` check with something external too (e.g. detecting a new connection)? perhaps let's have an EventEmitter interface on the interception context that says when there's a new connection or something
+                          interceptionContext.transformClientMessage = function (msg) {
+                            if (msg.deserialized.action === 15) {
+                              if (msg.deserialized.messages[0].name === 'first') {
+                                try {
+                                  expect(msg.deserialized.msgSerial).to.equal(
+                                    0,
+                                    'Expect msgSerial of original message to still be 0',
+                                  );
+                                  expect(msg.deserialized.messages.length).to.equal(
+                                    1,
+                                    'Expect second message to not have been merged with the attempted message',
+                                  );
+                                } catch (err) {
+                                  cb(err);
+                                  return msg.deserialized;
+                                }
+                              } else if (msg.deserialized.messages[0].name === 'second') {
+                                try {
+                                  expect(msg.deserialized.msgSerial).to.equal(
+                                    1,
+                                    'Expect msgSerial of new message to be 1',
+                                  );
+                                } catch (err) {
+                                  cb(err);
+                                  return msg.deserialized;
+                                }
+                                cb();
+                              }
+                            }
+
+                            // preserve the message
+                            return msg.deserialized;
+                          };
+                          channel.publish('second', null);
+                        });
+
+                        /* Disconnect the transport (will automatically reconnect and resume) () */
+                        helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
+                        connectionManager.disconnectAllTransports();
+                      },
+                    ],
+                    cb,
+                  );
+                },
+              ],
+              function (err) {
+                helper.closeAndFinish(done, realtime, err);
+              },
+            );
+          });
         });
       });
     });
