@@ -48,7 +48,7 @@ interface PluginInfo {
 
 const buildablePlugins: Record<'push' | 'objects', PluginInfo> = {
   push: { description: 'Push', path: './build/push.js', external: ['ulid'] },
-  objects: { description: 'Objects', path: './build/objects.js', external: ['deep-equal'] },
+  objects: { description: 'Objects', path: './build/objects.js', external: ['dequal'] },
 };
 
 function formatBytes(bytes: number) {

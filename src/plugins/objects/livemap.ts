@@ -1,4 +1,4 @@
-import deepEqual from 'deep-equal';
+import { dequal } from 'dequal';
 
 import type * as API from '../../../ably';
 import { DEFAULTS } from './defaults';
@@ -572,7 +572,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       }
 
       // both props exist and are not tombstoned, need to compare values with deep equals to see if it was changed
-      const valueChanged = !deepEqual(currentEntry.data, newEntry.data, { strict: true });
+      const valueChanged = !dequal(currentEntry.data, newEntry.data);
       if (valueChanged) {
         update.update[typedKey] = 'updated';
         continue;
