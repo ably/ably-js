@@ -2,6 +2,14 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.7.0](https://github.com/ably/ably-js/tree/2.7.0) (2025-04-17)
+
+- Adds `ANNOTATION_PUBLISH` and `ANNOTATION_SUBSCRIBE` channel modes [\#1953](https://github.com/ably/ably-js/pull/1953)
+- Adds support for message annotations via `channel.annotations` [\#1953](https://github.com/ably/ably-js/pull/1953)
+- The message action `meta.occupancy` is now renamed to `meta`. Similarly, `MessageActions.META` is now `MessageActions.META` [\#1953](https://github.com/ably/ably-js/pull/1953)
+- Fixes a bug where `deactivate` would not use device auth, meaning clients would only be able to use it with the `push-admin` capability [\#2000](https://github.com/ably/ably-js/pull/2000)
+- The push `deactivate` method's callback type is now optional when using TypeScript [\#2000](https://github.com/ably/ably-js/pull/2000)
+
 ## [2.6.5](https://github.com/ably/ably-js/tree/2.6.5) (2025-03-24)
 
 - Fixed type issue in `PublishOptions` [\#1988](https://github.com/ably/ably-js/pull/1988)
