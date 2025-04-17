@@ -3180,6 +3180,13 @@ export declare interface LocalDevice {
    * A unique device identity token that the device uses to authenticate itself with Ably.
    */
   deviceIdentityToken?: string;
+
+  /**
+   * Retrieves push subscriptions active for the local device.
+   *
+   * @returns a {@link PaginatedResult} object containing an array of {@link PushChannelSubscription} objects for each push channel subscription active for the local device.
+   */
+  listSubscriptions(): Promise<PaginatedResult<PushChannelSubscription>>;
 }
 
 /**

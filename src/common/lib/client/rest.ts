@@ -17,6 +17,7 @@ import { useTokenAuth } from './auth';
 import { RestChannelMixin } from './restchannelmixin';
 import { RestPresenceMixin } from './restpresencemixin';
 import DeviceDetails from '../types/devicedetails';
+import PushChannelSubscription from '../types/pushchannelsubscription';
 
 type BatchResult<T> = API.BatchResult<T>;
 
@@ -44,7 +45,9 @@ export class Rest {
 
   // exposed for plugins but shouldn't be bundled with minimal realtime
   Resource = Resource;
+  PaginatedResource = PaginatedResource;
   DeviceDetails = DeviceDetails;
+  PushChannelSubscription = PushChannelSubscription;
 
   constructor(client: BaseClient) {
     this.client = client;
