@@ -26,7 +26,7 @@ class RealtimeAnnotations {
     const annotation = constructValidateAnnotation(msgOrSerial, annotationValues);
     const wireAnnotation = await annotation.encode();
 
-    this.channel._throwIfUnpublishableState();
+    this.channel.throwIfUnpublishableState();
 
     Logger.logAction(
       this.logger,

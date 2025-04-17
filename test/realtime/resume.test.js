@@ -140,7 +140,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Related to RTN15b, RTN15c.
      * @nospec
      */
-    Helper.testOnAllTransports(this, 'resume_inactive', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'resume_inactive', function (realtimeOpts) {
       return function (done) {
         resume_inactive(done, this.test.helper, 'resume_inactive' + String(Math.random()), {}, realtimeOpts);
       };
@@ -266,7 +266,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Related to RTN15b, RTN15c.
      * @nospec
      */
-    Helper.testOnAllTransports(this, 'resume_active', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'resume_active', function (realtimeOpts) {
       return function (done) {
         resume_active(done, this.test.helper, 'resume_active' + String(Math.random()), {}, realtimeOpts);
       };
@@ -276,7 +276,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Resume with loss of continuity
      * @spec RTN15c7
      */
-    Helper.testOnAllTransports(
+    Helper.testOnAllTransportsAndProtocols(
       this,
       'resume_lost_continuity',
       function (realtimeOpts) {
@@ -353,7 +353,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Resume with token error
      * @spec RTN15c5
      */
-    Helper.testOnAllTransports(
+    Helper.testOnAllTransportsAndProtocols(
       this,
       'resume_token_error',
       function (realtimeOpts) {
@@ -411,7 +411,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
      * Resume with fatal error
      * @spec RTN15c4
      */
-    Helper.testOnAllTransports(
+    Helper.testOnAllTransportsAndProtocols(
       this,
       'resume_fatal_error',
       function (realtimeOpts) {

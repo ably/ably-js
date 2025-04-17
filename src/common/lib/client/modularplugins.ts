@@ -10,7 +10,8 @@ import { FilteredSubscriptions } from './filteredsubscriptions';
 import PresenceMessage, { WirePresenceMessage } from '../types/presencemessage';
 import Annotation, { WireAnnotation } from '../types/annotation';
 import { TransportCtor } from '../transport/transport';
-import * as PushPlugin from 'plugins/push';
+import type * as PushPlugin from 'plugins/push';
+import type * as ObjectsPlugin from 'plugins/objects';
 
 export interface PresenceMessagePlugin {
   PresenceMessage: typeof PresenceMessage;
@@ -40,6 +41,7 @@ export interface ModularPlugins {
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
   Push?: typeof PushPlugin;
+  Objects?: typeof ObjectsPlugin;
 }
 
 export const allCommonModularPlugins: ModularPlugins = { Rest };

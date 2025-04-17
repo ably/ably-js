@@ -21,8 +21,8 @@ export const actions = {
   SYNC: 16,
   AUTH: 17,
   ACTIVATE: 18,
-  STATE: 19,
-  STATE_SYNC: 20,
+  OBJECT: 19,
+  OBJECT_SYNC: 20,
   ANNOTATION: 21,
 };
 
@@ -38,6 +38,7 @@ export const flags: { [key: string]: number } = {
   RESUMED: 1 << 2,
   TRANSIENT: 1 << 4,
   ATTACH_RESUME: 1 << 5,
+  HAS_OBJECTS: 1 << 7,
   /* Channel mode flags */
   PRESENCE: 1 << 16,
   PUBLISH: 1 << 17,
@@ -45,6 +46,8 @@ export const flags: { [key: string]: number } = {
   PRESENCE_SUBSCRIBE: 1 << 19,
   ANNOTATION_PUBLISH: 1 << 21,
   ANNOTATION_SUBSCRIBE: 1 << 22,
+  OBJECT_SUBSCRIBE: 1 << 24,
+  OBJECT_PUBLISH: 1 << 25,
 };
 
 export const flagNames = Object.keys(flags);
@@ -55,7 +58,9 @@ flags.MODE_ALL =
   flags.SUBSCRIBE |
   flags.PRESENCE_SUBSCRIBE |
   flags.ANNOTATION_PUBLISH |
-  flags.ANNOTATION_SUBSCRIBE;
+  flags.ANNOTATION_SUBSCRIBE |
+  flags.OBJECT_SUBSCRIBE |
+  flags.OBJECT_PUBLISH;
 
 export const channelModes = [
   'PRESENCE',
@@ -64,4 +69,6 @@ export const channelModes = [
   'PRESENCE_SUBSCRIBE',
   'ANNOTATION_PUBLISH',
   'ANNOTATION_SUBSCRIBE',
+  'OBJECT_SUBSCRIBE',
+  'OBJECT_PUBLISH',
 ];

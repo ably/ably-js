@@ -102,7 +102,7 @@ function rightRotate(word: number, bits: number) {
   return (word >>> bits) | (word << (32 - bits));
 }
 
-function sha256(data: Uint8Array) {
+export function sha256(data: Uint8Array): Uint8Array {
   // Copy default state
   var STATE = DEFAULT_STATE.slice();
 
@@ -185,7 +185,7 @@ function sha256(data: Uint8Array) {
   );
 }
 
-export function hmac(key: Uint8Array, data: Uint8Array) {
+export function hmac(key: Uint8Array, data: Uint8Array): Uint8Array {
   if (key.length > 64) key = sha256(key);
 
   if (key.length < 64) {

@@ -39,6 +39,7 @@ window.__testFiles__.files = {
   'test/realtime/failure.test.js': true,
   'test/realtime/history.test.js': true,
   'test/realtime/init.test.js': true,
+  'test/realtime/objects.test.js': true,
   'test/realtime/message.test.js': true,
   'test/realtime/presence.test.js': true,
   'test/realtime/reauth.test.js': true,

@@ -2,7 +2,7 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   var expect = chai.expect;
-  var createPM = Ably.protocolMessageFromDeserialized;
+  var createPM = Ably.makeProtocolMessageFromDeserialized();
 
   describe('realtime/sync', function () {
     this.timeout(60 * 1000);
@@ -50,7 +50,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'syncexistingset',
         channel = realtime.channels.get(channelName);
 
-      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
       helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
@@ -183,7 +183,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'sync_member_arrives_in_middle',
         channel = realtime.channels.get(channelName);
 
-      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
       helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
@@ -303,7 +303,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'sync_member_arrives_normally_after_came_in_sync',
         channel = realtime.channels.get(channelName);
 
-      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
       helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
@@ -401,7 +401,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'sync_member_arrives_normally_before_comes_in_sync',
         channel = realtime.channels.get(channelName);
 
-      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
       helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({
@@ -503,7 +503,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         channelName = 'sync_ordering',
         channel = realtime.channels.get(channelName);
 
-      helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
       helper.recordPrivateApi('call.channel.processMessage');
       await channel.processMessage(
         createPM({

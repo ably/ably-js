@@ -11,6 +11,10 @@ define(function () {
       browser: 'build/push',
       node: 'build/push',
     },
+    objects: {
+      browser: 'build/objects',
+      node: 'build/objects',
+    },
 
     // test modules
     globals: { browser: 'test/common/globals/environment', node: 'test/common/globals/environment' },
@@ -18,9 +22,14 @@ define(function () {
     async: { browser: 'node_modules/async/lib/async' },
     chai: { browser: 'node_modules/chai/chai', node: 'node_modules/chai/chai' },
     ulid: { browser: 'node_modules/ulid/dist/index.umd', node: 'node_modules/ulid/dist/index.umd' },
+    dequal: { browser: 'node_modules/dequal/dist/index.min', node: 'node_modules/dequal/dist/index' },
     private_api_recorder: {
       browser: 'test/common/modules/private_api_recorder',
       node: 'test/common/modules/private_api_recorder',
+    },
+    objects_helper: {
+      browser: 'test/common/modules/objects_helper',
+      node: 'test/common/modules/objects_helper',
     },
   });
 });

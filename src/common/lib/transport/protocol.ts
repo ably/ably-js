@@ -21,7 +21,9 @@ export class PendingMessage {
     this.merged = false;
     const action = message.action;
     this.sendAttempted = false;
-    this.ackRequired = action == actions.MESSAGE || action == actions.PRESENCE || action == actions.ANNOTATION;
+    this.ackRequired =
+      typeof action === 'number' &&
+      [actions.MESSAGE, actions.PRESENCE, actions.ANNOTATION, actions.OBJECT].includes(action);
   }
 }
 
@@ -82,6 +84,7 @@ class Protocol extends EventEmitter {
             pendingMessage.message,
             this.transport.connectionManager.realtime._RealtimePresence,
             this.transport.connectionManager.realtime._Annotations,
+            this.transport.connectionManager.realtime._objectsPlugin,
           ),
       );
     }
