@@ -53,6 +53,40 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       return device;
     }
 
+    async listSubscriptions() {
+      const Platform = this.rest.Platform;
+      if (!Platform.Config.push) {
+        throw new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+      }
+
+      if (!this.id) {
+        throw new this.rest.ErrorInfo('Device not activated', 40000, 400);
+      }
+
+      const client = this.rest,
+        format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
+        envelope = client.http.supportsLinkHeaders ? undefined : format,
+        headers = client.Defaults.defaultGetHeaders(client.options, { format });
+
+      client.Utils.mixin(headers, client.options.headers);
+
+      const authDetails = this.getAuthDetails(client, headers, {});
+
+      return new client.rest.PaginatedResource(
+        client,
+        '/push/channelSubscriptions',
+        authDetails.headers,
+        envelope,
+        async function (body, headers, unpacked) {
+          return client.rest.PushChannelSubscription.fromResponseBody(
+            body as Record<string, unknown>[],
+            client._MsgPack,
+            unpacked ? undefined : format,
+          );
+        },
+      ).get({ deviceId: this.id });
+    }
+
     loadPersisted() {
       const Platform = this.rest.Platform;
       if (!Platform.Config.push) {
