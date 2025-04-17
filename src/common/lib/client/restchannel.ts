@@ -2,13 +2,11 @@ import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import RestPresence from './restpresence';
 import Message, {
-  encodeArray as encodeMessagesArray,
   serialize as serializeMessage,
   getMessagesSize,
-  CipherOptions,
-  fromValues as messageFromValues,
-  fromValuesArray as messagesFromValuesArray,
+  encodeArray as encodeMessagesArray,
 } from '../types/message';
+import { CipherOptions } from '../types/basemessage';
 import ErrorInfo from '../types/errorinfo';
 import { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
@@ -19,6 +17,7 @@ import Defaults, { normaliseChannelOptions } from '../util/defaults';
 import { RestHistoryParams } from './restchannelmixin';
 import { RequestBody } from 'common/types/http';
 import type { PushChannel } from 'plugins/push';
+import type RestAnnotations from './restannotations';
 
 const MSG_ID_ENTROPY_BYTES = 9;
 
@@ -34,6 +33,13 @@ class RestChannel {
   presence: RestPresence;
   channelOptions: ChannelOptions;
   _push?: PushChannel;
+  private _annotations: RestAnnotations | null = null;
+  get annotations(): RestAnnotations {
+    if (!this._annotations) {
+      Utils.throwMissingPluginError('Annotations');
+    }
+    return this._annotations;
+  }
 
   constructor(client: BaseRest, name: string, channelOptions?: ChannelOptions) {
     Logger.logAction(client.logger, Logger.LOG_MINOR, 'RestChannel()', 'started; name = ' + name);
@@ -43,6 +49,9 @@ class RestChannel {
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, this.logger, channelOptions);
     if (client.options.plugins?.Push) {
       this._push = new client.options.plugins.Push.PushChannel(this);
+    }
+    if (client._Annotations) {
+      this._annotations = new client._Annotations.RestAnnotations(this);
     }
   }
 
@@ -74,13 +83,13 @@ class RestChannel {
 
     if (typeof first === 'string' || first === null) {
       /* (name, data, ...) */
-      messages = [messageFromValues({ name: first, data: second })];
+      messages = [Message.fromValues({ name: first, data: second })];
       params = args[2];
     } else if (Utils.isObject(first)) {
-      messages = [messageFromValues(first)];
+      messages = [Message.fromValues(first)];
       params = args[1];
     } else if (Array.isArray(first)) {
-      messages = messagesFromValuesArray(first);
+      messages = Message.fromValuesArray(first);
       params = args[1];
     } else {
       throw new ErrorInfo(
@@ -110,10 +119,10 @@ class RestChannel {
       });
     }
 
-    await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
+    const wireMessages = await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
 
     /* RSL1i */
-    const size = getMessagesSize(messages),
+    const size = getMessagesSize(wireMessages),
       maxMessageSize = options.maxMessageSize;
     if (size > maxMessageSize) {
       throw new ErrorInfo(
@@ -123,7 +132,7 @@ class RestChannel {
       );
     }
 
-    await this._publish(serializeMessage(messages, client._MsgPack, format), headers, params);
+    await this._publish(serializeMessage(wireMessages, client._MsgPack, format), headers, params);
   }
 
   async _publish(requestBody: RequestBody | null, headers: Record<string, string>, params: any): Promise<void> {

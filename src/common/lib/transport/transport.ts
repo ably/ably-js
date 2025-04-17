@@ -1,5 +1,5 @@
+import { actions } from '../types/protocolmessagecommon';
 import ProtocolMessage, {
-  actions,
   fromValues as protocolMessageFromValues,
   stringify as stringifyProtocolMessage,
 } from '../types/protocolmessage';
@@ -131,6 +131,7 @@ abstract class Transport extends EventEmitter {
           stringifyProtocolMessage(
             message,
             this.connectionManager.realtime._RealtimePresence,
+            this.connectionManager.realtime._Annotations,
             this.connectionManager.realtime._objectsPlugin,
           ) +
           '; connectionId = ' +

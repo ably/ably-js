@@ -184,7 +184,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const objectsHelper = new ObjectsHelper(helper);
         const testClient = helper.AblyRealtime();
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const testChannel = testClient.channels.get('channel');
           await testChannel.attach();
 
@@ -192,7 +192,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
           const publishClient = helper.AblyRealtime();
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
             // inject OBJECT message that should be ignored and not break anything without the plugin
             await objectsHelper.processObjectOperationMessageOnChannel({
               channel: testChannel,
@@ -216,7 +216,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const objectsHelper = new ObjectsHelper(helper);
         const testClient = helper.AblyRealtime();
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const testChannel = testClient.channels.get('channel');
           await testChannel.attach();
 
@@ -224,7 +224,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
           const publishClient = helper.AblyRealtime();
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
             // inject OBJECT_SYNC message that should be ignored and not break anything without the plugin
             await objectsHelper.processObjectStateMessageOnChannel({
               channel: testChannel,
@@ -261,7 +261,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
           const objects = channel.objects;
 
@@ -277,7 +277,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
           const objects = channel.objects;
 
@@ -294,7 +294,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
           const objects = channel.objects;
 
@@ -310,7 +310,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
           const objects = channel.objects;
 
@@ -339,7 +339,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
           const objects = channel.objects;
 
@@ -366,7 +366,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const objectsHelper = new ObjectsHelper(helper);
         const client = RealtimeWithObjects(helper);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
           const objects = channel.objects;
 
@@ -426,7 +426,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const helper = this.test.helper;
             const client = RealtimeWithObjects(helper, options);
 
-            await helper.monitorConnectionThenCloseAndFinish(async () => {
+            await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
               await waitFixtureChannelIsReady(client);
 
               const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
@@ -489,7 +489,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const helper = this.test.helper;
             const client = RealtimeWithObjects(helper, options);
 
-            await helper.monitorConnectionThenCloseAndFinish(async () => {
+            await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
               await waitFixtureChannelIsReady(client);
 
               const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
@@ -522,7 +522,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const helper = this.test.helper;
             const client = RealtimeWithObjects(helper, options);
 
-            await helper.monitorConnectionThenCloseAndFinish(async () => {
+            await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
               await waitFixtureChannelIsReady(client);
 
               const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
@@ -587,7 +587,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const helper = this.test.helper;
             const client = RealtimeWithObjects(helper, options);
 
-            await helper.monitorConnectionThenCloseAndFinish(async () => {
+            await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
               await waitFixtureChannelIsReady(client);
 
               const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
@@ -3559,7 +3559,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const objectsHelper = new ObjectsHelper(helper);
           const client = RealtimeWithObjects(helper, clientOptions);
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
             const channel = client.channels.get(channelName, channelOptionsWithObjects());
             const objects = channel.objects;
 
@@ -4060,7 +4060,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const objectsHelper = new ObjectsHelper(helper);
         const client = RealtimeWithObjects(helper, clientOptions);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get(channelName, channelOptionsWithObjects());
           const objects = channel.objects;
 
@@ -4212,7 +4212,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const objectsHelper = new ObjectsHelper(helper);
           const client = RealtimeWithObjects(helper, clientOptions);
 
-          await helper.monitorConnectionThenCloseAndFinish(async () => {
+          await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
             const channel = client.channels.get(channelName, channelOptionsWithObjects());
             const objects = channel.objects;
 
@@ -4446,7 +4446,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const objectsHelper = new ObjectsHelper(helper);
         const client = RealtimeWithObjects(helper, clientOptions);
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           // attach with correct channel modes so we can create Objects on the root for testing.
           // some scenarios will modify the underlying modes array to test specific behavior
           const channel = client.channels.get(channelName, channelOptionsWithObjects());
@@ -4477,7 +4477,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper, { clientId: 'test' });
 
-        await helper.monitorConnectionThenCloseAndFinish(async () => {
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           await client.connection.once('connected');
 
           const connectionManager = client.connection.connectionManager;
@@ -4746,7 +4746,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       const helper = this.test.helper;
       const client = helper.AblyRealtime();
 
-      await helper.monitorConnectionThenCloseAndFinish(async () => {
+      await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
         const objectsModes = ['object_subscribe', 'object_publish'];
         const channelOptions = { modes: objectsModes };
         const channel = client.channels.get('channel', channelOptions);

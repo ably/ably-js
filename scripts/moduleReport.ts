@@ -34,6 +34,8 @@ const functions = [
   { name: 'decodeEncryptedMessages', transitiveImports: ['Crypto'] },
   { name: 'decodePresenceMessage', transitiveImports: [] },
   { name: 'decodePresenceMessages', transitiveImports: [] },
+  { name: 'decodeEncryptedPresenceMessage', transitiveImports: ['Crypto'] },
+  { name: 'decodeEncryptedPresenceMessages', transitiveImports: ['Crypto'] },
   { name: 'constructPresenceMessage', transitiveImports: [] },
 ];
 
@@ -46,7 +48,7 @@ interface PluginInfo {
 
 const buildablePlugins: Record<'push' | 'objects', PluginInfo> = {
   push: { description: 'Push', path: './build/push.js', external: ['ulid'] },
-  objects: { description: 'Objects', path: './build/objects.js', external: ['deep-equal'] },
+  objects: { description: 'Objects', path: './build/objects.js', external: ['dequal'] },
 };
 
 function formatBytes(bytes: number) {
@@ -282,7 +284,9 @@ async function checkBaseRealtimeFiles() {
     'src/common/lib/transport/transport.ts',
     'src/common/lib/types/errorinfo.ts',
     'src/common/lib/types/message.ts',
+    'src/common/lib/types/basemessage.ts',
     'src/common/lib/types/protocolmessage.ts',
+    'src/common/lib/types/protocolmessagecommon.ts',
     'src/common/lib/types/pushchannelsubscription.ts', // TODO why? https://github.com/ably/ably-js/issues/1506
     'src/common/lib/util/defaults.ts',
     'src/common/lib/util/eventemitter.ts',

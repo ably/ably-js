@@ -1,6 +1,6 @@
 import * as Utils from '../util/utils';
+import { actions } from '../types/protocolmessagecommon';
 import ProtocolMessage, {
-  actions,
   fromValues as protocolMessageFromValues,
   fromDeserialized as protocolMessageFromDeserialized,
 } from '../types/protocolmessage';
@@ -356,6 +356,7 @@ abstract class CometTransport extends Transport {
             protocolMessageFromDeserialized(
               items[i],
               this.connectionManager.realtime._RealtimePresence,
+              this.connectionManager.realtime._Annotations,
               this.connectionManager.realtime._objectsPlugin,
             ),
           );

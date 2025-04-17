@@ -21,6 +21,13 @@ module.exports = {
     // TODO remove this once we start using the full @typescript-eslint/recommended ruleset in #958
     'no-redeclare': 'off',
     '@typescript-eslint/no-redeclare': 'error',
+    'jsdoc/multiline-blocks': [
+      'warn',
+      {
+        noZeroLineText: false,
+        noFinalLineText: false,
+      },
+    ],
   },
   overrides: [
     {

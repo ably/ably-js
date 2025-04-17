@@ -1,5 +1,5 @@
+import { actions } from '../types/protocolmessagecommon';
 import ProtocolMessage, {
-  actions,
   stringify as stringifyProtocolMessage,
   fromValues as protocolMessageFromValues,
 } from 'common/lib/types/protocolmessage';
@@ -1805,7 +1805,13 @@ class ConnectionManager extends EventEmitter {
 
         Logger.LOG_MICRO,
         'ConnectionManager.send()',
-        'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence, this.realtime._objectsPlugin),
+        'queueing msg; ' +
+          stringifyProtocolMessage(
+            msg,
+            this.realtime._RealtimePresence,
+            this.realtime._Annotations,
+            this.realtime._objectsPlugin,
+          ),
       );
     }
     this.queue(msg, callback);

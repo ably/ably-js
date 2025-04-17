@@ -47,6 +47,7 @@ window.__testFiles__.files = {
   'test/realtime/sync.test.js': true,
   'test/realtime/transports.test.js': true,
   'test/realtime/utils.test.js': true,
+  'test/realtime/annotations.test.js': true,
   'test/rest/api.test.js': true,
   'test/rest/auth.test.js': true,
   'test/rest/bufferutils.test.js': true,

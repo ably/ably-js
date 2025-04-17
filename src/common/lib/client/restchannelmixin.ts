@@ -2,7 +2,7 @@ import * as API from '../../../../ably';
 import RestChannel from './restchannel';
 import RealtimeChannel from './realtimechannel';
 import * as Utils from '../util/utils';
-import Message, { fromResponseBody as messageFromResponseBody } from '../types/message';
+import Message, { WireMessage, _fromEncodedArray } from '../types/message';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
 import Resource from './resource';
@@ -30,19 +30,16 @@ export class RestChannelMixin {
 
     Utils.mixin(headers, client.options.headers);
 
-    const options = channel.channelOptions;
     return new PaginatedResource(client, this.basePath(channel) + '/messages', headers, envelope, async function (
       body,
       headers,
       unpacked,
     ) {
-      return await messageFromResponseBody(
-        body as Message[],
-        options,
-        channel.logger,
-        client._MsgPack,
-        unpacked ? undefined : format,
-      );
+      const decoded = (
+        unpacked ? body : Utils.decodeBody(body, client._MsgPack, format)
+      ) as Utils.Properties<WireMessage>[];
+
+      return _fromEncodedArray(decoded, channel);
     }).get(params as Record<string, unknown>);
   }
 

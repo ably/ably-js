@@ -12,13 +12,14 @@ import * as Utils from '../util/utils';
 import Platform from '../../platform';
 import { Rest } from './rest';
 import { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
+import { AnnotationsPlugin } from './modularplugins';
 import { throwMissingPluginError } from '../util/utils';
 import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import type { LocalDevice } from 'plugins/push/pushactivation';
 import EventEmitter from '../util/eventemitter';
-import { MessageEncoding } from '../types/message';
+import { MessageEncoding } from '../types/basemessage';
 
 type BatchResult<T> = API.BatchResult<T>;
 type BatchPublishSpec = API.BatchPublishSpec;
@@ -48,6 +49,7 @@ class BaseClient {
   // Extra HTTP request implementations available to this client, in addition to those in web’s Http.bundledRequestImplementations
   readonly _additionalHTTPRequestImplementations: HTTPRequestImplementations | null;
   private readonly __FilteredSubscriptions: typeof FilteredSubscriptions | null;
+  readonly _Annotations: AnnotationsPlugin | null;
   readonly logger: Logger;
   _device?: LocalDevice;
 
@@ -100,6 +102,7 @@ class BaseClient {
     this._rest = options.plugins?.Rest ? new options.plugins.Rest(this) : null;
     this._Crypto = options.plugins?.Crypto ?? null;
     this.__FilteredSubscriptions = options.plugins?.MessageInteractions ?? null;
+    this._Annotations = options.plugins?.Annotations ?? null;
   }
 
   get rest(): Rest {

@@ -5,7 +5,11 @@ import Platform from 'common/platform';
 import { DefaultMessage } from '../types/defaultmessage';
 import { MsgPack } from 'common/types/msgpack';
 import { DefaultPresenceMessage } from '../types/defaultpresencemessage';
+import { DefaultAnnotation } from '../types/defaultannotation';
 import { Http } from 'common/types/http';
+import RealtimeAnnotations from './realtimeannotations';
+import RestAnnotations from './restannotations';
+import Annotation, { WireAnnotation } from '../types/annotation';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
 
@@ -25,6 +29,12 @@ export class DefaultRest extends BaseRest {
         ...allCommonModularPlugins,
         Crypto: DefaultRest.Crypto ?? undefined,
         MsgPack: DefaultRest._MsgPack ?? undefined,
+        Annotations: {
+          Annotation,
+          WireAnnotation,
+          RealtimeAnnotations,
+          RestAnnotations,
+        },
       }),
     );
   }
@@ -43,6 +53,7 @@ export class DefaultRest extends BaseRest {
 
   static Message = DefaultMessage;
   static PresenceMessage = DefaultPresenceMessage;
+  static Annotation = DefaultAnnotation;
 
   static _MsgPack: MsgPack | null = null;
 

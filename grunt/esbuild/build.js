@@ -82,7 +82,7 @@ const objectsPluginConfig = {
   entryPoints: ['src/plugins/objects/index.ts'],
   plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
   outfile: 'build/objects.js',
-  external: ['deep-equal'],
+  external: ['dequal'],
 };
 
 const objectsPluginCdnConfig = {

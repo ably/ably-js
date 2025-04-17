@@ -31,9 +31,9 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             var realtime = helper.AblyRealtime({ key: 'this.is:wrong', transports: transports });
             realtime.connection.on('failed', function (connectionStateChange) {
               try {
-                expect(realtime.connection.errorReason.code).to.equal(40400, 'wrong error reason code on connection.');
+                expect(realtime.connection.errorReason.code).to.equal(40101, 'wrong error reason code on connection.');
                 expect(connectionStateChange.reason.code).to.equal(
-                  40400,
+                  40101,
                   'wrong error reason code on connectionStateChange',
                 );
                 expect(connectionStateChange.reason).to.deep.equal(

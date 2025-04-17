@@ -1,36 +1,30 @@
-import ProtocolMessage, {
-  actions,
-  channelModes,
-  fromValues as protocolMessageFromValues,
-} from '../types/protocolmessage';
+import { actions, channelModes } from '../types/protocolmessagecommon';
+import ProtocolMessage, { fromValues as protocolMessageFromValues } from '../types/protocolmessage';
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
-import RealtimePresence from './realtimepresence';
-import Message, {
-  fromValues as messageFromValues,
-  fromValuesArray as messagesFromValuesArray,
-  encodeArray as encodeMessagesArray,
-  decode as decodeMessage,
-  getMessagesSize,
-  CipherOptions,
+import {
   EncodingDecodingContext,
+  CipherOptions,
+  populateFieldsFromParent,
   MessageEncoding,
-} from '../types/message';
+} from '../types/basemessage';
+import Message, { getMessagesSize, encodeArray as encodeMessagesArray } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
-import PresenceMessage, { decode as decodePresenceMessage } from '../types/presencemessage';
-import ConnectionErrors from '../transport/connectionerrors';
 import * as API from '../../../../ably';
 import ConnectionManager from '../transport/connectionmanager';
 import ConnectionStateChange from './connectionstatechange';
-import { ErrCallback, StandardCallback } from '../../types/utils';
+import { StandardCallback } from '../../types/utils';
 import BaseRealtime from './baserealtime';
 import { ChannelOptions } from '../../types/channel';
 import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
+import type { WirePresenceMessage } from '../types/presencemessage';
 import type { Objects, ObjectMessage } from 'plugins/objects';
+import type RealtimePresence from './realtimepresence';
+import type RealtimeAnnotations from './realtimeannotations';
 
 interface RealtimeHistoryParams {
   start?: number;
@@ -69,11 +63,18 @@ class RealtimeChannel extends EventEmitter {
   channelOptions: ChannelOptions;
   client: BaseRealtime;
   private _presence: RealtimePresence | null;
+  private _annotations: RealtimeAnnotations | null = null;
   get presence(): RealtimePresence {
     if (!this._presence) {
       Utils.throwMissingPluginError('RealtimePresence');
     }
     return this._presence;
+  }
+  get annotations(): RealtimeAnnotations {
+    if (!this._annotations) {
+      Utils.throwMissingPluginError('Annotations');
+    }
+    return this._annotations;
   }
   connectionManager: ConnectionManager;
   state: API.ChannelState;
@@ -85,8 +86,7 @@ class RealtimeChannel extends EventEmitter {
     channelSerial: string | null | undefined;
   };
   errorReason: ErrorInfo | string | null;
-  _requestedFlags: Array<API.ChannelMode> | null;
-  _mode?: null | number;
+  _mode = 0;
   _attachResume: boolean;
   _decodingContext: EncodingDecodingContext;
   _lastPayload: {
@@ -96,7 +96,7 @@ class RealtimeChannel extends EventEmitter {
   };
   _allChannelChanges: EventEmitter;
   params?: Record<string, any>;
-  modes: string[] | undefined;
+  modes: API.ChannelMode[] | undefined;
   stateTimer?: number | NodeJS.Timeout | null;
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
@@ -110,6 +110,9 @@ class RealtimeChannel extends EventEmitter {
     this.channelOptions = normaliseChannelOptions(client._Crypto ?? null, this.logger, options);
     this.client = client;
     this._presence = client._RealtimePresence ? new client._RealtimePresence.RealtimePresence(this) : null;
+    if (client._Annotations) {
+      this._annotations = new client._Annotations.RealtimeAnnotations(this);
+    }
     this.connectionManager = client.connection.connectionManager;
     this.state = 'initialized';
     this.subscriptions = new EventEmitter(this.logger);
@@ -120,8 +123,6 @@ class RealtimeChannel extends EventEmitter {
     };
     this.setOptions(options);
     this.errorReason = null;
-    this._requestedFlags = null;
-    this._mode = null;
     this._attachResume = false;
     this._decodingContext = {
       channelOptions: this.channelOptions,
@@ -241,28 +242,29 @@ class RealtimeChannel extends EventEmitter {
   }
 
   async publish(...args: any[]): Promise<void> {
-    let messages = args[0];
+    let messages: Message[];
     let argCount = args.length;
 
-    if (!this.connectionManager.activeState()) {
-      throw this.connectionManager.getError();
-    }
     if (argCount == 1) {
-      if (Utils.isObject(messages)) messages = [messageFromValues(messages)];
-      else if (Array.isArray(messages)) messages = messagesFromValuesArray(messages);
-      else
+      if (Utils.isObject(args[0])) {
+        messages = [Message.fromValues(args[0])];
+      } else if (Array.isArray(args[0])) {
+        messages = Message.fromValuesArray(args[0]);
+      } else {
         throw new ErrorInfo(
           'The single-argument form of publish() expects a message object or an array of message objects',
           40013,
           400,
         );
+      }
     } else {
-      messages = [messageFromValues({ name: args[0], data: args[1] })];
+      messages = [Message.fromValues({ name: args[0], data: args[1] })];
     }
     const maxMessageSize = this.client.options.maxMessageSize;
-    await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
+    // TODO get rid of CipherOptions type assertion, indicates channeloptions types are broken
+    const wireMessages = await encodeMessagesArray(messages, this.channelOptions as CipherOptions);
     /* RSL1i */
-    const size = getMessagesSize(messages);
+    const size = getMessagesSize(wireMessages);
     if (size > maxMessageSize) {
       throw new ErrorInfo(
         `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
@@ -270,33 +272,26 @@ class RealtimeChannel extends EventEmitter {
         400,
       );
     }
-    return new Promise((resolve, reject) => {
-      this._publish(messages, (err) => (err ? reject(err) : resolve()));
-    });
+
+    this.throwIfUnpublishableState();
+
+    Logger.logAction(
+      this.logger,
+      Logger.LOG_MICRO,
+      'RealtimeChannel.publish()',
+      'sending message; channel state is ' + this.state + ', message count = ' + wireMessages.length,
+    );
+
+    const pm = protocolMessageFromValues({ action: actions.MESSAGE, channel: this.name, messages: wireMessages });
+    return this.sendMessage(pm);
   }
 
-  _publish(messages: Array<Message>, callback: ErrCallback) {
-    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.publish()', 'message count = ' + messages.length);
-    const state = this.state;
-    switch (state) {
-      case 'failed':
-      case 'suspended':
-        callback(ErrorInfo.fromValues(this.invalidStateError()));
-        break;
-      default: {
-        Logger.logAction(
-          this.logger,
-          Logger.LOG_MICRO,
-          'RealtimeChannel.publish()',
-          'sending message; channel state is ' + state,
-        );
-        const msg = new ProtocolMessage();
-        msg.action = actions.MESSAGE;
-        msg.channel = this.name;
-        msg.messages = messages;
-        this.sendMessage(msg, callback);
-        break;
-      }
+  throwIfUnpublishableState(): void {
+    if (!this.connectionManager.activeState()) {
+      throw this.connectionManager.getError();
+    }
+    if (this.state === 'failed' || this.state === 'suspended') {
+      throw this.invalidStateError();
     }
   }
 
@@ -378,9 +373,7 @@ class RealtimeChannel extends EventEmitter {
       // or attachment.
       channelSerial: this.properties.channelSerial,
     });
-    if (this._requestedFlags) {
-      attachMsg.encodeModesToFlags(this._requestedFlags);
-    } else if (this.channelOptions.modes) {
+    if (this.channelOptions.modes) {
       attachMsg.encodeModesToFlags(Utils.allToUpperCase(this.channelOptions.modes) as API.ChannelMode[]);
     }
     if (this._attachResume) {
@@ -389,7 +382,7 @@ class RealtimeChannel extends EventEmitter {
     if (this._lastPayload.decodeFailureRecoveryInProgress) {
       attachMsg.channelSerial = this._lastPayload.protocolMessageChannelSerial;
     }
-    this.sendMessage(attachMsg, noop);
+    this.sendMessage(attachMsg).catch(noop);
   }
 
   async detach(): Promise<void> {
@@ -433,10 +426,10 @@ class RealtimeChannel extends EventEmitter {
     }
   }
 
-  detachImpl(callback?: ErrCallback): void {
+  detachImpl(): void {
     Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.detach()', 'sending DETACH message');
     const msg = protocolMessageFromValues({ action: actions.DETACH, channel: this.name });
-    this.sendMessage(msg, callback || noop);
+    this.sendMessage(msg).catch(noop);
   }
 
   async subscribe(...args: unknown[] /* [event], listener */): Promise<ChannelStateChange | null> {
@@ -453,7 +446,12 @@ class RealtimeChannel extends EventEmitter {
       this.subscriptions.on(event, listener);
     }
 
-    return this.attach();
+    // (RTL7g)
+    if (this.channelOptions.attachOnSubscribe !== false) {
+      return this.attach();
+    } else {
+      return null;
+    }
   }
 
   unsubscribe(...args: unknown[] /* [event], listener */): void {
@@ -492,30 +490,34 @@ class RealtimeChannel extends EventEmitter {
     connectionManager.send(syncMessage);
   }
 
-  sendMessage(msg: ProtocolMessage, callback?: ErrCallback): void {
-    this.connectionManager.send(msg, this.client.options.queueMessages, callback);
+  async sendMessage(msg: ProtocolMessage): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.connectionManager.send(msg, this.client.options.queueMessages, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
-  sendPresence(presence: PresenceMessage | PresenceMessage[], callback?: ErrCallback): void {
+  async sendPresence(presence: WirePresenceMessage[]): Promise<void> {
     const msg = protocolMessageFromValues({
       action: actions.PRESENCE,
       channel: this.name,
-      presence: Array.isArray(presence)
-        ? this.client._RealtimePresence!.presenceMessagesFromValuesArray(presence)
-        : [this.client._RealtimePresence!.presenceMessageFromValues(presence)],
+      presence: presence,
     });
-    this.sendMessage(msg, callback);
+    return this.sendMessage(msg);
   }
 
   sendState(objectMessages: ObjectMessage[]): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const msg = protocolMessageFromValues({
-        action: actions.OBJECT,
-        channel: this.name,
-        state: objectMessages,
-      });
-      this.sendMessage(msg, (err) => (err ? reject(err) : resolve()));
+    const msg = protocolMessageFromValues({
+      action: actions.OBJECT,
+      channel: this.name,
+      state: objectMessages,
     });
+    return this.sendMessage(msg);
   }
 
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
@@ -524,7 +526,8 @@ class RealtimeChannel extends EventEmitter {
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||
       message.action === actions.PRESENCE ||
-      message.action === actions.OBJECT
+      message.action === actions.OBJECT ||
+      message.action === actions.ANNOTATION
     ) {
       // RTL15b
       this.setChannelSerial(message.channelSerial);
@@ -538,7 +541,7 @@ class RealtimeChannel extends EventEmitter {
         this._mode = message.getMode();
         this.params = (message as any).params || {};
         const modesFromFlags = message.decodeModesFromFlags();
-        this.modes = (modesFromFlags && Utils.allToLowerCase(modesFromFlags)) || undefined;
+        this.modes = (modesFromFlags && (Utils.allToLowerCase(modesFromFlags) as API.ChannelMode[])) || undefined;
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         const hasBacklog = message.hasFlag('HAS_BACKLOG');
@@ -597,16 +600,19 @@ class RealtimeChannel extends EventEmitter {
         if (!message.presence) break;
       // eslint-disable-next-line no-fallthrough
       case actions.PRESENCE: {
-        const presenceMessages = message.presence;
-
-        if (!presenceMessages) {
+        if (!message.presence) {
           break;
         }
 
+        populateFieldsFromParent(message);
         const options = this.channelOptions;
-        await this._decodeAndPrepareMessages(message, presenceMessages, (msg) => decodePresenceMessage(msg, options));
-
         if (this._presence) {
+          const presenceMessages = await Promise.all(
+            message.presence.map((wpm) => {
+              return wpm.decode(options, this.logger);
+            }),
+          );
+
           this._presence.setPresence(presenceMessages, isSync, syncChannelSerial as any);
         }
         break;
@@ -615,16 +621,17 @@ class RealtimeChannel extends EventEmitter {
       // OBJECT and OBJECT_SYNC message processing share most of the logic, so group them together
       case actions.OBJECT:
       case actions.OBJECT_SYNC: {
-        if (!this._objects) {
+        if (!this._objects || !message.state) {
           return;
         }
 
-        const objectMessages = message.state ?? [];
+        populateFieldsFromParent(message);
         const options = this.channelOptions;
-        await this._decodeAndPrepareMessages(message, objectMessages, (msg) =>
-          this.client._objectsPlugin
-            ? this.client._objectsPlugin.ObjectMessage.decode(msg, options, MessageEncoding)
-            : Utils.throwMissingPluginError('Objects'),
+        const objectMessages = message.state;
+        await Promise.all(
+          objectMessages.map((om) =>
+            this.client._objectsPlugin!.ObjectMessage.decode(om, options, MessageEncoding, this.logger, Logger, Utils),
+          ),
         );
 
         if (message.action === actions.OBJECT) {
@@ -654,9 +661,11 @@ class RealtimeChannel extends EventEmitter {
           return;
         }
 
-        const messages = message.messages as Array<Message>,
-          firstMessage = messages[0],
-          lastMessage = messages[messages.length - 1];
+        populateFieldsFromParent(message);
+
+        const encoded = message.messages!,
+          firstMessage = encoded[0],
+          lastMessage = encoded[encoded.length - 1];
 
         if (
           firstMessage.extras &&
@@ -674,40 +683,48 @@ class RealtimeChannel extends EventEmitter {
           break;
         }
 
-        const { unrecoverableError } = await this._decodeAndPrepareMessages(
-          message,
-          messages,
-          (msg) => decodeMessage(msg, this._decodingContext),
-          (e) => {
-            /* decrypt failed .. the most likely cause is that we have the wrong key */
-            const errorInfo = e as ErrorInfo;
+        let messages: Message[] = [];
+        for (let i = 0; i < encoded.length; i++) {
+          const { decoded, err } = await encoded[i].decodeWithErr(this._decodingContext, this.logger);
+          messages[i] = decoded;
 
-            switch (errorInfo.code) {
+          if (err) {
+            switch (err.code) {
               case 40018:
                 /* decode failure */
-                this._startDecodeFailureRecovery(errorInfo);
-                return { unrecoverableError: true };
+                this._startDecodeFailureRecovery(err);
+                return;
 
-              case 40019:
-              /* No vcdiff plugin passed in - no point recovering, give up */
-              // eslint-disable-next-line no-fallthrough
+              case 40019: /* No vcdiff plugin passed in - no point recovering, give up */
               case 40021:
                 /* Browser does not support deltas, similarly no point recovering */
-                this.notifyState('failed', errorInfo);
-                return { unrecoverableError: true };
+                this.notifyState('failed', err);
+                return;
 
               default:
-                return { unrecoverableError: false };
+              // do nothing, continue decoding
             }
-          },
-        );
-        if (unrecoverableError) {
-          return;
+          }
         }
 
         this._lastPayload.messageId = lastMessage.id;
         this._lastPayload.protocolMessageChannelSerial = message.channelSerial;
         this.onEvent(messages);
+        break;
+      }
+
+      case actions.ANNOTATION: {
+        populateFieldsFromParent(message);
+        const options = this.channelOptions;
+        if (this._annotations) {
+          const annotations = await Promise.all(
+            (message.annotations || []).map((wpm) => {
+              return wpm.decode(options, this.logger);
+            }),
+          );
+
+          this._annotations._processIncoming(annotations);
+        }
         break;
       }
 
@@ -724,59 +741,14 @@ class RealtimeChannel extends EventEmitter {
       }
 
       default:
+        // RSF1, should handle unrecognized message actions gracefully and don't abort the realtime connection to ensure forward compatibility
         Logger.logAction(
           this.logger,
-          Logger.LOG_ERROR,
+          Logger.LOG_MAJOR,
           'RealtimeChannel.processMessage()',
-          'Fatal protocol error: unrecognised action (' + message.action + ')',
+          'Protocol error: unrecognised message action (' + message.action + ')',
         );
-        this.connectionManager.abort(ConnectionErrors.unknownChannelErr());
     }
-  }
-
-  /**
-   * Mutates provided messages by adding `connectionId`, `timestamp` and `id` fields, and decoding message data.
-   *
-   * @returns `unrecoverableError` flag. If `true` indicates that unrecoverable error was encountered during message decoding
-   * and any further message processing should be stopped. Always equals to `false` if `decodeErrorRecoveryHandler` was not provided
-   */
-  private async _decodeAndPrepareMessages<T extends Message | PresenceMessage | ObjectMessage>(
-    protocolMessage: ProtocolMessage,
-    messages: T[],
-    decodeFn: (msg: T) => Promise<void>,
-    decodeErrorRecoveryHandler?: (e: Error) => { unrecoverableError: boolean },
-  ): Promise<{ unrecoverableError: boolean }> {
-    const { id, connectionId, timestamp } = protocolMessage;
-
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i];
-
-      try {
-        // decode underlying data for a message
-        await decodeFn(msg);
-      } catch (e) {
-        Logger.logAction(
-          this.logger,
-          Logger.LOG_ERROR,
-          'RealtimeChannel.decodeAndPrepareMessages()',
-          (e as Error).toString(),
-        );
-
-        if (decodeErrorRecoveryHandler) {
-          const { unrecoverableError } = decodeErrorRecoveryHandler(e as Error);
-          if (unrecoverableError) {
-            // break out of for loop by returning
-            return { unrecoverableError: true };
-          }
-        }
-      }
-
-      if (!msg.connectionId) msg.connectionId = connectionId;
-      if (!msg.timestamp) msg.timestamp = timestamp;
-      if (!msg.id) msg.id = id + ':' + i;
-    }
-
-    return { unrecoverableError: false };
   }
 
   _startDecodeFailureRecovery(reason: ErrorInfo): void {

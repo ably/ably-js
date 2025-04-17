@@ -1,5 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type { MessageEncoding } from 'common/lib/types/message';
+import type { MessageEncoding } from 'common/lib/types/basemessage';
+import type Logger from 'common/lib/util/logger';
 import type * as Utils from 'common/lib/util/utils';
 import type { Bufferlike } from 'common/platform';
 import type { ChannelOptions } from 'common/types/channel';
@@ -203,27 +204,34 @@ export class ObjectMessage {
     message: ObjectMessage,
     inputContext: ChannelOptions,
     messageEncoding: typeof MessageEncoding,
+    logger: Logger,
+    LoggerClass: typeof Logger,
+    utils: typeof Utils,
   ): Promise<void> {
     // TODO: decide how to handle individual errors from decoding values. currently we throw first ever error we get
 
-    if (message.object?.map?.entries) {
-      await ObjectMessage._decodeMapEntries(message.object.map.entries, inputContext, messageEncoding);
-    }
+    try {
+      if (message.object?.map?.entries) {
+        await ObjectMessage._decodeMapEntries(message.object.map.entries, inputContext, messageEncoding);
+      }
 
-    if (message.object?.createOp?.map?.entries) {
-      await ObjectMessage._decodeMapEntries(message.object.createOp.map.entries, inputContext, messageEncoding);
-    }
+      if (message.object?.createOp?.map?.entries) {
+        await ObjectMessage._decodeMapEntries(message.object.createOp.map.entries, inputContext, messageEncoding);
+      }
 
-    if (message.object?.createOp?.mapOp?.data && 'value' in message.object.createOp.mapOp.data) {
-      await ObjectMessage._decodeObjectData(message.object.createOp.mapOp.data, inputContext, messageEncoding);
-    }
+      if (message.object?.createOp?.mapOp?.data && 'value' in message.object.createOp.mapOp.data) {
+        await ObjectMessage._decodeObjectData(message.object.createOp.mapOp.data, inputContext, messageEncoding);
+      }
 
-    if (message.operation?.map?.entries) {
-      await ObjectMessage._decodeMapEntries(message.operation.map.entries, inputContext, messageEncoding);
-    }
+      if (message.operation?.map?.entries) {
+        await ObjectMessage._decodeMapEntries(message.operation.map.entries, inputContext, messageEncoding);
+      }
 
-    if (message.operation?.mapOp?.data && 'value' in message.operation.mapOp.data) {
-      await ObjectMessage._decodeObjectData(message.operation.mapOp.data, inputContext, messageEncoding);
+      if (message.operation?.mapOp?.data && 'value' in message.operation.mapOp.data) {
+        await ObjectMessage._decodeObjectData(message.operation.mapOp.data, inputContext, messageEncoding);
+      }
+    } catch (error) {
+      LoggerClass.logAction(logger, LoggerClass.LOG_ERROR, 'ObjectMessage.decode()', utils.inspectError(error));
     }
   }
 
@@ -384,11 +392,7 @@ export class ObjectMessage {
     objectState?: ObjectState;
   } {
     const encodeFn: EncodeFunction = (data, encoding) => {
-      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWireProtocol(
-        data,
-        encoding,
-        format,
-      );
+      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWire(data, encoding, format);
       return {
         data: encodedData,
         encoding: newEncoding,

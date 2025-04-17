@@ -3,8 +3,7 @@ import RealtimePresence from './realtimepresence';
 import * as Utils from '../util/utils';
 import Defaults from '../util/defaults';
 import PaginatedResource, { PaginatedResult } from './paginatedresource';
-import PresenceMessage, { fromResponseBody as presenceMessageFromResponseBody } from '../types/presencemessage';
-import { CipherOptions } from '../types/message';
+import PresenceMessage, { WirePresenceMessage, _fromEncodedArray } from '../types/presencemessage';
 import { RestChannelMixin } from './restchannelmixin';
 
 export class RestPresenceMixin {
@@ -23,19 +22,18 @@ export class RestPresenceMixin {
 
     Utils.mixin(headers, client.options.headers);
 
-    const options = presence.channel.channelOptions;
-    return new PaginatedResource(client, this.basePath(presence) + '/history', headers, envelope, async function (
-      body,
+    return new PaginatedResource(
+      client,
+      this.basePath(presence) + '/history',
       headers,
-      unpacked,
-    ) {
-      return await presenceMessageFromResponseBody(
-        body as Record<string, unknown>[],
-        options as CipherOptions,
-        presence.logger,
-        client._MsgPack,
-        unpacked ? undefined : format,
-      );
-    }).get(params);
+      envelope,
+      async (body, headers, unpacked) => {
+        const decoded = (
+          unpacked ? body : Utils.decodeBody(body, client._MsgPack, format)
+        ) as Utils.Properties<WirePresenceMessage>[];
+
+        return _fromEncodedArray(decoded, presence.channel);
+      },
+    ).get(params);
   }
 }

@@ -1,16 +1,12 @@
 import * as Utils from '../util/utils';
 import EventEmitter from '../util/eventemitter';
 import Logger from '../util/logger';
-import PresenceMessage, {
-  fromValues as presenceMessageFromValues,
-  fromData as presenceMessageFromData,
-  encode as encodePresenceMessage,
-} from '../types/presencemessage';
+import PresenceMessage, { WirePresenceMessage } from '../types/presencemessage';
+import type { CipherOptions } from '../types/basemessage';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
 import RealtimeChannel from './realtimechannel';
 import Multicaster from '../util/multicaster';
 import ChannelStateChange from './channelstatechange';
-import { CipherOptions } from '../types/message';
 import { ErrCallback } from '../../types/utils';
 import { PaginatedResult } from './paginatedresource';
 import { PresenceMap, RealtimePresenceParams } from './presencemap';
@@ -61,7 +57,7 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
 
 class RealtimePresence extends EventEmitter {
   channel: RealtimeChannel;
-  pendingPresence: { presence: PresenceMessage; callback: ErrCallback }[];
+  pendingPresence: { presence: WirePresenceMessage; callback: ErrCallback }[];
   syncComplete: boolean;
   members: PresenceMap;
   _myMembers: PresenceMap;
@@ -119,7 +115,7 @@ class RealtimePresence extends EventEmitter {
       'channel = ' + channel.name + ', id = ' + id + ', client = ' + (clientId || '(implicit) ' + getClientId(this)),
     );
 
-    const presence = presenceMessageFromData(data);
+    const presence = PresenceMessage.fromData(data);
     presence.action = action;
     if (id) {
       presence.id = id;
@@ -127,13 +123,11 @@ class RealtimePresence extends EventEmitter {
     if (clientId) {
       presence.clientId = clientId;
     }
+    const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 
-    await encodePresenceMessage(presence, channel.channelOptions as CipherOptions);
     switch (channel.state) {
       case 'attached':
-        return new Promise((resolve, reject) => {
-          channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
-        });
+        return channel.sendPresence([wirePresMsg]);
       case 'initialized':
       case 'detached':
         channel.attach();
@@ -141,7 +135,7 @@ class RealtimePresence extends EventEmitter {
       case 'attaching':
         return new Promise((resolve, reject) => {
           this.pendingPresence.push({
-            presence: presence,
+            presence: wirePresMsg,
             callback: (err) => (err ? reject(err) : resolve()),
           });
         });
@@ -175,35 +169,32 @@ class RealtimePresence extends EventEmitter {
       'RealtimePresence.leaveClient()',
       'leaving; channel = ' + this.channel.name + ', client = ' + clientId,
     );
-    const presence = presenceMessageFromData(data);
+    const presence = PresenceMessage.fromData(data);
     presence.action = 'leave';
     if (clientId) {
       presence.clientId = clientId;
     }
+    const wirePresMsg = await presence.encode(channel.channelOptions as CipherOptions);
 
-    return new Promise((resolve, reject) => {
-      switch (channel.state) {
-        case 'attached':
-          channel.sendPresence(presence, (err) => (err ? reject(err) : resolve()));
-          break;
-        case 'attaching':
+    switch (channel.state) {
+      case 'attached':
+        return channel.sendPresence([wirePresMsg]);
+      case 'attaching':
+        return new Promise((resolve, reject) => {
           this.pendingPresence.push({
-            presence: presence,
+            presence: wirePresMsg,
             callback: (err) => (err ? reject(err) : resolve()),
           });
-          break;
-        case 'initialized':
-        case 'failed': {
-          /* we're not attached; therefore we let any entered status
-           * timeout by itself instead of attaching just in order to leave */
-          const err = new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
-          reject(err);
-          break;
-        }
-        default:
-          reject(channel.invalidStateError());
+        });
+      case 'initialized':
+      case 'failed': {
+        /* we're not attached; therefore we let any entered status
+         * timeout by itself instead of attaching just in order to leave */
+        throw new PartialErrorInfo('Unable to leave presence channel (incompatible state)', 90001);
       }
-    });
+      default:
+        throw channel.invalidStateError();
+    }
   }
 
   async get(params?: RealtimePresenceParams): Promise<PresenceMessage[]> {
@@ -288,8 +279,7 @@ class RealtimePresence extends EventEmitter {
       }
     }
 
-    for (let i = 0; i < presenceSet.length; i++) {
-      const presence = presenceMessageFromValues(presenceSet[i]);
+    for (let presence of presenceSet) {
       switch (presence.action) {
         case 'leave':
           if (members.remove(presence)) {
@@ -320,7 +310,7 @@ class RealtimePresence extends EventEmitter {
     /* broadcast to listeners */
     for (let i = 0; i < broadcastMessages.length; i++) {
       const presence = broadcastMessages[i];
-      this.subscriptions.emit(presence.action as string, presence);
+      this.subscriptions.emit(presence.action!, presence);
     }
   }
 
@@ -361,7 +351,10 @@ class RealtimePresence extends EventEmitter {
         presenceArray.push(event.presence);
         multicaster.push(event.callback);
       }
-      this.channel.sendPresence(presenceArray, multicaster);
+      this.channel
+        .sendPresence(presenceArray)
+        .then(() => multicaster())
+        .catch((err: ErrorInfo) => multicaster(err));
     }
   }
 
@@ -435,7 +428,7 @@ class RealtimePresence extends EventEmitter {
   _synthesizeLeaves(items: PresenceMessage[]): void {
     const subscriptions = this.subscriptions;
     items.forEach(function (item) {
-      const presence = presenceMessageFromValues({
+      const presence = PresenceMessage.fromValues({
         action: 'leave',
         connectionId: item.connectionId,
         clientId: item.clientId,
@@ -458,7 +451,11 @@ class RealtimePresence extends EventEmitter {
     }
 
     this.subscriptions.on(event, listener);
-    await channel.attach();
+
+    // (RTP6d)
+    if (channel.channelOptions.attachOnSubscribe !== false) {
+      await channel.attach();
+    }
   }
 
   unsubscribe(..._args: unknown[] /* [event], listener */): void {
