@@ -902,7 +902,7 @@ declare namespace ResolvedChannelModes {
    */
   type PUBLISH = 'publish';
   /**
-   * The client can subscribe to messages.
+   * The client will receive messages.
    */
   type SUBSCRIBE = 'subscribe';
   /**
@@ -910,9 +910,17 @@ declare namespace ResolvedChannelModes {
    */
   type PRESENCE = 'presence';
   /**
-   * The client can receive presence messages.
+   * The client will receive presence messages.
    */
   type PRESENCE_SUBSCRIBE = 'presence_subscribe';
+  /**
+   * The client can publish annotations
+   */
+  type ANNOTATION_PUBLISH = 'annotation_publish';
+  /**
+   * The client will receive annotations
+   */
+  type ANNOTATION_SUBSCRIBE = 'annotation_subscribe';
 }
 
 /**
@@ -926,7 +934,9 @@ export type ResolvedChannelMode =
   | ResolvedChannelModes.PUBLISH
   | ResolvedChannelModes.SUBSCRIBE
   | ResolvedChannelModes.PRESENCE
-  | ResolvedChannelModes.PRESENCE_SUBSCRIBE;
+  | ResolvedChannelModes.PRESENCE_SUBSCRIBE
+  | ResolvedChannelModes.ANNOTATION_PUBLISH
+  | ResolvedChannelModes.ANNOTATION_SUBSCRIBE;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
