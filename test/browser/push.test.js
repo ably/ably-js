@@ -88,6 +88,53 @@ define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, Helper, chai, 
         expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
         expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
       });
+
+      /** @nospec */
+      it('device_list_subscriptions', async function () {
+        const helper = Helper.forHook(this);
+
+        const adminRest = helper.AblyRest({
+          pushServiceWorkerUrl: swUrl,
+          plugins: { Push: PushPlugin },
+          key: helper.getTestApp().keys[0].keyStr, // admin user, all capabilities
+        });
+
+        const subscriberRest = helper.AblyRest({
+          pushServiceWorkerUrl: swUrl,
+          plugins: { Push: PushPlugin },
+          key: helper.getTestApp().keys[1].keyStr, // subscriber user, push-subscribe capability but no admin
+        });
+
+        await subscriberRest.push.activate();
+        expect(subscriberRest.device().deviceIdentityToken).to.be.ok;
+
+        const channel1 = 'pushenabled:test1';
+        const channel2 = 'pushenabled:test2';
+
+        await adminRest.push.admin.channelSubscriptions.save({
+          channel: channel1,
+          deviceId: subscriberRest.device().id,
+        });
+
+        await adminRest.push.admin.channelSubscriptions.save({
+          channel: channel2,
+          deviceId: subscriberRest.device().id,
+        });
+
+        const subscriptions = await subscriberRest.device().listSubscriptions();
+        expect(subscriptions).to.be.ok;
+        expect(Array.isArray(subscriptions.items)).to.be.true;
+        expect(subscriptions.items.length).to.equal(2);
+
+        const channels = subscriptions.items.map((sub) => sub.channel).sort();
+        expect(channels).to.deep.equal([channel1, channel2].sort());
+
+        subscriptions.items.forEach((sub) => {
+          expect(sub.deviceId).to.equal(subscriberRest.device().id);
+        });
+
+        await subscriberRest.push.deactivate();
+      });
     });
   }
 });
