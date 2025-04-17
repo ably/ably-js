@@ -917,7 +917,7 @@ declare namespace ResolvedChannelModes {
    */
   type PUBLISH = 'publish';
   /**
-   * The client can subscribe to messages.
+   * The client will receive messages.
    */
   type SUBSCRIBE = 'subscribe';
   /**
@@ -925,7 +925,7 @@ declare namespace ResolvedChannelModes {
    */
   type PRESENCE = 'presence';
   /**
-   * The client can receive presence messages.
+   * The client will receive presence messages.
    */
   type PRESENCE_SUBSCRIBE = 'presence_subscribe';
   /**
@@ -936,6 +936,14 @@ declare namespace ResolvedChannelModes {
    * The client can receive object messages.
    */
   type OBJECT_SUBSCRIBE = 'object_subscribe';
+  /**
+   * The client can publish annotations
+   */
+  type ANNOTATION_PUBLISH = 'annotation_publish';
+  /**
+   * The client will receive annotations
+   */
+  type ANNOTATION_SUBSCRIBE = 'annotation_subscribe';
 }
 
 /**
@@ -951,7 +959,9 @@ export type ResolvedChannelMode =
   | ResolvedChannelModes.PRESENCE
   | ResolvedChannelModes.PRESENCE_SUBSCRIBE
   | ResolvedChannelModes.OBJECT_PUBLISH
-  | ResolvedChannelModes.OBJECT_SUBSCRIBE;
+  | ResolvedChannelModes.OBJECT_SUBSCRIBE
+  | ResolvedChannelModes.ANNOTATION_PUBLISH
+  | ResolvedChannelModes.ANNOTATION_SUBSCRIBE;
 
 /**
  * Passes additional properties to a {@link Channel} or {@link RealtimeChannel} object, such as encryption, {@link ChannelMode} and channel parameters.
@@ -2106,7 +2116,7 @@ export declare interface RealtimeAnnotations {
    * @param listener - An event listener function.
    * @returns A promise which resolves upon success of the channel {@link RealtimeChannel.attach | `attach()`} operation and rejects with an {@link ErrorInfo} object upon its failure.
    */
-  subscribe(type: string | Array<string>, listener?: messageCallback<PresenceMessage>): Promise<void>;
+  subscribe(type: string | Array<string>, listener?: messageCallback<Annotation>): Promise<void>;
   /**
    * Registers a listener that is called each time an {@link Annotation} is received on the channel.
    * Note that if you want to receive individual realtime annotations (instead of just the rolled-up summaries), you will need to request the annotation_subscribe ChannelMode in ChannelOptions, since they are not delivered by default. In general, most clients will not bother with subscribing to individual annotations, and will instead just look at the summary updates.
