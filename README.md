@@ -11,7 +11,7 @@ _[Ably](https://ably.com) is the platform that powers synchronized digital exper
 > **Deprecation Notice**
 >
 > Versions **1.2.36 and below are deprecated**.
-> Please update to version **1.2.37 or higher** to continue receiving updates, support and important fixes.
+> If you are running a deprecated version then update as soon as possible. Ably recommends updating to the latest version wherever possible. See the [deprecation policy](https://ably.com/docs/platform/deprecate) and [deprecation announcement](https://ably.com/docs/platform/deprecate/protocol-v1) for further info.
 
 ## Supported platforms
 
