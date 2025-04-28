@@ -1967,6 +1967,11 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             channel: channel.name,
             channelSerial: 'OBJECT',
           }),
+          createPM({
+            action: 21, // ANNOTATION
+            channel: channel.name,
+            channelSerial: 'ANNOTATION',
+          }),
         ];
 
         helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
