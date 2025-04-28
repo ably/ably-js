@@ -82,6 +82,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'read.LiveMap._dataRef.data',
     'read.EventEmitter.events',
     'read.Platform.Config.push',
+    'read.ProtocolMessage.channelSerial',
     'read.Realtime._transports',
     'read.auth.authOptions.authUrl',
     'read.auth.key',
@@ -89,6 +90,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'read.auth.tokenParams.version',
     'read.channel.channelOptions',
     'read.channel.channelOptions.cipher',
+    'read.channel.properties.channelSerial', // This should be public API, but channel.properties is not currently exposed. Remove it from the list when https://github.com/ably/ably-js/issues/2018 is done
     'read.connectionManager.activeProtocol',
     'read.connectionManager.activeProtocol.transport',
     'read.connectionManager.baseTransport',

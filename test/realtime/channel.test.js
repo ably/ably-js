@@ -1872,34 +1872,63 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const realtime = helper.AblyRealtime();
 
       await helper.monitorConnectionAsync(async () => {
-        const channel = realtime.channels.get('channel');
-        channel.properties.channelSerial = 'channelSerial';
-
+        const channel = realtime.channels.get('set_channelSerial_on_attach');
         await realtime.connection.once('connected');
+        await channel.attach();
 
-        const promiseCheck = new Promise((resolve, reject) => {
+        // Publish a message to get the channelSerial from it
+        const messageReceivedPromise = new Promise((resolve, reject) => {
           helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
           const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-          const sendOriginal = transport.send;
+          const onProtocolMessageOriginal = transport.onProtocolMessage;
 
-          helper.recordPrivateApi('replace.transport.send');
-          transport.send = function (msg) {
-            if (msg.action === 10) {
-              try {
-                expect(msg.channelSerial).to.equal('channelSerial');
-                resolve();
-              } catch (error) {
-                reject(error);
-              }
-            } else {
-              helper.recordPrivateApi('call.transport.send');
-              sendOriginal.call(this, msg);
+          helper.recordPrivateApi('replace.transport.onProtocolMessage');
+          transport.onProtocolMessage = function (msg) {
+            if (msg.action === 15) {
+              // MESSAGE
+              resolve(msg);
             }
+
+            helper.recordPrivateApi('call.transport.onProtocolMessage');
+            onProtocolMessageOriginal.call(this, msg);
           };
         });
+        await channel.publish('event', 'test');
 
-        // don't await for attach as it will never resolve in this test since we don't send ATTACH msg to realtime
-        channel.attach();
+        const receivedMessage = await messageReceivedPromise;
+        helper.recordPrivateApi('read.ProtocolMessage.channelSerial');
+        const receivedChannelSerial = receivedMessage.channelSerial;
+
+        // After the disconnect, on reconnect, spy on transport.send to check sent channelSerial
+        const promiseCheck = new Promise((resolve, reject) => {
+          helper.recordPrivateApi('listen.connectionManager.transport.pending');
+          realtime.connection.connectionManager.once('transport.pending', function (transport) {
+            helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+            const sendOriginal = transport.send;
+
+            helper.recordPrivateApi('replace.transport.send');
+            transport.send = function (msg) {
+              if (msg.action === 10) {
+                // ATTACH
+                try {
+                  helper.recordPrivateApi('read.ProtocolMessage.channelSerial');
+                  expect(msg.channelSerial).to.equal(receivedChannelSerial);
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              }
+
+              helper.recordPrivateApi('call.transport.send');
+              sendOriginal.call(this, msg);
+            };
+          });
+        });
+
+        // Disconnect the transport (will automatically reconnect and resume)
+        helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
+        realtime.connection.connectionManager.disconnectAllTransports();
+
         await promiseCheck;
       }, realtime);
 
@@ -1912,7 +1941,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       const realtime = helper.AblyRealtime({ clientId: 'me' });
 
       await helper.monitorConnectionAsync(async () => {
-        const channel = realtime.channels.get('channel');
+        const channel = realtime.channels.get('update_channelSerial_on_message');
         await realtime.connection.once('connected');
 
         helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
@@ -1949,6 +1978,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
           // wait until next event loop so any async ops get resolved and channel serial gets updated on a channel
           await new Promise((res) => setTimeout(res, 0));
+          helper.recordPrivateApi('read.channel.properties.channelSerial');
+          helper.recordPrivateApi('read.ProtocolMessage.channelSerial');
           expect(channel.properties.channelSerial).to.equal(msg.channelSerial);
         }
       }, realtime);
