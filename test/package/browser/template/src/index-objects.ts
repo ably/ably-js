@@ -3,6 +3,12 @@ import Objects from 'ably/objects';
 import { CustomRoot } from './ably.config';
 import { createSandboxAblyAPIKey } from './sandbox';
 
+// Fix for "type 'typeof globalThis' has no index signature" error:
+// https://stackoverflow.com/questions/68481686/type-typeof-globalthis-has-no-index-signature
+declare module globalThis {
+  var testAblyPackage: () => Promise<void>;
+}
+
 type ExplicitRootType = {
   someOtherKey: string;
 };
