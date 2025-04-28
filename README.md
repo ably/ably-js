@@ -886,7 +886,7 @@ declare global {
 }
 ```
 
-This will enable code completion and editor hints when interacting with the Objects API:
+Note that using TypeScript typings for Objects does not provide runtime type checking; instead, it enables code completion and editor hints (if supported by your IDE) when interacting with the Objects API:
 
 ```typescript
 const root = await objects.getRoot(); // uses types defined by global AblyObjectsTypes interface by default
