@@ -1,12 +1,31 @@
 import * as Ably from 'ably';
 import Objects from 'ably/objects';
-import { CustomRoot } from './ably.config';
 import { createSandboxAblyAPIKey } from './sandbox';
 
 // Fix for "type 'typeof globalThis' has no index signature" error:
 // https://stackoverflow.com/questions/68481686/type-typeof-globalthis-has-no-index-signature
 declare module globalThis {
   var testAblyPackage: () => Promise<void>;
+}
+
+type CustomRoot = {
+  numberKey: number;
+  stringKey: string;
+  booleanKey: boolean;
+  couldBeUndefined?: string;
+  mapKey: Ably.LiveMap<{
+    foo: 'bar';
+    nestedMap?: Ably.LiveMap<{
+      baz: 'qux';
+    }>;
+  }>;
+  counterKey: Ably.LiveCounter;
+};
+
+declare global {
+  export interface AblyObjectsTypes {
+    root: CustomRoot;
+  }
 }
 
 type ExplicitRootType = {
