@@ -15,7 +15,7 @@ type CustomRoot = {
 };
 
 declare global {
-  export interface ObjectsTypes {
+  export interface AblyObjectsTypes {
     root: CustomRoot;
   }
 }

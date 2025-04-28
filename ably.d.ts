@@ -2277,9 +2277,9 @@ export declare interface Objects {
   /**
    * Retrieves the root {@link LiveMap} object for Objects on a channel.
    *
-   * A type parameter can be provided to describe the structure of the Objects on the channel. By default, it uses types from the globally defined `ObjectsTypes` interface.
+   * A type parameter can be provided to describe the structure of the Objects on the channel. By default, it uses types from the globally defined `AblyObjectsTypes` interface.
    *
-   * You can specify custom types for Objects by defining a global `ObjectsTypes` interface with a `root` property that conforms to {@link LiveMapType}.
+   * You can specify custom types for Objects by defining a global `AblyObjectsTypes` interface with a `root` property that conforms to {@link LiveMapType}.
    *
    * Example:
    *
@@ -2291,7 +2291,7 @@ export declare interface Objects {
    * };
    *
    * declare global {
-   *   export interface ObjectsTypes {
+   *   export interface AblyObjectsTypes {
    *     root: MyRoot;
    *   }
    * }
@@ -2367,7 +2367,7 @@ declare global {
   /**
    * A globally defined interface that allows users to define custom types for Objects.
    */
-  export interface ObjectsTypes {
+  export interface AblyObjectsTypes {
     [key: string]: unknown;
   }
 }
@@ -2379,20 +2379,20 @@ declare global {
 export type LiveMapType = { [key: string]: ObjectValue | LiveMap<LiveMapType> | LiveCounter | undefined };
 
 /**
- * The default type for the `root` object for Objects on a channel, based on the globally defined {@link ObjectsTypes} interface.
+ * The default type for the `root` object for Objects on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
  *
- * - If no custom types are provided in `ObjectsTypes`, defaults to an untyped root map representation using the {@link LiveMapType} interface.
- * - If a `root` type exists in `ObjectsTypes` and conforms to the {@link LiveMapType} interface, it is used as the type for the `root` object.
+ * - If no custom types are provided in `AblyObjectsTypes`, defaults to an untyped root map representation using the {@link LiveMapType} interface.
+ * - If a `root` type exists in `AblyObjectsTypes` and conforms to the {@link LiveMapType} interface, it is used as the type for the `root` object.
  * - If the provided `root` type does not match {@link LiveMapType}, a type error message is returned.
  */
 export type DefaultRoot =
   // we need a way to know when no types were provided by the user.
-  // we expect a "root" property to be set on ObjectsTypes interface, e.g. it won't be "unknown" anymore
-  unknown extends ObjectsTypes['root']
+  // we expect a "root" property to be set on AblyObjectsTypes interface, e.g. it won't be "unknown" anymore
+  unknown extends AblyObjectsTypes['root']
     ? LiveMapType // no custom types provided; use the default untyped map representation for the root
-    : ObjectsTypes['root'] extends LiveMapType
-      ? ObjectsTypes['root'] // "root" property exists, and it is of an expected type, we can use this interface for the root object in Objects.
-      : `Provided type definition for the "root" object in ObjectsTypes is not of an expected LiveMapType`;
+    : AblyObjectsTypes['root'] extends LiveMapType
+      ? AblyObjectsTypes['root'] // "root" property exists, and it is of an expected type, we can use this interface for the root object in Objects.
+      : `Provided type definition for the "root" object in AblyObjectsTypes is not of an expected LiveMapType`;
 
 /**
  * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
