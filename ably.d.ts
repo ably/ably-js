@@ -880,7 +880,7 @@ declare namespace ChannelModes {
    */
   type OBJECT_PUBLISH = 'OBJECT_PUBLISH' | 'object_publish';
   /**
-   * The client can receive object messages.
+   * The client will receive object messages.
    */
   type OBJECT_SUBSCRIBE = 'OBJECT_SUBSCRIBE' | 'object_subscribe';
   /**
@@ -933,15 +933,15 @@ declare namespace ResolvedChannelModes {
    */
   type OBJECT_PUBLISH = 'object_publish';
   /**
-   * The client can receive object messages.
+   * The client will receive object messages.
    */
   type OBJECT_SUBSCRIBE = 'object_subscribe';
   /**
-   * The client can publish annotations
+   * The client can publish annotations.
    */
   type ANNOTATION_PUBLISH = 'annotation_publish';
   /**
-   * The client will receive annotations
+   * The client will receive annotations.
    */
   type ANNOTATION_SUBSCRIBE = 'annotation_subscribe';
 }
