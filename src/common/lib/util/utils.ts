@@ -279,7 +279,15 @@ export function inspectBody(body: unknown): string {
   }
 }
 
-/* Data is assumed to be either a string, a number, a boolean or a buffer. */
+/**
+ * Data is assumed to be either a string, a number, a boolean or a buffer.
+ *
+ * Returns the byte size of the provided data based on the spec:
+ * - TM6a - size of the string is byte length of the string
+ * - TM6c - size of the buffer is its size in bytes
+ * - OD3c - size of a number is 8 bytes
+ * - OD3d - size of a boolean is 1 byte
+ */
 export function dataSizeBytes(data: string | number | boolean | Bufferlike): number {
   if (Platform.BufferUtils.isBuffer(data)) {
     return Platform.BufferUtils.byteLength(data);

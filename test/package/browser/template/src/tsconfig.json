@@ -1,11 +1,11 @@
 {
   "include": ["**/*.ts", "**/*.tsx"],
   "compilerOptions": {
-    "strictNullChecks": true,
+    "strict": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx"
   }
 }

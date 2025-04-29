@@ -866,7 +866,7 @@ objects.offAll();
 
 #### Typing Objects
 
-You can provide your own TypeScript typings for Objects by providing a globally defined `ObjectsTypes` interface.
+You can provide your own TypeScript typings for Objects by providing a globally defined `AblyObjectsTypes` interface.
 
 ```typescript
 // file: ably.config.d.ts
@@ -880,16 +880,16 @@ type MyCustomRoot = {
 };
 
 declare global {
-  export interface ObjectsTypes {
+  export interface AblyObjectsTypes {
     root: MyCustomRoot;
   }
 }
 ```
 
-This will enable code completion and editor hints when interacting with the Objects API:
+Note that using TypeScript typings for Objects does not provide runtime type checking; instead, it enables code completion and editor hints (if supported by your IDE) when interacting with the Objects API:
 
 ```typescript
-const root = await objects.getRoot(); // uses types defined by global ObjectsTypes interface by default
+const root = await objects.getRoot(); // uses types defined by global AblyObjectsTypes interface by default
 
 const map = root.get('map'); // LiveMap<{ foo: string; counter: LiveCounter }>
 map.set('foo', 1); // TypeError

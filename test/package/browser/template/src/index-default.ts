@@ -1,6 +1,12 @@
 import * as Ably from 'ably';
 import { createSandboxAblyAPIKey } from './sandbox';
 
+// Fix for "type 'typeof globalThis' has no index signature" error:
+// https://stackoverflow.com/questions/68481686/type-typeof-globalthis-has-no-index-signature
+declare module globalThis {
+  var testAblyPackage: () => Promise<void>;
+}
+
 // This function exists to check that we can refer to the types exported by Ably.
 async function attachChannel(channel: Ably.RealtimeChannel) {
   await channel.attach();
