@@ -44,13 +44,20 @@ Install the package using npm:
 ```bash
 npm install ably --save
 ```
+Install the package using npm:
 
+```bash
+npm install ably --save
+```
+
+Then require it in your code:
 Then require it in your code:
 
 ```javascript
 var Ably = require('ably');
 ```
 
+### CDN
 ### CDN
 
 Include the Ably SDK in your HTML:
@@ -91,6 +98,7 @@ To ensure compatibility, add the following to your `manifest.json`:
 ```
 
 ### Next.js with App Router and Turbopack
+### Next.js with App Router and Turbopack
 
 If you encounter a `Failed to compile Module not found` error or warnings related to `keyv` when using Ably Pub/Sub JavaScript SDK with [Next.js](https://nextjs.org/docs/app/api-reference/next-config-js/serverComponentsExternalPackages), add `ably` to the `serverComponentsExternalPackages` list in `next.config.js`:
 
@@ -111,6 +119,9 @@ If you encounter an error such as `connection limit exceeded` during development
 
 Use the `autoConnect` option to prevent the client from connecting when rendered on the server:
 
+```typescript
+const client = new Ably.Realtime({ key: 'your-ably-api-key', autoConnect: typeof window !== 'undefined' });
+```
 ```typescript
 const client = new Ably.Realtime({ key: 'your-ably-api-key', autoConnect: typeof window !== 'undefined' });
 ```
