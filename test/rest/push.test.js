@@ -395,7 +395,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
         const rest = PushRealtime(helper, { pushRecipientChannel: 'my_channel' });
         await rest.push.activate();
-        expect(rest.device.deviceIdentityToken).to.be.ok;
+        expect(rest.device().deviceIdentityToken).to.be.ok;
       });
 
       /** @nospec */
@@ -563,7 +563,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
 
         const subscription = result.items[0];
         expect(subscription.channel).to.equal(channelName);
-        expect(subscription.deviceId).to.equal(rest.device.id);
+        expect(subscription.deviceId).to.equal(rest.device().id);
       });
 
       /** @spec RSH7c */
@@ -600,7 +600,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         await rest.push.activate();
 
         const pushRecipient = {
-          deviceId: rest.device.id,
+          deviceId: rest.device().id,
         };
 
         const pushPayload = {
@@ -732,7 +732,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         const pushRecipientChannel = 'failed_registration';
         helper.recordPrivateApi('pass.clientOption.pushRecipientChannel');
         const rest = PushRest(helper, { pushRecipientChannel });
-        rest.device.platform = 'not_a_real_platform';
+        rest.device().platform = 'not_a_real_platform';
         try {
           await rest.push.activate();
         } catch (err) {
