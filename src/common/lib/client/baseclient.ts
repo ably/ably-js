@@ -126,7 +126,7 @@ class BaseClient {
   }
 
   /** RSH8 */
-  device(): LocalDevice {
+  device(): LocalDevice & API.LocalDevice {
     if (!this.options.plugins?.Push || !this.push.LocalDevice) {
       throwMissingPluginError('Push');
     }

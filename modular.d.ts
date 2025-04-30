@@ -55,6 +55,7 @@ import {
   // The ESLint warning is triggered because we only use this type in a documentation comment.
   // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
   AuthOptions,
+  LocalDevice,
 } from './ably';
 
 export declare const generateRandomKey: CryptoClass['generateRandomKey'];
@@ -327,6 +328,7 @@ export declare class BaseRest implements RestClient {
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
+  device(): LocalDevice;
 }
 
 /**
@@ -380,6 +382,7 @@ export declare class BaseRealtime implements RealtimeClient {
   ): Promise<BatchResult<BatchPublishSuccessResult | BatchPublishFailureResult>[]>;
   batchPresence(channels: string[]): Promise<BatchResult<BatchPresenceSuccessResult | BatchPresenceFailureResult>[]>;
   push: Push;
+  device(): LocalDevice;
 }
 
 export { ErrorInfo };
