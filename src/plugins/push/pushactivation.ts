@@ -38,6 +38,10 @@ export type LocalDevice = ReturnType<LocalDeviceFactory['load']>;
  */
 export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
   return class LocalDevice extends deviceDetails {
+    // guaranteed to be set in the .loadPersisted() method
+    declare id: string;
+    declare deviceSecret: string;
+
     rest: BaseClient;
     push: DevicePushDetails;
 
@@ -64,7 +68,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       this.id = Platform.Config.push.storage.get(persistKeys.deviceId);
 
       if (this.id) {
-        this.deviceSecret = Platform.Config.push.storage.get(persistKeys.deviceSecret) || undefined;
+        this.deviceSecret = Platform.Config.push.storage.get(persistKeys.deviceSecret);
         this.deviceIdentityToken = JSON.parse(
           Platform.Config.push.storage.get(persistKeys.deviceIdentityToken) || 'null',
         );
