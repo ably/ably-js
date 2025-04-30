@@ -69,28 +69,28 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
         throw new this.rest.ErrorInfo('Device not activated', 40000, 400);
       }
 
+      if (!this.deviceIdentityToken) {
+        throw new this.rest.ErrorInfo('Cannot list device subscriptions without deviceIdentityToken', 50000, 500);
+      }
+
       const client = this.rest,
         format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
         envelope = client.http.supportsLinkHeaders ? undefined : format,
         headers = client.Defaults.defaultGetHeaders(client.options, { format });
 
-      client.Utils.mixin(headers, client.options.headers);
+      client.Utils.mixin(headers, client.options.headers, { 'X-Ably-DeviceToken': this.deviceIdentityToken });
 
-      const authDetails = this.getAuthDetails(client, headers, {});
-
-      return new client.rest.PaginatedResource(
-        client,
-        '/push/channelSubscriptions',
-        authDetails.headers,
-        envelope,
-        async function (body, headers, unpacked) {
-          return client.rest.PushChannelSubscription.fromResponseBody(
-            body as Record<string, unknown>[],
-            client._MsgPack,
-            unpacked ? undefined : format,
-          );
-        },
-      ).get({ deviceId: this.id });
+      return new client.rest.PaginatedResource(client, '/push/channelSubscriptions', headers, envelope, async function (
+        body,
+        headers,
+        unpacked,
+      ) {
+        return client.rest.PushChannelSubscription.fromResponseBody(
+          body as Record<string, unknown>[],
+          client._MsgPack,
+          unpacked ? undefined : format,
+        );
+      }).get({ deviceId: this.id });
     }
 
     loadPersisted() {
