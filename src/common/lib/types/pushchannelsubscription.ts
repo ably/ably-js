@@ -2,14 +2,17 @@ import { MsgPack } from 'common/types/msgpack';
 import * as Utils from '../util/utils';
 
 type PushChannelSubscriptionObject = {
-  channel?: string;
+  channel: string;
   deviceId?: string;
   clientId?: string;
 };
 
 class PushChannelSubscription {
-  channel?: string;
+  /** PCS4, the channel name associated with this subscription */
+  channel!: string;
+  /** PCS2, optional, populated for subscriptions made for a specific device registration */
   deviceId?: string;
+  /** PCS3, optional, populated for subscriptions made for a specific clientId */
   clientId?: string;
 
   /**
