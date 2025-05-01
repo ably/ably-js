@@ -4,8 +4,10 @@ import { ulid } from 'ulid';
 import type { ErrCallback, StandardCallback } from 'common/types/utils';
 import type ErrorInfo from 'common/lib/types/errorinfo';
 import DeviceDetails, { DevicePlatform, DevicePushDetails } from 'common/lib/types/devicedetails';
+import type PushChannelSubscription from 'common/lib/types/pushchannelsubscription';
 import { getW3CPushDeviceDetails } from './getW3CDeviceDetails';
 import type BaseClient from 'common/lib/client/baseclient';
+import type { PaginatedResult } from 'common/lib/client/paginatedresource';
 
 const persistKeys = {
   deviceId: 'ably.push.deviceId',
@@ -55,6 +57,40 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       const device = new LocalDevice(rest);
       device.loadPersisted();
       return device;
+    }
+
+    async listSubscriptions(): Promise<PaginatedResult<PushChannelSubscription>> {
+      const Platform = this.rest.Platform;
+      if (!Platform.Config.push) {
+        throw new this.rest.ErrorInfo('Push activation is not available on this platform', 40000, 400);
+      }
+
+      if (!this.id) {
+        throw new this.rest.ErrorInfo('Device not activated', 40000, 400);
+      }
+
+      if (!this.deviceIdentityToken) {
+        throw new this.rest.ErrorInfo('Cannot list device subscriptions without deviceIdentityToken', 50000, 500);
+      }
+
+      const client = this.rest,
+        format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
+        envelope = client.http.supportsLinkHeaders ? undefined : format,
+        headers = client.Defaults.defaultGetHeaders(client.options, { format });
+
+      client.Utils.mixin(headers, client.options.headers, { 'X-Ably-DeviceToken': this.deviceIdentityToken });
+
+      return new client.rest.PaginatedResource(client, '/push/channelSubscriptions', headers, envelope, async function (
+        body,
+        headers,
+        unpacked,
+      ) {
+        return client.rest.PushChannelSubscription.fromResponseBody(
+          body as Record<string, unknown>[],
+          client._MsgPack,
+          unpacked ? undefined : format,
+        );
+      }).get({ deviceId: this.id });
     }
 
     loadPersisted() {
