@@ -38,6 +38,10 @@ export type LocalDevice = ReturnType<LocalDeviceFactory['load']>;
  */
 export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
   return class LocalDevice extends deviceDetails {
+    // guaranteed to be set in the .loadPersisted() method
+    declare id: string;
+    declare deviceSecret: string;
+
     rest: BaseClient;
     push: DevicePushDetails;
 
@@ -64,7 +68,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       this.id = Platform.Config.push.storage.get(persistKeys.deviceId);
 
       if (this.id) {
-        this.deviceSecret = Platform.Config.push.storage.get(persistKeys.deviceSecret) || undefined;
+        this.deviceSecret = Platform.Config.push.storage.get(persistKeys.deviceSecret);
         this.deviceIdentityToken = JSON.parse(
           Platform.Config.push.storage.get(persistKeys.deviceIdentityToken) || 'null',
         );
@@ -215,7 +219,7 @@ export class ActivationStateMachine {
   }
 
   async updateRegistration() {
-    const localDevice = this.client.device as LocalDevice;
+    const localDevice = this.client.device();
     if (this.registerCallback) {
       this.callCustomRegisterer(localDevice, false);
     } else {
@@ -255,7 +259,7 @@ export class ActivationStateMachine {
   }
 
   async deregister() {
-    const device = this.client.device as LocalDevice;
+    const device = this.client.device();
     if (this.deregisterCallback) {
       this.callCustomDeregisterer(device);
     } else {
@@ -266,7 +270,7 @@ export class ActivationStateMachine {
 
       if (rest.options.headers) this.client.Utils.mixin(headers, rest.options.headers);
 
-      const authDetails = this.client.device.getAuthDetails(this.client, headers, params);
+      const authDetails = this.client.device().getAuthDetails(this.client, headers, params);
 
       if (rest.options.pushFullWait) this.client.Utils.mixin(params, { fullWait: 'true' });
 
@@ -472,7 +476,7 @@ class NotActivated extends ActivationState {
       machine.callDeactivatedCallback(null);
       return new NotActivated();
     } else if (event instanceof CalledActivate) {
-      const device = machine.client.device as LocalDevice;
+      const device = machine.client.device();
 
       if (device.deviceIdentityToken != null) {
         if (device.clientId && device.clientId !== machine.client.auth.clientId) {
@@ -523,7 +527,7 @@ class WaitingForPushDeviceDetails extends ActivationState {
       return new NotActivated();
     } else if (event instanceof GotPushDeviceDetails) {
       const client = machine.client;
-      const device = client.device as LocalDevice;
+      const device = client.device();
 
       if (machine.registerCallback) {
         machine.callCustomRegisterer(device, true);
@@ -571,7 +575,7 @@ class WaitingForDeviceRegistration extends ActivationState {
     if (event instanceof CalledActivate) {
       return new WaitingForDeviceRegistration();
     } else if (event instanceof GotDeviceRegistration) {
-      const device = machine.client.device as LocalDevice;
+      const device = machine.client.device();
       device.deviceIdentityToken = event.tokenDetails.token;
       device.persist();
       machine.callActivatedCallback(null);
@@ -655,7 +659,7 @@ class WaitingForDeregistration extends ActivationState {
     if (event instanceof CalledDeactivate) {
       return new WaitingForDeregistration(this.previousState);
     } else if (event instanceof Deregistered) {
-      const device = machine.client.device as LocalDevice;
+      const device = machine.client.device();
       delete device.deviceIdentityToken;
       delete device.push.recipient;
       device.resetId();

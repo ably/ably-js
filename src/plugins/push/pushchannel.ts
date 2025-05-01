@@ -1,7 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type RestChannel from 'common/lib/client/restchannel';
-import type { LocalDevice } from 'plugins/push/pushactivation';
 
 class PushChannel {
   client: BaseClient;
@@ -14,7 +13,7 @@ class PushChannel {
 
   async subscribeDevice() {
     const client = this.client;
-    const device = client.device as LocalDevice;
+    const device = client.device();
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       body = { deviceId: device.id, channel: this.channel.name },
       headers = client.Defaults.defaultPostHeaders(client.options, { format });
@@ -29,7 +28,7 @@ class PushChannel {
 
   async unsubscribeDevice() {
     const client = this.client;
-    const device = client.device as LocalDevice;
+    const device = client.device();
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       headers = client.Defaults.defaultPostHeaders(client.options, { format });
 
@@ -101,7 +100,7 @@ class PushChannel {
   }
 
   private _getDeviceIdentityToken() {
-    const device = this.client.device as LocalDevice;
+    const device = this.client.device();
     const deviceIdentityToken = device.deviceIdentityToken;
     if (deviceIdentityToken) {
       return deviceIdentityToken;

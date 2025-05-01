@@ -125,7 +125,8 @@ class BaseClient {
     return this.rest.push;
   }
 
-  get device() {
+  /** RSH8 */
+  device(): LocalDevice & API.LocalDevice {
     if (!this.options.plugins?.Push || !this.push.LocalDevice) {
       throwMissingPluginError('Push');
     }

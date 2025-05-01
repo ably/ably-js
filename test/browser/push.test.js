@@ -56,7 +56,7 @@ define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, Helper, chai, 
       /** @spec RSH2a */
       it('push_activation_succeeds', async function () {
         await rest.push.activate();
-        expect(rest.device.deviceIdentityToken).to.be.ok;
+        expect(rest.device().deviceIdentityToken).to.be.ok;
       });
 
       /** @nospec */
@@ -64,7 +64,7 @@ define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, Helper, chai, 
         await rest.push.activate();
 
         const pushRecipient = {
-          deviceId: rest.device.id,
+          deviceId: rest.device().id,
         };
 
         const pushPayload = {

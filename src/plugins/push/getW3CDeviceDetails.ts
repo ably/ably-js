@@ -69,7 +69,7 @@ export async function getW3CPushDeviceDetails(machine: ActivationStateMachine) {
       throw new ErrorInfo('Public key not found', 50000, 500);
     }
 
-    const device = machine.client.device;
+    const device = machine.client.device();
     device.push.recipient = {
       transportType: 'web',
       targetUrl: btoa(endpoint),

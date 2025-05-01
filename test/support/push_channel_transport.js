@@ -23,7 +23,7 @@ define(['ably'], function (Ably) {
 
       var ablyUrl = machine.client.baseUri(Defaults.getHosts(machine.client.options)[0]);
 
-      var device = machine.client.device;
+      var device = machine.client.device();
       device.push.recipient = {
         transportType: 'ablyChannel',
         channel: channel,
