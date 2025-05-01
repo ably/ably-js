@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.8.0](https://github.com/ably/ably-js/tree/2.8.0) (2025-05-01)
+
+- Add `RestClient.device()` and `RealtimeClient.device()` methods which return the `LocalDevice` object for push notifications [\#2020](https://github.com/ably/ably-js/pull/2020)
+- Add `LocalDevice.channelSubscriptions()` method which uses device auth to get channel subscriptions only for the local device [\#2013](https://github.com/ably/ably-js/pull/2013)
+
 ## [2.7.0](https://github.com/ably/ably-js/tree/2.7.0) (2025-04-17)
 
 - Adds `ANNOTATION_PUBLISH` and `ANNOTATION_SUBSCRIBE` channel modes [\#1953](https://github.com/ably/ably-js/pull/1953)
