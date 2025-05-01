@@ -1,7 +1,7 @@
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
 import Resource, { ResourceResult } from './resource';
-import { IPartialErrorInfo } from '../types/errorinfo';
+import ErrorInfo, { IPartialErrorInfo } from '../types/errorinfo';
 import BaseClient from './baseclient';
 import { RequestBody, ResponseHeaders } from 'common/types/http';
 import HttpStatusCodes from '../../constants/HttpStatusCodes';
@@ -134,43 +134,52 @@ class PaginatedResource {
 export class PaginatedResult<T> {
   resource: PaginatedResource;
   items: T[];
-  first?: () => Promise<PaginatedResult<T>>;
-  next?: () => Promise<PaginatedResult<T> | null>;
-  current?: () => Promise<PaginatedResult<T>>;
-  hasNext?: () => boolean;
-  isLast?: () => boolean;
+  private _relParams?: Record<string, any>;
 
   constructor(resource: PaginatedResource, items: T[], relParams?: Record<string, any>) {
     this.resource = resource;
     this.items = items;
+    this._relParams = relParams;
+  }
 
-    const self = this;
-    if (relParams) {
-      if ('first' in relParams) {
-        this.first = async function () {
-          return self.get(relParams.first);
-        };
-      }
-      if ('current' in relParams) {
-        this.current = async function () {
-          return self.get(relParams.current);
-        };
-      }
-      this.next = async function () {
-        if ('next' in relParams) {
-          return self.get(relParams.next);
-        } else {
-          return null;
-        }
-      };
-
-      this.hasNext = function () {
-        return 'next' in relParams;
-      };
-      this.isLast = () => {
-        return !this.hasNext?.();
-      };
+  async first(): Promise<PaginatedResult<T>> {
+    if (this.hasFirst()) {
+      return this.get(this._relParams!.first);
     }
+
+    throw new ErrorInfo('No link to the first page of results', 40400, 404);
+  }
+
+  async current(): Promise<PaginatedResult<T>> {
+    if (this.hasCurrent()) {
+      return this.get(this._relParams!.current);
+    }
+
+    throw new ErrorInfo('No link to the current page of results', 40400, 404);
+  }
+
+  async next(): Promise<PaginatedResult<T> | null> {
+    if (this.hasNext()) {
+      return this.get(this._relParams!.next);
+    }
+
+    return null;
+  }
+
+  hasFirst(): boolean {
+    return this._relParams != null && 'first' in this._relParams;
+  }
+
+  hasCurrent(): boolean {
+    return this._relParams != null && 'current' in this._relParams;
+  }
+
+  hasNext(): boolean {
+    return this._relParams != null && 'next' in this._relParams;
+  }
+
+  isLast(): boolean {
+    return !this.hasNext();
   }
 
   /* We assume that only the initial request can be a POST, and that accessing
