@@ -55,6 +55,13 @@ function waitAttached(channel: RealtimeChannel, callback: ErrCallback, action: (
   }
 }
 
+type PresenceSetChangeListener = (event: {
+  members: PresenceMessage[];
+  current: PresenceMessage;
+  previous?: PresenceMessage;
+  syncInProgress: boolean;
+}) => void;
+
 class RealtimePresence extends EventEmitter {
   channel: RealtimeChannel;
   pendingPresence: { presence: WirePresenceMessage; callback: ErrCallback }[];
@@ -63,6 +70,9 @@ class RealtimePresence extends EventEmitter {
   _myMembers: PresenceMap;
   subscriptions: EventEmitter;
   name?: string;
+  private _current?: PresenceMessage;
+  private _previous?: PresenceMessage;
+  private _presenceSetChangeEventEmitter: EventEmitter
 
   constructor(channel: RealtimeChannel) {
     super(channel.logger);
@@ -73,6 +83,10 @@ class RealtimePresence extends EventEmitter {
     this._myMembers = new PresenceMap(this, (item) => item.clientId!);
     this.subscriptions = new EventEmitter(this.logger);
     this.pendingPresence = [];
+    this._presenceSetChangeEventEmitter = new EventEmitter(this.logger);
+
+    // Subscribe the internal listener to the presence set change event
+    this._internalPresenceSubscribe();
   }
 
   async enter(data: unknown): Promise<void> {
@@ -101,7 +115,7 @@ class RealtimePresence extends EventEmitter {
     id: string | undefined,
     clientId: string | undefined,
     data: unknown,
-    action: string,
+    action: string
   ): Promise<void> {
     const channel = this.channel;
     if (!channel.connectionManager.activeState()) {
@@ -440,6 +454,42 @@ class RealtimePresence extends EventEmitter {
     });
   }
 
+  private _internalPresenceSubscribe(): void {
+    this.subscriptions.on((...args: any[]) => {
+      this._previous = this._current;
+      this._current = args[0];
+      this._presenceSetChangeEventEmitter.emit('internal',{
+        members: this.members.values(),
+        current: this._current,
+        previous: this._previous,
+        syncInProgress: this.members.syncInProgress,
+      });
+    });
+  }
+
+  async onPresenceSetChange(listener: PresenceSetChangeListener): Promise<void> {
+    const channel = this.channel;
+    if (channel.state === 'failed') {
+      throw ErrorInfo.fromValues(channel.invalidStateError());
+    }
+
+    // Add the listener to the dedicated presence emitter
+    this._presenceSetChangeEventEmitter.on(listener);
+
+    // TODO - Add spec point for this
+    if (channel.channelOptions.attachOnSubscribe !== false) {
+      await channel.attach();
+    }
+  }
+
+  /**
+   * Removes a previously subscribed listener.
+   */
+  offPresenceSetChange(listener: PresenceSetChangeListener): void {
+    // Remove the listener from the dedicated presence emitter
+    this._presenceSetChangeEventEmitter.off(listener);
+  }
+
   async subscribe(..._args: unknown[] /* [event], listener */): Promise<void> {
     const args = RealtimeChannel.processListenerArgs(_args);
     const event = args[0];
@@ -463,6 +513,10 @@ class RealtimePresence extends EventEmitter {
     const event = args[0];
     const listener = args[1];
     this.subscriptions.off(event, listener);
+    if (this.subscriptions.listeners.length === 0) {
+      // Resubscribe the internal listener if this unsubscribe() call has removed all listeners
+      this._internalPresenceSubscribe();
+    }
   }
 }
 
