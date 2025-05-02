@@ -18,9 +18,16 @@ define(function () {
     async: { browser: 'node_modules/async/lib/async' },
     chai: { browser: 'node_modules/chai/chai', node: 'node_modules/chai/chai' },
     ulid: { browser: 'node_modules/ulid/dist/index.umd', node: 'node_modules/ulid/dist/index.umd' },
+    interception_proxy_client: {
+      browser: 'test/common/modules/interception_proxy_client',
+      node: 'test/common/modules/interception_proxy_client',
+    },
     private_api_recorder: {
       browser: 'test/common/modules/private_api_recorder',
       node: 'test/common/modules/private_api_recorder',
+    },
+    'json-rpc-2.0': {
+      browser: 'test/support/json-rpc-2.0/build/browser',
     },
   });
 });
