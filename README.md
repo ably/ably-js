@@ -6,9 +6,12 @@ _[Ably](https://ably.com) is the platform that powers synchronized digital exper
 
 [![npm version](https://img.shields.io/npm/v/ably.svg?style=flat)](https://img.shields.io/npm/v/ably.svg?style=flat)
 
-This is a JavaScript client library for Ably Realtime.
-
-This library currently targets the [Ably client library features spec](https://www.ably.com/docs/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.com/download/sdk-feature-support-matrix) to see the list of all the available features.
+> [!IMPORTANT]
+>
+> **Deprecation Notice**
+>
+> Versions **1.2.36 and below are deprecated**.
+> If you are running a deprecated version then update as soon as possible. Ably recommends updating to the latest version wherever possible. See the [deprecation policy](https://ably.com/docs/platform/deprecate) and [deprecation announcement](https://ably.com/docs/platform/deprecate/protocol-v1) for further info.
 
 ## Supported platforms
 
