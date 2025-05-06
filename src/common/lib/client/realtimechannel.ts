@@ -3,12 +3,7 @@ import ProtocolMessage, { fromValues as protocolMessageFromValues } from '../typ
 import EventEmitter from '../util/eventemitter';
 import * as Utils from '../util/utils';
 import Logger from '../util/logger';
-import {
-  EncodingDecodingContext,
-  CipherOptions,
-  populateFieldsFromParent,
-  MessageEncoding,
-} from '../types/basemessage';
+import { EncodingDecodingContext, CipherOptions, populateFieldsFromParent } from '../types/basemessage';
 import Message, { getMessagesSize, encodeArray as encodeMessagesArray } from '../types/message';
 import ChannelStateChange from './channelstatechange';
 import ErrorInfo, { PartialErrorInfo } from '../types/errorinfo';
@@ -626,11 +621,15 @@ class RealtimeChannel extends EventEmitter {
         }
 
         populateFieldsFromParent(message);
-        const options = this.channelOptions;
         const objectMessages = message.state;
+        // need to use the active protocol format instead of just client's useBinaryProtocol option,
+        // as comet transport does not support msgpack and will default to json without changing useBinaryProtocol.
+        // message processing is done in the same event loop tick up until this point,
+        // so we can reliably expect an active protocol to exist and be the one that received the object message.
+        const format = this.client.connection.connectionManager.getActiveTransportFormat()!;
         await Promise.all(
           objectMessages.map((om) =>
-            this.client._objectsPlugin!.ObjectMessage.decode(om, options, MessageEncoding, this.logger, Logger, Utils),
+            this.client._objectsPlugin!.ObjectMessage.decode(om, this.client, this.logger, Logger, Utils, format),
           ),
         );
 

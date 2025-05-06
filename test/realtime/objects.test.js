@@ -198,7 +198,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               channel: testChannel,
               serial: lexicoTimeserial('aaa', 0, 0),
               siteCode: 'aaa',
-              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'stringKey', data: { value: 'stringValue' } })],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'stringKey', data: { string: 'stringValue' } })],
             });
 
             const publishChannel = publishClient.channels.get('channel');
@@ -403,7 +403,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               objectsHelper.mapObject({
                 objectId: 'root',
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
-                initialEntries: { key: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 1 } } },
+                initialEntries: { key: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { number: 1 } } },
               }),
             ],
           });
@@ -623,28 +623,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       );
 
       const primitiveKeyData = [
-        { key: 'stringKey', data: { value: 'stringValue' }, restData: { string: 'stringValue' } },
-        { key: 'emptyStringKey', data: { value: '' }, restData: { string: '' } },
-        {
-          key: 'bytesKey',
-          data: { value: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9', encoding: 'base64' },
-          restData: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
-        },
-        { key: 'emptyBytesKey', data: { value: '', encoding: 'base64' }, restData: { bytes: '' } },
-        {
-          key: 'maxSafeIntegerKey',
-          data: { value: Number.MAX_SAFE_INTEGER },
-          restData: { number: Number.MAX_SAFE_INTEGER },
-        },
-        {
-          key: 'negativeMaxSafeIntegerKey',
-          data: { value: -Number.MAX_SAFE_INTEGER },
-          restData: { number: -Number.MAX_SAFE_INTEGER },
-        },
-        { key: 'numberKey', data: { value: 1 }, restData: { number: 1 } },
-        { key: 'zeroKey', data: { value: 0 }, restData: { number: 0 } },
-        { key: 'trueKey', data: { value: true }, restData: { boolean: true } },
-        { key: 'falseKey', data: { value: false }, restData: { boolean: false } },
+        { key: 'stringKey', data: { string: 'stringValue' } },
+        { key: 'emptyStringKey', data: { string: '' } },
+        { key: 'bytesKey', data: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' } },
+        { key: 'emptyBytesKey', data: { bytes: '' } },
+        { key: 'maxSafeIntegerKey', data: { number: Number.MAX_SAFE_INTEGER } },
+        { key: 'negativeMaxSafeIntegerKey', data: { number: -Number.MAX_SAFE_INTEGER } },
+        { key: 'numberKey', data: { number: 1 } },
+        { key: 'zeroKey', data: { number: 0 } },
+        { key: 'trueKey', data: { boolean: true } },
+        { key: 'falseKey', data: { boolean: false } },
       ];
       const primitiveMapsFixtures = [
         { name: 'emptyMap' },
@@ -655,7 +643,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             return acc;
           }, {}),
           restData: primitiveKeyData.reduce((acc, v) => {
-            acc[v.key] = v.restData;
+            acc[v.key] = v.data;
             return acc;
           }, {}),
         },
@@ -704,7 +692,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   initialEntries: {
                     map: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: mapId } },
                     counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
-                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'bar' } },
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
                   },
                 }),
               ],
@@ -760,7 +748,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
                   initialEntries: {
                     counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
-                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'bar' } },
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
                   },
                 }),
               ],
@@ -879,16 +867,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               );
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
-                if (keyData.data.encoding) {
+                if (keyData.data.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
                   helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                   expect(
-                    BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.value)),
+                    BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.bytes)),
                     `Check map "${mapKey}" has correct value for "${key}" key`,
                   ).to.be.true;
                 } else {
+                  const valueType = typeof mapObj.get(key);
                   expect(mapObj.get(key)).to.equal(
-                    keyData.data.value,
+                    keyData.data[valueType],
                     `Check map "${mapKey}" has correct value for "${key}" key`,
                   );
                 }
@@ -994,7 +983,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   channel,
                   serial: lexicoTimeserial('bbb', 1, 0),
                   siteCode: 'bbb',
-                  state: [objectsHelper.mapSetOp({ objectId: mapId, key: 'foo', data: { value: 'bar' } })],
+                  state: [objectsHelper.mapSetOp({ objectId: mapId, key: 'foo', data: { string: 'bar' } })],
                 });
                 await objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
@@ -1021,7 +1010,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   objectsHelper.mapCreateOp({
                     objectId: mapIds[i],
                     entries: {
-                      baz: { timeserial: serial, data: { value: 'qux' } },
+                      baz: { timeserial: serial, data: { string: 'qux' } },
                     },
                   }),
                 ],
@@ -1078,7 +1067,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   objectsHelper.mapSetRestOp({
                     objectId: 'root',
                     key: keyData.key,
-                    value: keyData.restData,
+                    value: keyData.data,
                   }),
                 ),
               ),
@@ -1087,16 +1076,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              if (keyData.data.encoding) {
+              if (keyData.data.bytes != null) {
                 helper.recordPrivateApi('call.BufferUtils.base64Decode');
                 helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
-                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
+                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.bytes)),
                   `Check root has correct value for "${keyData.key}" key after MAP_SET op`,
                 ).to.be.true;
               } else {
+                const valueType = typeof root.get(keyData.key);
                 expect(root.get(keyData.key)).to.equal(
-                  keyData.data.value,
+                  keyData.data[valueType],
                   `Check root has correct value for "${keyData.key}" key after MAP_SET op`,
                 );
               }
@@ -1178,12 +1168,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 objectsHelper.mapCreateOp({
                   objectId: mapId,
                   entries: {
-                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo3: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo5: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo6: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo3: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo5: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo6: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
                   },
                 }),
               ],
@@ -1208,7 +1198,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 channel,
                 serial,
                 siteCode,
-                state: [objectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
+                state: [objectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { string: 'baz' } })],
               });
             }
 
@@ -1310,12 +1300,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 objectsHelper.mapCreateOp({
                   objectId: mapId,
                   entries: {
-                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo3: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo5: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo6: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
+                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo3: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo5: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo6: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
                   },
                 }),
               ],
@@ -1914,7 +1904,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               channel,
               serial: lexicoTimeserial('aaa', 3, 0),
               siteCode: 'aaa',
-              state: [objectsHelper.mapSetOp({ objectId: mapId1, key: 'baz', data: { value: 'qux' } })],
+              state: [objectsHelper.mapSetOp({ objectId: mapId1, key: 'baz', data: { string: 'qux' } })],
             });
             await objectsHelper.processObjectOperationMessageOnChannel({
               channel,
@@ -1946,7 +1936,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'object operation messages are buffered during OBJECT_SYNC sequence',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel, client, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -1956,15 +1946,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // inject operations, it should not be applied as sync is in progress
             await Promise.all(
-              primitiveKeyData.map((keyData) =>
-                objectsHelper.processObjectOperationMessageOnChannel({
+              primitiveKeyData.map(async (keyData) => {
+                // copy data object as library will modify it
+                const data = { ...keyData.data };
+                helper.recordPrivateApi('read.realtime.options.useBinaryProtocol');
+                if (data.bytes != null && client.options.useBinaryProtocol) {
+                  // decode base64 data to binary for binary protocol
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  data.bytes = BufferUtils.base64Decode(data.bytes);
+                }
+
+                return objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', 0, 0),
                   siteCode: 'aaa',
-                  // copy data object as library will modify it
-                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } })],
-                }),
-              ),
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data })],
+                });
+              }),
             );
 
             // check root doesn't have data from operations
@@ -1978,7 +1976,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'buffered object operation messages are applied when OBJECT_SYNC sequence ends',
           action: async (ctx) => {
-            const { root, objectsHelper, channel, helper } = ctx;
+            const { root, objectsHelper, channel, helper, client } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -1988,15 +1986,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // inject operations, they should be applied when sync ends
             await Promise.all(
-              primitiveKeyData.map((keyData, i) =>
-                objectsHelper.processObjectOperationMessageOnChannel({
+              primitiveKeyData.map(async (keyData, i) => {
+                // copy data object as library will modify it
+                const data = { ...keyData.data };
+                helper.recordPrivateApi('read.realtime.options.useBinaryProtocol');
+                if (data.bytes != null && client.options.useBinaryProtocol) {
+                  // decode base64 data to binary for binary protocol
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  data.bytes = BufferUtils.base64Decode(data.bytes);
+                }
+
+                return objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  // copy data object as library will modify it
-                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } })],
-                }),
-              ),
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data })],
+                });
+              }),
             );
 
             // end the sync with empty cursor
@@ -2007,16 +2013,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              if (keyData.data.encoding) {
+              if (keyData.data.bytes != null) {
                 helper.recordPrivateApi('call.BufferUtils.base64Decode');
                 helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
-                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
+                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.bytes)),
                   `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
                 ).to.be.true;
               } else {
+                const valueType = typeof root.get(keyData.key);
                 expect(root.get(keyData.key)).to.equal(
-                  keyData.data.value,
+                  keyData.data[valueType],
                   `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
                 );
               }
@@ -2027,7 +2034,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'buffered object operation messages are discarded when new OBJECT_SYNC sequence starts',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { root, objectsHelper, channel, client, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -2037,15 +2044,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // inject operations, expect them to be discarded when sync with new sequence id starts
             await Promise.all(
-              primitiveKeyData.map((keyData, i) =>
-                objectsHelper.processObjectOperationMessageOnChannel({
+              primitiveKeyData.map(async (keyData, i) => {
+                // copy data object as library will modify it
+                const data = { ...keyData.data };
+                helper.recordPrivateApi('read.realtime.options.useBinaryProtocol');
+                if (data.bytes != null && client.options.useBinaryProtocol) {
+                  // decode base64 data to binary for binary protocol
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  data.bytes = BufferUtils.base64Decode(data.bytes);
+                }
+
+                return objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  // copy data object as library will modify it
-                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } })],
-                }),
-              ),
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data })],
+                });
+              }),
             );
 
             // start new sync with new sequence id
@@ -2059,7 +2074,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               channel,
               serial: lexicoTimeserial('bbb', 0, 0),
               siteCode: 'bbb',
-              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { value: 'bar' } })],
+              state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'foo', data: { string: 'bar' } })],
             });
 
             // end sync
@@ -2106,14 +2121,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                     ccc: lexicoTimeserial('ccc', 5, 0),
                   },
                   materialisedEntries: {
-                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo3: { timeserial: lexicoTimeserial('ccc', 5, 0), data: { value: 'bar' } },
-                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { value: 'bar' } },
-                    foo5: { timeserial: lexicoTimeserial('bbb', 2, 0), data: { value: 'bar' } },
-                    foo6: { timeserial: lexicoTimeserial('ccc', 2, 0), data: { value: 'bar' } },
-                    foo7: { timeserial: lexicoTimeserial('ccc', 0, 0), data: { value: 'bar' } },
-                    foo8: { timeserial: lexicoTimeserial('ccc', 0, 0), data: { value: 'bar' } },
+                    foo1: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo2: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo3: { timeserial: lexicoTimeserial('ccc', 5, 0), data: { string: 'bar' } },
+                    foo4: { timeserial: lexicoTimeserial('bbb', 0, 0), data: { string: 'bar' } },
+                    foo5: { timeserial: lexicoTimeserial('bbb', 2, 0), data: { string: 'bar' } },
+                    foo6: { timeserial: lexicoTimeserial('ccc', 2, 0), data: { string: 'bar' } },
+                    foo7: { timeserial: lexicoTimeserial('ccc', 0, 0), data: { string: 'bar' } },
+                    foo8: { timeserial: lexicoTimeserial('ccc', 0, 0), data: { string: 'bar' } },
                   },
                 }),
                 objectsHelper.counterObject({
@@ -2153,7 +2168,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 channel,
                 serial,
                 siteCode,
-                state: [objectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { value: 'baz' } })],
+                state: [objectsHelper.mapSetOp({ objectId: mapId, key: `foo${i + 1}`, data: { string: 'baz' } })],
               });
             }
 
@@ -2210,7 +2225,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'subsequent object operation messages are applied immediately after OBJECT_SYNC ended and buffers are applied',
           action: async (ctx) => {
-            const { root, objectsHelper, channel, channelName, helper } = ctx;
+            const { root, objectsHelper, channel, channelName, helper, client } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -2220,15 +2235,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // inject operations, they should be applied when sync ends
             await Promise.all(
-              primitiveKeyData.map((keyData, i) =>
-                objectsHelper.processObjectOperationMessageOnChannel({
+              primitiveKeyData.map(async (keyData, i) => {
+                // copy data object as library will modify it
+                const data = { ...keyData.data };
+                helper.recordPrivateApi('read.realtime.options.useBinaryProtocol');
+                if (data.bytes != null && client.options.useBinaryProtocol) {
+                  // decode base64 data to binary for binary protocol
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  data.bytes = BufferUtils.base64Decode(data.bytes);
+                }
+
+                return objectsHelper.processObjectOperationMessageOnChannel({
                   channel,
                   serial: lexicoTimeserial('aaa', i, 0),
                   siteCode: 'aaa',
-                  // copy data object as library will modify it
-                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data: { ...keyData.data } })],
-                }),
-              ),
+                  state: [objectsHelper.mapSetOp({ objectId: 'root', key: keyData.key, data })],
+                });
+              }),
             );
 
             // end the sync with empty cursor
@@ -2251,16 +2274,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check buffered operations are applied, as well as the most recent operation outside of the sync sequence is applied
             primitiveKeyData.forEach((keyData) => {
-              if (keyData.data.encoding) {
+              if (keyData.data.bytes != null) {
                 helper.recordPrivateApi('call.BufferUtils.base64Decode');
                 helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
-                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
+                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.bytes)),
                   `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
                 ).to.be.true;
               } else {
+                const valueType = typeof root.get(keyData.key);
                 expect(root.get(keyData.key)).to.equal(
-                  keyData.data.value,
+                  keyData.data[valueType],
                   `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
                 );
               }
@@ -2503,8 +2527,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
-                helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                const value = keyData.data.encoding ? BufferUtils.base64Decode(keyData.data.value) : keyData.data.value;
+                let value;
+                if (keyData.data.bytes != null) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  value = BufferUtils.base64Decode(keyData.data.bytes);
+                } else if (keyData.data.number != null) {
+                  value = keyData.data.number;
+                } else if (keyData.data.string != null) {
+                  value = keyData.data.string;
+                } else if (keyData.data.boolean != null) {
+                  value = keyData.data.boolean;
+                }
+
                 await root.set(keyData.key, value);
               }),
             );
@@ -2512,16 +2546,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              if (keyData.data.encoding) {
+              if (keyData.data.bytes != null) {
                 helper.recordPrivateApi('call.BufferUtils.base64Decode');
                 helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                 expect(
-                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.value)),
+                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.bytes)),
                   `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
                 ).to.be.true;
               } else {
+                const valueType = typeof root.get(keyData.key);
                 expect(root.get(keyData.key)).to.equal(
-                  keyData.data.value,
+                  keyData.data[valueType],
                   `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
                 );
               }
@@ -2842,10 +2877,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               primitiveMapsFixtures.map(async (mapFixture) => {
                 const entries = mapFixture.entries
                   ? Object.entries(mapFixture.entries).reduce((acc, [key, keyData]) => {
-                      helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                      const value = keyData.data.encoding
-                        ? BufferUtils.base64Decode(keyData.data.value)
-                        : keyData.data.value;
+                      let value;
+                      if (keyData.data.bytes != null) {
+                        helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                        value = BufferUtils.base64Decode(keyData.data.bytes);
+                      } else if (keyData.data.number != null) {
+                        value = keyData.data.number;
+                      } else if (keyData.data.string != null) {
+                        value = keyData.data.string;
+                      } else if (keyData.data.boolean != null) {
+                        value = keyData.data.boolean;
+                      }
+
                       acc[key] = value;
                       return acc;
                     }, {})
@@ -2868,16 +2911,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               );
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
-                if (keyData.data.encoding) {
+                if (keyData.data.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
                   helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
                   expect(
-                    BufferUtils.areBuffersEqual(map.get(key), BufferUtils.base64Decode(keyData.data.value)),
+                    BufferUtils.areBuffersEqual(map.get(key), BufferUtils.base64Decode(keyData.data.bytes)),
                     `Check map #${i + 1} has correct value for "${key}" key`,
                   ).to.be.true;
                 } else {
+                  const valueType = typeof map.get(key);
                   expect(map.get(key)).to.equal(
-                    keyData.data.value,
+                    keyData.data[valueType],
                     `Check map #${i + 1} has correct value for "${key}" key`,
                   );
                 }
@@ -2990,7 +3034,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 state: [
                   objectsHelper.mapCreateOp({
                     objectId: mapId,
-                    entries: { baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { value: 'qux' } } },
+                    entries: { baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { string: 'qux' } } },
                   }),
                 ],
               });
@@ -3031,8 +3075,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 objectsHelper.mapCreateOp({
                   objectId: mapId,
                   entries: {
-                    foo: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { value: 'qux' } },
-                    baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { value: 'qux' } },
+                    foo: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { string: 'qux' } },
+                    baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { string: 'qux' } },
                   },
                 }),
               ],
@@ -3453,8 +3497,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   materialisedEntries: {
                     counter1: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId1 } },
                     counter2: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId2 } },
-                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'bar' } },
-                    baz: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'qux' }, tombstone: true },
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
+                    baz: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'qux' }, tombstone: true },
                   },
                 }),
               ],
@@ -3511,8 +3555,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   materialisedEntries: {
                     counter1: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId1 } },
                     counter2: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId2 } },
-                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'bar' } },
-                    baz: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { value: 'qux' }, tombstone: true },
+                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
+                    baz: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'qux' }, tombstone: true },
                   },
                 }),
               ],
@@ -4571,7 +4615,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 operation: {
                   action: 0,
                   objectId: 'object-id',
-                  map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: 'a string' } } } },
+                  map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } } },
                 },
               },
               MessageEncoding,
@@ -4587,7 +4631,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   objectId: 'object-id',
                   map: {
                     semantics: 0,
-                    entries: { 'key-1': { tombstone: false, data: { value: BufferUtils.utf8Encode('my-value') } } },
+                    entries: { 'key-1': { tombstone: false, data: { bytes: BufferUtils.utf8Encode('my-value') } } },
                   },
                 },
               },
@@ -4602,12 +4646,38 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 operation: {
                   action: 0,
                   objectId: 'object-id',
-                  map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: true } } } },
+                  map: {
+                    semantics: 0,
+                    entries: {
+                      'key-1': { tombstone: false, data: { boolean: true } },
+                      'key-2': { tombstone: false, data: { boolean: false } },
+                    },
+                  },
                 },
               },
               MessageEncoding,
             ),
-            expected: Utils.dataSizeBytes('key-1') + 1,
+            expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('key-2') + 2,
+          },
+          {
+            description: 'map create op with double payload',
+            message: objectMessageFromValues(
+              {
+                operation: {
+                  action: 0,
+                  objectId: 'object-id',
+                  map: {
+                    semantics: 0,
+                    entries: {
+                      'key-1': { tombstone: false, data: { number: 123.456 } },
+                      'key-2': { tombstone: false, data: { number: 0 } },
+                    },
+                  },
+                },
+              },
+              MessageEncoding,
+            ),
+            expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('key-2') + 16,
           },
           {
             description: 'map remove op',
@@ -4630,7 +4700,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           {
             description: 'map set operation value=string',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 'my-value' } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { string: 'my-value' } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes('my-value'),
           },
@@ -4640,22 +4710,36 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { value: BufferUtils.utf8Encode('my-value') } },
+                mapOp: { key: 'my-key', data: { bytes: BufferUtils.utf8Encode('my-value') } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
           },
           {
-            description: 'map set operation value=boolean',
+            description: 'map set operation value=boolean true',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: true } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { boolean: true } } },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + 1,
+          },
+          {
+            description: 'map set operation value=boolean false',
+            message: objectMessageFromValues({
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { boolean: false } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=double',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 123.456 } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { number: 123.456 } } },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + 8,
+          },
+          {
+            description: 'map set operation value=double 0',
+            message: objectMessageFromValues({
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { number: 0 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
@@ -4667,14 +4751,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 map: {
                   semantics: 0,
                   entries: {
-                    'key-1': { tombstone: false, data: { value: 'a string' } },
-                    'key-2': { tombstone: true, data: { value: 'another string' } },
+                    'key-1': { tombstone: false, data: { string: 'a string' } },
+                    'key-2': { tombstone: true, data: { string: 'another string' } },
                   },
                 },
                 createOp: {
                   action: 0,
                   objectId: 'object-id',
-                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { value: 'third string' } } } },
+                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { string: 'third string' } } } },
                 },
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
                 tombstone: false,
@@ -4742,7 +4826,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     });
 
     /** @nospec */
-    it('can attach to channel with Objects modes', async function () {
+    it('can attach to channel with object modes', async function () {
       const helper = this.test.helper;
       const client = helper.AblyRealtime();
 

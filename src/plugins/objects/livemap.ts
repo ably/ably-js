@@ -1,5 +1,6 @@
 import { dequal } from 'dequal';
 
+import type { Bufferlike } from 'common/platform';
 import type * as API from '../../../ably';
 import { DEFAULTS } from './defaults';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
@@ -12,9 +13,10 @@ import {
   ObjectOperation,
   ObjectOperationAction,
   ObjectState,
-  ObjectValue,
 } from './objectmessage';
 import { Objects } from './objects';
+
+export type PrimitiveObjectValue = string | number | boolean | Bufferlike;
 
 export interface ObjectIdObjectData {
   /** A reference to another object, used to support composable object structures. */
@@ -22,13 +24,16 @@ export interface ObjectIdObjectData {
 }
 
 export interface ValueObjectData {
-  /**
-   * The encoding the client should use to interpret the value.
-   * Analogous to the `encoding` field on the `Message` and `PresenceMessage` types.
-   */
+  /** Can be set by the client to indicate that value in `string` or `bytes` field have an encoding. */
   encoding?: string;
-  /** A concrete leaf value in the object graph. */
-  value: ObjectValue;
+  /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
+  boolean?: boolean;
+  /** A primitive binary leaf value in the object graph. Only one value field can be set. */
+  bytes?: Bufferlike;
+  /** A primitive number leaf value in the object graph. Only one value field can be set. */
+  number?: number;
+  /** A primitive string leaf value in the object graph. Only one value field can be set. */
+  string?: string;
 }
 
 export type ObjectData = ObjectIdObjectData | ValueObjectData;
@@ -109,10 +114,23 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     LiveMap.validateKeyValue(objects, key, value);
 
-    const objectData: ObjectData =
-      value instanceof LiveObject
-        ? ({ objectId: value.getObjectId() } as ObjectIdObjectData)
-        : ({ value } as ValueObjectData);
+    let objectData: ObjectData;
+    if (value instanceof LiveObject) {
+      const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
+      objectData = typedObjectData;
+    } else {
+      const typedObjectData: ValueObjectData = {};
+      if (typeof value === 'string') {
+        typedObjectData.string = value;
+      } else if (typeof value === 'number') {
+        typedObjectData.number = value;
+      } else if (typeof value === 'boolean') {
+        typedObjectData.boolean = value;
+      } else {
+        typedObjectData.bytes = value as Bufferlike;
+      }
+      objectData = typedObjectData;
+    }
 
     const msg = ObjectMessage.fromValues(
       {
@@ -236,10 +254,23 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const mapEntries: Record<string, MapEntry> = {};
 
     Object.entries(entries ?? {}).forEach(([key, value]) => {
-      const objectData: ObjectData =
-        value instanceof LiveObject
-          ? ({ objectId: value.getObjectId() } as ObjectIdObjectData)
-          : ({ value } as ValueObjectData);
+      let objectData: ObjectData;
+      if (value instanceof LiveObject) {
+        const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
+        objectData = typedObjectData;
+      } else {
+        const typedObjectData: ValueObjectData = {};
+        if (typeof value === 'string') {
+          typedObjectData.string = value;
+        } else if (typeof value === 'number') {
+          typedObjectData.number = value;
+        } else if (typeof value === 'boolean') {
+          typedObjectData.boolean = value;
+        } else {
+          typedObjectData.bytes = value as Bufferlike;
+        }
+        objectData = typedObjectData;
+      }
 
       mapEntries[key] = {
         data: objectData,
@@ -666,7 +697,14 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return { noop: true };
     }
 
-    if (Utils.isNil(op.data) || (Utils.isNil(op.data.value) && Utils.isNil(op.data.objectId))) {
+    if (
+      Utils.isNil(op.data) ||
+      (Utils.isNil(op.data.objectId) &&
+        Utils.isNil(op.data.boolean) &&
+        Utils.isNil(op.data.bytes) &&
+        Utils.isNil(op.data.number) &&
+        Utils.isNil(op.data.string))
+    ) {
       throw new ErrorInfo(
         `Invalid object data for MAP_SET op on objectId=${this.getObjectId()} on key=${op.key}`,
         92000,
@@ -683,7 +721,13 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       // so instead we create a zero-value object for that object id if it not exists.
       this._objects.getPool().createZeroValueObjectIfNotExists(op.data.objectId);
     } else {
-      liveData = { encoding: op.data.encoding, value: op.data.value } as ValueObjectData;
+      liveData = {
+        encoding: op.data.encoding,
+        boolean: op.data.boolean,
+        bytes: op.data.bytes,
+        number: op.data.number,
+        string: op.data.string,
+      } as ValueObjectData;
     }
 
     if (existingEntry) {
@@ -779,10 +823,17 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // need to iterate over entries to correctly process optional parameters
     Object.entries(entries ?? {}).forEach(([key, entry]) => {
       let liveData: ObjectData;
-      if (typeof entry.data.objectId !== 'undefined') {
+
+      if (!this._client.Utils.isNil(entry.data.objectId)) {
         liveData = { objectId: entry.data.objectId } as ObjectIdObjectData;
       } else {
-        liveData = { encoding: entry.data.encoding, value: entry.data.value } as ValueObjectData;
+        liveData = {
+          encoding: entry.data.encoding,
+          boolean: entry.data.boolean,
+          bytes: entry.data.bytes,
+          number: entry.data.number,
+          string: entry.data.string,
+        } as ValueObjectData;
       }
 
       const liveDataEntry: LiveMapEntry = {
@@ -802,14 +853,25 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * Returns value as is if MapEntry stores a primitive type, or a reference to another LiveObject from the pool if it stores an objectId.
    */
-  private _getResolvedValueFromObjectData(data: ObjectData): ObjectValue | LiveObject | undefined {
-    if ('value' in data) {
-      // object data stores a primitive type value, just return it as is.
-      return data.value;
+  private _getResolvedValueFromObjectData(data: ObjectData): PrimitiveObjectValue | LiveObject | undefined {
+    // if object data stores one of the primitive values, just return it as is.
+    const asValueObject = data as ValueObjectData;
+    if (asValueObject.boolean !== undefined) {
+      return asValueObject.boolean;
+    }
+    if (asValueObject.bytes !== undefined) {
+      return asValueObject.bytes;
+    }
+    if (asValueObject.number !== undefined) {
+      return asValueObject.number;
+    }
+    if (asValueObject.string !== undefined) {
+      return asValueObject.string;
     }
 
-    // object data points to another object, get it from the pool
-    const refObject: LiveObject | undefined = this._objects.getPool().get(data.objectId);
+    // otherwise, it has an objectId reference, and we should get the actual object from the pool
+    const objectId = (data as ObjectIdObjectData).objectId;
+    const refObject: LiveObject | undefined = this._objects.getPool().get(objectId);
     if (!refObject) {
       return undefined;
     }
