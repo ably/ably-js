@@ -157,7 +157,6 @@ export class ObjectMessage {
   timestamp?: number;
   clientId?: string;
   connectionId?: string;
-  channel?: string;
   extras?: any;
   /**
    * Describes an operation to be applied to an object.
@@ -499,7 +498,6 @@ export class ObjectMessage {
     if (this.timestamp) result += '; timestamp=' + this.timestamp;
     if (this.clientId) result += '; clientId=' + this.clientId;
     if (this.connectionId) result += '; connectionId=' + this.connectionId;
-    if (this.channel) result += '; channel=' + this.channel;
     // TODO: prettify output for operation and object and encode buffers.
     // see examples for data in Message and PresenceMessage
     if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
