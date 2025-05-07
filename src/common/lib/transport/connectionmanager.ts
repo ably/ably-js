@@ -949,6 +949,10 @@ class ConnectionManager extends EventEmitter {
     this.clearSessionRecoverData();
   }
 
+  getActiveTransportFormat(): Utils.Format | undefined {
+    return this.activeProtocol?.getTransport().format;
+  }
+
   /*********************
    * state management
    *********************/

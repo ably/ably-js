@@ -112,6 +112,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'read.realtime.options.maxMessageSize',
     'read.realtime.options.realtimeHost',
     'read.realtime.options.token',
+    'read.realtime.options.useBinaryProtocol',
     'read.rest._currentFallback',
     'read.rest._currentFallback.host',
     'read.rest._currentFallback.validUntil',

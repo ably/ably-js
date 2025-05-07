@@ -2374,9 +2374,9 @@ declare global {
 
 /**
  * Represents the type of data stored in a {@link LiveMap}.
- * It maps string keys to scalar values ({@link ObjectValue}), or other {@link LiveObject | LiveObjects}.
+ * It maps string keys to primitive values ({@link PrimitiveObjectValue}), or other {@link LiveObject | LiveObjects}.
  */
-export type LiveMapType = { [key: string]: ObjectValue | LiveMap<LiveMapType> | LiveCounter | undefined };
+export type LiveMapType = { [key: string]: PrimitiveObjectValue | LiveMap<LiveMapType> | LiveCounter | undefined };
 
 /**
  * The default type for the `root` object for Objects on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
@@ -2502,7 +2502,7 @@ export declare interface BatchContextLiveCounter {
  * Conflicts in a LiveMap are automatically resolved with last-write-wins (LWW) semantics,
  * meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
  *
- * Keys must be strings. Values can be another {@link LiveObject}, or a primitive type, such as a string, number, boolean, or binary data (see {@link ObjectValue}).
+ * Keys must be strings. Values can be another {@link LiveObject}, or a primitive type, such as a string, number, boolean, or binary data (see {@link PrimitiveObjectValue}).
  */
 export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate<T>> {
   /**
@@ -2589,7 +2589,7 @@ export declare interface LiveMapUpdate<T extends LiveMapType> extends LiveObject
  *
  * For binary data, the resulting type depends on the platform (`Buffer` in Node.js, `ArrayBuffer` elsewhere).
  */
-export type ObjectValue = string | number | boolean | Buffer | ArrayBuffer;
+export type PrimitiveObjectValue = string | number | boolean | Buffer | ArrayBuffer;
 
 /**
  * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.

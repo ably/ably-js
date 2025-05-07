@@ -3,9 +3,13 @@ import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type Logger from 'common/lib/util/logger';
 import type * as Utils from 'common/lib/util/utils';
 import type { Bufferlike } from 'common/platform';
-import type { ChannelOptions } from 'common/types/channel';
 
-export type EncodeFunction = (data: any, encoding?: string | null) => { data: any; encoding?: string | null };
+export type EncodeInitialValueFunction = (
+  data: any,
+  encoding?: string | null,
+) => { data: any; encoding?: string | null };
+
+export type EncodeObjectDataFunction = (data: ObjectData) => ObjectData;
 
 export enum ObjectOperationAction {
   MAP_CREATE = 0,
@@ -20,20 +24,21 @@ export enum MapSemantics {
   LWW = 0,
 }
 
-/** An ObjectValue represents a concrete leaf value in the object graph. */
-export type ObjectValue = string | number | boolean | Bufferlike;
-
 /** An ObjectData represents a value in an object on a channel. */
 export interface ObjectData {
   /** A reference to another object, used to support composable object structures. */
   objectId?: string;
-  /**
-   * The encoding the client should use to interpret the value.
-   * Analogous to the `encoding` field on the `Message` and `PresenceMessage` types.
-   */
+
+  /** Can be set by the client to indicate that value in `string` or `bytes` field have an encoding. */
   encoding?: string;
-  /** A concrete leaf value in the object graph. */
-  value?: ObjectValue;
+  /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
+  boolean?: boolean;
+  /** A primitive binary leaf value in the object graph. Only one value field can be set. */
+  bytes?: Bufferlike;
+  /** A primitive number leaf value in the object graph. Only one value field can be set. */
+  number?: number;
+  /** A primitive string leaf value in the object graph. Only one value field can be set. */
+  string?: string;
 }
 
 /** A MapOp describes an operation to be applied to a Map object. */
@@ -141,6 +146,9 @@ export interface ObjectState {
   counter?: ObjectCounter;
 }
 
+// TODO: tidy up encoding/decoding logic for ObjectMessage:
+// Should have separate WireObjectMessage with the correct types received from the server, do the necessary encoding/decoding there.
+// For reference, see WireMessage and WirePresenceMessage
 /**
  * @internal
  */
@@ -180,7 +188,7 @@ export class ObjectMessage {
    * Uses encoding functions from regular `Message` processing.
    */
   static async encode(message: ObjectMessage, messageEncoding: typeof MessageEncoding): Promise<ObjectMessage> {
-    const encodeFn: EncodeFunction = (data, encoding) => {
+    const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
       const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeData(data, encoding);
 
       return {
@@ -189,46 +197,60 @@ export class ObjectMessage {
       };
     };
 
+    const encodeObjectDataFn: EncodeObjectDataFunction = (data) => {
+      // TODO: support encoding JSON objects as a JSON string on "string" property with an encoding of "json"
+      // https://ably.atlassian.net/browse/PUB-1667
+      // for now just return values as they are
+
+      return data;
+    };
+
     message.operation = message.operation
-      ? ObjectMessage._encodeObjectOperation(message.operation, encodeFn)
+      ? ObjectMessage._encodeObjectOperation(message.operation, encodeObjectDataFn, encodeInitialValueFn)
       : undefined;
-    message.object = message.object ? ObjectMessage._encodeObjectState(message.object, encodeFn) : undefined;
+    message.object = message.object
+      ? ObjectMessage._encodeObjectState(message.object, encodeObjectDataFn, encodeInitialValueFn)
+      : undefined;
 
     return message;
   }
 
   /**
-   * Mutates the provided ObjectMessage and decodes all data entries in the message
+   * Mutates the provided ObjectMessage and decodes all data entries in the message.
+   *
+   * Format is used to decode the bytes value as it's implicitly encoded depending on the protocol used:
+   * - json: bytes are base64 encoded string
+   * - msgpack: bytes have a binary representation and don't need to be decoded
    */
   static async decode(
     message: ObjectMessage,
-    inputContext: ChannelOptions,
-    messageEncoding: typeof MessageEncoding,
+    client: BaseClient,
     logger: Logger,
     LoggerClass: typeof Logger,
     utils: typeof Utils,
+    format: Utils.Format | undefined,
   ): Promise<void> {
     // TODO: decide how to handle individual errors from decoding values. currently we throw first ever error we get
 
     try {
       if (message.object?.map?.entries) {
-        await ObjectMessage._decodeMapEntries(message.object.map.entries, inputContext, messageEncoding);
+        await ObjectMessage._decodeMapEntries(message.object.map.entries, client, format);
       }
 
       if (message.object?.createOp?.map?.entries) {
-        await ObjectMessage._decodeMapEntries(message.object.createOp.map.entries, inputContext, messageEncoding);
+        await ObjectMessage._decodeMapEntries(message.object.createOp.map.entries, client, format);
       }
 
-      if (message.object?.createOp?.mapOp?.data && 'value' in message.object.createOp.mapOp.data) {
-        await ObjectMessage._decodeObjectData(message.object.createOp.mapOp.data, inputContext, messageEncoding);
+      if (message.object?.createOp?.mapOp?.data) {
+        await ObjectMessage._decodeObjectData(message.object.createOp.mapOp.data, client, format);
       }
 
       if (message.operation?.map?.entries) {
-        await ObjectMessage._decodeMapEntries(message.operation.map.entries, inputContext, messageEncoding);
+        await ObjectMessage._decodeMapEntries(message.operation.map.entries, client, format);
       }
 
-      if (message.operation?.mapOp?.data && 'value' in message.operation.mapOp.data) {
-        await ObjectMessage._decodeObjectData(message.operation.mapOp.data, inputContext, messageEncoding);
+      if (message.operation?.mapOp?.data) {
+        await ObjectMessage._decodeObjectData(message.operation.mapOp.data, client, format);
       }
     } catch (error) {
       LoggerClass.logAction(logger, LoggerClass.LOG_ERROR, 'ObjectMessage.decode()', utils.inspectError(error));
@@ -296,59 +318,69 @@ export class ObjectMessage {
 
   private static async _decodeMapEntries(
     mapEntries: Record<string, MapEntry>,
-    inputContext: ChannelOptions,
-    messageEncoding: typeof MessageEncoding,
+    client: BaseClient,
+    format: Utils.Format | undefined,
   ): Promise<void> {
     for (const entry of Object.values(mapEntries)) {
-      await ObjectMessage._decodeObjectData(entry.data, inputContext, messageEncoding);
+      await ObjectMessage._decodeObjectData(entry.data, client, format);
     }
   }
 
   private static async _decodeObjectData(
     objectData: ObjectData,
-    inputContext: ChannelOptions,
-    messageEncoding: typeof MessageEncoding,
+    client: BaseClient,
+    format: Utils.Format | undefined,
   ): Promise<void> {
-    const { data, encoding, error } = await messageEncoding.decodeData(
-      objectData.value,
-      objectData.encoding,
-      inputContext,
-    );
-    objectData.value = data;
-    objectData.encoding = encoding ?? undefined;
+    // TODO: support decoding JSON objects stored as a JSON string with an encoding of "json"
+    // https://ably.atlassian.net/browse/PUB-1667
+    // currently we check only the "bytes" field:
+    // - if connection is msgpack - "bytes" was received as msgpack encoded bytes, no need to decode, it's already a buffer
+    // - if connection is json - "bytes" was received as a base64 string, need to decode it to a buffer
 
-    if (error) {
-      throw error;
+    if (format !== 'msgpack' && objectData.bytes != null) {
+      // connection is using JSON protocol, decode bytes value
+      objectData.bytes = client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
     }
   }
 
-  private static _encodeObjectOperation(objectOperation: ObjectOperation, encodeFn: EncodeFunction): ObjectOperation {
+  private static _encodeObjectOperation(
+    objectOperation: ObjectOperation,
+    encodeObjectDataFn: EncodeObjectDataFunction,
+    encodeInitialValueFn: EncodeInitialValueFunction,
+  ): ObjectOperation {
     // deep copy "objectOperation" object so we can modify the copy here.
     // buffer values won't be correctly copied, so we will need to set them again explicitly.
     const objectOperationCopy = JSON.parse(JSON.stringify(objectOperation)) as ObjectOperation;
 
-    if (objectOperationCopy.mapOp?.data && 'value' in objectOperationCopy.mapOp.data) {
+    if (objectOperationCopy.mapOp?.data) {
       // use original "objectOperation" object when encoding values, so we have access to the original buffer values.
-      objectOperationCopy.mapOp.data = ObjectMessage._encodeObjectData(objectOperation.mapOp?.data!, encodeFn);
+      objectOperationCopy.mapOp.data = ObjectMessage._encodeObjectData(
+        objectOperation.mapOp?.data!,
+        encodeObjectDataFn,
+      );
     }
 
     if (objectOperationCopy.map?.entries) {
       Object.entries(objectOperationCopy.map.entries).forEach(([key, entry]) => {
         // use original "objectOperation" object when encoding values, so we have access to original buffer values.
-        entry.data = ObjectMessage._encodeObjectData(objectOperation?.map?.entries?.[key].data!, encodeFn);
+        entry.data = ObjectMessage._encodeObjectData(objectOperation?.map?.entries?.[key].data!, encodeObjectDataFn);
       });
     }
 
     if (objectOperation.initialValue) {
       // use original "objectOperation" object so we have access to the original buffer value
-      const { data: encodedInitialValue } = encodeFn(objectOperation.initialValue);
+      const { data: encodedInitialValue } = encodeInitialValueFn(objectOperation.initialValue);
       objectOperationCopy.initialValue = encodedInitialValue;
     }
 
     return objectOperationCopy;
   }
 
-  private static _encodeObjectState(objectState: ObjectState, encodeFn: EncodeFunction): ObjectState {
+  private static _encodeObjectState(
+    objectState: ObjectState,
+    encodeObjectDataFn: EncodeObjectDataFunction,
+    encodeInitialValueFn: EncodeInitialValueFunction,
+  ): ObjectState {
     // deep copy "objectState" object so we can modify the copy here.
     // buffer values won't be correctly copied, so we will need to set them again explicitly.
     const objectStateCopy = JSON.parse(JSON.stringify(objectState)) as ObjectState;
@@ -356,26 +388,25 @@ export class ObjectMessage {
     if (objectStateCopy.map?.entries) {
       Object.entries(objectStateCopy.map.entries).forEach(([key, entry]) => {
         // use original "objectState" object when encoding values, so we have access to original buffer values.
-        entry.data = ObjectMessage._encodeObjectData(objectState?.map?.entries?.[key].data!, encodeFn);
+        entry.data = ObjectMessage._encodeObjectData(objectState?.map?.entries?.[key].data!, encodeObjectDataFn);
       });
     }
 
     if (objectStateCopy.createOp) {
       // use original "objectState" object when encoding values, so we have access to original buffer values.
-      objectStateCopy.createOp = ObjectMessage._encodeObjectOperation(objectState.createOp!, encodeFn);
+      objectStateCopy.createOp = ObjectMessage._encodeObjectOperation(
+        objectState.createOp!,
+        encodeObjectDataFn,
+        encodeInitialValueFn,
+      );
     }
 
     return objectStateCopy;
   }
 
-  private static _encodeObjectData(data: ObjectData, encodeFn: EncodeFunction): ObjectData {
-    const { data: encodedValue, encoding: newEncoding } = encodeFn(data?.value, data?.encoding);
-
-    return {
-      ...data,
-      value: encodedValue,
-      encoding: newEncoding ?? undefined,
-    };
+  private static _encodeObjectData(data: ObjectData, encodeFn: EncodeObjectDataFunction): ObjectData {
+    const encodedData = encodeFn(data);
+    return encodedData;
   }
 
   /**
@@ -391,7 +422,7 @@ export class ObjectMessage {
     operation?: ObjectOperation;
     objectState?: ObjectState;
   } {
-    const encodeFn: EncodeFunction = (data, encoding) => {
+    const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
       const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWire(data, encoding, format);
       return {
         data: encodedData,
@@ -399,10 +430,32 @@ export class ObjectMessage {
       };
     };
 
+    const encodeObjectDataFn: EncodeObjectDataFunction = (data) => {
+      // TODO: support encoding JSON objects as a JSON string on "string" property with an encoding of "json"
+      // https://ably.atlassian.net/browse/PUB-1667
+      // currently we check only the "bytes" field:
+      // - if connection is msgpack - "bytes" will will be sent as msgpack bytes, no need to encode here
+      // - if connection is json - "bytes" will be encoded as a base64 string
+
+      let encodedBytes: any = data.bytes;
+      if (data.bytes != null) {
+        const result = messageEncoding.encodeDataForWire(data.bytes, data.encoding, format);
+        encodedBytes = result.data;
+        // no need to change the encoding
+      }
+
+      return {
+        ...data,
+        bytes: encodedBytes,
+      };
+    };
+
     const encodedOperation = message.operation
-      ? ObjectMessage._encodeObjectOperation(message.operation, encodeFn)
+      ? ObjectMessage._encodeObjectOperation(message.operation, encodeObjectDataFn, encodeInitialValueFn)
       : undefined;
-    const encodedObjectState = message.object ? ObjectMessage._encodeObjectState(message.object, encodeFn) : undefined;
+    const encodedObjectState = message.object
+      ? ObjectMessage._encodeObjectState(message.object, encodeObjectDataFn, encodeInitialValueFn)
+      : undefined;
 
     return {
       operation: encodedOperation,
@@ -566,14 +619,19 @@ export class ObjectMessage {
   private _getObjectDataSize(data: ObjectData): number {
     let size = 0;
 
-    if (data.value) {
-      size += this._getObjectValueSize(data.value);
+    if (data.boolean != null) {
+      size += this._utils.dataSizeBytes(data.boolean);
+    }
+    if (data.bytes != null) {
+      size += this._utils.dataSizeBytes(data.bytes);
+    }
+    if (data.number != null) {
+      size += this._utils.dataSizeBytes(data.number);
+    }
+    if (data.string != null) {
+      size += this._utils.dataSizeBytes(data.string);
     }
 
     return size;
-  }
-
-  private _getObjectValueSize(value: ObjectValue): number {
-    return this._utils.dataSizeBytes(value);
   }
 }
