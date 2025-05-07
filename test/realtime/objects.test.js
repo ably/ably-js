@@ -455,7 +455,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       const objectSyncSequenceScenarios = [
         {
           allTransportsAndProtocols: true,
-          description: 'builds object tree from OBJECT_SYNC sequence on channel attachment',
+          description: 'OBJECT_SYNC sequence builds object tree on channel attachment',
           action: async (ctx) => {
             const { client } = ctx;
 
@@ -503,6 +503,68 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               const value = valuesMap.get(key);
               expect(value, `Check value at key="${key}" in nested map exists`).to.exist;
             });
+          },
+        },
+
+        {
+          allTransportsAndProtocols: true,
+          description: 'OBJECT_SYNC sequence builds object tree with all operations applied',
+          action: async (ctx) => {
+            const { root, objects, helper, clientOptions, channelName } = ctx;
+
+            const objectsCreatedPromise = Promise.all([
+              waitForMapKeyUpdate(root, 'counter'),
+              waitForMapKeyUpdate(root, 'map'),
+            ]);
+
+            // MAP_CREATE
+            const map = await objects.createMap({ shouldStay: 'foo', shouldDelete: 'bar' });
+            // COUNTER_CREATE
+            const counter = await objects.createCounter(1);
+
+            await Promise.all([root.set('map', map), root.set('counter', counter), objectsCreatedPromise]);
+
+            const operationsAppliedPromise = Promise.all([
+              waitForMapKeyUpdate(map, 'anotherKey'),
+              waitForMapKeyUpdate(map, 'shouldDelete'),
+              waitForCounterUpdate(counter),
+            ]);
+
+            await Promise.all([
+              // MAP_SET
+              map.set('anotherKey', 'baz'),
+              // MAP_REMOVE
+              map.remove('shouldDelete'),
+              // COUNTER_INC
+              counter.increment(10),
+              operationsAppliedPromise,
+            ]);
+
+            // create a new client and check it syncs with the aggregated data
+            const client2 = RealtimeWithObjects(helper, clientOptions);
+
+            await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+              const channel2 = client2.channels.get(channelName, channelOptionsWithObjects());
+              const objects2 = channel2.objects;
+
+              await channel2.attach();
+              const root2 = await objects2.getRoot();
+
+              expect(root2.get('counter'), 'Check counter exists').to.exist;
+              expect(root2.get('counter').value()).to.equal(11, 'Check counter has correct value');
+
+              expect(root2.get('map'), 'Check map exists').to.exist;
+              expect(root2.get('map').size()).to.equal(2, 'Check map has correct number of keys');
+              expect(root2.get('map').get('shouldStay')).to.equal(
+                'foo',
+                'Check map has correct value for "shouldStay" key',
+              );
+              expect(root2.get('map').get('anotherKey')).to.equal(
+                'baz',
+                'Check map has correct value for "anotherKey" key',
+              );
+              expect(root2.get('map').get('shouldDelete'), 'Check map does not have "shouldDelete" key').to.not.exist;
+            }, client2);
           },
         },
 
@@ -3576,7 +3638,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await channel.attach();
             const root = await objects.getRoot();
 
-            await scenario.action({ objects, root, objectsHelper, channelName, channel, client, helper });
+            await scenario.action({
+              objects,
+              root,
+              objectsHelper,
+              channelName,
+              channel,
+              client,
+              helper,
+              clientOptions,
+            });
           }, client);
         },
       );

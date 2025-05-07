@@ -67,7 +67,7 @@ export interface MapEntry {
    */
   timeserial?: string;
   /** The data that represents the value of the map entry. */
-  data: ObjectData;
+  data?: ObjectData;
 }
 
 /** An ObjectMap object represents a map of key-value pairs. */
@@ -321,7 +321,9 @@ export class ObjectMessage {
     format: Utils.Format | undefined,
   ): Promise<void> {
     for (const entry of Object.values(mapEntries)) {
-      await ObjectMessage._decodeObjectData(entry.data, client, format);
+      if (entry.data) {
+        await ObjectMessage._decodeObjectData(entry.data, client, format);
+      }
     }
   }
 
@@ -361,8 +363,10 @@ export class ObjectMessage {
 
     if (objectOperationCopy.map?.entries) {
       Object.entries(objectOperationCopy.map.entries).forEach(([key, entry]) => {
-        // use original "objectOperation" object when encoding values, so we have access to original buffer values.
-        entry.data = ObjectMessage._encodeObjectData(objectOperation?.map?.entries?.[key].data!, encodeObjectDataFn);
+        if (entry.data) {
+          // use original "objectOperation" object when encoding values, so we have access to original buffer values.
+          entry.data = ObjectMessage._encodeObjectData(objectOperation?.map?.entries?.[key].data!, encodeObjectDataFn);
+        }
       });
     }
 
@@ -386,8 +390,10 @@ export class ObjectMessage {
 
     if (objectStateCopy.map?.entries) {
       Object.entries(objectStateCopy.map.entries).forEach(([key, entry]) => {
-        // use original "objectState" object when encoding values, so we have access to original buffer values.
-        entry.data = ObjectMessage._encodeObjectData(objectState?.map?.entries?.[key].data!, encodeObjectDataFn);
+        if (entry.data) {
+          // use original "objectState" object when encoding values, so we have access to original buffer values.
+          entry.data = ObjectMessage._encodeObjectData(objectState?.map?.entries?.[key].data!, encodeObjectDataFn);
+        }
       });
     }
 

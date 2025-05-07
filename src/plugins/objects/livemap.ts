@@ -822,18 +822,20 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     // need to iterate over entries to correctly process optional parameters
     Object.entries(entries ?? {}).forEach(([key, entry]) => {
-      let liveData: ObjectData;
+      let liveData: ObjectData | undefined = undefined;
 
-      if (!this._client.Utils.isNil(entry.data.objectId)) {
-        liveData = { objectId: entry.data.objectId } as ObjectIdObjectData;
-      } else {
-        liveData = {
-          encoding: entry.data.encoding,
-          boolean: entry.data.boolean,
-          bytes: entry.data.bytes,
-          number: entry.data.number,
-          string: entry.data.string,
-        } as ValueObjectData;
+      if (!this._client.Utils.isNil(entry.data)) {
+        if (!this._client.Utils.isNil(entry.data.objectId)) {
+          liveData = { objectId: entry.data.objectId } as ObjectIdObjectData;
+        } else {
+          liveData = {
+            encoding: entry.data.encoding,
+            boolean: entry.data.boolean,
+            bytes: entry.data.bytes,
+            number: entry.data.number,
+            string: entry.data.string,
+          } as ValueObjectData;
+        }
       }
 
       const liveDataEntry: LiveMapEntry = {
