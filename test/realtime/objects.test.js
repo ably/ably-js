@@ -4852,7 +4852,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         /** @nospec */
         forScenarios(this, objectMessageSizeScenarios, function (helper, scenario) {
           helper.recordPrivateApi('call.ObjectMessage.encode');
-          ObjectsPlugin.ObjectMessage.encode(scenario.message);
+          ObjectsPlugin.ObjectMessage.encode(scenario.message, MessageEncoding);
           helper.recordPrivateApi('call.BufferUtils.utf8Encode'); // was called by a scenario to create buffers
           helper.recordPrivateApi('call.ObjectMessage.fromValues'); // was called by a scenario to create an ObjectMessage instance
           helper.recordPrivateApi('call.Utils.dataSizeBytes'); // was called by a scenario to calculated the expected byte size

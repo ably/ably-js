@@ -186,7 +186,7 @@ export class ObjectMessage {
    *
    * Uses encoding functions from regular `Message` processing.
    */
-  static async encode(message: ObjectMessage, messageEncoding: typeof MessageEncoding): Promise<ObjectMessage> {
+  static encode(message: ObjectMessage, messageEncoding: typeof MessageEncoding): ObjectMessage {
     const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
       const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeData(data, encoding);
 
