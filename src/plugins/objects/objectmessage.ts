@@ -186,9 +186,21 @@ export class ObjectMessage {
    *
    * Uses encoding functions from regular `Message` processing.
    */
-  static encode(message: ObjectMessage, messageEncoding: typeof MessageEncoding): ObjectMessage {
+  static encode(message: ObjectMessage, client: BaseClient): ObjectMessage {
     const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
-      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeData(data, encoding);
+      const isNativeDataType =
+        typeof data == 'string' ||
+        typeof data == 'number' ||
+        typeof data == 'boolean' ||
+        client.Platform.BufferUtils.isBuffer(data) ||
+        data === null ||
+        data === undefined;
+
+      const { data: encodedData, encoding: newEncoding } = client.MessageEncoding.encodeData(
+        data,
+        encoding,
+        isNativeDataType,
+      );
 
       return {
         data: encodedData,
@@ -291,7 +303,7 @@ export class ObjectMessage {
     // initial value object may contain user provided data that requires an additional encoding (for example buffers as map keys).
     // so we need to encode that data first as if we were sending it over the wire. we can use an ObjectMessage methods for this
     const msg = ObjectMessage.fromValues({ operation: initialValue }, client.Utils, client.MessageEncoding);
-    ObjectMessage.encode(msg, client.MessageEncoding);
+    ObjectMessage.encode(msg, client);
     const { operation: initialValueWithDataEncoding } = ObjectMessage._encodeForWireProtocol(
       msg,
       client.MessageEncoding,

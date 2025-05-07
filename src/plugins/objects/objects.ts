@@ -296,7 +296,7 @@ export class Objects {
   async publish(objectMessages: ObjectMessage[]): Promise<void> {
     this._channel.throwIfUnpublishableState();
 
-    objectMessages.forEach((x) => ObjectMessage.encode(x, this._client.MessageEncoding));
+    objectMessages.forEach((x) => ObjectMessage.encode(x, this._client));
     const maxMessageSize = this._client.options.maxMessageSize;
     const size = objectMessages.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
     if (size > maxMessageSize) {
