@@ -4622,6 +4622,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expected: 0,
           },
           {
+            description: 'nonce',
+            message: objectMessageFromValues({
+              operation: { nonce: '1234567890' },
+            }),
+            expected: 0,
+          },
+          {
+            description: 'initial value',
+            message: objectMessageFromValues({
+              operation: {
+                initialValue: BufferUtils.utf8Encode('{"counter":{"count":1}}'),
+                initialValueEncoding: 'json',
+              },
+            }),
+            expected: 0,
+          },
+          {
             description: 'map create op no payload',
             message: objectMessageFromValues({
               operation: { action: 0, objectId: 'object-id' },
