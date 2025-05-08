@@ -4450,7 +4450,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         expect(() => map.remove()).to.throw(errorMsg);
       };
 
-      const channelConfigurationScenarios = [
+      const clientConfigurationScenarios = [
         {
           description: 'public API throws missing object modes error when attached without correct modes',
           action: async (ctx) => {
@@ -4574,10 +4574,30 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
           },
         },
+
+        {
+          description: 'public write API throws invalid channel option when "echoMessages" is disabled',
+          action: async (ctx) => {
+            const { objects, client, map, counter, helper } = ctx;
+
+            // obtain batch context with valid client options first
+            await objects.batch((ctx) => {
+              const map = ctx.getRoot().get('map');
+              const counter = ctx.getRoot().get('counter');
+              // now simulate echoMessages was disabled
+              helper.recordPrivateApi('write.realtime.options.echoMessages');
+              client.options.echoMessages = false;
+
+              expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"echoMessages" client option' });
+            });
+
+            await expectWriteApiToThrow({ objects, map, counter, errorMsg: '"echoMessages" client option' });
+          },
+        },
       ];
 
       /** @nospec */
-      forScenarios(this, channelConfigurationScenarios, async function (helper, scenario, clientOptions, channelName) {
+      forScenarios(this, clientConfigurationScenarios, async function (helper, scenario, clientOptions, channelName) {
         const objectsHelper = new ObjectsHelper(helper);
         const client = RealtimeWithObjects(helper, clientOptions);
 
@@ -4600,7 +4620,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           await root.set('counter', counter);
           await objectsCreatedPromise;
 
-          await scenario.action({ objects, objectsHelper, channelName, channel, root, map, counter, helper });
+          await scenario.action({ objects, objectsHelper, channelName, channel, root, map, counter, helper, client });
         }, client);
       });
 

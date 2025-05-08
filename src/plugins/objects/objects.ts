@@ -326,6 +326,7 @@ export class Objects {
   throwIfInvalidWriteApiConfiguration(): void {
     this._throwIfMissingChannelMode('object_publish');
     this._throwIfInChannelState(['detached', 'failed', 'suspended']);
+    this._throwIfEchoMessagesDisabled();
   }
 
   private _startNewSync(syncId?: string, syncCursor?: string): void {
@@ -492,6 +493,16 @@ export class Objects {
   private _throwIfInChannelState(channelState: API.ChannelState[]): void {
     if (channelState.includes(this._channel.state)) {
       throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
+    }
+  }
+
+  private _throwIfEchoMessagesDisabled(): void {
+    if (this._channel.client.options.echoMessages === false) {
+      throw new this._channel.client.ErrorInfo(
+        `"echoMessages" client option must be enabled for this operation`,
+        40000,
+        400,
+      );
     }
   }
 }
