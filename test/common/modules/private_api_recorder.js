@@ -156,6 +156,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'write.connectionManager.lastActivity',
     'write.connectionManager.msgSerial',
     'write.connectionManager.wsHosts',
+    'write.realtime.options.echoMessages',
     'write.realtime.options.realtimeHost',
     'write.realtime.options.wsConnectivityCheckUrl',
     'write.realtime.options.timeouts.realtimeRequestTimeout',

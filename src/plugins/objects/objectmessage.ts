@@ -67,7 +67,7 @@ export interface MapEntry {
    */
   timeserial?: string;
   /** The data that represents the value of the map entry. */
-  data: ObjectData;
+  data?: ObjectData;
 }
 
 /** An ObjectMap object represents a map of key-value pairs. */
@@ -157,7 +157,6 @@ export class ObjectMessage {
   timestamp?: number;
   clientId?: string;
   connectionId?: string;
-  channel?: string;
   extras?: any;
   /**
    * Describes an operation to be applied to an object.
@@ -187,9 +186,21 @@ export class ObjectMessage {
    *
    * Uses encoding functions from regular `Message` processing.
    */
-  static async encode(message: ObjectMessage, messageEncoding: typeof MessageEncoding): Promise<ObjectMessage> {
+  static encode(message: ObjectMessage, client: BaseClient): ObjectMessage {
     const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
-      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeData(data, encoding);
+      const isNativeDataType =
+        typeof data == 'string' ||
+        typeof data == 'number' ||
+        typeof data == 'boolean' ||
+        client.Platform.BufferUtils.isBuffer(data) ||
+        data === null ||
+        data === undefined;
+
+      const { data: encodedData, encoding: newEncoding } = client.MessageEncoding.encodeData(
+        data,
+        encoding,
+        isNativeDataType,
+      );
 
       return {
         data: encodedData,
@@ -292,7 +303,7 @@ export class ObjectMessage {
     // initial value object may contain user provided data that requires an additional encoding (for example buffers as map keys).
     // so we need to encode that data first as if we were sending it over the wire. we can use an ObjectMessage methods for this
     const msg = ObjectMessage.fromValues({ operation: initialValue }, client.Utils, client.MessageEncoding);
-    ObjectMessage.encode(msg, client.MessageEncoding);
+    ObjectMessage.encode(msg, client);
     const { operation: initialValueWithDataEncoding } = ObjectMessage._encodeForWireProtocol(
       msg,
       client.MessageEncoding,
@@ -322,7 +333,9 @@ export class ObjectMessage {
     format: Utils.Format | undefined,
   ): Promise<void> {
     for (const entry of Object.values(mapEntries)) {
-      await ObjectMessage._decodeObjectData(entry.data, client, format);
+      if (entry.data) {
+        await ObjectMessage._decodeObjectData(entry.data, client, format);
+      }
     }
   }
 
@@ -362,8 +375,10 @@ export class ObjectMessage {
 
     if (objectOperationCopy.map?.entries) {
       Object.entries(objectOperationCopy.map.entries).forEach(([key, entry]) => {
-        // use original "objectOperation" object when encoding values, so we have access to original buffer values.
-        entry.data = ObjectMessage._encodeObjectData(objectOperation?.map?.entries?.[key].data!, encodeObjectDataFn);
+        if (entry.data) {
+          // use original "objectOperation" object when encoding values, so we have access to original buffer values.
+          entry.data = ObjectMessage._encodeObjectData(objectOperation?.map?.entries?.[key].data!, encodeObjectDataFn);
+        }
       });
     }
 
@@ -387,8 +402,10 @@ export class ObjectMessage {
 
     if (objectStateCopy.map?.entries) {
       Object.entries(objectStateCopy.map.entries).forEach(([key, entry]) => {
-        // use original "objectState" object when encoding values, so we have access to original buffer values.
-        entry.data = ObjectMessage._encodeObjectData(objectState?.map?.entries?.[key].data!, encodeObjectDataFn);
+        if (entry.data) {
+          // use original "objectState" object when encoding values, so we have access to original buffer values.
+          entry.data = ObjectMessage._encodeObjectData(objectState?.map?.entries?.[key].data!, encodeObjectDataFn);
+        }
       });
     }
 
@@ -499,7 +516,6 @@ export class ObjectMessage {
     if (this.timestamp) result += '; timestamp=' + this.timestamp;
     if (this.clientId) result += '; clientId=' + this.clientId;
     if (this.connectionId) result += '; connectionId=' + this.connectionId;
-    if (this.channel) result += '; channel=' + this.channel;
     // TODO: prettify output for operation and object and encode buffers.
     // see examples for data in Message and PresenceMessage
     if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
