@@ -2,6 +2,20 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.9.0](https://github.com/ably/ably-js/tree/2.9.0) (2025-05-08)
+
+**Introducing Ably LiveObjects**
+
+With this release, ably-js now supports LiveObjects.
+
+Ably LiveObjects enables effortless realtime synchronization of application state across multiple users and devices at any scale. When a LiveObject is updated, changes are automatically propagated to all subscribed clients in realtime, ensuring that everyone always sees the latest state.
+
+The ably-js implementation for LiveObjects provides a simple, purpose-built API that handles realtime synchronization, persistence, and convergence behind the scenes.
+
+See our [official documentation](https://ably.com/docs/liveobjects) to learn more about LiveObjects and how to start synchronizing your application state using Ably.
+
+- Add support for Ably LiveObjects [\#2007](https://github.com/ably/ably-js/pull/2007)
+
 ## [2.8.0](https://github.com/ably/ably-js/tree/2.8.0) (2025-05-01)
 
 - Add `RestClient.device()` and `RealtimeClient.device()` methods which return the `LocalDevice` object for push notifications [\#2020](https://github.com/ably/ably-js/pull/2020)
