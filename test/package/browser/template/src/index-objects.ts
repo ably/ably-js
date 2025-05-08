@@ -33,7 +33,7 @@ type ExplicitRootType = {
 };
 
 globalThis.testAblyPackage = async function () {
-  const key = await createSandboxAblyAPIKey({ featureFlags: ['enableChannelState'] });
+  const key = await createSandboxAblyAPIKey();
 
   const realtime = new Ably.Realtime({ key, environment: 'sandbox', plugins: { Objects } });
 
