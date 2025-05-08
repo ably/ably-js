@@ -18,7 +18,7 @@ export class ObjectsPool {
 
   constructor(private _objects: Objects) {
     this._client = this._objects.getClient();
-    this._pool = this._getInitialPool();
+    this._pool = this._createInitialPool();
     this._gcInterval = setInterval(() => {
       this._onGCInterval();
     }, DEFAULTS.gcInterval);
@@ -44,8 +44,30 @@ export class ObjectsPool {
     this._pool.set(objectId, liveObject);
   }
 
-  reset(): void {
-    this._pool = this._getInitialPool();
+  /**
+   * Removes all objects but root from the pool and clears the data for root.
+   * Does not create a new root object, so the reference to the root object remains the same.
+   */
+  resetToInitialPool(emitUpdateEvents: boolean): void {
+    // clear the pool first and keep the root object
+    const root = this._pool.get(ROOT_OBJECT_ID)!;
+    this._pool.clear();
+    this._pool.set(root.getObjectId(), root);
+
+    // clear the data, this will only clear the root object
+    this.clearObjectsData(emitUpdateEvents);
+  }
+
+  /**
+   * Clears the data stored for all objects in the pool.
+   */
+  clearObjectsData(emitUpdateEvents: boolean): void {
+    for (const object of this._pool.values()) {
+      const update = object.clearData();
+      if (emitUpdateEvents) {
+        object.notifyUpdated(update);
+      }
+    }
   }
 
   createZeroValueObjectIfNotExists(objectId: string): LiveObject {
@@ -71,7 +93,7 @@ export class ObjectsPool {
     return zeroValueObject;
   }
 
-  private _getInitialPool(): Map<string, LiveObject> {
+  private _createInitialPool(): Map<string, LiveObject> {
     const pool = new Map<string, LiveObject>();
     const root = LiveMap.zeroValue(this._objects, ROOT_OBJECT_ID);
     pool.set(root.getObjectId(), root);

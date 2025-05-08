@@ -45,7 +45,7 @@ export class SyncObjectsDataPool {
     return this._pool.size === 0;
   }
 
-  reset(): void {
+  clear(): void {
     this._pool.clear();
   }
 

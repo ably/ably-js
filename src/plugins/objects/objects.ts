@@ -265,8 +265,9 @@ export class Objects {
 
     if (!hasObjects) {
       // if no HAS_OBJECTS flag received on attach, we can end sync sequence immediately and treat it as no objects on a channel.
-      this._objectsPool.reset();
-      this._syncObjectsDataPool.reset();
+      // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
+      this._objectsPool.resetToInitialPool(true);
+      this._syncObjectsDataPool.clear();
       // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
       // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
       this._endSync(fromInitializedState);
@@ -284,8 +285,9 @@ export class Objects {
 
       case 'detached':
       case 'failed':
-        this._objectsPool.reset();
-        this._syncObjectsDataPool.reset();
+        // do not emit data update events as the actual current state of Objects data is unknown when we're in these channel states
+        this._objectsPool.clearObjectsData(false);
+        this._syncObjectsDataPool.clear();
         break;
     }
   }
@@ -329,7 +331,7 @@ export class Objects {
   private _startNewSync(syncId?: string, syncCursor?: string): void {
     // need to discard all buffered object operation messages on new sync start
     this._bufferedObjectOperations = [];
-    this._syncObjectsDataPool.reset();
+    this._syncObjectsDataPool.clear();
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
     this._stateChange(ObjectsState.syncing, false);
@@ -342,7 +344,7 @@ export class Objects {
     this._applyObjectMessages(this._bufferedObjectOperations);
 
     this._bufferedObjectOperations = [];
-    this._syncObjectsDataPool.reset();
+    this._syncObjectsDataPool.clear();
     this._currentSyncId = undefined;
     this._currentSyncCursor = undefined;
     this._stateChange(ObjectsState.synced, deferStateEvent);

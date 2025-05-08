@@ -135,6 +135,30 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     });
   }
 
+  async function waitForObjectSync(helper, client) {
+    return new Promise((resolve, reject) => {
+      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+      const transport = client.connection.connectionManager.activeProtocol.getTransport();
+      const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+      helper.recordPrivateApi('replace.transport.onProtocolMessage');
+      transport.onProtocolMessage = function (message) {
+        try {
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          onProtocolMessageOriginal.call(transport, message);
+
+          if (message.action === 20) {
+            helper.recordPrivateApi('replace.transport.onProtocolMessage');
+            transport.onProtocolMessage = onProtocolMessageOriginal;
+            resolve();
+          }
+        } catch (err) {
+          reject(err);
+        }
+      };
+    });
+  }
+
   /**
    * The channel with fixture data may not yet be populated by REST API requests made by ObjectsHelper.
    * This function waits for a channel to have all keys set.
@@ -565,6 +589,36 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               );
               expect(root2.get('map').get('shouldDelete'), 'Check map does not have "shouldDelete" key').to.not.exist;
             }, client2);
+          },
+        },
+
+        {
+          description: 'OBJECT_SYNC sequence does not change references to existing objects',
+          action: async (ctx) => {
+            const { root, objects, helper, channel } = ctx;
+
+            const objectsCreatedPromise = Promise.all([
+              waitForMapKeyUpdate(root, 'counter'),
+              waitForMapKeyUpdate(root, 'map'),
+            ]);
+
+            const map = await objects.createMap();
+            const counter = await objects.createCounter();
+            await Promise.all([root.set('map', map), root.set('counter', counter), objectsCreatedPromise]);
+            await channel.detach();
+
+            // wait for the actual OBJECT_SYNC message to confirm it was received and processed
+            const objectSyncPromise = waitForObjectSync(helper, channel.client);
+            await channel.attach();
+            await objectSyncPromise;
+
+            const newRootRef = await channel.objects.getRoot();
+            const newMapRef = newRootRef.get('map');
+            const newCounterRef = newRootRef.get('counter');
+
+            expect(newRootRef).to.equal(root, 'Check root reference is the same after OBJECT_SYNC sequence');
+            expect(newMapRef).to.equal(map, 'Check map reference is the same after OBJECT_SYNC sequence');
+            expect(newCounterRef).to.equal(counter, 'Check counter reference is the same after OBJECT_SYNC sequence');
           },
         },
 

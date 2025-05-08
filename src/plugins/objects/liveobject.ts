@@ -159,11 +159,13 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  tombstone(): void {
+  tombstone(): TUpdate {
     this._tombstone = true;
     this._tombstonedAt = Date.now();
-    this._dataRef = this._getZeroValueData();
+    const update = this.clearData();
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
+
+    return update;
   }
 
   /**
@@ -178,6 +180,15 @@ export abstract class LiveObject<
    */
   tombstonedAt(): number | undefined {
     return this._tombstonedAt;
+  }
+
+  /**
+   * @internal
+   */
+  clearData(): TUpdate {
+    const previousDataRef = this._dataRef;
+    this._dataRef = this._getZeroValueData();
+    return this._updateFromDataDiff(previousDataRef, this._dataRef);
   }
 
   /**
@@ -200,9 +211,7 @@ export abstract class LiveObject<
   }
 
   protected _applyObjectDelete(): TUpdate {
-    const previousDataRef = this._dataRef;
-    this.tombstone();
-    return this._updateFromDataDiff(previousDataRef, this._dataRef);
+    return this.tombstone();
   }
 
   /**
