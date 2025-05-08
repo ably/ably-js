@@ -4,7 +4,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
   var exports = {};
   var _exports = {};
   var expect = chai.expect;
-  var createPM = Ably.protocolMessageFromDeserialized;
+  var createPM = Ably.makeProtocolMessageFromDeserialized();
 
   function checkCanSubscribe(channel, testChannel) {
     return function (callback) {
@@ -170,7 +170,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTS3c
      * @spec RTL16
      */
-    Helper.testOnAllTransports(this, 'channelinit0', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelinit0', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -208,7 +208,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4
      */
-    Helper.testOnAllTransports(this, 'channelattach0', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattach0', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -235,7 +235,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4
      */
-    Helper.testOnAllTransports(this, 'channelattach2', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattach2', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -262,7 +262,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4
      * @spec RTL5
      */
-    Helper.testOnAllTransports(
+    Helper.testOnAllTransportsAndProtocols(
       this,
       'channelattach3',
       function (realtimeOpts) {
@@ -303,7 +303,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4d
      */
-    Helper.testOnAllTransports(this, 'channelattachempty', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattachempty', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -338,7 +338,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL4d
      */
-    Helper.testOnAllTransports(this, 'channelattachinvalid', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattachinvalid', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -379,7 +379,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @spec RTL6
      */
-    Helper.testOnAllTransports(this, 'publish_no_attach', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'publish_no_attach', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -409,7 +409,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @specpartial RTL6b - callback which is called with an error
      */
-    Helper.testOnAllTransports(this, 'channelattach_publish_invalid', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattach_publish_invalid', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -443,7 +443,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      *
      * @nospec
      */
-    Helper.testOnAllTransports(this, 'channelattach_invalid_twice', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'channelattach_invalid_twice', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         try {
@@ -538,7 +538,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4k1
      * @spec RTL4m
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'attachWithChannelParamsBasicChannelsGet', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsBasicChannelsGet';
@@ -601,7 +601,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4m
      * @spec RTL16
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'attachWithChannelParamsBasicSetOptions', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsBasicSetOptions';
@@ -656,7 +656,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL16
      * @spec RTL7c
      */
-    Helper.testOnAllTransports(this, 'subscribeAfterSetOptions', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'subscribeAfterSetOptions', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'subscribeAfterSetOptions';
@@ -732,7 +732,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /** @spec RTL16a */
-    Helper.testOnAllTransports(this, 'setOptionsCallbackBehaviour', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'setOptionsCallbackBehaviour', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'setOptionsCallbackBehaviour';
@@ -814,61 +814,65 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * Verify modes is ignored when params.modes is present
      * @nospec
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelParamsModesAndChannelModes', function (realtimeOpts) {
-      return function (done) {
-        const helper = this.test.helper;
-        var testName = 'attachWithChannelParamsModesAndChannelModes';
-        try {
-          var realtime = helper.AblyRealtime(realtimeOpts);
-          realtime.connection.on('connected', function () {
-            var paramsModes = ['presence', 'subscribe'];
-            var params = {
-              modes: paramsModes.join(','),
-            };
-            var channelOptions = {
-              params: params,
-              modes: ['publish', 'presence_subscribe'],
-            };
-            var channel = realtime.channels.get(testName, channelOptions);
-            Helper.whenPromiseSettles(channel.attach(), function (err) {
-              if (err) {
-                helper.closeAndFinish(done, realtime, err);
-                return;
-              }
-              try {
-                helper.recordPrivateApi('read.channel.channelOptions');
-                expect(channel.channelOptions).to.deep.equal(channelOptions, 'Check requested channel options');
-                expect(channel.params).to.deep.equal(params, 'Check result params');
-                expect(channel.modes).to.deep.equal(paramsModes, 'Check result modes');
-              } catch (err) {
-                helper.closeAndFinish(done, realtime, err);
-                return;
-              }
+    Helper.testOnAllTransportsAndProtocols(
+      this,
+      'attachWithChannelParamsModesAndChannelModes',
+      function (realtimeOpts) {
+        return function (done) {
+          const helper = this.test.helper;
+          var testName = 'attachWithChannelParamsModesAndChannelModes';
+          try {
+            var realtime = helper.AblyRealtime(realtimeOpts);
+            realtime.connection.on('connected', function () {
+              var paramsModes = ['presence', 'subscribe'];
+              var params = {
+                modes: paramsModes.join(','),
+              };
+              var channelOptions = {
+                params: params,
+                modes: ['publish', 'presence_subscribe'],
+              };
+              var channel = realtime.channels.get(testName, channelOptions);
+              Helper.whenPromiseSettles(channel.attach(), function (err) {
+                if (err) {
+                  helper.closeAndFinish(done, realtime, err);
+                  return;
+                }
+                try {
+                  helper.recordPrivateApi('read.channel.channelOptions');
+                  expect(channel.channelOptions).to.deep.equal(channelOptions, 'Check requested channel options');
+                  expect(channel.params).to.deep.equal(params, 'Check result params');
+                  expect(channel.modes).to.deep.equal(paramsModes, 'Check result modes');
+                } catch (err) {
+                  helper.closeAndFinish(done, realtime, err);
+                  return;
+                }
 
-              var testRealtime = helper.AblyRealtime();
-              testRealtime.connection.on('connected', function () {
-                var testChannel = testRealtime.channels.get(testName);
-                async.series(
-                  [
-                    checkCanSubscribe(channel, testChannel),
-                    checkCanEnterPresence(channel),
-                    checkCantPublish(channel),
-                    checkCantPresenceSubscribe(channel, testChannel),
-                  ],
-                  function (err) {
-                    testRealtime.close();
-                    helper.closeAndFinish(done, realtime, err);
-                  },
-                );
+                var testRealtime = helper.AblyRealtime();
+                testRealtime.connection.on('connected', function () {
+                  var testChannel = testRealtime.channels.get(testName);
+                  async.series(
+                    [
+                      checkCanSubscribe(channel, testChannel),
+                      checkCanEnterPresence(channel),
+                      checkCantPublish(channel),
+                      checkCantPresenceSubscribe(channel, testChannel),
+                    ],
+                    function (err) {
+                      testRealtime.close();
+                      helper.closeAndFinish(done, realtime, err);
+                    },
+                  );
+                });
               });
             });
-          });
-          helper.monitorConnection(done, realtime);
-        } catch (err) {
-          helper.closeAndFinish(done, realtime, err);
-        }
-      };
-    });
+            helper.monitorConnection(done, realtime);
+          } catch (err) {
+            helper.closeAndFinish(done, realtime, err);
+          }
+        };
+      },
+    );
 
     /**
      * No spec items found for 'modes' property behavior (like preventing publish, entering presence, presence subscription)
@@ -877,7 +881,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4l
      * @spec RTL4m
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelModes', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'attachWithChannelModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelModes';
@@ -937,7 +941,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      * @spec RTL4l
      * @spec RTL4m
      */
-    Helper.testOnAllTransports(this, 'attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
+    Helper.testOnAllTransportsAndProtocols(this, 'attachWithChannelParamsDeltaAndModes', function (realtimeOpts) {
       return function (done) {
         const helper = this.test.helper;
         var testName = 'attachWithChannelParamsDeltaAndModes';
@@ -1259,7 +1263,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             });
             helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
             var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
             helper.recordPrivateApi('call.transport.onProtocolMessage');
             transport.onProtocolMessage(
               createPM({
@@ -1309,7 +1313,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           }
           helper.recordPrivateApi('call.Platform.nextTick');
           Ably.Realtime.Platform.Config.nextTick(function () {
-            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
             helper.recordPrivateApi('call.transport.onProtocolMessage');
             transport.onProtocolMessage(
               createPM({
@@ -1360,7 +1364,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           });
           helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
           var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-          helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
           helper.recordPrivateApi('call.transport.onProtocolMessage');
           transport.onProtocolMessage(
             createPM({
@@ -1408,7 +1412,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             });
             helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
             var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
             helper.recordPrivateApi('call.transport.onProtocolMessage');
             transport.onProtocolMessage(
               createPM({
@@ -1614,7 +1618,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             setTimeout(function () {
               helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
               var transport = realtime.connection.connectionManager.activeProtocol.getTransport();
-              helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+              helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
               helper.recordPrivateApi('call.transport.onProtocolMessage');
               transport.onProtocolMessage(createPM({ action: 11, channel: channelName }));
             }, 0);
@@ -1857,6 +1861,132 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         expect(attachedStateChange).not.to.be.null;
         expect(attachedStateChange.previous).to.equal('attaching');
         expect(attachedStateChange.current).to.equal('attached');
+      }, realtime);
+
+      await helper.closeAndFinishAsync(realtime);
+    });
+
+    /** @spec RTL4c1 */
+    it('set channelSerial field for ATTACH ProtocolMessage if available', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime();
+
+      await helper.monitorConnectionAsync(async () => {
+        const channel = realtime.channels.get('set_channelSerial_on_attach');
+        await realtime.connection.once('connected');
+        await channel.attach();
+
+        // Publish a message to get the channelSerial from it
+        const messageReceivedPromise = new Promise((resolve, reject) => {
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+          const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+          helper.recordPrivateApi('replace.transport.onProtocolMessage');
+          transport.onProtocolMessage = function (msg) {
+            if (msg.action === 15) {
+              // MESSAGE
+              resolve(msg);
+            }
+
+            helper.recordPrivateApi('call.transport.onProtocolMessage');
+            onProtocolMessageOriginal.call(this, msg);
+          };
+        });
+        await channel.publish('event', 'test');
+
+        const receivedMessage = await messageReceivedPromise;
+        helper.recordPrivateApi('read.ProtocolMessage.channelSerial');
+        const receivedChannelSerial = receivedMessage.channelSerial;
+
+        // After the disconnect, on reconnect, spy on transport.send to check sent channelSerial
+        const promiseCheck = new Promise((resolve, reject) => {
+          helper.recordPrivateApi('listen.connectionManager.transport.pending');
+          realtime.connection.connectionManager.once('transport.pending', function (transport) {
+            helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+            const sendOriginal = transport.send;
+
+            helper.recordPrivateApi('replace.transport.send');
+            transport.send = function (msg) {
+              if (msg.action === 10) {
+                // ATTACH
+                try {
+                  helper.recordPrivateApi('read.ProtocolMessage.channelSerial');
+                  expect(msg.channelSerial).to.equal(receivedChannelSerial);
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              }
+
+              helper.recordPrivateApi('call.transport.send');
+              sendOriginal.call(this, msg);
+            };
+          });
+        });
+
+        // Disconnect the transport (will automatically reconnect and resume)
+        helper.recordPrivateApi('call.connectionManager.disconnectAllTransports');
+        realtime.connection.connectionManager.disconnectAllTransports();
+
+        await promiseCheck;
+      }, realtime);
+
+      await helper.closeAndFinishAsync(realtime);
+    });
+
+    /** @spec RTL15b */
+    it('channel.properties.channelSerial is updated with channelSerial from latest message', async function () {
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ clientId: 'me' });
+
+      await helper.monitorConnectionAsync(async () => {
+        const channel = realtime.channels.get('update_channelSerial_on_message');
+        await realtime.connection.once('connected');
+
+        helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+        const messagesToUpdateChannelSerial = [
+          createPM({
+            action: 11, // ATTACHED
+            channel: channel.name,
+            channelSerial: 'ATTACHED',
+          }),
+          createPM({
+            action: 15, // MESSAGE
+            channel: channel.name,
+            channelSerial: 'MESSAGE',
+            messages: [{ name: 'foo', data: 'bar' }],
+          }),
+          createPM({
+            action: 14, // PRESENCE
+            channel: channel.name,
+            channelSerial: 'PRESENCE',
+          }),
+          createPM({
+            action: 19, // OBJECT
+            channel: channel.name,
+            channelSerial: 'OBJECT',
+          }),
+          createPM({
+            action: 21, // ANNOTATION
+            channel: channel.name,
+            channelSerial: 'ANNOTATION',
+          }),
+        ];
+
+        helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+        const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+
+        for (const msg of messagesToUpdateChannelSerial) {
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          transport.onProtocolMessage(msg);
+
+          // wait until next event loop so any async ops get resolved and channel serial gets updated on a channel
+          await new Promise((res) => setTimeout(res, 0));
+          helper.recordPrivateApi('read.channel.properties.channelSerial');
+          helper.recordPrivateApi('read.ProtocolMessage.channelSerial');
+          expect(channel.properties.channelSerial).to.equal(msg.channelSerial);
+        }
       }, realtime);
 
       await helper.closeAndFinishAsync(realtime);

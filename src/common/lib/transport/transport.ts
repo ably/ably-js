@@ -132,6 +132,7 @@ abstract class Transport extends EventEmitter {
             message,
             this.connectionManager.realtime._RealtimePresence,
             this.connectionManager.realtime._Annotations,
+            this.connectionManager.realtime._objectsPlugin,
           ) +
           '; connectionId = ' +
           this.connectionManager.connectionId,

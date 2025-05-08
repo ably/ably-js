@@ -584,7 +584,333 @@ const client = new Ably.Rest({
 
 The Push plugin is developed as part of the Ably client library, so it is available for the same versions as the Ably client library itself. It also means that it follows the same semantic versioning rules as they were defined for [the Ably client library](#for-browsers). For example, to lock into a major or minor version of the Push plugin, you can specify a specific version number such as https://cdn.ably.com/lib/push.umd.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/push.umd.min-2.4.js for all v2.4._ versions, or you can lock into a single release with https://cdn.ably.com/lib/push.umd.min-2.4.0.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/push.umd-2.js.
 
-For more information on publishing push notifcations over Ably, see the [Ably push documentation](https://ably.com/docs/push).
+For more information on publishing push notifications over Ably, see the [Ably push documentation](https://ably.com/docs/push).
+
+### LiveObjects
+
+#### Using the Objects plugin
+
+LiveObjects functionality is supported for Realtime clients via the Objects plugin. In order to use Objects on a channel, you must pass in the plugin via client options.
+
+```typescript
+import * as Ably from 'ably';
+import Objects from 'ably/objects';
+
+const client = new Ably.Realtime({
+  ...options,
+  plugins: { Objects },
+});
+```
+
+Objects plugin also works with the [Modular variant](#modular-tree-shakable-variant) of the library.
+
+Alternatively, you can load the Objects plugin directly in your HTML using `script` tag (in case you can't use a package manager):
+
+```html
+<script src="https://cdn.ably.com/lib/objects.umd.min-2.js"></script>
+```
+
+When loaded this way, the Objects plugin will be available on the global object via the `AblyObjectsPlugin` property, so you will need to pass it to the Ably instance as follows:
+
+```typescript
+const client = new Ably.Realtime({
+  ...options,
+  plugins: { Objects: AblyObjectsPlugin },
+});
+```
+
+The Objects plugin is developed as part of the Ably client library, so it is available for the same versions as the Ably client library itself. It also means that it follows the same semantic versioning rules as they were defined for [the Ably client library](#for-browsers). For example, to lock into a major or minor version of the Objects plugin, you can specify a specific version number such as https://cdn.ably.com/lib/objects.umd.min-2.js for all v2._ versions, or https://cdn.ably.com/lib/objects.umd.min-2.4.js for all v2.4._ versions, or you can lock into a single release with https://cdn.ably.com/lib/objects.umd.min-2.4.0.js. Note you can load the non-minified version by omitting `.min` from the URL such as https://cdn.ably.com/lib/objects.umd-2.js.
+
+For more information about the LiveObjects product, see the [Ably LiveObjects documentation](https://ably.com/docs/liveobjects).
+
+#### Objects Channel Modes
+
+To use the Objects on a channel, clients must attach to a channel with the correct channel mode:
+
+- `object_subscribe` - required to retrieve Objects for a channel
+- `object_publish` - required to create new and modify existing Objects on a channel
+
+```typescript
+const client = new Ably.Realtime({
+  // authentication options
+  ...options,
+  plugins: { Objects },
+});
+const channelOptions = { modes: ['object_subscribe', 'object_publish'] };
+const channel = client.channels.get('my_objects_channel', channelOptions);
+const objects = channel.objects;
+```
+
+The authentication token must include corresponding capabilities for the client to interact with Objects.
+
+#### Getting the Root Object
+
+The root object represents the top-level entry point for objects within a channel. It gives access to all other nested objects.
+
+```typescript
+const root = await objects.getRoot();
+```
+
+The root object is a `LiveMap` instance and serves as the starting point for storing and organizing Objects on a channel.
+
+#### Object Types
+
+LiveObjects currently supports two primary data structures; `LiveMap` and `LiveCounter`.
+
+`LiveMap` - A key/value map data structure, similar to a JavaScript `Map`, where all changes are synchronized across clients in realtime. It enables you to store primitive values and other objects, enabling composability.
+
+You can use `LiveMap` as follows:
+
+```typescript
+// root object is a LiveMap
+const root = await objects.getRoot();
+
+// you can read values for a key with .get
+root.get('foo');
+root.get('bar');
+
+// get a number of key/value pairs in a map with .size
+root.size();
+
+// iterate over keys/values in a map
+for (const [key, value] of root.entries()) {
+  /**/
+}
+for (const key of root.keys()) {
+  /**/
+}
+for (const value of root.values()) {
+  /**/
+}
+
+// set keys on a map with .set
+// different data types are supported
+await root.set('foo', 'Alice');
+await root.set('bar', 1);
+await root.set('baz', true);
+await root.set('qux', new Uint8Array([21, 31]));
+// as well as other objects
+const counter = await objects.createCounter();
+await root.set('quux', counter);
+
+// and you can remove keys with .remove
+await root.remove('name');
+```
+
+`LiveCounter` - A counter that can be incremented or decremented and is synchronized across clients in realtime
+
+You can use `LiveCounter` as follows:
+
+```typescript
+const counter = await objects.createCounter();
+
+// you can get current value of a counter with .value
+counter.value();
+
+// and change its value with .increment or .decrement
+await counter.increment(5);
+await counter.decrement(2);
+```
+
+#### Subscribing to Updates
+
+Subscribing to updates on objects enables you to receive changes made by other clients in realtime. Since multiple clients may modify the same objects, subscribing ensures that your application reacts to external updates as soon as they are received.
+
+Additionally, mutation methods such as `LiveMap.set`, `LiveCounter.increment`, and `LiveCounter.decrement` do not directly edit the current state of the object locally. Instead, they send the intended operation to the Ably system, and the change is applied to the local object only when the corresponding realtime operation is echoed back to the client. This means that the state you retrieve immediately after a mutation may not reflect the latest updates yet.
+
+You can subscribe to updates on all objects using subscription listeners as follows:
+
+```typescript
+const root = await objects.getRoot();
+
+// subscribe to updates on a LiveMap
+root.subscribe((update: LiveMapUpdate) => {
+  console.log('LiveMap "name" key:', root.get('name')); // can read the current value for a key in a map inside this callback
+  console.log('LiveMap update details:', update); // and can get update details from the provided update object
+});
+
+// subscribe to updates on a LiveCounter
+const counter = await objects.createCounter();
+counter.subscribe((update: LiveCounterUpdate) => {
+  console.log('LiveCounter new value:', counter.value()); // can read the current value of the counter inside this callback
+  console.log('LiveCounter update details:', update); // and can get update details from the provided update object
+});
+
+// perform operations on LiveMap and LiveCounter
+await root.set('name', 'Alice');
+// LiveMap "name" key: Alice
+// LiveMap update details: { update: { name: 'updated' } }
+
+await root.remove('name');
+// LiveMap "name" key: undefined
+// LiveMap update details: { update: { name: 'removed' } }
+
+await counter.increment(5);
+// LiveCounter new value: 5
+// LiveCounter update details: { update: { amount: 5 } }
+
+await counter.decrement(2);
+// LiveCounter new value: 3
+// LiveCounter update details: { update: { amount: -2 } }
+```
+
+You can deregister subscription listeners as follows:
+
+```typescript
+// use dedicated unsubscribe function from the .subscribe call
+const { unsubscribe } = root.subscribe(() => {});
+unsubscribe();
+
+// call .unsubscribe with a listener reference
+const listener = () => {};
+root.subscribe(listener);
+root.unsubscribe(listener);
+
+// deregister all listeners using .unsubscribeAll
+root.unsubscribeAll();
+```
+
+#### Creating New Objects
+
+New `LiveMap` and `LiveCounter` objects can be created as follows:
+
+```typescript
+const counter = await objects.createCounter(123); // with optional initial counter value
+const map = await objects.createMap({ key: 'value' }); // with optional initial map entries
+```
+
+To persist them on a channel and share them between clients, they must be assigned to a parent `LiveMap` that is connected to the root object through the object hierarchy:
+
+```typescript
+const root = await objects.getRoot();
+
+const counter = await objects.createCounter();
+const map = await objects.createMap({ counter });
+const outerMap = await objects.createMap({ map });
+
+await root.set('outerMap', outerMap);
+
+// resulting structure:
+// root (LiveMap)
+// └── outerMap (LiveMap)
+//     └── map (LiveMap)
+//         └── counter (LiveCounter)
+```
+
+#### Batch Operations
+
+Batching enables multiple operations to be grouped into a single channel message that is sent to the Ably service. This guarantees that all changes are applied atomically.
+
+Within a batch callback, the `BatchContext` instance provides wrapper objects around regular `LiveMap` and `LiveCounter` objects with a synchronous API for storing changes in the batch context.
+
+```typescript
+await objects.batch((ctx) => {
+  const root = ctx.getRoot();
+
+  root.set('foo', 'bar');
+  root.set('baz', 42);
+
+  const counter = root.get('counter');
+  counter.increment(5);
+
+  // batched operations are sent to the Ably service when the batch callback returns
+});
+```
+
+#### Lifecycle Events
+
+LiveObjects emit events that allow you to monitor objects' lifecycle changes, such as synchronization progress and object deletions.
+
+**Synchronization Events** - the `syncing` and `synced` events notify when the local Objects state on a client is being synchronized with the Ably service. These events can be useful for displaying loading indicators, preventing user edits during synchronization, or triggering application logic when the data was loaded for the first time.
+
+```typescript
+objects.on('syncing', () => {
+  console.log('Objects are syncing...');
+  // Example: Show a loading indicator
+});
+
+objects.on('synced', () => {
+  console.log('Objects have been synced.');
+  // Example: Hide loading indicator
+});
+```
+
+**Object Deletion Events** - objects that have been orphaned for a long period (i.e., not connected to the object tree by being set as a key in a map accessible from the root map object) will eventually be deleted. Once an object is deleted, it can no longer be interacted with. You should avoid accessing its data or trying to update its value and you should remove all references to the deleted object in your application.
+
+```typescript
+const root = await objects.getRoot();
+const counter = root.get('counter');
+
+counter.on('deleted', () => {
+  console.log('Object has been deleted.');
+  // Example: Remove references to the object from the application
+});
+```
+
+To unsubscribe from lifecycle events:
+
+```typescript
+// same API for channel.objects and LiveObject instances
+// use dedicated off function from the .on call
+const { off } = objects.on('synced', () => {});
+off();
+
+// call .off with an event name and a listener reference
+const listener = () => {};
+objects.on('synced', listener);
+objects.off('synced', listener);
+
+// deregister all listeners using .offAll
+objects.offAll();
+```
+
+#### Typing Objects
+
+You can provide your own TypeScript typings for Objects by providing a globally defined `AblyObjectsTypes` interface.
+
+```typescript
+// file: ably.config.d.ts
+import { LiveCounter, LiveMap } from 'ably';
+
+type MyCustomRoot = {
+  map: LiveMap<{
+    foo: string;
+    counter: LiveCounter;
+  }>;
+};
+
+declare global {
+  export interface AblyObjectsTypes {
+    root: MyCustomRoot;
+  }
+}
+```
+
+Note that using TypeScript typings for Objects does not provide runtime type checking; instead, it enables code completion and editor hints (if supported by your IDE) when interacting with the Objects API:
+
+```typescript
+const root = await objects.getRoot(); // uses types defined by global AblyObjectsTypes interface by default
+
+const map = root.get('map'); // LiveMap<{ foo: string; counter: LiveCounter }>
+map.set('foo', 1); // TypeError
+map.get('counter').value(); // autocompletion for counter method names
+```
+
+You can also provide typings for the channel Objects when calling the `objects.getRoot` method, allowing you to have different typings for different channels:
+
+```typescript
+type ReactionsRoot = {
+  hearts: LiveCounter;
+  likes: LiveCounter;
+};
+
+type PollsRoot = {
+  currentPoll: LiveMap;
+};
+
+const reactionsRoot = await reactionsChannel.objects.getRoot<ReactionsRoot>();
+const pollsRoot = await pollsChannel.objects.getRoot<PollsRoot>();
+```
 
 ## Delta Plugin
 

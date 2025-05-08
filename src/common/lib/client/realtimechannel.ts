@@ -17,6 +17,7 @@ import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
 import type { WirePresenceMessage } from '../types/presencemessage';
+import type { Objects, ObjectMessage } from 'plugins/objects';
 import type RealtimePresence from './realtimepresence';
 import type RealtimeAnnotations from './realtimeannotations';
 
@@ -95,6 +96,7 @@ class RealtimeChannel extends EventEmitter {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
   _push?: PushChannel;
+  _objects?: Objects;
 
   constructor(client: BaseRealtime, name: string, options?: API.ChannelOptions) {
     super(client.logger);
@@ -134,6 +136,10 @@ class RealtimeChannel extends EventEmitter {
     if (client.options.plugins?.Push) {
       this._push = new client.options.plugins.Push.PushChannel(this);
     }
+
+    if (client.options.plugins?.Objects) {
+      this._objects = new client.options.plugins.Objects.Objects(this);
+    }
   }
 
   get push() {
@@ -141,6 +147,13 @@ class RealtimeChannel extends EventEmitter {
       Utils.throwMissingPluginError('Push');
     }
     return this._push;
+  }
+
+  get objects() {
+    if (!this._objects) {
+      Utils.throwMissingPluginError('Objects');
+    }
+    return this._objects;
   }
 
   invalidStateError(): ErrorInfo {
@@ -249,17 +262,13 @@ class RealtimeChannel extends EventEmitter {
     const size = getMessagesSize(wireMessages);
     if (size > maxMessageSize) {
       throw new ErrorInfo(
-        'Maximum size of messages that can be published at once exceeded ( was ' +
-          size +
-          ' bytes; limit is ' +
-          maxMessageSize +
-          ' bytes)',
+        `Maximum size of messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
         40009,
         400,
       );
     }
 
-    this._throwIfUnpublishableState();
+    this.throwIfUnpublishableState();
 
     Logger.logAction(
       this.logger,
@@ -272,7 +281,7 @@ class RealtimeChannel extends EventEmitter {
     return this.sendMessage(pm);
   }
 
-  _throwIfUnpublishableState(): void {
+  throwIfUnpublishableState(): void {
     if (!this.connectionManager.activeState()) {
       throw this.connectionManager.getError();
     }
@@ -497,12 +506,22 @@ class RealtimeChannel extends EventEmitter {
     return this.sendMessage(msg);
   }
 
+  sendState(objectMessages: ObjectMessage[]): Promise<void> {
+    const msg = protocolMessageFromValues({
+      action: actions.OBJECT,
+      channel: this.name,
+      state: objectMessages,
+    });
+    return this.sendMessage(msg);
+  }
+
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
   async processMessage(message: ProtocolMessage): Promise<void> {
     if (
       message.action === actions.ATTACHED ||
       message.action === actions.MESSAGE ||
       message.action === actions.PRESENCE ||
+      message.action === actions.OBJECT ||
       message.action === actions.ANNOTATION
     ) {
       // RTL15b
@@ -521,11 +540,17 @@ class RealtimeChannel extends EventEmitter {
         const resumed = message.hasFlag('RESUMED');
         const hasPresence = message.hasFlag('HAS_PRESENCE');
         const hasBacklog = message.hasFlag('HAS_BACKLOG');
+        const hasObjects = message.hasFlag('HAS_OBJECTS');
         if (this.state === 'attached') {
           if (!resumed) {
-            /* On a loss of continuity, the presence set needs to be re-synced */
+            // we have lost continuity.
+            // the presence set needs to be re-synced
             if (this._presence) {
               this._presence.onAttached(hasPresence);
+            }
+            // the Objects tree needs to be re-synced
+            if (this._objects) {
+              this._objects.onAttached(hasObjects);
             }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
@@ -537,7 +562,7 @@ class RealtimeChannel extends EventEmitter {
           /* RTL5i: re-send DETACH and remain in the 'detaching' state */
           this.checkPendingState();
         } else {
-          this.notifyState('attached', message.error, resumed, hasPresence, hasBacklog);
+          this.notifyState('attached', message.error, resumed, hasPresence, hasBacklog, hasObjects);
         }
         break;
       }
@@ -587,6 +612,36 @@ class RealtimeChannel extends EventEmitter {
         }
         break;
       }
+
+      // OBJECT and OBJECT_SYNC message processing share most of the logic, so group them together
+      case actions.OBJECT:
+      case actions.OBJECT_SYNC: {
+        if (!this._objects || !message.state) {
+          return;
+        }
+
+        populateFieldsFromParent(message);
+        const objectMessages = message.state;
+        // need to use the active protocol format instead of just client's useBinaryProtocol option,
+        // as comet transport does not support msgpack and will default to json without changing useBinaryProtocol.
+        // message processing is done in the same event loop tick up until this point,
+        // so we can reliably expect an active protocol to exist and be the one that received the object message.
+        const format = this.client.connection.connectionManager.getActiveTransportFormat()!;
+        await Promise.all(
+          objectMessages.map((om) =>
+            this.client._objectsPlugin!.ObjectMessage.decode(om, this.client, this.logger, Logger, Utils, format),
+          ),
+        );
+
+        if (message.action === actions.OBJECT) {
+          this._objects.handleObjectMessages(objectMessages);
+        } else {
+          this._objects.handleObjectSyncMessages(objectMessages, message.channelSerial);
+        }
+
+        break;
+      }
+
       case actions.MESSAGE: {
         //RTL17
         if (this.state !== 'attached') {
@@ -725,6 +780,7 @@ class RealtimeChannel extends EventEmitter {
     resumed?: boolean,
     hasPresence?: boolean,
     hasBacklog?: boolean,
+    hasObjects?: boolean,
   ): void {
     Logger.logAction(
       this.logger,
@@ -744,6 +800,9 @@ class RealtimeChannel extends EventEmitter {
     }
     if (this._presence) {
       this._presence.actOnChannelState(state, hasPresence, reason);
+    }
+    if (this._objects) {
+      this._objects.actOnChannelState(state, hasObjects);
     }
     if (state === 'suspended' && this.connectionManager.state.sendEvents) {
       this.startRetryTimer();

@@ -1,6 +1,6 @@
 import Platform from 'common/platform';
 import IBufferUtils from 'common/types/IBufferUtils';
-import { hmac as hmacSha256 } from './hmac-sha256';
+import { hmac as hmacSha256, sha256 } from './hmac-sha256';
 
 /* Most BufferUtils methods that return a binary object return an ArrayBuffer
  * The exception is toBuffer, which returns a Uint8Array */
@@ -116,6 +116,11 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return this.uint8ViewToBase64(this.toBuffer(buffer));
   }
 
+  base64UrlEncode(buffer: Bufferlike): string {
+    // base64url encoding is based on regular base64 with following changes: https://base64.guru/standards/base64url
+    return this.base64Encode(buffer).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
   base64Decode(str: string): Output {
     if (ArrayBuffer && Platform.Config.atob) {
       return this.base64ToArrayBuffer(str);
@@ -193,6 +198,26 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
 
   arrayBufferViewToBuffer(arrayBufferView: ArrayBufferView): ArrayBuffer {
     return this.toArrayBuffer(arrayBufferView);
+  }
+
+  concat(buffers: Bufferlike[]): Output {
+    const sumLength = buffers.reduce((acc, v) => acc + v.byteLength, 0);
+    const result = new Uint8Array(sumLength);
+    let offset = 0;
+
+    for (const buffer of buffers) {
+      const uint8Array = this.toBuffer(buffer);
+      // see TypedArray.set for TypedArray argument https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray/set#typedarray
+      result.set(uint8Array, offset);
+      offset += uint8Array.byteLength;
+    }
+
+    return result.buffer;
+  }
+
+  sha256(message: Bufferlike): Output {
+    const hash = sha256(this.toBuffer(message));
+    return this.toArrayBuffer(hash);
   }
 
   hmacSha256(message: Bufferlike, key: Bufferlike): Output {

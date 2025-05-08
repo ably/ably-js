@@ -515,11 +515,7 @@ function registerAblyModularTests(Helper) {
               },
             });
 
-            await (
-              clientClassConfig.isRealtime
-                ? (op, realtime) => helper.monitorConnectionThenCloseAndFinishAsync(op, realtime)
-                : async (op) => await op()
-            )(async () => {
+            const action = async () => {
               const txChannel = txClient.channels.get('channel', encryptionChannelOptions);
               await txChannel.publish(txMessage);
 
@@ -531,7 +527,13 @@ function registerAblyModularTests(Helper) {
               // Verify that the message was correctly encrypted
               const rxMessageDecrypted = await decodeEncryptedMessage(rxMessage, encryptionChannelOptions);
               helper.testMessageEquality(rxMessageDecrypted, txMessage);
-            }, txClient);
+            };
+
+            if (clientClassConfig.isRealtime) {
+              await helper.monitorConnectionThenCloseAndFinishAsync(action, txClient);
+            } else {
+              await action();
+            }
           }, rxClient);
         }
 

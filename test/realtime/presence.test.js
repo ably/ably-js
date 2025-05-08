@@ -2,7 +2,7 @@
 
 define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async, chai) {
   const { expect, assert } = chai;
-  var createPM = Ably.protocolMessageFromDeserialized;
+  var createPM = Ably.makeProtocolMessageFromDeserialized();
   var PresenceMessage = Ably.Realtime.PresenceMessage;
 
   function extractClientIds(presenceSet) {
@@ -2093,7 +2093,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               cb();
             });
             /* Inject an ATTACHED with RESUMED and HAS_PRESENCE both false */
-            helper.recordPrivateApi('call.protocolMessageFromDeserialized');
+            helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
             channel.processMessage(
               createPM({
                 action: 11,

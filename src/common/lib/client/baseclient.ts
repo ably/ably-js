@@ -18,6 +18,8 @@ import { MsgPack } from 'common/types/msgpack';
 import { HTTPRequestImplementations } from 'platform/web/lib/http/http';
 import { FilteredSubscriptions } from './filteredsubscriptions';
 import type { LocalDevice } from 'plugins/push/pushactivation';
+import EventEmitter from '../util/eventemitter';
+import { MessageEncoding } from '../types/basemessage';
 
 type BatchResult<T> = API.BatchResult<T>;
 type BatchPublishSpec = API.BatchPublishSpec;
@@ -173,6 +175,28 @@ class BaseClient {
     this.logger.setLog(logOptions.level, logOptions.handler);
   }
 
+  /**
+   * Get the current time based on the local clock,
+   * or if the option queryTime is true, return the server time.
+   * The server time offset from the local time is stored so that
+   * only one request to the server to get the time is ever needed
+   */
+  async getTimestamp(queryTime: boolean): Promise<number> {
+    if (!this.isTimeOffsetSet() && queryTime) {
+      return this.time();
+    }
+
+    return this.getTimestampUsingOffset();
+  }
+
+  getTimestampUsingOffset(): number {
+    return Date.now() + (this.serverTimeOffset || 0);
+  }
+
+  isTimeOffsetSet(): boolean {
+    return this.serverTimeOffset !== null;
+  }
+
   static Platform = Platform;
 
   /**
@@ -183,6 +207,8 @@ class BaseClient {
   Logger = Logger;
   Defaults = Defaults;
   Utils = Utils;
+  EventEmitter = EventEmitter;
+  MessageEncoding = MessageEncoding;
 }
 
 export default BaseClient;

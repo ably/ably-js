@@ -623,6 +623,11 @@ export interface CorePlugins {
    * A plugin which allows the client to be the target of push notifications.
    */
   Push?: unknown;
+
+  /**
+   * A plugin which allows the client to use LiveObjects functionality at {@link RealtimeChannel.objects}.
+   */
+  Objects?: unknown;
 }
 
 /**
@@ -871,11 +876,19 @@ declare namespace ChannelModes {
    */
   type PRESENCE_SUBSCRIBE = 'PRESENCE_SUBSCRIBE' | 'presence_subscribe';
   /**
-   * The client can publish annotations
+   * The client can publish object messages.
+   */
+  type OBJECT_PUBLISH = 'OBJECT_PUBLISH' | 'object_publish';
+  /**
+   * The client will receive object messages.
+   */
+  type OBJECT_SUBSCRIBE = 'OBJECT_SUBSCRIBE' | 'object_subscribe';
+  /**
+   * The client can publish annotations.
    */
   type ANNOTATION_PUBLISH = 'ANNOTATION_PUBLISH' | 'annotation_publish';
   /**
-   * The client will receive annotations
+   * The client will receive annotations.
    */
   type ANNOTATION_SUBSCRIBE = 'ANNOTATION_SUBSCRIBE' | 'annotation_subscribe';
 }
@@ -890,6 +903,8 @@ export type ChannelMode =
   | ChannelModes.SUBSCRIBE
   | ChannelModes.PRESENCE
   | ChannelModes.PRESENCE_SUBSCRIBE
+  | ChannelModes.OBJECT_PUBLISH
+  | ChannelModes.OBJECT_SUBSCRIBE
   | ChannelModes.ANNOTATION_PUBLISH
   | ChannelModes.ANNOTATION_SUBSCRIBE;
 
@@ -914,11 +929,19 @@ declare namespace ResolvedChannelModes {
    */
   type PRESENCE_SUBSCRIBE = 'presence_subscribe';
   /**
-   * The client can publish annotations
+   * The client can publish object messages.
+   */
+  type OBJECT_PUBLISH = 'object_publish';
+  /**
+   * The client will receive object messages.
+   */
+  type OBJECT_SUBSCRIBE = 'object_subscribe';
+  /**
+   * The client can publish annotations.
    */
   type ANNOTATION_PUBLISH = 'annotation_publish';
   /**
-   * The client will receive annotations
+   * The client will receive annotations.
    */
   type ANNOTATION_SUBSCRIBE = 'annotation_subscribe';
 }
@@ -935,6 +958,8 @@ export type ResolvedChannelMode =
   | ResolvedChannelModes.SUBSCRIBE
   | ResolvedChannelModes.PRESENCE
   | ResolvedChannelModes.PRESENCE_SUBSCRIBE
+  | ResolvedChannelModes.OBJECT_PUBLISH
+  | ResolvedChannelModes.OBJECT_SUBSCRIBE
   | ResolvedChannelModes.ANNOTATION_PUBLISH
   | ResolvedChannelModes.ANNOTATION_SUBSCRIBE;
 
@@ -1619,6 +1644,32 @@ export type DeregisterCallback = (device: DeviceDetails, callback: StandardCallb
  */
 export type ErrorCallback = (error: ErrorInfo | null) => void;
 
+/**
+ * A callback used in {@link LiveObject} to listen for updates to the object.
+ *
+ * @param update - The update object describing the changes made to the object.
+ */
+export type LiveObjectUpdateCallback<T> = (update: T) => void;
+
+/**
+ * The callback used for the events emitted by {@link Objects}.
+ */
+export type ObjectsEventCallback = () => void;
+
+/**
+ * The callback used for the lifecycle events emitted by {@link LiveObject}.
+ */
+export type LiveObjectLifecycleEventCallback = () => void;
+
+/**
+ * A function passed to {@link Objects.batch} to group multiple Objects operations into a single channel message.
+ *
+ * Must not be `async`.
+ *
+ * @param batchContext - A {@link BatchContext} object that allows grouping Objects operations for this batch.
+ */
+export type BatchCallback = (batchContext: BatchContext) => void;
+
 // Internal Interfaces
 
 // To allow a uniform (callback) interface between on and once even in the
@@ -2198,6 +2249,499 @@ export declare interface PushChannel {
 }
 
 /**
+ * The `ObjectsEvents` namespace describes the possible values of the {@link ObjectsEvent} type.
+ */
+declare namespace ObjectsEvents {
+  /**
+   * The local copy of Objects on a channel is currently being synchronized with the Ably service.
+   */
+  type SYNCING = 'syncing';
+  /**
+   * The local copy of Objects on a channel has been synchronized with the Ably service.
+   */
+  type SYNCED = 'synced';
+}
+
+/**
+ * Describes the events emitted by a {@link Objects} object.
+ */
+export type ObjectsEvent = ObjectsEvents.SYNCED | ObjectsEvents.SYNCING;
+
+/**
+ * The `LiveObjectLifecycleEvents` namespace describes the possible values of the {@link LiveObjectLifecycleEvent} type.
+ */
+declare namespace LiveObjectLifecycleEvents {
+  /**
+   * Indicates that the object has been deleted from the Objects pool and should no longer be interacted with.
+   */
+  type DELETED = 'deleted';
+}
+
+/**
+ * Describes the events emitted by a {@link LiveObject} object.
+ */
+export type LiveObjectLifecycleEvent = LiveObjectLifecycleEvents.DELETED;
+
+/**
+ * Enables the Objects to be read, modified and subscribed to for a channel.
+ */
+export declare interface Objects {
+  /**
+   * Retrieves the root {@link LiveMap} object for Objects on a channel.
+   *
+   * A type parameter can be provided to describe the structure of the Objects on the channel. By default, it uses types from the globally defined `AblyObjectsTypes` interface.
+   *
+   * You can specify custom types for Objects by defining a global `AblyObjectsTypes` interface with a `root` property that conforms to {@link LiveMapType}.
+   *
+   * Example:
+   *
+   * ```typescript
+   * import { LiveCounter } from 'ably';
+   *
+   * type MyRoot = {
+   *   myTypedKey: LiveCounter;
+   * };
+   *
+   * declare global {
+   *   export interface AblyObjectsTypes {
+   *     root: MyRoot;
+   *   }
+   * }
+   * ```
+   *
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @experimental
+   */
+  getRoot<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>>;
+
+  /**
+   * Creates a new {@link LiveMap} object instance with the provided entries.
+   *
+   * @param entries - The initial entries for the new {@link LiveMap} object.
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @experimental
+   */
+  createMap<T extends LiveMapType>(entries?: T): Promise<LiveMap<T>>;
+
+  /**
+   * Creates a new {@link LiveCounter} object instance with the provided `count` value.
+   *
+   * @param count - The initial value for the new {@link LiveCounter} object.
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveCounter} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @experimental
+   */
+  createCounter(count?: number): Promise<LiveCounter>;
+
+  /**
+   * Allows you to group multiple operations together and send them to the Ably service in a single channel message.
+   * As a result, other clients will receive the changes as a single channel message after the batch function has completed.
+   *
+   * This method accepts a synchronous callback, which is provided with a {@link BatchContext} object.
+   * Use the context object to access Objects on a channel and batch operations for them.
+   *
+   * The objects' data is not modified inside the callback function. Instead, the objects will be updated
+   * when the batched operations are applied by the Ably service and echoed back to the client.
+   *
+   * @param callback - A batch callback function used to group operations together. Cannot be an `async` function.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
+   */
+  batch(callback: BatchCallback): Promise<void>;
+
+  /**
+   * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
+   *
+   * @param event - The named event to listen for.
+   * @param callback - The event listener.
+   * @returns A {@link OnObjectsEventResponse} object that allows the provided listener to be deregistered from future updates.
+   * @experimental
+   */
+  on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse;
+
+  /**
+   * Removes all registrations that match both the specified listener and the specified event.
+   *
+   * @param event - The named event.
+   * @param callback - The event listener.
+   * @experimental
+   */
+  off(event: ObjectsEvent, callback: ObjectsEventCallback): void;
+
+  /**
+   * Deregisters all registrations, for all events and listeners.
+   *
+   * @experimental
+   */
+  offAll(): void;
+}
+
+declare global {
+  /**
+   * A globally defined interface that allows users to define custom types for Objects.
+   */
+  export interface AblyObjectsTypes {
+    [key: string]: unknown;
+  }
+}
+
+/**
+ * Represents the type of data stored in a {@link LiveMap}.
+ * It maps string keys to primitive values ({@link PrimitiveObjectValue}), or other {@link LiveObject | LiveObjects}.
+ */
+export type LiveMapType = { [key: string]: PrimitiveObjectValue | LiveMap<LiveMapType> | LiveCounter | undefined };
+
+/**
+ * The default type for the `root` object for Objects on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
+ *
+ * - If no custom types are provided in `AblyObjectsTypes`, defaults to an untyped root map representation using the {@link LiveMapType} interface.
+ * - If a `root` type exists in `AblyObjectsTypes` and conforms to the {@link LiveMapType} interface, it is used as the type for the `root` object.
+ * - If the provided `root` type does not match {@link LiveMapType}, a type error message is returned.
+ */
+export type DefaultRoot =
+  // we need a way to know when no types were provided by the user.
+  // we expect a "root" property to be set on AblyObjectsTypes interface, e.g. it won't be "unknown" anymore
+  unknown extends AblyObjectsTypes['root']
+    ? LiveMapType // no custom types provided; use the default untyped map representation for the root
+    : AblyObjectsTypes['root'] extends LiveMapType
+      ? AblyObjectsTypes['root'] // "root" property exists, and it is of an expected type, we can use this interface for the root object in Objects.
+      : `Provided type definition for the "root" object in AblyObjectsTypes is not of an expected LiveMapType`;
+
+/**
+ * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
+ */
+export declare interface OnObjectsEventResponse {
+  /**
+   * Deregisters the listener passed to the `on` call.
+   *
+   * @experimental
+   */
+  off(): void;
+}
+
+/**
+ * Enables grouping multiple Objects operations together by providing `BatchContext*` wrapper objects.
+ */
+export declare interface BatchContext {
+  /**
+   * Mirrors the {@link Objects.getRoot} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
+   *
+   * @returns A {@link BatchContextLiveMap} object.
+   * @experimental
+   */
+  getRoot<T extends LiveMapType = DefaultRoot>(): BatchContextLiveMap<T>;
+}
+
+/**
+ * A wrapper around the {@link LiveMap} object that enables batching operations inside a {@link BatchCallback}.
+ */
+export declare interface BatchContextLiveMap<T extends LiveMapType> {
+  /**
+   * Mirrors the {@link LiveMap.get} method and returns the value associated with a key in the map.
+   *
+   * @param key - The key to retrieve the value for.
+   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @experimental
+   */
+  get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
+
+  /**
+   * Returns the number of key-value pairs in the map.
+   *
+   * @experimental
+   */
+  size(): number;
+
+  /**
+   * Similar to the {@link LiveMap.set} method, but instead, it adds an operation to set a key in the map with the provided value to the current batch, to be sent in a single message to the Ably service.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param key - The key to set the value for.
+   * @param value - The value to assign to the key.
+   * @experimental
+   */
+  set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): void;
+
+  /**
+   * Similar to the {@link LiveMap.remove} method, but instead, it adds an operation to remove a key from the map to the current batch, to be sent in a single message to the Ably service.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param key - The key to set the value for.
+   * @experimental
+   */
+  remove<TKey extends keyof T & string>(key: TKey): void;
+}
+
+/**
+ * A wrapper around the {@link LiveCounter} object that enables batching operations inside a {@link BatchCallback}.
+ */
+export declare interface BatchContextLiveCounter {
+  /**
+   * Returns the current value of the counter.
+   *
+   * @experimental
+   */
+  value(): number;
+
+  /**
+   * Similar to the {@link LiveCounter.increment} method, but instead, it adds an operation to increment the counter value to the current batch, to be sent in a single message to the Ably service.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param amount - The amount by which to increase the counter value.
+   * @experimental
+   */
+  increment(amount: number): void;
+
+  /**
+   * An alias for calling {@link BatchContextLiveCounter.increment | BatchContextLiveCounter.increment(-amount)}
+   *
+   * @param amount - The amount by which to decrease the counter value.
+   * @experimental
+   */
+  decrement(amount: number): void;
+}
+
+/**
+ * The `LiveMap` class represents a key-value map data structure, similar to a JavaScript Map, where all changes are synchronized across clients in realtime.
+ * Conflicts in a LiveMap are automatically resolved with last-write-wins (LWW) semantics,
+ * meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
+ *
+ * Keys must be strings. Values can be another {@link LiveObject}, or a primitive type, such as a string, number, boolean, or binary data (see {@link PrimitiveObjectValue}).
+ */
+export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate<T>> {
+  /**
+   * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map or if the associated {@link LiveObject} has been deleted.
+   *
+   * Always returns undefined if this map object is deleted.
+   *
+   * @param key - The key to retrieve the value for.
+   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @experimental
+   */
+  get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
+
+  /**
+   * Returns the number of key-value pairs in the map.
+   *
+   * @experimental
+   */
+  size(): number;
+
+  /**
+   * Returns an iterable of key-value pairs for every entry in the map.
+   *
+   * @experimental
+   */
+  entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]>;
+
+  /**
+   * Returns an iterable of keys in the map.
+   *
+   * @experimental
+   */
+  keys<TKey extends keyof T & string>(): IterableIterator<TKey>;
+
+  /**
+   * Returns an iterable of values in the map.
+   *
+   * @experimental
+   */
+  values<TKey extends keyof T & string>(): IterableIterator<T[TKey]>;
+
+  /**
+   * Sends an operation to the Ably system to set a key on this `LiveMap` object to a specified value.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param key - The key to set the value for.
+   * @param value - The value to assign to the key.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
+   */
+  set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void>;
+
+  /**
+   * Sends an operation to the Ably system to remove a key from this `LiveMap` object.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param key - The key to remove.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
+   */
+  remove<TKey extends keyof T & string>(key: TKey): Promise<void>;
+}
+
+/**
+ * Represents an update to a {@link LiveMap} object, describing the keys that were updated or removed.
+ */
+export declare interface LiveMapUpdate<T extends LiveMapType> extends LiveObjectUpdate {
+  /**
+   * An object containing keys from a `LiveMap` that have changed, along with their change status:
+   * - `updated` - the value of a key in the map was updated.
+   * - `removed` - the key was removed from the map.
+   */
+  update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
+}
+
+/**
+ * Represents a primitive value that can be stored in a {@link LiveMap}.
+ *
+ * For binary data, the resulting type depends on the platform (`Buffer` in Node.js, `ArrayBuffer` elsewhere).
+ */
+export type PrimitiveObjectValue = string | number | boolean | Buffer | ArrayBuffer;
+
+/**
+ * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.
+ */
+export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
+  /**
+   * Returns the current value of the counter.
+   *
+   * @experimental
+   */
+  value(): number;
+
+  /**
+   * Sends an operation to the Ably system to increment the value of this `LiveCounter` object.
+   *
+   * This does not modify the underlying data of this object. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   *
+   * @param amount - The amount by which to increase the counter value.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
+   */
+  increment(amount: number): Promise<void>;
+
+  /**
+   * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
+   *
+   * @param amount - The amount by which to decrease the counter value.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   * @experimental
+   */
+  decrement(amount: number): Promise<void>;
+}
+
+/**
+ * Represents an update to a {@link LiveCounter} object.
+ */
+export declare interface LiveCounterUpdate extends LiveObjectUpdate {
+  /**
+   * Holds the numerical change to the counter value.
+   */
+  update: {
+    /**
+     * The value by which the counter was incremented or decremented.
+     */
+    amount: number;
+  };
+}
+
+/**
+ * Describes the common interface for all conflict-free data structures supported by the Objects.
+ */
+export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjectUpdate> {
+  /**
+   * Registers a listener that is called each time this LiveObject is updated.
+   *
+   * @param listener - An event listener function that is called with an update object whenever this LiveObject is updated.
+   * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
+   * @experimental
+   */
+  subscribe(listener: LiveObjectUpdateCallback<TUpdate>): SubscribeResponse;
+
+  /**
+   * Deregisters the given listener from updates for this LiveObject.
+   *
+   * @param listener - An event listener function.
+   * @experimental
+   */
+  unsubscribe(listener: LiveObjectUpdateCallback<TUpdate>): void;
+
+  /**
+   * Deregisters all listeners from updates for this LiveObject.
+   *
+   * @experimental
+   */
+  unsubscribeAll(): void;
+
+  /**
+   * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
+   *
+   * @param event - The named event to listen for.
+   * @param callback - The event listener.
+   * @returns A {@link OnLiveObjectLifecycleEventResponse} object that allows the provided listener to be deregistered from future updates.
+   * @experimental
+   */
+  on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse;
+
+  /**
+   * Removes all registrations that match both the specified listener and the specified event.
+   *
+   * @param event - The named event.
+   * @param callback - The event listener.
+   * @experimental
+   */
+  off(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): void;
+
+  /**
+   * Deregisters all registrations, for all events and listeners.
+   *
+   * @experimental
+   */
+  offAll(): void;
+}
+
+/**
+ * Represents a generic update object describing the changes that occurred on a LiveObject.
+ */
+export declare interface LiveObjectUpdate {
+  /**
+   * Holds an update object which describe changes applied to the object.
+   */
+  update: any;
+}
+
+/**
+ * Object returned from a `subscribe` call, allowing the listener provided in that call to be deregistered.
+ */
+export declare interface SubscribeResponse {
+  /**
+   * Deregisters the listener passed to the `subscribe` call.
+   *
+   * @experimental
+   */
+  unsubscribe(): void;
+}
+
+/**
+ * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
+ */
+export declare interface OnLiveObjectLifecycleEventResponse {
+  /**
+   * Deregisters the listener passed to the `on` call.
+   *
+   * @experimental
+   */
+  off(): void;
+}
+
+/**
  * Enables messages to be published and historic messages to be retrieved for a channel.
  */
 export declare interface Channel {
@@ -2374,9 +2918,13 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   push: PushChannel;
   /**
-   * {@link RealtimeAnnotations}
+   * A {@link RealtimeAnnotations} object.
    */
   annotations: RealtimeAnnotations;
+  /**
+   * An {@link Objects} object.
+   */
+  objects: Objects;
   /**
    * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel.
    *

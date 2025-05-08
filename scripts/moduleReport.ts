@@ -6,7 +6,7 @@ import { gzip } from 'zlib';
 import Table from 'cli-table';
 
 // The maximum size we allow for a minimal useful Realtime bundle (i.e. one that can subscribe to a channel)
-const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 100, gzip: 31 };
+const minimalUsefulRealtimeBundleSizeThresholdsKiB = { raw: 102, gzip: 31 };
 
 const baseClientNames = ['BaseRest', 'BaseRealtime'];
 
@@ -38,6 +38,18 @@ const functions = [
   { name: 'decodeEncryptedPresenceMessages', transitiveImports: ['Crypto'] },
   { name: 'constructPresenceMessage', transitiveImports: [] },
 ];
+
+// List of all buildable plugins available as a separate export
+interface PluginInfo {
+  description: string;
+  path: string;
+  external?: string[];
+}
+
+const buildablePlugins: Record<'push' | 'objects', PluginInfo> = {
+  push: { description: 'Push', path: './build/push.js', external: ['ulid'] },
+  objects: { description: 'Objects', path: './build/objects.js', external: ['dequal'] },
+};
 
 function formatBytes(bytes: number) {
   const kibibytes = bytes / 1024;
@@ -72,7 +84,7 @@ function getModularBundleInfo(exports: string[]): BundleInfo {
 }
 
 // Uses esbuild to create a bundle containing the named exports from a given module
-function getBundleInfo(modulePath: string, exports?: string[]): BundleInfo {
+function getBundleInfo(modulePath: string, exports?: string[], external?: string[]): BundleInfo {
   const outfile = exports ? exports.join('') : 'all';
   const exportTarget = exports ? `{ ${exports.join(', ')} }` : '*';
   const result = esbuild.buildSync({
@@ -86,7 +98,7 @@ function getBundleInfo(modulePath: string, exports?: string[]): BundleInfo {
     outfile,
     write: false,
     sourcemap: 'external',
-    external: ['ulid'],
+    external,
   });
 
   const pathHasBase = (component: string) => {
@@ -185,20 +197,28 @@ async function calculateAndCheckFunctionSizes(): Promise<Output> {
   return output;
 }
 
-async function calculatePushPluginSize(): Promise<Output> {
+async function calculatePluginSize(options: PluginInfo): Promise<Output> {
   const output: Output = { tableRows: [], errors: [] };
-  const pushPluginBundleInfo = getBundleInfo('./build/push.js');
+  const pluginBundleInfo = getBundleInfo(options.path, undefined, options.external);
   const sizes = {
-    rawByteSize: pushPluginBundleInfo.byteSize,
-    gzipEncodedByteSize: (await promisify(gzip)(pushPluginBundleInfo.code)).byteLength,
+    rawByteSize: pluginBundleInfo.byteSize,
+    gzipEncodedByteSize: (await promisify(gzip)(pluginBundleInfo.code)).byteLength,
   };
 
   output.tableRows.push({
-    description: 'Push',
+    description: options.description,
     sizes: sizes,
   });
 
   return output;
+}
+
+async function calculatePushPluginSize(): Promise<Output> {
+  return calculatePluginSize(buildablePlugins.push);
+}
+
+async function calculateObjectsPluginSize(): Promise<Output> {
+  return calculatePluginSize(buildablePlugins.objects);
 }
 
 async function calculateAndCheckMinimalUsefulRealtimeBundleSize(): Promise<Output> {
@@ -287,7 +307,8 @@ async function checkBaseRealtimeFiles() {
 }
 
 async function checkPushPluginFiles() {
-  const pushPluginBundleInfo = getBundleInfo('./build/push.js');
+  const { path, external } = buildablePlugins.push;
+  const pushPluginBundleInfo = getBundleInfo(path, undefined, external);
 
   // These are the files that are allowed to contribute >= `threshold` bytes to the Push bundle.
   const allowedFiles = new Set([
@@ -298,6 +319,29 @@ async function checkPushPluginFiles() {
   ]);
 
   return checkBundleFiles(pushPluginBundleInfo, allowedFiles, 100);
+}
+
+async function checkObjectsPluginFiles() {
+  const { path, external } = buildablePlugins.objects;
+  const pluginBundleInfo = getBundleInfo(path, undefined, external);
+
+  // These are the files that are allowed to contribute >= `threshold` bytes to the Objects bundle.
+  const allowedFiles = new Set([
+    'src/plugins/objects/batchcontext.ts',
+    'src/plugins/objects/batchcontextlivecounter.ts',
+    'src/plugins/objects/batchcontextlivemap.ts',
+    'src/plugins/objects/index.ts',
+    'src/plugins/objects/livecounter.ts',
+    'src/plugins/objects/livemap.ts',
+    'src/plugins/objects/liveobject.ts',
+    'src/plugins/objects/objectid.ts',
+    'src/plugins/objects/objectmessage.ts',
+    'src/plugins/objects/objects.ts',
+    'src/plugins/objects/objectspool.ts',
+    'src/plugins/objects/syncobjectsdatapool.ts',
+  ]);
+
+  return checkBundleFiles(pluginBundleInfo, allowedFiles, 100);
 }
 
 async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string>, thresholdBytes: number) {
@@ -351,6 +395,7 @@ async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string
       calculateAndCheckExportSizes(),
       calculateAndCheckFunctionSizes(),
       calculatePushPluginSize(),
+      calculateObjectsPluginSize(),
     ])
   ).reduce((accum, current) => ({
     tableRows: [...accum.tableRows, ...current.tableRows],
@@ -359,6 +404,7 @@ async function checkBundleFiles(bundleInfo: BundleInfo, allowedFiles: Set<string
 
   output.errors.push(...(await checkBaseRealtimeFiles()));
   output.errors.push(...(await checkPushPluginFiles()));
+  output.errors.push(...(await checkObjectsPluginFiles()));
 
   const table = new Table({
     style: { head: ['green'] },

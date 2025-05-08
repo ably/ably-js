@@ -1,4 +1,4 @@
-import Platform from 'common/platform';
+import Platform, { Bufferlike } from 'common/platform';
 import ErrorInfo, { PartialErrorInfo } from 'common/lib/types/errorinfo';
 import { ModularPlugins } from '../client/modularplugins';
 import { MsgPack } from 'common/types/msgpack';
@@ -165,15 +165,6 @@ export function arrIntersectOb<K extends string>(arr: Array<K>, ob: Partial<Reco
   return result;
 }
 
-export function arrSubtract<T>(arr1: Array<T>, arr2: Array<T>): Array<T> {
-  const result = [];
-  for (let i = 0; i < arr1.length; i++) {
-    const element = arr1[i];
-    if (arr2.indexOf(element) == -1) result.push(element);
-  }
-  return result;
-}
-
 export function arrDeleteValue<T>(arr: Array<T>, val: T): boolean {
   const idx = arr.indexOf(val);
   const res = idx != -1;
@@ -288,15 +279,31 @@ export function inspectBody(body: unknown): string {
   }
 }
 
-/* Data is assumed to be either a string or a buffer. */
-export function dataSizeBytes(data: string | Buffer): number {
+/**
+ * Data is assumed to be either a string, a number, a boolean or a buffer.
+ *
+ * Returns the byte size of the provided data based on the spec:
+ * - TM6a - size of the string is byte length of the string
+ * - TM6c - size of the buffer is its size in bytes
+ * - OD3c - size of a number is 8 bytes
+ * - OD3d - size of a boolean is 1 byte
+ */
+export function dataSizeBytes(data: string | number | boolean | Bufferlike): number {
   if (Platform.BufferUtils.isBuffer(data)) {
     return Platform.BufferUtils.byteLength(data);
   }
   if (typeof data === 'string') {
     return Platform.Config.stringByteSize(data);
   }
-  throw new Error('Expected input of Utils.dataSizeBytes to be a buffer or string, but was: ' + typeof data);
+  if (typeof data === 'number') {
+    return 8;
+  }
+  if (typeof data === 'boolean') {
+    return 1;
+  }
+  throw new Error(
+    `Expected input of Utils.dataSizeBytes to be a string, a number, a boolean or a buffer, but was: ${typeof data}`,
+  );
 }
 
 export function cheapRandStr(): string {

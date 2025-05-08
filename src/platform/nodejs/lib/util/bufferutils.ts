@@ -17,6 +17,10 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return this.toBuffer(buffer).toString('base64');
   }
 
+  base64UrlEncode(buffer: Bufferlike): string {
+    return this.toBuffer(buffer).toString('base64url');
+  }
+
   areBuffersEqual(buffer1: Bufferlike, buffer2: Bufferlike): boolean {
     if (!buffer1 || !buffer2) return false;
     return this.toBuffer(buffer1).compare(this.toBuffer(buffer2)) == 0;
@@ -70,14 +74,21 @@ class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
     return Buffer.from(string, 'utf8');
   }
 
+  concat(buffers: Bufferlike[]): Output {
+    return Buffer.concat(buffers.map((x) => this.toBuffer(x)));
+  }
+
+  sha256(message: Bufferlike): Output {
+    const messageBuffer = this.toBuffer(message);
+
+    return crypto.createHash('SHA256').update(messageBuffer).digest();
+  }
+
   hmacSha256(message: Bufferlike, key: Bufferlike): Output {
     const messageBuffer = this.toBuffer(message);
     const keyBuffer = this.toBuffer(key);
 
-    const hmac = crypto.createHmac('SHA256', keyBuffer);
-    hmac.update(messageBuffer);
-
-    return hmac.digest();
+    return crypto.createHmac('SHA256', keyBuffer).update(messageBuffer).digest();
   }
 }
 

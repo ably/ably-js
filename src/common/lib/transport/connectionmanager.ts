@@ -949,6 +949,10 @@ class ConnectionManager extends EventEmitter {
     this.clearSessionRecoverData();
   }
 
+  getActiveTransportFormat(): Utils.Format | undefined {
+    return this.activeProtocol?.getTransport().format;
+  }
+
   /*********************
    * state management
    *********************/
@@ -1805,7 +1809,13 @@ class ConnectionManager extends EventEmitter {
 
         Logger.LOG_MICRO,
         'ConnectionManager.send()',
-        'queueing msg; ' + stringifyProtocolMessage(msg, this.realtime._RealtimePresence, this.realtime._Annotations),
+        'queueing msg; ' +
+          stringifyProtocolMessage(
+            msg,
+            this.realtime._RealtimePresence,
+            this.realtime._Annotations,
+            this.realtime._objectsPlugin,
+          ),
       );
     }
     this.queue(msg, callback);

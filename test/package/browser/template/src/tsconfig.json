@@ -1,6 +1,7 @@
 {
   "include": ["**/*.ts", "**/*.tsx"],
   "compilerOptions": {
+    "strict": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "module": "esnext",

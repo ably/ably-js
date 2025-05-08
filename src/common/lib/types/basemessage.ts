@@ -1,9 +1,9 @@
 import Platform from 'common/platform';
-import Logger from '../util/logger';
-import ErrorInfo from './errorinfo';
-import * as Utils from '../util/utils';
-import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/bufferutils';
 import * as API from '../../../../ably';
+import { Bufferlike as BrowserBufferlike } from '../../../platform/web/lib/util/bufferutils';
+import Logger from '../util/logger';
+import * as Utils from '../util/utils';
+import ErrorInfo from './errorinfo';
 import { actions } from './protocolmessagecommon';
 
 import type { IUntypedCryptoStatic } from 'common/types/ICryptoStatic';
@@ -60,35 +60,51 @@ export function normalizeCipherOptions(
   return options ?? {};
 }
 
-async function encrypt<T extends BaseMessage>(msg: T, options: CipherOptions): Promise<T> {
-  let data = msg.data,
-    encoding = msg.encoding,
-    cipher = options.channelCipher;
-
-  encoding = encoding ? encoding + '/' : '';
-  if (!Platform.BufferUtils.isBuffer(data)) {
-    data = Platform.BufferUtils.utf8Encode(String(data));
-    encoding = encoding + 'utf-8/';
-  }
-  const ciphertext = await cipher.encrypt(data);
-  msg.data = ciphertext;
-  msg.encoding = encoding + 'cipher+' + cipher.algorithm;
+async function encrypt<T extends BaseMessage>(msg: T, cipherOptions: CipherOptions): Promise<T> {
+  const { data, encoding } = await encryptData(msg.data, msg.encoding, cipherOptions);
+  msg.data = data;
+  msg.encoding = encoding;
   return msg;
 }
 
-export async function encode<T extends BaseMessage>(msg: T, options: unknown): Promise<T> {
-  const data = msg.data;
-  const nativeDataType =
-    typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
+export async function encryptData(
+  data: any,
+  encoding: string | null | undefined,
+  cipherOptions: CipherOptions,
+): Promise<{ data: any; encoding: string | null | undefined }> {
+  let cipher = cipherOptions.channelCipher;
+  let dataToEncrypt = data;
+  let finalEncoding = encoding ? encoding + '/' : '';
 
-  if (!nativeDataType) {
-    if (Utils.isObject(data) || Array.isArray(data)) {
-      msg.data = JSON.stringify(data);
-      msg.encoding = msg.encoding ? msg.encoding + '/json' : 'json';
-    } else {
-      throw new ErrorInfo('Data type is unsupported', 40013, 400);
-    }
+  if (!Platform.BufferUtils.isBuffer(dataToEncrypt)) {
+    dataToEncrypt = Platform.BufferUtils.utf8Encode(String(dataToEncrypt));
+    finalEncoding = finalEncoding + 'utf-8/';
   }
+
+  const ciphertext = await cipher.encrypt(dataToEncrypt);
+  finalEncoding = finalEncoding + 'cipher+' + cipher.algorithm;
+
+  return {
+    data: ciphertext,
+    encoding: finalEncoding,
+  };
+}
+
+/**
+ * Encodes and encrypts message's payload. Mutates the message object.
+ * Implements RSL4 and RSL5.
+ */
+export async function encode<T extends BaseMessage>(msg: T, options: unknown): Promise<T> {
+  // RSL4a, supported types
+  const isNativeDataType =
+    typeof msg.data == 'string' ||
+    Platform.BufferUtils.isBuffer(msg.data) ||
+    msg.data === null ||
+    msg.data === undefined;
+  const { data, encoding } = encodeData(msg.data, msg.encoding, isNativeDataType);
+
+  msg.data = data;
+  msg.encoding = encoding;
 
   if (options != null && (options as CipherOptions).cipher) {
     return encrypt(msg, options as CipherOptions);
@@ -97,21 +113,70 @@ export async function encode<T extends BaseMessage>(msg: T, options: unknown): P
   }
 }
 
+export function encodeData(
+  data: any,
+  encoding: string | null | undefined,
+  isNativeDataType: boolean,
+): { data: any; encoding: string | null | undefined } {
+  if (isNativeDataType) {
+    // nothing to do with the native data types at this point
+    return {
+      data,
+      encoding,
+    };
+  }
+
+  if (Utils.isObject(data) || Array.isArray(data)) {
+    // RSL4c3 and RSL4d3, encode objects and arrays as strings
+    return {
+      data: JSON.stringify(data),
+      encoding: encoding ? encoding + '/json' : 'json',
+    };
+  }
+
+  // RSL4a, throw an error for unsupported types
+  throw new ErrorInfo('Data type is unsupported', 40013, 400);
+}
+
 export async function decode<T extends BaseMessage>(
   message: T,
   inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions,
 ): Promise<void> {
-  const context = normaliseContext(inputContext);
+  // data can be decoded partially and throw an error on a later decoding step.
+  // so we need to reassign the data and encoding values we got, and only then throw an error if there is one
+  const { data, encoding, error } = await decodeData(message.data, message.encoding, inputContext);
+  message.data = data;
+  message.encoding = encoding;
 
-  let lastPayload = message.data;
-  const encoding = message.encoding;
+  if (error) {
+    throw error;
+  }
+}
+
+/**
+ * Implements RSL6
+ */
+export async function decodeData(
+  data: any,
+  encoding: string | null | undefined,
+  inputContext: CipherOptions | EncodingDecodingContext | ChannelOptions,
+): Promise<{
+  error?: ErrorInfo;
+  data: any;
+  encoding: string | null | undefined;
+}> {
+  const context = normaliseContext(inputContext);
+  let lastPayload = data;
+  let decodedData = data;
+  let finalEncoding = encoding;
+  let decodingError: ErrorInfo | undefined;
+
   if (encoding) {
     const xforms = encoding.split('/');
-    let lastProcessedEncodingIndex,
-      encodingsToProcess = xforms.length,
-      data = message.data;
-
+    let lastProcessedEncodingIndex;
+    let encodingsToProcess = xforms.length;
     let xform = '';
+
     try {
       while ((lastProcessedEncodingIndex = encodingsToProcess) > 0) {
         // eslint-disable-next-line security/detect-unsafe-regex
@@ -120,16 +185,16 @@ export async function decode<T extends BaseMessage>(
         xform = match[1];
         switch (xform) {
           case 'base64':
-            data = Platform.BufferUtils.base64Decode(String(data));
+            decodedData = Platform.BufferUtils.base64Decode(String(decodedData));
             if (lastProcessedEncodingIndex == xforms.length) {
-              lastPayload = data;
+              lastPayload = decodedData;
             }
             continue;
           case 'utf-8':
-            data = Platform.BufferUtils.utf8Decode(data);
+            decodedData = Platform.BufferUtils.utf8Decode(decodedData);
             continue;
           case 'json':
-            data = JSON.parse(data);
+            decodedData = JSON.parse(decodedData);
             continue;
           case 'cipher':
             if (
@@ -143,7 +208,7 @@ export async function decode<T extends BaseMessage>(
               if (xformAlgorithm != cipher.algorithm) {
                 throw new Error('Unable to decrypt message with given cipher; incompatible cipher params');
               }
-              data = await cipher.decrypt(data);
+              decodedData = await cipher.decrypt(decodedData);
               continue;
             } else {
               throw new Error('Unable to decrypt message; not an encrypted channel');
@@ -167,10 +232,12 @@ export async function decode<T extends BaseMessage>(
 
               // vcdiff expects Uint8Arrays, can't copy with ArrayBuffers.
               const deltaBaseBuffer = Platform.BufferUtils.toBuffer(deltaBase as Buffer);
-              data = Platform.BufferUtils.toBuffer(data);
+              decodedData = Platform.BufferUtils.toBuffer(decodedData);
 
-              data = Platform.BufferUtils.arrayBufferViewToBuffer(context.plugins.vcdiff.decode(data, deltaBaseBuffer));
-              lastPayload = data;
+              decodedData = Platform.BufferUtils.arrayBufferViewToBuffer(
+                context.plugins.vcdiff.decode(decodedData, deltaBaseBuffer),
+              );
+              lastPayload = decodedData;
             } catch (e) {
               throw new ErrorInfo('Vcdiff delta decode failed with ' + e, 40018, 400);
             }
@@ -181,40 +248,84 @@ export async function decode<T extends BaseMessage>(
       }
     } catch (e) {
       const err = e as ErrorInfo;
-      throw new ErrorInfo(
-        'Error processing the ' + xform + ' encoding, decoder returned ‘' + err.message + '’',
+      decodingError = new ErrorInfo(
+        `Error processing the ${xform} encoding, decoder returned ‘${err.message}’`,
         err.code || 40013,
         400,
       );
     } finally {
-      message.encoding =
+      finalEncoding =
         (lastProcessedEncodingIndex as number) <= 0 ? null : xforms.slice(0, lastProcessedEncodingIndex).join('/');
-      message.data = data;
     }
   }
+
+  if (decodingError) {
+    return {
+      error: decodingError,
+      data: decodedData,
+      encoding: finalEncoding,
+    };
+  }
+
   context.baseEncodedPreviousPayload = lastPayload;
+  return {
+    data: decodedData,
+    encoding: finalEncoding,
+  };
 }
 
 export function wireToJSON(this: BaseMessage, ...args: any[]): any {
-  /* encode data to base64 if present and we're returning real JSON;
-   * although msgpack calls toJSON(), we know it is a stringify()
-   * call if it has a non-empty arguments list */
-  let encoding = this.encoding;
-  let data = this.data;
-  if (data && Platform.BufferUtils.isBuffer(data)) {
-    if (args.length > 0) {
-      /* stringify call */
-      encoding = encoding ? encoding + '/base64' : 'base64';
-      data = Platform.BufferUtils.base64Encode(data);
-    } else {
-      /* Called by msgpack. toBuffer returns a datatype understandable by
-       * that platform's msgpack implementation (Buffer in node, Uint8Array
-       * in browsers) */
-      data = Platform.BufferUtils.toBuffer(data);
-    }
-  }
+  // encode message data for wire transmission. we can infer the format used by client by inspecting with what arguments this method was called.
+  // if JSON encoding is being used, the JSON.stringify() will be called and this toJSON() method will have a non-empty arguments list.
+  // MSGPack encoding implementation also calls toJSON(), but with an empty arguments list.
+  const format = args.length > 0 ? Utils.Format.json : Utils.Format.msgpack;
+  const { data, encoding } = encodeDataForWire(this.data, this.encoding, format);
+
   return Object.assign({}, this, { encoding, data });
 }
+
+/**
+ * Prepares the payload data to be transmitted over the wire to Ably.
+ * Encodes the data depending on the selected protocol format.
+ *
+ * Implements RSL4c1 and RSL4d1
+ */
+export function encodeDataForWire(
+  data: any,
+  encoding: string | null | undefined,
+  format: Utils.Format,
+): { data: any; encoding: string | null | undefined } {
+  if (!data || !Platform.BufferUtils.isBuffer(data)) {
+    // no encoding required for non-buffer payloads
+    return {
+      data,
+      encoding,
+    };
+  }
+
+  if (format === Utils.Format.msgpack) {
+    // RSL4c1
+    // BufferUtils.toBuffer returns a datatype understandable by that platform's msgpack implementation:
+    // Buffer in node, Uint8Array in browsers
+    return {
+      data: Platform.BufferUtils.toBuffer(data),
+      encoding,
+    };
+  }
+
+  // RSL4d1, encode binary payload as base64 string
+  return {
+    data: Platform.BufferUtils.base64Encode(data),
+    encoding: encoding ? encoding + '/base64' : 'base64',
+  };
+}
+
+export const MessageEncoding = {
+  encryptData,
+  encodeData,
+  encodeDataForWire,
+  decodeData,
+};
 
 // in-place, generally called on the protocol message before decoding
 export function populateFieldsFromParent(parent: ProtocolMessage) {
@@ -232,6 +343,10 @@ export function populateFieldsFromParent(parent: ProtocolMessage) {
       break;
     case actions.ANNOTATION:
       msgs = parent.annotations!;
+      break;
+    case actions.OBJECT:
+    case actions.OBJECT_SYNC:
+      msgs = parent.state!;
       break;
     default:
       throw new ErrorInfo('Unexpected action ' + parent.action, 40000, 400);
@@ -259,7 +374,7 @@ export function strMsg(m: any, cls: string) {
         result += '; data=' + m.data;
       } else if (Platform.BufferUtils.isBuffer(m.data)) {
         result += '; data (buffer)=' + Platform.BufferUtils.base64Encode(m.data);
-      } else {
+      } else if (typeof m.data !== 'undefined') {
         result += '; data (json)=' + JSON.stringify(m.data);
       }
     } else if (attr && (attr === 'extras' || attr === 'operation')) {
