@@ -5,3 +5,6 @@ updates:
     schedule:
       interval: 'daily' # weekdays (Monday to Friday)
     labels: [] # prevent the default `dependencies` label from being added to pull requests
+    reviewers:
+      - "ably/team-sdk"
+    open-pull-requests-limit: 3
