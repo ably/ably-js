@@ -3,5 +3,7 @@ updates:
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'daily' # weekdays (Monday to Friday)
+      interval: 'weekly'
     labels: [] # prevent the default `dependencies` label from being added to pull requests
+    # Disable @dependabot (except for security updates) because it pollutes a list of PRs, we'll update CI to use @renovate instead
+    open-pull-requests-limit: 0
