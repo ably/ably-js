@@ -28,12 +28,16 @@ define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, Helper, chai, 
 
       before(function (done) {
         const helper = Helper.forHook(this);
-        helper.setupApp(function () {
-          rest = helper.AblyRest({
-            pushServiceWorkerUrl: swUrl,
-            plugins: { Push: PushPlugin },
+        const sw = navigator.serviceWorker.getRegistration(swUrl).then((sw) => {
+          sw.active.postMessage({ type: 'INIT_PORT' }, [messageChannel.port2]);
+          helper.setupApp(function () {
+            rest = helper.AblyRest({
+              pushServiceWorkerUrl: swUrl,
+              clientId: 'browser-push-test-client',
+              plugins: { Push: PushPlugin },
+            });
+            done();
           });
-          done();
         });
       });
 
@@ -68,13 +72,34 @@ define(['ably', 'shared_helper', 'chai', 'push'], function (Ably, Helper, chai, 
         };
 
         const pushPayload = {
-          notification: { title: 'Test message', body: 'Test message body' },
+          notification: { title: 'Test message', body: 'direct_publish_device_id' },
           data: { foo: 'bar' },
         };
 
-        const sw = await navigator.serviceWorker.getRegistration(swUrl);
+        const receivedPushPayload = await new Promise((resolve, reject) => {
+          messageChannel.port1.onmessage = function (event) {
+            resolve(event.data.payload);
+          };
 
-        sw.active.postMessage({ type: 'INIT_PORT' }, [messageChannel.port2]);
+          rest.push.admin.publish(pushRecipient, pushPayload).catch(reject);
+        });
+
+        expect(receivedPushPayload.data).to.deep.equal(pushPayload.data);
+        expect(receivedPushPayload.notification.title).to.equal(pushPayload.notification.title);
+        expect(receivedPushPayload.notification.body).to.equal(pushPayload.notification.body);
+      });
+
+      it('direct_publish_client_id', async function () {
+        await rest.push.activate();
+
+        const pushRecipient = {
+          clientId: rest.auth.clientId,
+        };
+
+        const pushPayload = {
+          notification: { title: 'Test message', body: 'direct_publish_client_id' },
+          data: { foo: 'bar' },
+        };
 
         const receivedPushPayload = await new Promise((resolve, reject) => {
           messageChannel.port1.onmessage = function (event) {
