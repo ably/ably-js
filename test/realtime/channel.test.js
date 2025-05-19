@@ -1583,6 +1583,145 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       );
     });
 
+    /** @spec RTL3g **/
+    it('detaching_channel_when_connection_enters_failed', async function () {
+      // Given: A channel in the DETACHING state
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
+      const channel = realtime.channels.get('detached_channel_when_connection_enters_failed');
+
+      await channel.attach();
+
+      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+      const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+      const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+      helper.recordPrivateApi('replace.transport.onProtocolMessage');
+      transport.onProtocolMessage = function (msg) {
+        if (msg.action === 13) {
+          // Drop the incoming DETACHED so that the channel stays in DETACHING
+          return;
+        }
+
+        helper.recordPrivateApi('call.transport.onProtocolMessage');
+        onProtocolMessageOriginal.call(this, msg);
+      };
+
+      const channelDetachPromise = channel.detach();
+
+      expect(channel.state).to.equal('detaching');
+
+      // When: The connection enters FAILED
+      const channelFailedPromise = channel.whenState('failed');
+
+      // Inject a connection-level ERROR to make connection enter FAILED per RTN15i
+      helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+      helper.recordPrivateApi('call.transport.onProtocolMessage');
+      transport.onProtocolMessage(
+        createPM({ action: 9, error: { code: 40000, statusCode: 400, message: 'Some error' } }),
+      );
+
+      // Then: The channel transitions to FAILED and the call to `detach()` fails
+      await channelFailedPromise;
+
+      try {
+        await channelDetachPromise;
+        expect.fail('Expected channel.detach() to throw');
+      } catch {
+        expect(channel.errorReason.code).to.equal(40000);
+        expect(channel.errorReason.statusCode).to.equal(400);
+        expect(channel.errorReason.message).to.equal('Some error');
+      }
+
+      // Teardown
+      await helper.closeAndFinishAsync(realtime);
+    });
+
+    /** @specpartial RTL3h - Tests the CLOSED case **/
+    it('detaching_channel_when_connection_enters_closed', async function () {
+      // Given: A channel in the DETACHING state
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
+      const channel = realtime.channels.get('detached_channel_when_connection_enters_failed');
+
+      await channel.attach();
+
+      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+      const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+      const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+      helper.recordPrivateApi('replace.transport.onProtocolMessage');
+      transport.onProtocolMessage = function (msg) {
+        if (msg.action === 13) {
+          // Drop the incoming DETACHED so that the channel stays in DETACHING
+          return;
+        }
+
+        helper.recordPrivateApi('call.transport.onProtocolMessage');
+        onProtocolMessageOriginal.call(this, msg);
+      };
+
+      const channelDetachPromise = channel.detach();
+
+      expect(channel.state).to.equal('detaching');
+
+      // When: The connection enters CLOSED
+      const channelDetachedPromise = channel.whenState('detached');
+
+      realtime.close();
+
+      // Then: The channel transitions to DETACHED and the call to `detach()` succeeds
+      await channelDetachedPromise;
+      await channelDetachPromise;
+
+      // Teardown
+      await helper.closeAndFinishAsync(realtime);
+    });
+
+    /** @specpartial RTL3h - Tests the SUSPENDED case **/
+    it('detaching_channel_when_connection_enters_suspended', async function () {
+      // Given: A channel in the DETACHING state
+      const helper = this.test.helper;
+      const realtime = helper.AblyRealtime({ transports: [helper.bestTransport] });
+      const channel = realtime.channels.get('detached_channel_when_connection_enters_failed');
+
+      await channel.attach();
+
+      helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+      const transport = realtime.connection.connectionManager.activeProtocol.getTransport();
+      const onProtocolMessageOriginal = transport.onProtocolMessage;
+
+      helper.recordPrivateApi('replace.transport.onProtocolMessage');
+      transport.onProtocolMessage = function (msg) {
+        if (msg.action === 13) {
+          // Drop the incoming DETACHED so that the channel stays in DETACHING
+          return;
+        }
+
+        helper.recordPrivateApi('call.transport.onProtocolMessage');
+        onProtocolMessageOriginal.call(this, msg);
+      };
+
+      const channelDetachPromise = channel.detach();
+
+      expect(channel.state).to.equal('detaching');
+
+      // When: The connection enters SUSPENDED
+      const channelDetachedPromise = channel.whenState('detached');
+
+      await new Promise((resolve) => {
+        helper.becomeSuspended(realtime, resolve);
+      });
+
+      // Then: The channel transitions to DETACHED and the call to `detach()` succeeds
+      await channelDetachedPromise;
+      expect(channel.errorReason).to.be.null;
+      await channelDetachPromise;
+
+      // Teardown
+      await helper.closeAndFinishAsync(realtime);
+    });
+
     /** @spec RTL5i */
     it('attached_while_detaching', function (done) {
       var helper = this.test.helper,
