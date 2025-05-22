@@ -396,7 +396,7 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   endpoint?: string;
 
   /**
-   * Enables a [custom environment](https://ably.com/docs/platform-customization) to be used with the Ably service.
+   * @deprecated This property is deprecated and will be removed in a future version. Use the {@link ClientOptions.endpoint} client option instead.
    */
   environment?: string;
 
@@ -428,16 +428,12 @@ export interface ClientOptions<Plugins = CorePlugins> extends AuthOptions {
   queueMessages?: boolean;
 
   /**
-   * Enables a non-default Ably host to be specified. For development environments only. The default value is `rest.ably.io`.
-   *
-   * @defaultValue `"rest.ably.io"`
+   * @deprecated This property is deprecated and will be removed in a future version. Use the {@link ClientOptions.endpoint} client option instead.
    */
   restHost?: string;
 
   /**
-   * Enables a non-default Ably host to be specified for realtime connections. For development environments only. The default value is `realtime.ably.io`.
-   *
-   * @defaultValue `"realtime.ably.io"`
+   * @deprecated This property is deprecated and will be removed in a future version. Use the {@link ClientOptions.endpoint} client option instead.
    */
   realtimeHost?: string;
 
