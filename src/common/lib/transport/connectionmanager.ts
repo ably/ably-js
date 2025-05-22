@@ -1303,7 +1303,7 @@ class ConnectionManager extends EventEmitter {
     if (this.state.sendEvents) {
       this.sendQueuedMessages();
     } else if (!this.state.queueEvents) {
-      this.realtime.channels.propogateConnectionInterruption(state, change.reason);
+      this.realtime.channels.propagateConnectionInterruption(state, change.reason);
       this.failQueuedMessages(change.reason as ErrorInfo); // RTN7c
     }
   }
