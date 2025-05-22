@@ -42,11 +42,11 @@ The following browser versions are supported:
 
 | Browser | Version |
 |---------|---------|
-| Chrome | >=58 (April 19, 2017) |
-| Firefox | >=52 (March 7, 2017) |
-| Edge | >=79 (December 15, 2020) |
-| Safari | >=11 (September 19, 2017) |
-| Opera | >=45 (May 10, 2017) |
+| Chrome | >=58 (April 19, 2017). |
+| Firefox | >=52 (March 7, 2017). |
+| Edge | >=79 (December 15, 2020). |
+| Safari | >=11 (September 19, 2017). |
+| Opera | >=45 (May 10, 2017). |
 
 > [!NOTE]
 > Versions 1.2.x of the SDK support Internet Explorer >=9 and other older browsers, as well as Node.js >=8.17.
@@ -148,7 +148,7 @@ Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
 
 ## Releases
 
-The [CHANGELOG.md](/ably/ably-js/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [https://changelog.ably.com].
+The [CHANGELOG.md](/ably/ably-js/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
 
 ---
 
