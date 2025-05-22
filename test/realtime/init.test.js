@@ -279,7 +279,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         var realtime = new Ably.Realtime({ key: 'not_a.real:key', autoConnect: false });
         helper.recordPrivateApi('read.connectionManager.httpHosts');
         var defaultHost = realtime.connection.connectionManager.httpHosts[0];
-        expect(defaultHost).to.equal('rest.ably.io', 'Verify correct default rest host chosen');
+        expect(defaultHost).to.equal('main.realtime.ably.net', 'Verify correct default rest host chosen');
         realtime.close();
         done();
       } catch (err) {
