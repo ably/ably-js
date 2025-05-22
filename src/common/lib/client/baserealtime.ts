@@ -171,7 +171,7 @@ class Channels extends EventEmitter {
   /* Connection interruptions (ie when the connection will no longer queue
    * events) imply connection state changes for any channel which is either
    * attached, pending, or will attempt to become attached in the future */
-  propogateConnectionInterruption(connectionState: string, reason: ErrorInfo) {
+  propagateConnectionInterruption(connectionState: string, reason: ErrorInfo) {
     const connectionStateToChannelState: Record<string, API.ChannelState> = {
       closing: 'detached',
       closed: 'detached',

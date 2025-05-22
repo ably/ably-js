@@ -1258,7 +1258,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             realtime.options.timeouts.realtimeRequestTimeout = 100;
             channel.once(function (stateChange) {
               expect(stateChange.current).to.equal('attaching', 'Channel reattach attempt happens immediately');
-              expect(stateChange.reason.code).to.equal(50000, 'check error is propogated in the reason');
+              expect(stateChange.reason.code).to.equal(50000, 'check error is propagated in the reason');
               cb();
             });
             helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
@@ -1326,7 +1326,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         };
         Helper.whenPromiseSettles(channel.attach(), function (err) {
           try {
-            expect(err.code).to.equal(50000, 'check error is propogated to the attach callback');
+            expect(err.code).to.equal(50000, 'check error is propagated to the attach callback');
             expect(channel.state).to.equal('suspended', 'check channel goes into suspended');
             helper.closeAndFinish(done, realtime);
           } catch (err) {
@@ -1356,7 +1356,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
           channel.on('failed', function (stateChange) {
             try {
-              expect(stateChange.reason.code).to.equal(50000, 'check error is propogated');
+              expect(stateChange.reason.code).to.equal(50000, 'check error is propagated');
               helper.closeAndFinish(done, realtime);
             } catch (err) {
               helper.closeAndFinish(done, realtime, err);
@@ -1406,7 +1406,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
               expect(stateChange.current).to.equal('attached', 'check current');
               expect(stateChange.previous).to.equal('attached', 'check previous');
               expect(stateChange.resumed).to.equal(false, 'check resumed');
-              expect(stateChange.reason.code).to.equal(50000, 'check error propogated');
+              expect(stateChange.reason.code).to.equal(50000, 'check error propagated');
               expect(channel.state).to.equal('attached', 'check channel still attached');
               cb();
             });
