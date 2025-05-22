@@ -949,14 +949,11 @@ You can ensure that your extension only runs in versions 116 and above by adding
 
 If you are using ably-js in your Next.js project with App Router and Turbopack enabled (via running `next dev --turbo`), you may encounter `Failed to compile Module not found` compilation error referencing `./node_modules/keyv/src/index.js` file or see `Critical dependency: the request of a dependency is an expression` warnings for the same `keyv` module.
 
-To fix this, please add `ably` to the `serverComponentsExternalPackages` list in `next.config.js` (read more about this option [here](https://nextjs.org/docs/app/api-reference/next-config-js/serverComponentsExternalPackages)):
+To fix this, please add `ably` to the `serverExternalPackages` list in `next.config.js` (read more about this option [here](https://nextjs.org/docs/app/api-reference/config/next-config-js/serverExternalPackages)):
 
 ```javascript
 const nextConfig = {
-  // ...
-  experimental: {
-    serverComponentsExternalPackages: ['ably'],
-  },
+  serverExternalPackages: ['ably'],
 };
 ```
 
@@ -964,8 +961,8 @@ The issue is coming from the fact that when using App Router specifically depend
 
 `keyv` ends up being one of `ably-js`'s upstream dependencies for node.js bundle, which causes the errors above when using it with Next.js App Router.
 
-Using `serverComponentsExternalPackages` opt-outs from using Next.js bundling for specific packages and uses native Node.js `require` instead.
-This is a common problem in App Router for a number of packages (for example, see next.js issue [vercel/next.js#52876](https://github.com/vercel/next.js/issues/52876)), and using `serverComponentsExternalPackages` is the recommended approach here.
+Using `serverExternalPackages` opt-outs from using Next.js bundling for specific packages and uses native Node.js `require` instead.
+This is a common problem in App Router for a number of packages (for example, see next.js issue [vercel/next.js#52876](https://github.com/vercel/next.js/issues/52876)), and using `serverExternalPackages` is the recommended approach here.
 
 #### "Connection limit exceeded" error during development
 
