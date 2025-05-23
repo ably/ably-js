@@ -137,28 +137,6 @@ For more information view the [TypeDoc references](https://sdk.ably.com/builds/a
 
 </details>
 
-### TypeScript
-
-The TypeScript typings are included in the package and so all you have to do is:
-
-```typescript
-import * as Ably from 'ably';
-
-let options: Ably.ClientOptions = { key: 'foo' };
-let client = new Ably.Realtime(options); /* inferred type Ably.Realtime */
-let channel = client.channels.get('feed'); /* inferred type Ably.RealtimeChannel */
-```
-
-Intellisense in IDEs with TypeScript support is supported:
-
-![TypeScript suggestions](./resources/typescript-demo.gif)
-
-If you need to explicitly import the type definitions, see [ably.d.ts](./ably.d.ts).
-
-## NativeScript
-
-See the [ably-js-nativescript repo](https://github.com/ably/ably-js-nativescript) for NativeScript usage details.
-
 ## Using the Realtime API
 
 This readme gives some basic examples; for our full API documentation, please go to https://www.ably.com/docs .
