@@ -55,20 +55,6 @@ Everything you need to get started with Ably:
 
 ---
 
-## Installation
-
-### Node.js
-
-    npm install ably --save
-
-and require as:
-
-```javascript
-var Ably = require('ably');
-```
-
-For usage, jump to [Using the Realtime API](#using-the-realtime-api) or [Using the REST API](#using-the-rest-api).
-
 #### Serverside usage with Webpack
 
 If you are using a version older than 1.2.5 you will need to add 'ably' to `externals` in your Webpack config to exclude it from Webpack processing, and require and use it in as a external module using require('ably') as above.
