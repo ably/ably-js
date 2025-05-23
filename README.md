@@ -45,6 +45,16 @@ The following browser versions are supported:
 
 ---
 
+## Getting started
+
+Everything you need to get started with Ably:
+
+- [Getting started with Pub/Sub in JavaScript](https://ably.com/docs/getting-started/javascript)
+- [Getting started with Pub/Sub in React](https://ably.com/docs/getting-started/react)
+- [Getting started with LiveObjects in JavaScript](https://ably.com/docs/liveobjects/quickstart)
+
+---
+
 ## Installation
 
 ### Node.js
