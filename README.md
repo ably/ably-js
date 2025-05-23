@@ -1,14 +1,15 @@
-# [Ably](https://www.ably.com)
+# Ably Pub/Sub JavaScript SDK
 
-[![Features](https://github.com/ably/ably-js/actions/workflows/features.yml/badge.svg)](https://github.com/ably/ably-js/actions/workflows/features.yml)
+Build any realtime experience using Ably’s Pub/Sub JavaScript SDK. Supported on all popular platforms and frameworks, including Node, React, and Web Workers.
 
-_[Ably](https://ably.com) is the platform that powers synchronized digital experiences in realtime. Whether attending an event in a virtual venue, receiving realtime financial information, or monitoring live car performance data – consumers simply expect realtime digital experiences as standard. Ably provides a suite of APIs to build, extend, and deliver powerful digital experiences in realtime for more than 250 million devices across 80 countries each month. Organizations like Bloomberg, HubSpot, Verizon, and Hopin depend on Ably’s platform to offload the growing complexity of business-critical realtime data synchronization at global scale. For more information, see the [Ably documentation](https://ably.com/docs)._
+Ably Pub/Sub provides flexible APIs that deliver features such as pub-sub messaging, message history, presence, and push notifications. Utilizing Ably’s realtime messaging platform, applications benefit from its highly performant, reliable, and scalable infrastructure.
 
-[![npm version](https://img.shields.io/npm/v/ably.svg?style=flat)](https://img.shields.io/npm/v/ably.svg?style=flat)
+Ably LiveObjects is also available as a Pub/Sub JavaScript SDK plugin. You can use LiveObjects to synchronize application state across your clients at scale.
 
-This is a JavaScript client library for Ably Realtime.
+Find out more:
 
-This library currently targets the [Ably client library features spec](https://www.ably.com/docs/client-lib-development-guide/features/) Version 1.2. You can jump to the '[Known Limitations](#known-limitations)' section to see the features this client library does not yet support or [view our client library SDKs feature support matrix](https://www.ably.com/download/sdk-feature-support-matrix) to see the list of all the available features.
+* [Ably Pub/Sub docs](https://ably.com/docs/basics)
+* [Ably Pub/Sub Examples](https://ably.com/examples?product=pubsub)
 
 ## Supported platforms
 
