@@ -145,13 +145,11 @@ Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
 
 ---
 
-## Support, feedback and troubleshooting
+## Releases
 
-Please visit http://support.ably.com/ for access to our knowledgebase and to ask for any assistance.
+The [CHANGELOG.md](/ably/ably-js/blob/main/CHANGELOG.md) contains details of the latest releases for this SDK. You can also view all Ably releases on [changelog.ably.com](https://changelog.ably.com).
 
-You can also view the [community reported Github issues](https://github.com/ably/ably-js/issues).
-
-To see what has changed in recent versions, see the [CHANGELOG](CHANGELOG.md).
+---
 
 #### Browser-specific issues
 
