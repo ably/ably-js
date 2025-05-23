@@ -137,6 +137,14 @@ For more information view the [TypeDoc references](https://sdk.ably.com/builds/a
 
 </details>
 
+---
+
+## Contribute
+
+Read the [CONTRIBUTING.md](./CONTRIBUTING.md) guidelines to contribute to Ably.
+
+---
+
 ## Support, feedback and troubleshooting
 
 Please visit http://support.ably.com/ for access to our knowledgebase and to ask for any assistance.
@@ -205,12 +213,3 @@ If you're encountering a "Connection limit exceeded" error when trying to connec
 
   The solution is simple: move the `new Ably.Realtime()` call to a separate file, such as `ably-client.js`, and export the client instance from there. This way, the client instance will only be recreated when you specifically make changes to the `ably-client.js` file, which should be far less frequent than changes in the rest of the codebase.
 
-## Contributing
-
-For guidance on how to contribute to this project, see the [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Credits
-
-Automated browser testing supported by
-
-[<img src="./resources/Browserstack-logo@2x.png" width="200px"></img>](https://www.browserstack.com/)
