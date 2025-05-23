@@ -137,13 +137,6 @@ For more information view the [TypeDoc references](https://sdk.ably.com/builds/a
 
 </details>
 
-## Delta Plugin
-
-From version 1.2 this client library supports subscription to a stream of Vcdiff formatted delta messages from the Ably service. For certain applications this can bring significant data efficiency savings.
-This is an optional feature so our
-
-See the [@ably-forks/vcdiff-decoder documentation](https://github.com/ably-forks/vcdiff-decoder#usage) for setup and usage examples.
-
 ## Support, feedback and troubleshooting
 
 Please visit http://support.ably.com/ for access to our knowledgebase and to ask for any assistance.
