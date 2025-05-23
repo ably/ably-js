@@ -55,7 +55,7 @@ The following browser versions are supported:
 
 ---
 
-### Webpack installation
+## Webpack installation
 
 The Ably Pub/Sub SDK includes support for Webpack compiling browsers.
 
@@ -90,9 +90,14 @@ If needed, for example with custom targets:
   ```
 </details>
 
-#### Modular (tree-shakable) variant
+## Modular variant
 
-Aimed at those who are concerned about their app’s bundle size, the modular variant of the library allows you to create a client which has only the functionality that you choose. Unused functionality can then be tree-shaken by your module bundler.
+The Pub/Sub SDK has a modular (tree-shakable) variant to build with a small bundle sizes.
+
+<details>
+<summary>Modular variant details</summary>
+
+Aimed at those who are concerned about their app's bundle size, the modular variant of the library allows you to create a client which has only the functionality that you choose. Unused functionality can then be tree-shaken by your module bundler.
 
 The modular variant of the library provides:
 
@@ -105,7 +110,7 @@ To use this variant of the library, import the `BaseRealtime` class from `ably/m
 import { BaseRealtime, WebSocketTransport, FetchRequest, RealtimePresence } from 'ably/modular';
 
 const client = new BaseRealtime({
-  key: 'YOUR_ABLY_API_KEY' /* Replace with a real key from the Ably dashboard */,
+  key: 'YOUR_ABLY_API_KEY', // Replace with a real key from the Ably dashboard
   plugins: {
     WebSocketTransport,
     FetchRequest,
@@ -126,9 +131,11 @@ In order to further reduce bundle size, the modular variant of the SDK performs 
 - messages that have a `logLevel` of 1 (that is, errors)
 - a small number of other network events
 
-If you need more verbose logging, use the default variant of the SDK.
+If you require more verbose logging, use the default variant of the SDK.
 
-For more information about the modular variant of the SDK, see the [generated documentation](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html) (this link points to the documentation for the `main` branch).
+For more information view the [TypeDoc references](https://sdk.ably.com/builds/ably/ably-js/main/typedoc/modules/modular.html).
+
+</details>
 
 ### TypeScript
 
