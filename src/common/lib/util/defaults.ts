@@ -135,6 +135,10 @@ export function getEndpointHostname(endpoint: string): string {
 }
 
 export function getEndpointFallbackHosts(endpoint: string): string[] {
+  if (endpoint.includes('.') || endpoint.includes('::') || endpoint.includes('localhost')) {
+    return [];
+  }
+
   if (endpoint.startsWith('nonprod:')) {
     const root = endpoint.replace('nonprod:', '');
     return endpointFallbacks(root, 'ably-realtime-nonprod.com');
