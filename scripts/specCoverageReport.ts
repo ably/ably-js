@@ -2,6 +2,7 @@ import Table from 'cli-table';
 import dox from 'dox';
 import fs from 'fs';
 import { glob } from 'glob';
+import { exit } from 'process';
 
 const ABLY_FEATURES_SPEC_URL = 'https://raw.githubusercontent.com/ably/specification/main/textile/features.textile';
 const PATHS_TO_LOOK_FOR_TESTS = ['./test', './src/platform/react-hooks'];
@@ -446,22 +447,21 @@ function printCoverageTableForAllSpecItems(collection: SpecItemNodesCollection):
 }
 
 (async function main() {
-  try {
-    const paths = await getTestFilePaths();
-    const specCoverages = paths.flatMap((x) => {
-      const docstrings = parseDocstringsForFile(x);
-      return getSpecCoveragesFromDocstrings(docstrings);
-    });
+  const paths = await getTestFilePaths();
+  const specCoverages = paths.flatMap((x) => {
+    const docstrings = parseDocstringsForFile(x);
+    return getSpecCoveragesFromDocstrings(docstrings);
+  });
 
-    const specTextile = await loadSpecTextile();
-    const specItems = specTextileToOrderedSpecItems(specTextile);
-    const collection = new SpecItemNodesCollection(specItems);
-    applySpecCoveragesToSpecItemsCollection(collection, specCoverages);
+  const specTextile = await loadSpecTextile();
+  const specItems = specTextileToOrderedSpecItems(specTextile);
+  const collection = new SpecItemNodesCollection(specItems);
+  applySpecCoveragesToSpecItemsCollection(collection, specCoverages);
 
-    printGeneralCoverageMetrics(collection);
-    printNoSpecMetrics(specCoverages);
-    printCoverageTableForAllSpecItems(collection);
-  } catch (error) {
-    console.error('Spec coverage report failed with error:', error);
-  }
-})();
+  printGeneralCoverageMetrics(collection);
+  printNoSpecMetrics(specCoverages);
+  printCoverageTableForAllSpecItems(collection);
+})().catch((error) => {
+  console.error('Spec coverage report failed with error:', error);
+  exit(1);
+});
