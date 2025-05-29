@@ -3,7 +3,7 @@
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
 define(['globals', 'ably'], function (ablyGlobals, ably) {
-  var restHost = ablyGlobals.restHost || setHostname(ablyGlobals.environment),
+  var restHost = ablyGlobals.restHost || getHostname(ablyGlobals.environment),
     port = ablyGlobals.tls ? ablyGlobals.tlsPort : ablyGlobals.port,
     scheme = ablyGlobals.tls ? 'https' : 'http';
 
@@ -23,7 +23,7 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
     }
   }
 
-  function setHostname(endpoint) {
+  function getHostname(endpoint) {
     if (endpoint.startsWith('nonprod:')) {
       return `${endpoint.replace('nonprod:', '')}.realtime.ably-nonprod.net`;
     }

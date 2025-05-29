@@ -121,34 +121,34 @@ export function getHttpScheme(options: ClientOptions): string {
   return options.tls ? 'https://' : 'http://';
 }
 
+function isFqdnIpOrLocalhost(endpoint: string): boolean {
+  return endpoint.includes('.') || endpoint.includes('::') || endpoint === 'localhost';
+}
+
 export function getEndpointHostname(endpoint: string): string {
-  if (endpoint.includes('.') || endpoint.includes('::') || endpoint.includes('localhost')) {
-    return endpoint;
-  }
+  if (isFqdnIpOrLocalhost(endpoint)) return endpoint;
 
   if (endpoint.startsWith('nonprod:')) {
-    const root = endpoint.replace('nonprod:', '');
-    return `${root}.realtime.ably-nonprod.net`;
+    const routingPolicyId = endpoint.replace('nonprod:', '');
+    return `${routingPolicyId}.realtime.ably-nonprod.net`;
   }
 
   return `${endpoint}.realtime.ably.net`;
 }
 
 export function getEndpointFallbackHosts(endpoint: string): string[] {
-  if (endpoint.includes('.') || endpoint.includes('::') || endpoint.includes('localhost')) {
-    return [];
-  }
+  if (isFqdnIpOrLocalhost(endpoint)) return [];
 
   if (endpoint.startsWith('nonprod:')) {
-    const root = endpoint.replace('nonprod:', '');
-    return endpointFallbacks(root, 'ably-realtime-nonprod.com');
+    const routingPolicyId = endpoint.replace('nonprod:', '');
+    return endpointFallbacks(routingPolicyId, 'ably-realtime-nonprod.com');
   }
 
   return endpointFallbacks(endpoint, 'ably-realtime.com');
 }
 
-export function endpointFallbacks(root: string, domain: string): string[] {
-  return ['a', 'b', 'c', 'd', 'e'].map((id) => `${root}.${id}.fallback.${domain}`);
+export function endpointFallbacks(routingPolicyId: string, domain: string): string[] {
+  return ['a', 'b', 'c', 'd', 'e'].map((id) => `${routingPolicyId}.${id}.fallback.${domain}`);
 }
 
 export function getFallbackHosts(options: NormalisedClientOptions): string[] {
