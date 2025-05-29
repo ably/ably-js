@@ -270,10 +270,9 @@ export function normaliseOptions(
     options.fallbackHosts = getEndpointFallbackHosts(endpoint);
   }
 
-  const restHost = options.restHost || getEndpointHostname(endpoint);
-  const realtimeHost = options.realtimeHost || getEndpointHostname(endpoint);
+  const primaryDomain = options.restHost || options.realtimeHost || getEndpointHostname(endpoint);
 
-  (options.fallbackHosts || []).concat(restHost, realtimeHost).forEach(checkHost);
+  (options.fallbackHosts || []).concat(primaryDomain).forEach(checkHost);
 
   options.port = options.port || Defaults.PORT;
   options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
@@ -318,8 +317,8 @@ export function normaliseOptions(
 
   return {
     ...options,
-    realtimeHost,
-    restHost,
+    restHost: primaryDomain,
+    realtimeHost: primaryDomain,
     maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
     timeouts,
     connectivityCheckParams,
