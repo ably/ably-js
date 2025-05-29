@@ -13,6 +13,7 @@ import { ModularPlugins } from '../client/modularplugins';
 let agent = 'ably-js/' + version;
 
 type CompleteDefaults = IDefaults & {
+  ENDPOINT: string;
   ENVIRONMENT: string;
   REST_HOST: string;
   REALTIME_HOST: string;
@@ -40,7 +41,7 @@ type CompleteDefaults = IDefaults & {
   getHost(options: ClientOptions, host?: string | null, ws?: boolean): string;
   getPort(options: ClientOptions, tls?: boolean): number | undefined;
   getHttpScheme(options: ClientOptions): string;
-  environmentFallbackHosts(environment: string): string[];
+  getEndpointFallbackHosts(endpoint: string): string[];
   getFallbackHosts(options: NormalisedClientOptions): string[];
   getHosts(options: NormalisedClientOptions, ws?: boolean): string[];
   checkHost(host: string): void;
@@ -57,15 +58,16 @@ type CompleteDefaults = IDefaults & {
 };
 
 const Defaults = {
+  ENDPOINT: 'main',
   ENVIRONMENT: '',
   REST_HOST: 'rest.ably.io',
   REALTIME_HOST: 'realtime.ably.io',
   FALLBACK_HOSTS: [
-    'A.ably-realtime.com',
-    'B.ably-realtime.com',
-    'C.ably-realtime.com',
-    'D.ably-realtime.com',
-    'E.ably-realtime.com',
+    'main.a.fallback.ably-realtime.com',
+    'main.b.fallback.ably-realtime.com',
+    'main.c.fallback.ably-realtime.com',
+    'main.d.fallback.ably-realtime.com',
+    'main.e.fallback.ably-realtime.com',
   ],
   PORT: 80,
   TLS_PORT: 443,
@@ -94,7 +96,7 @@ const Defaults = {
   getHost,
   getPort,
   getHttpScheme,
-  environmentFallbackHosts,
+  getEndpointFallbackHosts,
   getFallbackHosts,
   getHosts,
   checkHost,
@@ -119,15 +121,34 @@ export function getHttpScheme(options: ClientOptions): string {
   return options.tls ? 'https://' : 'http://';
 }
 
-// construct environment fallback hosts as per RSC15i
-export function environmentFallbackHosts(environment: string): string[] {
-  return [
-    environment + '-a-fallback.ably-realtime.com',
-    environment + '-b-fallback.ably-realtime.com',
-    environment + '-c-fallback.ably-realtime.com',
-    environment + '-d-fallback.ably-realtime.com',
-    environment + '-e-fallback.ably-realtime.com',
-  ];
+function isFqdnIpOrLocalhost(endpoint: string): boolean {
+  return endpoint.includes('.') || endpoint.includes('::') || endpoint === 'localhost';
+}
+
+export function getEndpointHostname(endpoint: string): string {
+  if (isFqdnIpOrLocalhost(endpoint)) return endpoint;
+
+  if (endpoint.startsWith('nonprod:')) {
+    const routingPolicyId = endpoint.replace('nonprod:', '');
+    return `${routingPolicyId}.realtime.ably-nonprod.net`;
+  }
+
+  return `${endpoint}.realtime.ably.net`;
+}
+
+export function getEndpointFallbackHosts(endpoint: string): string[] {
+  if (isFqdnIpOrLocalhost(endpoint)) return [];
+
+  if (endpoint.startsWith('nonprod:')) {
+    const routingPolicyId = endpoint.replace('nonprod:', '');
+    return endpointFallbacks(routingPolicyId, 'ably-realtime-nonprod.com');
+  }
+
+  return endpointFallbacks(endpoint, 'ably-realtime.com');
+}
+
+export function endpointFallbacks(routingPolicyId: string, domain: string): string[] {
+  return ['a', 'b', 'c', 'd', 'e'].map((id) => `${routingPolicyId}.${id}.fallback.${domain}`);
 }
 
 export function getFallbackHosts(options: NormalisedClientOptions): string[] {
@@ -150,26 +171,6 @@ function checkHost(host: string): void {
   if (!host.length) {
     throw new ErrorInfo('host must not be zero-length', 40000, 400);
   }
-}
-
-function getRealtimeHost(options: ClientOptions, production: boolean, environment: string, logger: Logger): string {
-  if (options.realtimeHost) return options.realtimeHost;
-  /* prefer setting realtimeHost to restHost as a custom restHost typically indicates
-   * a development environment is being used that can't be inferred by the library */
-  if (options.restHost) {
-    Logger.logAction(
-      logger,
-      Logger.LOG_MINOR,
-      'Defaults.normaliseOptions',
-      'restHost is set to "' +
-        options.restHost +
-        '" but realtimeHost is not set, so setting realtimeHost to "' +
-        options.restHost +
-        '" too. If this is not what you want, please set realtimeHost explicitly.',
-    );
-    return options.restHost;
-  }
-  return production ? Defaults.REALTIME_HOST : environment + '-' + Defaults.REALTIME_HOST;
 }
 
 function getTimeouts(options: ClientOptions) {
@@ -262,18 +263,16 @@ export function normaliseOptions(
 
   if (!('queueMessages' in options)) options.queueMessages = true;
 
-  /* infer hosts and fallbacks based on the configured environment */
-  const environment = (options.environment && String(options.environment).toLowerCase()) || Defaults.ENVIRONMENT;
-  const production = !environment || environment === 'production';
+  /* infer hosts and fallbacks based on the specified endpoint */
+  const endpoint = options.endpoint || options.environment || Defaults.ENDPOINT;
 
   if (!options.fallbackHosts && !options.restHost && !options.realtimeHost && !options.port && !options.tlsPort) {
-    options.fallbackHosts = production ? Defaults.FALLBACK_HOSTS : environmentFallbackHosts(environment);
+    options.fallbackHosts = getEndpointFallbackHosts(endpoint);
   }
 
-  const restHost = options.restHost || (production ? Defaults.REST_HOST : environment + '-' + Defaults.REST_HOST);
-  const realtimeHost = getRealtimeHost(options, production, environment, loggerToUse);
+  const primaryDomain = options.restHost || options.realtimeHost || getEndpointHostname(endpoint);
 
-  (options.fallbackHosts || []).concat(restHost, realtimeHost).forEach(checkHost);
+  (options.fallbackHosts || []).concat(primaryDomain).forEach(checkHost);
 
   options.port = options.port || Defaults.PORT;
   options.tlsPort = options.tlsPort || Defaults.TLS_PORT;
@@ -318,8 +317,8 @@ export function normaliseOptions(
 
   return {
     ...options,
-    realtimeHost,
-    restHost,
+    restHost: primaryDomain,
+    realtimeHost: primaryDomain,
     maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
     timeouts,
     connectivityCheckParams,

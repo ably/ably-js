@@ -139,6 +139,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'replace.transport.onProtocolMessage',
     'replace.transport.send',
     'serialize.recoveryKey',
+    'write.Defaults.ENDPOINT',
     'write.Defaults.ENVIRONMENT',
     'write.Defaults.wsConnectivityCheckUrl',
     'write.Objects._DEFAULTS.gcGracePeriod',
