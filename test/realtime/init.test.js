@@ -340,8 +340,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     /**
      * Check changing the default fallback hosts and changing httpMaxRetryCount.
      *
-     * @spec RSC12
-     * @spec RTN17b2
+     * @spec REC2a2
      * @spec TO3k2
      * @spec TO3l5
      * @specpartial RSC11 - test override endpoint using restHost
@@ -473,7 +472,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
       }
     });
 
-    /** @spec RTN17b2 */
+    /** @spec REC2c */
     it('init_fallbacks_once_connected', function (done) {
       const helper = this.test.helper;
       var realtime = helper.AblyRealtime({

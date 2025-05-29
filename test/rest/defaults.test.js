@@ -169,9 +169,8 @@ define(['ably', 'chai'], function (Ably, chai) {
      * @spec TO3k5
      * @spec TO3k6
      * @spec TO3d
-     * @specpartial RSC11 - test restHost is overridden by environment
-     * @specpartial RSC15g2 - test with environment set other than 'production'
-     * @specpartial RTC1e - test with environment set other than 'production'
+     * @specpartial REC1d1 - test restHost is overridden by environment
+     * @specpartial REC1c - test with environment set other than 'production'
      */
     it('Init with given environment', function () {
       const helper = this.test.helper;
@@ -211,9 +210,8 @@ define(['ably', 'chai'], function (Ably, chai) {
      * @spec TO3k5
      * @spec TO3k6
      * @spec TO3d
-     * @specpartial RSC11 - test restHost is overridden by environment
-     * @specpartial RSC15g2 - test with environment set other than 'production'
-     * @specpartial RTC1e - test with environment set other than 'production'
+     * @specpartial REC1d1 - test restHost is overridden by environment
+     * @specpartial REC1c - test with environment set other than 'production'
      */
     it('Init with local environment and non-default ports', function () {
       const helper = this.test.helper;
@@ -255,8 +253,8 @@ define(['ably', 'chai'], function (Ably, chai) {
      * @spec TO3k5
      * @spec TO3k6
      * @spec TO3d
-     * @spec RSC15h
-     * @spec RSC11a
+     * @spec REC1d1
+     * @spec REC1d2
      * @specpartial RSC11 - test restHost is overridden by custom value
      */
     it('Init with given host', function () {
@@ -289,8 +287,8 @@ define(['ably', 'chai'], function (Ably, chai) {
      * @spec TO3k5
      * @spec TO3k6
      * @spec TO3d
-     * @spec RSC15h
-     * @spec RSC11a
+     * @spec REC1d1
+     * @spec REC1d2
      * @specpartial RSC11 - test restHost is overridden by custom value
      * @specpartial RTN17a - primary host for realtime can be overridden by realtimeHost
      */
@@ -328,8 +326,8 @@ define(['ably', 'chai'], function (Ably, chai) {
      * @spec TO3k5
      * @spec TO3k6
      * @spec TO3d
-     * @specpartial RSC11 - test restHost is overridden by environment
-     * @specpartial RSC15g2 - test with environment set other than 'production'
+     * @specpartial REC1d1 - test restHost is overridden by environment
+     * @specpartial REC1c - test with environment set other than 'production'
      */
     it('Init with no endpoint-related options and given default environment', function () {
       const helper = this.test.helper;
