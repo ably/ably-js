@@ -26,7 +26,7 @@ globalThis.testAblyPackage = async function () {
 
   const realtime = new BaseRealtime({
     key,
-    environment: 'nonprod:sandbox',
+    endpoint: 'nonprod:sandbox',
     plugins: { WebSocketTransport, FetchRequest },
   });
 

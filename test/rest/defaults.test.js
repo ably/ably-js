@@ -176,26 +176,24 @@ define(['ably', 'chai'], function (Ably, chai) {
       const helper = this.test.helper;
 
       helper.recordPrivateApi('call.Defaults.normaliseOptions');
-      var normalisedOptions = Defaults.normaliseOptions({ environment: 'nonprod:sandbox' }, null, null);
+      var normalisedOptions = Defaults.normaliseOptions({ environment: 'main' }, null, null);
 
-      expect(normalisedOptions.restHost).to.equal('sandbox.realtime.ably-nonprod.net');
-      expect(normalisedOptions.realtimeHost).to.equal('sandbox.realtime.ably-nonprod.net');
+      expect(normalisedOptions.restHost).to.equal('main.realtime.ably.net');
+      expect(normalisedOptions.realtimeHost).to.equal('main.realtime.ably.net');
       expect(normalisedOptions.port).to.equal(80);
       expect(normalisedOptions.tlsPort).to.equal(443);
-      expect(normalisedOptions.fallbackHosts.sort()).to.deep.equal(
-        Defaults.getEndpointFallbackHosts('nonprod:sandbox').sort(),
-      );
+      expect(normalisedOptions.fallbackHosts.sort()).to.deep.equal(Defaults.getEndpointFallbackHosts('main').sort());
       expect(normalisedOptions.tls).to.equal(true);
 
       helper.recordPrivateApi('call.Defaults.getHosts');
       expect(Defaults.getHosts(normalisedOptions).length).to.deep.equal(4);
       expect(Defaults.getHosts(normalisedOptions)[0]).to.deep.equal(normalisedOptions.restHost);
       helper.recordPrivateApi('call.Defaults.getHost');
-      expect(Defaults.getHost(normalisedOptions, 'sandbox.realtime.ably-nonprod.net', false)).to.deep.equal(
-        'sandbox.realtime.ably-nonprod.net',
+      expect(Defaults.getHost(normalisedOptions, 'main.realtime.ably.net', false)).to.deep.equal(
+        'main.realtime.ably.net',
       );
-      expect(Defaults.getHost(normalisedOptions, 'sandbox.realtime.ably-nonprod.net', true)).to.deep.equal(
-        'sandbox.realtime.ably-nonprod.net',
+      expect(Defaults.getHost(normalisedOptions, 'main.realtime.ably.net', true)).to.deep.equal(
+        'main.realtime.ably.net',
       );
 
       helper.recordPrivateApi('call.Defaults.getPort');
