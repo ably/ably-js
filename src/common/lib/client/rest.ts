@@ -247,6 +247,7 @@ export class Rest {
 
 class Channels {
   client: BaseClient;
+  // RSN2
   all: Record<string, RestChannel>;
 
   constructor(client: BaseClient) {
