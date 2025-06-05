@@ -1,0 +1,301 @@
+
+> ably@2.9.0 test:node
+> npm run build:node && npm run build:push && npm run build:objects && mocha
+
+
+> ably@2.9.0 build:node
+> grunt build:node
+
+Running "build:node" task
+
+Done.
+
+> ably@2.9.0 build:push
+> grunt build:push
+
+Running "build:push" task
+
+Done.
+
+> ably@2.9.0 build:objects
+> grunt build:objects
+
+Running "build:objects" task
+
+Done.
+
+
+  realtime/objects
+Test App _tmp_aWQ6Uw in environment sandbox has been set up
+16:32:34.294 Ably: BaseClient(): initialized with clientOptions {
+  environment: 'sandbox',
+  realtimeHost: undefined,
+  restHost: undefined,
+  port: 80,
+  tlsPort: 443,
+  tls: true,
+  logLevel: '4',
+  getLogs: [Function: getLogs],
+  flushLogs: [Function: flushLogs],
+  logHandler: [Function: logHandler],
+  useBinaryProtocol: false,
+  key: '_tmp_aWQ6Uw.LH4z4Q:zmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI',
+  plugins: {
+    Rest: [class Rest],
+    Crypto: [class Crypto2] { CipherParams: [class CipherParams] },
+    MsgPack: { encode: [Function (anonymous)], decode: [Function: decode2] },
+    Annotations: {
+      Annotation: [class _Annotation extends BaseMessage],
+      WireAnnotation: [class _WireAnnotation extends BaseMessage],
+      RealtimeAnnotations: [class RealtimeAnnotations],
+      RestAnnotations: [class RestAnnotations]
+    }
+  }
+}
+16:32:34.294 Ably: BaseClient(): started; version = 2.9.0
+16:32:34.295 Ably: Auth(): anonymous, using basic auth
+16:32:34.298 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"COUNTER_CREATE"}
+16:32:34.299 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"COUNTER_CREATE"}
+16:32:34.640 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=140&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:34 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=YYfoQiugBd0pkdiH1rTZSBgMq-B7XrHaJwTy9mMsVXEzd_7BWw22oQ==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJkQWRIMG1lZWhQOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJjb3VudGVyOjIwY244dS1RUGJpa0hpbjExUXZNSHF2OHNxb2g2U1k0WXo3NHJZMWpIUTBAMTc0OTE1MTk1NDU0NyJdfQo=
+16:32:34.640 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=140&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:34 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=YYfoQiugBd0pkdiH1rTZSBgMq-B7XrHaJwTy9mMsVXEzd_7BWw22oQ==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJkQWRIMG1lZWhQOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJjb3VudGVyOjIwY244dS1RUGJpa0hpbjExUXZNSHF2OHNxb2g2U1k0WXo3NHJZMWpIUTBAMTc0OTE1MTk1NDU0NyJdfQo=
+16:32:34.643 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"emptyCounter","value":{"objectId":"counter:20cn8u-QPbikHin11QvMHqv8sqoh6SY4Yz74rY1jHQ0@1749151954547"}}}
+16:32:34.644 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"emptyCounter","value":{"objectId":"counter:20cn8u-QPbikHin11QvMHqv8sqoh6SY4Yz74rY1jHQ0@1749151954547"}}}
+16:32:35.151 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:35 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=Kp0DB8Ge7C40wk5-jz7C8ky7i2KYhRy5OtmYulXUby61kST0et-vEg==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJqMm8zQ2pIWXo2OjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:35.151 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:35 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=Kp0DB8Ge7C40wk5-jz7C8ky7i2KYhRy5OtmYulXUby61kST0et-vEg==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJqMm8zQ2pIWXo2OjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:35.151 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"COUNTER_CREATE","data":{"number":10}}
+16:32:35.151 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"COUNTER_CREATE","data":{"number":10}}
+16:32:35.663 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=140&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:35 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=XI1zA5p45_kxNpUIrOnHGyfXq3WZzCrachL6Vq5AHOz0WlqTw1Vb1A==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJDTWdfM2JjV25DOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJjb3VudGVyOlNrWjNSOHpQdDV1eEpFbGZnT2JTRkdvLW5UdEZmNUdlNmtVMjJ3VE5QUUFAMTc0OTE1MTk1NTY2MyJdfQo=
+16:32:35.664 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=140&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:35 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=XI1zA5p45_kxNpUIrOnHGyfXq3WZzCrachL6Vq5AHOz0WlqTw1Vb1A==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJDTWdfM2JjV25DOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJjb3VudGVyOlNrWjNSOHpQdDV1eEpFbGZnT2JTRkdvLW5UdEZmNUdlNmtVMjJ3VE5QUUFAMTc0OTE1MTk1NTY2MyJdfQo=
+16:32:35.664 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"initialValueCounter","value":{"objectId":"counter:SkZ3R8zPt5uxJElfgObSFGo-nTtFf5Ge6kU22wTNPQA@1749151955663"}}}
+16:32:35.664 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"initialValueCounter","value":{"objectId":"counter:SkZ3R8zPt5uxJElfgObSFGo-nTtFf5Ge6kU22wTNPQA@1749151955663"}}}
+16:32:35.832 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:35 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=mB-xjwGQcvlDfQl-GKiN6fssotaRzxhevA9M7IMrNXePIuE8GcCMPQ==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiI2YUhrOVl6cWtYOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:35.832 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:35 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=mB-xjwGQcvlDfQl-GKiN6fssotaRzxhevA9M7IMrNXePIuE8GcCMPQ==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiI2YUhrOVl6cWtYOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:35.833 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"COUNTER_CREATE","data":{"number":20}}
+16:32:35.833 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"COUNTER_CREATE","data":{"number":20}}
+16:32:35.985 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=140&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:35 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=iQdM1GAR5CmAKkzMHZh1pPuio1dg8kRIbSbo7J_rTnQfG40NJVrb9Q==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiIwQTNtMGtNSzRfOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJjb3VudGVyOmJRMS1NWHBESlRXZDgxY2o2cmt2Q09mTEkyeHJFdHZyX28ydGZ0X2huSjRAMTc0OTE1MTk1NTk4MyJdfQo=
+16:32:35.986 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=140&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:35 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=iQdM1GAR5CmAKkzMHZh1pPuio1dg8kRIbSbo7J_rTnQfG40NJVrb9Q==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiIwQTNtMGtNSzRfOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJjb3VudGVyOmJRMS1NWHBESlRXZDgxY2o2cmt2Q09mTEkyeHJFdHZyX28ydGZ0X2huSjRAMTc0OTE1MTk1NTk4MyJdfQo=
+16:32:35.986 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"referencedCounter","value":{"objectId":"counter:bQ1-MXpDJTWd81cj6rkvCOfLI2xrEtvr_o2tft_hnJ4@1749151955983"}}}
+16:32:35.986 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"referencedCounter","value":{"objectId":"counter:bQ1-MXpDJTWd81cj6rkvCOfLI2xrEtvr_o2tft_hnJ4@1749151955983"}}}
+16:32:36.144 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:36 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=kblDHuw7uHUNrqOYju3Ydn5uvnhP6EmKGM76wb5FxoL4Bd2-vz3Whw==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJhYmtsdVNmS2RxOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:36.144 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:36 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=kblDHuw7uHUNrqOYju3Ydn5uvnhP6EmKGM76wb5FxoL4Bd2-vz3Whw==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJhYmtsdVNmS2RxOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:36.145 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_CREATE"}
+16:32:36.145 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_CREATE"}
+16:32:36.668 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=136&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5979.us-east-1-A.i-0925e949ba35902d9.e7df0SUhwIQAeC&date=Thu, 05 Jun 2025 19:32:36 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=HVfL0ApiAxoMvzXwmzBs4364lXaLN0tAhA7WLgUYTuS1qtRvE7-AVQ==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJFSFNjQnVtZnJROjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJtYXA6THR1dF9BZVc0VElWalIwWjh6RnVxVDNQenViWXhXTU9TNW5FcWtiQjFxMEAxNzQ5MTUxOTU2NjY1Il19Cg==
+16:32:36.669 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=136&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5979.us-east-1-A.i-0925e949ba35902d9.e7df0SUhwIQAeC&date=Thu, 05 Jun 2025 19:32:36 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=HVfL0ApiAxoMvzXwmzBs4364lXaLN0tAhA7WLgUYTuS1qtRvE7-AVQ==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJFSFNjQnVtZnJROjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJtYXA6THR1dF9BZVc0VElWalIwWjh6RnVxVDNQenViWXhXTU9TNW5FcWtiQjFxMEAxNzQ5MTUxOTU2NjY1Il19Cg==
+16:32:36.669 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"emptyMap","value":{"objectId":"map:Ltut_AeW4TIVjR0Z8zFuqT3PzubYxWMOS5nEqkbB1q0@1749151956665"}}}
+16:32:36.669 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"emptyMap","value":{"objectId":"map:Ltut_AeW4TIVjR0Z8zFuqT3PzubYxWMOS5nEqkbB1q0@1749151956665"}}}
+16:32:36.833 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5979.us-east-1-A.i-0925e949ba35902d9.e7df0SUhwIQAeC&date=Thu, 05 Jun 2025 19:32:36 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=QTsIK9_ZrXwBK1vvNGNWfMaM3-CNktu5ORUgbSlleukwWneshBwGnA==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJCa3VoQ0NpbkRsOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:36.834 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5979.us-east-1-A.i-0925e949ba35902d9.e7df0SUhwIQAeC&date=Thu, 05 Jun 2025 19:32:36 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=QTsIK9_ZrXwBK1vvNGNWfMaM3-CNktu5ORUgbSlleukwWneshBwGnA==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJCa3VoQ0NpbkRsOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:36.835 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_CREATE","data":{"counterKey":{"objectId":"counter:bQ1-MXpDJTWd81cj6rkvCOfLI2xrEtvr_o2tft_hnJ4@1749151955983"}}}
+16:32:36.835 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_CREATE","data":{"counterKey":{"objectId":"counter:bQ1-MXpDJTWd81cj6rkvCOfLI2xrEtvr_o2tft_hnJ4@1749151955983"}}}
+16:32:37.360 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=136&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5979.us-east-1-A.i-0925e949ba35902d9.e7df0SUhwIQAeC&date=Thu, 05 Jun 2025 19:32:37 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=QHp2GH2p-n6LxMtSAQ4r9-wk7WSkSVeATlJyUmrL0nDmh-fY-YsDgg==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJidUQ5ZEloTDk2OjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJtYXA6ckhIYXVaM3JZYU9ralkySTIxOEtyZGNoRzFPS1EtSUU0OExFVUdyeXFYc0AxNzQ5MTUxOTU3MzQ0Il19Cg==
+16:32:37.360 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=136&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5979.us-east-1-A.i-0925e949ba35902d9.e7df0SUhwIQAeC&date=Thu, 05 Jun 2025 19:32:37 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=QHp2GH2p-n6LxMtSAQ4r9-wk7WSkSVeATlJyUmrL0nDmh-fY-YsDgg==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJidUQ5ZEloTDk2OjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJtYXA6ckhIYXVaM3JZYU9ralkySTIxOEtyZGNoRzFPS1EtSUU0OExFVUdyeXFYc0AxNzQ5MTUxOTU3MzQ0Il19Cg==
+16:32:37.360 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"referencedMap","value":{"objectId":"map:rHHauZ3rYaOkjY2I218KrdchG1OKQ-IE48LEUGryqXs@1749151957344"}}}
+16:32:37.361 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"referencedMap","value":{"objectId":"map:rHHauZ3rYaOkjY2I218KrdchG1OKQ-IE48LEUGryqXs@1749151957344"}}}
+16:32:37.518 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:37 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=PBrS4uL0Q6hZy3nJ2lQIxZdN5hwSYSHrNgAdHUqJN4IqED-8RK5cuA==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJ1VkFFWWgxbmZjOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:37.518 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:37 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=PBrS4uL0Q6hZy3nJ2lQIxZdN5hwSYSHrNgAdHUqJN4IqED-8RK5cuA==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJ1VkFFWWgxbmZjOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:37.518 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_CREATE","data":{"stringKey":{"string":"stringValue"},"emptyStringKey":{"string":""},"bytesKey":{"bytes":"eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9"},"emptyBytesKey":{"bytes":""},"numberKey":{"number":1},"zeroKey":{"number":0},"trueKey":{"boolean":true},"falseKey":{"boolean":false},"mapKey":{"objectId":"map:rHHauZ3rYaOkjY2I218KrdchG1OKQ-IE48LEUGryqXs@1749151957344"}}}
+16:32:37.518 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_CREATE","data":{"stringKey":{"string":"stringValue"},"emptyStringKey":{"string":""},"bytesKey":{"bytes":"eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9"},"emptyBytesKey":{"bytes":""},"numberKey":{"number":1},"zeroKey":{"number":0},"trueKey":{"boolean":true},"falseKey":{"boolean":false},"mapKey":{"objectId":"map:rHHauZ3rYaOkjY2I218KrdchG1OKQ-IE48LEUGryqXs@1749151957344"}}}
+16:32:37.679 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=136&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5979.us-east-1-A.i-0925e949ba35902d9.e7df0SUhwIQAeC&date=Thu, 05 Jun 2025 19:32:37 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=NOFakCpUPFUHUulw0aImJW1yKKLCuo3xtxTxKKAnHUPHxpHrqEW4Dw==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJnSl9McVAzbTNWOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJtYXA6TDZNRG5qODV3a3hwaHNHM3puVm5xdHR6WERFNHBlUmstd19NOWNyVEVuVUAxNzQ5MTUxOTU3NjczIl19Cg==
+16:32:37.679 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=136&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5979.us-east-1-A.i-0925e949ba35902d9.e7df0SUhwIQAeC&date=Thu, 05 Jun 2025 19:32:37 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=NOFakCpUPFUHUulw0aImJW1yKKLCuo3xtxTxKKAnHUPHxpHrqEW4Dw==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJnSl9McVAzbTNWOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJtYXA6TDZNRG5qODV3a3hwaHNHM3puVm5xdHR6WERFNHBlUmstd19NOWNyVEVuVUAxNzQ5MTUxOTU3NjczIl19Cg==
+16:32:37.680 Ably: Resource.post(): Sending; /channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"valuesMap","value":{"objectId":"map:L6MDnj85wkxphsG3znVnqttzXDE4peRk-w_M9crTEnU@1749151957673"}}}
+16:32:37.680 Ably: Http.post(): Sending; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Body: {"operation":"MAP_SET","objectId":"root","data":{"key":"valuesMap","value":{"objectId":"map:L6MDnj85wkxphsG3znVnqttzXDE4peRk-w_M9crTEnU@1749151957673"}}}
+16:32:38.192 Ably: Http.post(): Received; https://sandbox-rest.ably.io:443/channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:38 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=uU3zGzHarTPUcweglCfepU1n5165tv1snmAZnt_VH61cT_8QnerUtA==; StatusCode: 201; Body (Base64): eyJtZXNzYWdlSWQiOiJNay1aa19Jd2ZUOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+16:32:38.193 Ably: Resource.post(): Received; /channels/objects_fixtures/objects?; Headers: content-type=application/json&content-length=79&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0&date=Thu, 05 Jun 2025 19:32:38 GMT&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=uU3zGzHarTPUcweglCfepU1n5165tv1snmAZnt_VH61cT_8QnerUtA==; StatusCode: 201; Body:  (Base64): eyJtZXNzYWdlSWQiOiJNay1aa19Jd2ZUOjAiLCJjaGFubmVsIjoib2JqZWN0c19maXh0dXJlcyIsIm9iamVjdElkcyI6WyJyb290Il19Cg==
+    Realtime with Objects plugin
+start of test
+16:32:38.197 Ably: BaseClient(): initialized with clientOptions {
+  environment: 'sandbox',
+  realtimeHost: undefined,
+  restHost: undefined,
+  port: 80,
+  tlsPort: 443,
+  tls: true,
+  logLevel: '4',
+  getLogs: [Function: getLogs],
+  flushLogs: [Function: flushLogs],
+  logHandler: [Function: logHandler],
+  clientId: 'Client 1',
+  plugins: {
+    Rest: [class Rest],
+    Crypto: [class Crypto2] { CipherParams: [class CipherParams] },
+    MsgPack: { encode: [Function (anonymous)], decode: [Function: decode2] },
+    RealtimePresence: {
+      RealtimePresence: [class RealtimePresence extends EventEmitter],
+      PresenceMessage: [class _PresenceMessage extends BaseMessage],
+      WirePresenceMessage: [class _WirePresenceMessage extends BaseMessage]
+    },
+    Annotations: {
+      Annotation: [class _Annotation extends BaseMessage],
+      WireAnnotation: [class _WireAnnotation extends BaseMessage],
+      RealtimeAnnotations: [class RealtimeAnnotations],
+      RestAnnotations: [class RestAnnotations]
+    },
+    WebSocketTransport: [class WebSocketTransport extends Transport],
+    MessageInteractions: [class FilteredSubscriptions],
+    Objects: { ObjectMessage: [Getter], Objects: [Getter], default: [Getter] }
+  },
+  key: '_tmp_aWQ6Uw.LH4z4Q:zmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI'
+}
+16:32:38.197 Ably: BaseClient(): started; version = 2.9.0
+16:32:38.198 Ably: Auth(): anonymous, using basic auth
+16:32:38.198 Ably: Realtime(): 
+16:32:38.200 Ably: Realtime.ConnectionManager(): started
+16:32:38.200 Ably: Realtime.ConnectionManager(): requested transports = [web_socket]
+16:32:38.200 Ably: Realtime.ConnectionManager(): available transports = [web_socket]
+16:32:38.200 Ably: Realtime.ConnectionManager(): http hosts = [sandbox-rest.ably.io]
+16:32:38.200 Ably: Realtime.connect(): 
+16:32:38.200 Ably: Connection.connect(): 
+16:32:38.201 Ably: ConnectionManager.requestState(): requested state: connecting; current state: initialized
+16:32:38.201 Ably: ConnectionManager.cancelTransitionTimer(): 
+16:32:38.201 Ably: Connection state: connecting
+16:32:38.201 Ably: ConnectionManager.enactStateChange: setting new state: connecting; reason = undefined
+16:32:38.201 Ably: RealtimeChannel(): started; name = 17613406920717556
+16:32:38.203 Ably: RealtimePresence.enterClient(): channel = 17613406920717556, id = undefined, client = (implicit) Client 1
+16:32:38.203 Ably: ConnectionManager.startConnect(): starting connection
+16:32:38.203 Ably: ConnectionManager.startTransitionTimer(): transitionState: connecting
+16:32:38.203 Ably: ConnectionManager.getTransportParams(): Transport params = [mode=clean,format=msgpack]
+16:32:38.204 Ably: ConnectionManager.connectWs(): undefined
+16:32:38.204 Ably: ConnectionManager.tryTransportWithFallbacks(): web_socket
+16:32:38.204 Ably: ConnectionManager.tryATransport(): trying web_socket
+16:32:38.204 Ably: WebSocketTransport.connect(): starting
+16:32:38.205 Ably: WebSocketTransport.connect(): uri: wss://sandbox-realtime.ably.io:443/
+16:32:38.205 Ably: WebSocketTransport.connect(): authParams: key: _tmp_aWQ6Uw.LH4z4Q:zmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI; err: null
+16:32:38.209 Ably: RealtimeChannel.requestState: name = 17613406920717556, state = attaching
+16:32:38.210 Ably: RealtimeChannel.notifyState: name = 17613406920717556, current state = initialized, notifying state attaching
+16:32:38.210 Ably: Channel state for channel "17613406920717556": attaching
+16:32:38.210 Ably: RealtimeChannel.checkPendingState: sendEvents is false; state is connecting
+16:32:38.791 Ably: WebSocketTransport.onWsOpen(): opened WebSocket
+16:32:38.791 Ably: Transport.tryConnect(): viable transport WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_aWQ6Uw.LH4z4Q%3AzmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI&clientId=Client%201&format=msgpack&heartbeats=false&v=3&agent=ably-js%2F2.9.0%20nodejs%2F20.17.0
+16:32:38.792 Ably: ConnectionManager.tryATransport(): viable transport web_socket; setting pending
+16:32:38.792 Ably: ConnectionManager.setTransportPending(): transport = WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_aWQ6Uw.LH4z4Q%3AzmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI&clientId=Client%201&format=msgpack&heartbeats=false&v=3&agent=ably-js%2F2.9.0%20nodejs%2F20.17.0; mode = clean
+16:32:38.795 Ably: WebSocketTransport.onWsData(): data received; length = 318; type = object
+16:32:38.797 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=CONNECTED; connectionId=d2NOCFfdaG]; connectionId = undefined
+16:32:38.797 Ably: ConnectionManager.activateTransport(): transport = WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_aWQ6Uw.LH4z4Q%3AzmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI&clientId=Client%201&format=msgpack&heartbeats=false&v=3&agent=ably-js%2F2.9.0%20nodejs%2F20.17.0
+16:32:38.797 Ably: ConnectionManager.activateTransport(): connectionId =  d2NOCFfdaG
+16:32:38.797 Ably: ConnectionManager.activateTransport(): connectionDetails =  {"clientId":"Client 1","connectionKey":"e7dThqrJgoL7e0!d2NOCFfdaGARyZVMp6rdbW-1e53f","maxMessageSize":16384,"maxInboundRate":250,"maxOutboundRate":100,"maxFrameSize":1468006,"serverId":"frontdoor.5e18.us-east-1-A.i-0b9b1e4ccfc742839.e7dThqrJgoL7e0","connectionStateTtl":120000,"maxIdleInterval":15000}
+16:32:38.797 Ably: ConnectionManager.activateTransport(): current state = connecting
+16:32:38.798 Ably: ConnectionManager.setConnection(): New connectionId; reattaching any attached channels
+16:32:38.798 Ably: ConnectionManager.notifyState(): new state: connected
+16:32:38.798 Ably: ConnectionManager.cancelTransitionTimer(): 
+16:32:38.798 Ably: Connection state: connected
+16:32:38.798 Ably: ConnectionManager.enactStateChange: setting new state: connected; reason = undefined
+16:32:38.799 Ably: ConnectionManager.sendQueuedMessages(): sending 0 queued messages
+16:32:38.799 Ably: RealtimeChannel.checkPendingState: name = 17613406920717556, state = attaching
+16:32:38.799 Ably: RealtimeChannel.attachImpl(): sending ATTACH message
+16:32:38.799 Ably: ConnectionManager.send(): sending event
+16:32:38.800 Ably: Protocol.send(): sending msg; [ProtocolMessage; action=ATTACH; channel=17613406920717556; flags=PRESENCE,PUBLISH,SUBSCRIBE,PRESENCE_SUBSCRIBE,OBJECT_SUBSCRIBE,OBJECT_PUBLISH]
+16:32:38.987 Ably: WebSocketTransport.onWsData(): data received; length = 107; type = object
+16:32:38.988 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ATTACHED; channel=17613406920717556; channelSerial=01749151958965-000@e7drMCKjABpv1F01480724; flags=HAS_PRESENCE,HAS_OBJECTS,PRESENCE,PUBLISH,SUBSCRIBE,PRESENCE_SUBSCRIBE,OBJECT_SUBSCRIBE,OBJECT_PUBLISH]; connectionId = d2NOCFfdaG
+16:32:38.990 Ably: RealtimeChannel.setChannelSerial(): Updating channel serial; serial = 01749151958965-000@e7drMCKjABpv1F01480724; previous = undefined
+16:32:38.991 Ably: RealtimeChannel.notifyState: name = 17613406920717556, current state = attaching, notifying state attached
+16:32:38.991 Ably: RealtimePresence.onAttached(): channel = 17613406920717556, hasPresence = true
+16:32:38.991 Ably: PresenceMap.startSync(): channel = 17613406920717556; syncInProgress = false
+16:32:38.991 Ably: PresenceMap.setInProgress(): inProgress = true
+16:32:38.992 Ably: RealtimePresence.onAttached: sending 1 queued presence messages
+16:32:38.992 Ably: ConnectionManager.send(): sending event
+16:32:38.993 Ably: Protocol.send(): sending msg; [ProtocolMessage; action=PRESENCE; channel=17613406920717556; msgSerial=0; presence=[ [WirePresenceMessage; action=2] ]]
+16:32:38.994 Ably: Objects.onAttached(): channel=17613406920717556, hasObjects=true
+16:32:38.995 Ably: Channel state for channel "17613406920717556": attached
+16:32:38.995 Ably: RealtimeChannel.onAttached: activating channel; name = 17613406920717556
+16:32:39.040 Ably: WebSocketTransport.onWsData(): data received; length = 150; type = object
+16:32:39.042 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=OBJECT_SYNC; channel=17613406920717556; channelSerial=2dfee3f5:; state=[ [ObjectMessage; object={"objectId":"root","siteTimeserials":{},"tombstone":false,"map":{"entries":{},"semantics":0}}] ]]; connectionId = d2NOCFfdaG
+16:32:39.043 Ably: WebSocketTransport.onWsData(): data received; length = 73; type = object
+16:32:39.043 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=SYNC; channel=17613406920717556; channelSerial=e4ddd734:; presence=[  ]]; connectionId = d2NOCFfdaG
+16:32:39.046 Ably: RealtimePresence.setPresence(): received presence for 0 participants; syncChannelSerial = e4ddd734:
+16:32:39.046 Ably: PresenceMap.startSync(): channel = 17613406920717556; syncInProgress = true
+16:32:39.046 Ably: PresenceMap.endSync(): channel = 17613406920717556; syncInProgress = true
+16:32:39.046 Ably: PresenceMap.setInProgress(): inProgress = false
+16:32:39.146 Ably: WebSocketTransport.onWsData(): data received; length = 268; type = object
+16:32:39.148 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=PRESENCE; id=d2NOCFfdaG:0; channel=17613406920717556; channelSerial=01749151959146-000@e7drMCKjABpv1F01480724; connectionId=d2NOCFfdaG; count=8; timestamp=1749151959146; presence=[ [WirePresenceMessage; id=d2NOCFfdaG:0:0; timestamp=1749151959146; clientId=Client 1; connectionId=d2NOCFfdaG; action=2] ]]; connectionId = d2NOCFfdaG
+16:32:39.148 Ably: RealtimeChannel.setChannelSerial(): Updating channel serial; serial = 01749151959146-000@e7drMCKjABpv1F01480724; previous = 01749151958965-000@e7drMCKjABpv1F01480724
+16:32:39.150 Ably: RealtimePresence.setPresence(): received presence for 1 participants; syncChannelSerial = undefined
+16:32:39.151 Ably: WebSocketTransport.onWsData(): data received; length = 39; type = object
+16:32:39.151 Ably: Transport.onProtocolMessage(): received on web_socket: [ProtocolMessage; action=ACK; count=1; msgSerial=0]; connectionId = d2NOCFfdaG
+16:32:39.152 Ably: Protocol.onAck(): serial = 0; count = 1
+16:32:39.152 Ably: MessageQueue.completeMessages(): serial = 0; count = 1
+16:32:39.155 Ably: BaseClient(): initialized with clientOptions {
+  environment: 'sandbox',
+  realtimeHost: undefined,
+  restHost: undefined,
+  port: 80,
+  tlsPort: 443,
+  tls: true,
+  logLevel: '4',
+  getLogs: [Function: getLogs],
+  flushLogs: [Function: flushLogs],
+  logHandler: [Function: logHandler],
+  key: '_tmp_aWQ6Uw.LH4z4Q:zmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI',
+  plugins: {
+    Rest: [class Rest],
+    Crypto: [class Crypto2] { CipherParams: [class CipherParams] },
+    MsgPack: { encode: [Function (anonymous)], decode: [Function: decode2] },
+    Annotations: {
+      Annotation: [class _Annotation extends BaseMessage],
+      WireAnnotation: [class _WireAnnotation extends BaseMessage],
+      RealtimeAnnotations: [class RealtimeAnnotations],
+      RestAnnotations: [class RestAnnotations]
+    }
+  }
+}
+16:32:39.156 Ably: BaseClient(): started; version = 2.9.0
+16:32:39.156 Ably: Auth(): anonymous, using basic auth
+16:32:39.156 Ably: RestChannel(): started; name = 17613406920717556
+16:32:39.158 Ably: Resource.get(): Sending MsgPack Decoding Error: TypeError: Cannot read properties of null (reading 'length')
+16:32:39.158 Ably: Resource.get(): Sending; /channels/17613406920717556?envelope=msgpack; Body: null
+16:32:39.158 Ably: Http.get(): Sending; https://sandbox-rest.ably.io:443/channels/17613406920717556?envelope=msgpack; Body: null
+16:32:39.326 Ably: Http.get(): Received; https://sandbox-rest.ably.io:443/channels/17613406920717556?envelope=msgpack; Headers: content-type=application/x-msgpack&content-length=312&connection=keep-alive&access-control-allow-credentials=true&access-control-allow-origin=*&access-control-expose-headers=Link,Transfer-Encoding,Content-Length,X-Ably-ErrorCode,X-Ably-ErrorMessage,X-Ably-ServerId,X-Ably-Cluster,Server,X-Amz-Cf-Pop&date=Thu, 05 Jun 2025 19:32:39 GMT&vary=Origin&x-ably-cluster=sandbox&x-ably-serverid=frontend.4080.1.us-east-1-A.i-0470a72cd0343c6df.e7dlktSWABpv59&x-robots-tag=noindex&x-cache=Miss from cloudfront&via=1.1 2b8eb2197d483eb73a5419f545e62c0c.cloudfront.net (CloudFront)&x-amz-cf-pop=GIG51-P2&x-amz-cf-id=qi-XnD7AIJzyJri7bCkTv84rL6CfkZavqwfFiKW3RO7VDW_FaHytJA==; StatusCode: 200; Body (Base64): g6pzdGF0dXNDb2RlzMiocmVzcG9uc2WDpG5hbWWxMTc2MTM0MDY5MjA3MTc1NTapY2hhbm5lbElksTE3NjEzNDA2OTIwNzE3NTU2pnN0YXR1c4KoaXNBY3RpdmXDqW9jY3VwYW5jeYGnbWV0cmljc4irY29ubmVjdGlvbnMCqnB1Ymxpc2hlcnMBq3N1YnNjcmliZXJzArNwcmVzZW5jZUNvbm5lY3Rpb25zAa9wcmVzZW5jZU1lbWJlcnMBs3ByZXNlbmNlU3Vic2NyaWJlcnMBsW9iamVjdFN1YnNjcmliZXJzArBvYmplY3RQdWJsaXNoZXJzAadoZWFkZXJzgqxDb250ZW50LVR5cGW1YXBwbGljYXRpb24veC1tc2dwYWNrrFgtUm9ib3RzLVRhZ6dub2luZGV4
+16:32:39.327 Ably: Resource.get(): Received; /channels/17613406920717556?envelope=msgpack; Headers: Content-Type=application/x-msgpack&X-Robots-Tag=noindex; StatusCode: 200; Body: : {
+  name: '17613406920717556',
+  channelId: '17613406920717556',
+  status: { isActive: true, occupancy: { metrics: [Object] } }
+}
+channelDetails.status.occupancy.metrics {
+  connections: 2,
+  publishers: 1,
+  subscribers: 2,
+  presenceConnections: 1,
+  presenceMembers: 1,
+  presenceSubscribers: 1,
+  objectSubscribers: 2,
+  objectPublishers: 1
+}
+16:32:39.328 Ably: Realtime.close(): 
+16:32:39.328 Ably: Connection.close(): connectionKey = e7dThqrJgoL7e0!d2NOCFfdaGARyZVMp6rdbW-1e53f
+16:32:39.328 Ably: ConnectionManager.requestState(): requested state: closing; current state: connected
+16:32:39.328 Ably: ConnectionManager.cancelTransitionTimer(): 
+16:32:39.329 Ably: Connection state: closing; reason: [_ErrorInfo: Connection closing; statusCode=400; code=80017; see https://help.ably.io/error/80017 ]
+16:32:39.329 Ably: ConnectionManager.enactStateChange: setting new state: closing; reason = Connection closing
+16:32:39.329 Ably: ConnectionManager.closeImpl(): closing connection
+16:32:39.329 Ably: ConnectionManager.startTransitionTimer(): transitionState: closing
+16:32:39.329 Ably: ConnectionManager.closeImpl(): Closing active transport: WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_aWQ6Uw.LH4z4Q%3AzmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI&clientId=Client%201&format=msgpack&heartbeats=false&v=3&agent=ably-js%2F2.9.0%20nodejs%2F20.17.0
+16:32:39.329 Ably: Transport.requestClose(): 
+16:32:39.331 Ably: ConnectionManager.deactivateTransport(): transport = WebSocketTransport; uri=wss://sandbox-realtime.ably.io:443/?key=_tmp_aWQ6Uw.LH4z4Q%3AzmJpDgvI9QFwGNbChczXEGhoxM2-EfvgofFUqAbNJsI&clientId=Client%201&format=msgpack&heartbeats=false&v=3&agent=ably-js%2F2.9.0%20nodejs%2F20.17.0
+16:32:39.331 Ably: ConnectionManager.deactivateTransport(): state = closed; was active
+16:32:39.332 Ably: ConnectionManager.deactivateTransport(): reason =  Connection closed
+16:32:39.332 Ably: ConnectionManager.deactivateTransport(): Getting, clearing, and requeuing 0 pending messages
+16:32:39.332 Ably: MessageQueue.clear(): clearing 0 messages
+16:32:39.332 Ably: ConnectionManager.notifyState(): new state: closed
+16:32:39.332 Ably: ConnectionManager.cancelTransitionTimer(): 
+16:32:39.332 Ably: Connection state: closed; reason: [_ErrorInfo: Connection closed; statusCode=400; code=80017; see https://help.ably.io/error/80017 ]
+16:32:39.333 Ably: ConnectionManager.enactStateChange: setting new state: closed; reason = Connection closed
+16:32:39.333 Ably: RealtimeChannel.notifyState: name = 17613406920717556, current state = attached, notifying state detached
+16:32:39.333 Ably: PresenceMap.setInProgress(): inProgress = false
+16:32:39.333 Ably: PresenceMap.setInProgress(): inProgress = false
+16:32:39.333 Ably: Channel state for channel "17613406920717556": detached; reason: [_ErrorInfo: Connection closed; statusCode=400; code=80017; see https://help.ably.io/error/80017 ]
+16:32:39.333 Ably: WebSocketTransport.dispose(): 
+16:32:39.334 Ably: ConnectionManager.notifyState(): new state: closed
+      ✓ metrics (1139ms)
+16:32:39.335 Ably: ConnectionManager.disconnectAllTransports(): Disconnecting all transports
+16:32:39.335 Ably: ConnectionManager.disconnectAllTransports(): Disconnecting proposed transport: undefined
+16:32:39.335 Ably: WebSocketTransport.dispose(): closing websocket
+16:32:39.337 Ably: Realtime.close(): 
+16:32:39.337 Ably: Connection.close(): connectionKey = undefined
+16:32:39.337 Ably: ConnectionManager.requestState(): requested state: closing; current state: closed
+16:32:39.337 Ably: ConnectionManager.cancelTransitionTimer(): 
+
+16:32:39.484 Ably: WebSocketTransport.onWsClose(): Cleanly closed WebSocket
+Test App _tmp_aWQ6Uw has been torn down
+
+  1 passing (15s)
+

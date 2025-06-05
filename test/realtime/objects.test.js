@@ -280,6 +280,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         expectInstanceOf(channel.objects, 'Objects');
       });
 
+      it.only('metrics', async function() {
+          console.log("start of test");
+          const helper = this.test.helper;
+          const realtime = RealtimeWithObjects(helper, { clientId: "Client 1" });
+          const channelName = Helper.randomString();
+          const realtimeChannel = realtime.channels.get(channelName, { modes: ['SUBSCRIBE', 'PUBLISH', 'PRESENCE_SUBSCRIBE', 'PRESENCE', 'OBJECT_PUBLISH', 'OBJECT_SUBSCRIBE'] });
+          await realtimeChannel.presence.enter();
+
+          const rest = helper.AblyRest()
+          const restChannel = rest.channels.get(channelName);
+
+          const channelDetails = await restChannel.status();
+          console.log("channelDetails.status.occupancy.metrics", channelDetails.status.occupancy.metrics);
+
+          realtime.close();
+      })
+
       /** @nospec */
       it('getRoot() returns LiveMap instance', async function () {
         const helper = this.test.helper;
