@@ -96,6 +96,7 @@ class BaseRealtime extends BaseClient {
 
 class Channels extends EventEmitter {
   realtime: BaseRealtime;
+  // RSN2
   all: Record<string, RealtimeChannel>;
 
   constructor(realtime: BaseRealtime) {

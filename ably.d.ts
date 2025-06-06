@@ -3087,6 +3087,12 @@ export declare interface Channels<T> {
    * @param name - The channel name.
    */
   release(name: string): void;
+  /**
+   * All of the channels that exist in this `Channels` object.
+   *
+   * Channels are added here when created using {@link get}, and removed when released using {@link release}.
+   */
+  all: Record<string, T>;
 }
 
 /** The summary entry for aggregated annotations that use the distinct.v1
