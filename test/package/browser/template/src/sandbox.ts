@@ -5,7 +5,7 @@ export async function createSandboxAblyAPIKey(withOptions?: object) {
     ...testAppSetup.post_apps,
     ...(withOptions ?? {}),
   };
-  const response = await fetch('https://sandbox-rest.ably.io/apps', {
+  const response = await fetch('https://sandbox.realtime.ably-nonprod.net/apps', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(postData),
