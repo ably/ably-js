@@ -1,7 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import { ObjectMessage, ObjectOperation, ObjectState } from './objectmessage';
-import { Objects } from './objects';
+import { RealtimeObjects } from './realtimeobjects';
 
 export enum LiveObjectSubscriptionEvent {
   updated = 'updated',
@@ -62,7 +62,7 @@ export abstract class LiveObject<
   private _tombstonedAt: number | undefined;
 
   protected constructor(
-    protected _objects: Objects,
+    protected _objects: RealtimeObjects,
     objectId: string,
   ) {
     this._client = this._objects.getClient();
