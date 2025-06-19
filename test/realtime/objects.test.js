@@ -14,7 +14,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
   const createPM = Ably.makeProtocolMessageFromDeserialized({ ObjectsPlugin });
   const objectsFixturesChannel = 'objects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
-  const gcIntervalOriginal = ObjectsPlugin.Objects._DEFAULTS.gcInterval;
+  const gcIntervalOriginal = ObjectsPlugin.RealtimeObjects._DEFAULTS.gcInterval;
 
   function RealtimeWithObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { Objects: ObjectsPlugin } });
@@ -272,11 +272,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
     describe('Realtime with Objects plugin', () => {
       /** @nospec */
-      it("returns Objects class instance when accessing channel's `objects` property", async function () {
+      it("returns RealtimeObjects class instance when accessing channel's `objects` property", async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper, { autoConnect: false });
         const channel = client.channels.get('channel');
-        expectInstanceOf(channel.objects, 'Objects');
+        expectInstanceOf(channel.objects, 'RealtimeObjects');
       });
 
       /** @nospec */
@@ -968,7 +968,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               ],
             });
 
-            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
             const obj = objects._objectsPool.get(counterId);
             expect(obj, 'Check object added to the pool OBJECT_SYNC sequence with "tombstone=true"').to.exist;
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
@@ -1011,7 +1011,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             const tsAfterMsg = Date.now();
 
-            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
             const obj = objects._objectsPool.get(counterId);
             expect(obj, 'Check object added to the pool OBJECT_SYNC sequence with "tombstone=true"').to.exist;
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
@@ -2154,7 +2154,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               state: [objectsHelper.objectDeleteOp({ objectId })],
             });
 
-            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
             const obj = objects._objectsPool.get(objectId);
             helper.recordPrivateApi('call.LiveObject.isTombstoned');
             expect(obj.isTombstoned()).to.equal(true, `Check object is tombstoned after OBJECT_DELETE`);
@@ -2192,7 +2192,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             const tsAfterMsg = Date.now();
 
-            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
             const obj = objects._objectsPool.get(objectId);
             helper.recordPrivateApi('call.LiveObject.isTombstoned');
             expect(obj.isTombstoned()).to.equal(true, `Check object is tombstoned after OBJECT_DELETE`);
@@ -3076,7 +3076,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'Objects.createCounter sends COUNTER_CREATE operation',
+          description: 'RealtimeObjects.createCounter sends COUNTER_CREATE operation',
           action: async (ctx) => {
             const { objects } = ctx;
 
@@ -3098,7 +3098,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveCounter created with Objects.createCounter can be assigned to the object tree',
+          description: 'LiveCounter created with RealtimeObjects.createCounter can be assigned to the object tree',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -3126,12 +3126,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'Objects.createCounter can return LiveCounter with initial value without applying CREATE operation',
+            'RealtimeObjects.createCounter can return LiveCounter with initial value without applying CREATE operation',
           action: async (ctx) => {
             const { objects, helper } = ctx;
 
             // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
-            helper.recordPrivateApi('replace.Objects.publish');
+            helper.recordPrivateApi('replace.RealtimeObjects.publish');
             objects.publish = () => {};
 
             const counter = await objects.createCounter(1);
@@ -3141,13 +3141,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'Objects.createCounter can return LiveCounter with initial value from applied CREATE operation',
+          description:
+            'RealtimeObjects.createCounter can return LiveCounter with initial value from applied CREATE operation',
           action: async (ctx) => {
             const { objects, objectsHelper, helper, channel } = ctx;
 
             // instead of sending CREATE op to the realtime, echo it immediately to the client
             // with forged initial value so we can check that counter gets initialized with a value from a CREATE op
-            helper.recordPrivateApi('replace.Objects.publish');
+            helper.recordPrivateApi('replace.RealtimeObjects.publish');
             objects.publish = async (objectMessages) => {
               const counterId = objectMessages[0].operation.objectId;
               // this should result execute regular operation application procedure and create an object in the pool with forged initial value
@@ -3171,12 +3172,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'initial value is not double counted for LiveCounter from Objects.createCounter when CREATE op is received',
+            'initial value is not double counted for LiveCounter from RealtimeObjects.createCounter when CREATE op is received',
           action: async (ctx) => {
             const { objects, objectsHelper, helper, channel } = ctx;
 
             // prevent publishing of ops to realtime so we can guarantee order of operations
-            helper.recordPrivateApi('replace.Objects.publish');
+            helper.recordPrivateApi('replace.RealtimeObjects.publish');
             objects.publish = () => {};
 
             // create counter locally, should have an initial value set
@@ -3200,7 +3201,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'Objects.createCounter throws on invalid input',
+          description: 'RealtimeObjects.createCounter throws on invalid input',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -3238,7 +3239,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'Objects.createMap sends MAP_CREATE operation with primitive values',
+          description: 'RealtimeObjects.createMap sends MAP_CREATE operation with primitive values',
           action: async (ctx) => {
             const { objects, helper } = ctx;
 
@@ -3292,7 +3293,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'Objects.createMap sends MAP_CREATE operation with reference to another LiveObject',
+          description: 'RealtimeObjects.createMap sends MAP_CREATE operation with reference to another LiveObject',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, objects } = ctx;
 
@@ -3333,7 +3334,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveMap created with Objects.createMap can be assigned to the object tree',
+          description: 'LiveMap created with RealtimeObjects.createMap can be assigned to the object tree',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -3362,12 +3363,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'Objects.createMap can return LiveMap with initial value without applying CREATE operation',
+          description:
+            'RealtimeObjects.createMap can return LiveMap with initial value without applying CREATE operation',
           action: async (ctx) => {
             const { objects, helper } = ctx;
 
             // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
-            helper.recordPrivateApi('replace.Objects.publish');
+            helper.recordPrivateApi('replace.RealtimeObjects.publish');
             objects.publish = () => {};
 
             const map = await objects.createMap({ foo: 'bar' });
@@ -3377,13 +3379,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'Objects.createMap can return LiveMap with initial value from applied CREATE operation',
+          description: 'RealtimeObjects.createMap can return LiveMap with initial value from applied CREATE operation',
           action: async (ctx) => {
             const { objects, objectsHelper, helper, channel } = ctx;
 
             // instead of sending CREATE op to the realtime, echo it immediately to the client
             // with forged initial value so we can check that map gets initialized with a value from a CREATE op
-            helper.recordPrivateApi('replace.Objects.publish');
+            helper.recordPrivateApi('replace.RealtimeObjects.publish');
             objects.publish = async (objectMessages) => {
               const mapId = objectMessages[0].operation.objectId;
               // this should result execute regular operation application procedure and create an object in the pool with forged initial value
@@ -3413,12 +3415,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'initial value is not double counted for LiveMap from Objects.createMap when CREATE op is received',
+            'initial value is not double counted for LiveMap from RealtimeObjects.createMap when CREATE op is received',
           action: async (ctx) => {
             const { objects, objectsHelper, helper, channel } = ctx;
 
             // prevent publishing of ops to realtime so we can guarantee order of operations
-            helper.recordPrivateApi('replace.Objects.publish');
+            helper.recordPrivateApi('replace.RealtimeObjects.publish');
             objects.publish = () => {};
 
             // create map locally, should have an initial value set
@@ -3452,7 +3454,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'Objects.createMap throws on invalid input',
+          description: 'RealtimeObjects.createMap throws on invalid input',
           action: async (ctx) => {
             const { root, objects } = ctx;
 
@@ -4666,12 +4668,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const connectionDetails = connectionManager.connectionDetails;
 
           // gcGracePeriod should be set after the initial connection
-          helper.recordPrivateApi('read.Objects.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
           expect(
             objects.gcGracePeriod,
             'Check gcGracePeriod is set after initial connection from connectionDetails.objectsGCGracePeriod',
           ).to.exist;
-          helper.recordPrivateApi('read.Objects.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
           expect(objects.gcGracePeriod).to.equal(
             connectionDetails.objectsGCGracePeriod,
             'Check gcGracePeriod is set to equal connectionDetails.objectsGCGracePeriod',
@@ -4697,7 +4699,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           // wait for next tick to ensure the connectionDetails event was processed by Objects plugin
           await new Promise((res) => nextTick(res));
 
-          helper.recordPrivateApi('read.Objects.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
           expect(objects.gcGracePeriod).to.equal(999, 'Check gcGracePeriod is updated on new CONNECTED event');
         }, client);
       });
@@ -4714,10 +4716,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const connectionManager = client.connection.connectionManager;
           const connectionDetails = connectionManager.connectionDetails;
 
-          helper.recordPrivateApi('read.Objects._DEFAULTS.gcGracePeriod');
-          helper.recordPrivateApi('write.Objects.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObjects._DEFAULTS.gcGracePeriod');
+          helper.recordPrivateApi('write.RealtimeObjects.gcGracePeriod');
           // set gcGracePeriod to a value different from the default
-          objects.gcGracePeriod = ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod + 1;
+          objects.gcGracePeriod = ObjectsPlugin.RealtimeObjects._DEFAULTS.gcGracePeriod + 1;
 
           const connectionDetailsPromise = connectionManager.once('connectiondetails');
 
@@ -4737,10 +4739,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           // wait for next tick to ensure the connectionDetails event was processed by Objects plugin
           await new Promise((res) => nextTick(res));
 
-          helper.recordPrivateApi('read.Objects._DEFAULTS.gcGracePeriod');
-          helper.recordPrivateApi('read.Objects.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObjects._DEFAULTS.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
           expect(objects.gcGracePeriod).to.equal(
-            ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod,
+            ObjectsPlugin.RealtimeObjects._DEFAULTS.gcGracePeriod,
             'Check gcGracePeriod is set to a default value if connectionDetails.objectsGCGracePeriod is missing',
           );
         }, client);
@@ -4762,7 +4764,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
             await counterCreatedPromise;
 
-            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
             expect(objects._objectsPool.get(objectId), 'Check object exists in the pool after creation').to.exist;
 
             // inject OBJECT_DELETE for the object. this should tombstone the object and make it inaccessible to the end user, but still keep it in memory in the local pool
@@ -4773,12 +4775,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               state: [objectsHelper.objectDeleteOp({ objectId })],
             });
 
-            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
             expect(
               objects._objectsPool.get(objectId),
               'Check object exists in the pool immediately after OBJECT_DELETE',
             ).to.exist;
-            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
             helper.recordPrivateApi('call.LiveObject.isTombstoned');
             expect(objects._objectsPool.get(objectId).isTombstoned()).to.equal(
               true,
@@ -4789,7 +4791,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await waitForGCCycles(2);
 
             // object should be removed from the local pool entirely now, as the GC grace period has passed
-            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
             expect(
               objects._objectsPool.get(objectId),
               'Check object exists does not exist in the pool after the GC grace period expiration',
@@ -4850,8 +4852,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       /** @nospec */
       forScenarios(this, tombstonesGCScenarios, async function (helper, scenario, clientOptions, channelName) {
         try {
-          helper.recordPrivateApi('write.Objects._DEFAULTS.gcInterval');
-          ObjectsPlugin.Objects._DEFAULTS.gcInterval = 500;
+          helper.recordPrivateApi('write.RealtimeObjects._DEFAULTS.gcInterval');
+          ObjectsPlugin.RealtimeObjects._DEFAULTS.gcInterval = 500;
 
           const objectsHelper = new ObjectsHelper(helper);
           const client = RealtimeWithObjects(helper, clientOptions);
@@ -4863,9 +4865,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await channel.attach();
             const root = await objects.getRoot();
 
-            helper.recordPrivateApi('read.Objects.gcGracePeriod');
+            helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
             const gcGracePeriodOriginal = objects.gcGracePeriod;
-            helper.recordPrivateApi('write.Objects.gcGracePeriod');
+            helper.recordPrivateApi('write.RealtimeObjects.gcGracePeriod');
             objects.gcGracePeriod = 250;
 
             // helper function to spy on the GC interval callback and wait for a specific number of GC cycles.
@@ -4874,9 +4876,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               const onGCIntervalOriginal = objects._objectsPool._onGCInterval;
               let gcCalledTimes = 0;
               return new Promise((resolve) => {
-                helper.recordPrivateApi('replace.Objects._objectsPool._onGCInterval');
+                helper.recordPrivateApi('replace.RealtimeObjects._objectsPool._onGCInterval');
                 objects._objectsPool._onGCInterval = function () {
-                  helper.recordPrivateApi('call.Objects._objectsPool._onGCInterval');
+                  helper.recordPrivateApi('call.RealtimeObjects._objectsPool._onGCInterval');
                   onGCIntervalOriginal.call(this);
 
                   gcCalledTimes++;
@@ -4899,12 +4901,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForGCCycles,
             });
 
-            helper.recordPrivateApi('write.Objects.gcGracePeriod');
+            helper.recordPrivateApi('write.RealtimeObjects.gcGracePeriod');
             objects.gcGracePeriod = gcGracePeriodOriginal;
           }, client);
         } finally {
-          helper.recordPrivateApi('write.Objects._DEFAULTS.gcInterval');
-          ObjectsPlugin.Objects._DEFAULTS.gcInterval = gcIntervalOriginal;
+          helper.recordPrivateApi('write.RealtimeObjects._DEFAULTS.gcInterval');
+          ObjectsPlugin.RealtimeObjects._DEFAULTS.gcInterval = gcIntervalOriginal;
         }
       });
 

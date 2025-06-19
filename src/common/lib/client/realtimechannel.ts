@@ -17,7 +17,7 @@ import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
 import type { WirePresenceMessage } from '../types/presencemessage';
-import type { Objects, WireObjectMessage } from 'plugins/objects';
+import type { RealtimeObjects, WireObjectMessage } from 'plugins/objects';
 import type RealtimePresence from './realtimepresence';
 import type RealtimeAnnotations from './realtimeannotations';
 
@@ -96,7 +96,7 @@ class RealtimeChannel extends EventEmitter {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
   _push?: PushChannel;
-  _objects?: Objects;
+  _objects?: RealtimeObjects;
 
   constructor(client: BaseRealtime, name: string, options?: API.ChannelOptions) {
     super(client.logger);
@@ -138,7 +138,7 @@ class RealtimeChannel extends EventEmitter {
     }
 
     if (client.options.plugins?.Objects) {
-      this._objects = new client.options.plugins.Objects.Objects(this);
+      this._objects = new client.options.plugins.Objects.RealtimeObjects(this);
     }
   }
 

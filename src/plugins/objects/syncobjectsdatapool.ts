@@ -1,7 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import { ObjectMessage } from './objectmessage';
-import { Objects } from './objects';
+import { RealtimeObjects } from './realtimeobjects';
 
 export interface LiveObjectDataEntry {
   objectMessage: ObjectMessage;
@@ -27,7 +27,7 @@ export class SyncObjectsDataPool {
   private _channel: RealtimeChannel;
   private _pool: Map<string, AnyDataEntry>;
 
-  constructor(private _objects: Objects) {
+  constructor(private _objects: RealtimeObjects) {
     this._client = this._objects.getClient();
     this._channel = this._objects.getChannel();
     this._pool = new Map<string, AnyDataEntry>();

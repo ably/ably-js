@@ -1653,7 +1653,7 @@ export type ErrorCallback = (error: ErrorInfo | null) => void;
 export type LiveObjectUpdateCallback<T> = (update: T) => void;
 
 /**
- * The callback used for the events emitted by {@link Objects}.
+ * The callback used for the events emitted by {@link RealtimeObjects}.
  */
 export type ObjectsEventCallback = () => void;
 
@@ -1663,7 +1663,7 @@ export type ObjectsEventCallback = () => void;
 export type LiveObjectLifecycleEventCallback = () => void;
 
 /**
- * A function passed to {@link Objects.batch} to group multiple Objects operations into a single channel message.
+ * A function passed to {@link RealtimeObjects.batch} to group multiple Objects operations into a single channel message.
  *
  * Must not be `async`.
  *
@@ -2264,7 +2264,7 @@ declare namespace ObjectsEvents {
 }
 
 /**
- * Describes the events emitted by a {@link Objects} object.
+ * Describes the events emitted by a {@link RealtimeObjects} object.
  */
 export type ObjectsEvent = ObjectsEvents.SYNCED | ObjectsEvents.SYNCING;
 
@@ -2286,7 +2286,7 @@ export type LiveObjectLifecycleEvent = LiveObjectLifecycleEvents.DELETED;
 /**
  * Enables the Objects to be read, modified and subscribed to for a channel.
  */
-export declare interface Objects {
+export declare interface RealtimeObjects {
   /**
    * Retrieves the root {@link LiveMap} object for Objects on a channel.
    *
@@ -2424,7 +2424,7 @@ export declare interface OnObjectsEventResponse {
  */
 export declare interface BatchContext {
   /**
-   * Mirrors the {@link Objects.getRoot} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
+   * Mirrors the {@link RealtimeObjects.getRoot} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
    *
    * @returns A {@link BatchContextLiveMap} object.
    * @experimental
@@ -2983,9 +2983,9 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   annotations: RealtimeAnnotations;
   /**
-   * An {@link Objects} object.
+   * A {@link RealtimeObjects} object.
    */
-  objects: Objects;
+  objects: RealtimeObjects;
   /**
    * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel.
    *

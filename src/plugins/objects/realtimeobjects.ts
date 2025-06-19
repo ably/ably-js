@@ -36,7 +36,7 @@ export interface OnObjectsEventResponse {
 
 export type BatchCallback = (batchContext: BatchContext) => void;
 
-export class Objects {
+export class RealtimeObjects {
   gcGracePeriod: number;
 
   private _client: BaseClient;
@@ -263,7 +263,7 @@ export class Objects {
     this._client.Logger.logAction(
       this._client.logger,
       this._client.Logger.LOG_MINOR,
-      'Objects.onAttached()',
+      'RealtimeObjects.onAttached()',
       `channel=${this._channel.name}, hasObjects=${hasObjects}`,
     );
 
@@ -432,7 +432,7 @@ export class Objects {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'Objects._applyObjectMessages()',
+          'RealtimeObjects._applyObjectMessages()',
           `object operation message is received without 'operation' field, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
@@ -461,7 +461,7 @@ export class Objects {
           this._client.Logger.logAction(
             this._client.logger,
             this._client.Logger.LOG_MAJOR,
-            'Objects._applyObjectMessages()',
+            'RealtimeObjects._applyObjectMessages()',
             `received unsupported action in object operation message: ${objectOperation.action}, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
           );
       }
