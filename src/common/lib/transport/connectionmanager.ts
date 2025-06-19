@@ -185,8 +185,7 @@ class ConnectionManager extends EventEmitter {
   baseTransport?: TransportName;
   webSocketTransportAvailable?: true;
   transportPreference: string | null;
-  httpHosts: string[];
-  wsHosts: string[];
+  domains: string[];
   activeProtocol: null | Protocol;
   pendingTransport?: Transport;
   proposedTransport?: Transport;
@@ -293,8 +292,7 @@ class ConnectionManager extends EventEmitter {
       this.baseTransport = TransportNames.Comet;
     }
 
-    this.httpHosts = Defaults.getHosts(options);
-    this.wsHosts = Defaults.getHosts(options, true);
+    this.domains = Defaults.getHosts(options);
     this.activeProtocol = null;
     this.host = null;
     this.lastAutoReconnectAttempt = null;
@@ -323,7 +321,7 @@ class ConnectionManager extends EventEmitter {
       this.logger,
       Logger.LOG_MICRO,
       'Realtime.ConnectionManager()',
-      'http hosts = [' + this.httpHosts + ']',
+      'http domains = [' + this.domains + ']',
     );
 
     if (!this.transports.length) {
@@ -835,7 +833,7 @@ class ConnectionManager extends EventEmitter {
        * setting an instance variable to force fallback hosts to be used (if
        * any) here. Bit of a kludge, but no real better alternatives without
        * rewriting the entire thing */
-      if (state === 'disconnected' && error && (error.statusCode as number) > 500 && this.httpHosts.length > 1) {
+      if (state === 'disconnected' && error && (error.statusCode as number) > 500 && this.domains.length > 1) {
         this.unpersistTransportPreference();
         this.forceFallbackHost = true;
         /* and try to connect again to try a fallback host without waiting for the usual 15s disconnectedRetryTimeout */
@@ -1533,7 +1531,7 @@ class ConnectionManager extends EventEmitter {
       this.notifyState({ state: this.states.connecting.failState as string, error: err });
     };
 
-    const candidateHosts = ws ? this.wsHosts.slice() : this.httpHosts.slice();
+    const candidateHosts = this.domains.slice();
 
     const hostAttemptCb = (fatal: boolean, transport: Transport) => {
       if (connectCount !== this.connectCounter) {

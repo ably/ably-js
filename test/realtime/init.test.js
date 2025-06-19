@@ -267,19 +267,27 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     });
 
     /**
-     * Check default httpHost selection.
+     * Check primary domain selection.
      * @specpartial RSC11 - tests only default value
      */
-    it('init_defaulthost', function (done) {
+    it('init_primary_domain', function (done) {
       const helper = this.test.helper;
       try {
         /* want to check the default host when no custom environment or custom
          * host set, so not using helpers.realtime this time, which will use a
          * test env */
-        var realtime = new Ably.Realtime({ key: 'not_a.real:key', autoConnect: false });
-        helper.recordPrivateApi('read.connectionManager.httpHosts');
-        var defaultHost = realtime.connection.connectionManager.httpHosts[0];
-        expect(defaultHost).to.equal('main.realtime.ably.net', 'Verify correct default rest host chosen');
+        const realtime = new Ably.Realtime({ key: 'not_a.real:key', autoConnect: false });
+        helper.recordPrivateApi('read.connectionManager.domains');
+        helper.recordPrivateApi('read.realtime.options.primaryDomain');
+        expect(realtime.options.primaryDomain).to.equal(
+          'main.realtime.ably.net',
+          'Verify correct primary domain chosen',
+        );
+        const primaryDomainOnDomainsList = realtime.connection.connectionManager.domains[0];
+        expect(primaryDomainOnDomainsList).to.equal(
+          'main.realtime.ably.net',
+          'Verify correct primary domain on the domains list',
+        );
         realtime.close();
         done();
       } catch (err) {
@@ -357,12 +365,12 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
           fallbackHosts: ['b', 'c', 'd', 'e'],
         });
         /* Note: uses internal knowledge of connectionManager */
-        helper.recordPrivateApi('read.connectionManager.httpHosts');
-        expect(realtime.connection.connectionManager.httpHosts.length).to.equal(
+        helper.recordPrivateApi('read.connectionManager.domains');
+        expect(realtime.connection.connectionManager.domains.length).to.equal(
           3,
           'Verify hosts list is the expected length',
         );
-        expect(realtime.connection.connectionManager.httpHosts[0]).to.equal('a', 'Verify given restHost is first');
+        expect(realtime.connection.connectionManager.domains[0]).to.equal('a', 'Verify given restHost is first');
         /* Replace chooseTransportForHost with a spy, then try calling
          * chooseHttpTransport to see what host is picked */
         helper.recordPrivateApi('replace.connectionManager.tryATransport');
@@ -486,7 +494,10 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
           var hosts = new Ably.Rest._Http()._getHosts(realtime);
           /* restHost rather than realtimeHost as that's what connectionManager
            * knows about; converted to realtimeHost by the websocketTransport */
-          expect(hosts[0]).to.equal(realtime.options.realtimeHost, 'Check connected realtime host is the first option');
+          expect(hosts[0]).to.equal(
+            realtime.options.primaryDomain,
+            'Check connected realtime host is the first option',
+          );
           expect(hosts.length).to.equal(4, 'Check also have three fallbacks');
         } catch (err) {
           helper.closeAndFinish(done, realtime, err);
@@ -499,7 +510,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     /** @specpartial RTN17e */
     it('init_fallbacks_once_connected_2', function (done) {
       const helper = this.test.helper;
-      var goodHost = helper.AblyRest().options.realtimeHost;
+      var goodHost = helper.AblyRest().options.primaryDomain;
       var realtime = helper.AblyRealtimeWithoutEndpoint({
         httpMaxRetryCount: 3,
         restHost: 'a',

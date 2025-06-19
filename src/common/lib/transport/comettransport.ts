@@ -77,7 +77,7 @@ abstract class CometTransport extends Transport {
     Transport.prototype.connect.call(this);
     const params = this.params;
     const options = params.options;
-    const host = Defaults.getHost(options, params.host);
+    const host = params.host || options.primaryDomain;
     const port = Defaults.getPort(options);
     const cometScheme = options.tls ? 'https://' : 'http://';
 

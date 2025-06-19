@@ -14,7 +14,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
           done(err);
           return;
         }
-        goodHost = helper.AblyRest().options.restHost;
+        goodHost = helper.AblyRest().options.primaryDomain;
         done();
       });
     });

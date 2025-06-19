@@ -38,9 +38,9 @@ type CompleteDefaults = IDefaults & {
   version: string;
   protocolVersion: number;
   agent: string;
-  getHost(options: ClientOptions, host?: string | null, ws?: boolean): string;
   getPort(options: ClientOptions, tls?: boolean): number | undefined;
   getHttpScheme(options: ClientOptions): string;
+  getPrimaryDomainFromEndpoint(endpoint: string): string;
   getEndpointFallbackHosts(endpoint: string): string[];
   getFallbackHosts(options: NormalisedClientOptions): string[];
   getHosts(options: NormalisedClientOptions, ws?: boolean): string[];
@@ -93,9 +93,9 @@ const Defaults = {
   version,
   protocolVersion: 3,
   agent,
-  getHost,
   getPort,
   getHttpScheme,
+  getPrimaryDomainFromEndpoint,
   getEndpointFallbackHosts,
   getFallbackHosts,
   getHosts,
@@ -105,13 +105,6 @@ const Defaults = {
   defaultGetHeaders,
   defaultPostHeaders,
 };
-
-export function getHost(options: ClientOptions, host?: string | null, ws?: boolean): string {
-  if (ws) host = (host == options.restHost && options.realtimeHost) || host || options.realtimeHost;
-  else host = host || options.restHost;
-
-  return host as string;
-}
 
 export function getPort(options: ClientOptions, tls?: boolean): number | undefined {
   return tls || options.tls ? options.tlsPort : options.port;
@@ -176,9 +169,8 @@ export function getFallbackHosts(options: NormalisedClientOptions): string[] {
   return fallbackHosts ? Utils.arrChooseN(fallbackHosts, httpMaxRetryCount) : [];
 }
 
-export function getHosts(options: NormalisedClientOptions, ws?: boolean): string[] {
-  const hosts = [options.restHost].concat(getFallbackHosts(options));
-  return ws ? hosts.map((host) => getHost(options, host, true)) : hosts;
+export function getHosts(options: NormalisedClientOptions): string[] {
+  return [options.primaryDomain].concat(getFallbackHosts(options));
 }
 
 function checkHost(host: string): void {
@@ -361,8 +353,7 @@ export function normaliseOptions(
 
   return {
     ...options,
-    restHost: primaryDomain,
-    realtimeHost: primaryDomain,
+    primaryDomain: primaryDomain,
     maxMessageSize: options.maxMessageSize || Defaults.maxMessageSize,
     timeouts,
     connectivityCheckParams,

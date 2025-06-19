@@ -3,7 +3,8 @@
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
 define(['globals', 'ably'], function (ablyGlobals, ably) {
-  var restHost = ablyGlobals.restHost || getHostname(ablyGlobals.endpoint),
+  const Defaults = ably.Realtime.Platform.Defaults;
+  var restHost = Defaults.getPrimaryDomainFromEndpoint(ablyGlobals.endpoint),
     port = ablyGlobals.tls ? ablyGlobals.tlsPort : ablyGlobals.port,
     scheme = ablyGlobals.tls ? 'https' : 'http';
 
