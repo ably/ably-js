@@ -14,7 +14,7 @@ import {
   ObjectOperationAction,
   ObjectState,
 } from './objectmessage';
-import { Objects } from './objects';
+import { RealtimeObjects } from './realtimeobjects';
 
 export type PrimitiveObjectValue = string | number | boolean | Bufferlike;
 
@@ -58,7 +58,7 @@ export interface LiveMapUpdate<T extends API.LiveMapType> extends LiveObjectUpda
 
 export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate<T>> {
   constructor(
-    objects: Objects,
+    objects: RealtimeObjects,
     private _semantics: MapSemantics,
     objectId: string,
   ) {
@@ -70,7 +70,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  static zeroValue<T extends API.LiveMapType>(objects: Objects, objectId: string): LiveMap<T> {
+  static zeroValue<T extends API.LiveMapType>(objects: RealtimeObjects, objectId: string): LiveMap<T> {
     return new LiveMap<T>(objects, MapSemantics.LWW, objectId);
   }
 
@@ -80,7 +80,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  static fromObjectState<T extends API.LiveMapType>(objects: Objects, objectState: ObjectState): LiveMap<T> {
+  static fromObjectState<T extends API.LiveMapType>(objects: RealtimeObjects, objectState: ObjectState): LiveMap<T> {
     const obj = new LiveMap<T>(objects, objectState.map?.semantics!, objectState.objectId);
     obj.overrideWithObjectState(objectState);
     return obj;
@@ -93,7 +93,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    */
   static fromObjectOperation<T extends API.LiveMapType>(
-    objects: Objects,
+    objects: RealtimeObjects,
     objectOperation: ObjectOperation,
   ): LiveMap<T> {
     const obj = new LiveMap<T>(objects, objectOperation.map?.semantics!, objectOperation.objectId);
@@ -105,7 +105,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    */
   static createMapSetMessage<TKey extends keyof API.LiveMapType & string>(
-    objects: Objects,
+    objects: RealtimeObjects,
     objectId: string,
     key: TKey,
     value: API.LiveMapType[TKey],
@@ -154,7 +154,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    */
   static createMapRemoveMessage<TKey extends keyof API.LiveMapType & string>(
-    objects: Objects,
+    objects: RealtimeObjects,
     objectId: string,
     key: TKey,
   ): ObjectMessage {
@@ -183,7 +183,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    */
   static validateKeyValue<TKey extends keyof API.LiveMapType & string>(
-    objects: Objects,
+    objects: RealtimeObjects,
     key: TKey,
     value: API.LiveMapType[TKey],
   ): void {
@@ -207,7 +207,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  static async createMapCreateMessage(objects: Objects, entries?: API.LiveMapType): Promise<ObjectMessage> {
+  static async createMapCreateMessage(objects: RealtimeObjects, entries?: API.LiveMapType): Promise<ObjectMessage> {
     const client = objects.getClient();
 
     if (entries !== undefined && (entries === null || typeof entries !== 'object')) {

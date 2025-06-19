@@ -2,12 +2,12 @@ import type * as API from '../../../ably';
 import { BatchContext } from './batchcontext';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
-import { Objects } from './objects';
+import { RealtimeObjects } from './realtimeobjects';
 
 export class BatchContextLiveMap<T extends API.LiveMapType> {
   constructor(
     private _batchContext: BatchContext,
-    private _objects: Objects,
+    private _objects: RealtimeObjects,
     private _map: LiveMap<T>,
   ) {}
 

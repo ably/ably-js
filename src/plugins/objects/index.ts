@@ -1,9 +1,9 @@
 import { ObjectMessage } from './objectmessage';
-import { Objects } from './objects';
+import { RealtimeObjects } from './realtimeobjects';
 
-export { Objects, ObjectMessage };
+export { ObjectMessage, RealtimeObjects };
 
 export default {
-  Objects,
   ObjectMessage,
+  RealtimeObjects,
 };
