@@ -20,7 +20,7 @@ export enum ObjectOperationAction {
   OBJECT_DELETE = 5,
 }
 
-export enum MapSemantics {
+export enum ObjectsMapSemantics {
   LWW = 0,
 }
 
@@ -41,22 +41,22 @@ export interface ObjectData {
   string?: string;
 }
 
-/** A MapOp describes an operation to be applied to a Map object. */
-export interface MapOp {
+/** An ObjectsMapOp describes an operation to be applied to a Map object. */
+export interface ObjectsMapOp {
   /** The key of the map entry to which the operation should be applied. */
   key: string;
   /** The data that the map entry should contain if the operation is a MAP_SET operation. */
   data?: ObjectData;
 }
 
-/** A CounterOp describes an operation to be applied to a Counter object. */
-export interface CounterOp {
+/** An ObjectsCounterOp describes an operation to be applied to a Counter object. */
+export interface ObjectsCounterOp {
   /** The data value that should be added to the counter */
   amount: number;
 }
 
-/** A MapEntry represents the value at a given key in a Map object. */
-export interface MapEntry {
+/** An ObjectsMapEntry represents the value at a given key in a Map object. */
+export interface ObjectsMapEntry {
   /** Indicates whether the map entry has been removed. */
   tombstone?: boolean;
   /**
@@ -70,16 +70,16 @@ export interface MapEntry {
   data?: ObjectData;
 }
 
-/** An ObjectMap object represents a map of key-value pairs. */
-export interface ObjectMap {
+/** An ObjectsMap object represents a map of key-value pairs. */
+export interface ObjectsMap {
   /** The conflict-resolution semantics used by the map object. */
-  semantics?: MapSemantics;
+  semantics?: ObjectsMapSemantics;
   // The map entries, indexed by key.
-  entries?: Record<string, MapEntry>;
+  entries?: Record<string, ObjectsMapEntry>;
 }
 
-/** An ObjectCounter object represents an incrementable and decrementable value */
-export interface ObjectCounter {
+/** An ObjectsCounter object represents an incrementable and decrementable value */
+export interface ObjectsCounter {
   /** The value of the counter */
   count?: number;
 }
@@ -91,19 +91,19 @@ export interface ObjectOperation {
   /** The object ID of the object on a channel to which the operation should be applied. */
   objectId: string;
   /** The payload for the operation if it is an operation on a Map object type. */
-  mapOp?: MapOp;
+  mapOp?: ObjectsMapOp;
   /** The payload for the operation if it is an operation on a Counter object type. */
-  counterOp?: CounterOp;
+  counterOp?: ObjectsCounterOp;
   /**
    * The payload for the operation if the operation is MAP_CREATE.
    * Defines the initial value for the Map object.
    */
-  map?: ObjectMap;
+  map?: ObjectsMap;
   /**
    * The payload for the operation if the operation is COUNTER_CREATE.
    * Defines the initial value for the Counter object.
    */
-  counter?: ObjectCounter;
+  counter?: ObjectsCounter;
   /**
    * The nonce, must be present on create operations. This is the random part
    * that has been hashed with the type and initial value to create the object ID.
@@ -138,12 +138,12 @@ export interface ObjectState {
    * The data that represents the result of applying all operations to a Map object
    * excluding the initial value from the create operation if it is a Map object type.
    */
-  map?: ObjectMap;
+  map?: ObjectsMap;
   /**
    * The data that represents the result of applying all operations to a Counter object
    * excluding the initial value from the create operation if it is a Counter object type.
    */
-  counter?: ObjectCounter;
+  counter?: ObjectsCounter;
 }
 
 // TODO: tidy up encoding/decoding logic for ObjectMessage:
@@ -328,7 +328,7 @@ export class ObjectMessage {
   }
 
   private static async _decodeMapEntries(
-    mapEntries: Record<string, MapEntry>,
+    mapEntries: Record<string, ObjectsMapEntry>,
     client: BaseClient,
     format: Utils.Format | undefined,
   ): Promise<void> {
@@ -581,7 +581,7 @@ export class ObjectMessage {
     return size;
   }
 
-  private _getObjectMapSize(map: ObjectMap): number {
+  private _getObjectMapSize(map: ObjectsMap): number {
     let size = 0;
 
     Object.entries(map.entries ?? {}).forEach(([key, entry]) => {
@@ -594,7 +594,7 @@ export class ObjectMessage {
     return size;
   }
 
-  private _getObjectCounterSize(counter: ObjectCounter): number {
+  private _getObjectCounterSize(counter: ObjectsCounter): number {
     if (counter.count == null) {
       return 0;
     }
@@ -602,7 +602,7 @@ export class ObjectMessage {
     return 8;
   }
 
-  private _getMapEntrySize(entry: MapEntry): number {
+  private _getMapEntrySize(entry: ObjectsMapEntry): number {
     let size = 0;
 
     if (entry.data) {
@@ -612,7 +612,7 @@ export class ObjectMessage {
     return size;
   }
 
-  private _getMapOpSize(mapOp: MapOp): number {
+  private _getMapOpSize(mapOp: ObjectsMapOp): number {
     let size = 0;
 
     size += mapOp.key?.length ?? 0;
@@ -624,7 +624,7 @@ export class ObjectMessage {
     return size;
   }
 
-  private _getCounterOpSize(operation: CounterOp): number {
+  private _getCounterOpSize(operation: ObjectsCounterOp): number {
     if (operation.amount == null) {
       return 0;
     }
