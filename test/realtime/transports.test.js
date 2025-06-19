@@ -118,7 +118,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
         const helper = this.test.helper;
         const goodHost = helper.AblyRest().options.realtimeHost;
         const realtime = helper.AblyRealtime(
-          options(helper, { realtimeHost: helper.unroutableAddress, fallbackHosts: [goodHost] }),
+          options(helper, { endpoint: helper.unroutableAddress, fallbackHosts: [goodHost] }),
         );
 
         realtime.connection.on('connected', function () {
@@ -168,7 +168,7 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
         helper.recordPrivateApi('pass.clientOption.wsConnectivityCheckUrl');
         const realtime = helper.AblyRealtime(
           options(helper, {
-            realtimeHost: helper.unroutableAddress,
+            endpoint: helper.unroutableAddress,
             // use unroutable host ws connectivity check to simulate no internet
             wsConnectivityCheckUrl: helper.unroutableWssAddress,
             // ensure ws slow timeout procs and performs ws connectivity check, which would fail due to unroutable host

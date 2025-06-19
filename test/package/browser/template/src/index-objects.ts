@@ -35,7 +35,7 @@ type ExplicitRootType = {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new Ably.Realtime({ key, environment: 'sandbox', plugins: { Objects } });
+  const realtime = new Ably.Realtime({ key, endpoint: 'nonprod:sandbox', plugins: { Objects } });
 
   const channel = realtime.channels.get('channel', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
   // check Objects can be accessed

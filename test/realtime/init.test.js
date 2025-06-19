@@ -349,7 +349,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     it('init_fallbacks', function (done) {
       const helper = this.test.helper;
       try {
-        var realtime = helper.AblyRealtime({
+        var realtime = helper.AblyRealtimeWithoutEndpoint({
           key: 'not_a.real:key',
           restHost: 'a',
           httpMaxRetryCount: 2,
@@ -500,7 +500,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
     it('init_fallbacks_once_connected_2', function (done) {
       const helper = this.test.helper;
       var goodHost = helper.AblyRest().options.realtimeHost;
-      var realtime = helper.AblyRealtime({
+      var realtime = helper.AblyRealtimeWithoutEndpoint({
         httpMaxRetryCount: 3,
         restHost: 'a',
         fallbackHosts: [goodHost, 'b', 'c'],

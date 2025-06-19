@@ -301,7 +301,9 @@ define(['ably', 'chai'], function (Ably, chai) {
       );
 
       expect(normalisedOptions.restHost).to.equal('test.org');
-      expect(normalisedOptions.realtimeHost).to.equal('ws.test.org');
+      // The default behavior uses a single endpoint for both Rest and Realtime,
+      // with developer-only option restHost taking precedence over realtimeHost
+      expect(normalisedOptions.realtimeHost).to.equal('test.org');
       expect(normalisedOptions.port).to.equal(80);
       expect(normalisedOptions.tlsPort).to.equal(443);
       expect(normalisedOptions.fallbackHosts).to.equal(undefined);
@@ -311,7 +313,7 @@ define(['ably', 'chai'], function (Ably, chai) {
       expect(Defaults.getHosts(normalisedOptions)).to.deep.equal([normalisedOptions.restHost]);
       helper.recordPrivateApi('call.Defaults.getHost');
       expect(Defaults.getHost(normalisedOptions, 'test.org', false)).to.deep.equal('test.org');
-      expect(Defaults.getHost(normalisedOptions, 'test.org', true)).to.deep.equal('ws.test.org');
+      expect(Defaults.getHost(normalisedOptions, 'test.org', true)).to.deep.equal('test.org');
 
       helper.recordPrivateApi('call.Defaults.getPort');
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
@@ -358,7 +360,7 @@ define(['ably', 'chai'], function (Ably, chai) {
       helper.recordPrivateApi('call.Defaults.getPort');
       expect(Defaults.getPort(normalisedOptions)).to.equal(443);
       helper.recordPrivateApi('write.Defaults.ENDPOINT');
-      Defaults.ENDPOINT = '';
+      Defaults.ENDPOINT = 'main';
     });
 
     // TODO once https://github.com/ably/ably-js/issues/1424 is fixed, this should also test the case where the useBinaryProtocol option is not specified

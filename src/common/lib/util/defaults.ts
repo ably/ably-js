@@ -121,29 +121,46 @@ export function getHttpScheme(options: ClientOptions): string {
   return options.tls ? 'https://' : 'http://';
 }
 
+/**
+ * REC1b2
+ */
 function isFqdnIpOrLocalhost(endpoint: string): boolean {
   return endpoint.includes('.') || endpoint.includes('::') || endpoint === 'localhost';
 }
 
-export function getEndpointHostname(endpoint: string): string {
+/**
+ * REC1b
+ */
+export function getPrimaryDomainFromEndpoint(endpoint: string): string {
+  // REC1b2 (endpoint is a valid hostname)
   if (isFqdnIpOrLocalhost(endpoint)) return endpoint;
 
+  // REC1b3 (endpoint in form "nonprod:[id]")
   if (endpoint.startsWith('nonprod:')) {
     const routingPolicyId = endpoint.replace('nonprod:', '');
     return `${routingPolicyId}.realtime.ably-nonprod.net`;
   }
 
+  // REC1b4 (endpoint in form "[id]")
   return `${endpoint}.realtime.ably.net`;
 }
 
+/**
+ * REC2c
+ *
+ * @returns default callbacks based on endpoint client option
+ */
 export function getEndpointFallbackHosts(endpoint: string): string[] {
+  // REC2c2
   if (isFqdnIpOrLocalhost(endpoint)) return [];
 
+  // REC2c3
   if (endpoint.startsWith('nonprod:')) {
     const routingPolicyId = endpoint.replace('nonprod:', '');
     return endpointFallbacks(routingPolicyId, 'ably-realtime-nonprod.com');
   }
 
+  // REC2c1
   return endpointFallbacks(endpoint, 'ably-realtime.com');
 }
 
@@ -238,11 +255,35 @@ export function objectifyOptions(
   return optionsObj;
 }
 
+function checkIfClientOptionsAreValid(options: ClientOptions) {
+  // REC1b
+  if (options.endpoint && (options.environment || options.restHost || options.realtimeHost)) {
+    // RSC1b
+    throw new ErrorInfo(
+      'The `endpoint` option cannot be used in conjunction with the `environment`, `restHost`, or `realtimeHost` options.',
+      40106,
+      400,
+    );
+  }
+
+  // REC1c
+  if (options.environment && (options.restHost || options.realtimeHost)) {
+    // RSC1b
+    throw new ErrorInfo(
+      'The `environment` option cannot be used in conjunction with the `restHost`, or `realtimeHost` options.',
+      40106,
+      400,
+    );
+  }
+}
+
 export function normaliseOptions(
   options: ClientOptions,
   MsgPack: MsgPack | null,
   logger: Logger | null, // should only be omitted by tests
 ): NormalisedClientOptions {
+  checkIfClientOptionsAreValid(options);
+
   const loggerToUse = logger ?? Logger.defaultLogger;
 
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
@@ -264,13 +305,16 @@ export function normaliseOptions(
   if (!('queueMessages' in options)) options.queueMessages = true;
 
   /* infer hosts and fallbacks based on the specified endpoint */
-  const endpoint = options.endpoint || options.environment || Defaults.ENDPOINT;
+  const endpoint = options.endpoint || Defaults.ENDPOINT;
 
   if (!options.fallbackHosts && !options.restHost && !options.realtimeHost && !options.port && !options.tlsPort) {
-    options.fallbackHosts = getEndpointFallbackHosts(endpoint);
+    options.fallbackHosts = getEndpointFallbackHosts(options.environment || endpoint);
   }
 
-  const primaryDomain = options.restHost || options.realtimeHost || getEndpointHostname(endpoint);
+  const primaryDomainFromEnvironment = options.environment && `${options.environment}.realtime.ably.net`;
+  const primaryDomainFromLegacyOptions = options.restHost || options.realtimeHost || primaryDomainFromEnvironment;
+
+  const primaryDomain = primaryDomainFromLegacyOptions || getPrimaryDomainFromEndpoint(endpoint);
 
   (options.fallbackHosts || []).concat(primaryDomain).forEach(checkHost);
 

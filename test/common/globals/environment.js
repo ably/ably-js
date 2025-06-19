@@ -3,7 +3,7 @@
 define(function (require) {
   var defaultLogLevel = 4,
     environment = isBrowser ? window.__env__ || {} : process.env,
-    ablyEnvironment = environment.ABLY_ENV || 'nonprod:sandbox',
+    ablyEndpoint = environment.ABLY_ENV || 'nonprod:sandbox',
     realtimeHost = environment.ABLY_REALTIME_HOST,
     restHost = environment.ABLY_REST_HOST,
     port = environment.ABLY_PORT || 80,
@@ -23,7 +23,7 @@ define(function (require) {
       query[keyValue[0]] = keyValue[1];
     }
 
-    if (query['env']) ablyEnvironment = query['env'];
+    if (query['env']) ablyEndpoint = query['env'];
     if (query['realtime_host']) realtimeHost = query['realtime_host'];
     if (query['rest_host']) restHost = query['rest_host'];
     if (query['port']) port = query['port'];
@@ -63,7 +63,7 @@ define(function (require) {
   }
 
   return (module.exports = {
-    environment: ablyEnvironment,
+    endpoint: restHost ? undefined : ablyEndpoint,
     realtimeHost: realtimeHost,
     restHost: restHost,
     port: port,
