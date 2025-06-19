@@ -8,7 +8,7 @@ import {
   ObjectOperationAction,
   ObjectsCounterOp,
 } from './objectmessage';
-import { Objects } from './objects';
+import { RealtimeObjects } from './realtimeobjects';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number; // RTLC3
@@ -26,7 +26,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @internal
    * @spec RTLC4
    */
-  static zeroValue(objects: Objects, objectId: string): LiveCounter {
+  static zeroValue(objects: RealtimeObjects, objectId: string): LiveCounter {
     return new LiveCounter(objects, objectId);
   }
 
@@ -36,7 +36,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectState(objects: Objects, objectMessage: ObjectMessage): LiveCounter {
+  static fromObjectState(objects: RealtimeObjects, objectMessage: ObjectMessage): LiveCounter {
     const obj = new LiveCounter(objects, objectMessage.object!.objectId);
     obj.overrideWithObjectState(objectMessage);
     return obj;
@@ -48,7 +48,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectOperation(objects: Objects, objectOperation: ObjectOperation<ObjectData>): LiveCounter {
+  static fromObjectOperation(objects: RealtimeObjects, objectOperation: ObjectOperation<ObjectData>): LiveCounter {
     const obj = new LiveCounter(objects, objectOperation.objectId);
     obj._mergeInitialDataFromCreateOperation(objectOperation);
     return obj;
@@ -57,7 +57,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  static createCounterIncMessage(objects: Objects, objectId: string, amount: number): ObjectMessage {
+  static createCounterIncMessage(objects: RealtimeObjects, objectId: string, amount: number): ObjectMessage {
     const client = objects.getClient();
 
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {
@@ -82,7 +82,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  static async createCounterCreateMessage(objects: Objects, count?: number): Promise<ObjectMessage> {
+  static async createCounterCreateMessage(objects: RealtimeObjects, count?: number): Promise<ObjectMessage> {
     const client = objects.getClient();
 
     if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {

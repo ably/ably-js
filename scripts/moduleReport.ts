@@ -336,8 +336,8 @@ async function checkObjectsPluginFiles() {
     'src/plugins/objects/liveobject.ts',
     'src/plugins/objects/objectid.ts',
     'src/plugins/objects/objectmessage.ts',
-    'src/plugins/objects/objects.ts',
     'src/plugins/objects/objectspool.ts',
+    'src/plugins/objects/realtimeobjects.ts',
     'src/plugins/objects/syncobjectsdatapool.ts',
   ]);
 
