@@ -1,6 +1,6 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
-import { CounterOp, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectState } from './objectmessage';
+import { ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp, ObjectState } from './objectmessage';
 import { Objects } from './objects';
 
 export interface LiveCounterData extends LiveObjectData {
@@ -330,7 +330,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return this._mergeInitialDataFromCreateOperation(op);
   }
 
-  private _applyCounterInc(op: CounterOp): LiveCounterUpdate {
+  private _applyCounterInc(op: ObjectsCounterOp): LiveCounterUpdate {
     this._dataRef.data += op.amount;
     return { update: { amount: op.amount } };
   }
