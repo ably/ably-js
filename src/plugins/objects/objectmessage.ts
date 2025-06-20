@@ -11,6 +11,7 @@ export type EncodeInitialValueFunction = (
 
 export type EncodeObjectDataFunction = (data: ObjectData) => ObjectData;
 
+/** @spec OOP2 */
 export enum ObjectOperationAction {
   MAP_CREATE = 0,
   MAP_SET = 1,
@@ -20,160 +21,187 @@ export enum ObjectOperationAction {
   OBJECT_DELETE = 5,
 }
 
+/** @spec OMP2 */
 export enum ObjectsMapSemantics {
   LWW = 0,
 }
 
-/** An ObjectData represents a value in an object on a channel. */
+/**
+ * An ObjectData represents a value in an object on a channel.
+ * @spec OD1
+ */
 export interface ObjectData {
   /** A reference to another object, used to support composable object structures. */
-  objectId?: string;
+  objectId?: string; // OD2a
 
   /** Can be set by the client to indicate that value in `string` or `bytes` field have an encoding. */
-  encoding?: string;
+  encoding?: string; // OD2b
   /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
-  boolean?: boolean;
+  boolean?: boolean; // OD2c
   /** A primitive binary leaf value in the object graph. Only one value field can be set. */
-  bytes?: Bufferlike;
+  bytes?: Bufferlike; // OD2d
   /** A primitive number leaf value in the object graph. Only one value field can be set. */
-  number?: number;
+  number?: number; // OD2e
   /** A primitive string leaf value in the object graph. Only one value field can be set. */
-  string?: string;
+  string?: string; // OD2f
 }
 
-/** An ObjectsMapOp describes an operation to be applied to a Map object. */
+/**
+ * An ObjectsMapOp describes an operation to be applied to a Map object.
+ * @spec OMO1
+ */
 export interface ObjectsMapOp {
   /** The key of the map entry to which the operation should be applied. */
-  key: string;
+  key: string; // OMO2a
   /** The data that the map entry should contain if the operation is a MAP_SET operation. */
-  data?: ObjectData;
+  data?: ObjectData; // OMO2b
 }
 
-/** An ObjectsCounterOp describes an operation to be applied to a Counter object. */
+/**
+ * An ObjectsCounterOp describes an operation to be applied to a Counter object.
+ * @spec OCO1
+ */
 export interface ObjectsCounterOp {
   /** The data value that should be added to the counter */
-  amount: number;
+  amount: number; // OCO2a
 }
 
-/** An ObjectsMapEntry represents the value at a given key in a Map object. */
+/**
+ * An ObjectsMapEntry represents the value at a given key in a Map object.
+ * @spec OME1
+ */
 export interface ObjectsMapEntry {
   /** Indicates whether the map entry has been removed. */
-  tombstone?: boolean;
+  tombstone?: boolean; // OME2a
   /**
    * The {@link ObjectMessage.serial} value of the last operation that was applied to the map entry.
    *
    * It is optional in a MAP_CREATE operation and might be missing, in which case the client should use a nullish value for it
    * and treat it as the "earliest possible" serial for comparison purposes.
    */
-  timeserial?: string;
+  timeserial?: string; // OME2b
   /** The data that represents the value of the map entry. */
-  data?: ObjectData;
+  data?: ObjectData; // OME2c
 }
 
-/** An ObjectsMap object represents a map of key-value pairs. */
+/**
+ * An ObjectsMap object represents a map of key-value pairs.
+ * @spec OMP1
+ */
 export interface ObjectsMap {
   /** The conflict-resolution semantics used by the map object. */
-  semantics?: ObjectsMapSemantics;
+  semantics?: ObjectsMapSemantics; // OMP3a
   // The map entries, indexed by key.
-  entries?: Record<string, ObjectsMapEntry>;
+  entries?: Record<string, ObjectsMapEntry>; // OMP3b
 }
 
-/** An ObjectsCounter object represents an incrementable and decrementable value */
+/**
+ * An ObjectsCounter object represents an incrementable and decrementable value
+ * @spec OCN1
+ */
 export interface ObjectsCounter {
   /** The value of the counter */
-  count?: number;
+  count?: number; // OCN2a
 }
 
-/** An ObjectOperation describes an operation to be applied to an object on a channel. */
+/**
+ * An ObjectOperation describes an operation to be applied to an object on a channel.
+ * @spec OOP1
+ */
 export interface ObjectOperation {
   /** Defines the operation to be applied to the object. */
-  action: ObjectOperationAction;
+  action: ObjectOperationAction; // OOP3a
   /** The object ID of the object on a channel to which the operation should be applied. */
-  objectId: string;
+  objectId: string; // OOP3b
   /** The payload for the operation if it is an operation on a Map object type. */
-  mapOp?: ObjectsMapOp;
+  mapOp?: ObjectsMapOp; // OOP3c
   /** The payload for the operation if it is an operation on a Counter object type. */
-  counterOp?: ObjectsCounterOp;
+  counterOp?: ObjectsCounterOp; // OOP3d
   /**
    * The payload for the operation if the operation is MAP_CREATE.
    * Defines the initial value for the Map object.
    */
-  map?: ObjectsMap;
+  map?: ObjectsMap; // OOP3e
   /**
    * The payload for the operation if the operation is COUNTER_CREATE.
    * Defines the initial value for the Counter object.
    */
-  counter?: ObjectsCounter;
+  counter?: ObjectsCounter; // OOP3f
   /**
    * The nonce, must be present on create operations. This is the random part
    * that has been hashed with the type and initial value to create the object ID.
    */
-  nonce?: string;
+  nonce?: string; // OOP3g
   /**
    * The initial value bytes for the object. These bytes should be used along with the nonce
    * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
    * After verification the bytes will be decoded into the Map or Counter objects and
    * the initialValue, nonce, and initialValueEncoding will be removed.
    */
-  initialValue?: Bufferlike;
+  initialValue?: Bufferlike; // OOP3h
   /** The initial value encoding defines how the initialValue should be interpreted. */
-  initialValueEncoding?: Utils.Format;
+  initialValueEncoding?: Utils.Format; // OOP3i
 }
 
-/** An ObjectState describes the instantaneous state of an object on a channel. */
+/**
+ * An ObjectState describes the instantaneous state of an object on a channel.
+ * @spec OST1
+ */
 export interface ObjectState {
   /** The identifier of the object. */
-  objectId: string;
+  objectId: string; // OST2a
   /** A map of serials keyed by a {@link ObjectMessage.siteCode}, representing the last operations applied to this object */
-  siteTimeserials: Record<string, string>;
+  siteTimeserials: Record<string, string>; // OST2b
   /** True if the object has been tombstoned. */
-  tombstone: boolean;
+  tombstone: boolean; // OST2c
   /**
    * The operation that created the object.
    *
    * Can be missing if create operation for the object is not known at this point.
    */
-  createOp?: ObjectOperation;
+  createOp?: ObjectOperation; // OST2d
   /**
    * The data that represents the result of applying all operations to a Map object
    * excluding the initial value from the create operation if it is a Map object type.
    */
-  map?: ObjectsMap;
+  map?: ObjectsMap; // OST2e
   /**
    * The data that represents the result of applying all operations to a Counter object
    * excluding the initial value from the create operation if it is a Counter object type.
    */
-  counter?: ObjectsCounter;
+  counter?: ObjectsCounter; // OST2f
 }
 
 // TODO: tidy up encoding/decoding logic for ObjectMessage:
 // Should have separate WireObjectMessage with the correct types received from the server, do the necessary encoding/decoding there.
 // For reference, see WireMessage and WirePresenceMessage
 /**
+ * An individual object message to be sent or received via the Ably Realtime service.
+ * @spec OM1
  * @internal
  */
 export class ObjectMessage {
-  id?: string;
-  timestamp?: number;
-  clientId?: string;
-  connectionId?: string;
-  extras?: any;
+  id?: string; // OM2a
+  clientId?: string; // OM2b
+  connectionId?: string; // OM2c
+  extras?: any; // OM2d
+  timestamp?: number; // OM2e
   /**
    * Describes an operation to be applied to an object.
    *
    * Mutually exclusive with the `object` field. This field is only set on object messages if the `action` field of the `ProtocolMessage` encapsulating it is `OBJECT`.
    */
-  operation?: ObjectOperation;
+  operation?: ObjectOperation; // OM2f
   /**
    * Describes the instantaneous state of an object.
    *
    * Mutually exclusive with the `operation` field. This field is only set on object messages if the `action` field of the `ProtocolMessage` encapsulating it is `OBJECT_SYNC`.
    */
-  object?: ObjectState;
+  object?: ObjectState; // OM2g
   /** An opaque string that uniquely identifies this object message. */
-  serial?: string;
+  serial?: string; // OM2h
   /** An opaque string used as a key to update the map of serial values on an object. */
-  siteCode?: string;
+  siteCode?: string; // OM2i
 
   constructor(
     private _utils: typeof Utils,
@@ -529,123 +557,142 @@ export class ObjectMessage {
     return result;
   }
 
+  /** @spec OM3 */
   getMessageSize(): number {
     let size = 0;
 
-    size += this.clientId?.length ?? 0;
+    // OM3a
+    size += this.clientId?.length ?? 0; // OM3f
     if (this.operation) {
-      size += this._getObjectOperationSize(this.operation);
+      size += this._getObjectOperationSize(this.operation); // OM3b
     }
     if (this.object) {
-      size += this._getObjectStateSize(this.object);
+      size += this._getObjectStateSize(this.object); // OM3c
     }
     if (this.extras) {
-      size += JSON.stringify(this.extras).length;
+      size += JSON.stringify(this.extras).length; // OM3d
     }
 
     return size;
   }
 
+  /** @spec OOP4 */
   private _getObjectOperationSize(operation: ObjectOperation): number {
     let size = 0;
 
+    // OOP4a
     if (operation.mapOp) {
-      size += this._getMapOpSize(operation.mapOp);
+      size += this._getMapOpSize(operation.mapOp); // OOP4b
     }
     if (operation.counterOp) {
-      size += this._getCounterOpSize(operation.counterOp);
+      size += this._getCounterOpSize(operation.counterOp); // OOP4c
     }
     if (operation.map) {
-      size += this._getObjectMapSize(operation.map);
+      size += this._getObjectMapSize(operation.map); // OOP4d
     }
     if (operation.counter) {
-      size += this._getObjectCounterSize(operation.counter);
+      size += this._getObjectCounterSize(operation.counter); // OOP4e
     }
 
     return size;
   }
 
+  /** @spec OST3 */
   private _getObjectStateSize(obj: ObjectState): number {
     let size = 0;
 
+    // OST3a
     if (obj.map) {
-      size += this._getObjectMapSize(obj.map);
+      size += this._getObjectMapSize(obj.map); // OST3b
     }
     if (obj.counter) {
-      size += this._getObjectCounterSize(obj.counter);
+      size += this._getObjectCounterSize(obj.counter); // OST3c
     }
     if (obj.createOp) {
-      size += this._getObjectOperationSize(obj.createOp);
+      size += this._getObjectOperationSize(obj.createOp); // OST3d
     }
 
     return size;
   }
 
+  /** @spec OMP4 */
   private _getObjectMapSize(map: ObjectsMap): number {
     let size = 0;
 
+    // OMP4a
     Object.entries(map.entries ?? {}).forEach(([key, entry]) => {
-      size += key?.length ?? 0;
+      size += key?.length ?? 0; // OMP4a1
       if (entry) {
-        size += this._getMapEntrySize(entry);
+        size += this._getMapEntrySize(entry); // OMP4a2
       }
     });
 
     return size;
   }
 
+  /** @spec OCN3 */
   private _getObjectCounterSize(counter: ObjectsCounter): number {
+    // OCN3b
     if (counter.count == null) {
       return 0;
     }
 
+    // OCN3a
     return 8;
   }
 
+  /** @spec OME3 */
   private _getMapEntrySize(entry: ObjectsMapEntry): number {
     let size = 0;
 
+    // OME3a
     if (entry.data) {
-      size += this._getObjectDataSize(entry.data);
+      size += this._getObjectDataSize(entry.data); // OME3b
     }
 
     return size;
   }
 
+  /** @spec OMO3 */
   private _getMapOpSize(mapOp: ObjectsMapOp): number {
     let size = 0;
 
-    size += mapOp.key?.length ?? 0;
-
+    // OMO3a
+    size += mapOp.key?.length ?? 0; // OMO3d
     if (mapOp.data) {
-      size += this._getObjectDataSize(mapOp.data);
+      size += this._getObjectDataSize(mapOp.data); // OMO3b
     }
 
     return size;
   }
 
+  /** @spec OCO3 */
   private _getCounterOpSize(operation: ObjectsCounterOp): number {
+    // OCO3b
     if (operation.amount == null) {
       return 0;
     }
 
+    // OCO3a
     return 8;
   }
 
+  /** @spec OD3 */
   private _getObjectDataSize(data: ObjectData): number {
     let size = 0;
 
+    // OD3a
     if (data.boolean != null) {
-      size += this._utils.dataSizeBytes(data.boolean);
+      size += this._utils.dataSizeBytes(data.boolean); // OD3b
     }
     if (data.bytes != null) {
-      size += this._utils.dataSizeBytes(data.bytes);
+      size += this._utils.dataSizeBytes(data.bytes); // OD3c
     }
     if (data.number != null) {
-      size += this._utils.dataSizeBytes(data.number);
+      size += this._utils.dataSizeBytes(data.number); // OD3d
     }
     if (data.string != null) {
-      size += this._utils.dataSizeBytes(data.string);
+      size += this._utils.dataSizeBytes(data.string); // OD3e
     }
 
     return size;

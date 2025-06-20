@@ -169,7 +169,7 @@ class ProtocolMessage {
   /**
    * This will be undefined if we skipped decoding this property due to user not requesting Objects functionality — see {@link fromDeserialized}
    */
-  state?: ObjectsPlugin.ObjectMessage[];
+  state?: ObjectsPlugin.ObjectMessage[]; // TR4r
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
   params?: Record<string, string>;
