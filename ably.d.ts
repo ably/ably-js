@@ -3209,7 +3209,7 @@ export interface Message {
   refType?: string;
   /**
    * The timestamp of the very first version of a given message (will differ from
-   * createdAt only if the message has been updated or deleted).
+   * `timestamp` only if the message has been updated or deleted).
    */
   createdAt?: number;
   /**
