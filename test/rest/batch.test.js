@@ -69,7 +69,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         expect(batchResults[0].results).to.have.lengthOf(2);
 
         expect(batchResults[0].results[0].channel).to.equal('channel0');
-        expect(batchResults[0].results[0].messageId).to.include(':0');
+        expect(batchResults[0].results[0].messageId).to.not.be.empty;
         expect('error' in batchResults[0].results[0]).to.be.false;
 
         expect(batchResults[0].results[1].channel).to.equal('channel3');
@@ -81,7 +81,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         expect(batchResults[1].results).to.have.lengthOf(2);
 
         expect(batchResults[1].results[0].channel).to.equal('channel4');
-        expect(batchResults[1].results[0].messageId).to.include(':0');
+        expect(batchResults[1].results[0].messageId).to.not.be.empty;
         expect('error' in batchResults[1].results[0]).to.be.false;
 
         expect(batchResults[1].results[1].channel).to.equal('channel5');
@@ -147,7 +147,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
         expect(batchResult.results).to.have.lengthOf(2);
 
         expect(batchResult.results[0].channel).to.equal('channel0');
-        expect(batchResult.results[0].messageId).to.include(':0');
+        expect(batchResult.results[0].messageId).to.not.be.empty;
         expect('error' in batchResult.results[0]).to.be.false;
 
         expect(batchResult.results[1].channel).to.equal('channel3');

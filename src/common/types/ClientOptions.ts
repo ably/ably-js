@@ -17,8 +17,7 @@ export default interface ClientOptions extends API.ClientOptions<API.CorePlugins
 export type NormalisedClientOptions = Modify<
   ClientOptions,
   {
-    realtimeHost: string;
-    restHost: string;
+    primaryDomain: string;
     keyName?: string;
     keySecret?: string;
     timeouts: Record<string, number>;

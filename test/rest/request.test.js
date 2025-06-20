@@ -92,7 +92,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
      */
     it('request_network_error', async function () {
       const helper = this.test.helper;
-      rest = helper.AblyRest({ restHost: helper.unroutableAddress });
+      rest = helper.AblyRest({ endpoint: helper.unroutableAddress });
       try {
         var res = await rest.request('get', '/time', 3, null, null, null);
       } catch (err) {
@@ -220,7 +220,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       /** @specpartial RSC19f - tests put, patch, delete methods are supported */
       it('check' + method, async function () {
         const helper = this.test.helper.withParameterisedTestTitle('check');
-        var restEcho = helper.AblyRest({ useBinaryProtocol: false, restHost: echoServerHost, tls: true });
+        var restEcho = helper.AblyRest({ useBinaryProtocol: false, endpoint: echoServerHost, tls: true });
         var res = await restEcho.request(method, '/methods', 3, {}, {}, {});
         expect(res.items[0] && res.items[0].method).to.equal(method);
       });

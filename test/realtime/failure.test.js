@@ -127,7 +127,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             var connectionEvents = [];
 
             helper.recordPrivateApi('pass.clientOption.webSocketConnectTimeout');
-            var realtime = helper.AblyRealtime({
+            var realtime = helper.AblyRealtimeWithoutEndpoint({
               transports: transports,
               realtimeHost: 'invalid',
               restHost: 'invalid',
@@ -213,7 +213,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       it('disconnected_backoff_' + transport, function (done) {
         const helper = this.test.helper;
         var disconnectedRetryTimeout = 150;
-        var realtime = helper.AblyRealtime({
+        var realtime = helper.AblyRealtimeWithoutEndpoint({
           disconnectedRetryTimeout: disconnectedRetryTimeout,
           realtimeHost: 'invalid',
           restHost: 'invalid',

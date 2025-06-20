@@ -9,7 +9,7 @@
       "request": "launch",
       "name": "Debug Test",
       "env": {
-        "ABLY_ENV": "sandbox"
+        "ABLY_ENDPOINT": "nonprod:sandbox"
       },
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "node",
