@@ -45,7 +45,7 @@ export class Objects {
   private _eventEmitterInternal: EventEmitter;
   // related to RTC10, should have a separate EventEmitter for users of the library
   private _eventEmitterPublic: EventEmitter;
-  private _objectsPool: ObjectsPool;
+  private _objectsPool: ObjectsPool; // RTO3
   private _syncObjectsDataPool: SyncObjectsDataPool;
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
@@ -69,16 +69,17 @@ export class Objects {
    * When called without a type variable, we return a default root type which is based on globally defined interface for Objects feature.
    * A user can provide an explicit type for the getRoot method to explicitly set the type structure on this particular channel.
    * This is useful when working with multiple channels with different underlying data structure.
+   * @spec RTO1
    */
   async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
-    this.throwIfInvalidAccessApiConfiguration();
+    this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
 
     // if we're not synced yet, wait for sync sequence to finish before returning root
     if (this._state !== ObjectsState.synced) {
-      await this._eventEmitterInternal.once(ObjectsEvent.synced);
+      await this._eventEmitterInternal.once(ObjectsEvent.synced); // RTO1c
     }
 
-    return this._objectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>;
+    return this._objectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>; // RTO1d
   }
 
   /**
@@ -211,17 +212,20 @@ export class Objects {
 
   /**
    * @internal
+   * @spec RTO5
    */
   handleObjectSyncMessages(objectMessages: ObjectMessage[], syncChannelSerial: string | null | undefined): void {
-    const { syncId, syncCursor } = this._parseSyncChannelSerial(syncChannelSerial);
+    const { syncId, syncCursor } = this._parseSyncChannelSerial(syncChannelSerial); // RTO5a
     const newSyncSequence = this._currentSyncId !== syncId;
     if (newSyncSequence) {
-      this._startNewSync(syncId, syncCursor);
+      // RTO5a2 - new sync sequence started
+      this._startNewSync(syncId, syncCursor); // RTO5a2a
     }
 
-    this._syncObjectsDataPool.applyObjectSyncMessages(objectMessages);
+    // RTO5a3 - continue current sync sequence
+    this._syncObjectsDataPool.applyObjectSyncMessages(objectMessages); // RTO5b
 
-    // if this is the last (or only) message in a sequence of sync updates, end the sync
+    // RTO5a4 - if this is the last (or only) message in a sequence of sync updates, end the sync
     if (!syncCursor) {
       // defer the state change event until the next tick if this was a new sync sequence
       // to allow any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
@@ -247,6 +251,7 @@ export class Objects {
 
   /**
    * @internal
+   * @spec RTO4
    */
   onAttached(hasObjects?: boolean): void {
     this._client.Logger.logAction(
@@ -256,6 +261,7 @@ export class Objects {
       `channel=${this._channel.name}, hasObjects=${hasObjects}`,
     );
 
+    // RTO4a
     const fromInitializedState = this._state === ObjectsState.initialized;
     if (hasObjects || fromInitializedState) {
       // should always start a new sync sequence if we're in the initialized state, no matter the HAS_OBJECTS flag value.
@@ -263,14 +269,15 @@ export class Objects {
       this._startNewSync();
     }
 
+    // RTO4b
     if (!hasObjects) {
       // if no HAS_OBJECTS flag received on attach, we can end sync sequence immediately and treat it as no objects on a channel.
       // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
-      this._objectsPool.resetToInitialPool(true);
-      this._syncObjectsDataPool.clear();
+      this._objectsPool.resetToInitialPool(true); // RTO4b1, RTO4b2
+      this._syncObjectsDataPool.clear(); // RTO4b3
       // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
       // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
-      this._endSync(fromInitializedState);
+      this._endSync(fromInitializedState); // RTO4b4
     }
   }
 
@@ -338,6 +345,7 @@ export class Objects {
     this._stateChange(ObjectsState.syncing, false);
   }
 
+  /** @spec RTO5c */
   private _endSync(deferStateEvent: boolean): void {
     this._applySync();
     // should apply buffered object operations after we applied the sync.
@@ -345,9 +353,9 @@ export class Objects {
     this._applyObjectMessages(this._bufferedObjectOperations);
 
     this._bufferedObjectOperations = [];
-    this._syncObjectsDataPool.clear();
-    this._currentSyncId = undefined;
-    this._currentSyncCursor = undefined;
+    this._syncObjectsDataPool.clear(); // RTO5c4
+    this._currentSyncId = undefined; // RTO5c3
+    this._currentSyncCursor = undefined; // RTO5c3
     this._stateChange(ObjectsState.synced, deferStateEvent);
   }
 
@@ -358,6 +366,7 @@ export class Objects {
     let match: RegExpMatchArray | null;
     let syncId: string | undefined = undefined;
     let syncCursor: string | undefined = undefined;
+    // RTO5a1 - syncChannelSerial is a two-part identifier: <sequence id>:<cursor value>
     if (syncChannelSerial && (match = syncChannelSerial.match(/^([\w-]+):(.*)$/))) {
       syncId = match[1];
       syncCursor = match[2];
@@ -377,38 +386,41 @@ export class Objects {
     const receivedObjectIds = new Set<string>();
     const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate | LiveObjectUpdateNoop }[] = [];
 
+    // RTO5c1
     for (const [objectId, entry] of this._syncObjectsDataPool.entries()) {
       receivedObjectIds.add(objectId);
       const existingObject = this._objectsPool.get(objectId);
 
+      // RTO5c1a
       if (existingObject) {
-        const update = existingObject.overrideWithObjectState(entry.objectState);
+        const update = existingObject.overrideWithObjectState(entry.objectState); // RTO5c1a1
         // store updates to call subscription callbacks for all of them once the sync sequence is completed.
         // this will ensure that clients get notified about the changes only once everything has been applied.
         existingObjectUpdates.push({ object: existingObject, update });
         continue;
       }
 
+      // RTO5c1b,
       let newObject: LiveObject;
       // assign to a variable so TS doesn't complain about 'never' type in the default case
       const objectType = entry.objectType;
       switch (objectType) {
         case 'LiveCounter':
-          newObject = LiveCounter.fromObjectState(this, entry.objectState);
+          newObject = LiveCounter.fromObjectState(this, entry.objectState); // RTO5c1b1a
           break;
 
         case 'LiveMap':
-          newObject = LiveMap.fromObjectState(this, entry.objectState);
+          newObject = LiveMap.fromObjectState(this, entry.objectState); // RTO5c1b1b
           break;
 
         default:
-          throw new this._client.ErrorInfo(`Unknown LiveObject type: ${objectType}`, 50000, 500);
+          throw new this._client.ErrorInfo(`Unknown LiveObject type: ${objectType}`, 50000, 500); // RTO5c1b1c
       }
 
-      this._objectsPool.set(objectId, newObject);
+      this._objectsPool.set(objectId, newObject); // RTO5c1b1
     }
 
-    // need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
+    // RTO5c2 - need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
     this._objectsPool.deleteExtraObjectIds([...receivedObjectIds]);
 
     // call subscription callbacks for all updated existing objects
@@ -457,14 +469,15 @@ export class Objects {
     }
   }
 
+  /** @spec RTO2 */
   private _throwIfMissingChannelMode(expectedMode: 'object_subscribe' | 'object_publish'): void {
-    // channel.modes is only populated on channel attachment, so use it only if it is set,
-    // otherwise as a best effort use user provided channel options
+    // RTO2a - channel.modes is only populated on channel attachment, so use it only if it is set
     if (this._channel.modes != null && !this._channel.modes.includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400);
+      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400); // RTO2a2
     }
+    // RTO2b - otherwise as a best effort use user provided channel options
     if (!this._client.Utils.allToLowerCase(this._channel.channelOptions.modes ?? []).includes(expectedMode)) {
-      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400);
+      throw new this._client.ErrorInfo(`"${expectedMode}" channel mode must be set for this operation`, 40024, 400); // RTO2b2
     }
   }
 
