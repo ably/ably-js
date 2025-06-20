@@ -149,11 +149,12 @@ class RealtimeChannel extends EventEmitter {
     return this._push;
   }
 
+  /** @spec RTL27 */
   get objects() {
     if (!this._objects) {
-      Utils.throwMissingPluginError('Objects');
+      Utils.throwMissingPluginError('Objects'); // RTL27b
     }
-    return this._objects;
+    return this._objects; // RTL27a
   }
 
   invalidStateError(): ErrorInfo {
