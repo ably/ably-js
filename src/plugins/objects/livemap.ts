@@ -200,7 +200,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       !client.Platform.BufferUtils.isBuffer(value) &&
       !(value instanceof LiveObject)
     ) {
-      throw new client.ErrorInfo('Map value data type is unsupported', 40013, 400);
+      throw new client.ErrorInfo('Map value data type is unsupported', 40013, 400); // OD4a
     }
   }
 
@@ -237,7 +237,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
           objectId,
           nonce,
           initialValue: encodedInitialValue,
-          initialValueEncoding: format,
+          initialValueEncoding: format, // OOP5a2, OOP5b2
         } as ObjectOperation,
       },
       client.Utils,

@@ -34,7 +34,7 @@ export interface ObjectData {
   /** A reference to another object, used to support composable object structures. */
   objectId?: string; // OD2a
 
-  /** Can be set by the client to indicate that value in `string` or `bytes` field have an encoding. */
+  /** May be set by the client to indicate that value in `string` field have an encoding. */
   encoding?: string; // OD2b
   /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
   boolean?: boolean; // OD2c
@@ -213,6 +213,8 @@ export class ObjectMessage {
    * Mutates the provided ObjectMessage.
    *
    * Uses encoding functions from regular `Message` processing.
+   *
+   * @spec OM4
    */
   static encode(message: ObjectMessage, client: BaseClient): ObjectMessage {
     const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
@@ -260,6 +262,8 @@ export class ObjectMessage {
    * Format is used to decode the bytes value as it's implicitly encoded depending on the protocol used:
    * - json: bytes are base64 encoded string
    * - msgpack: bytes have a binary representation and don't need to be decoded
+   *
+   * @spec OM5
    */
   static async decode(
     message: ObjectMessage,
@@ -367,6 +371,7 @@ export class ObjectMessage {
     }
   }
 
+  /** @spec OD5 */
   private static async _decodeObjectData(
     objectData: ObjectData,
     client: BaseClient,
@@ -379,11 +384,12 @@ export class ObjectMessage {
     // - if connection is json - "bytes" was received as a base64 string, need to decode it to a buffer
 
     if (format !== 'msgpack' && objectData.bytes != null) {
-      // connection is using JSON protocol, decode bytes value
+      // OD5b2 - connection is using JSON protocol, decode bytes value
       objectData.bytes = client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
     }
   }
 
+  /** @spec OOP5 */
   private static _encodeObjectOperation(
     objectOperation: ObjectOperation,
     encodeObjectDataFn: EncodeObjectDataFunction,
@@ -449,6 +455,7 @@ export class ObjectMessage {
     return objectStateCopy;
   }
 
+  /** @spec OD4 */
   private static _encodeObjectData(data: ObjectData, encodeFn: EncodeObjectDataFunction): ObjectData {
     const encodedData = encodeFn(data);
     return encodedData;
@@ -468,6 +475,7 @@ export class ObjectMessage {
     objectState?: ObjectState;
   } {
     const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
+      // OOP5a1, OOP5b1 - initialValue encoded based on the protocol used
       const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWire(data, encoding, format);
       return {
         data: encodedData,
@@ -484,6 +492,7 @@ export class ObjectMessage {
 
       let encodedBytes: any = data.bytes;
       if (data.bytes != null) {
+        // OD4c2, OD4d2
         const result = messageEncoding.encodeDataForWire(data.bytes, data.encoding, format);
         encodedBytes = result.data;
         // no need to change the encoding
