@@ -4,18 +4,20 @@ import { ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp
 import { Objects } from './objects';
 
 export interface LiveCounterData extends LiveObjectData {
-  data: number;
+  data: number; // RTLC3
 }
 
 export interface LiveCounterUpdate extends LiveObjectUpdate {
   update: { amount: number };
 }
 
+/** @spec RTLC1, RTLC2 */
 export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> {
   /**
    * Returns a {@link LiveCounter} instance with a 0 value.
    *
    * @internal
+   * @spec RTLC4
    */
   static zeroValue(objects: Objects, objectId: string): LiveCounter {
     return new LiveCounter(objects, objectId);
@@ -122,9 +124,10 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     };
   }
 
+  /** @spec RTLC5 */
   value(): number {
-    this._objects.throwIfInvalidAccessApiConfiguration();
-    return this._dataRef.data;
+    this._objects.throwIfInvalidAccessApiConfiguration(); // RTLC5a, RTLC5b
+    return this._dataRef.data; // RTLC5c
   }
 
   /**
@@ -221,6 +224,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   /**
    * @internal
+   * @spec RTLC6
    */
   overrideWithObjectState(objectState: ObjectState): LiveCounterUpdate | LiveObjectUpdateNoop {
     if (objectState.objectId !== this.getObjectId()) {
@@ -252,7 +256,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
     // object's site serials are still updated even if it is tombstoned, so always use the site serials received from the operation.
     // should default to empty map if site serials do not exist on the object state, so that any future operation may be applied to this object.
-    this._siteTimeserials = objectState.siteTimeserials ?? {};
+    this._siteTimeserials = objectState.siteTimeserials ?? {}; // RTLC6a
 
     if (this.isTombstoned()) {
       // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
@@ -265,8 +269,9 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       this.tombstone();
     } else {
       // override data for this object with data from the object state
-      this._createOperationIsMerged = false;
-      this._dataRef = { data: objectState.counter?.count ?? 0 };
+      this._createOperationIsMerged = false; // RTLC6b
+      this._dataRef = { data: objectState.counter?.count ?? 0 }; // RTLC6c
+      // RTLC6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
         this._mergeInitialDataFromCreateOperation(objectState.createOp);
       }
@@ -285,6 +290,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return;
   }
 
+  /** @spec RTLC4 */
   protected _getZeroValueData(): LiveCounterData {
     return { data: 0 };
   }
@@ -299,8 +305,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    this._dataRef.data += objectOperation.counter?.count ?? 0;
-    this._createOperationIsMerged = true;
+    this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC6d1
+    this._createOperationIsMerged = true; // RTLC6d2
 
     return { update: { amount: objectOperation.counter?.count ?? 0 } };
   }

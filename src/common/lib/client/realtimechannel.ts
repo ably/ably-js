@@ -614,6 +614,7 @@ class RealtimeChannel extends EventEmitter {
         break;
       }
 
+      // RTL1
       // OBJECT and OBJECT_SYNC message processing share most of the logic, so group them together
       case actions.OBJECT:
       case actions.OBJECT_SYNC: {
