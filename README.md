@@ -1,3 +1,8 @@
+![Ably Chat Header](/images/JavaScriptSDK-github.png)
+[![npm version](https://img.shields.io/npm/v/ably.svg?style=flat)](https://img.shields.io/npm/v/ably.svg?style=flat)
+[![License](https://badgen.net/github/license/ably/ably-js)](https://github.com/ably/ably-js/blob/main/LICENSE)
+---
+
 # Ably Pub/Sub JavaScript SDK
 
 Build any realtime experience using Ably’s Pub/Sub JavaScript SDK. Supported on all popular platforms and frameworks, including Node, React, and Web Workers.
