@@ -453,17 +453,37 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           // Verify channel is initially not attached
           expect(channel.state).to.equal('initialized', 'Channel should be in initialized state');
 
-          // Call getRoot() on unattached channel - this should automatically attach
-          const getRootPromise = objects.getRoot();
-
-          // Wait a bit and verify channel starts attaching
-          await new Promise((res) => setTimeout(res, 100));
-          expect(['attaching', 'attached']).to.include(channel.state, 'Channel should be attaching or attached after getRoot() call');
-
-          // The promise should eventually resolve
-          const root = await getRootPromise;
+          // Call getRoot() on unattached channel - this should automatically attach and resolve
+          const root = await objects.getRoot();
+          
+          // Channel should now be attached (or at least no longer initialized)
+          expect(channel.state).to.equal('attached', 'Channel should be attached after getRoot() call');
           expect(root).to.be.an('object', 'getRoot should return a root object');
           expect(root.size()).to.equal(0, 'Root should be empty for new channel');
+        }, client);
+      });
+
+      /** @nospec */
+      it('getRoot() resolves promptly when called on unattached channel (regression test for hanging promise)', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
+
+          // Set up a timeout to catch if getRoot() hangs
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('getRoot() timed out')), 5000);
+          });
+
+          // Race between getRoot and timeout - getRoot should win by completing quickly
+          const result = await Promise.race([
+            objects.getRoot(),
+            timeoutPromise
+          ]);
+
+          expect(result).to.be.an('object', 'getRoot should return a root object without hanging');
         }, client);
       });
 
