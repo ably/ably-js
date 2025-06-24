@@ -172,7 +172,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       /* easiest way to get the host we're using for tests */
       var helper = this.test.helper,
         dummyRest = helper.AblyRest(),
-        host = dummyRest.options.restHost,
+        host = dummyRest.options.primaryDomain,
         /* Add the same host as a bunch of fallback hosts, so after the first
          * request 'fails' we retry on the same host using the fallback mechanism */
         rest = helper.AblyRest({
@@ -219,7 +219,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       await channel.publish([{ name: 'one' }, { name: 'two' }]);
       var page = await channel.history({ direction: 'forwards' });
       /* TODO uncomment when idempotent publishing works on sandbox
-       * until then, test with ABLY_ENV=idempotent-dev
+       * until then, test with ABLY_ENDPOINT=idempotent-dev
        * test.equal(page.items.length, 2, 'Only one message (with two items) should have been published');
        */
       expect(page.items[0].id).to.equal(idOne, 'Check message id 1 preserved in history');

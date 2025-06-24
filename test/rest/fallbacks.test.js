@@ -14,16 +14,18 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
           done(err);
           return;
         }
-        goodHost = helper.AblyRest().options.restHost;
+        goodHost = helper.AblyRest().options.primaryDomain;
         done();
       });
     });
 
-    /** @spec RSC15f */
+    /**
+     * @spec RSC15f
+     */
     it('Store working fallback', async function () {
       const helper = this.test.helper;
       var rest = helper.AblyRest({
-        restHost: helper.unroutableHost,
+        endpoint: helper.unroutableHost,
         fallbackHosts: [goodHost],
         httpRequestTimeout: 3000,
       });
@@ -61,6 +63,40 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
       expect(currentFallback.validUntil > now, 'Check validUntil has been re-set').to.be.ok;
     });
 
+    /**
+     * @spec RSC25
+     * @spec RTN17i
+     */
+    it('Should use the primary domain as the first attempted for every connection attempt', async function () {
+      const helper = this.test.helper;
+      const rest = helper.AblyRest({
+        endpoint: helper.unroutableHost,
+        fallbackHosts: [goodHost],
+        httpRequestTimeout: 3000,
+      });
+      const originDoUri = rest.http.doUri.bind(rest.http);
+      const recordedHttpRequests = [];
+
+      rest.http.doUri = (method, uri, ...rest) => {
+        recordedHttpRequests.push(uri);
+        return originDoUri(method, uri, ...rest);
+      };
+
+      await rest.time();
+      expect(recordedHttpRequests.length).to.be.eq(2);
+      expect(recordedHttpRequests[0]).to.be.eq(`https://${helper.unroutableHost}:443/time`);
+      expect(recordedHttpRequests[1]).to.be.eq('https://sandbox.realtime.ably-nonprod.net:443/time');
+
+      recordedHttpRequests.length = 0;
+      helper.recordPrivateApi('write.rest._currentFallback.validUntil');
+      rest._currentFallback.validUntil = Date.now() - 1000;
+
+      await rest.time();
+      expect(recordedHttpRequests.length).to.be.eq(2);
+      expect(recordedHttpRequests[0]).to.be.eq(`https://${helper.unroutableHost}:443/time`);
+      expect(recordedHttpRequests[1]).to.be.eq('https://sandbox.realtime.ably-nonprod.net:443/time');
+    });
+
     describe('Max elapsed time for host retries', function () {
       /** @spec TO3l6 */
       it('can timeout after default host', async function () {
@@ -69,7 +105,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
         // set httpMaxRetryDuration lower than httpRequestTimeout so it would timeout after default host attempt
         const httpMaxRetryDuration = Math.floor(httpRequestTimeout / 2);
         const rest = helper.AblyRest({
-          restHost: helper.unroutableHost,
+          endpoint: helper.unroutableHost,
           fallbackHosts: [helper.unroutableHost],
           httpRequestTimeout,
           httpMaxRetryDuration,
@@ -96,7 +132,7 @@ define(['shared_helper', 'async', 'chai'], function (Helper, async, chai) {
         // set httpMaxRetryDuration higher than httpRequestTimeout and lower than 2*httpRequestTimeout so it would timeout after first fallback host retry attempt
         const httpMaxRetryDuration = Math.floor(httpRequestTimeout * 1.5);
         const rest = helper.AblyRest({
-          restHost: helper.unroutableHost,
+          endpoint: helper.unroutableHost,
           fallbackHosts: [helper.unroutableHost, helper.unroutableHost],
           httpRequestTimeout,
           httpMaxRetryDuration,

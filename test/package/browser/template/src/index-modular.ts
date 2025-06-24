@@ -24,7 +24,11 @@ async function checkStandaloneFunction() {
 globalThis.testAblyPackage = async function () {
   const key = await createSandboxAblyAPIKey();
 
-  const realtime = new BaseRealtime({ key, environment: 'sandbox', plugins: { WebSocketTransport, FetchRequest } });
+  const realtime = new BaseRealtime({
+    key,
+    endpoint: 'nonprod:sandbox',
+    plugins: { WebSocketTransport, FetchRequest },
+  });
 
   const channel = realtime.channels.get('channel');
   await attachChannel(channel);

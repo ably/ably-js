@@ -3,7 +3,8 @@
 
 /* testapp module is responsible for setting up and tearing down apps in the test environment */
 define(['globals', 'ably'], function (ablyGlobals, ably) {
-  var restHost = ablyGlobals.restHost || prefixDomainWithEnvironment('rest.ably.io', ablyGlobals.environment),
+  const Defaults = ably.Realtime.Platform.Defaults;
+  var restHost = Defaults.getPrimaryDomainFromEndpoint(ablyGlobals.endpoint),
     port = ablyGlobals.tls ? ablyGlobals.tlsPort : ablyGlobals.port,
     scheme = ablyGlobals.tls ? 'https' : 'http';
 
@@ -23,12 +24,12 @@ define(['globals', 'ably'], function (ablyGlobals, ably) {
     }
   }
 
-  function prefixDomainWithEnvironment(domain, environment) {
-    if (environment.toLowerCase() === 'production') {
-      return domain;
-    } else {
-      return environment + '-' + domain;
+  function getHostname(endpoint) {
+    if (endpoint.startsWith('nonprod:')) {
+      return `${endpoint.replace('nonprod:', '')}.realtime.ably-nonprod.net`;
     }
+
+    return `${endpoint}.realtime.ably.net`;
   }
 
   function toBase64(helper, str) {

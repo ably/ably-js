@@ -129,9 +129,8 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
         };
 
         helper.recordPrivateApi('read.realtime.options');
-        helper.recordPrivateApi('call.Defaults.getHost');
         helper.recordPrivateApi('call.realtime.baseUri');
-        var baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
+        var baseUri = realtime.baseUri(realtime.options.primaryDomain);
         var pushRecipient = {
           transportType: 'ablyChannel',
           channel: 'pushenabled:foo',
@@ -413,9 +412,8 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
 
         const channel = realtime.channels.get(channelName);
 
-        helper.recordPrivateApi('call.Defaults.getHost');
-        helper.recordPrivateApi('read.realtime.options');
-        const baseUri = realtime.baseUri(Ably.Rest.Platform.Defaults.getHost(realtime.options));
+        helper.recordPrivateApi('read.realtime.options.primaryDomain');
+        const baseUri = realtime.baseUri(realtime.options.primaryDomain);
 
         helper.recordPrivateApi('read.realtime.options');
         const pushRecipient = {

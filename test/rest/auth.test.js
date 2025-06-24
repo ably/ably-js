@@ -400,11 +400,14 @@ define(['chai', 'shared_helper', 'async', 'globals'], function (chai, Helper, as
     testJWTAuthParams('Basic rest JWT', {});
     testJWTAuthParams('Rest JWT with return type ', { returnType: 'jwt' });
     /* The embedded tests rely on the echoserver getting a token from realtime, so won't work against a local realtime */
-    if (globals.environment !== 'local') {
-      testJWTAuthParams('Rest embedded JWT', { jwtType: 'embedded', environment: globals.environment });
+    if (globals.endpoint !== 'local') {
+      testJWTAuthParams('Rest embedded JWT', {
+        jwtType: 'embedded',
+        environment: globals.endpoint.replace('nonprod:', ''),
+      });
       testJWTAuthParams('Rest embedded JWT with encryption', {
         jwtType: 'embedded',
-        environment: globals.environment,
+        environment: globals.endpoint.replace('nonprod:', ''),
         encrypted: 1,
       });
     }

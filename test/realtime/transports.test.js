@@ -116,9 +116,9 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       /** @nospec */
       it('ws_primary_host_fails', function (done) {
         const helper = this.test.helper;
-        const goodHost = helper.AblyRest().options.realtimeHost;
+        const goodHost = helper.AblyRest().options.primaryDomain;
         const realtime = helper.AblyRealtime(
-          options(helper, { realtimeHost: helper.unroutableAddress, fallbackHosts: [goodHost] }),
+          options(helper, { endpoint: helper.unroutableAddress, fallbackHosts: [goodHost] }),
         );
 
         realtime.connection.on('connected', function () {
@@ -129,7 +129,10 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
         helper.monitorConnection(done, realtime);
       });
 
-      /** @specpartial RTN14d */
+      /**
+       * @spec REC3b
+       * @specpartial RTN14d
+       */
       it('no_internet_connectivity', function (done) {
         const helper = this.test.helper;
         Config.WebSocket = FakeWebSocket;
@@ -161,14 +164,14 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
       /** @nospec */
       it('ws_can_reconnect_after_ws_connectivity_fail', function (done) {
         const helper = this.test.helper;
-        helper.recordPrivateApi('read.realtime.options.realtimeHost');
-        const goodHost = helper.AblyRest().options.realtimeHost;
+        helper.recordPrivateApi('read.realtime.options.primaryDomain');
+        const goodHost = helper.AblyRest().options.primaryDomain;
 
         helper.recordPrivateApi('pass.clientOption.webSocketSlowTimeout');
         helper.recordPrivateApi('pass.clientOption.wsConnectivityCheckUrl');
         const realtime = helper.AblyRealtime(
           options(helper, {
-            realtimeHost: helper.unroutableAddress,
+            endpoint: helper.unroutableAddress,
             // use unroutable host ws connectivity check to simulate no internet
             wsConnectivityCheckUrl: helper.unroutableWssAddress,
             // ensure ws slow timeout procs and performs ws connectivity check, which would fail due to unroutable host
@@ -200,10 +203,10 @@ define(['shared_helper', 'async', 'chai', 'ably'], function (Helper, async, chai
               connection.connectionManager.tryATransport = tryATransportOriginal;
               helper.recordPrivateApi('write.realtime.options.wsConnectivityCheckUrl');
               realtime.options.wsConnectivityCheckUrl = originialWsCheckUrl;
-              helper.recordPrivateApi('write.realtime.options.realtimeHost');
-              realtime.options.realtimeHost = goodHost;
-              helper.recordPrivateApi('write.connectionManager.wsHosts');
-              realtime.connection.connectionManager.wsHosts = [goodHost];
+              helper.recordPrivateApi('write.realtime.options.primaryDomain');
+              realtime.options.primaryDomain = goodHost;
+              helper.recordPrivateApi('write.connectionManager.domains');
+              realtime.connection.connectionManager.domains = [goodHost];
 
               cb();
             },
