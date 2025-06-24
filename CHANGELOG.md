@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.10.0](https://github.com/ably/ably-js/tree/2.10.0) (2025-06-25)
+
+- Add `Channels.all` to type declarations [\#2040](https://github.com/ably/ably-js/pull/2040)
+- Add `ClientOptions.endpoint` parameter and deprecate the `environment`, `restHost` and `realtimeHost` client options. See [platform customization](https://ably.com/docs/platform-customization#request-a-custom-environment) documentation for guidance on using the new `endpoint` parameter [\#1973](https://github.com/ably/ably-js/pull/1973)
+
 ## [2.9.0](https://github.com/ably/ably-js/tree/2.9.0) (2025-05-08)
 
 **Introducing Ably LiveObjects**
