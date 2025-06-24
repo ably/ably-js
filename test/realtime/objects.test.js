@@ -441,6 +441,32 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         }, client);
       });
 
+      /** @nospec */
+      it('getRoot() on unattached channel automatically attaches and waits for sync', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
+
+          // Verify channel is initially not attached
+          expect(channel.state).to.equal('initialized', 'Channel should be in initialized state');
+
+          // Call getRoot() on unattached channel - this should automatically attach
+          const getRootPromise = objects.getRoot();
+
+          // Wait a bit and verify channel starts attaching
+          await new Promise((res) => setTimeout(res, 100));
+          expect(['attaching', 'attached']).to.include(channel.state, 'Channel should be attaching or attached after getRoot() call');
+
+          // The promise should eventually resolve
+          const root = await getRootPromise;
+          expect(root).to.be.an('object', 'getRoot should return a root object');
+          expect(root.size()).to.equal(0, 'Root should be empty for new channel');
+        }, client);
+      });
+
       const primitiveKeyData = [
         { key: 'stringKey', data: { string: 'stringValue' } },
         { key: 'emptyStringKey', data: { string: '' } },

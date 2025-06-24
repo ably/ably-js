@@ -73,6 +73,9 @@ export class Objects {
   async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
     this.throwIfInvalidAccessApiConfiguration();
 
+    // Ensure channel is attached before proceeding with getRoot operation
+    await this._ensureChannelAttached();
+
     // if we're not synced yet, wait for sync sequence to finish before returning root
     if (this._state !== ObjectsState.synced) {
       await this._eventEmitterInternal.once(ObjectsEvent.synced);
@@ -487,6 +490,25 @@ export class Objects {
     } else {
       this._eventEmitterInternal.emit(event);
       this._eventEmitterPublic.emit(event);
+    }
+  }
+
+  private async _ensureChannelAttached(): Promise<void> {
+    switch (this._channel.state) {
+      case 'attached':
+      case 'suspended':
+        // Channel is attached or suspended, proceed with the operation
+        return;
+      case 'initialized':
+      case 'detached':
+      case 'detaching':
+      case 'attaching':
+        // Channel needs to be attached
+        await this._channel.attach();
+        return;
+      default:
+        // For 'failed' state or any other invalid state
+        throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
     }
   }
 
