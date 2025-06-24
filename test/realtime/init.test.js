@@ -494,6 +494,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
           var hosts = new Ably.Rest._Http()._getHosts(realtime);
           /* restHost rather than realtimeHost as that's what connectionManager
            * knows about; converted to realtimeHost by the websocketTransport */
+          helper.recordPrivateApi('read.realtime.options.primaryDomain');
           expect(hosts[0]).to.equal(
             realtime.options.primaryDomain,
             'Check connected realtime host is the first option',

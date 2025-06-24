@@ -412,7 +412,7 @@ define(['ably', 'shared_helper', 'async', 'chai', 'test/support/push_channel_tra
 
         const channel = realtime.channels.get(channelName);
 
-        helper.recordPrivateApi('read.realtime.options');
+        helper.recordPrivateApi('read.realtime.options.primaryDomain');
         const baseUri = realtime.baseUri(realtime.options.primaryDomain);
 
         helper.recordPrivateApi('read.realtime.options');
