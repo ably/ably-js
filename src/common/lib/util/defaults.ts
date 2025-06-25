@@ -274,9 +274,20 @@ export function normaliseOptions(
   MsgPack: MsgPack | null,
   logger: Logger | null, // should only be omitted by tests
 ): NormalisedClientOptions {
-  checkIfClientOptionsAreValid(options);
-
   const loggerToUse = logger ?? Logger.defaultLogger;
+
+  // Deprecated options
+  if (options.environment) {
+    loggerToUse.deprecated('The `environment` client option', 'Use the `endpoint` client option instead.');
+  }
+  if (options.restHost) {
+    loggerToUse.deprecated('The `restHost` client option', 'Use the `endpoint` client option instead.');
+  }
+  if (options.realtimeHost) {
+    loggerToUse.deprecated('The `realtimeHost` client option', 'Use the `endpoint` client option instead.');
+  }
+
+  checkIfClientOptionsAreValid(options);
 
   if (typeof options.recover === 'function' && options.closeOnUnload === true) {
     Logger.logAction(
