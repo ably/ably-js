@@ -71,7 +71,14 @@ export class Objects {
    * This is useful when working with multiple channels with different underlying data structure.
    */
   async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
-    this.throwIfInvalidAccessApiConfiguration();
+    // Check for channel mode first
+    this._throwIfMissingChannelMode('object_subscribe');
+    
+    // Ensure channel is attached before proceeding with getRoot operation
+    await this._ensureChannelAttached();
+    
+    // Now that we're attached, check for any remaining invalid states
+    this._throwIfInChannelState(['failed']);
 
     // if we're not synced yet, wait for sync sequence to finish before returning root
     if (this._state !== ObjectsState.synced) {
@@ -487,6 +494,25 @@ export class Objects {
     } else {
       this._eventEmitterInternal.emit(event);
       this._eventEmitterPublic.emit(event);
+    }
+  }
+
+  private async _ensureChannelAttached(): Promise<void> {
+    switch (this._channel.state) {
+      case 'attached':
+      case 'suspended':
+        // Channel is attached or suspended, proceed with the operation
+        return;
+      case 'initialized':
+      case 'detached':
+      case 'detaching':
+      case 'attaching':
+        // Channel needs to be attached
+        await this._channel.attach();
+        return;
+      default:
+        // For 'failed' state or any other invalid state
+        throw this._client.ErrorInfo.fromValues(this._channel.invalidStateError());
     }
   }
 
