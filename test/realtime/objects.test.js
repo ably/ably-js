@@ -4721,90 +4721,75 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           },
           {
             description: 'map create op with object payload',
-            message: objectMessageFromValues(
-              {
-                operation: {
-                  action: 0,
-                  objectId: 'object-id',
-                  map: {
-                    semantics: 0,
-                    entries: { 'key-1': { tombstone: false, data: { objectId: 'another-object-id' } } },
-                  },
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                map: {
+                  semantics: 0,
+                  entries: { 'key-1': { tombstone: false, data: { objectId: 'another-object-id' } } },
                 },
               },
-              MessageEncoding,
-            ),
+            }),
             expected: Utils.dataSizeBytes('key-1'),
           },
           {
             description: 'map create op with string payload',
-            message: objectMessageFromValues(
-              {
-                operation: {
-                  action: 0,
-                  objectId: 'object-id',
-                  map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } } },
-                },
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } } },
               },
-              MessageEncoding,
-            ),
+            }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
           },
           {
             description: 'map create op with bytes payload',
-            message: objectMessageFromValues(
-              {
-                operation: {
-                  action: 0,
-                  objectId: 'object-id',
-                  map: {
-                    semantics: 0,
-                    entries: { 'key-1': { tombstone: false, data: { bytes: BufferUtils.utf8Encode('my-value') } } },
-                  },
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                map: {
+                  semantics: 0,
+                  entries: { 'key-1': { tombstone: false, data: { bytes: BufferUtils.utf8Encode('my-value') } } },
                 },
               },
-              MessageEncoding,
-            ),
+            }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
           },
           {
             description: 'map create op with boolean payload',
-            message: objectMessageFromValues(
-              {
-                operation: {
-                  action: 0,
-                  objectId: 'object-id',
-                  map: {
-                    semantics: 0,
-                    entries: {
-                      'key-1': { tombstone: false, data: { boolean: true } },
-                      'key-2': { tombstone: false, data: { boolean: false } },
-                    },
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                map: {
+                  semantics: 0,
+                  entries: {
+                    'key-1': { tombstone: false, data: { boolean: true } },
+                    'key-2': { tombstone: false, data: { boolean: false } },
                   },
                 },
               },
-              MessageEncoding,
-            ),
+            }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('key-2') + 2,
           },
           {
             description: 'map create op with double payload',
-            message: objectMessageFromValues(
-              {
-                operation: {
-                  action: 0,
-                  objectId: 'object-id',
-                  map: {
-                    semantics: 0,
-                    entries: {
-                      'key-1': { tombstone: false, data: { number: 123.456 } },
-                      'key-2': { tombstone: false, data: { number: 0 } },
-                    },
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                map: {
+                  semantics: 0,
+                  entries: {
+                    'key-1': { tombstone: false, data: { number: 123.456 } },
+                    'key-2': { tombstone: false, data: { number: 0 } },
                   },
                 },
               },
-              MessageEncoding,
-            ),
+            }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('key-2') + 16,
           },
           {
@@ -4944,12 +4929,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         forScenarios(this, objectMessageSizeScenarios, function (helper, scenario) {
           const client = RealtimeWithObjects(helper, { autoConnect: false });
           helper.recordPrivateApi('call.ObjectMessage.encode');
-          ObjectsPlugin.ObjectMessage.encode(scenario.message, client);
+          const encodedMessage = scenario.message.encode(client);
           helper.recordPrivateApi('call.BufferUtils.utf8Encode'); // was called by a scenario to create buffers
           helper.recordPrivateApi('call.ObjectMessage.fromValues'); // was called by a scenario to create an ObjectMessage instance
           helper.recordPrivateApi('call.Utils.dataSizeBytes'); // was called by a scenario to calculated the expected byte size
           helper.recordPrivateApi('call.ObjectMessage.getMessageSize');
-          expect(scenario.message.getMessageSize()).to.equal(scenario.expected);
+          expect(encodedMessage.getMessageSize()).to.equal(scenario.expected);
         });
       });
     });
