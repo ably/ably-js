@@ -1,6 +1,5 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type { MessageEncoding } from 'common/lib/types/basemessage';
-import type Logger from 'common/lib/util/logger';
 import type * as Utils from 'common/lib/util/utils';
 import type { Bufferlike } from 'common/platform';
 
@@ -9,7 +8,7 @@ export type EncodeInitialValueFunction = (
   encoding?: string | null,
 ) => { data: any; encoding?: string | null };
 
-export type EncodeObjectDataFunction = (data: ObjectData) => ObjectData;
+export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
 
 /** @spec OOP2 */
 export enum ObjectOperationAction {
@@ -27,7 +26,7 @@ export enum ObjectsMapSemantics {
 }
 
 /**
- * An ObjectData represents a value in an object on a channel.
+ * An ObjectData represents a value in an object on a channel decoded from {@link WireObjectData}.
  * @spec OD1
  */
 export interface ObjectData {
@@ -47,14 +46,34 @@ export interface ObjectData {
 }
 
 /**
+ * A WireObjectData represents a value in an object on a channel received from the server.
+ * @spec OD1
+ */
+export interface WireObjectData {
+  /** A reference to another object, used to support composable object structures. */
+  objectId?: string; // OD2a
+
+  /** May be set by the client to indicate that value in `string` field have an encoding. */
+  encoding?: string; // OD2b
+  /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
+  boolean?: boolean; // OD2c
+  /** A primitive binary leaf value in the object graph. Only one value field can be set. Represented as a Base64-encoded string in JSON protocol */
+  bytes?: Bufferlike | string; // OD2d
+  /** A primitive number leaf value in the object graph. Only one value field can be set. */
+  number?: number; // OD2e
+  /** A primitive string leaf value in the object graph. Only one value field can be set. */
+  string?: string; // OD2f
+}
+
+/**
  * An ObjectsMapOp describes an operation to be applied to a Map object.
  * @spec OMO1
  */
-export interface ObjectsMapOp {
+export interface ObjectsMapOp<TData> {
   /** The key of the map entry to which the operation should be applied. */
   key: string; // OMO2a
   /** The data that the map entry should contain if the operation is a MAP_SET operation. */
-  data?: ObjectData; // OMO2b
+  data?: TData; // OMO2b
 }
 
 /**
@@ -70,7 +89,7 @@ export interface ObjectsCounterOp {
  * An ObjectsMapEntry represents the value at a given key in a Map object.
  * @spec OME1
  */
-export interface ObjectsMapEntry {
+export interface ObjectsMapEntry<TData> {
   /** Indicates whether the map entry has been removed. */
   tombstone?: boolean; // OME2a
   /**
@@ -81,18 +100,18 @@ export interface ObjectsMapEntry {
    */
   timeserial?: string; // OME2b
   /** The data that represents the value of the map entry. */
-  data?: ObjectData; // OME2c
+  data?: TData; // OME2c
 }
 
 /**
  * An ObjectsMap object represents a map of key-value pairs.
  * @spec OMP1
  */
-export interface ObjectsMap {
+export interface ObjectsMap<TData> {
   /** The conflict-resolution semantics used by the map object. */
   semantics?: ObjectsMapSemantics; // OMP3a
   // The map entries, indexed by key.
-  entries?: Record<string, ObjectsMapEntry>; // OMP3b
+  entries?: Record<string, ObjectsMapEntry<TData>>; // OMP3b
 }
 
 /**
@@ -108,20 +127,20 @@ export interface ObjectsCounter {
  * An ObjectOperation describes an operation to be applied to an object on a channel.
  * @spec OOP1
  */
-export interface ObjectOperation {
+export interface ObjectOperation<TData> {
   /** Defines the operation to be applied to the object. */
   action: ObjectOperationAction; // OOP3a
   /** The object ID of the object on a channel to which the operation should be applied. */
   objectId: string; // OOP3b
   /** The payload for the operation if it is an operation on a Map object type. */
-  mapOp?: ObjectsMapOp; // OOP3c
+  mapOp?: ObjectsMapOp<TData>; // OOP3c
   /** The payload for the operation if it is an operation on a Counter object type. */
   counterOp?: ObjectsCounterOp; // OOP3d
   /**
    * The payload for the operation if the operation is MAP_CREATE.
    * Defines the initial value for the Map object.
    */
-  map?: ObjectsMap; // OOP3e
+  map?: ObjectsMap<TData>; // OOP3e
   /**
    * The payload for the operation if the operation is COUNTER_CREATE.
    * Defines the initial value for the Counter object.
@@ -147,7 +166,7 @@ export interface ObjectOperation {
  * An ObjectState describes the instantaneous state of an object on a channel.
  * @spec OST1
  */
-export interface ObjectState {
+export interface ObjectState<TData> {
   /** The identifier of the object. */
   objectId: string; // OST2a
   /** A map of serials keyed by a {@link ObjectMessage.siteCode}, representing the last operations applied to this object */
@@ -159,12 +178,12 @@ export interface ObjectState {
    *
    * Can be missing if create operation for the object is not known at this point.
    */
-  createOp?: ObjectOperation; // OST2d
+  createOp?: ObjectOperation<TData>; // OST2d
   /**
    * The data that represents the result of applying all operations to a Map object
    * excluding the initial value from the create operation if it is a Map object type.
    */
-  map?: ObjectsMap; // OST2e
+  map?: ObjectsMap<TData>; // OST2e
   /**
    * The data that represents the result of applying all operations to a Counter object
    * excluding the initial value from the create operation if it is a Counter object type.
@@ -172,11 +191,177 @@ export interface ObjectState {
   counter?: ObjectsCounter; // OST2f
 }
 
-// TODO: tidy up encoding/decoding logic for ObjectMessage:
-// Should have separate WireObjectMessage with the correct types received from the server, do the necessary encoding/decoding there.
-// For reference, see WireMessage and WirePresenceMessage
+function encode(
+  message: Utils.Properties<ObjectMessage> | Utils.Properties<WireObjectMessage>,
+  utils: typeof Utils,
+  messageEncoding: typeof MessageEncoding,
+  encodeObjectDataFn: EncodeObjectDataFunction,
+  encodeInitialValueFn: EncodeInitialValueFunction,
+): WireObjectMessage {
+  // deep copy the message to avoid mutating the original one.
+  // buffer values won't be correctly copied, so we will need to use the original message when encoding.
+  const result = Object.assign(new WireObjectMessage(utils, messageEncoding), copyMsg(message));
+
+  // encode "object" field
+  if (message.object?.map?.entries) {
+    result.object!.map!.entries = encodeMapEntries(message.object.map.entries, encodeObjectDataFn);
+  }
+
+  if (message.object?.createOp?.map?.entries) {
+    result.object!.createOp!.map!.entries = encodeMapEntries(message.object.createOp.map.entries, encodeObjectDataFn);
+  }
+
+  if (message.object?.createOp?.mapOp?.data) {
+    result.object!.createOp!.mapOp!.data = encodeObjectData(message.object.createOp.mapOp.data, encodeObjectDataFn);
+  }
+
+  if (message.object?.createOp?.initialValue) {
+    const { data: encodedInitialValue } = encodeInitialValueFn(message.object.createOp.initialValue);
+    result.object!.createOp!.initialValue = encodedInitialValue;
+  }
+
+  // OOP5
+  // encode "operation" field
+  if (message.operation?.map?.entries) {
+    result.operation!.map!.entries = encodeMapEntries(message.operation.map.entries, encodeObjectDataFn);
+  }
+
+  if (message.operation?.mapOp?.data) {
+    result.operation!.mapOp!.data = encodeObjectData(message.operation.mapOp.data, encodeObjectDataFn);
+  }
+
+  if (message.operation?.initialValue) {
+    const { data: encodedInitialValue } = encodeInitialValueFn(message.operation.initialValue);
+    result.operation!.initialValue = encodedInitialValue;
+  }
+
+  return result;
+}
+
+function encodeMapEntries(
+  mapEntries: Record<string, ObjectsMapEntry<ObjectData | WireObjectData>>,
+  encodeFn: EncodeObjectDataFunction,
+): Record<string, ObjectsMapEntry<WireObjectData>> {
+  return Object.entries(mapEntries).reduce(
+    (acc, v) => {
+      const [key, entry] = v;
+      const encodedData = entry.data ? encodeObjectData(entry.data, encodeFn) : undefined;
+      acc[key] = {
+        ...entry,
+        data: encodedData,
+      };
+      return acc;
+    },
+    {} as Record<string, ObjectsMapEntry<WireObjectData>>,
+  );
+}
+
+/** @spec OD4 */
+function encodeObjectData(data: ObjectData | WireObjectData, encodeFn: EncodeObjectDataFunction): WireObjectData {
+  const encodedData = encodeFn(data);
+  return encodedData;
+}
+
+export function encodeInitialValue(
+  initialValue: Partial<ObjectOperation<ObjectData>>,
+  client: BaseClient,
+): {
+  encodedInitialValue: Bufferlike;
+  format: Utils.Format;
+} {
+  const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
+
+  // initial value object may contain user provided data that requires an additional encoding (for example buffers as map keys).
+  // so we need to encode that data first as if we were sending it over the wire.
+  const msg = ObjectMessage.fromValues(
+    // cast initialValue to ObjectOperation here, even though it may lack some properties
+    // that are usually present on ObjectOperation.
+    // this ObjectMessage instance is only used to get the encoded body,
+    // so it's ok for the operation field to be incomplete in this context.
+    // doing the type assertion here avoids the need to define a separate ObjectMessage
+    // type that supports a fully optional ObjectOperation.
+    { operation: initialValue as ObjectOperation<ObjectData> },
+    client.Utils,
+    client.MessageEncoding,
+  );
+  const wireMsg = msg.encode(client);
+  const { operation: initialValueWithDataEncoding } = WireObjectMessage.encodeForWire(
+    wireMsg,
+    client.Utils,
+    client.MessageEncoding,
+    format,
+  );
+
+  // initial value field should be represented as an array of bytes over the wire. so we encode the whole object based on the client encoding format
+  const encodedInitialValue = client.Utils.encodeBody(initialValueWithDataEncoding, client._MsgPack, format);
+
+  // if we've got string result (for example, json encoding was used), we need to additionally convert it to bytes array with utf8 encoding
+  if (typeof encodedInitialValue === 'string') {
+    return {
+      encodedInitialValue: client.Platform.BufferUtils.utf8Encode(encodedInitialValue),
+      format,
+    };
+  }
+
+  return {
+    encodedInitialValue,
+    format,
+  };
+}
+
+function strMsg(msg: any, className: string) {
+  let result = '[' + className;
+
+  for (const attr in msg) {
+    if (msg[attr] === undefined || attr === '_utils' || attr === '_messageEncoding') {
+      continue;
+    }
+
+    if (attr === 'operation' || attr === 'object' || attr === 'extras') {
+      result += `; ${attr}=${JSON.stringify(msg[attr])}`;
+    } else {
+      result += `; ${attr}=${msg[attr]}`;
+    }
+  }
+
+  result += ']';
+  return result;
+}
+
 /**
- * An individual object message to be sent or received via the Ably Realtime service.
+ * Deep copy public properties of an object message, using `JSON.parse(JSON.stringify(object))` for nested object fields like `operation` and `object`.
+ *
+ * Important: Buffer instances are not copied correctly using `JSON.parse(JSON.stringify(object))`, as they lose their type and become plain objects.
+ * If you need access to the original Buffer values, use the original message instance instead.
+ */
+
+function copyMsg(
+  msg: Utils.Properties<ObjectMessage | WireObjectMessage>,
+): Utils.Properties<ObjectMessage | WireObjectMessage> {
+  const result: Utils.Properties<ObjectMessage | WireObjectMessage> = {
+    id: msg.id,
+    clientId: msg.clientId,
+    connectionId: msg.connectionId,
+    timestamp: msg.timestamp,
+    serial: msg.serial,
+    siteCode: msg.siteCode,
+  };
+
+  if (msg.operation) {
+    result.operation = JSON.parse(JSON.stringify(msg.operation));
+  }
+  if (msg.object) {
+    result.object = JSON.parse(JSON.stringify(msg.object));
+  }
+  if (msg.extras) {
+    result.extras = JSON.parse(JSON.stringify(msg.extras));
+  }
+
+  return result;
+}
+
+/**
+ * A decoded {@link WireObjectMessage} message
  * @spec OM1
  * @internal
  */
@@ -191,13 +376,13 @@ export class ObjectMessage {
    *
    * Mutually exclusive with the `object` field. This field is only set on object messages if the `action` field of the `ProtocolMessage` encapsulating it is `OBJECT`.
    */
-  operation?: ObjectOperation; // OM2f
+  operation?: ObjectOperation<ObjectData>; // OM2f
   /**
    * Describes the instantaneous state of an object.
    *
    * Mutually exclusive with the `operation` field. This field is only set on object messages if the `action` field of the `ProtocolMessage` encapsulating it is `OBJECT_SYNC`.
    */
-  object?: ObjectState; // OM2g
+  object?: ObjectState<ObjectData>; // OM2g
   /** An opaque string that uniquely identifies this object message. */
   serial?: string; // OM2h
   /** An opaque string used as a key to update the map of serial values on an object. */
@@ -208,15 +393,30 @@ export class ObjectMessage {
     private _messageEncoding: typeof MessageEncoding,
   ) {}
 
+  static fromValues(
+    values: Utils.Properties<ObjectMessage>,
+    utils: typeof Utils,
+    messageEncoding: typeof MessageEncoding,
+  ): ObjectMessage {
+    return Object.assign(new ObjectMessage(utils, messageEncoding), values);
+  }
+
+  static fromValuesArray(
+    values: Utils.Properties<ObjectMessage>[],
+    utils: typeof Utils,
+    messageEncoding: typeof MessageEncoding,
+  ): ObjectMessage[] {
+    return values.map((x) => ObjectMessage.fromValues(x, utils, messageEncoding));
+  }
+
   /**
-   * Protocol agnostic encoding of the object message's data entries.
-   * Mutates the provided ObjectMessage.
+   * Protocol agnostic encoding of this ObjectMessage. Returns a new {@link WireObjectMessage} instance.
    *
    * Uses encoding functions from regular `Message` processing.
    *
    * @spec OM4
    */
-  static encode(message: ObjectMessage, client: BaseClient): ObjectMessage {
+  encode(client: BaseClient): WireObjectMessage {
     const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
       const isNativeDataType =
         typeof data == 'string' ||
@@ -226,7 +426,7 @@ export class ObjectMessage {
         data === null ||
         data === undefined;
 
-      const { data: encodedData, encoding: newEncoding } = client.MessageEncoding.encodeData(
+      const { data: encodedData, encoding: newEncoding } = this._messageEncoding.encodeData(
         data,
         encoding,
         isNativeDataType,
@@ -246,234 +446,74 @@ export class ObjectMessage {
       return data;
     };
 
-    message.operation = message.operation
-      ? ObjectMessage._encodeObjectOperation(message.operation, encodeObjectDataFn, encodeInitialValueFn)
-      : undefined;
-    message.object = message.object
-      ? ObjectMessage._encodeObjectState(message.object, encodeObjectDataFn, encodeInitialValueFn)
-      : undefined;
-
-    return message;
+    return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn, encodeInitialValueFn);
   }
 
+  toString(): string {
+    return strMsg(this, 'ObjectMessage');
+  }
+}
+
+/**
+ * An individual object message to be sent or received via the Ably Realtime service.
+ * @spec OM1
+ * @internal
+ */
+export class WireObjectMessage {
+  id?: string; // OM2a
+  clientId?: string; // OM2b
+  connectionId?: string; // OM2c
+  extras?: any; // OM2d
+  timestamp?: number; // OM2e
   /**
-   * Mutates the provided ObjectMessage and decodes all data entries in the message.
+   * Describes an operation to be applied to an object.
    *
-   * Format is used to decode the bytes value as it's implicitly encoded depending on the protocol used:
-   * - json: bytes are base64 encoded string
-   * - msgpack: bytes have a binary representation and don't need to be decoded
-   *
-   * @spec OM5
+   * Mutually exclusive with the `object` field. This field is only set on object messages if the `action` field of the `ProtocolMessage` encapsulating it is `OBJECT`.
    */
-  static async decode(
-    message: ObjectMessage,
-    client: BaseClient,
-    logger: Logger,
-    LoggerClass: typeof Logger,
-    utils: typeof Utils,
-    format: Utils.Format | undefined,
-  ): Promise<void> {
-    // TODO: decide how to handle individual errors from decoding values. currently we throw first ever error we get
+  operation?: ObjectOperation<WireObjectData>; // OM2f
+  /**
+   * Describes the instantaneous state of an object.
+   *
+   * Mutually exclusive with the `operation` field. This field is only set on object messages if the `action` field of the `ProtocolMessage` encapsulating it is `OBJECT_SYNC`.
+   */
+  object?: ObjectState<WireObjectData>; // OM2g
+  /** An opaque string that uniquely identifies this object message. */
+  serial?: string; // OM2h
+  /** An opaque string used as a key to update the map of serial values on an object. */
+  siteCode?: string; // OM2i
 
-    try {
-      if (message.object?.map?.entries) {
-        await ObjectMessage._decodeMapEntries(message.object.map.entries, client, format);
-      }
-
-      if (message.object?.createOp?.map?.entries) {
-        await ObjectMessage._decodeMapEntries(message.object.createOp.map.entries, client, format);
-      }
-
-      if (message.object?.createOp?.mapOp?.data) {
-        await ObjectMessage._decodeObjectData(message.object.createOp.mapOp.data, client, format);
-      }
-
-      if (message.operation?.map?.entries) {
-        await ObjectMessage._decodeMapEntries(message.operation.map.entries, client, format);
-      }
-
-      if (message.operation?.mapOp?.data) {
-        await ObjectMessage._decodeObjectData(message.operation.mapOp.data, client, format);
-      }
-    } catch (error) {
-      LoggerClass.logAction(logger, LoggerClass.LOG_ERROR, 'ObjectMessage.decode()', utils.inspectError(error));
-    }
-  }
+  constructor(
+    private _utils: typeof Utils,
+    private _messageEncoding: typeof MessageEncoding,
+  ) {}
 
   static fromValues(
-    values: ObjectMessage | Record<string, unknown>,
+    values: Utils.Properties<WireObjectMessage>,
     utils: typeof Utils,
     messageEncoding: typeof MessageEncoding,
-  ): ObjectMessage {
-    return Object.assign(new ObjectMessage(utils, messageEncoding), values);
+  ): WireObjectMessage {
+    return Object.assign(new WireObjectMessage(utils, messageEncoding), values);
   }
 
   static fromValuesArray(
-    values: (ObjectMessage | Record<string, unknown>)[],
+    values: Utils.Properties<WireObjectMessage>[],
     utils: typeof Utils,
     messageEncoding: typeof MessageEncoding,
-  ): ObjectMessage[] {
-    const count = values.length;
-    const result = new Array(count);
-
-    for (let i = 0; i < count; i++) {
-      result[i] = ObjectMessage.fromValues(values[i], utils, messageEncoding);
-    }
-
-    return result;
-  }
-
-  static encodeInitialValue(
-    initialValue: Partial<ObjectOperation>,
-    client: BaseClient,
-  ): {
-    encodedInitialValue: Bufferlike;
-    format: Utils.Format;
-  } {
-    const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
-
-    // initial value object may contain user provided data that requires an additional encoding (for example buffers as map keys).
-    // so we need to encode that data first as if we were sending it over the wire. we can use an ObjectMessage methods for this
-    const msg = ObjectMessage.fromValues({ operation: initialValue }, client.Utils, client.MessageEncoding);
-    ObjectMessage.encode(msg, client);
-    const { operation: initialValueWithDataEncoding } = ObjectMessage._encodeForWireProtocol(
-      msg,
-      client.MessageEncoding,
-      format,
-    );
-
-    // initial value field should be represented as an array of bytes over the wire. so we encode the whole object based on the client encoding format
-    const encodedInitialValue = client.Utils.encodeBody(initialValueWithDataEncoding, client._MsgPack, format);
-
-    // if we've got string result (for example, json encoding was used), we need to additionally convert it to bytes array with utf8 encoding
-    if (typeof encodedInitialValue === 'string') {
-      return {
-        encodedInitialValue: client.Platform.BufferUtils.utf8Encode(encodedInitialValue),
-        format,
-      };
-    }
-
-    return {
-      encodedInitialValue,
-      format,
-    };
-  }
-
-  private static async _decodeMapEntries(
-    mapEntries: Record<string, ObjectsMapEntry>,
-    client: BaseClient,
-    format: Utils.Format | undefined,
-  ): Promise<void> {
-    for (const entry of Object.values(mapEntries)) {
-      if (entry.data) {
-        await ObjectMessage._decodeObjectData(entry.data, client, format);
-      }
-    }
-  }
-
-  /** @spec OD5 */
-  private static async _decodeObjectData(
-    objectData: ObjectData,
-    client: BaseClient,
-    format: Utils.Format | undefined,
-  ): Promise<void> {
-    // TODO: support decoding JSON objects stored as a JSON string with an encoding of "json"
-    // https://ably.atlassian.net/browse/PUB-1667
-    // currently we check only the "bytes" field:
-    // - if connection is msgpack - "bytes" was received as msgpack encoded bytes, no need to decode, it's already a buffer
-    // - if connection is json - "bytes" was received as a base64 string, need to decode it to a buffer
-
-    if (format !== 'msgpack' && objectData.bytes != null) {
-      // OD5b2 - connection is using JSON protocol, decode bytes value
-      objectData.bytes = client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
-    }
-  }
-
-  /** @spec OOP5 */
-  private static _encodeObjectOperation(
-    objectOperation: ObjectOperation,
-    encodeObjectDataFn: EncodeObjectDataFunction,
-    encodeInitialValueFn: EncodeInitialValueFunction,
-  ): ObjectOperation {
-    // deep copy "objectOperation" object so we can modify the copy here.
-    // buffer values won't be correctly copied, so we will need to set them again explicitly.
-    const objectOperationCopy = JSON.parse(JSON.stringify(objectOperation)) as ObjectOperation;
-
-    if (objectOperationCopy.mapOp?.data) {
-      // use original "objectOperation" object when encoding values, so we have access to the original buffer values.
-      objectOperationCopy.mapOp.data = ObjectMessage._encodeObjectData(
-        objectOperation.mapOp?.data!,
-        encodeObjectDataFn,
-      );
-    }
-
-    if (objectOperationCopy.map?.entries) {
-      Object.entries(objectOperationCopy.map.entries).forEach(([key, entry]) => {
-        if (entry.data) {
-          // use original "objectOperation" object when encoding values, so we have access to original buffer values.
-          entry.data = ObjectMessage._encodeObjectData(objectOperation?.map?.entries?.[key].data!, encodeObjectDataFn);
-        }
-      });
-    }
-
-    if (objectOperation.initialValue) {
-      // use original "objectOperation" object so we have access to the original buffer value
-      const { data: encodedInitialValue } = encodeInitialValueFn(objectOperation.initialValue);
-      objectOperationCopy.initialValue = encodedInitialValue;
-    }
-
-    return objectOperationCopy;
-  }
-
-  private static _encodeObjectState(
-    objectState: ObjectState,
-    encodeObjectDataFn: EncodeObjectDataFunction,
-    encodeInitialValueFn: EncodeInitialValueFunction,
-  ): ObjectState {
-    // deep copy "objectState" object so we can modify the copy here.
-    // buffer values won't be correctly copied, so we will need to set them again explicitly.
-    const objectStateCopy = JSON.parse(JSON.stringify(objectState)) as ObjectState;
-
-    if (objectStateCopy.map?.entries) {
-      Object.entries(objectStateCopy.map.entries).forEach(([key, entry]) => {
-        if (entry.data) {
-          // use original "objectState" object when encoding values, so we have access to original buffer values.
-          entry.data = ObjectMessage._encodeObjectData(objectState?.map?.entries?.[key].data!, encodeObjectDataFn);
-        }
-      });
-    }
-
-    if (objectStateCopy.createOp) {
-      // use original "objectState" object when encoding values, so we have access to original buffer values.
-      objectStateCopy.createOp = ObjectMessage._encodeObjectOperation(
-        objectState.createOp!,
-        encodeObjectDataFn,
-        encodeInitialValueFn,
-      );
-    }
-
-    return objectStateCopy;
-  }
-
-  /** @spec OD4 */
-  private static _encodeObjectData(data: ObjectData, encodeFn: EncodeObjectDataFunction): ObjectData {
-    const encodedData = encodeFn(data);
-    return encodedData;
+  ): WireObjectMessage[] {
+    return values.map((x) => WireObjectMessage.fromValues(x, utils, messageEncoding));
   }
 
   /**
-   * Encodes operation and object fields of the ObjectMessage. Does not mutate the provided ObjectMessage.
+   * Encodes WireObjectMessage for wire transmission. Does not mutate the provided WireObjectMessage.
    *
    * Uses encoding functions from regular `Message` processing.
    */
-  private static _encodeForWireProtocol(
-    message: ObjectMessage,
+  static encodeForWire(
+    message: Utils.Properties<WireObjectMessage>,
+    utils: typeof Utils,
     messageEncoding: typeof MessageEncoding,
     format: Utils.Format,
-  ): {
-    operation?: ObjectOperation;
-    objectState?: ObjectState;
-  } {
+  ): WireObjectMessage {
     const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
       // OOP5a1, OOP5b1 - initialValue encoded based on the protocol used
       const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWire(data, encoding, format);
@@ -504,17 +544,59 @@ export class ObjectMessage {
       };
     };
 
-    const encodedOperation = message.operation
-      ? ObjectMessage._encodeObjectOperation(message.operation, encodeObjectDataFn, encodeInitialValueFn)
-      : undefined;
-    const encodedObjectState = message.object
-      ? ObjectMessage._encodeObjectState(message.object, encodeObjectDataFn, encodeInitialValueFn)
-      : undefined;
+    return encode(message, utils, messageEncoding, encodeObjectDataFn, encodeInitialValueFn);
+  }
 
-    return {
-      operation: encodedOperation,
-      objectState: encodedObjectState,
-    };
+  /**
+   * Decodes this WireObjectMessage and returns a new {@link ObjectMessage} instance.
+   *
+   * Format is used to decode the bytes value as it's implicitly encoded depending on the protocol used:
+   * - json: bytes are Base64-encoded string
+   * - msgpack: bytes have a binary representation and don't need to be decoded
+   *
+   * @spec OM5
+   */
+  decode(client: BaseClient, format: Utils.Format | undefined): ObjectMessage {
+    // deep copy the message to avoid mutating the original one.
+    // buffer values won't be correctly copied, so we will need to use the original message when decoding.
+    const result = Object.assign(new ObjectMessage(this._utils, this._messageEncoding), copyMsg(this));
+
+    try {
+      // decode "object" field
+      if (this.object?.map?.entries) {
+        result.object!.map!.entries = this._decodeMapEntries(this.object.map.entries, client, format);
+      }
+
+      if (this.object?.createOp?.map?.entries) {
+        result.object!.createOp!.map!.entries = this._decodeMapEntries(
+          this.object.createOp.map.entries,
+          client,
+          format,
+        );
+      }
+
+      if (this.object?.createOp?.mapOp?.data) {
+        result.object!.createOp!.mapOp!.data = this._decodeObjectData(this.object.createOp.mapOp.data, client, format);
+      }
+
+      // decode "operation" field
+      if (this.operation?.map?.entries) {
+        result.operation!.map!.entries = this._decodeMapEntries(this.operation.map.entries, client, format);
+      }
+
+      if (this.operation?.mapOp?.data) {
+        result.operation!.mapOp!.data = this._decodeObjectData(this.operation.mapOp.data, client, format);
+      }
+    } catch (error) {
+      client.Logger.logAction(
+        client.logger,
+        client.Logger.LOG_ERROR,
+        'WireObjectMessage.decode()',
+        this._utils.inspectError(error),
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -522,48 +604,23 @@ export class ObjectMessage {
    *
    * This will prepare the message to be transmitted over the wire to Ably.
    * It will encode the data payload according to the wire protocol used on the client.
-   * It will transform any client-side enum string representations into their corresponding numbers, if needed (like "action" fields).
    */
-  toJSON(): {
-    id?: string;
-    clientId?: string;
-    operation?: ObjectOperation;
-    object?: ObjectState;
-    extras?: any;
-  } {
+  toJSON() {
     // we can infer the format used by client by inspecting with what arguments this method was called.
     // if JSON protocol is being used, the JSON.stringify() will be called and this toJSON() method will have a non-empty arguments list.
     // MSGPack protocol implementation also calls toJSON(), but with an empty arguments list.
     const format = arguments.length > 0 ? this._utils.Format.json : this._utils.Format.msgpack;
-    const { operation, objectState } = ObjectMessage._encodeForWireProtocol(this, this._messageEncoding, format);
-
-    return {
-      id: this.id,
-      clientId: this.clientId,
-      operation,
-      object: objectState,
-      extras: this.extras,
-    };
+    const { _utils, _messageEncoding, ...publicProps } = WireObjectMessage.encodeForWire(
+      this,
+      this._utils,
+      this._messageEncoding,
+      format,
+    );
+    return publicProps;
   }
 
   toString(): string {
-    let result = '[ObjectMessage';
-
-    if (this.id) result += '; id=' + this.id;
-    if (this.timestamp) result += '; timestamp=' + this.timestamp;
-    if (this.clientId) result += '; clientId=' + this.clientId;
-    if (this.connectionId) result += '; connectionId=' + this.connectionId;
-    // TODO: prettify output for operation and object and encode buffers.
-    // see examples for data in Message and PresenceMessage
-    if (this.operation) result += '; operation=' + JSON.stringify(this.operation);
-    if (this.object) result += '; object=' + JSON.stringify(this.object);
-    if (this.extras) result += '; extras=' + JSON.stringify(this.extras);
-    if (this.serial) result += '; serial=' + this.serial;
-    if (this.siteCode) result += '; siteCode=' + this.siteCode;
-
-    result += ']';
-
-    return result;
+    return strMsg(this, 'WireObjectMessage');
   }
 
   /** @spec OM3 */
@@ -586,7 +643,7 @@ export class ObjectMessage {
   }
 
   /** @spec OOP4 */
-  private _getObjectOperationSize(operation: ObjectOperation): number {
+  private _getObjectOperationSize(operation: ObjectOperation<WireObjectData>): number {
     let size = 0;
 
     // OOP4a
@@ -607,7 +664,7 @@ export class ObjectMessage {
   }
 
   /** @spec OST3 */
-  private _getObjectStateSize(obj: ObjectState): number {
+  private _getObjectStateSize(obj: ObjectState<WireObjectData>): number {
     let size = 0;
 
     // OST3a
@@ -625,7 +682,7 @@ export class ObjectMessage {
   }
 
   /** @spec OMP4 */
-  private _getObjectMapSize(map: ObjectsMap): number {
+  private _getObjectMapSize(map: ObjectsMap<WireObjectData>): number {
     let size = 0;
 
     // OMP4a
@@ -651,7 +708,7 @@ export class ObjectMessage {
   }
 
   /** @spec OME3 */
-  private _getMapEntrySize(entry: ObjectsMapEntry): number {
+  private _getMapEntrySize(entry: ObjectsMapEntry<WireObjectData>): number {
     let size = 0;
 
     // OME3a
@@ -663,7 +720,7 @@ export class ObjectMessage {
   }
 
   /** @spec OMO3 */
-  private _getMapOpSize(mapOp: ObjectsMapOp): number {
+  private _getMapOpSize(mapOp: ObjectsMapOp<WireObjectData>): number {
     let size = 0;
 
     // OMO3a
@@ -687,7 +744,7 @@ export class ObjectMessage {
   }
 
   /** @spec OD3 */
-  private _getObjectDataSize(data: ObjectData): number {
+  private _getObjectDataSize(data: WireObjectData): number {
     let size = 0;
 
     // OD3a
@@ -705,5 +762,65 @@ export class ObjectMessage {
     }
 
     return size;
+  }
+
+  private _decodeMapEntries(
+    mapEntries: Record<string, ObjectsMapEntry<WireObjectData>>,
+    client: BaseClient,
+    format: Utils.Format | undefined,
+  ): Record<string, ObjectsMapEntry<ObjectData>> {
+    return Object.entries(mapEntries).reduce(
+      (acc, v) => {
+        const [key, entry] = v;
+        const decodedData = entry.data ? this._decodeObjectData(entry.data, client, format) : undefined;
+        acc[key] = {
+          ...entry,
+          data: decodedData,
+        };
+        return acc;
+      },
+      {} as Record<string, ObjectsMapEntry<ObjectData>>,
+    );
+  }
+
+  /** @spec OD5 */
+  private _decodeObjectData(
+    objectData: WireObjectData,
+    client: BaseClient,
+    format: Utils.Format | undefined,
+  ): ObjectData {
+    // TODO: support decoding JSON objects stored as a JSON string with an encoding of "json"
+    // https://ably.atlassian.net/browse/PUB-1667
+    // currently we check only the "bytes" field:
+    // - if connection is msgpack - "bytes" was received as msgpack encoded bytes, no need to decode, it's already a buffer
+    // - if connection is json - "bytes" was received as a base64 string, need to decode it to a buffer
+
+    try {
+      let decodedBytes: Bufferlike | undefined;
+      if (format === 'msgpack') {
+        // OD5a1 - connection is using msgpack protocol, bytes are already a buffer
+        decodedBytes = objectData.bytes as Bufferlike;
+      } else {
+        // OD5b2 - connection is using JSON protocol, Base64-decode bytes value
+        decodedBytes =
+          objectData.bytes != null ? client.Platform.BufferUtils.base64Decode(String(objectData.bytes)) : undefined;
+      }
+
+      return {
+        ...objectData,
+        bytes: decodedBytes,
+      };
+    } catch (error) {
+      client.Logger.logAction(
+        client.logger,
+        client.Logger.LOG_ERROR,
+        'WireObjectMessage._decodeObjectData()',
+        this._utils.inspectError(error),
+      );
+      // object data decoding has failed, return the data as is.
+      return {
+        ...objectData,
+      } as ObjectData;
+    }
   }
 }

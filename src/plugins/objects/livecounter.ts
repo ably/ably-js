@@ -1,6 +1,14 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
-import { ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp, ObjectState } from './objectmessage';
+import {
+  encodeInitialValue,
+  ObjectData,
+  ObjectMessage,
+  ObjectOperation,
+  ObjectOperationAction,
+  ObjectsCounterOp,
+  ObjectState,
+} from './objectmessage';
 import { Objects } from './objects';
 
 export interface LiveCounterData extends LiveObjectData {
@@ -29,7 +37,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectState(objects: Objects, objectState: ObjectState): LiveCounter {
+  static fromObjectState(objects: Objects, objectState: ObjectState<ObjectData>): LiveCounter {
     const obj = new LiveCounter(objects, objectState.objectId);
     obj.overrideWithObjectState(objectState);
     return obj;
@@ -41,7 +49,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectOperation(objects: Objects, objectOperation: ObjectOperation): LiveCounter {
+  static fromObjectOperation(objects: Objects, objectOperation: ObjectOperation<ObjectData>): LiveCounter {
     const obj = new LiveCounter(objects, objectOperation.objectId);
     obj._mergeInitialDataFromCreateOperation(objectOperation);
     return obj;
@@ -63,7 +71,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
           action: ObjectOperationAction.COUNTER_INC,
           objectId,
           counterOp: { amount },
-        } as ObjectOperation,
+        } as ObjectOperation<ObjectData>,
       },
       client.Utils,
       client.MessageEncoding,
@@ -83,7 +91,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     }
 
     const initialValueObj = LiveCounter.createInitialValueObject(count);
-    const { encodedInitialValue, format } = ObjectMessage.encodeInitialValue(initialValueObj, client);
+    const { encodedInitialValue, format } = encodeInitialValue(initialValueObj, client);
     const nonce = client.Utils.cheapRandStr();
     const msTimestamp = await client.getTimestamp(true);
 
@@ -104,7 +112,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
           nonce,
           initialValue: encodedInitialValue,
           initialValueEncoding: format,
-        } as ObjectOperation,
+        } as ObjectOperation<ObjectData>,
       },
       client.Utils,
       client.MessageEncoding,
@@ -116,7 +124,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  static createInitialValueObject(count?: number): Pick<ObjectOperation, 'counter'> {
+  static createInitialValueObject(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
     return {
       counter: {
         count: count ?? 0,
@@ -162,7 +170,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  applyOperation(op: ObjectOperation, msg: ObjectMessage): void {
+  applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage): void {
     if (op.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Cannot apply object operation with objectId=${op.objectId}, to this LiveCounter with objectId=${this.getObjectId()}`,
@@ -226,7 +234,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @internal
    * @spec RTLC6
    */
-  overrideWithObjectState(objectState: ObjectState): LiveCounterUpdate | LiveObjectUpdateNoop {
+  overrideWithObjectState(objectState: ObjectState<ObjectData>): LiveCounterUpdate | LiveObjectUpdateNoop {
     if (objectState.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Invalid object state: object state objectId=${objectState.objectId}; LiveCounter objectId=${this.getObjectId()}`,
@@ -300,7 +308,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return { update: { amount: counterDiff } };
   }
 
-  protected _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation): LiveCounterUpdate {
+  protected _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation<ObjectData>): LiveCounterUpdate {
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
@@ -311,7 +319,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return { update: { amount: objectOperation.counter?.count ?? 0 } };
   }
 
-  private _throwNoPayloadError(op: ObjectOperation): void {
+  private _throwNoPayloadError(op: ObjectOperation<ObjectData>): void {
     throw new this._client.ErrorInfo(
       `No payload found for ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
       92000,
@@ -319,7 +327,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     );
   }
 
-  private _applyCounterCreate(op: ObjectOperation): LiveCounterUpdate | LiveObjectUpdateNoop {
+  private _applyCounterCreate(op: ObjectOperation<ObjectData>): LiveCounterUpdate | LiveObjectUpdateNoop {
     if (this._createOperationIsMerged) {
       // There can't be two different create operation for the same object id, because the object id
       // fully encodes that operation. This means we can safely ignore any new incoming create operations
