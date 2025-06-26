@@ -1,6 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import { ObjectMessage, ObjectOperation, ObjectState } from './objectmessage';
+import { ObjectData, ObjectMessage, ObjectOperation, ObjectState } from './objectmessage';
 import { Objects } from './objects';
 
 export enum LiveObjectSubscriptionEvent {
@@ -219,7 +219,7 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  abstract applyOperation(op: ObjectOperation, msg: ObjectMessage): void;
+  abstract applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage): void;
   /**
    * Overrides internal data for this LiveObject with data from the given object state.
    * Provided object state should hold a valid data for current LiveObject, e.g. counter data for LiveCounter, map data for LiveMap.
@@ -232,7 +232,7 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  abstract overrideWithObjectState(objectState: ObjectState): TUpdate | LiveObjectUpdateNoop;
+  abstract overrideWithObjectState(objectState: ObjectState<ObjectData>): TUpdate | LiveObjectUpdateNoop;
   /**
    * @internal
    */
@@ -253,5 +253,5 @@ export abstract class LiveObject<
    * This saves us from needing to merge the initial value with operations applied to
    * the object every time the object is read.
    */
-  protected abstract _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation): TUpdate;
+  protected abstract _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation<ObjectData>): TUpdate;
 }

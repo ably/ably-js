@@ -68,10 +68,10 @@ export function fromDeserialized(
     );
   }
 
-  let state: ObjectsPlugin.ObjectMessage[] | undefined;
+  let state: ObjectsPlugin.WireObjectMessage[] | undefined;
   if (objectsPlugin && deserialized.state) {
-    state = objectsPlugin.ObjectMessage.fromValuesArray(
-      deserialized.state as ObjectsPlugin.ObjectMessage[],
+    state = objectsPlugin.WireObjectMessage.fromValuesArray(
+      deserialized.state as ObjectsPlugin.WireObjectMessage[],
       Utils,
       MessageEncoding,
     );
@@ -128,7 +128,7 @@ export function stringify(
   }
   if (msg.state && objectsPlugin) {
     result +=
-      '; state=' + toStringArray(objectsPlugin.ObjectMessage.fromValuesArray(msg.state, Utils, MessageEncoding));
+      '; state=' + toStringArray(objectsPlugin.WireObjectMessage.fromValuesArray(msg.state, Utils, MessageEncoding));
   }
   if (msg.error) result += '; error=' + ErrorInfo.fromValues(msg.error).toString();
   if (msg.auth && msg.auth.accessToken) result += '; token=' + msg.auth.accessToken;
@@ -169,7 +169,7 @@ class ProtocolMessage {
   /**
    * This will be undefined if we skipped decoding this property due to user not requesting Objects functionality — see {@link fromDeserialized}
    */
-  state?: ObjectsPlugin.ObjectMessage[]; // TR4r
+  state?: ObjectsPlugin.WireObjectMessage[]; // TR4r
   auth?: unknown;
   connectionDetails?: Record<string, unknown>;
   params?: Record<string, string>;

@@ -305,9 +305,9 @@ export class Objects {
   async publish(objectMessages: ObjectMessage[]): Promise<void> {
     this._channel.throwIfUnpublishableState();
 
-    objectMessages.forEach((x) => ObjectMessage.encode(x, this._client));
+    const encodedMsgs = objectMessages.map((x) => x.encode(this._client));
     const maxMessageSize = this._client.options.maxMessageSize;
-    const size = objectMessages.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
+    const size = encodedMsgs.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
     if (size > maxMessageSize) {
       throw new this._client.ErrorInfo(
         `Maximum size of object messages that can be published at once exceeded (was ${size} bytes; limit is ${maxMessageSize} bytes)`,
@@ -316,7 +316,7 @@ export class Objects {
       );
     }
 
-    return this._channel.sendState(objectMessages);
+    return this._channel.sendState(encodedMsgs);
   }
 
   /**
