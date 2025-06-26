@@ -149,11 +149,12 @@ class RealtimeChannel extends EventEmitter {
     return this._push;
   }
 
+  /** @spec RTL27 */
   get objects() {
     if (!this._objects) {
-      Utils.throwMissingPluginError('Objects');
+      Utils.throwMissingPluginError('Objects'); // RTL27b
     }
-    return this._objects;
+    return this._objects; // RTL27a
   }
 
   invalidStateError(): ErrorInfo {
@@ -613,6 +614,7 @@ class RealtimeChannel extends EventEmitter {
         break;
       }
 
+      // RTL1
       // OBJECT and OBJECT_SYNC message processing share most of the logic, so group them together
       case actions.OBJECT:
       case actions.OBJECT_SYNC: {

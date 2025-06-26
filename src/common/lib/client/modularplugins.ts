@@ -41,7 +41,7 @@ export interface ModularPlugins {
   FetchRequest?: typeof fetchRequest;
   MessageInteractions?: typeof FilteredSubscriptions;
   Push?: typeof PushPlugin;
-  Objects?: typeof ObjectsPlugin;
+  Objects?: typeof ObjectsPlugin; // PC5, PT2b
 }
 
 export const allCommonModularPlugins: ModularPlugins = { Rest };
