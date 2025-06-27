@@ -688,13 +688,15 @@ for (const value of root.values()) {
 await root.set('foo', 'Alice');
 await root.set('bar', 1);
 await root.set('baz', true);
-await root.set('qux', new Uint8Array([21, 31]));
+await root.set('qux', { hello: 'world' });
+await root.set('quux', [42]);
+await root.set('corge', new Uint8Array([21, 31]));
 // as well as other objects
 const counter = await objects.createCounter();
-await root.set('quux', counter);
+await root.set('grault', counter);
 
 // and you can remove keys with .remove
-await root.remove('name');
+await root.remove('foo');
 ```
 
 `LiveCounter` - A counter that can be incremented or decremented and is synchronized across clients in realtime

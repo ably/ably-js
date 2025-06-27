@@ -2440,7 +2440,7 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    * Mirrors the {@link LiveMap.get} method and returns the value associated with a key in the map.
    *
    * @param key - The key to retrieve the value for.
-   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
    * @experimental
    */
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
@@ -2515,7 +2515,7 @@ export declare interface BatchContextLiveCounter {
  * Conflicts in a LiveMap are automatically resolved with last-write-wins (LWW) semantics,
  * meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
  *
- * Keys must be strings. Values can be another {@link LiveObject}, or a primitive type, such as a string, number, boolean, or binary data (see {@link PrimitiveObjectValue}).
+ * Keys must be strings. Values can be another {@link LiveObject}, or a primitive type, such as a string, number, boolean, JSON-serializable object or array, or binary data (see {@link PrimitiveObjectValue}).
  */
 export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate<T>> {
   /**
@@ -2524,7 +2524,7 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
    * Always returns undefined if this map object is deleted.
    *
    * @param key - The key to retrieve the value for.
-   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
    * @experimental
    */
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
@@ -2602,7 +2602,27 @@ export declare interface LiveMapUpdate<T extends LiveMapType> extends LiveObject
  *
  * For binary data, the resulting type depends on the platform (`Buffer` in Node.js, `ArrayBuffer` elsewhere).
  */
-export type PrimitiveObjectValue = string | number | boolean | Buffer | ArrayBuffer;
+export type PrimitiveObjectValue = string | number | boolean | Buffer | ArrayBuffer | JsonArray | JsonObject;
+
+/**
+ * Represents a JSON-encodable value.
+ */
+export type Json = JsonScalar | JsonArray | JsonObject;
+
+/**
+ * Represents a JSON-encodable scalar value.
+ */
+export type JsonScalar = null | boolean | number | string;
+
+/**
+ * Represents a JSON-encodable array.
+ */
+export type JsonArray = Json[];
+
+/**
+ * Represents a JSON-encodable object.
+ */
+export type JsonObject = { [prop: string]: Json | undefined };
 
 /**
  * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.
