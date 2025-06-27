@@ -13,10 +13,9 @@ import {
   ObjectsMapEntry,
   ObjectsMapOp,
   ObjectsMapSemantics,
+  PrimitiveObjectValue,
 } from './objectmessage';
 import { Objects } from './objects';
-
-export type PrimitiveObjectValue = string | number | boolean | Bufferlike;
 
 export interface ObjectIdObjectData {
   /** A reference to another object, used to support composable object structures. */
@@ -24,16 +23,8 @@ export interface ObjectIdObjectData {
 }
 
 export interface ValueObjectData {
-  /** Can be set by the client to indicate that value in `string` or `bytes` field have an encoding. */
-  encoding?: string;
-  /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
-  boolean?: boolean;
-  /** A primitive binary leaf value in the object graph. Only one value field can be set. */
-  bytes?: Bufferlike;
-  /** A primitive number leaf value in the object graph. Only one value field can be set. */
-  number?: number;
-  /** A primitive string leaf value in the object graph. Only one value field can be set. */
-  string?: string;
+  /** A decoded leaf value from {@link WireObjectData}. */
+  value: string | number | boolean | Bufferlike | API.JsonArray | API.JsonObject;
 }
 
 export type LiveMapObjectData = ObjectIdObjectData | ValueObjectData;
@@ -118,16 +109,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
       objectData = typedObjectData;
     } else {
-      const typedObjectData: ValueObjectData = {};
-      if (typeof value === 'string') {
-        typedObjectData.string = value;
-      } else if (typeof value === 'number') {
-        typedObjectData.number = value;
-      } else if (typeof value === 'boolean') {
-        typedObjectData.boolean = value;
-      } else {
-        typedObjectData.bytes = value as Bufferlike;
-      }
+      const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
       objectData = typedObjectData;
     }
 
@@ -193,11 +175,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     if (
-      typeof value !== 'string' &&
-      typeof value !== 'number' &&
-      typeof value !== 'boolean' &&
-      !client.Platform.BufferUtils.isBuffer(value) &&
-      !(value instanceof LiveObject)
+      value === null ||
+      (typeof value !== 'string' &&
+        typeof value !== 'number' &&
+        typeof value !== 'boolean' &&
+        typeof value !== 'object')
     ) {
       throw new client.ErrorInfo('Map value data type is unsupported', 40013, 400); // OD4a
     }
@@ -258,16 +240,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
         objectData = typedObjectData;
       } else {
-        const typedObjectData: ValueObjectData = {};
-        if (typeof value === 'string') {
-          typedObjectData.string = value;
-        } else if (typeof value === 'number') {
-          typedObjectData.number = value;
-        } else if (typeof value === 'boolean') {
-          typedObjectData.boolean = value;
-        } else {
-          typedObjectData.bytes = value as Bufferlike;
-        }
+        const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
         objectData = typedObjectData;
       }
 
@@ -714,14 +687,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return { noop: true };
     }
 
-    if (
-      Utils.isNil(op.data) ||
-      (Utils.isNil(op.data.objectId) &&
-        Utils.isNil(op.data.boolean) &&
-        Utils.isNil(op.data.bytes) &&
-        Utils.isNil(op.data.number) &&
-        Utils.isNil(op.data.string))
-    ) {
+    if (Utils.isNil(op.data) || (Utils.isNil(op.data.objectId) && Utils.isNil(op.data.value))) {
       throw new ErrorInfo(
         `Invalid object data for MAP_SET op on objectId=${this.getObjectId()} on key="${op.key}"`,
         92000,
@@ -739,13 +705,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       // so instead we create a zero-value object for that object id if it not exists.
       this._objects.getPool().createZeroValueObjectIfNotExists(op.data.objectId); // RTLM7c1
     } else {
-      liveData = {
-        encoding: op.data.encoding,
-        boolean: op.data.boolean,
-        bytes: op.data.bytes,
-        number: op.data.number,
-        string: op.data.string,
-      } as ValueObjectData;
+      liveData = { value: op.data.value } as ValueObjectData;
     }
 
     if (existingEntry) {
@@ -870,13 +830,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         if (!this._client.Utils.isNil(entry.data.objectId)) {
           liveData = { objectId: entry.data.objectId } as ObjectIdObjectData;
         } else {
-          liveData = {
-            encoding: entry.data.encoding,
-            boolean: entry.data.boolean,
-            bytes: entry.data.bytes,
-            number: entry.data.number,
-            string: entry.data.string,
-          } as ValueObjectData;
+          liveData = { value: entry.data.value } as ValueObjectData;
         }
       }
 
@@ -913,19 +867,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * Returns value as is if object data stores a primitive type, or a reference to another LiveObject from the pool if it stores an objectId.
    */
   private _getResolvedValueFromObjectData(data: LiveMapObjectData): PrimitiveObjectValue | LiveObject | undefined {
-    // if object data stores one of the primitive values, just return it as is.
-    const asValueObject = data as ValueObjectData;
-    if (asValueObject.boolean !== undefined) {
-      return asValueObject.boolean; // RTLM5d2b
-    }
-    if (asValueObject.bytes !== undefined) {
-      return asValueObject.bytes; // RTLM5d2c
-    }
-    if (asValueObject.number !== undefined) {
-      return asValueObject.number; // RTLM5d2d
-    }
-    if (asValueObject.string !== undefined) {
-      return asValueObject.string; // RTLM5d2e
+    // if object data stores primitive value, just return it as is.
+    const primitiveValue = (data as ValueObjectData).value;
+    if (primitiveValue != null) {
+      return primitiveValue; // RTLM5d2b, RTLM5d2c, RTLM5d2d, RTLM5d2e
     }
 
     // RTLM5d2f - otherwise, it has an objectId reference, and we should get the actual object from the pool

@@ -2,10 +2,11 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
 import type { Bufferlike } from 'common/platform';
+import type { JsonArray, JsonObject } from '../../../ably';
 
 export type EncodeInitialValueFunction = (initialValueBuffer: Bufferlike) => any;
 
-export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
+export type EncodeObjectDataFunction<T extends ObjectData | WireObjectData> = (data: T) => WireObjectData;
 
 /** @spec OOP2 */
 export enum ObjectOperationAction {
@@ -22,6 +23,8 @@ export enum ObjectsMapSemantics {
   LWW = 0,
 }
 
+export type PrimitiveObjectValue = string | number | boolean | Bufferlike | JsonArray | JsonObject;
+
 /**
  * An ObjectData represents a value in an object on a channel decoded from {@link WireObjectData}.
  * @spec OD1
@@ -29,17 +32,8 @@ export enum ObjectsMapSemantics {
 export interface ObjectData {
   /** A reference to another object, used to support composable object structures. */
   objectId?: string; // OD2a
-
-  /** May be set by the client to indicate that value in `string` field have an encoding. */
-  encoding?: string; // OD2b
-  /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
-  boolean?: boolean; // OD2c
-  /** A primitive binary leaf value in the object graph. Only one value field can be set. */
-  bytes?: Bufferlike; // OD2d
-  /** A primitive number leaf value in the object graph. Only one value field can be set. */
-  number?: number; // OD2e
-  /** A primitive string leaf value in the object graph. Only one value field can be set. */
-  string?: string; // OD2f
+  /** A decoded leaf value from {@link WireObjectData}. */
+  value?: PrimitiveObjectValue;
 }
 
 /**
@@ -194,7 +188,7 @@ function encode(
   message: Utils.Properties<ObjectMessage> | Utils.Properties<WireObjectMessage>,
   utils: typeof Utils,
   messageEncoding: typeof MessageEncoding,
-  encodeObjectDataFn: EncodeObjectDataFunction,
+  encodeObjectDataFn: EncodeObjectDataFunction<ObjectData | WireObjectData>,
   encodeInitialValueFn?: EncodeInitialValueFunction,
 ): WireObjectMessage {
   // deep copy the message to avoid mutating the original one.
@@ -241,7 +235,7 @@ function encode(
 
 function encodeMapEntries(
   mapEntries: Record<string, ObjectsMapEntry<ObjectData | WireObjectData>>,
-  encodeFn: EncodeObjectDataFunction,
+  encodeFn: EncodeObjectDataFunction<ObjectData | WireObjectData>,
 ): Record<string, ObjectsMapEntry<WireObjectData>> {
   return Object.entries(mapEntries).reduce(
     (acc, v) => {
@@ -258,7 +252,10 @@ function encodeMapEntries(
 }
 
 /** @spec OD4 */
-function encodeObjectData(data: ObjectData | WireObjectData, encodeFn: EncodeObjectDataFunction): WireObjectData {
+function encodeObjectData(
+  data: ObjectData | WireObjectData,
+  encodeFn: EncodeObjectDataFunction<ObjectData | WireObjectData>,
+): WireObjectData {
   const encodedData = encodeFn(data);
   return encodedData;
 }
@@ -285,7 +282,7 @@ export function encodeInitialValue(
     client.Utils,
     client.MessageEncoding,
   );
-  const wireMsg = msg.encode();
+  const wireMsg = msg.encode(client);
   const { operation: initialValueWithDataEncoding } = WireObjectMessage.encodeForWire(
     wireMsg,
     client.Utils,
@@ -420,13 +417,26 @@ export class ObjectMessage {
    *
    * @spec OM4
    */
-  encode(): WireObjectMessage {
-    const encodeObjectDataFn: EncodeObjectDataFunction = (data) => {
-      // TODO: support encoding JSON objects as a JSON string on "string" property with an encoding of "json"
-      // https://ably.atlassian.net/browse/PUB-1667
-      // for now just return values as they are
+  encode(client: BaseClient): WireObjectMessage {
+    const encodeObjectDataFn: EncodeObjectDataFunction<ObjectData> = (data) => {
+      const encodedObjectData: WireObjectData = { objectId: data.objectId };
 
-      return data;
+      if (client.Platform.BufferUtils.isBuffer(data.value)) {
+        // bytes encoding happens later when WireObjectMessage is encoded for wire transmission
+        encodedObjectData.bytes = data.value;
+      } else if (typeof data.value === 'string') {
+        encodedObjectData.string = data.value; // OD4c4, OD4d4
+      } else if (typeof data.value === 'boolean') {
+        encodedObjectData.boolean = data.value; // OD4c1, OD4d1
+      } else if (typeof data.value === 'number') {
+        encodedObjectData.number = data.value; // OD4c3, OD4d3
+      } else if (typeof data.value === 'object' && data.value !== null) {
+        // OD4c5, OD4d5
+        encodedObjectData.string = JSON.stringify(data.value);
+        encodedObjectData.encoding = 'json';
+      }
+
+      return encodedObjectData;
     };
 
     return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn);
@@ -504,25 +514,15 @@ export class WireObjectMessage {
       return messageEncoding.encodeDataForWire(initialValueBuffer, null, format).data;
     };
 
-    const encodeObjectDataFn: EncodeObjectDataFunction = (data) => {
-      // TODO: support encoding JSON objects as a JSON string on "string" property with an encoding of "json"
-      // https://ably.atlassian.net/browse/PUB-1667
-      // currently we check only the "bytes" field:
-      // - if connection is msgpack - "bytes" will will be sent as msgpack bytes, no need to encode here
-      // - if connection is json - "bytes" will be encoded as a base64 string
-
-      let encodedBytes: any = data.bytes;
+    const encodeObjectDataFn: EncodeObjectDataFunction<WireObjectData> = (data) => {
       if (data.bytes != null) {
         // OD4c2, OD4d2
         const result = messageEncoding.encodeDataForWire(data.bytes, data.encoding, format);
-        encodedBytes = result.data;
-        // no need to change the encoding
+        // no need to set the encoding
+        return { ...data, bytes: result.data };
       }
 
-      return {
-        ...data,
-        bytes: encodedBytes,
-      };
+      return { ...data };
     };
 
     return encode(message, utils, messageEncoding, encodeObjectDataFn, encodeInitialValueFn);
@@ -770,26 +770,25 @@ export class WireObjectMessage {
     client: BaseClient,
     format: Utils.Format | undefined,
   ): ObjectData {
-    // TODO: support decoding JSON objects stored as a JSON string with an encoding of "json"
-    // https://ably.atlassian.net/browse/PUB-1667
-    // currently we check only the "bytes" field:
-    // - if connection is msgpack - "bytes" was received as msgpack encoded bytes, no need to decode, it's already a buffer
-    // - if connection is json - "bytes" was received as a base64 string, need to decode it to a buffer
-
     try {
       let decodedBytes: Bufferlike | undefined;
-      if (format === 'msgpack') {
-        // OD5a1 - connection is using msgpack protocol, bytes are already a buffer
-        decodedBytes = objectData.bytes as Bufferlike;
-      } else {
-        // OD5b2 - connection is using JSON protocol, Base64-decode bytes value
+      if (objectData.bytes != null) {
         decodedBytes =
-          objectData.bytes != null ? client.Platform.BufferUtils.base64Decode(String(objectData.bytes)) : undefined;
+          format === 'msgpack'
+            ? // OD5a1 - connection is using msgpack protocol, bytes are already a buffer
+              (objectData.bytes as Bufferlike)
+            : // OD5b2 - connection is using JSON protocol, Base64-decode bytes value
+              client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
+      }
+
+      let decodedJson: JsonObject | JsonArray | undefined;
+      if (objectData.encoding === 'json') {
+        decodedJson = JSON.parse(objectData.string!); // OD5a2, OD5b3
       }
 
       return {
-        ...objectData,
-        bytes: decodedBytes,
+        objectId: objectData.objectId,
+        value: decodedBytes ?? decodedJson ?? objectData.boolean ?? objectData.number ?? objectData.string,
       };
     } catch (error) {
       client.Logger.logAction(
