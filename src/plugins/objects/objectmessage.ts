@@ -3,10 +3,7 @@ import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
 import type { Bufferlike } from 'common/platform';
 
-export type EncodeInitialValueFunction = (
-  data: any,
-  encoding?: string | null,
-) => { data: any; encoding?: string | null };
+export type EncodeInitialValueFunction = (initialValueBuffer: Bufferlike) => any;
 
 export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
 
@@ -198,7 +195,7 @@ function encode(
   utils: typeof Utils,
   messageEncoding: typeof MessageEncoding,
   encodeObjectDataFn: EncodeObjectDataFunction,
-  encodeInitialValueFn: EncodeInitialValueFunction,
+  encodeInitialValueFn?: EncodeInitialValueFunction,
 ): WireObjectMessage {
   // deep copy the message to avoid mutating the original one.
   // buffer values won't be correctly copied, so we will need to use the original message when encoding.
@@ -218,8 +215,9 @@ function encode(
   }
 
   if (message.object?.createOp?.initialValue) {
-    const { data: encodedInitialValue } = encodeInitialValueFn(message.object.createOp.initialValue);
-    result.object!.createOp!.initialValue = encodedInitialValue;
+    result.object!.createOp!.initialValue = encodeInitialValueFn
+      ? encodeInitialValueFn(message.object.createOp.initialValue)
+      : message.object.createOp.initialValue;
   }
 
   // OOP5
@@ -233,8 +231,9 @@ function encode(
   }
 
   if (message.operation?.initialValue) {
-    const { data: encodedInitialValue } = encodeInitialValueFn(message.operation.initialValue);
-    result.operation!.initialValue = encodedInitialValue;
+    result.operation!.initialValue = encodeInitialValueFn
+      ? encodeInitialValueFn(message.operation.initialValue)
+      : message.operation.initialValue;
   }
 
   return result;
@@ -286,7 +285,7 @@ export function encodeInitialValue(
     client.Utils,
     client.MessageEncoding,
   );
-  const wireMsg = msg.encode(client);
+  const wireMsg = msg.encode();
   const { operation: initialValueWithDataEncoding } = WireObjectMessage.encodeForWire(
     wireMsg,
     client.Utils,
@@ -421,28 +420,7 @@ export class ObjectMessage {
    *
    * @spec OM4
    */
-  encode(client: BaseClient): WireObjectMessage {
-    const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
-      const isNativeDataType =
-        typeof data == 'string' ||
-        typeof data == 'number' ||
-        typeof data == 'boolean' ||
-        client.Platform.BufferUtils.isBuffer(data) ||
-        data === null ||
-        data === undefined;
-
-      const { data: encodedData, encoding: newEncoding } = this._messageEncoding.encodeData(
-        data,
-        encoding,
-        isNativeDataType,
-      );
-
-      return {
-        data: encodedData,
-        encoding: newEncoding,
-      };
-    };
-
+  encode(): WireObjectMessage {
     const encodeObjectDataFn: EncodeObjectDataFunction = (data) => {
       // TODO: support encoding JSON objects as a JSON string on "string" property with an encoding of "json"
       // https://ably.atlassian.net/browse/PUB-1667
@@ -451,7 +429,7 @@ export class ObjectMessage {
       return data;
     };
 
-    return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn, encodeInitialValueFn);
+    return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn);
   }
 
   toString(): string {
@@ -521,13 +499,9 @@ export class WireObjectMessage {
     messageEncoding: typeof MessageEncoding,
     format: Utils.Format,
   ): WireObjectMessage {
-    const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
+    const encodeInitialValueFn: EncodeInitialValueFunction = (initialValueBuffer) => {
       // OOP5a1, OOP5b1 - initialValue encoded based on the protocol used
-      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWire(data, encoding, format);
-      return {
-        data: encodedData,
-        encoding: newEncoding,
-      };
+      return messageEncoding.encodeDataForWire(initialValueBuffer, null, format).data;
     };
 
     const encodeObjectDataFn: EncodeObjectDataFunction = (data) => {
