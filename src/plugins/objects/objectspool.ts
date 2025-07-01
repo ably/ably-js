@@ -109,7 +109,7 @@ export class ObjectsPool {
       // tombstoned objects should be removed from the pool if they have been tombstoned for longer than grace period.
       // by removing them from the local pool, Objects plugin no longer keeps a reference to those objects, allowing JS's
       // Garbage Collection to eventually free the memory for those objects, provided the user no longer references them either.
-      if (obj.isTombstoned() && Date.now() - obj.tombstonedAt()! >= DEFAULTS.gcGracePeriod) {
+      if (obj.isTombstoned() && Date.now() - obj.tombstonedAt()! >= this._objects.gcGracePeriod) {
         toDelete.push(objectId);
         continue;
       }

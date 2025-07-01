@@ -80,6 +80,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'read.Defaults.version',
     'read.LiveMap._dataRef.data',
     'read.EventEmitter.events',
+    'read.Objects.gcGracePeriod',
     'read.Platform.Config.push',
     'read.ProtocolMessage.channelSerial',
     'read.Realtime._transports',
@@ -141,8 +142,8 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'write.Defaults.ENDPOINT',
     'write.Defaults.ENVIRONMENT',
     'write.Defaults.wsConnectivityCheckUrl',
-    'write.Objects._DEFAULTS.gcGracePeriod',
     'write.Objects._DEFAULTS.gcInterval',
+    'write.Objects.gcGracePeriod',
     'write.Platform.Config.push', // This implies using a mock implementation of the internal IPlatformPushConfig interface. Our mock (in push_channel_transport.js) then interacts with internal objects and private APIs of public objects to implement this interface; I haven’t added annotations for that private API usage, since there wasn’t an easy way to pass test context information into the mock. I think that for now we can just say that if we wanted to get rid of this private API usage, then we’d need to remove this mock entirely.
     'write.auth.authOptions.requestHeaders',
     'write.auth.key',

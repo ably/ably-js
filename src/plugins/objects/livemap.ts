@@ -2,7 +2,6 @@ import { dequal } from 'dequal';
 
 import type { Bufferlike } from 'common/platform';
 import type * as API from '../../../ably';
-import { DEFAULTS } from './defaults';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
 import {
@@ -556,7 +555,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     const keysToDelete: string[] = [];
     for (const [key, value] of this._dataRef.data.entries()) {
-      if (value.tombstone === true && Date.now() - value.tombstonedAt! >= DEFAULTS.gcGracePeriod) {
+      if (value.tombstone === true && Date.now() - value.tombstonedAt! >= this._objects.gcGracePeriod) {
         keysToDelete.push(key);
       }
     }
