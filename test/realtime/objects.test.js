@@ -777,7 +777,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'OBJECT_SYNC sequence with object state "tombstone" property creates tombstoned object',
+          description: 'OBJECT_SYNC sequence with "tombstone=true" for an object creates tombstoned object',
           action: async (ctx) => {
             const { root, objectsHelper, channel } = ctx;
 
@@ -831,7 +831,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'OBJECT_SYNC sequence with object state "tombstone" property deletes existing object',
+          description: 'OBJECT_SYNC sequence with "tombstone=true" for an object deletes existing object',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, channel } = ctx;
 
@@ -884,7 +884,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           allTransportsAndProtocols: true,
           description:
-            'OBJECT_SYNC sequence with object state "tombstone" property triggers subscription callback for existing object',
+            'OBJECT_SYNC sequence with "tombstone=true" for an object triggers subscription callback for existing object',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, channel } = ctx;
 
@@ -934,6 +934,168 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             await counterSubPromise;
+          },
+        },
+
+        {
+          description:
+            'OBJECT_SYNC sequence with "tombstone=true" for an object sets "tombstoneAt" from "serialTimestamp"',
+          action: async (ctx) => {
+            const { helper, objectsHelper, channel, objects } = ctx;
+
+            const counterId = objectsHelper.fakeCounterObjectId();
+            const serialTimestamp = 1234567890;
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
+              serialTimestamp,
+              state: [
+                objectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: true,
+                  initialCount: 1,
+                }),
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
+                  },
+                }),
+              ],
+            });
+
+            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            const obj = objects._objectsPool.get(counterId);
+            expect(obj, 'Check object added to the pool OBJECT_SYNC sequence with "tombstone=true"').to.exist;
+            helper.recordPrivateApi('call.LiveObject.tombstonedAt');
+            expect(obj.tombstonedAt()).to.equal(
+              serialTimestamp,
+              `Check object's "tombstonedAt" value is set to "serialTimestamp" from OBJECT_SYNC sequence`,
+            );
+          },
+        },
+
+        {
+          description:
+            'OBJECT_SYNC sequence with "tombstone=true" for an object sets "tombstoneAt" using local clock if missing "serialTimestamp"',
+          action: async (ctx) => {
+            const { helper, objectsHelper, channel, objects } = ctx;
+
+            const counterId = objectsHelper.fakeCounterObjectId();
+            await objectsHelper.processObjectStateMessageOnChannel({
+              // don't provide serialTimestamp
+              channel,
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
+              state: [
+                objectsHelper.counterObject({
+                  objectId: counterId,
+                  siteTimeserials: {
+                    aaa: lexicoTimeserial('aaa', 0, 0),
+                  },
+                  tombstone: true,
+                  initialCount: 1,
+                }),
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    counter: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId } },
+                  },
+                }),
+              ],
+            });
+
+            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            const obj = objects._objectsPool.get(counterId);
+            expect(obj, 'Check object added to the pool OBJECT_SYNC sequence with "tombstone=true"').to.exist;
+            helper.recordPrivateApi('call.LiveObject.tombstonedAt');
+            const tombstonedAt = obj.tombstonedAt();
+            expect(
+              tombstonedAt && Math.abs(tombstonedAt - Date.now()) < 1000,
+              `Check object's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
+            ).to.be.true;
+          },
+        },
+
+        {
+          description:
+            'OBJECT_SYNC sequence with "tombstone=true" for a map entry sets "tombstoneAt" from "serialTimestamp"',
+          action: async (ctx) => {
+            const { helper, root, objectsHelper, channel } = ctx;
+
+            const serialTimestamp = 1234567890;
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    foo: {
+                      timeserial: lexicoTimeserial('aaa', 0, 0),
+                      data: { string: 'bar' },
+                      tombstone: true,
+                      serialTimestamp,
+                    },
+                  },
+                }),
+              ],
+            });
+
+            helper.recordPrivateApi('read.LiveMap._dataRef.data');
+            const mapEntry = root._dataRef.data.get('foo');
+            expect(
+              mapEntry,
+              'Check map entry is added to root internal data after OBJECT_SYNC sequence with "tombstone=true" for a map entry',
+            ).to.exist;
+            expect(mapEntry.tombstonedAt).to.equal(
+              serialTimestamp,
+              `Check map entry's "tombstonedAt" value is set to "serialTimestamp" from OBJECT_SYNC sequence`,
+            );
+          },
+        },
+
+        {
+          description:
+            'OBJECT_SYNC sequence with "tombstone=true" for a map entry sets "tombstoneAt" using local clock if missing "serialTimestamp"',
+          action: async (ctx) => {
+            const { helper, root, objectsHelper, channel } = ctx;
+
+            await objectsHelper.processObjectStateMessageOnChannel({
+              channel,
+              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
+              state: [
+                objectsHelper.mapObject({
+                  objectId: 'root',
+                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
+                  initialEntries: {
+                    foo: {
+                      timeserial: lexicoTimeserial('aaa', 0, 0),
+                      data: { string: 'bar' },
+                      tombstone: true,
+                      // don't provide serialTimestamp
+                    },
+                  },
+                }),
+              ],
+            });
+
+            helper.recordPrivateApi('read.LiveMap._dataRef.data');
+            const mapEntry = root._dataRef.data.get('foo');
+            expect(
+              mapEntry,
+              'Check map entry is added to root internal data after OBJECT_SYNC sequence with "tombstone=true" for a map entry',
+            ).to.exist;
+            const tombstonedAt = mapEntry.tombstonedAt;
+            expect(
+              tombstonedAt && Math.abs(tombstonedAt - Date.now()) < 1000,
+              `Check map entry's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
+            ).to.be.true;
           },
         },
       ];
@@ -1461,6 +1623,56 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
+          description: 'MAP_REMOVE for a map entry sets "tombstoneAt" from "serialTimestamp"',
+          action: async (ctx) => {
+            const { helper, channel, root, objectsHelper } = ctx;
+
+            const serialTimestamp = 1234567890;
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              serialTimestamp,
+              siteCode: 'aaa',
+              state: [objectsHelper.mapRemoveOp({ objectId: 'root', key: 'foo' })],
+            });
+
+            helper.recordPrivateApi('read.LiveMap._dataRef.data');
+            const mapEntry = root._dataRef.data.get('foo');
+            expect(mapEntry, 'Check map entry is added to root internal data after MAP_REMOVE for a map entry').to
+              .exist;
+            expect(mapEntry.tombstonedAt).to.equal(
+              serialTimestamp,
+              `Check map entry's "tombstonedAt" value is set to "serialTimestamp" from MAP_REMOVE`,
+            );
+          },
+        },
+
+        {
+          description: 'MAP_REMOVE for a map entry sets "tombstoneAt" using local clock if missing "serialTimestamp"',
+          action: async (ctx) => {
+            const { helper, channel, root, objectsHelper } = ctx;
+
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              // don't provide serialTimestamp
+              siteCode: 'aaa',
+              state: [objectsHelper.mapRemoveOp({ objectId: 'root', key: 'foo' })],
+            });
+
+            helper.recordPrivateApi('read.LiveMap._dataRef.data');
+            const mapEntry = root._dataRef.data.get('foo');
+            expect(mapEntry, 'Check map entry is added to root internal data after MAP_REMOVE for a map entry').to
+              .exist;
+            const tombstonedAt = mapEntry.tombstonedAt;
+            expect(
+              tombstonedAt && Math.abs(tombstonedAt - Date.now()) < 1000,
+              `Check map entry's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
+            ).to.be.true;
+          },
+        },
+
+        {
           allTransportsAndProtocols: true,
           description: 'can apply COUNTER_CREATE object operation messages',
           action: async (ctx) => {
@@ -1911,6 +2123,80 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             await Promise.all([mapSubPromise, counterSubPromise]);
+          },
+        },
+
+        {
+          description: 'OBJECT_DELETE for an object sets "tombstoneAt" from "serialTimestamp"',
+          action: async (ctx) => {
+            const { root, objectsHelper, channelName, channel, helper, objects } = ctx;
+
+            const objectCreatedPromise = waitForMapKeyUpdate(root, 'object');
+            const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'object',
+              createOp: objectsHelper.counterCreateRestOp(),
+            });
+            await objectCreatedPromise;
+
+            expect(root.get('object'), 'Check object exists on root before OBJECT_DELETE').to.exist;
+
+            // inject OBJECT_DELETE
+            const serialTimestamp = 1234567890;
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              serialTimestamp,
+              siteCode: 'aaa',
+              state: [objectsHelper.objectDeleteOp({ objectId })],
+            });
+
+            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            const obj = objects._objectsPool.get(objectId);
+            helper.recordPrivateApi('call.LiveObject.isTombstoned');
+            expect(obj.isTombstoned()).to.equal(true, `Check object is tombstoned after OBJECT_DELETE`);
+            helper.recordPrivateApi('call.LiveObject.tombstonedAt');
+            expect(obj.tombstonedAt()).to.equal(
+              serialTimestamp,
+              `Check object's "tombstonedAt" value is set to "serialTimestamp" from OBJECT_DELETE`,
+            );
+          },
+        },
+
+        {
+          description: 'OBJECT_DELETE for an object sets "tombstoneAt" using local clock if missing "serialTimestamp"',
+          action: async (ctx) => {
+            const { root, objectsHelper, channelName, channel, helper, objects } = ctx;
+
+            const objectCreatedPromise = waitForMapKeyUpdate(root, 'object');
+            const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'object',
+              createOp: objectsHelper.counterCreateRestOp(),
+            });
+            await objectCreatedPromise;
+
+            expect(root.get('object'), 'Check object exists on root before OBJECT_DELETE').to.exist;
+
+            // inject OBJECT_DELETE
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              // don't provide serialTimestamp
+              siteCode: 'aaa',
+              state: [objectsHelper.objectDeleteOp({ objectId })],
+            });
+
+            helper.recordPrivateApi('call.Objects._objectsPool.get');
+            const obj = objects._objectsPool.get(objectId);
+            helper.recordPrivateApi('call.LiveObject.isTombstoned');
+            expect(obj.isTombstoned()).to.equal(true, `Check object is tombstoned after OBJECT_DELETE`);
+            helper.recordPrivateApi('call.LiveObject.tombstonedAt');
+            const tombstonedAt = obj.tombstonedAt();
+            expect(
+              tombstonedAt && Math.abs(tombstonedAt - Date.now()) < 1000,
+              `Check object's "tombstonedAt" value is set using local clock if no "serialTimestamp" provided`,
+            ).to.be.true;
           },
         },
 

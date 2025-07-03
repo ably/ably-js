@@ -16,6 +16,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'call.EventEmitter.emit',
     'call.LiveObject.getObjectId',
     'call.LiveObject.isTombstoned',
+    'call.LiveObject.tombstonedAt',
     'call.Objects._objectsPool._onGCInterval',
     'call.Objects._objectsPool.get',
     'call.Message.decode',

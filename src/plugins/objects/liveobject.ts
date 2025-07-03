@@ -1,6 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import { ObjectData, ObjectMessage, ObjectOperation, ObjectState } from './objectmessage';
+import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
 import { Objects } from './objects';
 
 export enum LiveObjectSubscriptionEvent {
@@ -51,14 +51,6 @@ export abstract class LiveObject<
   protected _siteTimeserials: Record<string, string>;
   protected _createOperationIsMerged: boolean;
   private _tombstone: boolean;
-  /**
-   * Even though the {@link ObjectMessage.serial} value from the operation that deleted the object contains the timestamp value,
-   * the serial should be treated as an opaque string on the client, meaning we should not attempt to parse it.
-   *
-   * Therefore, we need to set our own timestamp using local clock when the object is deleted client-side.
-   * Strictly speaking, this does make an assumption about the client clock not being too heavily skewed behind the server,
-   * but it is an acceptable compromise for the time being, as the likelihood of encountering a race here is pretty low given the grace periods we use.
-   */
   private _tombstonedAt: number | undefined;
 
   protected constructor(
@@ -159,9 +151,19 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  tombstone(): TUpdate {
+  tombstone(objectMessage: ObjectMessage): TUpdate {
     this._tombstone = true;
-    this._tombstonedAt = Date.now();
+    if (objectMessage.serialTimestamp != null) {
+      this._tombstonedAt = objectMessage.serialTimestamp;
+    } else {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MINOR,
+        'LiveObject.tombstone()',
+        `object has been tombstoned but no "serialTimestamp" found in the message, using local clock instead; objectId=${this.getObjectId()}`,
+      );
+      this._tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
+    }
     const update = this.clearData();
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
@@ -210,8 +212,8 @@ export abstract class LiveObject<
     return !siteSerial || opSerial > siteSerial;
   }
 
-  protected _applyObjectDelete(): TUpdate {
-    return this.tombstone();
+  protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
+    return this.tombstone(objectMessage);
   }
 
   /**
@@ -221,7 +223,7 @@ export abstract class LiveObject<
    */
   abstract applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage): void;
   /**
-   * Overrides internal data for this LiveObject with data from the given object state.
+   * Overrides internal data for this LiveObject with object state from the given object message.
    * Provided object state should hold a valid data for current LiveObject, e.g. counter data for LiveCounter, map data for LiveMap.
    *
    * Object states are received during sync sequence, and sync sequence is a source of truth for the current state of the objects,
@@ -232,7 +234,7 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  abstract overrideWithObjectState(objectState: ObjectState<ObjectData>): TUpdate | LiveObjectUpdateNoop;
+  abstract overrideWithObjectState(objectMessage: ObjectMessage): TUpdate | LiveObjectUpdateNoop;
   /**
    * @internal
    */
