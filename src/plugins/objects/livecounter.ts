@@ -7,7 +7,6 @@ import {
   ObjectOperation,
   ObjectOperationAction,
   ObjectsCounterOp,
-  ObjectState,
 } from './objectmessage';
 import { Objects } from './objects';
 
@@ -37,9 +36,9 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectState(objects: Objects, objectState: ObjectState<ObjectData>): LiveCounter {
-    const obj = new LiveCounter(objects, objectState.objectId);
-    obj.overrideWithObjectState(objectState);
+  static fromObjectState(objects: Objects, objectMessage: ObjectMessage): LiveCounter {
+    const obj = new LiveCounter(objects, objectMessage.object!.objectId);
+    obj.overrideWithObjectState(objectMessage);
     return obj;
   }
 
@@ -216,7 +215,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        update = this._applyObjectDelete();
+        update = this._applyObjectDelete(msg);
         break;
 
       default:
@@ -234,7 +233,12 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @internal
    * @spec RTLC6
    */
-  overrideWithObjectState(objectState: ObjectState<ObjectData>): LiveCounterUpdate | LiveObjectUpdateNoop {
+  overrideWithObjectState(objectMessage: ObjectMessage): LiveCounterUpdate | LiveObjectUpdateNoop {
+    const objectState = objectMessage.object;
+    if (objectState == null) {
+      throw new this._client.ErrorInfo(`Missing object state; LiveCounter objectId=${this.getObjectId()}`, 92000, 500);
+    }
+
     if (objectState.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Invalid object state: object state objectId=${objectState.objectId}; LiveCounter objectId=${this.getObjectId()}`,
@@ -274,7 +278,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     const previousDataRef = this._dataRef;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone();
+      this.tombstone(objectMessage);
     } else {
       // override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLC6b

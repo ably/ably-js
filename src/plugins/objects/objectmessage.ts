@@ -90,6 +90,8 @@ export interface ObjectsMapEntry<T> {
    * and treat it as the "earliest possible" serial for comparison purposes.
    */
   timeserial?: string; // OME2b
+  /** A timestamp from the {@link timeserial} field. Only present if {@link tombstone} is `true` */
+  serialTimestamp?: number; // OME2d
   /** The data that represents the value of the map entry. */
   data?: T; // OME2c
 }
@@ -332,6 +334,7 @@ function copyMsg(
     extras: msg.extras,
     timestamp: msg.timestamp,
     serial: msg.serial,
+    serialTimestamp: msg.serialTimestamp,
     siteCode: msg.siteCode,
   };
 
@@ -370,6 +373,8 @@ export class ObjectMessage {
   object?: ObjectState<ObjectData>; // OM2g
   /** An opaque string that uniquely identifies this object message. */
   serial?: string; // OM2h
+  /** A timestamp from the {@link serial} field. */
+  serialTimestamp?: number; // OM2j
   /** An opaque string used as a key to update the map of serial values on an object. */
   siteCode?: string; // OM2i
 
@@ -456,6 +461,8 @@ export class WireObjectMessage {
   object?: ObjectState<WireObjectData>; // OM2g
   /** An opaque string that uniquely identifies this object message. */
   serial?: string; // OM2h
+  /** A timestamp from the {@link serial} field. */
+  serialTimestamp?: number; // OM2j
   /** An opaque string used as a key to update the map of serial values on an object. */
   siteCode?: string; // OM2i
 
