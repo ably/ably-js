@@ -36,21 +36,21 @@ The following platforms are supported:
 
 | Platform | Support |
 |----------|---------|
-| Node.js | >=16.x or later. See `engines` in [package.json](https://github.com/ably/ably-js/blob/main/package.json). |
+| JavaScript | ES2017 |
+| Node.js | See `engines` in [package.json](https://github.com/ably/ably-js/blob/main/package.json). |
 | React | >=16.8.x |
 | TypeScript | Type definitions are included in the package. |
-| [Webpack](#webpack-installation) | Browser and server-side bundling supported. |
 | Web Workers | Browser bundle and [modular](#modular-variant) support. |
 
 The following browser versions are supported:
 
-| Browser | Version |
+| Browser | Support |
 |---------|---------|
-| Chrome | >=58 (April 19, 2017). |
-| Firefox | >=52 (March 7, 2017). |
-| Edge | >=79 (December 15, 2020). |
-| Safari | >=11 (September 19, 2017). |
-| Opera | >=45 (May 10, 2017). |
+| Chrome | Long term support. |
+| Firefox | Long term support. |
+| Edge | Long term support. |
+| Safari | Long term support. |
+| Opera | Long term support. |
 
 > [!NOTE]
 > Versions 1.2.x of the SDK support Internet Explorer >=9 and other older browsers, as well as Node.js >=8.17.
@@ -60,7 +60,22 @@ The following browser versions are supported:
 
 ---
 
-## Webpack installation
+## Installation
+
+The NodeJS SDK is available as an [NPM module](https://www.npmjs.com/package/ably). To get started with your project, install the package:
+
+```sh
+npm install ably
+```
+
+Run the following to instantiate a client:
+
+```javascript
+const Ably = require('ably');
+const realtime = new Ably.Realtime({ key: apiKey });
+```
+
+### Webpack installation
 
 The Ably Pub/Sub SDK includes support for Webpack compiling browsers.
 
@@ -77,21 +92,40 @@ import * as Ably from 'ably';
 
 With `target: 'browser'`, Webpack uses the browser-compatible CommonJS build by default.
 
-If needed, for example with custom targets:
+If needed (for example with custom targets):
 
-- **Webpack 5**: add an alias in your config:
+- Webpack 5: To resolve Ably correctly, add this alias to your webpack configuration:
 
   ```javascript
   alias: {
     ably: path.resolve(__dirname, 'node_modules/ably/build/ably.js'),
   }
   ```
-- **Webpack < 5**: directly import:
+- Webpack < 5: For older versions, import the pre-built bundle directly:
 
   ```javascript
   import * as Ably from 'ably/build/ably.js';
   ```
 </details>
+
+## Usage
+
+The following code connects to Ably's realtime messaging service, subscribes to a channel to receive messages, and publishes a test message to that same channel.
+
+```javascript
+const realtimeClient = new Ably.Realtime({ key: '', clientId: 'a-client' });
+
+await realtimeClient.connection.once('connected');
+  console.log(`Connected to Ably`);
+
+const channel = realtimeClient.channels.get('a-channel');
+
+await channel.subscribe((message) => {
+  console.log(`Received message: ${message.data}`);
+});
+
+await channel.publish('example', 'a-message');
+```
 
 ## Modular variant
 
@@ -104,7 +138,7 @@ Aimed at those who are concerned about their app's bundle size, the modular vari
 
 The modular variant of the library provides:
 
-- a `BaseRealtime` class;
+- A `BaseRealtime` class;
 - various plugins that add functionality to a `BaseRealtime` instance, such as `Rest`, `RealtimePresence`, etc.
 
 To use this variant of the library, import the `BaseRealtime` class from `ably/modular`, along with the plugins that you wish to use. Then, pass these plugins to the `BaseRealtime` constructor as shown in the example below:
@@ -124,15 +158,15 @@ const client = new BaseRealtime({
 
 You must provide:
 
-- at least one HTTP request implementation; that is, one of `FetchRequest` or `XHRRequest`;
-- at least one realtime transport implementation; that is, one of `WebSocketTransport` or `XHRPolling`.
+- At least one HTTP request implementation; that is, one of `FetchRequest` or `XHRRequest`;
+- At least one realtime transport implementation; that is, one of `WebSocketTransport` or `XHRPolling`.
 
 `BaseRealtime` offers the same API as the `Realtime` class described in the rest of this `README`. This means that you can develop an application using the default variant of the SDK and switch to the modular version when you wish to optimize your bundle size.
 
 In order to further reduce bundle size, the modular variant of the SDK performs less logging than the default variant. It only logs:
 
-- messages that have a `logLevel` of 1 (that is, errors)
-- a small number of other network events
+- Messages that have a `logLevel` of 1 (that is, errors)
+- A small number of other network events
 
 If you require more verbose logging, use the default variant of the SDK.
 
@@ -154,9 +188,9 @@ The [CHANGELOG.md](/ably/ably-js/blob/main/CHANGELOG.md) contains details of the
 
 ---
 
-## Support, Feedback, and Troubleshooting
+## Support, feedback, and troubleshooting
 
-For help or technical support, visit Ably's [support page](https://ably.com/support) or GitHub Issues](https://github.com/ably/ably-js-nativescript/issues) for community-reported bugs and discussions.
+For help or technical support, visit Ably's [support page](https://ably.com/support) or [GitHub Issues](https://github.com/ably/ably-js-nativescript/issues) for community-reported bugs and discussions.
 
 ### Chrome extensions
 
@@ -189,12 +223,12 @@ To ensure compatibility, add the following to your `manifest.json`:
 
 </details>
 
-### Avoiding "connection limit exceeded" errors during development
+### "Connection limit exceeded" errors during development
 
 If you're hitting a "connection limit exceeded" error and see rising connection counts in your Ably dashboard, it's likely due to multiple `Ably.Realtime` instances being created during development.
 
 <details>
-<summary>Errors during developments support details.</summary>
+<summary>"Connection limit exceeded" support details.</summary>
 
 Even for `use client` components, Next.js may execute them on the server during pre-rendering. This can create unintended `Ably.Realtime` connections from Node.js that remain open until you restart the development server.
 
@@ -218,7 +252,7 @@ In development environments that use Hot Module Replacement (HMR), such as React
 If you encounter a `Failed to compile Module not found` error or warnings related to `keyv` when using Ably Pub/Sub JavaScript SDK with [Next.js](https://nextjs.org/docs/app/api-reference/next-config-js/serverComponentsExternalPackages), add `ably` to the `serverComponentsExternalPackages` list in `next.config.js`.
 
 <details>
-<summary>Errors during developments support details.</summary>
+<summary>Next.js with App Router and Turbopack support details.</summary>
 
 The following example adds `ably` to the `serverComponentsExternalPackages` list in `next.config.js`:
 
@@ -242,7 +276,10 @@ This is a common problem in App Router for a number of packages (for example, se
 
 ### Genral errors during development
 
-If you encounter an error such as `connection limit exceeded` during development, it may be caused by one of the following issues:
+If you encounter an error such as `connection limit exceeded` during development, it may be caused by several issues.
+
+<details>
+<summary>General errors support details.</summary>
 
 #### Server-side rendering (SSR)
 
@@ -259,3 +296,5 @@ Avoid creating the client inside React components. Instead, move the client inst
 #### Hot module replacement (HMR)
 
 To avoid duplicate client instances caused by hot reloads, move the new `Ably.Realtime()` call into a separate file, for example, `ably.js` and export the client from there. This ensures a single shared instance is reused during development.
+
+</details>
