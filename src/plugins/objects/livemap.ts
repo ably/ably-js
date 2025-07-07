@@ -320,9 +320,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return this._getResolvedValueFromObjectData(element.data!) as T[TKey];
   }
 
+  /** @spec RTLM10, RTLM10a */
   size(): number {
-    this._objects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration(); // RTLM10b, RTLM10c
 
+    // RTLM10d
     let size = 0;
     for (const value of this._dataRef.data.values()) {
       if (this._isMapEntryTombstoned(value)) {
@@ -336,30 +338,34 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return size;
   }
 
+  /** @spec RTLM11, RTLM11a */
   *entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]> {
-    this._objects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration(); // RTLM11b, RTLM11c
 
+    // RTLM11d
     for (const [key, entry] of this._dataRef.data.entries()) {
       if (this._isMapEntryTombstoned(entry)) {
-        // do not return tombstoned entries
+        // RTLM11d1 - do not return tombstoned entries
         continue;
       }
 
       // data always exists for non-tombstoned elements
       const value = this._getResolvedValueFromObjectData(entry.data!) as T[TKey];
-      yield [key as TKey, value];
+      yield [key as TKey, value]; // RTLM11d2
     }
   }
 
+  /** @spec RTLM12, RTLM12a */
   *keys<TKey extends keyof T & string>(): IterableIterator<TKey> {
     for (const [key] of this.entries<TKey>()) {
-      yield key;
+      yield key; // RTLM12b
     }
   }
 
+  /** @spec RTLM13, RTLM13a */
   *values<TKey extends keyof T & string>(): IterableIterator<T[TKey]> {
     for (const [_, value] of this.entries<TKey>()) {
-      yield value;
+      yield value; // RTLM13b
     }
   }
 
@@ -943,9 +949,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return refObject; // RTLM5d2f2
   }
 
+  /** @spec RTLM14 */
   private _isMapEntryTombstoned(entry: LiveMapEntry): boolean {
     if (entry.tombstone === true) {
-      return true;
+      return true; // RTLM14a
     }
 
     // data always exists for non-tombstoned entries
@@ -959,6 +966,6 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       }
     }
 
-    return false;
+    return false; // RTLM14b
   }
 }
