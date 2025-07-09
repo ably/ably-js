@@ -10,10 +10,11 @@ export const ROOT_OBJECT_ID = 'root';
 
 /**
  * @internal
+ * @spec RTO3
  */
 export class ObjectsPool {
   private _client: BaseClient;
-  private _pool: Map<string, LiveObject>;
+  private _pool: Map<string, LiveObject>; // RTO3a
   private _gcInterval: ReturnType<typeof setInterval>;
 
   constructor(private _objects: Objects) {
@@ -70,22 +71,23 @@ export class ObjectsPool {
     }
   }
 
+  /** @spec RTO6 */
   createZeroValueObjectIfNotExists(objectId: string): LiveObject {
     const existingObject = this.get(objectId);
     if (existingObject) {
-      return existingObject;
+      return existingObject; // RTO6a
     }
 
-    const parsedObjectId = ObjectId.fromString(this._client, objectId);
+    const parsedObjectId = ObjectId.fromString(this._client, objectId); // RTO6b
     let zeroValueObject: LiveObject;
     switch (parsedObjectId.type) {
       case 'map': {
-        zeroValueObject = LiveMap.zeroValue(this._objects, objectId);
+        zeroValueObject = LiveMap.zeroValue(this._objects, objectId); // RTO6b2
         break;
       }
 
       case 'counter':
-        zeroValueObject = LiveCounter.zeroValue(this._objects, objectId);
+        zeroValueObject = LiveCounter.zeroValue(this._objects, objectId); // RTO6b3
         break;
     }
 
@@ -95,6 +97,7 @@ export class ObjectsPool {
 
   private _createInitialPool(): Map<string, LiveObject> {
     const pool = new Map<string, LiveObject>();
+    // RTO3b
     const root = LiveMap.zeroValue(this._objects, ROOT_OBJECT_ID);
     pool.set(root.getObjectId(), root);
     return pool;

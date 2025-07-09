@@ -42,6 +42,7 @@ export class ObjectId {
       throw new client.ErrorInfo('Invalid object id string', 92000, 500);
     }
 
+    // RTO6b1
     const [type, rest] = objectId.split(':');
     if (!type || !rest) {
       throw new client.ErrorInfo('Invalid object id string', 92000, 500);

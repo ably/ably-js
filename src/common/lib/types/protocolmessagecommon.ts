@@ -1,6 +1,7 @@
 // constant definitions that can be imported by anyone without worrying about circular
 // deps
 
+// TR2
 export const actions = {
   HEARTBEAT: 0,
   ACK: 1,
@@ -31,6 +32,7 @@ Object.keys(actions).forEach(function (name) {
   ActionName[(actions as { [key: string]: number })[name]] = name;
 });
 
+// TR3
 export const flags: { [key: string]: number } = {
   /* Channel attach state flags */
   HAS_PRESENCE: 1 << 0,
