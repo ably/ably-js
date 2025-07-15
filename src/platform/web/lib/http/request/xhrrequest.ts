@@ -183,7 +183,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       Logger.logAction(this.logger, Logger.LOG_ERROR, 'Request.on' + errorEvent.type + '()', errorMessage);
       this.complete(new PartialErrorInfo(errorMessage, code, statusCode));
     };
-    xhr.onerror = function (errorEvent) {
+    xhr.onerror = (errorEvent) => {
       errorHandler(errorEvent, 'XHR error occurred', null, 400);
     };
     xhr.onabort = (errorEvent) => {
@@ -193,7 +193,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
         errorHandler(errorEvent, 'Request cancelled', null, 400);
       }
     };
-    xhr.ontimeout = function (errorEvent) {
+    xhr.ontimeout = (errorEvent) => {
       errorHandler(errorEvent, 'Request timed out', null, 408);
     };
 
@@ -306,7 +306,7 @@ class XHRRequest extends EventEmitter implements IXHRRequest {
       });
     };
 
-    xhr.onreadystatechange = function () {
+    xhr.onreadystatechange = () => {
       const readyState = xhr.readyState;
       if (readyState < 3) return;
       if (xhr.status !== 0) {
