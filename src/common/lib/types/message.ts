@@ -105,8 +105,6 @@ class Message extends BaseMessage {
   connectionKey?: string;
   action?: API.MessageAction;
   serial?: string;
-  refSerial?: string;
-  refType?: string;
   createdAt?: number;
   version?: string;
   operation?: API.Operation;
@@ -150,8 +148,6 @@ export class WireMessage extends BaseMessage {
   connectionKey?: string;
   action?: number;
   serial?: string;
-  refSerial?: string;
-  refType?: string;
   createdAt?: number;
   version?: string;
   operation?: API.Operation;
