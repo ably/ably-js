@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.10.1](https://github.com/ably/ably-js/tree/2.10.1) (2025-07-16)
+
+- Fix minimization issue with Next.js 15.4+ canary builds [\#2057](https://github.com/ably/ably-js/pull/2057)
+
 ## [2.10.0](https://github.com/ably/ably-js/tree/2.10.0) (2025-06-25)
 
 - Add `Channels.all` to type declarations [\#2040](https://github.com/ably/ably-js/pull/2040)
