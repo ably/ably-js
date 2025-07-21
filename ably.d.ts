@@ -3201,14 +3201,6 @@ export interface Message {
    */
   serial?: string;
   /**
-   * If this message references another, the serial of that message.
-   */
-  refSerial?: string;
-  /**
-   * If this message references another, the type of reference that is.
-   */
-  refType?: string;
-  /**
    * The timestamp of the very first version of a given message (will differ from
    * `timestamp` only if the message has been updated or deleted).
    */
