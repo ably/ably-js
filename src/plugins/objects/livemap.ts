@@ -14,7 +14,6 @@ import {
   ObjectsMapEntry,
   ObjectsMapOp,
   ObjectsMapSemantics,
-  ObjectState,
 } from './objectmessage';
 import { Objects } from './objects';
 
@@ -42,9 +41,6 @@ export type LiveMapObjectData = ObjectIdObjectData | ValueObjectData;
 
 export interface LiveMapEntry {
   tombstone: boolean;
-  /**
-   * Can't use serial from the operation that deleted the entry for the same reason as for {@link LiveObject} tombstones, see explanation there.
-   */
   tombstonedAt: number | undefined;
   timeserial: string | undefined;
   data: LiveMapObjectData | undefined;
@@ -84,12 +80,9 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  static fromObjectState<T extends API.LiveMapType>(
-    objects: Objects,
-    objectState: ObjectState<ObjectData>,
-  ): LiveMap<T> {
-    const obj = new LiveMap<T>(objects, objectState.map?.semantics!, objectState.objectId);
-    obj.overrideWithObjectState(objectState);
+  static fromObjectState<T extends API.LiveMapType>(objects: Objects, objectMessage: ObjectMessage): LiveMap<T> {
+    const obj = new LiveMap<T>(objects, objectMessage.object!.map!.semantics!, objectMessage.object!.objectId);
+    obj.overrideWithObjectState(objectMessage);
     return obj;
   }
 
@@ -455,12 +448,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyMapRemove(op.mapOp, opSerial);
+          update = this._applyMapRemove(op.mapOp, opSerial, msg.serialTimestamp);
         }
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        update = this._applyObjectDelete();
+        update = this._applyObjectDelete(msg);
         break;
 
       default:
@@ -478,7 +471,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    * @spec RTLM6
    */
-  overrideWithObjectState(objectState: ObjectState<ObjectData>): LiveMapUpdate<T> | LiveObjectUpdateNoop {
+  overrideWithObjectState(objectMessage: ObjectMessage): LiveMapUpdate<T> | LiveObjectUpdateNoop {
+    const objectState = objectMessage.object;
+    if (objectState == null) {
+      throw new this._client.ErrorInfo(`Missing object state; LiveMap objectId=${this.getObjectId()}`, 92000, 500);
+    }
+
     if (objectState.objectId !== this.getObjectId()) {
       throw new this._client.ErrorInfo(
         `Invalid object state: object state objectId=${objectState.objectId}; LiveMap objectId=${this.getObjectId()}`,
@@ -534,7 +532,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const previousDataRef = this._dataRef;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone();
+      this.tombstone(objectMessage);
     } else {
       // override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLM6b
@@ -644,7 +642,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
       if (entry.tombstone === true) {
         // RTLM6d1b - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
-        update = this._applyMapRemove({ key }, opSerial);
+        update = this._applyMapRemove({ key }, opSerial, entry.serialTimestamp);
       } else {
         // RTLM6d1a - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
         update = this._applyMapSet({ key, data: entry.data }, opSerial);
@@ -726,7 +724,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         Utils.isNil(op.data.string))
     ) {
       throw new ErrorInfo(
-        `Invalid object data for MAP_SET op on objectId=${this.getObjectId()} on key=${op.key}`,
+        `Invalid object data for MAP_SET op on objectId=${this.getObjectId()} on key="${op.key}"`,
         92000,
         500,
       );
@@ -779,6 +777,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   private _applyMapRemove(
     op: ObjectsMapOp<ObjectData>,
     opSerial: string | undefined,
+    opTimestamp: number | undefined,
   ): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     const existingEntry = this._dataRef.data.get(op.key);
     // RTLM8a
@@ -793,17 +792,30 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return { noop: true };
     }
 
+    let tombstonedAt: number;
+    if (opTimestamp != null) {
+      tombstonedAt = opTimestamp;
+    } else {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MINOR,
+        'LiveMap._applyMapRemove()',
+        `map key has been removed but no "serialTimestamp" found in the message, using local clock instead; key="${op.key}", objectId=${this.getObjectId()}`,
+      );
+      tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
+    }
+
     if (existingEntry) {
       // RTLM8a2
       existingEntry.tombstone = true; // RTLM8a2c
-      existingEntry.tombstonedAt = Date.now();
+      existingEntry.tombstonedAt = tombstonedAt;
       existingEntry.timeserial = opSerial; // RTLM8a2b
       existingEntry.data = undefined; // RTLM8a2a
     } else {
       // RTLM8b, RTLM8b1
       const newEntry: LiveMapEntry = {
         tombstone: true, // RTLM8b2
-        tombstonedAt: Date.now(),
+        tombstonedAt: tombstonedAt,
         timeserial: opSerial,
         data: undefined,
       };
@@ -869,12 +881,27 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         }
       }
 
+      let tombstonedAt: number | undefined;
+      if (entry.tombstone === true) {
+        if (entry.serialTimestamp != null) {
+          tombstonedAt = entry.serialTimestamp;
+        } else {
+          this._client.Logger.logAction(
+            this._client.logger,
+            this._client.Logger.LOG_MINOR,
+            'LiveMap._liveMapDataFromMapEntries()',
+            `map key is removed but no "serialTimestamp" found, using local clock instead; key="${key}", objectId=${this.getObjectId()}`,
+          );
+          tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
+        }
+      }
+
       const liveDataEntry: LiveMapEntry = {
         timeserial: entry.timeserial,
         data: liveData,
         // consider object as tombstoned only if we received an explicit flag stating that. otherwise it exists
         tombstone: entry.tombstone === true,
-        tombstonedAt: entry.tombstone === true ? Date.now() : undefined,
+        tombstonedAt,
       };
 
       liveMapData.data.set(key, liveDataEntry);

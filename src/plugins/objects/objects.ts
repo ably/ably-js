@@ -393,7 +393,7 @@ export class Objects {
 
       // RTO5c1a
       if (existingObject) {
-        const update = existingObject.overrideWithObjectState(entry.objectState); // RTO5c1a1
+        const update = existingObject.overrideWithObjectState(entry.objectMessage); // RTO5c1a1
         // store updates to call subscription callbacks for all of them once the sync sequence is completed.
         // this will ensure that clients get notified about the changes only once everything has been applied.
         existingObjectUpdates.push({ object: existingObject, update });
@@ -406,11 +406,11 @@ export class Objects {
       const objectType = entry.objectType;
       switch (objectType) {
         case 'LiveCounter':
-          newObject = LiveCounter.fromObjectState(this, entry.objectState); // RTO5c1b1a
+          newObject = LiveCounter.fromObjectState(this, entry.objectMessage); // RTO5c1b1a
           break;
 
         case 'LiveMap':
-          newObject = LiveMap.fromObjectState(this, entry.objectState); // RTO5c1b1b
+          newObject = LiveMap.fromObjectState(this, entry.objectMessage); // RTO5c1b1b
           break;
 
         default:

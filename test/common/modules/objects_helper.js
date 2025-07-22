@@ -237,10 +237,11 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
     }
 
     objectOperationMessage(opts) {
-      const { channelName, serial, siteCode, state } = opts;
+      const { channelName, serial, serialTimestamp, siteCode, state } = opts;
 
       state?.forEach((objectMessage, i) => {
         objectMessage.serial = serial;
+        objectMessage.serialTimestamp = serialTimestamp;
         objectMessage.siteCode = siteCode;
       });
 
@@ -253,7 +254,11 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
     }
 
     objectStateMessage(opts) {
-      const { channelName, syncSerial, state } = opts;
+      const { channelName, syncSerial, state, serialTimestamp } = opts;
+
+      state?.forEach((objectMessage, i) => {
+        objectMessage.serialTimestamp = serialTimestamp;
+      });
 
       return {
         action: 20, // OBJECT_SYNC
