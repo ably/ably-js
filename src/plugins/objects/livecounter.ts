@@ -196,7 +196,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._siteTimeserials[opSiteCode] = opSerial; // RTLC7c
 
     if (this.isTombstoned()) {
-      // this object is tombstoned so the operation cannot be applied
+      // RTLC7e - this object is tombstoned so the operation cannot be applied
       return;
     }
 
@@ -218,7 +218,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        update = this._applyObjectDelete(msg);
+        update = this._applyObjectDelete(msg); // RTLC7d4, RTLC7d4a
         break;
 
       default:
@@ -275,14 +275,14 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._siteTimeserials = objectState.siteTimeserials ?? {}; // RTLC6a
 
     if (this.isTombstoned()) {
-      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      return { noop: true };
+      // RTLC6e - this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
+      return { noop: true }; // RTLC6e1
     }
 
     const previousDataRef = this._dataRef;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone(objectMessage);
+      this.tombstone(objectMessage); // RTLC6f
     } else {
       // override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLC6b
@@ -294,7 +294,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
     // if object got tombstoned, the update object will include all data that got cleared.
     // otherwise it is a diff between previous value and new value from object state.
-    return this._updateFromDataDiff(previousDataRef, this._dataRef);
+    return this._updateFromDataDiff(previousDataRef, this._dataRef); // RTLC6f1
   }
 
   /**

@@ -67,9 +67,9 @@ export class Objects {
     this._bufferedObjectOperations = []; // RTO7a1
     // use server-provided objectsGCGracePeriod if available, and subscribe to new connectionDetails that can be emitted as part of the RTN24
     this.gcGracePeriod =
-      this._channel.connectionManager.connectionDetails?.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod;
+      this._channel.connectionManager.connectionDetails?.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod; // RTO10b1
     this._channel.connectionManager.on('connectiondetails', (details: Record<string, any>) => {
-      this.gcGracePeriod = details.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod;
+      this.gcGracePeriod = details.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod; // RTO10b2
     });
   }
 

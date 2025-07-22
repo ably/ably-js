@@ -51,8 +51,8 @@ export abstract class LiveObject<
   protected _dataRef: TData;
   protected _siteTimeserials: Record<string, string>; // RTLO3b
   protected _createOperationIsMerged: boolean; // RTLO3c
-  private _tombstone: boolean;
-  private _tombstonedAt: number | undefined;
+  private _tombstone: boolean; // RTLO3d
+  private _tombstonedAt: number | undefined; // RTLO3e, RTLO3e1
 
   protected constructor(
     protected _objects: Objects,
@@ -66,7 +66,7 @@ export abstract class LiveObject<
     // use empty map of serials by default, so any future operation can be applied to this object
     this._siteTimeserials = {}; // RTLO3b1
     this._createOperationIsMerged = false; // RTLO3c1
-    this._tombstone = false;
+    this._tombstone = false; // RTLO3d1
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
@@ -151,21 +151,25 @@ export abstract class LiveObject<
    * Clears the object's data, cancels any buffered operations and sets the tombstone flag to `true`.
    *
    * @internal
+   * @spec RTLO4e
    */
   tombstone(objectMessage: ObjectMessage): TUpdate {
-    this._tombstone = true;
+    this._tombstone = true; // RTLO4e2
+    // RTLO4e3
     if (objectMessage.serialTimestamp != null) {
-      this._tombstonedAt = objectMessage.serialTimestamp;
+      this._tombstonedAt = objectMessage.serialTimestamp; // RTLO4e3a
     } else {
+      // RTLO4e3b1
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MINOR,
         'LiveObject.tombstone()',
         `object has been tombstoned but no "serialTimestamp" found in the message, using local clock instead; objectId=${this.getObjectId()}`,
       );
+      // RTLO4e3b
       this._tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
     }
-    const update = this.clearData();
+    const update = this.clearData(); // RTLO4e4
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
     return update;
@@ -215,8 +219,9 @@ export abstract class LiveObject<
     return !siteSerial || opSerial > siteSerial; // RTLO4a5, RTLO4a6
   }
 
+  /** @spec RTLO5 */
   protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
-    return this.tombstone(objectMessage);
+    return this.tombstone(objectMessage); // RTLO5b
   }
 
   /**
