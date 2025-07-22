@@ -51,7 +51,7 @@ export class Objects {
   private _syncObjectsDataPool: SyncObjectsDataPool;
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
-  private _bufferedObjectOperations: ObjectMessage[];
+  private _bufferedObjectOperations: ObjectMessage[]; // RTO7a
 
   // Used by tests
   static _DEFAULTS = DEFAULTS;
@@ -64,7 +64,7 @@ export class Objects {
     this._eventEmitterPublic = new this._client.EventEmitter(this._client.logger);
     this._objectsPool = new ObjectsPool(this);
     this._syncObjectsDataPool = new SyncObjectsDataPool(this);
-    this._bufferedObjectOperations = [];
+    this._bufferedObjectOperations = []; // RTO7a1
     // use server-provided objectsGCGracePeriod if available, and subscribe to new connectionDetails that can be emitted as part of the RTN24
     this.gcGracePeriod =
       this._channel.connectionManager.connectionDetails?.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod;
@@ -227,7 +227,7 @@ export class Objects {
     const newSyncSequence = this._currentSyncId !== syncId;
     if (newSyncSequence) {
       // RTO5a2 - new sync sequence started
-      this._startNewSync(syncId, syncCursor); // RTO5a2a
+      this._startNewSync(syncId, syncCursor);
     }
 
     // RTO5a3 - continue current sync sequence
@@ -243,18 +243,19 @@ export class Objects {
 
   /**
    * @internal
+   * @spec RTO8
    */
   handleObjectMessages(objectMessages: ObjectMessage[]): void {
     if (this._state !== ObjectsState.synced) {
-      // The client receives object messages in realtime over the channel concurrently with the sync sequence.
+      // RTO7 - The client receives object messages in realtime over the channel concurrently with the sync sequence.
       // Some of the incoming object messages may have already been applied to the objects described in
       // the sync sequence, but others may not; therefore we must buffer these messages so that we can apply
       // them to the objects once the sync is complete.
-      this._bufferedObjectOperations.push(...objectMessages);
+      this._bufferedObjectOperations.push(...objectMessages); // RTO8a
       return;
     }
 
-    this._applyObjectMessages(objectMessages);
+    this._applyObjectMessages(objectMessages); // RTO8b
   }
 
   /**
@@ -283,6 +284,7 @@ export class Objects {
       // reset the objects pool to its initial state, and emit update events so subscribers to root object get notified about changes.
       this._objectsPool.resetToInitialPool(true); // RTO4b1, RTO4b2
       this._syncObjectsDataPool.clear(); // RTO4b3
+      this._bufferedObjectOperations = []; // RTO4b5
       // defer the state change event until the next tick if we started a new sequence just now due to being in initialized state.
       // this allows any event listeners to process the start of the new sequence event that was emitted earlier during this event loop.
       this._endSync(fromInitializedState); // RTO4b4
@@ -346,8 +348,8 @@ export class Objects {
 
   private _startNewSync(syncId?: string, syncCursor?: string): void {
     // need to discard all buffered object operation messages on new sync start
-    this._bufferedObjectOperations = [];
-    this._syncObjectsDataPool.clear();
+    this._bufferedObjectOperations = []; // RTO5a2b
+    this._syncObjectsDataPool.clear(); // RTO5a2a
     this._currentSyncId = syncId;
     this._currentSyncCursor = syncCursor;
     this._stateChange(ObjectsState.syncing, false);
@@ -358,9 +360,9 @@ export class Objects {
     this._applySync();
     // should apply buffered object operations after we applied the sync.
     // can use regular object messages application logic
-    this._applyObjectMessages(this._bufferedObjectOperations);
+    this._applyObjectMessages(this._bufferedObjectOperations); // RTO5c6
 
-    this._bufferedObjectOperations = [];
+    this._bufferedObjectOperations = []; // RTO5c5
     this._syncObjectsDataPool.clear(); // RTO5c4
     this._currentSyncId = undefined; // RTO5c3
     this._currentSyncCursor = undefined; // RTO5c3
@@ -435,9 +437,12 @@ export class Objects {
     existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
   }
 
+  /** @spec RTO9 */
   private _applyObjectMessages(objectMessages: ObjectMessage[]): void {
+    // RTO9a
     for (const objectMessage of objectMessages) {
       if (!objectMessage.operation) {
+        // RTO9a1
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
@@ -447,8 +452,7 @@ export class Objects {
         continue;
       }
 
-      const objectOperation = objectMessage.operation;
-
+      const objectOperation = objectMessage.operation; // RTO9a2
       switch (objectOperation.action) {
         case ObjectOperationAction.MAP_CREATE:
         case ObjectOperationAction.COUNTER_CREATE:
@@ -456,17 +460,19 @@ export class Objects {
         case ObjectOperationAction.MAP_REMOVE:
         case ObjectOperationAction.COUNTER_INC:
         case ObjectOperationAction.OBJECT_DELETE:
+          // RTO9a2a
           // we can receive an op for an object id we don't have yet in the pool. instead of buffering such operations,
           // we can create a zero-value object for the provided object id and apply the operation to that zero-value object.
           // this also means that all objects are capable of applying the corresponding *_CREATE ops on themselves,
           // since they need to be able to eventually initialize themselves from that *_CREATE op.
           // so to simplify operations handling, we always try to create a zero-value object in the pool first,
           // and then we can always apply the operation on the existing object in the pool.
-          this._objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId);
-          this._objectsPool.get(objectOperation.objectId)!.applyOperation(objectOperation, objectMessage);
+          this._objectsPool.createZeroValueObjectIfNotExists(objectOperation.objectId); // RTO9a2a1
+          this._objectsPool.get(objectOperation.objectId)!.applyOperation(objectOperation, objectMessage); // RTO9a2a2, RTO9a2a3
           break;
 
         default:
+          // RTO9a2b
           this._client.Logger.logAction(
             this._client.logger,
             this._client.Logger.LOG_MAJOR,
