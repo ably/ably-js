@@ -65,10 +65,11 @@ export class Objects {
     this._objectsPool = new ObjectsPool(this);
     this._syncObjectsDataPool = new SyncObjectsDataPool(this);
     this._bufferedObjectOperations = [];
-    // use server-provided gcGracePeriod if available, and subscribe to new connectionDetails that can be emitted as part of the RTN24
-    this.gcGracePeriod = this._channel.connectionManager.connectionDetails?.gcGracePeriod ?? DEFAULTS.gcGracePeriod;
+    // use server-provided objectsGCGracePeriod if available, and subscribe to new connectionDetails that can be emitted as part of the RTN24
+    this.gcGracePeriod =
+      this._channel.connectionManager.connectionDetails?.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod;
     this._channel.connectionManager.on('connectiondetails', (details: Record<string, any>) => {
-      this.gcGracePeriod = details.gcGracePeriod ?? DEFAULTS.gcGracePeriod;
+      this.gcGracePeriod = details.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod;
     });
   }
 

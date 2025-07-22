@@ -4524,7 +4524,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         }, client);
       });
 
-      it('gcGracePeriod is set from connectionDetails', async function () {
+      it('gcGracePeriod is set from connectionDetails.objectsGCGracePeriod', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
@@ -4538,11 +4538,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
           // gcGracePeriod should be set after the initial connection
           helper.recordPrivateApi('read.Objects.gcGracePeriod');
-          expect(objects.gcGracePeriod, 'Check gcGracePeriod is set after initial connection').to.exist;
+          expect(
+            objects.gcGracePeriod,
+            'Check gcGracePeriod is set after initial connection from connectionDetails.objectsGCGracePeriod',
+          ).to.exist;
           helper.recordPrivateApi('read.Objects.gcGracePeriod');
           expect(objects.gcGracePeriod).to.equal(
-            connectionDetails.gcGracePeriod,
-            'Check gcGracePeriod is set to equal connectionDetails.gcGracePeriod',
+            connectionDetails.objectsGCGracePeriod,
+            'Check gcGracePeriod is set to equal connectionDetails.objectsGCGracePeriod',
           );
 
           const connectionDetailsPromise = connectionManager.once('connectiondetails');
@@ -4555,7 +4558,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               action: 4, // CONNECTED
               connectionDetails: {
                 ...connectionDetails,
-                gcGracePeriod: 999,
+                objectsGCGracePeriod: 999,
               },
             }),
           );
