@@ -17,7 +17,7 @@ import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
 import type { WirePresenceMessage } from '../types/presencemessage';
-import type { Objects, ObjectMessage } from 'plugins/objects';
+import type { Objects, WireObjectMessage } from 'plugins/objects';
 import type RealtimePresence from './realtimepresence';
 import type RealtimeAnnotations from './realtimeannotations';
 
@@ -507,7 +507,7 @@ class RealtimeChannel extends EventEmitter {
     return this.sendMessage(msg);
   }
 
-  sendState(objectMessages: ObjectMessage[]): Promise<void> {
+  sendState(objectMessages: WireObjectMessage[]): Promise<void> {
     const msg = protocolMessageFromValues({
       action: actions.OBJECT,
       channel: this.name,
@@ -623,17 +623,12 @@ class RealtimeChannel extends EventEmitter {
         }
 
         populateFieldsFromParent(message);
-        const objectMessages = message.state;
         // need to use the active protocol format instead of just client's useBinaryProtocol option,
         // as comet transport does not support msgpack and will default to json without changing useBinaryProtocol.
         // message processing is done in the same event loop tick up until this point,
         // so we can reliably expect an active protocol to exist and be the one that received the object message.
         const format = this.client.connection.connectionManager.getActiveTransportFormat()!;
-        await Promise.all(
-          objectMessages.map((om) =>
-            this.client._objectsPlugin!.ObjectMessage.decode(om, this.client, this.logger, Logger, Utils, format),
-          ),
-        );
+        const objectMessages = message.state.map((om) => om.decode(this.client, format));
 
         if (message.action === actions.OBJECT) {
           this._objects.handleObjectMessages(objectMessages);

@@ -1,6 +1,7 @@
 ![Ably Chat Header](/images/JavaScriptSDK-github.png)
 [![npm version](https://img.shields.io/npm/v/ably.svg?style=flat)](https://img.shields.io/npm/v/ably.svg?style=flat)
 [![License](https://badgen.net/github/license/ably/ably-js)](https://github.com/ably/ably-js/blob/main/LICENSE)
+
 ---
 
 # Ably Pub/Sub JavaScript SDK
@@ -13,8 +14,8 @@ Ably LiveObjects is also available as a Pub/Sub JavaScript SDK plugin. You can u
 
 Find out more:
 
-* [Ably Pub/Sub docs](https://ably.com/docs/basics)
-* [Ably Pub/Sub Examples](https://ably.com/examples?product=pubsub)
+- [Ably Pub/Sub docs](https://ably.com/docs/basics)
+- [Ably Pub/Sub Examples](https://ably.com/examples?product=pubsub)
 
 ---
 
@@ -34,13 +35,13 @@ Ably aims to support a wide range of platforms and all current browser versions,
 
 The following platforms are supported:
 
-| Platform | Support |
-|----------|---------|
-| JavaScript | ES2017 |
-| Node.js | See `engines` in [package.json](https://github.com/ably/ably-js/blob/main/package.json). |
-| React | >=16.8.x |
-| TypeScript | Type definitions are included in the package. |
-| Web Workers | Browser bundle and [modular](#modular-variant) support. |
+| Platform    | Support                                                                                  |
+| ----------- | ---------------------------------------------------------------------------------------- |
+| JavaScript  | ES2017                                                                                   |
+| Node.js     | See `engines` in [package.json](https://github.com/ably/ably-js/blob/main/package.json). |
+| React       | >=16.8.x                                                                                 |
+| TypeScript  | Type definitions are included in the package.                                            |
+| Web Workers | Browser bundle and [modular](#modular-variant) support.                                  |
 
 > [!NOTE]
 > Versions 1.2.x of the SDK support Internet Explorer >=9 and other older browsers, as well as Node.js >=8.17.
@@ -178,7 +179,7 @@ To ensure compatibility, add the following to your `manifest.json`:
 ```json
 {
   // ...
-  "minimum_chrome_version": "116",
+  "minimum_chrome_version": "116"
   // ...
 }
 ```
