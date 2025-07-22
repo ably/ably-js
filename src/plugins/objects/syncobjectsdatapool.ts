@@ -1,10 +1,10 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
-import { ObjectData, ObjectMessage, ObjectState } from './objectmessage';
+import { ObjectMessage } from './objectmessage';
 import { Objects } from './objects';
 
 export interface LiveObjectDataEntry {
-  objectState: ObjectState<ObjectData>;
+  objectMessage: ObjectMessage;
   objectType: 'LiveMap' | 'LiveCounter';
 }
 
@@ -64,9 +64,9 @@ export class SyncObjectsDataPool {
       const objectState = objectMessage.object;
 
       if (objectState.counter) {
-        this._pool.set(objectState.objectId, this._createLiveCounterDataEntry(objectState));
+        this._pool.set(objectState.objectId, this._createLiveCounterDataEntry(objectMessage));
       } else if (objectState.map) {
-        this._pool.set(objectState.objectId, this._createLiveMapDataEntry(objectState));
+        this._pool.set(objectState.objectId, this._createLiveMapDataEntry(objectMessage));
       } else {
         this._client.Logger.logAction(
           this._client.logger,
@@ -78,18 +78,18 @@ export class SyncObjectsDataPool {
     }
   }
 
-  private _createLiveCounterDataEntry(objectState: ObjectState<ObjectData>): LiveCounterDataEntry {
+  private _createLiveCounterDataEntry(objectMessage: ObjectMessage): LiveCounterDataEntry {
     const newEntry: LiveCounterDataEntry = {
-      objectState,
+      objectMessage,
       objectType: 'LiveCounter',
     };
 
     return newEntry;
   }
 
-  private _createLiveMapDataEntry(objectState: ObjectState<ObjectData>): LiveMapDataEntry {
+  private _createLiveMapDataEntry(objectMessage: ObjectMessage): LiveMapDataEntry {
     const newEntry: LiveMapDataEntry = {
-      objectState,
+      objectMessage,
       objectType: 'LiveMap',
     };
 
