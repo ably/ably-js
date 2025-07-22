@@ -80,6 +80,7 @@ define(['test/support/output_directory_paths'], function (outputDirectoryPaths) 
     'read.Defaults.version',
     'read.LiveMap._dataRef.data',
     'read.EventEmitter.events',
+    'read.Objects._DEFAULTS.gcGracePeriod',
     'read.Objects.gcGracePeriod',
     'read.Platform.Config.push',
     'read.ProtocolMessage.channelSerial',
