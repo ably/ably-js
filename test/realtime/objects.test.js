@@ -15,7 +15,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
   const objectsFixturesChannel = 'objects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
   const gcIntervalOriginal = ObjectsPlugin.Objects._DEFAULTS.gcInterval;
-  const gcGracePeriodOriginal = ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod;
 
   function RealtimeWithObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { Objects: ObjectsPlugin } });
@@ -4525,6 +4524,99 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         }, client);
       });
 
+      it('gcGracePeriod is set from connectionDetails.objectsGCGracePeriod', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          await client.connection.once('connected');
+
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
+          const connectionManager = client.connection.connectionManager;
+          const connectionDetails = connectionManager.connectionDetails;
+
+          // gcGracePeriod should be set after the initial connection
+          helper.recordPrivateApi('read.Objects.gcGracePeriod');
+          expect(
+            objects.gcGracePeriod,
+            'Check gcGracePeriod is set after initial connection from connectionDetails.objectsGCGracePeriod',
+          ).to.exist;
+          helper.recordPrivateApi('read.Objects.gcGracePeriod');
+          expect(objects.gcGracePeriod).to.equal(
+            connectionDetails.objectsGCGracePeriod,
+            'Check gcGracePeriod is set to equal connectionDetails.objectsGCGracePeriod',
+          );
+
+          const connectionDetailsPromise = connectionManager.once('connectiondetails');
+
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+          connectionManager.activeProtocol.getTransport().onProtocolMessage(
+            createPM({
+              action: 4, // CONNECTED
+              connectionDetails: {
+                ...connectionDetails,
+                objectsGCGracePeriod: 999,
+              },
+            }),
+          );
+
+          helper.recordPrivateApi('listen.connectionManager.connectiondetails');
+          await connectionDetailsPromise;
+          // wait for next tick to ensure the connectionDetails event was processed by Objects plugin
+          await new Promise((res) => nextTick(res));
+
+          helper.recordPrivateApi('read.Objects.gcGracePeriod');
+          expect(objects.gcGracePeriod).to.equal(999, 'Check gcGracePeriod is updated on new CONNECTED event');
+        }, client);
+      });
+
+      it('gcGracePeriod has a default value if connectionDetails.objectsGCGracePeriod is missing', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          await client.connection.once('connected');
+
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
+          const connectionManager = client.connection.connectionManager;
+          const connectionDetails = connectionManager.connectionDetails;
+
+          helper.recordPrivateApi('read.Objects._DEFAULTS.gcGracePeriod');
+          helper.recordPrivateApi('write.Objects.gcGracePeriod');
+          // set gcGracePeriod to a value different from the default
+          objects.gcGracePeriod = ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod + 1;
+
+          const connectionDetailsPromise = connectionManager.once('connectiondetails');
+
+          // send a CONNECTED event without objectsGCGracePeriod, it should use the default value instead
+          helper.recordPrivateApi('call.connectionManager.activeProtocol.getTransport');
+          helper.recordPrivateApi('call.transport.onProtocolMessage');
+          helper.recordPrivateApi('call.makeProtocolMessageFromDeserialized');
+          connectionManager.activeProtocol.getTransport().onProtocolMessage(
+            createPM({
+              action: 4, // CONNECTED
+              connectionDetails,
+            }),
+          );
+
+          helper.recordPrivateApi('listen.connectionManager.connectiondetails');
+          await connectionDetailsPromise;
+          // wait for next tick to ensure the connectionDetails event was processed by Objects plugin
+          await new Promise((res) => nextTick(res));
+
+          helper.recordPrivateApi('read.Objects._DEFAULTS.gcGracePeriod');
+          helper.recordPrivateApi('read.Objects.gcGracePeriod');
+          expect(objects.gcGracePeriod).to.equal(
+            ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod,
+            'Check gcGracePeriod is set to a default value if connectionDetails.objectsGCGracePeriod is missing',
+          );
+        }, client);
+      });
+
       const tombstonesGCScenarios = [
         // for the next tests we need to access the private API of Objects plugin in order to verify that tombstoned entities were indeed deleted after the GC grace period.
         // public API hides that kind of information from the user and returns undefined for tombstoned entities even if realtime client still keeps a reference to them.
@@ -4631,8 +4723,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         try {
           helper.recordPrivateApi('write.Objects._DEFAULTS.gcInterval');
           ObjectsPlugin.Objects._DEFAULTS.gcInterval = 500;
-          helper.recordPrivateApi('write.Objects._DEFAULTS.gcGracePeriod');
-          ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod = 250;
 
           const objectsHelper = new ObjectsHelper(helper);
           const client = RealtimeWithObjects(helper, clientOptions);
@@ -4643,6 +4733,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             await channel.attach();
             const root = await objects.getRoot();
+
+            helper.recordPrivateApi('read.Objects.gcGracePeriod');
+            const gcGracePeriodOriginal = objects.gcGracePeriod;
+            helper.recordPrivateApi('write.Objects.gcGracePeriod');
+            objects.gcGracePeriod = 250;
 
             // helper function to spy on the GC interval callback and wait for a specific number of GC cycles.
             // returns a promise which will resolve when required number of cycles have happened.
@@ -4674,12 +4769,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               helper,
               waitForGCCycles,
             });
+
+            helper.recordPrivateApi('write.Objects.gcGracePeriod');
+            objects.gcGracePeriod = gcGracePeriodOriginal;
           }, client);
         } finally {
           helper.recordPrivateApi('write.Objects._DEFAULTS.gcInterval');
           ObjectsPlugin.Objects._DEFAULTS.gcInterval = gcIntervalOriginal;
-          helper.recordPrivateApi('write.Objects._DEFAULTS.gcGracePeriod');
-          ObjectsPlugin.Objects._DEFAULTS.gcGracePeriod = gcGracePeriodOriginal;
         }
       });
 
@@ -4920,7 +5016,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
        */
       it('object message publish respects connectionDetails.maxMessageSize', async function () {
         const helper = this.test.helper;
-        const client = RealtimeWithObjects(helper, { clientId: 'test' });
+        const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           await client.connection.once('connected');
