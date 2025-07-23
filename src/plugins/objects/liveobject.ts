@@ -35,6 +35,7 @@ export interface OnLiveObjectLifecycleEventResponse {
   off(): void;
 }
 
+/** @spec RTLO1, RTLO2 */
 export abstract class LiveObject<
   TData extends LiveObjectData = LiveObjectData,
   TUpdate extends LiveObjectUpdate = LiveObjectUpdate,
@@ -42,16 +43,16 @@ export abstract class LiveObject<
   protected _client: BaseClient;
   protected _subscriptions: EventEmitter;
   protected _lifecycleEvents: EventEmitter;
-  protected _objectId: string;
+  protected _objectId: string; // RTLO3a
   /**
    * Represents an aggregated value for an object, which combines the initial value for an object from the create operation,
    * and all object operations applied to the object.
    */
   protected _dataRef: TData;
-  protected _siteTimeserials: Record<string, string>;
-  protected _createOperationIsMerged: boolean;
-  private _tombstone: boolean;
-  private _tombstonedAt: number | undefined;
+  protected _siteTimeserials: Record<string, string>; // RTLO3b
+  protected _createOperationIsMerged: boolean; // RTLO3c
+  private _tombstone: boolean; // RTLO3d
+  private _tombstonedAt: number | undefined; // RTLO3e, RTLO3e1
 
   protected constructor(
     protected _objects: Objects,
@@ -60,12 +61,12 @@ export abstract class LiveObject<
     this._client = this._objects.getClient();
     this._subscriptions = new this._client.EventEmitter(this._client.logger);
     this._lifecycleEvents = new this._client.EventEmitter(this._client.logger);
-    this._objectId = objectId;
+    this._objectId = objectId; // RTLO3a1
     this._dataRef = this._getZeroValueData();
     // use empty map of serials by default, so any future operation can be applied to this object
-    this._siteTimeserials = {};
-    this._createOperationIsMerged = false;
-    this._tombstone = false;
+    this._siteTimeserials = {}; // RTLO3b1
+    this._createOperationIsMerged = false; // RTLO3c1
+    this._tombstone = false; // RTLO3d1
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
@@ -150,21 +151,25 @@ export abstract class LiveObject<
    * Clears the object's data, cancels any buffered operations and sets the tombstone flag to `true`.
    *
    * @internal
+   * @spec RTLO4e
    */
   tombstone(objectMessage: ObjectMessage): TUpdate {
-    this._tombstone = true;
+    this._tombstone = true; // RTLO4e2
+    // RTLO4e3
     if (objectMessage.serialTimestamp != null) {
-      this._tombstonedAt = objectMessage.serialTimestamp;
+      this._tombstonedAt = objectMessage.serialTimestamp; // RTLO4e3a
     } else {
+      // RTLO4e3b1
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MINOR,
         'LiveObject.tombstone()',
         `object has been tombstoned but no "serialTimestamp" found in the message, using local clock instead; objectId=${this.getObjectId()}`,
       );
+      // RTLO4e3b
       this._tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
     }
-    const update = this.clearData();
+    const update = this.clearData(); // RTLO4e4
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
     return update;
@@ -198,22 +203,25 @@ export abstract class LiveObject<
    *
    * An operation should be applied if its serial is strictly greater than the serial in the `siteTimeserials` map for the same site.
    * If `siteTimeserials` map does not contain a serial for the same site, the operation should be applied.
+   *
+   * @spec RTLO4a
    */
   protected _canApplyOperation(opSerial: string | undefined, opSiteCode: string | undefined): boolean {
     if (!opSerial) {
-      throw new this._client.ErrorInfo(`Invalid serial: ${opSerial}`, 92000, 500);
+      throw new this._client.ErrorInfo(`Invalid serial: ${opSerial}`, 92000, 500); // RTLO4a3
     }
 
     if (!opSiteCode) {
-      throw new this._client.ErrorInfo(`Invalid site code: ${opSiteCode}`, 92000, 500);
+      throw new this._client.ErrorInfo(`Invalid site code: ${opSiteCode}`, 92000, 500); // RTLO4a3
     }
 
-    const siteSerial = this._siteTimeserials[opSiteCode];
-    return !siteSerial || opSerial > siteSerial;
+    const siteSerial = this._siteTimeserials[opSiteCode]; // RTLO4a4
+    return !siteSerial || opSerial > siteSerial; // RTLO4a5, RTLO4a6
   }
 
+  /** @spec RTLO5 */
   protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
-    return this.tombstone(objectMessage);
+    return this.tombstone(objectMessage); // RTLO5b
   }
 
   /**

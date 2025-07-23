@@ -21,6 +21,7 @@ export class ObjectsPool {
     this._client = this._objects.getClient();
     this._pool = this._createInitialPool();
     this._gcInterval = setInterval(() => {
+      // RTO10
       this._onGCInterval();
     }, DEFAULTS.gcInterval);
     // call nodejs's Timeout.unref to not require Node.js event loop to remain active due to this interval. see https://nodejs.org/api/timers.html#timeoutunref
@@ -103,18 +104,20 @@ export class ObjectsPool {
     return pool;
   }
 
+  /** @spec RTO10c */
   private _onGCInterval(): void {
     const toDelete: string[] = [];
     for (const [objectId, obj] of this._pool.entries()) {
+      // RTO10c1
       // tombstoned objects should be removed from the pool if they have been tombstoned for longer than grace period.
       // by removing them from the local pool, Objects plugin no longer keeps a reference to those objects, allowing JS's
       // Garbage Collection to eventually free the memory for those objects, provided the user no longer references them either.
       if (obj.isTombstoned() && Date.now() - obj.tombstonedAt()! >= this._objects.gcGracePeriod) {
-        toDelete.push(objectId);
+        toDelete.push(objectId); // RTO10c1b
         continue;
       }
 
-      obj.onGCInterval();
+      obj.onGCInterval(); // RTO10c1a
     }
 
     toDelete.forEach((x) => this._pool.delete(x));

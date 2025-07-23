@@ -1,5 +1,5 @@
 export const DEFAULTS = {
-  gcInterval: 1000 * 60 * 5, // 5 minutes
+  gcInterval: 1000 * 60 * 5, // RTO10a, 5 minutes
   /**
    * The SDK will attempt to use the `objectsGCGracePeriod` value provided by the server in the `connectionDetails` object of the `CONNECTED` event.
    * If the server does not provide this value, the SDK will fall back to this default value.
@@ -9,5 +9,5 @@ export const DEFAULTS = {
    *
    * Applies both for map entries tombstones and object tombstones.
    */
-  gcGracePeriod: 1000 * 60 * 60 * 24, // 24 hours
+  gcGracePeriod: 1000 * 60 * 60 * 24, // RTO10b3, 24 hours
 };
