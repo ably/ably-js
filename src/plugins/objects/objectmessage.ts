@@ -3,11 +3,6 @@ import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
 import type { Bufferlike } from 'common/platform';
 
-export type EncodeInitialValueFunction = (
-  data: any,
-  encoding?: string | null,
-) => { data: any; encoding?: string | null };
-
 export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
 
 /** @spec OOP2 */
@@ -154,14 +149,16 @@ export interface ObjectOperation<TData> {
    */
   nonce?: string; // OOP3g
   /**
-   * The initial value bytes for the object. These bytes should be used along with the nonce
-   * and timestamp to create the object ID. Frontdoor will use this to verify the object ID.
-   * After verification the bytes will be decoded into the Map or Counter objects and
-   * the initialValue, nonce, and initialValueEncoding will be removed.
+   * The initial value of the object, represented as a JSON string.
+   * Used along with the nonce and timestamp to create the object ID.
+   *
+   * This field must be set by the client for MAP_CREATE and COUNTER_CREATE operations.
+   * The server uses it to verify the object ID, and after verification, the JSON string
+   * is decoded into the initial value for new Map or Counter objects.
+   *
+   * This field must not be read by the client if received from the server.
    */
-  initialValue?: Bufferlike; // OOP3h
-  /** The initial value encoding defines how the initialValue should be interpreted. */
-  initialValueEncoding?: Utils.Format; // OOP3i
+  initialValue?: string; // OOP3h
 }
 
 /**
@@ -198,7 +195,6 @@ function encode(
   utils: typeof Utils,
   messageEncoding: typeof MessageEncoding,
   encodeObjectDataFn: EncodeObjectDataFunction,
-  encodeInitialValueFn: EncodeInitialValueFunction,
 ): WireObjectMessage {
   // deep copy the message to avoid mutating the original one.
   // buffer values won't be correctly copied, so we will need to use the original message when encoding.
@@ -217,11 +213,6 @@ function encode(
     result.object!.createOp!.mapOp!.data = encodeObjectData(message.object.createOp.mapOp.data, encodeObjectDataFn);
   }
 
-  if (message.object?.createOp?.initialValue) {
-    const { data: encodedInitialValue } = encodeInitialValueFn(message.object.createOp.initialValue);
-    result.object!.createOp!.initialValue = encodedInitialValue;
-  }
-
   // OOP5
   // encode "operation" field
   if (message.operation?.map?.entries) {
@@ -230,11 +221,6 @@ function encode(
 
   if (message.operation?.mapOp?.data) {
     result.operation!.mapOp!.data = encodeObjectData(message.operation.mapOp.data, encodeObjectDataFn);
-  }
-
-  if (message.operation?.initialValue) {
-    const { data: encodedInitialValue } = encodeInitialValueFn(message.operation.initialValue);
-    result.operation!.initialValue = encodedInitialValue;
   }
 
   return result;
@@ -264,17 +250,17 @@ function encodeObjectData(data: ObjectData | WireObjectData, encodeFn: EncodeObj
   return encodedData;
 }
 
-export function encodeInitialValue(
-  initialValue: Partial<ObjectOperation<ObjectData>>,
+/**
+ * Used to create an {@link ObjectOperation.initialValue} JSON string for *_CREATE operations,
+ * based on the object operation message that contains the initial value for the object.
+ */
+export function createInitialValueJSONString(
+  operation: Partial<ObjectOperation<ObjectData>>,
   client: BaseClient,
-): {
-  encodedInitialValue: Bufferlike;
-  format: Utils.Format;
-} {
-  const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json;
-
-  // initial value object may contain user provided data that requires an additional encoding (for example buffers as map keys).
-  // so we need to encode that data first as if we were sending it over the wire.
+): string {
+  // the object operation may contain user-provided data that requires encoding.
+  // for example, buffers must be encoded since the initial value will be represented as a JSON string.
+  // we can use ObjectMessage methods to encode the object operation.
   const msg = ObjectMessage.fromValues(
     // cast initialValue to ObjectOperation here, even though it may lack some properties
     // that are usually present on ObjectOperation.
@@ -282,33 +268,22 @@ export function encodeInitialValue(
     // so it's ok for the operation field to be incomplete in this context.
     // doing the type assertion here avoids the need to define a separate ObjectMessage
     // type that supports a fully optional ObjectOperation.
-    { operation: initialValue as ObjectOperation<ObjectData> },
+    { operation: operation as ObjectOperation<ObjectData> },
     client.Utils,
     client.MessageEncoding,
   );
-  const wireMsg = msg.encode(client);
-  const { operation: initialValueWithDataEncoding } = WireObjectMessage.encodeForWire(
+  const wireMsg = msg.encode();
+
+  // get the encoded operation that is safe to be sent over the wire as a JSON string.
+  const { operation: encodedOperation } = WireObjectMessage.encodeForWire(
     wireMsg,
     client.Utils,
     client.MessageEncoding,
-    format,
+    client.Utils.Format.json,
   );
 
-  // initial value field should be represented as an array of bytes over the wire. so we encode the whole object based on the client encoding format
-  const encodedInitialValue = client.Utils.encodeBody(initialValueWithDataEncoding, client._MsgPack, format);
-
-  // if we've got string result (for example, json encoding was used), we need to additionally convert it to bytes array with utf8 encoding
-  if (typeof encodedInitialValue === 'string') {
-    return {
-      encodedInitialValue: client.Platform.BufferUtils.utf8Encode(encodedInitialValue),
-      format,
-    };
-  }
-
-  return {
-    encodedInitialValue,
-    format,
-  };
+  // finally, initialValue is the JSON string representation of the encoded operation.
+  return JSON.stringify(encodedOperation);
 }
 
 function strMsg(msg: any, className: string) {
@@ -421,28 +396,7 @@ export class ObjectMessage {
    *
    * @spec OM4
    */
-  encode(client: BaseClient): WireObjectMessage {
-    const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
-      const isNativeDataType =
-        typeof data == 'string' ||
-        typeof data == 'number' ||
-        typeof data == 'boolean' ||
-        client.Platform.BufferUtils.isBuffer(data) ||
-        data === null ||
-        data === undefined;
-
-      const { data: encodedData, encoding: newEncoding } = this._messageEncoding.encodeData(
-        data,
-        encoding,
-        isNativeDataType,
-      );
-
-      return {
-        data: encodedData,
-        encoding: newEncoding,
-      };
-    };
-
+  encode(): WireObjectMessage {
     const encodeObjectDataFn: EncodeObjectDataFunction = (data) => {
       // TODO: support encoding JSON objects as a JSON string on "string" property with an encoding of "json"
       // https://ably.atlassian.net/browse/PUB-1667
@@ -451,7 +405,7 @@ export class ObjectMessage {
       return data;
     };
 
-    return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn, encodeInitialValueFn);
+    return encode(this, this._utils, this._messageEncoding, encodeObjectDataFn);
   }
 
   toString(): string {
@@ -521,15 +475,6 @@ export class WireObjectMessage {
     messageEncoding: typeof MessageEncoding,
     format: Utils.Format,
   ): WireObjectMessage {
-    const encodeInitialValueFn: EncodeInitialValueFunction = (data, encoding) => {
-      // OOP5a1, OOP5b1 - initialValue encoded based on the protocol used
-      const { data: encodedData, encoding: newEncoding } = messageEncoding.encodeDataForWire(data, encoding, format);
-      return {
-        data: encodedData,
-        encoding: newEncoding,
-      };
-    };
-
     const encodeObjectDataFn: EncodeObjectDataFunction = (data) => {
       // TODO: support encoding JSON objects as a JSON string on "string" property with an encoding of "json"
       // https://ably.atlassian.net/browse/PUB-1667
@@ -551,7 +496,7 @@ export class WireObjectMessage {
       };
     };
 
-    return encode(message, utils, messageEncoding, encodeObjectDataFn, encodeInitialValueFn);
+    return encode(message, utils, messageEncoding, encodeObjectDataFn);
   }
 
   /**
