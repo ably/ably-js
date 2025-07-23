@@ -95,13 +95,7 @@ export async function encryptData(
  * Implements RSL4 and RSL5.
  */
 export async function encode<T extends BaseMessage>(msg: T, options: unknown): Promise<T> {
-  // RSL4a, supported types
-  const isNativeDataType =
-    typeof msg.data == 'string' ||
-    Platform.BufferUtils.isBuffer(msg.data) ||
-    msg.data === null ||
-    msg.data === undefined;
-  const { data, encoding } = encodeData(msg.data, msg.encoding, isNativeDataType);
+  const { data, encoding } = encodeData(msg.data, msg.encoding);
 
   msg.data = data;
   msg.encoding = encoding;
@@ -116,9 +110,12 @@ export async function encode<T extends BaseMessage>(msg: T, options: unknown): P
 export function encodeData(
   data: any,
   encoding: string | null | undefined,
-  isNativeDataType: boolean,
 ): { data: any; encoding: string | null | undefined } {
-  if (isNativeDataType) {
+  // RSL4a, supported types
+  const nativeDataType =
+    typeof data == 'string' || Platform.BufferUtils.isBuffer(data) || data === null || data === undefined;
+
+  if (nativeDataType) {
     // nothing to do with the native data types at this point
     return {
       data,

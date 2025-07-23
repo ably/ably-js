@@ -440,6 +440,21 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         }, client);
       });
 
+      function checkKeyDataOnMap({ helper, key, keyData, mapObj, msg }) {
+        if (keyData.data.bytes != null) {
+          helper.recordPrivateApi('call.BufferUtils.base64Decode');
+          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
+          expect(BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.bytes)), msg).to.be
+            .true;
+        } else if (keyData.data.encoding === 'json') {
+          const expectedObject = JSON.parse(keyData.data.string);
+          expect(mapObj.get(key)).to.deep.equal(expectedObject, msg);
+        } else {
+          const expectedValue = keyData.data.string ?? keyData.data.number ?? keyData.data.boolean;
+          expect(mapObj.get(key)).to.equal(expectedValue, msg);
+        }
+      }
+
       const primitiveKeyData = [
         { key: 'stringKey', data: { string: 'stringValue' } },
         { key: 'emptyStringKey', data: { string: '' } },
@@ -451,6 +466,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         { key: 'zeroKey', data: { number: 0 } },
         { key: 'trueKey', data: { boolean: true } },
         { key: 'falseKey', data: { boolean: false } },
+        { key: 'objectKey', data: { string: JSON.stringify({ foo: 'bar' }), encoding: 'json' } },
+        { key: 'arrayKey', data: { string: JSON.stringify(['foo', 'bar', 'baz']), encoding: 'json' } },
       ];
       const primitiveMapsFixtures = [
         { name: 'emptyMap' },
@@ -515,10 +532,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               'emptyStringKey',
               'bytesKey',
               'emptyBytesKey',
+              'maxSafeIntegerKey',
+              'negativeMaxSafeIntegerKey',
               'numberKey',
               'zeroKey',
               'trueKey',
               'falseKey',
+              'objectKey',
+              'arrayKey',
               'mapKey',
             ];
             expect(valuesMap.size()).to.equal(valueMapKeys.length, 'Check nested map has correct number of keys');
@@ -672,7 +693,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(counterFromReferencedMap.value()).to.equal(20, 'Check nested counter has correct value');
 
             const valuesMap = root.get('valuesMap');
-            expect(valuesMap.size()).to.equal(9, 'Check values map in root has correct number of keys');
+            expect(valuesMap.size()).to.equal(13, 'Check values map in root has correct number of keys');
 
             expect(valuesMap.get('stringKey')).to.equal('stringValue', 'Check values map has correct string value key');
             expect(valuesMap.get('emptyStringKey')).to.equal('', 'Check values map has correct empty string value key');
@@ -691,10 +712,26 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               BufferUtils.areBuffersEqual(valuesMap.get('emptyBytesKey'), BufferUtils.base64Decode('')),
               'Check values map has correct empty bytes value key',
             ).to.be.true;
+            expect(valuesMap.get('maxSafeIntegerKey')).to.equal(
+              Number.MAX_SAFE_INTEGER,
+              'Check values map has correct maxSafeIntegerKey value',
+            );
+            expect(valuesMap.get('negativeMaxSafeIntegerKey')).to.equal(
+              -Number.MAX_SAFE_INTEGER,
+              'Check values map has correct negativeMaxSafeIntegerKey value',
+            );
             expect(valuesMap.get('numberKey')).to.equal(1, 'Check values map has correct number value key');
             expect(valuesMap.get('zeroKey')).to.equal(0, 'Check values map has correct zero number value key');
             expect(valuesMap.get('trueKey')).to.equal(true, `Check values map has correct 'true' value key`);
             expect(valuesMap.get('falseKey')).to.equal(false, `Check values map has correct 'false' value key`);
+            expect(valuesMap.get('objectKey')).to.deep.equal(
+              { foo: 'bar' },
+              `Check values map has correct objectKey value`,
+            );
+            expect(valuesMap.get('arrayKey')).to.deep.equal(
+              ['foo', 'bar', 'baz'],
+              `Check values map has correct arrayKey value`,
+            );
 
             const mapFromValuesMap = valuesMap.get('mapKey');
             expect(mapFromValuesMap.size()).to.equal(1, 'Check nested map has correct number of keys');
@@ -1112,20 +1149,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               );
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
-                if (keyData.data.bytes != null) {
-                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-                  expect(
-                    BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.bytes)),
-                    `Check map "${mapKey}" has correct value for "${key}" key`,
-                  ).to.be.true;
-                } else {
-                  const valueType = typeof mapObj.get(key);
-                  expect(mapObj.get(key)).to.equal(
-                    keyData.data[valueType],
-                    `Check map "${mapKey}" has correct value for "${key}" key`,
-                  );
-                }
+                checkKeyDataOnMap({
+                  helper,
+                  key,
+                  keyData,
+                  mapObj,
+                  msg: `Check map "${mapKey}" has correct value for "${key}" key`,
+                });
               });
             });
           },
@@ -1321,20 +1351,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              if (keyData.data.bytes != null) {
-                helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-                expect(
-                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.bytes)),
-                  `Check root has correct value for "${keyData.key}" key after MAP_SET op`,
-                ).to.be.true;
-              } else {
-                const valueType = typeof root.get(keyData.key);
-                expect(root.get(keyData.key)).to.equal(
-                  keyData.data[valueType],
-                  `Check root has correct value for "${keyData.key}" key after MAP_SET op`,
-                );
-              }
+              checkKeyDataOnMap({
+                helper,
+                key: keyData.key,
+                keyData,
+                mapObj: root,
+                msg: `Check root has correct value for "${keyData.key}" key after MAP_SET op`,
+              });
             });
           },
         },
@@ -2384,20 +2407,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              if (keyData.data.bytes != null) {
-                helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-                expect(
-                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.bytes)),
-                  `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
-                ).to.be.true;
-              } else {
-                const valueType = typeof root.get(keyData.key);
-                expect(root.get(keyData.key)).to.equal(
-                  keyData.data[valueType],
-                  `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
-                );
-              }
+              checkKeyDataOnMap({
+                helper,
+                key: keyData.key,
+                keyData,
+                mapObj: root,
+                msg: `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
+              });
             });
           },
         },
@@ -2645,20 +2661,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check buffered operations are applied, as well as the most recent operation outside of the sync sequence is applied
             primitiveKeyData.forEach((keyData) => {
-              if (keyData.data.bytes != null) {
-                helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-                expect(
-                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.bytes)),
-                  `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
-                ).to.be.true;
-              } else {
-                const valueType = typeof root.get(keyData.key);
-                expect(root.get(keyData.key)).to.equal(
-                  keyData.data[valueType],
-                  `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
-                );
-              }
+              checkKeyDataOnMap({
+                helper,
+                key: keyData.key,
+                keyData,
+                mapObj: root,
+                msg: `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
+              });
             });
             expect(root.get('foo')).to.equal(
               'bar',
@@ -2905,7 +2914,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 } else if (keyData.data.number != null) {
                   value = keyData.data.number;
                 } else if (keyData.data.string != null) {
-                  value = keyData.data.string;
+                  value = keyData.data.encoding === 'json' ? JSON.parse(keyData.data.string) : keyData.data.string;
                 } else if (keyData.data.boolean != null) {
                   value = keyData.data.boolean;
                 }
@@ -2917,20 +2926,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              if (keyData.data.bytes != null) {
-                helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-                expect(
-                  BufferUtils.areBuffersEqual(root.get(keyData.key), BufferUtils.base64Decode(keyData.data.bytes)),
-                  `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
-                ).to.be.true;
-              } else {
-                const valueType = typeof root.get(keyData.key);
-                expect(root.get(keyData.key)).to.equal(
-                  keyData.data[valueType],
-                  `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
-                );
-              }
+              checkKeyDataOnMap({
+                helper,
+                key: keyData.key,
+                keyData,
+                mapObj: root,
+                msg: `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
+              });
             });
           },
         },
@@ -3008,8 +3010,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await expectToThrowAsync(async () => map.set('key', null), 'Map value data type is unsupported');
             await expectToThrowAsync(async () => map.set('key', BigInt(1)), 'Map value data type is unsupported');
             await expectToThrowAsync(async () => map.set('key', Symbol()), 'Map value data type is unsupported');
-            await expectToThrowAsync(async () => map.set('key', {}), 'Map value data type is unsupported');
-            await expectToThrowAsync(async () => map.set('key', []), 'Map value data type is unsupported');
           },
         },
 
@@ -3255,7 +3255,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                       } else if (keyData.data.number != null) {
                         value = keyData.data.number;
                       } else if (keyData.data.string != null) {
-                        value = keyData.data.string;
+                        value =
+                          keyData.data.encoding === 'json' ? JSON.parse(keyData.data.string) : keyData.data.string;
                       } else if (keyData.data.boolean != null) {
                         value = keyData.data.boolean;
                       }
@@ -3282,20 +3283,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               );
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
-                if (keyData.data.bytes != null) {
-                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-                  expect(
-                    BufferUtils.areBuffersEqual(map.get(key), BufferUtils.base64Decode(keyData.data.bytes)),
-                    `Check map #${i + 1} has correct value for "${key}" key`,
-                  ).to.be.true;
-                } else {
-                  const valueType = typeof map.get(key);
-                  expect(map.get(key)).to.equal(
-                    keyData.data[valueType],
-                    `Check map #${i + 1} has correct value for "${key}" key`,
-                  );
-                }
+                checkKeyDataOnMap({
+                  helper,
+                  key,
+                  keyData,
+                  mapObj: map,
+                  msg: `Check map #${i + 1} has correct value for "${key}" key`,
+                });
               });
             }
           },
@@ -3496,8 +3490,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               async () => objects.createMap({ key: Symbol() }),
               'Map value data type is unsupported',
             );
-            await expectToThrowAsync(async () => objects.createMap({ key: {} }), 'Map value data type is unsupported');
-            await expectToThrowAsync(async () => objects.createMap({ key: [] }), 'Map value data type is unsupported');
           },
         },
 
@@ -5106,7 +5098,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expected: 0,
           },
           {
-            description: 'map create op with object payload',
+            description: 'map create op with object id payload',
             message: objectMessageFromValues({
               operation: {
                 action: 0,
@@ -5125,7 +5117,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               operation: {
                 action: 0,
                 objectId: 'object-id',
-                map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { string: 'a string' } } } },
+                map: { semantics: 0, entries: { 'key-1': { tombstone: false, data: { value: 'a string' } } } },
               },
             }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('a string'),
@@ -5138,7 +5130,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 objectId: 'object-id',
                 map: {
                   semantics: 0,
-                  entries: { 'key-1': { tombstone: false, data: { bytes: BufferUtils.utf8Encode('my-value') } } },
+                  entries: { 'key-1': { tombstone: false, data: { value: BufferUtils.utf8Encode('my-value') } } },
                 },
               },
             }),
@@ -5153,8 +5145,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 map: {
                   semantics: 0,
                   entries: {
-                    'key-1': { tombstone: false, data: { boolean: true } },
-                    'key-2': { tombstone: false, data: { boolean: false } },
+                    'key-1': { tombstone: false, data: { value: true } },
+                    'key-2': { tombstone: false, data: { value: false } },
                   },
                 },
               },
@@ -5170,13 +5162,41 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 map: {
                   semantics: 0,
                   entries: {
-                    'key-1': { tombstone: false, data: { number: 123.456 } },
-                    'key-2': { tombstone: false, data: { number: 0 } },
+                    'key-1': { tombstone: false, data: { value: 123.456 } },
+                    'key-2': { tombstone: false, data: { value: 0 } },
                   },
                 },
               },
             }),
             expected: Utils.dataSizeBytes('key-1') + Utils.dataSizeBytes('key-2') + 16,
+          },
+          {
+            description: 'map create op with object payload',
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                map: {
+                  semantics: 0,
+                  entries: { 'key-1': { tombstone: false, data: { value: { foo: 'bar' } } } },
+                },
+              },
+            }),
+            expected: Utils.dataSizeBytes('key-1') + JSON.stringify({ foo: 'bar' }).length,
+          },
+          {
+            description: 'map create op with array payload',
+            message: objectMessageFromValues({
+              operation: {
+                action: 0,
+                objectId: 'object-id',
+                map: {
+                  semantics: 0,
+                  entries: { 'key-1': { tombstone: false, data: { value: ['foo', 'bar', 'baz'] } } },
+                },
+              },
+            }),
+            expected: Utils.dataSizeBytes('key-1') + JSON.stringify(['foo', 'bar', 'baz']).length,
           },
           {
             description: 'map remove op',
@@ -5186,7 +5206,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expected: Utils.dataSizeBytes('my-key'),
           },
           {
-            description: 'map set operation value=object',
+            description: 'map set operation value=objectId',
             message: objectMessageFromValues({
               operation: {
                 action: 1,
@@ -5199,7 +5219,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           {
             description: 'map set operation value=string',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { string: 'my-value' } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 'my-value' } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes('my-value'),
           },
@@ -5209,7 +5229,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               operation: {
                 action: 1,
                 objectId: 'object-id',
-                mapOp: { key: 'my-key', data: { bytes: BufferUtils.utf8Encode('my-value') } },
+                mapOp: { key: 'my-key', data: { value: BufferUtils.utf8Encode('my-value') } },
               },
             }),
             expected: Utils.dataSizeBytes('my-key') + Utils.dataSizeBytes(BufferUtils.utf8Encode('my-value')),
@@ -5217,30 +5237,52 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           {
             description: 'map set operation value=boolean true',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { boolean: true } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: true } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=boolean false',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { boolean: false } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: false } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 1,
           },
           {
             description: 'map set operation value=double',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { number: 123.456 } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 123.456 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
           },
           {
             description: 'map set operation value=double 0',
             message: objectMessageFromValues({
-              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { number: 0 } } },
+              operation: { action: 1, objectId: 'object-id', mapOp: { key: 'my-key', data: { value: 0 } } },
             }),
             expected: Utils.dataSizeBytes('my-key') + 8,
+          },
+          {
+            description: 'map set operation value=json-object',
+            message: objectMessageFromValues({
+              operation: {
+                action: 1,
+                objectId: 'object-id',
+                mapOp: { key: 'my-key', data: { value: { foo: 'bar' } } },
+              },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + JSON.stringify({ foo: 'bar' }).length,
+          },
+          {
+            description: 'map set operation value=json-array',
+            message: objectMessageFromValues({
+              operation: {
+                action: 1,
+                objectId: 'object-id',
+                mapOp: { key: 'my-key', data: { value: ['foo', 'bar', 'baz'] } },
+              },
+            }),
+            expected: Utils.dataSizeBytes('my-key') + JSON.stringify(['foo', 'bar', 'baz']).length,
           },
           {
             description: 'map object',
@@ -5250,14 +5292,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 map: {
                   semantics: 0,
                   entries: {
-                    'key-1': { tombstone: false, data: { string: 'a string' } },
-                    'key-2': { tombstone: true, data: { string: 'another string' } },
+                    'key-1': { tombstone: false, data: { value: 'a string' } },
+                    'key-2': { tombstone: true, data: { value: 'another string' } },
                   },
                 },
                 createOp: {
                   action: 0,
                   objectId: 'object-id',
-                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { string: 'third string' } } } },
+                  map: { semantics: 0, entries: { 'key-3': { tombstone: false, data: { value: 'third string' } } } },
                 },
                 siteTimeserials: { aaa: lexicoTimeserial('aaa', 111, 111, 1) }, // shouldn't be counted
                 tombstone: false,
