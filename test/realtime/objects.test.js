@@ -383,6 +383,35 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         }, client);
       });
 
+      it.only('msgpack StateData random field becomes bytes', async function () {
+        const helper = this.test.helper;
+        const client = RealtimeWithObjects(helper);
+
+        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+          const channel = client.channels.get('channel', channelOptionsWithObjects());
+          const objects = channel.objects;
+
+          await channel.attach();
+          const root = await objects.getRoot();
+
+          const transport = client.connection.connectionManager.activeProtocol.transport;
+          const sendOriginal = transport.send;
+
+          transport.send = function (msg) {
+            if (msg.action === 19) {
+              // OBJECT
+              console.log('to be sent:', JSON.stringify(msg, null, 2));
+              msg.state[0].operation.mapOp.data = { sadfasfasd: 'baz' };
+              console.log('replaced with:', JSON.stringify(msg, null, 2));
+            }
+
+            sendOriginal.call(this, msg);
+          };
+
+          await root.set('foo', 'bar');
+        }, client);
+      });
+
       /** @nospec */
       it('getRoot() waits for OBJECT_SYNC with empty cursor before resolving', async function () {
         const helper = this.test.helper;
