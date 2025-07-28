@@ -446,8 +446,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
           expect(BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.bytes)), msg).to.be
             .true;
-        } else if (keyData.data.encoding === 'json') {
-          const expectedObject = JSON.parse(keyData.data.string);
+        } else if (keyData.data.json != null) {
+          const expectedObject = JSON.parse(keyData.data.json);
           expect(mapObj.get(key)).to.deep.equal(expectedObject, msg);
         } else {
           const expectedValue = keyData.data.string ?? keyData.data.number ?? keyData.data.boolean;
@@ -466,8 +466,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         { key: 'zeroKey', data: { number: 0 } },
         { key: 'trueKey', data: { boolean: true } },
         { key: 'falseKey', data: { boolean: false } },
-        { key: 'objectKey', data: { string: JSON.stringify({ foo: 'bar' }), encoding: 'json' } },
-        { key: 'arrayKey', data: { string: JSON.stringify(['foo', 'bar', 'baz']), encoding: 'json' } },
+        { key: 'objectKey', data: { json: JSON.stringify({ foo: 'bar' }) } },
+        { key: 'arrayKey', data: { json: JSON.stringify(['foo', 'bar', 'baz']) } },
       ];
       const primitiveMapsFixtures = [
         { name: 'emptyMap' },
@@ -2911,12 +2911,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 if (keyData.data.bytes != null) {
                   helper.recordPrivateApi('call.BufferUtils.base64Decode');
                   value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.number != null) {
-                  value = keyData.data.number;
-                } else if (keyData.data.string != null) {
-                  value = keyData.data.encoding === 'json' ? JSON.parse(keyData.data.string) : keyData.data.string;
-                } else if (keyData.data.boolean != null) {
-                  value = keyData.data.boolean;
+                } else if (keyData.data.json != null) {
+                  value = JSON.parse(keyData.data.json);
+                } else {
+                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
                 }
 
                 await root.set(keyData.key, value);
@@ -3252,13 +3250,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                       if (keyData.data.bytes != null) {
                         helper.recordPrivateApi('call.BufferUtils.base64Decode');
                         value = BufferUtils.base64Decode(keyData.data.bytes);
-                      } else if (keyData.data.number != null) {
-                        value = keyData.data.number;
-                      } else if (keyData.data.string != null) {
-                        value =
-                          keyData.data.encoding === 'json' ? JSON.parse(keyData.data.string) : keyData.data.string;
-                      } else if (keyData.data.boolean != null) {
-                        value = keyData.data.boolean;
+                      } else if (keyData.data.json != null) {
+                        value = JSON.parse(keyData.data.json);
+                      } else {
+                        value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
                       }
 
                       acc[key] = value;

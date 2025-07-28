@@ -44,8 +44,6 @@ export interface WireObjectData {
   /** A reference to another object, used to support composable object structures. */
   objectId?: string; // OD2a
 
-  /** May be set by the client to indicate that value in `string` field have an encoding. */
-  encoding?: string; // OD2b
   /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
   boolean?: boolean; // OD2c
   /** A primitive binary leaf value in the object graph. Only one value field can be set. Represented as a Base64-encoded string in JSON protocol */
@@ -54,6 +52,8 @@ export interface WireObjectData {
   number?: number; // OD2e
   /** A primitive string leaf value in the object graph. Only one value field can be set. */
   string?: string; // OD2f
+  /** A primitive JSON-encoded string leaf value in the object graph. Only one value field can be set. */
+  json?: string; // OD2g
 }
 
 /**
@@ -432,8 +432,7 @@ export class ObjectMessage {
         encodedObjectData.number = data.value; // OD4c3, OD4d3
       } else if (typeof data.value === 'object' && data.value !== null) {
         // OD4c5, OD4d5
-        encodedObjectData.string = JSON.stringify(data.value);
-        encodedObjectData.encoding = 'json';
+        encodedObjectData.json = JSON.stringify(data.value);
       }
 
       return encodedObjectData;
@@ -517,7 +516,7 @@ export class WireObjectMessage {
     const encodeObjectDataFn: EncodeObjectDataFunction<WireObjectData> = (data) => {
       if (data.bytes != null) {
         // OD4c2, OD4d2
-        const result = messageEncoding.encodeDataForWire(data.bytes, data.encoding, format);
+        const result = messageEncoding.encodeDataForWire(data.bytes, null, format);
         // no need to set the encoding
         return { ...data, bytes: result.data };
       }
@@ -741,6 +740,9 @@ export class WireObjectMessage {
     if (data.string != null) {
       size += this._utils.dataSizeBytes(data.string); // OD3e
     }
+    if (data.json != null) {
+      size += this._utils.dataSizeBytes(data.json);
+    }
 
     return size;
   }
@@ -782,8 +784,8 @@ export class WireObjectMessage {
       }
 
       let decodedJson: JsonObject | JsonArray | undefined;
-      if (objectData.encoding === 'json') {
-        decodedJson = JSON.parse(objectData.string!); // OD5a2, OD5b3
+      if (objectData.json != null) {
+        decodedJson = JSON.parse(objectData.json); // OD5a2, OD5b3
       }
 
       return {
