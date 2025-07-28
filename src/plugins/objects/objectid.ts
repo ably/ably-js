@@ -15,22 +15,24 @@ export class ObjectId {
     readonly msTimestamp: number,
   ) {}
 
+  /** @spec RTO14 */
   static fromInitialValue(
     platform: typeof Platform,
-    objectType: LiveObjectType,
-    initialValue: string,
-    nonce: string,
-    msTimestamp: number,
+    objectType: LiveObjectType, // RTO14a1
+    initialValue: string, // RTO14a2
+    nonce: string, // RTO14a3
+    msTimestamp: number, // RTO14a4
   ): ObjectId {
+    // RTO14b
     const valueForHashBuffer = platform.BufferUtils.concat([
       platform.BufferUtils.utf8Encode(initialValue),
       platform.BufferUtils.utf8Encode(':'),
       platform.BufferUtils.utf8Encode(nonce),
     ]);
-    const hashBuffer = platform.BufferUtils.sha256(valueForHashBuffer);
-    const hash = platform.BufferUtils.base64UrlEncode(hashBuffer);
+    const hashBuffer = platform.BufferUtils.sha256(valueForHashBuffer); // RTO14b1
+    const hash = platform.BufferUtils.base64UrlEncode(hashBuffer); // RTO14b2
 
-    return new ObjectId(objectType, hash, msTimestamp);
+    return new ObjectId(objectType, hash, msTimestamp); // RTO14c
   }
 
   /**

@@ -114,29 +114,32 @@ export class Objects {
    * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally using the provided data and returns it.
    *
    * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
+   * @spec RTO11
    */
   async createMap<T extends API.LiveMapType>(entries?: T): Promise<LiveMap<T>> {
-    this.throwIfInvalidWriteApiConfiguration();
+    this.throwIfInvalidWriteApiConfiguration(); // RTO11c, RTO11d, RTO11e
 
-    const msg = await LiveMap.createMapCreateMessage(this, entries);
+    const msg = await LiveMap.createMapCreateMessage(this, entries); // RTO11f
     const objectId = msg.operation?.objectId!;
 
-    await this.publish([msg]);
+    await this.publish([msg]); // RTO11g, RTO11g1
 
+    // RTO11h
     // we may have already received the MAP_CREATE operation at this point, as it could arrive before the ACK for our publish message.
     // this means the object might already exist in the local pool, having been added during the usual MAP_CREATE operation process.
     // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
     if (this._objectsPool.get(objectId)) {
-      return this._objectsPool.get(objectId) as LiveMap<T>;
+      return this._objectsPool.get(objectId) as LiveMap<T>; // RTO11h2
     }
 
+    // RTO11h3
     // we haven't received the MAP_CREATE operation yet, so we can create a new map object using the locally constructed object operation.
     // we don't know the serials for map entries, so we assign an "earliest possible" serial to each entry, so that any subsequent operation can be applied to them.
     // we mark the MAP_CREATE operation as merged for the object, guaranteeing its idempotency and preventing it from being applied again when the operation arrives.
-    const map = LiveMap.fromObjectOperation<T>(this, msg.operation!);
-    this._objectsPool.set(objectId, map);
+    const map = LiveMap.fromObjectOperation<T>(this, msg.operation!); // RTO11h3a
+    this._objectsPool.set(objectId, map); // RTO11h3b
 
-    return map;
+    return map; // RTO11h3c
   }
 
   /**
@@ -146,28 +149,31 @@ export class Objects {
    * the echoed COUNTER_CREATE operation, or if it wasn't received yet, the method creates a new object locally using the provided data and returns it.
    *
    * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
+   * @spec RTO12
    */
   async createCounter(count?: number): Promise<LiveCounter> {
-    this.throwIfInvalidWriteApiConfiguration();
+    this.throwIfInvalidWriteApiConfiguration(); // RTO12c, RTO12d, RTO12e
 
-    const msg = await LiveCounter.createCounterCreateMessage(this, count);
+    const msg = await LiveCounter.createCounterCreateMessage(this, count); // RTO12f
     const objectId = msg.operation?.objectId!;
 
-    await this.publish([msg]);
+    await this.publish([msg]); // RTO12g, RTO12g1
 
+    // RTO12h
     // we may have already received the COUNTER_CREATE operation at this point, as it could arrive before the ACK for our publish message.
     // this means the object might already exist in the local pool, having been added during the usual COUNTER_CREATE operation process.
     // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
     if (this._objectsPool.get(objectId)) {
-      return this._objectsPool.get(objectId) as LiveCounter;
+      return this._objectsPool.get(objectId) as LiveCounter; // RTO12h2
     }
 
+    // RTO12h3
     // we haven't received the COUNTER_CREATE operation yet, so we can create a new counter object using the locally constructed object operation.
     // we mark the COUNTER_CREATE operation as merged for the object, guaranteeing its idempotency. this ensures we don't double count the initial counter value when the operation arrives.
-    const counter = LiveCounter.fromObjectOperation(this, msg.operation!);
-    this._objectsPool.set(objectId, counter);
+    const counter = LiveCounter.fromObjectOperation(this, msg.operation!); // RTO12h3a
+    this._objectsPool.set(objectId, counter); // RTO12h3b
 
-    return counter;
+    return counter; // RTO12h3c
   }
 
   on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse {
@@ -309,11 +315,13 @@ export class Objects {
 
   /**
    * @internal
+   * @spec RTO15
    */
   async publish(objectMessages: ObjectMessage[]): Promise<void> {
-    this._channel.throwIfUnpublishableState();
+    this._channel.throwIfUnpublishableState(); // RTO15b
 
-    const encodedMsgs = objectMessages.map((x) => x.encode());
+    const encodedMsgs = objectMessages.map((x) => x.encode()); // RTO15c
+    // RTO15d
     const maxMessageSize = this._client.options.maxMessageSize;
     const size = encodedMsgs.reduce((acc, msg) => acc + msg.getMessageSize(), 0);
     if (size > maxMessageSize) {
@@ -324,7 +332,7 @@ export class Objects {
       );
     }
 
-    return this._channel.sendState(encodedMsgs);
+    return this._channel.sendState(encodedMsgs); // RTO15f, RTO15g
   }
 
   /**

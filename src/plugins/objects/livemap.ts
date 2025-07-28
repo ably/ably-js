@@ -102,6 +102,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
   /**
    * @internal
+   * @spec RTLM20e
    */
   static createMapSetMessage<TKey extends keyof API.LiveMapType & string>(
     objects: Objects,
@@ -111,22 +112,22 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   ): ObjectMessage {
     const client = objects.getClient();
 
-    LiveMap.validateKeyValue(objects, key, value);
+    LiveMap.validateKeyValue(objects, key, value); // RTLM20e1
 
     let objectData: LiveMapObjectData;
     if (value instanceof LiveObject) {
-      const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
+      const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() }; // RTLM20e5a
       objectData = typedObjectData;
     } else {
       const typedObjectData: ValueObjectData = {};
       if (typeof value === 'string') {
-        typedObjectData.string = value;
+        typedObjectData.string = value; // RTLM20e5c
       } else if (typeof value === 'number') {
-        typedObjectData.number = value;
+        typedObjectData.number = value; // RTLM20e5d
       } else if (typeof value === 'boolean') {
-        typedObjectData.boolean = value;
+        typedObjectData.boolean = value; // RTLM20e5e
       } else {
-        typedObjectData.bytes = value as Bufferlike;
+        typedObjectData.bytes = value as Bufferlike; // RTLM20e5f
       }
       objectData = typedObjectData;
     }
@@ -134,11 +135,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          action: ObjectOperationAction.MAP_SET,
-          objectId,
+          action: ObjectOperationAction.MAP_SET, // RTLM20e2
+          objectId, // RTLM20e3
           mapOp: {
-            key,
-            data: objectData,
+            key, // RTLM20e4
+            data: objectData, // RTLM20e5
           },
         } as ObjectOperation<ObjectData>,
       },
@@ -151,6 +152,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
   /**
    * @internal
+   * @spec RTLM21e
    */
   static createMapRemoveMessage<TKey extends keyof API.LiveMapType & string>(
     objects: Objects,
@@ -166,9 +168,9 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          action: ObjectOperationAction.MAP_REMOVE,
-          objectId,
-          mapOp: { key },
+          action: ObjectOperationAction.MAP_REMOVE, // RTLM21e2
+          objectId, // RTLM21e3
+          mapOp: { key }, // RTLM21e4
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -189,7 +191,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const client = objects.getClient();
 
     if (typeof key !== 'string') {
-      throw new client.ErrorInfo('Map key should be string', 40003, 400);
+      throw new client.ErrorInfo('Map key should be string', 40003, 400); // RTO11f2
     }
 
     if (
@@ -199,27 +201,29 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       !client.Platform.BufferUtils.isBuffer(value) &&
       !(value instanceof LiveObject)
     ) {
-      throw new client.ErrorInfo('Map value data type is unsupported', 40013, 400); // OD4a
+      throw new client.ErrorInfo('Map value data type is unsupported', 40013, 400); // OD4a, RTO11f3
     }
   }
 
   /**
    * @internal
+   * @spec RTO11f
    */
   static async createMapCreateMessage(objects: Objects, entries?: API.LiveMapType): Promise<ObjectMessage> {
     const client = objects.getClient();
 
     if (entries !== undefined && (entries === null || typeof entries !== 'object')) {
-      throw new client.ErrorInfo('Map entries should be a key-value object', 40003, 400);
+      throw new client.ErrorInfo('Map entries should be a key-value object', 40003, 400); // RTO11f1
     }
 
-    Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(objects, key, value));
+    Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(objects, key, value)); // RTO11f2, RTO11f3
 
-    const initialValueOperation = LiveMap.createInitialValueOperation(entries);
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
+    const initialValueOperation = LiveMap.createInitialValueOperation(entries); // RTO11f4
+    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client); // RTO11f5
+    const nonce = client.Utils.cheapRandStr(); // RTO11f6
+    const msTimestamp = await client.getTimestamp(true); // RTO11f7, RTO16, RTO16a
 
+    // RTO11f8
     const objectId = ObjectId.fromInitialValue(
       client.Platform,
       'map',
@@ -231,11 +235,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.MAP_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
+          ...initialValueOperation, // RTO11f13
+          action: ObjectOperationAction.MAP_CREATE, // RTO11f9
+          objectId, // RTO11f10
+          nonce, // RTO11f11
+          initialValue: initialValueJSONString, // RTO11f12
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -247,29 +251,33 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
   /**
    * @internal
+   * @spec RTO11f4
    */
   static createInitialValueOperation(entries?: API.LiveMapType): Pick<ObjectOperation<ObjectData>, 'map'> {
     const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
 
+    // RTO11f4b, RTO11f4c
     Object.entries(entries ?? {}).forEach(([key, value]) => {
+      // RTO11f4c1
       let objectData: LiveMapObjectData;
       if (value instanceof LiveObject) {
-        const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
+        const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() }; // RTO11f4c1a
         objectData = typedObjectData;
       } else {
         const typedObjectData: ValueObjectData = {};
         if (typeof value === 'string') {
-          typedObjectData.string = value;
+          typedObjectData.string = value; // RTO11f4c1c
         } else if (typeof value === 'number') {
-          typedObjectData.number = value;
+          typedObjectData.number = value; // RTO11f4c1d
         } else if (typeof value === 'boolean') {
-          typedObjectData.boolean = value;
+          typedObjectData.boolean = value; // RTO11f4c1e
         } else {
-          typedObjectData.bytes = value as Bufferlike;
+          typedObjectData.bytes = value as Bufferlike; // RTO11f4c1f
         }
         objectData = typedObjectData;
       }
 
+      // RTO11f4c2
       mapEntries[key] = {
         data: objectData,
       };
@@ -277,8 +285,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     return {
       map: {
-        semantics: ObjectsMapSemantics.LWW,
-        entries: mapEntries,
+        semantics: ObjectsMapSemantics.LWW, // RTO11f4a
+        entries: mapEntries, // RTO11f4b, RTO11f4c
       },
     };
   }
@@ -370,11 +378,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * operation application procedure.
    *
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   * @spec RTLM20
    */
   async set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
-    const msg = LiveMap.createMapSetMessage(this._objects, this.getObjectId(), key, value);
-    return this._objects.publish([msg]);
+    this._objects.throwIfInvalidWriteApiConfiguration(); // RTLM20b, RTLM20c, RTLM20d
+    const msg = LiveMap.createMapSetMessage(this._objects, this.getObjectId(), key, value); // RTLM20e
+    return this._objects.publish([msg]); // RTLM20f
   }
 
   /**
@@ -385,11 +394,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * operation application procedure.
    *
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   * @spec RTLM21
    */
   async remove<TKey extends keyof T & string>(key: TKey): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
-    const msg = LiveMap.createMapRemoveMessage(this._objects, this.getObjectId(), key);
-    return this._objects.publish([msg]);
+    this._objects.throwIfInvalidWriteApiConfiguration(); // RTLM21b, RTLM21c, RTLM21d
+    const msg = LiveMap.createMapRemoveMessage(this._objects, this.getObjectId(), key); // RTLM21e
+    return this._objects.publish([msg]); // RTLM21f
   }
 
   /**

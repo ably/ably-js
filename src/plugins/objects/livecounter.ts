@@ -56,20 +56,21 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   /**
    * @internal
+   * @spec RTLC12e
    */
   static createCounterIncMessage(objects: Objects, objectId: string, amount: number): ObjectMessage {
     const client = objects.getClient();
 
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {
-      throw new client.ErrorInfo('Counter value increment should be a valid number', 40003, 400);
+      throw new client.ErrorInfo('Counter value increment should be a valid number', 40003, 400); // RTLC12e1
     }
 
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          action: ObjectOperationAction.COUNTER_INC,
-          objectId,
-          counterOp: { amount },
+          action: ObjectOperationAction.COUNTER_INC, // RTLC12e2
+          objectId, // RTLC12e3
+          counterOp: { amount }, // RTLC12e4
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -81,19 +82,21 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   /**
    * @internal
+   * @spec RTO12f
    */
   static async createCounterCreateMessage(objects: Objects, count?: number): Promise<ObjectMessage> {
     const client = objects.getClient();
 
     if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
-      throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
+      throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400); // RTO12f1
     }
 
-    const initialValueOperation = LiveCounter.createInitialValueOperation(count);
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
+    const initialValueOperation = LiveCounter.createInitialValueOperation(count); // RTO12f2
+    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client); // RTO12f3
+    const nonce = client.Utils.cheapRandStr(); // RTO12f4
+    const msTimestamp = await client.getTimestamp(true); // RTO12f5, RTO16, RTO16a
 
+    // RTO12f6
     const objectId = ObjectId.fromInitialValue(
       client.Platform,
       'counter',
@@ -105,11 +108,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.COUNTER_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
+          ...initialValueOperation, // RTO12f11
+          action: ObjectOperationAction.COUNTER_CREATE, // RTO12f7
+          objectId, // RTO12f8
+          nonce, // RTO12f9
+          initialValue: initialValueJSONString, // RTO12f10
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -121,11 +124,12 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   /**
    * @internal
+   * @spec RTO12f2
    */
   static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
     return {
       counter: {
-        count: count ?? 0,
+        count: count ?? 0, // RTO12f2a, RTO12f2b
       },
     };
   }
@@ -144,25 +148,29 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * operation application procedure.
    *
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
+   * @spec RTLC12
    */
   async increment(amount: number): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
-    const msg = LiveCounter.createCounterIncMessage(this._objects, this.getObjectId(), amount);
-    return this._objects.publish([msg]);
+    this._objects.throwIfInvalidWriteApiConfiguration(); // RTLC12b, RTLC12c, RTLC12d
+    const msg = LiveCounter.createCounterIncMessage(this._objects, this.getObjectId(), amount); // RTLC12e
+    return this._objects.publish([msg]); // RTLC12f
   }
 
   /**
    * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
+   *
+   * @spec RTLC13
    */
   async decrement(amount: number): Promise<void> {
     this._objects.throwIfInvalidWriteApiConfiguration();
+    // RTLC13c
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {
       throw new this._client.ErrorInfo('Counter value decrement should be a valid number', 40003, 400);
     }
 
-    return this.increment(-amount);
+    return this.increment(-amount); // RTLC13b
   }
 
   /**

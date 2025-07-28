@@ -253,11 +253,14 @@ function encodeObjectData(data: ObjectData | WireObjectData, encodeFn: EncodeObj
 /**
  * Used to create an {@link ObjectOperation.initialValue} JSON string for *_CREATE operations,
  * based on the object operation message that contains the initial value for the object.
+ *
+ * @spec RTO13
  */
 export function createInitialValueJSONString(
   operation: Partial<ObjectOperation<ObjectData>>,
   client: BaseClient,
 ): string {
+  // RTO13b
   // the object operation may contain user-provided data that requires encoding.
   // for example, buffers must be encoded since the initial value will be represented as a JSON string.
   // we can use ObjectMessage methods to encode the object operation.
@@ -282,7 +285,7 @@ export function createInitialValueJSONString(
     client.Utils.Format.json,
   );
 
-  // finally, initialValue is the JSON string representation of the encoded operation.
+  // RTO13c - finally, initialValue is the JSON string representation of the encoded operation.
   return JSON.stringify(encodedOperation);
 }
 

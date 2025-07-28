@@ -2472,7 +2472,7 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    * the published operation is echoed back to the client and applied to the object.
    * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
    *
-   * @param key - The key to set the value for.
+   * @param key - The key to remove the value for.
    * @experimental
    */
   remove<TKey extends keyof T & string>(key: TKey): void;

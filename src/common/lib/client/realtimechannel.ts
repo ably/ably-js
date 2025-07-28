@@ -508,12 +508,13 @@ class RealtimeChannel extends EventEmitter {
   }
 
   sendState(objectMessages: WireObjectMessage[]): Promise<void> {
+    // RTO15e
     const msg = protocolMessageFromValues({
-      action: actions.OBJECT,
-      channel: this.name,
-      state: objectMessages,
+      action: actions.OBJECT, // RTO15e1
+      channel: this.name, // RTO15e2
+      state: objectMessages, // RTO15e3
     });
-    return this.sendMessage(msg);
+    return this.sendMessage(msg); // RTO15f
   }
 
   // Access to this method is synchronised by ConnectionManager#processChannelMessage, in order to synchronise access to the state stored in _decodingContext.
