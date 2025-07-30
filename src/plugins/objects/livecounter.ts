@@ -1,7 +1,7 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
 import {
-  encodeInitialValue,
+  createInitialValueJSONString,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
@@ -89,15 +89,15 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
     }
 
-    const initialValueObj = LiveCounter.createInitialValueObject(count);
-    const { encodedInitialValue, format } = encodeInitialValue(initialValueObj, client);
+    const initialValueOperation = LiveCounter.createInitialValueOperation(count);
+    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
     const nonce = client.Utils.cheapRandStr();
     const msTimestamp = await client.getTimestamp(true);
 
     const objectId = ObjectId.fromInitialValue(
       client.Platform,
       'counter',
-      encodedInitialValue,
+      initialValueJSONString,
       nonce,
       msTimestamp,
     ).toString();
@@ -105,12 +105,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueObj,
+          ...initialValueOperation,
           action: ObjectOperationAction.COUNTER_CREATE,
           objectId,
           nonce,
-          initialValue: encodedInitialValue,
-          initialValueEncoding: format,
+          initialValue: initialValueJSONString,
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -123,7 +122,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  static createInitialValueObject(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
+  static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
     return {
       counter: {
         count: count ?? 0,
