@@ -44,7 +44,7 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
      *
      * root "emptyMap" -> Map#1 {} -- empty map
      * root "referencedMap" -> Map#2 { "counterKey": <object id Counter#3> }
-     * root "valuesMap" -> Map#3 { "stringKey": "stringValue", "emptyStringKey": "", "bytesKey": <byte array for "{"productId": "001", "productName": "car"}", encoded in base64>, "emptyBytesKey": <empty byte array>, "numberKey": 1, "zeroKey": 0, "trueKey": true, "falseKey": false, "mapKey": <objectId of Map#2> }
+     * root "valuesMap" -> Map#3 { "stringKey": "stringValue", "emptyStringKey": "", "bytesKey": <byte array for "{"productId": "001", "productName": "car"}", encoded in base64>, "emptyBytesKey": <empty byte array>, "maxSafeIntegerKey": Number.MAX_SAFE_INTEGER, "negativeMaxSafeIntegerKey": -Number.MAX_SAFE_INTEGER, "numberKey": 1, "zeroKey": 0, "trueKey": true, "falseKey": false, "objectKey": { "foo": "bar" }, "arrayKey": ["foo", "bar", "baz"], "mapKey": <objectId of Map#2> }
      * root "emptyCounter" -> Counter#1 -- no initial value counter, should be 0
      * root "initialValueCounter" -> Counter#2 count=10
      * root "referencedCounter" -> Counter#3 count=20
@@ -85,10 +85,14 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
             emptyStringKey: { string: '' },
             bytesKey: { bytes: 'eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9' },
             emptyBytesKey: { bytes: '' },
+            maxSafeIntegerKey: { number: Number.MAX_SAFE_INTEGER },
+            negativeMaxSafeIntegerKey: { number: -Number.MAX_SAFE_INTEGER },
             numberKey: { number: 1 },
             zeroKey: { number: 0 },
             trueKey: { boolean: true },
             falseKey: { boolean: false },
+            objectKey: { json: JSON.stringify({ foo: 'bar' }) },
+            arrayKey: { json: JSON.stringify(['foo', 'bar', 'baz']) },
             mapKey: { objectId: referencedMap.objectId },
           },
         }),
