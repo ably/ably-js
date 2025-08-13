@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.11.0](https://github.com/ably/ably-js/tree/2.11.0) (2025-08-13)
+
+- Add support to get and set JSON-encodable objects as values for entries in a `LiveMap` [\#2052](https://github.com/ably/ably-js/pull/2052)
+
 ## [2.10.1](https://github.com/ably/ably-js/tree/2.10.1) (2025-07-16)
 
 - Fix minimization issue with Next.js 15.4+ canary builds [\#2057](https://github.com/ably/ably-js/pull/2057)
