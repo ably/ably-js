@@ -2736,6 +2736,8 @@ export declare interface LiveObjectUpdate {
    * Holds an update object which describe changes applied to the object.
    */
   update: any;
+  /** The client ID of the client that published this update. */
+  clientId?: string;
 }
 
 /**
