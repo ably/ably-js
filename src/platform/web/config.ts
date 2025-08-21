@@ -59,11 +59,9 @@ const Config: IPlatformConfig = {
   ArrayBuffer: globalObject.ArrayBuffer,
   atob: globalObject.atob,
   nextTick:
-    typeof globalObject.setImmediate !== 'undefined'
-      ? globalObject.setImmediate.bind(globalObject)
-      : function (f: () => void) {
-          setTimeout(f, 0);
-        },
+    typeof globalObject.queueMicrotask === 'function'
+      ? (f: () => void) => globalObject.queueMicrotask(f)
+      : (f: () => void) => Promise.resolve().then(f),
   addEventListener: globalObject.addEventListener,
   inspect: JSON.stringify,
   stringByteSize: function (str: string) {

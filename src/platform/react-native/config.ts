@@ -18,9 +18,10 @@ export default function (bufferUtils: typeof BufferUtils): IPlatformConfig {
     preferBinary: false, // Motivation as on web; see `preferBinary` comment there.
     ArrayBuffer: typeof ArrayBuffer !== 'undefined' && ArrayBuffer,
     atob: global.atob,
-    nextTick: function (f: Function) {
-      setTimeout(f, 0);
-    },
+    nextTick:
+      typeof global.queueMicrotask === 'function'
+        ? (f: () => void) => global.queueMicrotask(f)
+        : (f: () => void) => Promise.resolve().then(f),
     addEventListener: null,
     inspect: JSON.stringify,
     stringByteSize: function (str: string) {
