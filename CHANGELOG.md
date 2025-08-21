@@ -2,6 +2,11 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.11.1](https://github.com/ably/ably-js/tree/2.11.1) (2025-08-21)
+
+- Fix race for browsers that throttle timeouts in background tabs [\#2070](https://github.com/ably/ably-js/pull/2070)
+- Change `ObjectOperation.initialValue` to be a JSON encoded string [\#2065](https://github.com/ably/ably-js/pull/2065)
+
 ## [2.11.0](https://github.com/ably/ably-js/tree/2.11.0) (2025-08-13)
 
 - Add support to get and set JSON-encodable objects as values for entries in a `LiveMap` [\#2052](https://github.com/ably/ably-js/pull/2052)
