@@ -4,7 +4,7 @@ import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { ObjectId } from './objectid';
-import { Objects } from './objects';
+import { RealtimeObjects } from './realtimeobjects';
 
 export const ROOT_OBJECT_ID = 'root';
 
@@ -17,7 +17,7 @@ export class ObjectsPool {
   private _pool: Map<string, LiveObject>; // RTO3a
   private _gcInterval: ReturnType<typeof setInterval>;
 
-  constructor(private _objects: Objects) {
+  constructor(private _objects: RealtimeObjects) {
     this._client = this._objects.getClient();
     this._pool = this._createInitialPool();
     this._gcInterval = setInterval(() => {
