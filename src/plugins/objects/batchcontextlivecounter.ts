@@ -1,14 +1,14 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import { BatchContext } from './batchcontext';
 import { LiveCounter } from './livecounter';
-import { Objects } from './objects';
+import { RealtimeObjects } from './realtimeobjects';
 
 export class BatchContextLiveCounter {
   private _client: BaseClient;
 
   constructor(
     private _batchContext: BatchContext,
-    private _objects: Objects,
+    private _objects: RealtimeObjects,
     private _counter: LiveCounter,
   ) {
     this._client = this._objects.getClient();
