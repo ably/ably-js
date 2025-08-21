@@ -5,7 +5,7 @@ import type * as API from '../../../ably';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
 import {
-  encodeInitialValue,
+  createInitialValueJSONString,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
@@ -197,15 +197,15 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(objects, key, value));
 
-    const initialValueObj = LiveMap.createInitialValueObject(entries);
-    const { encodedInitialValue, format } = encodeInitialValue(initialValueObj, client);
+    const initialValueOperation = LiveMap.createInitialValueOperation(entries);
+    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
     const nonce = client.Utils.cheapRandStr();
     const msTimestamp = await client.getTimestamp(true);
 
     const objectId = ObjectId.fromInitialValue(
       client.Platform,
       'map',
-      encodedInitialValue,
+      initialValueJSONString,
       nonce,
       msTimestamp,
     ).toString();
@@ -213,12 +213,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const msg = ObjectMessage.fromValues(
       {
         operation: {
-          ...initialValueObj,
+          ...initialValueOperation,
           action: ObjectOperationAction.MAP_CREATE,
           objectId,
           nonce,
-          initialValue: encodedInitialValue,
-          initialValueEncoding: format, // OOP5a2, OOP5b2
+          initialValue: initialValueJSONString,
         } as ObjectOperation<ObjectData>,
       },
       client.Utils,
@@ -231,7 +230,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  static createInitialValueObject(entries?: API.LiveMapType): Pick<ObjectOperation<ObjectData>, 'map'> {
+  static createInitialValueOperation(entries?: API.LiveMapType): Pick<ObjectOperation<ObjectData>, 'map'> {
     const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
 
     Object.entries(entries ?? {}).forEach(([key, value]) => {

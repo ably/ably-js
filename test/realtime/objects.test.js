@@ -5078,10 +5078,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           {
             description: 'initial value',
             message: objectMessageFromValues({
-              operation: {
-                initialValue: BufferUtils.utf8Encode('{"counter":{"count":1}}'),
-                initialValueEncoding: 'json',
-              },
+              operation: { initialValue: JSON.stringify({ counter: { count: 1 } }) },
             }),
             expected: 0,
           },
