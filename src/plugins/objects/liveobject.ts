@@ -13,6 +13,7 @@ export interface LiveObjectData {
 
 export interface LiveObjectUpdate {
   update: any;
+  clientId?: string;
 }
 
 export interface LiveObjectUpdateNoop {
@@ -165,6 +166,7 @@ export abstract class LiveObject<
       this._tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
     }
     const update = this.clearData();
+    update.clientId = objectMessage.clientId;
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
     return update;
@@ -255,5 +257,8 @@ export abstract class LiveObject<
    * This saves us from needing to merge the initial value with operations applied to
    * the object every time the object is read.
    */
-  protected abstract _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation<ObjectData>): TUpdate;
+  protected abstract _mergeInitialDataFromCreateOperation(
+    objectOperation: ObjectOperation<ObjectData>,
+    msg: ObjectMessage,
+  ): TUpdate;
 }

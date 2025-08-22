@@ -48,9 +48,9 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectOperation(objects: Objects, objectOperation: ObjectOperation<ObjectData>): LiveCounter {
-    const obj = new LiveCounter(objects, objectOperation.objectId);
-    obj._mergeInitialDataFromCreateOperation(objectOperation);
+  static fromObjectOperation(objects: Objects, objectMessage: ObjectMessage): LiveCounter {
+    const obj = new LiveCounter(objects, objectMessage.operation!.objectId);
+    obj._mergeInitialDataFromCreateOperation(objectMessage.operation!, objectMessage);
     return obj;
   }
 
@@ -200,7 +200,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     let update: LiveCounterUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
       case ObjectOperationAction.COUNTER_CREATE:
-        update = this._applyCounterCreate(op);
+        update = this._applyCounterCreate(op, msg);
         break;
 
       case ObjectOperationAction.COUNTER_INC:
@@ -209,7 +209,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyCounterInc(op.counterOp);
+          update = this._applyCounterInc(op.counterOp, msg);
         }
         break;
 
@@ -284,13 +284,15 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       this._dataRef = { data: objectState.counter?.count ?? 0 }; // RTLC6c
       // RTLC6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
-        this._mergeInitialDataFromCreateOperation(objectState.createOp);
+        this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
       }
     }
 
     // if object got tombstoned, the update object will include all data that got cleared.
     // otherwise it is a diff between previous value and new value from object state.
-    return this._updateFromDataDiff(previousDataRef, this._dataRef);
+    const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
+    update.clientId = objectMessage.clientId;
+    return update;
   }
 
   /**
@@ -311,7 +313,10 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return { update: { amount: counterDiff } };
   }
 
-  protected _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation<ObjectData>): LiveCounterUpdate {
+  protected _mergeInitialDataFromCreateOperation(
+    objectOperation: ObjectOperation<ObjectData>,
+    msg: ObjectMessage,
+  ): LiveCounterUpdate {
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
@@ -319,7 +324,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC6d1
     this._createOperationIsMerged = true; // RTLC6d2
 
-    return { update: { amount: objectOperation.counter?.count ?? 0 } };
+    return { update: { amount: objectOperation.counter?.count ?? 0 }, clientId: msg.clientId };
   }
 
   private _throwNoPayloadError(op: ObjectOperation<ObjectData>): void {
@@ -330,7 +335,10 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     );
   }
 
-  private _applyCounterCreate(op: ObjectOperation<ObjectData>): LiveCounterUpdate | LiveObjectUpdateNoop {
+  private _applyCounterCreate(
+    op: ObjectOperation<ObjectData>,
+    msg: ObjectMessage,
+  ): LiveCounterUpdate | LiveObjectUpdateNoop {
     if (this._createOperationIsMerged) {
       // There can't be two different create operation for the same object id, because the object id
       // fully encodes that operation. This means we can safely ignore any new incoming create operations
@@ -344,11 +352,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       return { noop: true };
     }
 
-    return this._mergeInitialDataFromCreateOperation(op);
+    return this._mergeInitialDataFromCreateOperation(op, msg);
   }
 
-  private _applyCounterInc(op: ObjectsCounterOp): LiveCounterUpdate {
+  private _applyCounterInc(op: ObjectsCounterOp, msg: ObjectMessage): LiveCounterUpdate {
     this._dataRef.data += op.amount;
-    return { update: { amount: op.amount } };
+    return { update: { amount: op.amount }, clientId: msg.clientId };
   }
 }

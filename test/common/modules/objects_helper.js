@@ -241,12 +241,13 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
     }
 
     objectOperationMessage(opts) {
-      const { channelName, serial, serialTimestamp, siteCode, state } = opts;
+      const { channelName, serial, serialTimestamp, siteCode, state, clientId } = opts;
 
       state?.forEach((objectMessage, i) => {
         objectMessage.serial = serial;
         objectMessage.serialTimestamp = serialTimestamp;
         objectMessage.siteCode = siteCode;
+        objectMessage.clientId = clientId;
       });
 
       return {

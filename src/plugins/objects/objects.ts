@@ -133,7 +133,7 @@ export class Objects {
     // we haven't received the MAP_CREATE operation yet, so we can create a new map object using the locally constructed object operation.
     // we don't know the serials for map entries, so we assign an "earliest possible" serial to each entry, so that any subsequent operation can be applied to them.
     // we mark the MAP_CREATE operation as merged for the object, guaranteeing its idempotency and preventing it from being applied again when the operation arrives.
-    const map = LiveMap.fromObjectOperation<T>(this, msg.operation!);
+    const map = LiveMap.fromObjectOperation<T>(this, msg);
     this._objectsPool.set(objectId, map);
 
     return map;
@@ -164,7 +164,7 @@ export class Objects {
 
     // we haven't received the COUNTER_CREATE operation yet, so we can create a new counter object using the locally constructed object operation.
     // we mark the COUNTER_CREATE operation as merged for the object, guaranteeing its idempotency. this ensures we don't double count the initial counter value when the operation arrives.
-    const counter = LiveCounter.fromObjectOperation(this, msg.operation!);
+    const counter = LiveCounter.fromObjectOperation(this, msg);
     this._objectsPool.set(objectId, counter);
 
     return counter;
