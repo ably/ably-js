@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.12.0](https://github.com/ably/ably-js/tree/2.12.0) (2025-08-22)
+
+- Add `clientId` of the client who submitted the operation to the `LiveObjectUpdate` in subscription callbacks [\#2072](https://github.com/ably/ably-js/pull/2072)
+
 ## [2.11.1](https://github.com/ably/ably-js/tree/2.11.1) (2025-08-21)
 
 - Fix race for browsers that throttle timeouts in background tabs [\#2070](https://github.com/ably/ably-js/pull/2070)
