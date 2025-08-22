@@ -31,7 +31,7 @@ export type LiveMapObjectData = ObjectIdObjectData | ValueObjectData;
 
 export interface LiveMapEntry {
   tombstone: boolean;
-  tombstonedAt: number | undefined;
+  tombstonedAt: number | undefined; // RTLM3a1
   timeserial: string | undefined;
   data: LiveMapObjectData | undefined;
 }
@@ -272,6 +272,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined {
     this._objects.throwIfInvalidAccessApiConfiguration(); // RTLM5b, RTLM5c
 
+    // RTLM5e
     if (this.isTombstoned()) {
       return undefined as T[TKey];
     }
@@ -292,9 +293,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return this._getResolvedValueFromObjectData(element.data!) as T[TKey];
   }
 
+  /** @spec RTLM10, RTLM10a */
   size(): number {
-    this._objects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration(); // RTLM10b, RTLM10c
 
+    // RTLM10d
     let size = 0;
     for (const value of this._dataRef.data.values()) {
       if (this._isMapEntryTombstoned(value)) {
@@ -308,30 +311,34 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return size;
   }
 
+  /** @spec RTLM11, RTLM11a */
   *entries<TKey extends keyof T & string>(): IterableIterator<[TKey, T[TKey]]> {
-    this._objects.throwIfInvalidAccessApiConfiguration();
+    this._objects.throwIfInvalidAccessApiConfiguration(); // RTLM11b, RTLM11c
 
+    // RTLM11d
     for (const [key, entry] of this._dataRef.data.entries()) {
       if (this._isMapEntryTombstoned(entry)) {
-        // do not return tombstoned entries
+        // RTLM11d1 - do not return tombstoned entries
         continue;
       }
 
       // data always exists for non-tombstoned elements
       const value = this._getResolvedValueFromObjectData(entry.data!) as T[TKey];
-      yield [key as TKey, value];
+      yield [key as TKey, value]; // RTLM11d2
     }
   }
 
+  /** @spec RTLM12, RTLM12a */
   *keys<TKey extends keyof T & string>(): IterableIterator<TKey> {
     for (const [key] of this.entries<TKey>()) {
-      yield key;
+      yield key; // RTLM12b
     }
   }
 
+  /** @spec RTLM13, RTLM13a */
   *values<TKey extends keyof T & string>(): IterableIterator<T[TKey]> {
     for (const [_, value] of this.entries<TKey>()) {
-      yield value;
+      yield value; // RTLM13b
     }
   }
 
@@ -367,6 +374,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
   /**
    * @internal
+   * @spec RTLM15, RTLM15a
    */
   applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage): void {
     if (op.objectId !== this.getObjectId()) {
@@ -380,6 +388,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const opSerial = msg.serial!;
     const opSiteCode = msg.siteCode!;
     if (!this._canApplyOperation(opSerial, opSiteCode)) {
+      // RTLM15b
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
@@ -390,17 +399,18 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    this._siteTimeserials[opSiteCode] = opSerial;
+    this._siteTimeserials[opSiteCode] = opSerial; // RTLM15c
 
     if (this.isTombstoned()) {
-      // this object is tombstoned so the operation cannot be applied
+      // RTLM15e - this object is tombstoned so the operation cannot be applied
       return;
     }
 
     let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
+    // RTLM15d
     switch (op.action) {
       case ObjectOperationAction.MAP_CREATE:
-        update = this._applyMapCreate(op);
+        update = this._applyMapCreate(op); // RTLM15d1
         break;
 
       case ObjectOperationAction.MAP_SET:
@@ -409,7 +419,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyMapSet(op.mapOp, opSerial);
+          update = this._applyMapSet(op.mapOp, opSerial); // RTLM15d2
         }
         break;
 
@@ -419,15 +429,16 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyMapRemove(op.mapOp, opSerial, msg.serialTimestamp);
+          update = this._applyMapRemove(op.mapOp, opSerial, msg.serialTimestamp); // RTLM15d3
         }
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        update = this._applyObjectDelete(msg);
+        update = this._applyObjectDelete(msg); // RTLM15d5, RTLM15d5a
         break;
 
       default:
+        // RTLM15d4
         throw new this._client.ErrorInfo(
           `Invalid ${op.action} op for LiveMap objectId=${this.getObjectId()}`,
           92000,
@@ -496,39 +507,40 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     this._siteTimeserials = objectState.siteTimeserials ?? {}; // RTLM6a
 
     if (this.isTombstoned()) {
-      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      return { noop: true };
+      // RTLM6e - this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
+      return { noop: true }; // RTLM6e1
     }
 
     const previousDataRef = this._dataRef;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone(objectMessage);
+      this.tombstone(objectMessage); // RTLM6f
     } else {
       // override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLM6b
       this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
-      // RTLM6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
-        this._mergeInitialDataFromCreateOperation(objectState.createOp);
+        this._mergeInitialDataFromCreateOperation(objectState.createOp); // RTLM6d
       }
     }
 
     // if object got tombstoned, the update object will include all data that got cleared.
     // otherwise it is a diff between previous value and new value from object state.
-    return this._updateFromDataDiff(previousDataRef, this._dataRef);
+    return this._updateFromDataDiff(previousDataRef, this._dataRef); // RTLM6f1
   }
 
   /**
    * @internal
+   * @spec RTLM19
    */
   onGCInterval(): void {
     // should remove any tombstoned entries from the underlying map data that have exceeded the GC grace period
 
+    // RTLM19a
     const keysToDelete: string[] = [];
     for (const [key, value] of this._dataRef.data.entries()) {
       if (value.tombstone === true && Date.now() - value.tombstonedAt! >= this._objects.gcGracePeriod) {
-        keysToDelete.push(key);
+        keysToDelete.push(key); // RTLM19a1
       }
     }
 
@@ -596,6 +608,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     return update;
   }
 
+  /** @spec RTLM17 */
   protected _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation<ObjectData>): LiveMapUpdate<T> {
     if (this._client.Utils.isNil(objectOperation.map)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
@@ -604,7 +617,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     const aggregatedUpdate: LiveMapUpdate<T> = { update: {} };
-    // RTLM6d1
+    // RTLM17a
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
     Object.entries(objectOperation.map.entries ?? {}).forEach(([key, entry]) => {
@@ -612,10 +625,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       const opSerial = entry.timeserial;
       let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
       if (entry.tombstone === true) {
-        // RTLM6d1b - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
+        // RTLM17a2 - entry in MAP_CREATE op is removed, try to apply MAP_REMOVE op
         update = this._applyMapRemove({ key }, opSerial, entry.serialTimestamp);
       } else {
-        // RTLM6d1a - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
+        // RTLM17a1 - entry in MAP_CREATE op is not removed, try to set it via MAP_SET op
         update = this._applyMapSet({ key, data: entry.data }, opSerial);
       }
 
@@ -628,7 +641,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       Object.assign(aggregatedUpdate.update, update.update);
     });
 
-    this._createOperationIsMerged = true; // RTLM6d2
+    this._createOperationIsMerged = true; // RTLM17b
 
     return aggregatedUpdate;
   }
@@ -641,8 +654,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     );
   }
 
+  /** @spec RTLM16 */
   private _applyMapCreate(op: ObjectOperation<ObjectData>): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     if (this._createOperationIsMerged) {
+      // RTLM16b
       // There can't be two different create operation for the same object id, because the object id
       // fully encodes that operation. This means we can safely ignore any new incoming create operations
       // if we already merged it once.
@@ -656,6 +671,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     if (this._semantics !== op.map?.semantics) {
+      // RTLM16c
       throw new this._client.ErrorInfo(
         `Cannot apply MAP_CREATE op on LiveMap objectId=${this.getObjectId()}; map's semantics=${this._semantics}, but op expected ${op.map?.semantics}`,
         92000,
@@ -663,13 +679,13 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       );
     }
 
-    return this._mergeInitialDataFromCreateOperation(op);
+    return this._mergeInitialDataFromCreateOperation(op); // RTLM16d
   }
 
   /** @spec RTLM7 */
   private _applyMapSet(
-    op: ObjectsMapOp<ObjectData>,
-    opSerial: string | undefined,
+    op: ObjectsMapOp<ObjectData>, // RTLM7d1
+    opSerial: string | undefined, // RTLM7d2
   ): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     const { ErrorInfo, Utils } = this._client;
 
@@ -710,14 +726,14 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (existingEntry) {
       // RTLM7a2
       existingEntry.tombstone = false; // RTLM7a2c
-      existingEntry.tombstonedAt = undefined;
+      existingEntry.tombstonedAt = undefined; // RTLM7a2d
       existingEntry.timeserial = opSerial; // RTLM7a2b
       existingEntry.data = liveData; // RTLM7a2a
     } else {
       // RTLM7b, RTLM7b1
       const newEntry: LiveMapEntry = {
         tombstone: false, // RTLM7b2
-        tombstonedAt: undefined,
+        tombstonedAt: undefined, // RTLM7b3
         timeserial: opSerial,
         data: liveData,
       };
@@ -733,9 +749,9 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
   /** @spec RTLM8 */
   private _applyMapRemove(
-    op: ObjectsMapOp<ObjectData>,
-    opSerial: string | undefined,
-    opTimestamp: number | undefined,
+    op: ObjectsMapOp<ObjectData>, // RTLM8c1
+    opSerial: string | undefined, // RTLM8c2
+    opTimestamp: number | undefined, // RTLM8c3
   ): LiveMapUpdate<T> | LiveObjectUpdateNoop {
     const existingEntry = this._dataRef.data.get(op.key);
     // RTLM8a
@@ -750,30 +766,33 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return { noop: true };
     }
 
+    // RTLM8f
     let tombstonedAt: number;
     if (opTimestamp != null) {
-      tombstonedAt = opTimestamp;
+      tombstonedAt = opTimestamp; // RTLM8f1
     } else {
+      // RTLM8f2a
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MINOR,
         'LiveMap._applyMapRemove()',
         `map key has been removed but no "serialTimestamp" found in the message, using local clock instead; key="${op.key}", objectId=${this.getObjectId()}`,
       );
+      // RTLM8f2
       tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
     }
 
     if (existingEntry) {
       // RTLM8a2
       existingEntry.tombstone = true; // RTLM8a2c
-      existingEntry.tombstonedAt = tombstonedAt;
+      existingEntry.tombstonedAt = tombstonedAt; // RTLM8a2d
       existingEntry.timeserial = opSerial; // RTLM8a2b
       existingEntry.data = undefined; // RTLM8a2a
     } else {
       // RTLM8b, RTLM8b1
       const newEntry: LiveMapEntry = {
         tombstone: true, // RTLM8b2
-        tombstonedAt: tombstonedAt,
+        tombstonedAt: tombstonedAt, // RTLM8b3
         timeserial: opSerial,
         data: undefined,
       };
@@ -836,14 +855,16 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       let tombstonedAt: number | undefined;
       if (entry.tombstone === true) {
         if (entry.serialTimestamp != null) {
-          tombstonedAt = entry.serialTimestamp;
+          tombstonedAt = entry.serialTimestamp; // RTLM6c1a
         } else {
+          // RTLM6c1b1
           this._client.Logger.logAction(
             this._client.logger,
             this._client.Logger.LOG_MINOR,
             'LiveMap._liveMapDataFromMapEntries()',
             `map key is removed but no "serialTimestamp" found, using local clock instead; key="${key}", objectId=${this.getObjectId()}`,
           );
+          // RTLM6c1b
           tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
         }
       }
@@ -853,7 +874,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         data: liveData,
         // consider object as tombstoned only if we received an explicit flag stating that. otherwise it exists
         tombstone: entry.tombstone === true,
-        tombstonedAt,
+        tombstonedAt, // RTLM6c1
       };
 
       liveMapData.data.set(key, liveDataEntry);
@@ -874,22 +895,27 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     // RTLM5d2f - otherwise, it has an objectId reference, and we should get the actual object from the pool
     const objectId = (data as ObjectIdObjectData).objectId;
-    const refObject: LiveObject | undefined = this._objects.getPool().get(objectId);
-    if (!refObject) {
-      return undefined; // RTLM5d2f1
+    if (objectId != null) {
+      const refObject: LiveObject | undefined = this._objects.getPool().get(objectId);
+      if (!refObject) {
+        return undefined; // RTLM5d2f1
+      }
+
+      if (refObject.isTombstoned()) {
+        // RTLM5d2f3 - tombstoned objects must not be surfaced to the end users
+        return undefined;
+      }
+
+      return refObject; // RTLM5d2f2
     }
 
-    if (refObject.isTombstoned()) {
-      // tombstoned objects must not be surfaced to the end users
-      return undefined;
-    }
-
-    return refObject; // RTLM5d2f2
+    return undefined; // RTLM5d2g
   }
 
+  /** @spec RTLM14 */
   private _isMapEntryTombstoned(entry: LiveMapEntry): boolean {
     if (entry.tombstone === true) {
-      return true;
+      return true; // RTLM14a
     }
 
     // data always exists for non-tombstoned entries
@@ -899,10 +925,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
       if (refObject?.isTombstoned()) {
         // entry that points to tombstoned object should be considered tombstoned as well
-        return true;
+        return true; // RTLM14c
       }
     }
 
-    return false;
+    return false; // RTLM14b
   }
 }

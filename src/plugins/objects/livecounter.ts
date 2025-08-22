@@ -167,6 +167,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   /**
    * @internal
+   * @spec RTLC7, RTLC7a
    */
   applyOperation(op: ObjectOperation<ObjectData>, msg: ObjectMessage): void {
     if (op.objectId !== this.getObjectId()) {
@@ -180,6 +181,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     const opSerial = msg.serial!;
     const opSiteCode = msg.siteCode!;
     if (!this._canApplyOperation(opSerial, opSiteCode)) {
+      // RTLC7b
       this._client.Logger.logAction(
         this._client.logger,
         this._client.Logger.LOG_MICRO,
@@ -190,17 +192,18 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     }
     // should update stored site serial immediately. doesn't matter if we successfully apply the op,
     // as it's important to mark that the op was processed by the object
-    this._siteTimeserials[opSiteCode] = opSerial;
+    this._siteTimeserials[opSiteCode] = opSerial; // RTLC7c
 
     if (this.isTombstoned()) {
-      // this object is tombstoned so the operation cannot be applied
+      // RTLC7e - this object is tombstoned so the operation cannot be applied
       return;
     }
 
     let update: LiveCounterUpdate | LiveObjectUpdateNoop;
+    // RTLC7d
     switch (op.action) {
       case ObjectOperationAction.COUNTER_CREATE:
-        update = this._applyCounterCreate(op);
+        update = this._applyCounterCreate(op); // RTLC7d1
         break;
 
       case ObjectOperationAction.COUNTER_INC:
@@ -209,15 +212,16 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
           // leave an explicit return here, so that TS knows that update object is always set after the switch statement.
           return;
         } else {
-          update = this._applyCounterInc(op.counterOp);
+          update = this._applyCounterInc(op.counterOp); // RTLC7d2
         }
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        update = this._applyObjectDelete(msg);
+        update = this._applyObjectDelete(msg); // RTLC7d4, RTLC7d4a
         break;
 
       default:
+        // RTLC7d3
         throw new this._client.ErrorInfo(
           `Invalid ${op.action} op for LiveCounter objectId=${this.getObjectId()}`,
           92000,
@@ -270,27 +274,26 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._siteTimeserials = objectState.siteTimeserials ?? {}; // RTLC6a
 
     if (this.isTombstoned()) {
-      // this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
-      return { noop: true };
+      // RTLC6e - this object is tombstoned. this is a terminal state which can't be overridden. skip the rest of object state message processing
+      return { noop: true }; // RTLC6e1
     }
 
     const previousDataRef = this._dataRef;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone(objectMessage);
+      this.tombstone(objectMessage); // RTLC6f
     } else {
       // override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLC6b
       this._dataRef = { data: objectState.counter?.count ?? 0 }; // RTLC6c
-      // RTLC6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
-        this._mergeInitialDataFromCreateOperation(objectState.createOp);
+        this._mergeInitialDataFromCreateOperation(objectState.createOp); // RTLC6d
       }
     }
 
     // if object got tombstoned, the update object will include all data that got cleared.
     // otherwise it is a diff between previous value and new value from object state.
-    return this._updateFromDataDiff(previousDataRef, this._dataRef);
+    return this._updateFromDataDiff(previousDataRef, this._dataRef); // RTLC6f1
   }
 
   /**
@@ -311,13 +314,14 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     return { update: { amount: counterDiff } };
   }
 
+  /** @spec RTLC10 */
   protected _mergeInitialDataFromCreateOperation(objectOperation: ObjectOperation<ObjectData>): LiveCounterUpdate {
     // if a counter object is missing for the COUNTER_CREATE op, the initial value is implicitly 0 in this case.
     // note that it is intentional to SUM the incoming count from the create op.
     // if we got here, it means that current counter instance is missing the initial value in its data reference,
     // which we're going to add now.
-    this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC6d1
-    this._createOperationIsMerged = true; // RTLC6d2
+    this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC10a
+    this._createOperationIsMerged = true; // RTLC10b
 
     return { update: { amount: objectOperation.counter?.count ?? 0 } };
   }
@@ -330,8 +334,10 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     );
   }
 
+  /** @spec RTLC8 */
   private _applyCounterCreate(op: ObjectOperation<ObjectData>): LiveCounterUpdate | LiveObjectUpdateNoop {
     if (this._createOperationIsMerged) {
+      // RTLC8b
       // There can't be two different create operation for the same object id, because the object id
       // fully encodes that operation. This means we can safely ignore any new incoming create operations
       // if we already merged it once.
@@ -344,11 +350,12 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       return { noop: true };
     }
 
-    return this._mergeInitialDataFromCreateOperation(op);
+    return this._mergeInitialDataFromCreateOperation(op); // RTLC8c
   }
 
+  /** @spec RTLC9 */
   private _applyCounterInc(op: ObjectsCounterOp): LiveCounterUpdate {
-    this._dataRef.data += op.amount;
+    this._dataRef.data += op.amount; // RTLC9b
     return { update: { amount: op.amount } };
   }
 }
