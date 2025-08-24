@@ -90,7 +90,8 @@ export class Rest {
     if (!unpacked) body = JSON.parse(body as string);
     const time = (body as number[])[0];
     if (!time) {
-      throw new ErrorInfo('Internal error (unexpected result type from GET /time)', 50000, 500);
+      // ably-os:inline-error-update:50000:2025-08-22:e8u Original: "Internal error (unexpected result type from GET /time)"
+      throw new ErrorInfo(`Internal error (unexpected result from GET /time): expected number, got ${typeof time} with value: ${JSON.stringify(body)}`, 50000, 500);
     }
     /* calculate time offset only once for this device by adding to the prototype */
     this.client.serverTimeOffset = time - Date.now();
@@ -210,7 +211,8 @@ export class Rest {
     options?: TokenRevocationOptions,
   ): Promise<TokenRevocationResult> {
     if (useTokenAuth(this.client.options)) {
-      throw new ErrorInfo('Cannot revoke tokens when using token auth', 40162, 401);
+      // ably-os:inline-error-update:40162:2025-08-22:e8u Original: "Cannot revoke tokens when using token auth"
+      throw new ErrorInfo('Cannot revoke tokens when using token auth. Token revocation requires API key authentication for security', 40162, 401);
     }
 
     const keyName = this.client.options.keyName!;
