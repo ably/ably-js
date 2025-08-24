@@ -47,7 +47,8 @@ function validateChannelOptions(options?: API.ChannelOptions) {
         typeof currentMode !== 'string' ||
         !channelModes.includes(String.prototype.toUpperCase.call(currentMode))
       ) {
-        return new ErrorInfo('Invalid channel mode: ' + currentMode, 40000, 400);
+        // ably-os:inline-error-update:40000:2025-08-22:e8u Original: "Invalid channel mode: ' + currentMode"
+        return new ErrorInfo('Invalid channel mode: ' + currentMode + '. Valid modes: ' + channelModes.join(', '), 40000, 400);
       }
     }
   }

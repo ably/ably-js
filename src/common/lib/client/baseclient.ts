@@ -72,7 +72,8 @@ class BaseClient {
     if (normalOptions.key) {
       const keyMatch = normalOptions.key.match(/^([^:\s]+):([^:.\s]+)$/);
       if (!keyMatch) {
-        const msg = 'invalid key parameter';
+        // ably-os:inline-error-update:40400:2025-08-22:e8u Original: "invalid key parameter"
+        const msg = 'Invalid API key format. Expected format: "appId.keyName:keySecret"';
         Logger.logAction(this.logger, Logger.LOG_ERROR, 'BaseClient()', msg);
         throw new ErrorInfo(msg, 40400, 404);
       }
