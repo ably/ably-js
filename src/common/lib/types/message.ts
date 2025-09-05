@@ -105,20 +105,26 @@ class Message extends BaseMessage {
   connectionKey?: string;
   action?: API.MessageAction;
   serial?: string;
-  createdAt?: number;
-  version?: string;
-  operation?: API.Operation;
-  summary?: any; // TODO improve typings after summary structure is finalised
+  version?: API.MessageVersion;
+  annotations?: API.MessageAnnotations;
 
   expandFields() {
+    // Protocol v4 wire decoding rules
     if (this.action === 'message.create') {
-      // TM2k
-      if (this.version && !this.serial) {
-        this.serial = this.version;
+      if (!this.version) {
+        this.version = {};
       }
-      // TM2o
-      if (this.timestamp && !this.createdAt) {
-        this.createdAt = this.timestamp;
+
+      // If version.serial is unset on the wire, set from the root-level serial
+      // TM2s1
+      if (!this.version.serial) {
+        this.version.serial = this.serial;
+      }
+
+      // If version.timestamp is unset on the wire, set from the root-level timestamp
+      // TM2s2
+      if (!this.version.timestamp) {
+        this.version.timestamp = this.timestamp;
       }
     }
   }
@@ -148,10 +154,8 @@ export class WireMessage extends BaseMessage {
   connectionKey?: string;
   action?: number;
   serial?: string;
-  createdAt?: number;
-  version?: string;
-  operation?: API.Operation;
-  summary?: any;
+  version?: API.MessageVersion;
+  annotations?: API.MessageAnnotations;
 
   // Overload toJSON() to intercept JSON.stringify()
   toJSON(...args: any[]) {

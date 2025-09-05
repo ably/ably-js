@@ -43,7 +43,7 @@ define(['ably', 'shared_helper', 'chai'], function (Ably, Helper, chai) {
                     return transport.recvRequest.recvUri;
                   })();
               try {
-                expect(connectUri.indexOf('v=3') > -1, 'Check uri includes v=3').to.be.ok;
+                expect(connectUri.indexOf('v=4') > -1, 'Check uri includes v=4').to.be.ok;
               } catch (err) {
                 helper.closeAndFinish(done, realtime, err);
                 return;

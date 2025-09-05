@@ -3221,38 +3221,20 @@ export interface Message {
    * This message's unique serial (an identifier that will be the same in all future
    * updates of this message).
    */
-  serial?: string;
+  serial: string;
+
   /**
-   * The timestamp of the very first version of a given message (will differ from
-   * `timestamp` only if the message has been updated or deleted).
+   * The latest version of the message, containing version-specific metadata.
    */
-  createdAt?: number;
-  /**
-   * The version of the message, lexicographically-comparable with other versions (that
-   * share the same serial) Will differ from the serial only if the message has been
-   * updated or deleted.
-   */
-  version?: string;
-  /**
-   * In the case of an updated or deleted message, this will contain metadata about the
-   * update or delete operation.
-   */
-  operation?: Operation;
+  version: MessageVersion;
   /**
    * Allows a REST client to publish a message on behalf of a Realtime client. If you set this to the {@link Connection.key | private connection key} of a Realtime connection when publishing a message using a {@link RestClient}, the message will be published on behalf of that Realtime client. This property is only populated by a client performing a publish, and will never be populated on an inbound message.
    */
   connectionKey?: string;
   /**
-   * A summary of all the annotations that have been made to the message. Will always be
-   * populated for a message.summary, and may be populated for any other type (in
-   * particular a message retrieved from REST history will have its latest summary
-   * included).
-   * The keys of the map are the annotation types. The exact structure of the value of
-   * each key depends on the aggregation part of the annotation type, e.g. for a type of
-   * reaction:distinct.v1, the value will be a DistinctValues object. New aggregation
-   * methods might be added serverside, hence the 'unknown' part of the sum type.
+   * Annotations associated with this message.
    */
-  summary?: Record<string, SummaryEntry>;
+  annotations?: MessageAnnotations;
 }
 
 /**
@@ -3328,21 +3310,49 @@ export type OutboundAnnotation = Partial<Annotation> & {
 };
 
 /**
- * Contains the details of an operation, such as update or deletion, supplied by the actioning client.
+ * Contains the details regarding the current version of the message - including when it was updated and by whom.
  */
-export interface Operation {
+export interface MessageVersion {
   /**
-   * The client ID of the client that initiated the operation.
+   * A unique identifier for the version of the message, lexicographically-comparable with other versions (that
+   * share the same serial). Will differ from the serial only if the message has been
+   * updated or deleted.
+   */
+  serial?: string;
+  /**
+   * The timestamp of the message version.
+   */
+  timestamp?: number;
+  /**
+   * The client ID of the client initiated the operation to update the message to this version.
    */
   clientId?: string;
   /**
-   * The description provided by the client that initiated the operation.
+   * The description provided by the client that initatied the operation to update the message to this version.
    */
   description?: string;
   /**
-   * A JSON object of string key-value pairs that may contain metadata associated with the operation.
+   * A JSON object of string key-value pairs that may contain metadata associated with the operation to update
+   * the message to this version.
    */
   metadata?: Record<string, string>;
+}
+
+/**
+ * Contains information about annotations associated with a particular message.
+ */
+export interface MessageAnnotations {
+  /**
+   * A summary of all the annotations that have been made to the message. Will always be
+   * populated for a message.summary, and may be populated for any other type (in
+   * particular a message retrieved from REST history will have its latest summary
+   * included).
+   * The keys of the map are the annotation types. The exact structure of the value of
+   * each key depends on the aggregation part of the annotation type, e.g. for a type of
+   * reaction:distinct.v1, the value will be a DistinctValues object. New aggregation
+   * methods might be added serverside, hence the 'unknown' part of the sum type.
+   */
+  summary?: Record<string, SummaryEntry>;
 }
 
 /**
