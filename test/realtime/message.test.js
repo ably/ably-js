@@ -1280,7 +1280,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         {
           description: 'should stringify the numeric action',
           action: 0,
-          expectedString: '[Message; action=message.create]',
+          expectedString: '[Message; action=message.create; version=[object Object]]',
           expectedJSON: { action: 0 },
         },
         {
@@ -1292,7 +1292,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         {
           description: 'should handle no action provided',
           action: undefined,
-          expectedString: '[Message; action=message.create]',
+          expectedString: '[Message; action=message.create; version=[object Object]]',
           expectedJSON: { action: 0 },
         },
         {
@@ -1313,22 +1313,37 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
       });
 
       /**
-       * @spec TM2k
-       * @spec TM2o
+       * @spec TM2s
        */
-      it('create message should fill out serial and createdAt from version/timestamp', async function () {
-        const values = { action: 0, timestamp: 12345, version: 'foo' };
+      it('create message should populate version from serial/timestamp', async function () {
+        // Test with serial and timestamp at root level
+        const values = { action: 0, timestamp: 12345, serial: 'test-serial' };
         const message = await Message.fromEncoded(values);
         expect(message.timestamp).to.equal(12345);
-        expect(message.createdAt).to.equal(12345);
-        expect(message.version).to.equal('foo');
-        expect(message.serial).to.equal('foo');
+        expect(message.serial).to.equal('test-serial');
+        expect(message.version).to.deep.equal({
+          serial: 'test-serial',
+          timestamp: 12345,
+        });
+
+        // Test with partial version object - should fill from root
+        const partialVersion = {
+          action: 0,
+          timestamp: 54321,
+          serial: 'another-serial',
+          version: { clientId: 'test-client' },
+        };
+        const message2 = await Message.fromEncoded(partialVersion);
+        expect(message2.version).to.deep.equal({
+          serial: 'another-serial',
+          timestamp: 54321,
+          clientId: 'test-client',
+        });
 
         // should only apply to creates
-        const update = { action: 1, timestamp: 12345, version: 'foo' };
+        const update = { action: 1, timestamp: 12345, serial: 'update-serial' };
         const updateMessage = await Message.fromEncoded(update);
-        expect(updateMessage.createdAt).to.equal(undefined);
-        expect(updateMessage.serial).to.equal(undefined);
+        expect(updateMessage.version).to.equal(undefined);
       });
     });
 
