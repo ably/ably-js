@@ -3318,20 +3318,24 @@ export type OutboundAnnotation = Partial<Annotation> & {
 export interface MessageVersion {
   /**
    * A unique identifier for the version of the message, lexicographically-comparable with other versions (that
-   * share the same serial). Will differ from the serial only if the message has been
+   * share the same `Message.serial`). Will differ from the `Message.serial` only if the message has been
    * updated or deleted.
+   *
+   * If the `Message.action` is `message.create`, this will equal the `Message.serial`.
    */
   serial?: string;
   /**
    * The timestamp of the message version.
+   *
+   * If the `Message.action` is `message.create`, this will equal the `Message.timestamp`.
    */
   timestamp?: number;
   /**
-   * The client ID of the client initiated the operation to update the message to this version.
+   * The client ID of the client that initiated the operation to update the message to this version.
    */
   clientId?: string;
   /**
-   * The description provided by the client that initatied the operation to update the message to this version.
+   * The description provided by the client that updated the message to this version.
    */
   description?: string;
   /**
