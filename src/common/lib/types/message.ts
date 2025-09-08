@@ -109,23 +109,24 @@ class Message extends BaseMessage {
   annotations?: API.MessageAnnotations;
 
   expandFields() {
-    // Protocol v4 wire decoding rules
-    if (this.action === 'message.create') {
-      if (!this.version) {
-        this.version = {};
-      }
+    // TM2s
+    if (!this.version) {
+      this.version = {
+        serial: '',
+        timestamp: 0,
+      };
+    }
 
-      // If version.serial is unset on the wire, set from the root-level serial
-      // TM2s1
-      if (!this.version.serial) {
-        this.version.serial = this.serial;
-      }
+    // If version.serial is unset on the wire, set from the root-level serial
+    // TM2s1
+    if (!this.version.serial) {
+      this.version.serial = this.serial ?? '';
+    }
 
-      // If version.timestamp is unset on the wire, set from the root-level timestamp
-      // TM2s2
-      if (!this.version.timestamp) {
-        this.version.timestamp = this.timestamp;
-      }
+    // If version.timestamp is unset on the wire, set from the root-level timestamp
+    // TM2s2
+    if (!this.version.timestamp) {
+      this.version.timestamp = this.timestamp ?? 0;
     }
   }
 

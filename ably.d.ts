@@ -3225,7 +3225,6 @@ export interface Message {
    * updates of this message).
    */
   serial: string;
-
   /**
    * The latest version of the message, containing version-specific metadata.
    */
@@ -3301,7 +3300,7 @@ export interface Annotation {
 }
 
 /**
- * A variant of the Annotation type customised for those fields which need to be populated
+ * A variant of the Annotation type customized for those fields which need to be populated
  * by the user when publishing an annotation.
  */
 export type OutboundAnnotation = Partial<Annotation> & {
@@ -3320,18 +3319,16 @@ export interface MessageVersion {
    * A unique identifier for the version of the message, lexicographically-comparable with other versions (that
    * share the same `Message.serial`). Will differ from the `Message.serial` only if the message has been
    * updated or deleted.
-   *
-   * If the `Message.action` is `message.create`, this will equal the `Message.serial`.
    */
-  serial?: string;
+  serial: string;
   /**
    * The timestamp of the message version.
    *
    * If the `Message.action` is `message.create`, this will equal the `Message.timestamp`.
    */
-  timestamp?: number;
+  timestamp: number;
   /**
-   * The client ID of the client that initiated the operation to update the message to this version.
+   * The client ID of the client that updated the message to this version.
    */
   clientId?: string;
   /**

@@ -376,6 +376,8 @@ export function strMsg(m: any, cls: string) {
       }
     } else if (attr && (attr === 'extras' || attr === 'operation')) {
       result += '; ' + attr + '=' + JSON.stringify(m[attr]);
+    } else if (attr === 'version') {
+      result += '; version=' + JSON.stringify(m[attr]);
     } else if (m[attr] !== undefined) {
       result += '; ' + attr + '=' + m[attr];
     }

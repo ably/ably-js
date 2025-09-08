@@ -1280,25 +1280,25 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         {
           description: 'should stringify the numeric action',
           action: 0,
-          expectedString: '[Message; action=message.create; version=[object Object]]',
+          expectedString: '[Message; action=message.create; version={"serial":""}]',
           expectedJSON: { action: 0 },
         },
         {
           description: 'should stringify the numeric action',
           action: 1,
-          expectedString: '[Message; action=message.update]',
+          expectedString: '[Message; action=message.update; version={"serial":""}]',
           expectedJSON: { action: 1 },
         },
         {
           description: 'should handle no action provided',
           action: undefined,
-          expectedString: '[Message; action=message.create; version=[object Object]]',
+          expectedString: '[Message; action=message.create; version={"serial":""}]',
           expectedJSON: { action: 0 },
         },
         {
           description: 'should handle unknown action provided',
           action: 10,
-          expectedString: '[Message; action=unknown]',
+          expectedString: '[Message; action=unknown; version={"serial":""}]',
         },
       ];
       testCases.forEach(({ description, action, options, expectedString, expectedJSON }) => {
@@ -1340,10 +1340,15 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           clientId: 'test-client',
         });
 
-        // should only apply to creates
+        // Applying on non-creates
         const update = { action: 1, timestamp: 12345, serial: 'update-serial' };
         const updateMessage = await Message.fromEncoded(update);
-        expect(updateMessage.version).to.equal(undefined);
+        expect(updateMessage.version).to.deep.equal({serial: 'update-serial', timestamp: 12345});
+
+        // Non-set
+        const empty = { action: 1 };
+        const emptyMessage = await Message.fromEncoded(empty);
+        expect(emptyMessage.version).to.deep.equal({serial: '', timestamp: undefined});
       });
     });
 
