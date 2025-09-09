@@ -3424,7 +3424,7 @@ export type AnnotationAction = AnnotationActions.ANNOTATION_CREATE | AnnotationA
  * A message received from Ably.
  */
 export type InboundMessage = Omit<Message, 'connectionKey'> &
-  Required<Pick<Message, 'id' | 'timestamp' | 'serial' | 'action' | 'version' | 'annotations'>>;
+  Required<Pick<Message, 'id' | 'timestamp' | 'action' | 'version' | 'annotations'>>;
 
 /**
  * Static utilities related to messages.
