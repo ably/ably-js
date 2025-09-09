@@ -3147,6 +3147,9 @@ export interface SummaryClientIdList {
   /** A list of the clientIds of all clients who have published an annotation with this name (or
    * type, depending on context). */
   clientIds: string[];
+  /** Whether the list of clientIds has been clipped due to exceeding the maximum number of
+   * clients. */
+  clipped?: boolean;
 }
 
 /** The per-name value for the multiple.v1 aggregation method. */
@@ -3160,6 +3163,11 @@ export interface SummaryClientIdCounts {
   /** The sum of the counts from all unidentified clients who have published an annotation with this
    * name, and so who are not included in the clientIds list */
   totalUnidentified: number;
+  /** Whether the list of clientIds has been clipped due to exceeding the maximum number of
+   * clients. */
+  clipped?: boolean;
+  /** The total number of distinct clientIds in the map (equal to length of map if clipped is false). */
+  totalClientIds: number;
 }
 
 /** The summary entry for aggregated annotations that use the total.v1
