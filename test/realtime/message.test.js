@@ -1280,37 +1280,61 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         {
           description: 'should stringify the numeric action',
           action: 0,
-          expectedString: '[Message; action=message.create; version={"serial":""}]',
+          expectedString: '[Message; action=message.create; version={}]',
           expectedJSON: { action: 0 },
         },
         {
           description: 'should stringify the numeric action',
           action: 1,
-          expectedString: '[Message; action=message.update; version={"serial":""}]',
+          expectedString: '[Message; action=message.update; version={}]',
           expectedJSON: { action: 1 },
         },
         {
           description: 'should handle no action provided',
           action: undefined,
-          expectedString: '[Message; action=message.create; version={"serial":""}]',
+          expectedString: '[Message; action=message.create; version={}]',
           expectedJSON: { action: 0 },
         },
         {
           description: 'should handle unknown action provided',
           action: 10,
-          expectedString: '[Message; action=unknown; version={"serial":""}]',
+          expectedString: '[Message; action=unknown; version={}]',
+        },
+        {
+          description: 'should set version from version',
+          action: 0,
+          version: {
+            serial: 'serial-abc',
+            timestamp: 123,
+          },
+          timestamp: 456,
+          serial: 'version-a',
+          expectedString:
+            '[Message; action=message.create; serial=version-a; timestamp=456; version={"serial":"serial-abc","timestamp":123}]',
+          expectedJSON: { action: 0, version: { serial: 'serial-abc', timestamp: 123 } },
+        },
+        {
+          description: 'should set version from serial',
+          action: 0,
+          serial: 'serial-abc',
+          timestamp: 123,
+          expectedString:
+            '[Message; action=message.create; serial=serial-abc; timestamp=123; version={"serial":"serial-abc","timestamp":123}]',
+          expectedJSON: { action: 0, version: { serial: 'serial-abc', timestamp: 123 } },
         },
       ];
-      testCases.forEach(({ description, action, options, expectedString, expectedJSON }) => {
-        it(description, async function () {
-          const values = { action };
-          const message = await Message.fromEncoded(values, {});
-          expect(message.toString()).to.equal(expectedString);
-          if (expectedJSON) {
-            expect((await message.encode({})).toJSON()).to.deep.contains(expectedJSON);
-          }
-        });
-      });
+      testCases.forEach(
+        ({ description, action, serial, timestamp, version, options, expectedString, expectedJSON }) => {
+          it(description, async function () {
+            const values = { action, serial, timestamp, version };
+            const message = await Message.fromEncoded(values, {});
+            expect(message.toString()).to.equal(expectedString);
+            if (expectedJSON) {
+              expect((await message.encode({})).toJSON()).to.deep.contains(expectedJSON);
+            }
+          });
+        },
+      );
 
       /**
        * @spec TM2s
@@ -1343,12 +1367,12 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         // Applying on non-creates
         const update = { action: 1, timestamp: 12345, serial: 'update-serial' };
         const updateMessage = await Message.fromEncoded(update);
-        expect(updateMessage.version).to.deep.equal({serial: 'update-serial', timestamp: 12345});
+        expect(updateMessage.version).to.deep.equal({ serial: 'update-serial', timestamp: 12345 });
 
         // Non-set
         const empty = { action: 1 };
         const emptyMessage = await Message.fromEncoded(empty);
-        expect(emptyMessage.version).to.deep.equal({serial: '', timestamp: undefined});
+        expect(emptyMessage.version).to.deep.equal({});
       });
     });
 

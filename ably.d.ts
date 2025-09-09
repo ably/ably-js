@@ -3224,7 +3224,7 @@ export interface Message {
    * This message's unique serial (an identifier that will be the same in all future
    * updates of this message).
    */
-  serial: string;
+  serial?: string;
   /**
    * The latest version of the message, containing version-specific metadata.
    */
@@ -3320,13 +3320,13 @@ export interface MessageVersion {
    * share the same `Message.serial`). Will differ from the `Message.serial` only if the message has been
    * updated or deleted.
    */
-  serial: string;
+  serial?: string;
   /**
    * The timestamp of the message version.
    *
    * If the `Message.action` is `message.create`, this will equal the `Message.timestamp`.
    */
-  timestamp: number;
+  timestamp?: number;
   /**
    * The client ID of the client that updated the message to this version.
    */
