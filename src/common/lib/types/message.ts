@@ -123,6 +123,16 @@ class Message extends BaseMessage {
     if (!this.version.timestamp && this.timestamp) {
       this.version.timestamp = this.timestamp;
     }
+
+    // TM2u
+    if (!this.annotations) {
+      this.annotations = {};
+    }
+
+    // TM8a
+    if (!this.annotations.summary) {
+      this.annotations.summary = {};
+    }
   }
 
   async encode(options: CipherOptions): Promise<WireMessage> {

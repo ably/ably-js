@@ -1280,25 +1280,25 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         {
           description: 'should stringify the numeric action',
           action: 0,
-          expectedString: '[Message; action=message.create; version={}]',
+          expectedString: '[Message; action=message.create; version={}; annotations={"summary":{}}]',
           expectedJSON: { action: 0 },
         },
         {
           description: 'should stringify the numeric action',
           action: 1,
-          expectedString: '[Message; action=message.update; version={}]',
+          expectedString: '[Message; action=message.update; version={}; annotations={"summary":{}}]',
           expectedJSON: { action: 1 },
         },
         {
           description: 'should handle no action provided',
           action: undefined,
-          expectedString: '[Message; action=message.create; version={}]',
+          expectedString: '[Message; action=message.create; version={}; annotations={"summary":{}}]',
           expectedJSON: { action: 0 },
         },
         {
           description: 'should handle unknown action provided',
           action: 10,
-          expectedString: '[Message; action=unknown; version={}]',
+          expectedString: '[Message; action=unknown; version={}; annotations={"summary":{}}]',
         },
         {
           description: 'should set version from version',
@@ -1310,7 +1310,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           timestamp: 456,
           serial: 'version-a',
           expectedString:
-            '[Message; action=message.create; serial=version-a; timestamp=456; version={"serial":"serial-abc","timestamp":123}]',
+            '[Message; action=message.create; serial=version-a; timestamp=456; version={"serial":"serial-abc","timestamp":123}; annotations={"summary":{}}]',
           expectedJSON: { action: 0, version: { serial: 'serial-abc', timestamp: 123 } },
         },
         {
@@ -1319,7 +1319,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           serial: 'serial-abc',
           timestamp: 123,
           expectedString:
-            '[Message; action=message.create; serial=serial-abc; timestamp=123; version={"serial":"serial-abc","timestamp":123}]',
+            '[Message; action=message.create; serial=serial-abc; timestamp=123; version={"serial":"serial-abc","timestamp":123}; annotations={"summary":{}}]',
           expectedJSON: { action: 0, version: { serial: 'serial-abc', timestamp: 123 } },
         },
       ];
@@ -1338,8 +1338,10 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
 
       /**
        * @spec TM2s
+       * @spec TM2s1
+       * @spec TM2s2
        */
-      it('create message should populate version from serial/timestamp', async function () {
+      it('should populate version from serial/timestamp when decoding message', async function () {
         // Test with serial and timestamp at root level
         const values = { action: 0, timestamp: 12345, serial: 'test-serial' };
         const message = await Message.fromEncoded(values);
@@ -1373,6 +1375,41 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         const empty = { action: 1 };
         const emptyMessage = await Message.fromEncoded(empty);
         expect(emptyMessage.version).to.deep.equal({});
+      });
+
+      /**
+       * @spec TM2u
+       * @spec TM8a
+       */
+      it('should populate annotations and summary when decoding message', async function () {
+        // Test with preset annotations and summary
+        const values = { action: 0, timestamp: 12345, serial: 'test-serial', annotations: { summary: { foo: 'bar' } } };
+        const message = await Message.fromEncoded(values);
+        expect(message.timestamp).to.equal(12345);
+        expect(message.serial).to.equal('test-serial');
+        expect(message.annotations).to.deep.equal({
+          summary: {
+            foo: 'bar',
+          },
+        });
+
+        // Test with annotations set and no summary, should create summary
+        const withoutSummary = { action: 0, timestamp: 12345, serial: 'test-serial', annotations: {} };
+        const messageWithoutSummary = await Message.fromEncoded(withoutSummary);
+        expect(messageWithoutSummary.timestamp).to.equal(12345);
+        expect(messageWithoutSummary.serial).to.equal('test-serial');
+        expect(messageWithoutSummary.annotations).to.deep.equal({
+          summary: {},
+        });
+
+        // Test with neither set, should create both
+        const withoutSummaryAndAnnotations = { action: 0, timestamp: 12345, serial: 'test-serial' };
+        const messageWithoutSummaryAndAnnotations = await Message.fromEncoded(withoutSummaryAndAnnotations);
+        expect(messageWithoutSummaryAndAnnotations.timestamp).to.equal(12345);
+        expect(messageWithoutSummaryAndAnnotations.serial).to.equal('test-serial');
+        expect(messageWithoutSummaryAndAnnotations.annotations).to.deep.equal({
+          summary: {},
+        });
       });
     });
 
