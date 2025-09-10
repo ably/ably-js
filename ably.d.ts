@@ -3356,7 +3356,7 @@ export interface MessageAnnotations {
    * reaction:distinct.v1, the value will be a DistinctValues object. New aggregation
    * methods might be added serverside, hence the 'unknown' part of the sum type.
    */
-  summary?: Record<string, SummaryEntry>;
+  summary: Record<string, SummaryEntry>;
 }
 
 /**

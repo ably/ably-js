@@ -124,13 +124,13 @@ class Message extends BaseMessage {
       this.version.timestamp = this.timestamp;
     }
 
-    // TM2u
     if (!this.annotations) {
-      this.annotations = {};
-    }
-
-    // TM8a
-    if (!this.annotations.summary) {
+      // TM2u
+      this.annotations = {
+        summary: {},
+      };
+    } else if (!this.annotations.summary) {
+      // TM8a
       this.annotations.summary = {};
     }
   }
