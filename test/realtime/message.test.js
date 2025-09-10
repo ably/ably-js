@@ -699,7 +699,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             expect(message.clientId == clientId, 'Client ID was added implicitly').to.be.ok;
           } catch (err) {
             helper.closeAndFinish(done, realtime, err);
-            returnl;
+            return;
           }
           helper.closeAndFinish(done, realtime);
         });
@@ -1542,8 +1542,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                       'Unexpected header value received',
                     );
                     // Check that message with header that doesn't meet filtering condition is not received.
-                    for (msg of filteredMessages) {
-                      expect(msg.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
+                    for (const m of filteredMessages) {
+                      expect(m.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
                     }
 
                     // Check that we receive expected messages on unfiltered channel, including the `end` event message
