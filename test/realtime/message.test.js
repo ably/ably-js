@@ -1411,6 +1411,110 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
           summary: {},
         });
       });
+
+      /**
+       * @spec TM7c1c
+       * @spec TM7d1c
+       */
+      it('should ensure clipped field is set to false where not explicitly provided', async function () {
+        const values = {
+          annotations: {
+            summary: {
+              // all unset, expecting false
+              'reactions:distinct.v1': {
+                foo: { total: 1, clientIds: ['client1'] },
+                bar: { total: 1, clientIds: ['client2'] },
+              },
+              'reactions:unique.v1': {
+                foo: { total: 1, clientIds: ['client2'] },
+                bar: { total: 1, clientIds: ['client3'] },
+              },
+              'reactions:multiple.v1': {
+                foo: { total: 1, clientIds: ['client3'] },
+                bar: { total: 1, clientIds: ['client3'] },
+              },
+              'reactions:flag.v1': { total: 1, clientIds: ['client4'] },
+
+              // some set to true
+              'votes:distinct.v1': {
+                foo: { total: 1, clientIds: ['client1'], clipped: true },
+                bar: { total: 1, clientIds: ['client2'] },
+              },
+              'votes:unique.v1': {
+                foo: { total: 1, clientIds: ['client2'] },
+                bar: { total: 1, clientIds: ['client3'], clipped: true },
+              },
+              'votes:multiple.v1': {
+                foo: { total: 1, clientIds: ['client3'], clipped: true },
+                bar: { total: 1, clientIds: ['client3'] },
+              },
+              'votes:flag.v1': { total: 1, clientIds: ['client4'], clipped: true },
+            },
+          },
+        };
+
+        const message = await Message.fromEncoded(values);
+
+        // Check reactions types (all should have clipped=false when not provided)
+        expect(message.annotations.summary['reactions:distinct.v1']['foo'].clipped).to.equal(
+          false,
+          'reactions:distinct.v1 foo should have clipped=false',
+        );
+        expect(message.annotations.summary['reactions:distinct.v1']['bar'].clipped).to.equal(
+          false,
+          'reactions:distinct.v1 bar should have clipped=false',
+        );
+        expect(message.annotations.summary['reactions:unique.v1']['foo'].clipped).to.equal(
+          false,
+          'reactions:unique.v1 foo should have clipped=false',
+        );
+        expect(message.annotations.summary['reactions:unique.v1']['bar'].clipped).to.equal(
+          false,
+          'reactions:unique.v1 bar should have clipped=false',
+        );
+        expect(message.annotations.summary['reactions:multiple.v1']['foo'].clipped).to.equal(
+          false,
+          'reactions:multiple.v1 foo should have clipped=false',
+        );
+        expect(message.annotations.summary['reactions:multiple.v1']['bar'].clipped).to.equal(
+          false,
+          'reactions:multiple.v1 bar should have clipped=false',
+        );
+        expect(message.annotations.summary['reactions:flag.v1'].clipped).to.equal(
+          false,
+          'reactions:flag.v1 should have clipped=false',
+        );
+
+        // Check votes types (should preserve true values and set false for unset ones)
+        expect(message.annotations.summary['votes:distinct.v1']['foo'].clipped).to.equal(
+          true,
+          'votes:distinct.v1 foo should remain clipped=true',
+        );
+        expect(message.annotations.summary['votes:distinct.v1']['bar'].clipped).to.equal(
+          false,
+          'votes:distinct.v1 bar should have clipped=false',
+        );
+        expect(message.annotations.summary['votes:unique.v1']['foo'].clipped).to.equal(
+          false,
+          'votes:unique.v1 foo should have clipped=false',
+        );
+        expect(message.annotations.summary['votes:unique.v1']['bar'].clipped).to.equal(
+          true,
+          'votes:unique.v1 bar should remain clipped=true',
+        );
+        expect(message.annotations.summary['votes:multiple.v1']['foo'].clipped).to.equal(
+          true,
+          'votes:multiple.v1 foo should remain clipped=true',
+        );
+        expect(message.annotations.summary['votes:multiple.v1']['bar'].clipped).to.equal(
+          false,
+          'votes:multiple.v1 bar should have clipped=false',
+        );
+        expect(message.annotations.summary['votes:flag.v1'].clipped).to.equal(
+          true,
+          'votes:flag.v1 should remain clipped=true',
+        );
+      });
     });
 
     /**

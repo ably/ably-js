@@ -3128,7 +3128,7 @@ export interface SummaryDistinctValues {
 
 /** The summary entry for aggregated annotations that use the unique.v1
  * aggregation method. */
-interface SummaryUniqueValues {
+export interface SummaryUniqueValues {
   [key: string]: SummaryClientIdList;
 }
 
@@ -3149,7 +3149,7 @@ export interface SummaryClientIdList {
   clientIds: string[];
   /** Whether the list of clientIds has been clipped due to exceeding the maximum number of
    * clients. */
-  clipped?: boolean;
+  clipped: boolean;
 }
 
 /** The per-name value for the multiple.v1 aggregation method. */
@@ -3165,7 +3165,7 @@ export interface SummaryClientIdCounts {
   totalUnidentified: number;
   /** Whether the list of clientIds has been clipped due to exceeding the maximum number of
    * clients. */
-  clipped?: boolean;
+  clipped: boolean;
   /** The total number of distinct clientIds in the map (equal to length of map if clipped is false). */
   totalClientIds: number;
 }
