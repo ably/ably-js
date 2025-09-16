@@ -39,11 +39,10 @@ globalThis.testAblyPackage = async function () {
 
   const channel = realtime.channels.get('channel', { modes: ['OBJECT_SUBSCRIBE', 'OBJECT_PUBLISH'] });
   // check Objects can be accessed
-  const objects = channel.objects;
   await channel.attach();
   // expect root to be a LiveMap instance with Objects types defined via the global AblyObjectsTypes interface
   // also checks that we can refer to the Objects types exported from 'ably' by referencing a LiveMap interface
-  const root: Ably.LiveMap<CustomRoot> = await objects.getRoot();
+  const root: Ably.LiveMap<CustomRoot> = await channel.object.get();
 
   // check root has expected LiveMap TypeScript type methods
   const size: number = root.size();
@@ -89,7 +88,7 @@ globalThis.testAblyPackage = async function () {
   });
   counterSubscribeResponse?.unsubscribe();
 
-  // check can provide custom types for the getRoot method, ignoring global AblyObjectsTypes interface
-  const explicitRoot: Ably.LiveMap<ExplicitRootType> = await objects.getRoot<ExplicitRootType>();
+  // check can provide custom types for the object.get() method, ignoring global AblyObjectsTypes interface
+  const explicitRoot: Ably.LiveMap<ExplicitRootType> = await channel.object.get<ExplicitRootType>();
   const someOtherKey: string | undefined = explicitRoot.get('someOtherKey');
 };
