@@ -108,7 +108,7 @@ class Message extends BaseMessage {
   createdAt?: number;
   version?: string;
   operation?: API.Operation;
-  summary?: any; // TODO improve typings after summary structure is finalised
+  summary?: Record<string, API.SummaryEntry>;
 
   expandFields() {
     if (this.action === 'message.create') {
@@ -119,6 +119,22 @@ class Message extends BaseMessage {
       // TM2o
       if (this.timestamp && !this.createdAt) {
         this.createdAt = this.timestamp;
+      }
+    }
+    if (this.summary) {
+      // Ensure clipped field is set to false where not explicitly provided
+      for (const [type, summaryEntry] of Object.entries(this.summary)) {
+        if (type.endsWith(':distinct.v1') || type.endsWith(':unique.v1') || type.endsWith(':multiple.v1')) {
+          for (const [, entry] of Object.entries(summaryEntry)) {
+            if (!entry.clipped) {
+              entry.clipped = false;
+            }
+          }
+        } else if (type.endsWith(':flag.v1')) {
+          if (!(summaryEntry as API.SummaryClientIdList).clipped) {
+            (summaryEntry as API.SummaryClientIdList).clipped = false;
+          }
+        }
       }
     }
   }
