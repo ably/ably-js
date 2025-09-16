@@ -9,6 +9,7 @@ import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectMessage, ObjectOperationAction } from './objectmessage';
 import { ObjectsPool, ROOT_OBJECT_ID } from './objectspool';
+import { PathObjectImpl } from './pathobject';
 import { SyncObjectsDataPool } from './syncobjectsdatapool';
 
 export enum ObjectsEvent {
@@ -79,7 +80,8 @@ export class RealtimeObject {
    * This is useful when working with multiple channels with different underlying data structure.
    * @spec RTO1
    */
-  async get<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
+  // TODO: remove temporary access to old API via getRoot method
+  async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
     this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
 
     // if we're not synced yet, wait for sync sequence to finish before returning root
@@ -91,12 +93,35 @@ export class RealtimeObject {
   }
 
   /**
+   * When called without a type variable, we return a default root type which is based on globally defined interface for Objects feature.
+   * A user can provide an explicit type for the this method to explicitly set the type structure on this particular channel.
+   * This is useful when working with multiple channels with different underlying data structure.
+   * @spec RTO1
+   */
+  async get<T extends Record<string, API.Value>>(): Promise<API.PathObject<API.LiveMap<T>>> {
+    this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
+
+    // if we're not synced yet, wait for sync sequence to finish before returning root
+    if (this._state !== ObjectsState.synced) {
+      await this._eventEmitterInternal.once(ObjectsEvent.synced); // RTO1c
+    }
+
+    const pathObject = new PathObjectImpl<API.LiveMap<T>>(
+      this,
+      // TODO: fix LiveMap<any> when internal LiveMap is updated to support new path based type system
+      this._objectsPool.get(ROOT_OBJECT_ID) as LiveMap<any>,
+      [],
+    );
+    return pathObject;
+  }
+
+  /**
    * Provides access to the synchronous write API for Objects that can be used to batch multiple operations together in a single channel message.
    */
   async batch(callback: BatchCallback): Promise<void> {
     this.throwIfInvalidWriteApiConfiguration();
 
-    const root = await this.get();
+    const root = await this.getRoot();
     const context = new BatchContext(this, root);
 
     try {

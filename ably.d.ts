@@ -1646,7 +1646,7 @@ export type DeregisterCallback = (device: DeviceDetails, callback: StandardCallb
 export type ErrorCallback = (error: ErrorInfo | null) => void;
 
 /**
- * A callback used in {@link LiveObject} to listen for updates to the object.
+ * A callback used in {@link LiveObjectDeprecated} to listen for updates to the object.
  *
  * @param update - The update object describing the changes made to the object.
  */
@@ -1658,7 +1658,7 @@ export type LiveObjectUpdateCallback<T> = (update: T) => void;
 export type ObjectsEventCallback = () => void;
 
 /**
- * The callback used for the lifecycle events emitted by {@link LiveObject}.
+ * The callback used for the lifecycle events emitted by {@link LiveObjectDeprecated}.
  */
 export type LiveObjectLifecycleEventCallback = () => void;
 
@@ -2279,7 +2279,7 @@ declare namespace LiveObjectLifecycleEvents {
 }
 
 /**
- * Describes the events emitted by a {@link LiveObject} object.
+ * Describes the events emitted by a {@link LiveObjectDeprecated} object.
  */
 export type LiveObjectLifecycleEvent = LiveObjectLifecycleEvents.DELETED;
 
@@ -2290,7 +2290,7 @@ export declare interface RealtimeObject {
   /**
    * TODO: how to refer to the "root" object in docs now that we avoid that term in the public API?
    *
-   * Retrieves the root {@link LiveMap} object for Objects on a channel.
+   * Retrieves the root {@link LiveMapDeprecated} object for Objects on a channel.
    *
    * A type parameter can be provided to describe the structure of the Objects on the channel. By default, it uses types from the globally defined `AblyObjectsTypes` interface.
    *
@@ -2312,28 +2312,28 @@ export declare interface RealtimeObject {
    * }
    * ```
    *
-   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMapDeprecated} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    * @experimental
    */
-  get<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>>;
+  get<T extends Record<string, Value>>(): Promise<PathObject<LiveMap<T>>>;
 
   /**
-   * Creates a new {@link LiveMap} object instance with the provided entries.
+   * Creates a new {@link LiveMapDeprecated} object instance with the provided entries.
    *
-   * @param entries - The initial entries for the new {@link LiveMap} object.
-   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @param entries - The initial entries for the new {@link LiveMapDeprecated} object.
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMapDeprecated} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    * @experimental
    */
-  createMap<T extends LiveMapType>(entries?: T): Promise<LiveMap<T>>;
+  createMap<T extends LiveMapType>(entries?: T): Promise<LiveMapDeprecated<T>>;
 
   /**
-   * Creates a new {@link LiveCounter} object instance with the provided `count` value.
+   * Creates a new {@link LiveCounterDeprecated} object instance with the provided `count` value.
    *
-   * @param count - The initial value for the new {@link LiveCounter} object.
-   * @returns A promise which, upon success, will be fulfilled with a {@link LiveCounter} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   * @param count - The initial value for the new {@link LiveCounterDeprecated} object.
+   * @returns A promise which, upon success, will be fulfilled with a {@link LiveCounterDeprecated} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    * @experimental
    */
-  createCounter(count?: number): Promise<LiveCounter>;
+  createCounter(count?: number): Promise<LiveCounterDeprecated>;
 
   /**
    * Allows you to group multiple operations together and send them to the Ably service in a single channel message.
@@ -2388,10 +2388,174 @@ declare global {
 }
 
 /**
- * Represents the type of data stored in a {@link LiveMap}.
- * It maps string keys to primitive values ({@link PrimitiveObjectValue}), or other {@link LiveObject | LiveObjects}.
+ * Represents the type of data stored in a {@link LiveMapDeprecated}.
+ * It maps string keys to primitive values ({@link PrimitiveObjectValue}), or other {@link LiveObjectDeprecated | LiveObjects}.
  */
-export type LiveMapType = { [key: string]: PrimitiveObjectValue | LiveMap<LiveMapType> | LiveCounter | undefined };
+export type LiveMapType = {
+  [key: string]: PrimitiveObjectValue | LiveMapDeprecated<LiveMapType> | LiveCounterDeprecated | undefined;
+};
+
+// --- VALUES
+
+// Primitive types that can be stored in collection types.
+// Includes JSON-serialisable data so that maps and lists
+// can hold plain JS values.
+export type Primitive =
+  | string
+  | number
+  | boolean
+  | Buffer
+  | ArrayBuffer
+  // JSON-serialisable primitive values
+  | JsonArray
+  | JsonObject;
+
+// Unique symbol for nominal typing within TypeScript's structural type system.
+// This prevents structural compatibility between LiveObject types.
+declare const __livetype: unique symbol;
+
+// Branded interfaces that enables TypeScript to distinguish
+// between LiveObject types even when they have identical structure.
+// Enables PathObject<T> to dispatch to correct method sets via conditional types.
+
+export interface LiveMap<_T extends Record<string, Value> = Record<string, Value>> {
+  [__livetype]: 'LiveMap';
+}
+
+export interface LiveCounter {
+  [__livetype]: 'LiveCounter';
+}
+
+// Type union that matches any LiveObject type that can be mutated, subscribed to, etc.
+export type LiveObject = LiveMap | LiveCounter;
+
+// Type union that defines the base set of allowed types that can be stored in collection types.
+// Describes the set of all possible values that can parameterize PathObject.
+// This is the canonical union used when we cannot infer a narrower type.
+export type Value = LiveObject | Primitive;
+
+// LiveObject type class implementations.
+// Currently only defines the static method used to create branded value types
+// which can be provided as an argument to mutation methods.
+
+export class LiveMap {
+  static create<T extends Record<string, Value>>(initialData?: T): LiveMap<T extends Record<string, Value> ? T : {}>;
+}
+
+export class LiveCounter {
+  static create(initialValue: number = 0): LiveCounter;
+}
+
+// --- PATH OBJECT
+
+// Collection types support obtaining a PathObject with a fully-qualified string path,
+// which is evaluated from the current path.
+// Using this method loses rich compile-time type information.
+interface PathObjectCollectionMethods {
+  at<T extends Value = Value>(path: string): PathObject<T>;
+}
+
+// PathObjectBase defines the set of common methods on a PathObject
+// that are present regardless of the underlying type, which specified
+// in type parameter T.
+interface PathObjectBase<_T extends Value> {
+  // the fully-qualified string path that this PathObject represents
+  path(): string;
+  compact(): any;
+}
+
+interface LiveMapPathObjectCollectionMethods<T extends Record<string, Value> = Record<string, Value>> {
+  entries(): IterableIterator<[keyof T, PathObject<T[keyof T]>]>;
+  keys(): IterableIterator<keyof T>;
+  values(): IterableIterator<PathObject<T[keyof T]>>;
+  size(): number;
+}
+
+export interface LiveMapPathObject<T extends Record<string, Value> = Record<string, Value>>
+  extends PathObjectBase<LiveMap<T>>,
+    LiveMapPathObjectCollectionMethods<T>,
+    // if the underlying instance at a path cannot be resolved
+    // when an operation method is invoked, it will throw.
+    LiveMapOperations<T>,
+    PathObjectCollectionMethods {
+  // Navigate to a child path within the collection by obtaining a PathObject for that path.
+  // The next path segment in a LiveMap is identified with a string key.
+  get<K extends keyof T & string>(key: K): PathObject<T[K]>;
+}
+
+export interface LiveCounterPathObject
+  extends PathObjectBase<LiveCounter>,
+    // if the underlying instance at a path cannot be resolved
+    // when an operation method is invoked, it will throw.
+    LiveCounterOperations {
+  // Get the current value of the counter instance currently at this path.
+  // If the path does not resolve to any specific instance, returns `undefined`.
+  value(): number | undefined;
+}
+
+export interface PrimitivePathObject<T extends Primitive = Primitive> extends PathObjectBase<Primitive> {
+  // Get the current value of the primitive currently at this path.
+  // If the path does not resolve to any specific entry, returns `undefined`.
+  value(): T | undefined;
+}
+
+interface AnyPathObjectCollectionMethods {
+  // LiveMap collection methods
+  entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, PathObject<T[keyof T]>]>;
+  keys<T extends Record<string, Value>>(): IterableIterator<keyof T>;
+  values<T extends Record<string, Value>>(): IterableIterator<PathObject<T[keyof T]>>;
+  size(): number;
+}
+
+// When the underlying type of a PathObject is not known, provide a type
+// which defines all possible methods. The methods individually support type
+// parameters for specifying the expected underlying type.
+export interface AnyPathObject<T extends Value = Value>
+  extends PathObjectBase<T>,
+    AnyOperations,
+    AnyPathObjectCollectionMethods,
+    PathObjectCollectionMethods {
+  // Navigate to a child path within the collection by obtaining a PathObject for that path.
+  // The next path segment in a collection is identified with a string key.
+  get<T extends Value = Value>(key: string): PathObject<T>;
+
+  // Get the current value of the LiveCounter or primitive currently at this path.
+  // If the path does not resolve to any specific entry, returns `undefined`.
+  value<T extends number | Primitive = number | Primitive>(): T | undefined;
+}
+
+// PathObject wraps a reference to a path from root object on a channel.
+// The type parameter specifies the underlying type defined at that path,
+// and is used to infer the correct set of methods available for that type.
+export type PathObject<T extends Value = Value> = [T] extends [LiveMap<infer T>]
+  ? LiveMapPathObject<T>
+  : [T] extends [LiveCounter]
+    ? LiveCounterPathObject
+    : [T] extends [Primitive]
+      ? PrimitivePathObject<T>
+      : AnyPathObject<T>;
+
+// --- OPERATIONS
+
+export interface LiveMapOperations<T extends Record<string, Value> = Record<string, Value>> {
+  set<K extends keyof T & string>(key: K, value: T[K]): Promise<void>;
+  remove(key: keyof T & string): Promise<void>;
+}
+
+export interface LiveCounterOperations {
+  increment(amount: number): Promise<void>;
+  decrement(amount: number): Promise<void>;
+}
+
+export interface AnyOperations {
+  // LiveMap operations
+  set<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string, value: T[keyof T]): Promise<void>;
+  remove<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string): Promise<void>;
+
+  // LiveCounter operations
+  increment(amount: number): Promise<void>;
+  decrement(amount: number): Promise<void>;
+}
 
 /**
  * The default type for the `root` object for Objects on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
@@ -2435,14 +2599,14 @@ export declare interface BatchContext {
 }
 
 /**
- * A wrapper around the {@link LiveMap} object that enables batching operations inside a {@link BatchCallback}.
+ * A wrapper around the {@link LiveMapDeprecated} object that enables batching operations inside a {@link BatchCallback}.
  */
 export declare interface BatchContextLiveMap<T extends LiveMapType> {
   /**
-   * Mirrors the {@link LiveMap.get} method and returns the value associated with a key in the map.
+   * Mirrors the {@link LiveMapDeprecated.get} method and returns the value associated with a key in the map.
    *
    * @param key - The key to retrieve the value for.
-   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @returns A {@link LiveObjectDeprecated}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObjectDeprecated} has been deleted. Always `undefined` if this map object is deleted.
    * @experimental
    */
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
@@ -2455,11 +2619,11 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
   size(): number;
 
   /**
-   * Similar to the {@link LiveMap.set} method, but instead, it adds an operation to set a key in the map with the provided value to the current batch, to be sent in a single message to the Ably service.
+   * Similar to the {@link LiveMapDeprecated.set} method, but instead, it adds an operation to set a key in the map with the provided value to the current batch, to be sent in a single message to the Ably service.
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -2468,11 +2632,11 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
   set<TKey extends keyof T & string>(key: TKey, value: T[TKey]): void;
 
   /**
-   * Similar to the {@link LiveMap.remove} method, but instead, it adds an operation to remove a key from the map to the current batch, to be sent in a single message to the Ably service.
+   * Similar to the {@link LiveMapDeprecated.remove} method, but instead, it adds an operation to remove a key from the map to the current batch, to be sent in a single message to the Ably service.
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @experimental
@@ -2481,7 +2645,7 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
 }
 
 /**
- * A wrapper around the {@link LiveCounter} object that enables batching operations inside a {@link BatchCallback}.
+ * A wrapper around the {@link LiveCounterDeprecated} object that enables batching operations inside a {@link BatchCallback}.
  */
 export declare interface BatchContextLiveCounter {
   /**
@@ -2492,11 +2656,11 @@ export declare interface BatchContextLiveCounter {
   value(): number;
 
   /**
-   * Similar to the {@link LiveCounter.increment} method, but instead, it adds an operation to increment the counter value to the current batch, to be sent in a single message to the Ably service.
+   * Similar to the {@link LiveCounterDeprecated.increment} method, but instead, it adds an operation to increment the counter value to the current batch, to be sent in a single message to the Ably service.
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param amount - The amount by which to increase the counter value.
    * @experimental
@@ -2517,16 +2681,16 @@ export declare interface BatchContextLiveCounter {
  * Conflicts in a LiveMap are automatically resolved with last-write-wins (LWW) semantics,
  * meaning that if two clients update the same key in the map, the update with the most recent timestamp wins.
  *
- * Keys must be strings. Values can be another {@link LiveObject}, or a primitive type, such as a string, number, boolean, JSON-serializable object or array, or binary data (see {@link PrimitiveObjectValue}).
+ * Keys must be strings. Values can be another {@link LiveObjectDeprecated}, or a primitive type, such as a string, number, boolean, JSON-serializable object or array, or binary data (see {@link PrimitiveObjectValue}).
  */
-export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveMapUpdate<T>> {
+export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveObjectDeprecated<LiveMapUpdate<T>> {
   /**
-   * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map or if the associated {@link LiveObject} has been deleted.
+   * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map or if the associated {@link LiveObjectDeprecated} has been deleted.
    *
    * Always returns undefined if this map object is deleted.
    *
    * @param key - The key to retrieve the value for.
-   * @returns A {@link LiveObject}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @returns A {@link LiveObjectDeprecated}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the associated {@link LiveObjectDeprecated} has been deleted. Always `undefined` if this map object is deleted.
    * @experimental
    */
   get<TKey extends keyof T & string>(key: TKey): T[TKey] | undefined;
@@ -2564,7 +2728,7 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -2578,7 +2742,7 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2588,7 +2752,7 @@ export declare interface LiveMap<T extends LiveMapType> extends LiveObject<LiveM
 }
 
 /**
- * Represents an update to a {@link LiveMap} object, describing the keys that were updated or removed.
+ * Represents an update to a {@link LiveMapDeprecated} object, describing the keys that were updated or removed.
  */
 export declare interface LiveMapUpdate<T extends LiveMapType> extends LiveObjectUpdate {
   /**
@@ -2600,7 +2764,7 @@ export declare interface LiveMapUpdate<T extends LiveMapType> extends LiveObject
 }
 
 /**
- * Represents a primitive value that can be stored in a {@link LiveMap}.
+ * Represents a primitive value that can be stored in a {@link LiveMapDeprecated}.
  *
  * For binary data, the resulting type depends on the platform (`Buffer` in Node.js, `ArrayBuffer` elsewhere).
  */
@@ -2629,7 +2793,7 @@ export type JsonObject = { [prop: string]: Json | undefined };
 /**
  * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.
  */
-export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
+export declare interface LiveCounterDeprecated extends LiveObjectDeprecated<LiveCounterUpdate> {
   /**
    * Returns the current value of the counter.
    *
@@ -2642,7 +2806,7 @@ export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObject.subscribe} method.
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param amount - The amount by which to increase the counter value.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2651,7 +2815,7 @@ export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
   increment(amount: number): Promise<void>;
 
   /**
-   * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
+   * An alias for calling {@link LiveCounterDeprecated.increment | LiveCounter.increment(-amount)}
    *
    * @param amount - The amount by which to decrease the counter value.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2661,7 +2825,7 @@ export declare interface LiveCounter extends LiveObject<LiveCounterUpdate> {
 }
 
 /**
- * Represents an update to a {@link LiveCounter} object.
+ * Represents an update to a {@link LiveCounterDeprecated} object.
  */
 export declare interface LiveCounterUpdate extends LiveObjectUpdate {
   /**
@@ -2678,7 +2842,7 @@ export declare interface LiveCounterUpdate extends LiveObjectUpdate {
 /**
  * Describes the common interface for all conflict-free data structures supported by the Objects.
  */
-export declare interface LiveObject<TUpdate extends LiveObjectUpdate = LiveObjectUpdate> {
+export declare interface LiveObjectDeprecated<TUpdate extends LiveObjectUpdate = LiveObjectUpdate> {
   /**
    * Registers a listener that is called each time this LiveObject is updated.
    *
