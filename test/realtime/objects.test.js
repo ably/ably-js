@@ -14,7 +14,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
   const createPM = Ably.makeProtocolMessageFromDeserialized({ ObjectsPlugin });
   const objectsFixturesChannel = 'objects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
-  const gcIntervalOriginal = ObjectsPlugin.RealtimeObjects._DEFAULTS.gcInterval;
+  const gcIntervalOriginal = ObjectsPlugin.RealtimeObject._DEFAULTS.gcInterval;
 
   function RealtimeWithObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { Objects: ObjectsPlugin } });
@@ -164,11 +164,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
    */
   async function waitFixtureChannelIsReady(client) {
     const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
-    const objects = channel.objects;
     const expectedKeys = ObjectsHelper.fixtureRootKeys();
 
     await channel.attach();
-    const root = await objects.getRoot();
+    const root = await channel.object.get();
 
     await Promise.all(expectedKeys.map((key) => (root.get(key) ? undefined : waitForMapKeyUpdate(root, key))));
   }
@@ -194,11 +193,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
     describe('Realtime without Objects plugin', () => {
       /** @nospec */
-      it("throws an error when attempting to access the channel's `objects` property", async function () {
+      it("throws an error when attempting to access the channel's `object` property", async function () {
         const helper = this.test.helper;
         const client = helper.AblyRealtime({ autoConnect: false });
         const channel = client.channels.get('channel');
-        expect(() => channel.objects).to.throw('Objects plugin not provided');
+        expect(() => channel.object).to.throw('Objects plugin not provided');
       });
 
       /** @nospec */
@@ -272,40 +271,38 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
     describe('Realtime with Objects plugin', () => {
       /** @nospec */
-      it("returns RealtimeObjects class instance when accessing channel's `objects` property", async function () {
+      it("returns RealtimeObject class instance when accessing channel's `object` property", async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper, { autoConnect: false });
         const channel = client.channels.get('channel');
-        expectInstanceOf(channel.objects, 'RealtimeObjects');
+        expectInstanceOf(channel.object, 'RealtimeObject');
       });
 
       /** @nospec */
-      it('getRoot() returns LiveMap instance', async function () {
+      it('RealtimeObject.get() returns LiveMap instance', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
 
           await channel.attach();
-          const root = await objects.getRoot();
+          const root = await channel.object.get();
 
           expectInstanceOf(root, 'LiveMap', 'root object should be of LiveMap type');
         }, client);
       });
 
       /** @nospec */
-      it('getRoot() returns LiveObject with id "root"', async function () {
+      it('RealtimeObject.get() returns LiveObject with id "root"', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
 
           await channel.attach();
-          const root = await objects.getRoot();
+          const root = await channel.object.get();
 
           helper.recordPrivateApi('call.LiveObject.getObjectId');
           expect(root.getObjectId()).to.equal('root', 'root object should have an object id "root"');
@@ -313,89 +310,85 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       /** @nospec */
-      it('getRoot() returns empty root when no objects exist on a channel', async function () {
+      it('RealtimeObject.get() returns empty root when no objects exist on a channel', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
 
           await channel.attach();
-          const root = await objects.getRoot();
+          const root = await channel.object.get();
 
           expect(root.size()).to.equal(0, 'Check root has no keys');
         }, client);
       });
 
       /** @nospec */
-      it('getRoot() waits for initial OBJECT_SYNC to be completed before resolving', async function () {
+      it('RealtimeObject.get() waits for initial OBJECT_SYNC to be completed before resolving', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
 
-          const getRootPromise = objects.getRoot();
+          const getPromise = channel.object.get();
 
-          let getRootResolved = false;
-          getRootPromise.then(() => {
-            getRootResolved = true;
+          let getResolved = false;
+          getPromise.then(() => {
+            getResolved = true;
           });
 
-          // give a chance for getRoot() to resolve and proc its handler. it should not
+          // give a chance for RealtimeObject.get() to resolve and proc its handler. it should not
           helper.recordPrivateApi('call.Platform.nextTick');
           await new Promise((res) => nextTick(res));
-          expect(getRootResolved, 'Check getRoot() is not resolved until OBJECT_SYNC sequence is completed').to.be
-            .false;
+          expect(getResolved, 'Check RealtimeObject.get() is not resolved until OBJECT_SYNC sequence is completed').to
+            .be.false;
 
           await channel.attach();
 
           // should resolve eventually after attach
-          await getRootPromise;
+          await getPromise;
         }, client);
       });
 
       /** @nospec */
-      it('getRoot() resolves immediately when OBJECT_SYNC sequence is completed', async function () {
+      it('RealtimeObject.get() resolves immediately when OBJECT_SYNC sequence is completed', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
 
           await channel.attach();
           // wait for sync sequence to complete by accessing root for the first time
-          await objects.getRoot();
+          await channel.object.get();
 
           let resolvedImmediately = false;
-          objects.getRoot().then(() => {
+          channel.object.get().then(() => {
             resolvedImmediately = true;
           });
 
-          // wait for next tick for getRoot() handler to process
+          // wait for next tick for RealtimeObject.get() handler to process
           helper.recordPrivateApi('call.Platform.nextTick');
           await new Promise((res) => nextTick(res));
 
-          expect(resolvedImmediately, 'Check getRoot() is resolved on next tick').to.be.true;
+          expect(resolvedImmediately, 'Check RealtimeObject.get() is resolved on next tick').to.be.true;
         }, client);
       });
 
       /** @nospec */
-      it('getRoot() waits for OBJECT_SYNC with empty cursor before resolving', async function () {
+      it('RealtimeObject.get() waits for OBJECT_SYNC with empty cursor before resolving', async function () {
         const helper = this.test.helper;
         const objectsHelper = new ObjectsHelper(helper);
         const client = RealtimeWithObjects(helper);
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
 
           await channel.attach();
           // wait for initial sync sequence to complete
-          await objects.getRoot();
+          await channel.object.get();
 
           // inject OBJECT_SYNC message to emulate start of a new sequence
           await objectsHelper.processObjectStateMessageOnChannel({
@@ -404,18 +397,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             syncSerial: 'serial:cursor',
           });
 
-          let getRootResolved = false;
+          let getResolved = false;
           let root;
-          objects.getRoot().then((value) => {
-            getRootResolved = true;
+          channel.object.get().then((value) => {
+            getResolved = true;
             root = value;
           });
 
-          // wait for next tick to check that getRoot() promise handler didn't proc
+          // wait for next tick to check that RealtimeObject.get() promise handler didn't proc
           helper.recordPrivateApi('call.Platform.nextTick');
           await new Promise((res) => nextTick(res));
 
-          expect(getRootResolved, 'Check getRoot() is not resolved while OBJECT_SYNC is in progress').to.be.false;
+          expect(getResolved, 'Check RealtimeObject.get() is not resolved while OBJECT_SYNC is in progress').to.be
+            .false;
 
           // inject final OBJECT_SYNC message
           await objectsHelper.processObjectStateMessageOnChannel({
@@ -431,11 +425,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             ],
           });
 
-          // wait for next tick for getRoot() handler to process
+          // wait for next tick for RealtimeObject.get() handler to process
           helper.recordPrivateApi('call.Platform.nextTick');
           await new Promise((res) => nextTick(res));
 
-          expect(getRootResolved, 'Check getRoot() is resolved when OBJECT_SYNC sequence has ended').to.be.true;
+          expect(getResolved, 'Check RealtimeObject.get() is resolved when OBJECT_SYNC sequence has ended').to.be.true;
           expect(root.get('key')).to.equal(1, 'Check new root after OBJECT_SYNC sequence has expected key');
         }, client);
       });
@@ -502,16 +496,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await waitFixtureChannelIsReady(client);
 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
-            const objects = channel.objects;
 
             await channel.attach();
-            const root = await objects.getRoot();
+            const root = await channel.object.get();
 
             const counterKeys = ['emptyCounter', 'initialValueCounter', 'referencedCounter'];
             const mapKeys = ['emptyMap', 'referencedMap', 'valuesMap'];
             const rootKeysCount = counterKeys.length + mapKeys.length;
 
-            expect(root, 'Check getRoot() is resolved when OBJECT_SYNC sequence ends').to.exist;
+            expect(root, 'Check RealtimeObject.get() is resolved when OBJECT_SYNC sequence ends').to.exist;
             expect(root.size()).to.equal(rootKeysCount, 'Check root has correct number of keys');
 
             counterKeys.forEach((key) => {
@@ -554,7 +547,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'OBJECT_SYNC sequence builds object tree with all operations applied',
           action: async (ctx) => {
-            const { root, objects, helper, clientOptions, channelName } = ctx;
+            const { root, realtimeObject, helper, clientOptions, channelName } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
@@ -562,9 +555,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             ]);
 
             // MAP_CREATE
-            const map = await objects.createMap({ shouldStay: 'foo', shouldDelete: 'bar' });
+            const map = await realtimeObject.createMap({ shouldStay: 'foo', shouldDelete: 'bar' });
             // COUNTER_CREATE
-            const counter = await objects.createCounter(1);
+            const counter = await realtimeObject.createCounter(1);
 
             await Promise.all([root.set('map', map), root.set('counter', counter), objectsCreatedPromise]);
 
@@ -589,10 +582,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
               const channel2 = client2.channels.get(channelName, channelOptionsWithObjects());
-              const objects2 = channel2.objects;
 
               await channel2.attach();
-              const root2 = await objects2.getRoot();
+              const root2 = await channel2.object.get();
 
               expect(root2.get('counter'), 'Check counter exists').to.exist;
               expect(root2.get('counter').value()).to.equal(11, 'Check counter has correct value');
@@ -615,15 +607,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_SYNC sequence does not change references to existing objects',
           action: async (ctx) => {
-            const { root, objects, helper, channel } = ctx;
+            const { root, realtimeObject, helper, channel } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
 
-            const map = await objects.createMap();
-            const counter = await objects.createCounter();
+            const map = await realtimeObject.createMap();
+            const counter = await realtimeObject.createCounter();
             await Promise.all([root.set('map', map), root.set('counter', counter), objectsCreatedPromise]);
             await channel.detach();
 
@@ -632,7 +624,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await channel.attach();
             await objectSyncPromise;
 
-            const newRootRef = await channel.objects.getRoot();
+            const newRootRef = await channel.object.get();
             const newMapRef = newRootRef.get('map');
             const newCounterRef = newRootRef.get('counter');
 
@@ -651,10 +643,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await waitFixtureChannelIsReady(client);
 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
-            const objects = channel.objects;
 
             await channel.attach();
-            const root = await objects.getRoot();
+            const root = await channel.object.get();
 
             const counters = [
               { key: 'emptyCounter', value: 0 },
@@ -678,10 +669,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await waitFixtureChannelIsReady(client);
 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
-            const objects = channel.objects;
 
             await channel.attach();
-            const root = await objects.getRoot();
+            const root = await channel.object.get();
 
             const emptyMap = root.get('emptyMap');
             expect(emptyMap.size()).to.equal(0, 'Check empty map in root has no keys');
@@ -747,10 +737,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await waitFixtureChannelIsReady(client);
 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
-            const objects = channel.objects;
 
             await channel.attach();
-            const root = await objects.getRoot();
+            const root = await channel.object.get();
 
             const referencedCounter = root.get('referencedCounter');
             const referencedMap = root.get('referencedMap');
@@ -941,7 +930,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'OBJECT_SYNC sequence with "tombstone=true" for an object sets "tombstoneAt" from "serialTimestamp"',
           action: async (ctx) => {
-            const { helper, objectsHelper, channel, objects } = ctx;
+            const { helper, objectsHelper, channel, realtimeObject } = ctx;
 
             const counterId = objectsHelper.fakeCounterObjectId();
             const serialTimestamp = 1234567890;
@@ -968,8 +957,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               ],
             });
 
-            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
-            const obj = objects._objectsPool.get(counterId);
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
+            const obj = realtimeObject._objectsPool.get(counterId);
             expect(obj, 'Check object added to the pool OBJECT_SYNC sequence with "tombstone=true"').to.exist;
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
             expect(obj.tombstonedAt()).to.equal(
@@ -983,7 +972,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'OBJECT_SYNC sequence with "tombstone=true" for an object sets "tombstoneAt" using local clock if missing "serialTimestamp"',
           action: async (ctx) => {
-            const { helper, objectsHelper, channel, objects } = ctx;
+            const { helper, objectsHelper, channel, realtimeObject } = ctx;
 
             const tsBeforeMsg = Date.now();
             const counterId = objectsHelper.fakeCounterObjectId();
@@ -1011,8 +1000,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             const tsAfterMsg = Date.now();
 
-            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
-            const obj = objects._objectsPool.get(counterId);
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
+            const obj = realtimeObject._objectsPool.get(counterId);
             expect(obj, 'Check object added to the pool OBJECT_SYNC sequence with "tombstone=true"').to.exist;
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
             expect(
@@ -2132,7 +2121,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_DELETE for an object sets "tombstoneAt" from "serialTimestamp"',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, helper, objects } = ctx;
+            const { root, objectsHelper, channelName, channel, helper, realtimeObject } = ctx;
 
             const objectCreatedPromise = waitForMapKeyUpdate(root, 'object');
             const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -2154,8 +2143,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               state: [objectsHelper.objectDeleteOp({ objectId })],
             });
 
-            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
-            const obj = objects._objectsPool.get(objectId);
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
+            const obj = realtimeObject._objectsPool.get(objectId);
             helper.recordPrivateApi('call.LiveObject.isTombstoned');
             expect(obj.isTombstoned()).to.equal(true, `Check object is tombstoned after OBJECT_DELETE`);
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
@@ -2169,7 +2158,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_DELETE for an object sets "tombstoneAt" using local clock if missing "serialTimestamp"',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, helper, objects } = ctx;
+            const { root, objectsHelper, channelName, channel, helper, realtimeObject } = ctx;
 
             const objectCreatedPromise = waitForMapKeyUpdate(root, 'object');
             const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -2192,8 +2181,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             const tsAfterMsg = Date.now();
 
-            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
-            const obj = objects._objectsPool.get(objectId);
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
+            const obj = realtimeObject._objectsPool.get(objectId);
             helper.recordPrivateApi('call.LiveObject.isTombstoned');
             expect(obj.isTombstoned()).to.equal(true, `Check object is tombstoned after OBJECT_DELETE`);
             helper.recordPrivateApi('call.LiveObject.tombstonedAt');
@@ -3076,11 +3065,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'RealtimeObjects.createCounter sends COUNTER_CREATE operation',
+          description: 'RealtimeObject.createCounter sends COUNTER_CREATE operation',
           action: async (ctx) => {
-            const { objects } = ctx;
+            const { realtimeObject } = ctx;
 
-            const counters = await Promise.all(countersFixtures.map(async (x) => objects.createCounter(x.count)));
+            const counters = await Promise.all(
+              countersFixtures.map(async (x) => realtimeObject.createCounter(x.count)),
+            );
 
             for (let i = 0; i < counters.length; i++) {
               const counter = counters[i];
@@ -3098,12 +3089,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveCounter created with RealtimeObjects.createCounter can be assigned to the object tree',
+          description: 'LiveCounter created with RealtimeObject.createCounter can be assigned to the object tree',
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const counter = await objects.createCounter(1);
+            const counter = await realtimeObject.createCounter(1);
             await root.set('counter', counter);
             await counterCreatedPromise;
 
@@ -3126,15 +3117,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'RealtimeObjects.createCounter can return LiveCounter with initial value without applying CREATE operation',
+            'RealtimeObject.createCounter can return LiveCounter with initial value without applying CREATE operation',
           action: async (ctx) => {
-            const { objects, helper } = ctx;
+            const { realtimeObject, helper } = ctx;
 
             // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
-            helper.recordPrivateApi('replace.RealtimeObjects.publish');
-            objects.publish = () => {};
+            helper.recordPrivateApi('replace.RealtimeObject.publish');
+            realtimeObject.publish = () => {};
 
-            const counter = await objects.createCounter(1);
+            const counter = await realtimeObject.createCounter(1);
             expect(counter.value()).to.equal(1, `Check counter has expected initial value`);
           },
         },
@@ -3142,14 +3133,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           allTransportsAndProtocols: true,
           description:
-            'RealtimeObjects.createCounter can return LiveCounter with initial value from applied CREATE operation',
+            'RealtimeObject.createCounter can return LiveCounter with initial value from applied CREATE operation',
           action: async (ctx) => {
-            const { objects, objectsHelper, helper, channel } = ctx;
+            const { realtimeObject, objectsHelper, helper, channel } = ctx;
 
             // instead of sending CREATE op to the realtime, echo it immediately to the client
             // with forged initial value so we can check that counter gets initialized with a value from a CREATE op
-            helper.recordPrivateApi('replace.RealtimeObjects.publish');
-            objects.publish = async (objectMessages) => {
+            helper.recordPrivateApi('replace.RealtimeObject.publish');
+            realtimeObject.publish = async (objectMessages) => {
               const counterId = objectMessages[0].operation.objectId;
               // this should result execute regular operation application procedure and create an object in the pool with forged initial value
               await objectsHelper.processObjectOperationMessageOnChannel({
@@ -3160,7 +3151,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             };
 
-            const counter = await objects.createCounter(1);
+            const counter = await realtimeObject.createCounter(1);
 
             // counter should be created with forged initial value instead of the actual one
             expect(counter.value()).to.equal(
@@ -3172,16 +3163,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'initial value is not double counted for LiveCounter from RealtimeObjects.createCounter when CREATE op is received',
+            'initial value is not double counted for LiveCounter from RealtimeObject.createCounter when CREATE op is received',
           action: async (ctx) => {
-            const { objects, objectsHelper, helper, channel } = ctx;
+            const { realtimeObject, objectsHelper, helper, channel } = ctx;
 
             // prevent publishing of ops to realtime so we can guarantee order of operations
-            helper.recordPrivateApi('replace.RealtimeObjects.publish');
-            objects.publish = () => {};
+            helper.recordPrivateApi('replace.RealtimeObject.publish');
+            realtimeObject.publish = () => {};
 
             // create counter locally, should have an initial value set
-            const counter = await objects.createCounter(1);
+            const counter = await realtimeObject.createCounter(1);
             helper.recordPrivateApi('call.LiveObject.getObjectId');
             const counterId = counter.getObjectId();
 
@@ -3201,47 +3192,62 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'RealtimeObjects.createCounter throws on invalid input',
+          description: 'RealtimeObject.createCounter throws on invalid input',
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
-            await expectToThrowAsync(async () => objects.createCounter(null), 'Counter value should be a valid number');
             await expectToThrowAsync(
-              async () => objects.createCounter(Number.NaN),
+              async () => realtimeObject.createCounter(null),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => objects.createCounter(Number.POSITIVE_INFINITY),
+              async () => realtimeObject.createCounter(Number.NaN),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => objects.createCounter(Number.NEGATIVE_INFINITY),
+              async () => realtimeObject.createCounter(Number.POSITIVE_INFINITY),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => objects.createCounter('foo'),
+              async () => realtimeObject.createCounter(Number.NEGATIVE_INFINITY),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => objects.createCounter(BigInt(1)),
+              async () => realtimeObject.createCounter('foo'),
               'Counter value should be a valid number',
             );
-            await expectToThrowAsync(async () => objects.createCounter(true), 'Counter value should be a valid number');
             await expectToThrowAsync(
-              async () => objects.createCounter(Symbol()),
+              async () => realtimeObject.createCounter(BigInt(1)),
               'Counter value should be a valid number',
             );
-            await expectToThrowAsync(async () => objects.createCounter({}), 'Counter value should be a valid number');
-            await expectToThrowAsync(async () => objects.createCounter([]), 'Counter value should be a valid number');
-            await expectToThrowAsync(async () => objects.createCounter(root), 'Counter value should be a valid number');
+            await expectToThrowAsync(
+              async () => realtimeObject.createCounter(true),
+              'Counter value should be a valid number',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createCounter(Symbol()),
+              'Counter value should be a valid number',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createCounter({}),
+              'Counter value should be a valid number',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createCounter([]),
+              'Counter value should be a valid number',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createCounter(root),
+              'Counter value should be a valid number',
+            );
           },
         },
 
         {
           allTransportsAndProtocols: true,
-          description: 'RealtimeObjects.createMap sends MAP_CREATE operation with primitive values',
+          description: 'RealtimeObject.createMap sends MAP_CREATE operation with primitive values',
           action: async (ctx) => {
-            const { objects, helper } = ctx;
+            const { realtimeObject, helper } = ctx;
 
             const maps = await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
@@ -3262,7 +3268,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                     }, {})
                   : undefined;
 
-                return objects.createMap(entries);
+                return realtimeObject.createMap(entries);
               }),
             );
 
@@ -3293,9 +3299,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'RealtimeObjects.createMap sends MAP_CREATE operation with reference to another LiveObject',
+          description: 'RealtimeObject.createMap sends MAP_CREATE operation with reference to another LiveObject',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, objects } = ctx;
+            const { root, objectsHelper, channelName, realtimeObject } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
@@ -3316,7 +3322,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const counter = root.get('counter');
             const map = root.get('map');
 
-            const newMap = await objects.createMap({ counter, map });
+            const newMap = await realtimeObject.createMap({ counter, map });
 
             expect(newMap, 'Check map exists').to.exist;
             expectInstanceOf(newMap, 'LiveMap', 'Check map instance is of an expected class');
@@ -3334,13 +3340,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveMap created with RealtimeObjects.createMap can be assigned to the object tree',
+          description: 'LiveMap created with RealtimeObject.createMap can be assigned to the object tree',
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
-            const counter = await objects.createCounter();
-            const map = await objects.createMap({ foo: 'bar', baz: counter });
+            const counter = await realtimeObject.createCounter();
+            const map = await realtimeObject.createMap({ foo: 'bar', baz: counter });
             await root.set('map', map);
             await mapCreatedPromise;
 
@@ -3364,29 +3370,29 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'RealtimeObjects.createMap can return LiveMap with initial value without applying CREATE operation',
+            'RealtimeObject.createMap can return LiveMap with initial value without applying CREATE operation',
           action: async (ctx) => {
-            const { objects, helper } = ctx;
+            const { realtimeObject, helper } = ctx;
 
             // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
-            helper.recordPrivateApi('replace.RealtimeObjects.publish');
-            objects.publish = () => {};
+            helper.recordPrivateApi('replace.RealtimeObject.publish');
+            realtimeObject.publish = () => {};
 
-            const map = await objects.createMap({ foo: 'bar' });
+            const map = await realtimeObject.createMap({ foo: 'bar' });
             expect(map.get('foo')).to.equal('bar', `Check map has expected initial value`);
           },
         },
 
         {
           allTransportsAndProtocols: true,
-          description: 'RealtimeObjects.createMap can return LiveMap with initial value from applied CREATE operation',
+          description: 'RealtimeObject.createMap can return LiveMap with initial value from applied CREATE operation',
           action: async (ctx) => {
-            const { objects, objectsHelper, helper, channel } = ctx;
+            const { realtimeObject, objectsHelper, helper, channel } = ctx;
 
             // instead of sending CREATE op to the realtime, echo it immediately to the client
             // with forged initial value so we can check that map gets initialized with a value from a CREATE op
-            helper.recordPrivateApi('replace.RealtimeObjects.publish');
-            objects.publish = async (objectMessages) => {
+            helper.recordPrivateApi('replace.RealtimeObject.publish');
+            realtimeObject.publish = async (objectMessages) => {
               const mapId = objectMessages[0].operation.objectId;
               // this should result execute regular operation application procedure and create an object in the pool with forged initial value
               await objectsHelper.processObjectOperationMessageOnChannel({
@@ -3402,7 +3408,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             };
 
-            const map = await objects.createMap({ foo: 'bar' });
+            const map = await realtimeObject.createMap({ foo: 'bar' });
 
             // map should be created with forged initial value instead of the actual one
             expect(map.get('foo'), `Check key "foo" was not set on a map client-side`).to.not.exist;
@@ -3415,16 +3421,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           description:
-            'initial value is not double counted for LiveMap from RealtimeObjects.createMap when CREATE op is received',
+            'initial value is not double counted for LiveMap from RealtimeObject.createMap when CREATE op is received',
           action: async (ctx) => {
-            const { objects, objectsHelper, helper, channel } = ctx;
+            const { realtimeObject, objectsHelper, helper, channel } = ctx;
 
             // prevent publishing of ops to realtime so we can guarantee order of operations
-            helper.recordPrivateApi('replace.RealtimeObjects.publish');
-            objects.publish = () => {};
+            helper.recordPrivateApi('replace.RealtimeObject.publish');
+            realtimeObject.publish = () => {};
 
             // create map locally, should have an initial value set
-            const map = await objects.createMap({ foo: 'bar' });
+            const map = await realtimeObject.createMap({ foo: 'bar' });
             helper.recordPrivateApi('call.LiveObject.getObjectId');
             const mapId = map.getObjectId();
 
@@ -3454,50 +3460,62 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'RealtimeObjects.createMap throws on invalid input',
+          description: 'RealtimeObject.createMap throws on invalid input',
           action: async (ctx) => {
-            const { root, objects } = ctx;
-
-            await expectToThrowAsync(async () => objects.createMap(null), 'Map entries should be a key-value object');
-            await expectToThrowAsync(async () => objects.createMap('foo'), 'Map entries should be a key-value object');
-            await expectToThrowAsync(async () => objects.createMap(1), 'Map entries should be a key-value object');
-            await expectToThrowAsync(
-              async () => objects.createMap(BigInt(1)),
-              'Map entries should be a key-value object',
-            );
-            await expectToThrowAsync(async () => objects.createMap(true), 'Map entries should be a key-value object');
-            await expectToThrowAsync(
-              async () => objects.createMap(Symbol()),
-              'Map entries should be a key-value object',
-            );
+            const { root, realtimeObject } = ctx;
 
             await expectToThrowAsync(
-              async () => objects.createMap({ key: undefined }),
+              async () => realtimeObject.createMap(null),
+              'Map entries should be a key-value object',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createMap('foo'),
+              'Map entries should be a key-value object',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createMap(1),
+              'Map entries should be a key-value object',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createMap(BigInt(1)),
+              'Map entries should be a key-value object',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createMap(true),
+              'Map entries should be a key-value object',
+            );
+            await expectToThrowAsync(
+              async () => realtimeObject.createMap(Symbol()),
+              'Map entries should be a key-value object',
+            );
+
+            await expectToThrowAsync(
+              async () => realtimeObject.createMap({ key: undefined }),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => objects.createMap({ key: null }),
+              async () => realtimeObject.createMap({ key: null }),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => objects.createMap({ key: BigInt(1) }),
+              async () => realtimeObject.createMap({ key: BigInt(1) }),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => objects.createMap({ key: Symbol() }),
+              async () => realtimeObject.createMap({ key: Symbol() }),
               'Map value data type is unsupported',
             );
           },
         },
 
         {
-          description: 'batch API getRoot method is synchronous',
+          description: 'batch API get method is synchronous',
           action: async (ctx) => {
-            const { objects } = ctx;
+            const { realtimeObject } = ctx;
 
-            await objects.batch((ctx) => {
-              const root = ctx.getRoot();
-              expect(root, 'Check getRoot method in a BatchContext returns root object synchronously').to.exist;
+            await realtimeObject.batch((ctx) => {
+              const root = ctx.get();
+              expect(root, 'Check BatchContext.get() returns object synchronously').to.exist;
               expectInstanceOf(root, 'LiveMap', 'root object obtained from a BatchContext is a LiveMap');
             });
           },
@@ -3506,20 +3524,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API .get method on a map returns BatchContext* wrappers for objects',
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await objects.createCounter(1);
-            const map = await objects.createMap({ innerCounter: counter });
+            const counter = await realtimeObject.createCounter(1);
+            const map = await realtimeObject.createMap({ innerCounter: counter });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
 
-            await objects.batch((ctx) => {
-              const ctxRoot = ctx.getRoot();
+            await realtimeObject.batch((ctx) => {
+              const ctxRoot = ctx.get();
               const ctxCounter = ctxRoot.get('counter');
               const ctxMap = ctxRoot.get('map');
               const ctxInnerCounter = ctxMap.get('innerCounter');
@@ -3549,20 +3567,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API access API methods on objects work and are synchronous',
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await objects.createCounter(1);
-            const map = await objects.createMap({ foo: 'bar' });
+            const counter = await realtimeObject.createCounter(1);
+            const map = await realtimeObject.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
 
-            await objects.batch((ctx) => {
-              const ctxRoot = ctx.getRoot();
+            await realtimeObject.batch((ctx) => {
+              const ctxRoot = ctx.get();
               const ctxCounter = ctxRoot.get('counter');
               const ctxMap = ctxRoot.get('map');
 
@@ -3591,20 +3609,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API write API methods on objects do not mutate objects inside the batch callback',
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await objects.createCounter(1);
-            const map = await objects.createMap({ foo: 'bar' });
+            const counter = await realtimeObject.createCounter(1);
+            const map = await realtimeObject.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
 
-            await objects.batch((ctx) => {
-              const ctxRoot = ctx.getRoot();
+            await realtimeObject.batch((ctx) => {
+              const ctxRoot = ctx.get();
               const ctxCounter = ctxRoot.get('counter');
               const ctxMap = ctxRoot.get('map');
 
@@ -3639,20 +3657,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'batch API scheduled operations are applied when batch callback is finished',
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await objects.createCounter(1);
-            const map = await objects.createMap({ foo: 'bar' });
+            const counter = await realtimeObject.createCounter(1);
+            const map = await realtimeObject.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
 
-            await objects.batch((ctx) => {
-              const ctxRoot = ctx.getRoot();
+            await realtimeObject.batch((ctx) => {
+              const ctxRoot = ctx.get();
               const ctxCounter = ctxRoot.get('counter');
               const ctxMap = ctxRoot.get('map');
 
@@ -3672,11 +3690,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API can be called without scheduling any operations',
           action: async (ctx) => {
-            const { objects } = ctx;
+            const { realtimeObject } = ctx;
 
             let caughtError;
             try {
-              await objects.batch((ctx) => {});
+              await realtimeObject.batch((ctx) => {});
             } catch (error) {
               caughtError = error;
             }
@@ -3690,14 +3708,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API scheduled operations can be canceled by throwing an error in the batch callback',
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await objects.createCounter(1);
-            const map = await objects.createMap({ foo: 'bar' });
+            const counter = await realtimeObject.createCounter(1);
+            const map = await realtimeObject.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
@@ -3705,8 +3723,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const cancelError = new Error('cancel batch');
             let caughtError;
             try {
-              await objects.batch((ctx) => {
-                const ctxRoot = ctx.getRoot();
+              await realtimeObject.batch((ctx) => {
+                const ctxRoot = ctx.get();
                 const ctxCounter = ctxRoot.get('counter');
                 const ctxMap = ctxRoot.get('map');
 
@@ -3735,14 +3753,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: `batch API batch context and derived objects can't be interacted with after the batch call`,
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await objects.createCounter(1);
-            const map = await objects.createMap({ foo: 'bar' });
+            const counter = await realtimeObject.createCounter(1);
+            const map = await realtimeObject.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
@@ -3751,8 +3769,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             let savedCtxCounter;
             let savedCtxMap;
 
-            await objects.batch((ctx) => {
-              const ctxRoot = ctx.getRoot();
+            await realtimeObject.batch((ctx) => {
+              const ctxRoot = ctx.get();
               savedCtx = ctx;
               savedCtxCounter = ctxRoot.get('counter');
               savedCtxMap = ctxRoot.get('map');
@@ -3776,14 +3794,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: `batch API batch context and derived objects can't be interacted with after error was thrown from batch callback`,
           action: async (ctx) => {
-            const { root, objects } = ctx;
+            const { root, realtimeObject } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await objects.createCounter(1);
-            const map = await objects.createMap({ foo: 'bar' });
+            const counter = await realtimeObject.createCounter(1);
+            const map = await realtimeObject.createMap({ foo: 'bar' });
             await root.set('counter', counter);
             await root.set('map', map);
             await objectsCreatedPromise;
@@ -3794,8 +3812,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             let caughtError;
             try {
-              await objects.batch((ctx) => {
-                const ctxRoot = ctx.getRoot();
+              await realtimeObject.batch((ctx) => {
+                const ctxRoot = ctx.get();
                 savedCtx = ctx;
                 savedCtxCounter = ctxRoot.get('counter');
                 savedCtxMap = ctxRoot.get('map');
@@ -3885,7 +3903,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: `BatchContextLiveMap enumeration`,
           action: async (ctx) => {
-            const { root, objectsHelper, channel, objects } = ctx;
+            const { root, objectsHelper, channel, realtimeObject } = ctx;
 
             const counterId1 = objectsHelper.fakeCounterObjectId();
             const counterId2 = objectsHelper.fakeCounterObjectId();
@@ -3924,8 +3942,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const counter1 = await root.get('counter1');
 
-            await objects.batch(async (ctx) => {
-              const ctxRoot = ctx.getRoot();
+            await realtimeObject.batch(async (ctx) => {
+              const ctxRoot = ctx.get();
 
               // enumeration methods should not count tombstoned entries
               expect(ctxRoot.size()).to.equal(2, 'Check BatchContextLiveMap.size() returns expected number of keys');
@@ -3965,13 +3983,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
           await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
             const channel = client.channels.get(channelName, channelOptionsWithObjects());
-            const objects = channel.objects;
+            const realtimeObject = channel.object;
 
             await channel.attach();
-            const root = await objects.getRoot();
+            const root = await channel.object.get();
 
             await scenario.action({
-              objects,
+              realtimeObject,
               root,
               objectsHelper,
               channelName,
@@ -4183,7 +4201,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
               const publishChannel = publishClient.channels.get(channelName, channelOptionsWithObjects());
               await publishChannel.attach();
-              const publishRoot = await publishChannel.objects.getRoot();
+              const publishRoot = await publishChannel.object.get();
 
               // capture the connection ID once the client is connected
               publishConnectionId = publishClient.connection.id;
@@ -4616,10 +4634,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
           const channel = client.channels.get(channelName, channelOptionsWithObjects());
-          const objects = channel.objects;
 
           await channel.attach();
-          const root = await objects.getRoot();
+          const root = await channel.object.get();
 
           const sampleMapKey = 'sampleMap';
           const sampleCounterKey = 'sampleCounter';
@@ -4663,18 +4680,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           await client.connection.once('connected');
 
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
+          const realtimeObject = channel.object;
           const connectionManager = client.connection.connectionManager;
           const connectionDetails = connectionManager.connectionDetails;
 
           // gcGracePeriod should be set after the initial connection
-          helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObject.gcGracePeriod');
           expect(
-            objects.gcGracePeriod,
+            realtimeObject.gcGracePeriod,
             'Check gcGracePeriod is set after initial connection from connectionDetails.objectsGCGracePeriod',
           ).to.exist;
-          helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
-          expect(objects.gcGracePeriod).to.equal(
+          helper.recordPrivateApi('read.RealtimeObject.gcGracePeriod');
+          expect(realtimeObject.gcGracePeriod).to.equal(
             connectionDetails.objectsGCGracePeriod,
             'Check gcGracePeriod is set to equal connectionDetails.objectsGCGracePeriod',
           );
@@ -4699,8 +4716,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           // wait for next tick to ensure the connectionDetails event was processed by Objects plugin
           await new Promise((res) => nextTick(res));
 
-          helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
-          expect(objects.gcGracePeriod).to.equal(999, 'Check gcGracePeriod is updated on new CONNECTED event');
+          helper.recordPrivateApi('read.RealtimeObject.gcGracePeriod');
+          expect(realtimeObject.gcGracePeriod).to.equal(999, 'Check gcGracePeriod is updated on new CONNECTED event');
         }, client);
       });
 
@@ -4712,14 +4729,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           await client.connection.once('connected');
 
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
+          const realtimeObject = channel.object;
           const connectionManager = client.connection.connectionManager;
           const connectionDetails = connectionManager.connectionDetails;
 
-          helper.recordPrivateApi('read.RealtimeObjects._DEFAULTS.gcGracePeriod');
-          helper.recordPrivateApi('write.RealtimeObjects.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObject._DEFAULTS.gcGracePeriod');
+          helper.recordPrivateApi('write.RealtimeObject.gcGracePeriod');
           // set gcGracePeriod to a value different from the default
-          objects.gcGracePeriod = ObjectsPlugin.RealtimeObjects._DEFAULTS.gcGracePeriod + 1;
+          realtimeObject.gcGracePeriod = ObjectsPlugin.RealtimeObject._DEFAULTS.gcGracePeriod + 1;
 
           const connectionDetailsPromise = connectionManager.once('connectiondetails');
 
@@ -4739,10 +4756,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           // wait for next tick to ensure the connectionDetails event was processed by Objects plugin
           await new Promise((res) => nextTick(res));
 
-          helper.recordPrivateApi('read.RealtimeObjects._DEFAULTS.gcGracePeriod');
-          helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
-          expect(objects.gcGracePeriod).to.equal(
-            ObjectsPlugin.RealtimeObjects._DEFAULTS.gcGracePeriod,
+          helper.recordPrivateApi('read.RealtimeObject._DEFAULTS.gcGracePeriod');
+          helper.recordPrivateApi('read.RealtimeObject.gcGracePeriod');
+          expect(realtimeObject.gcGracePeriod).to.equal(
+            ObjectsPlugin.RealtimeObject._DEFAULTS.gcGracePeriod,
             'Check gcGracePeriod is set to a default value if connectionDetails.objectsGCGracePeriod is missing',
           );
         }, client);
@@ -4754,7 +4771,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'tombstoned object is removed from the pool after the GC grace period',
           action: async (ctx) => {
-            const { objectsHelper, channelName, channel, objects, helper, waitForGCCycles, client } = ctx;
+            const { objectsHelper, channelName, channel, realtimeObject, helper, waitForGCCycles, client } = ctx;
 
             const counterCreatedPromise = waitForObjectOperation(helper, client, ObjectsHelper.ACTIONS.COUNTER_CREATE);
             // send a CREATE op, this adds an object to the pool
@@ -4764,8 +4781,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
             await counterCreatedPromise;
 
-            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
-            expect(objects._objectsPool.get(objectId), 'Check object exists in the pool after creation').to.exist;
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
+            expect(realtimeObject._objectsPool.get(objectId), 'Check object exists in the pool after creation').to
+              .exist;
 
             // inject OBJECT_DELETE for the object. this should tombstone the object and make it inaccessible to the end user, but still keep it in memory in the local pool
             await objectsHelper.processObjectOperationMessageOnChannel({
@@ -4775,14 +4793,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               state: [objectsHelper.objectDeleteOp({ objectId })],
             });
 
-            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
             expect(
-              objects._objectsPool.get(objectId),
+              realtimeObject._objectsPool.get(objectId),
               'Check object exists in the pool immediately after OBJECT_DELETE',
             ).to.exist;
-            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
             helper.recordPrivateApi('call.LiveObject.isTombstoned');
-            expect(objects._objectsPool.get(objectId).isTombstoned()).to.equal(
+            expect(realtimeObject._objectsPool.get(objectId).isTombstoned()).to.equal(
               true,
               `Check object's "tombstone" flag is set to "true" after OBJECT_DELETE`,
             );
@@ -4791,9 +4809,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await waitForGCCycles(2);
 
             // object should be removed from the local pool entirely now, as the GC grace period has passed
-            helper.recordPrivateApi('call.RealtimeObjects._objectsPool.get');
+            helper.recordPrivateApi('call.RealtimeObject._objectsPool.get');
             expect(
-              objects._objectsPool.get(objectId),
+              realtimeObject._objectsPool.get(objectId),
               'Check object exists does not exist in the pool after the GC grace period expiration',
             ).to.not.exist;
           },
@@ -4852,39 +4870,39 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       /** @nospec */
       forScenarios(this, tombstonesGCScenarios, async function (helper, scenario, clientOptions, channelName) {
         try {
-          helper.recordPrivateApi('write.RealtimeObjects._DEFAULTS.gcInterval');
-          ObjectsPlugin.RealtimeObjects._DEFAULTS.gcInterval = 500;
+          helper.recordPrivateApi('write.RealtimeObject._DEFAULTS.gcInterval');
+          ObjectsPlugin.RealtimeObject._DEFAULTS.gcInterval = 500;
 
           const objectsHelper = new ObjectsHelper(helper);
           const client = RealtimeWithObjects(helper, clientOptions);
 
           await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
             const channel = client.channels.get(channelName, channelOptionsWithObjects());
-            const objects = channel.objects;
+            const realtimeObject = channel.object;
 
             await channel.attach();
-            const root = await objects.getRoot();
+            const root = await channel.object.get();
 
-            helper.recordPrivateApi('read.RealtimeObjects.gcGracePeriod');
-            const gcGracePeriodOriginal = objects.gcGracePeriod;
-            helper.recordPrivateApi('write.RealtimeObjects.gcGracePeriod');
-            objects.gcGracePeriod = 250;
+            helper.recordPrivateApi('read.RealtimeObject.gcGracePeriod');
+            const gcGracePeriodOriginal = realtimeObject.gcGracePeriod;
+            helper.recordPrivateApi('write.RealtimeObject.gcGracePeriod');
+            realtimeObject.gcGracePeriod = 250;
 
             // helper function to spy on the GC interval callback and wait for a specific number of GC cycles.
             // returns a promise which will resolve when required number of cycles have happened.
             const waitForGCCycles = (cycles) => {
-              const onGCIntervalOriginal = objects._objectsPool._onGCInterval;
+              const onGCIntervalOriginal = realtimeObject._objectsPool._onGCInterval;
               let gcCalledTimes = 0;
               return new Promise((resolve) => {
-                helper.recordPrivateApi('replace.RealtimeObjects._objectsPool._onGCInterval');
-                objects._objectsPool._onGCInterval = function () {
-                  helper.recordPrivateApi('call.RealtimeObjects._objectsPool._onGCInterval');
+                helper.recordPrivateApi('replace.RealtimeObject._objectsPool._onGCInterval');
+                realtimeObject._objectsPool._onGCInterval = function () {
+                  helper.recordPrivateApi('call.RealtimeObject._objectsPool._onGCInterval');
                   onGCIntervalOriginal.call(this);
 
                   gcCalledTimes++;
                   if (gcCalledTimes >= cycles) {
                     resolve();
-                    objects._objectsPool._onGCInterval = onGCIntervalOriginal;
+                    realtimeObject._objectsPool._onGCInterval = onGCIntervalOriginal;
                   }
                 };
               });
@@ -4896,22 +4914,22 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               objectsHelper,
               channelName,
               channel,
-              objects,
+              realtimeObject,
               helper,
               waitForGCCycles,
             });
 
-            helper.recordPrivateApi('write.RealtimeObjects.gcGracePeriod');
-            objects.gcGracePeriod = gcGracePeriodOriginal;
+            helper.recordPrivateApi('write.RealtimeObject.gcGracePeriod');
+            realtimeObject.gcGracePeriod = gcGracePeriodOriginal;
           }, client);
         } finally {
-          helper.recordPrivateApi('write.RealtimeObjects._DEFAULTS.gcInterval');
-          ObjectsPlugin.RealtimeObjects._DEFAULTS.gcInterval = gcIntervalOriginal;
+          helper.recordPrivateApi('write.RealtimeObject._DEFAULTS.gcInterval');
+          ObjectsPlugin.RealtimeObject._DEFAULTS.gcInterval = gcIntervalOriginal;
         }
       });
 
-      const expectAccessApiToThrow = async ({ objects, map, counter, errorMsg }) => {
-        await expectToThrowAsync(async () => objects.getRoot(), errorMsg);
+      const expectAccessApiToThrow = async ({ realtimeObject, map, counter, errorMsg }) => {
+        await expectToThrowAsync(async () => realtimeObject.get(), errorMsg);
 
         expect(() => counter.value()).to.throw(errorMsg);
 
@@ -4928,10 +4946,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         }
       };
 
-      const expectWriteApiToThrow = async ({ objects, map, counter, errorMsg }) => {
-        await expectToThrowAsync(async () => objects.batch(), errorMsg);
-        await expectToThrowAsync(async () => objects.createMap(), errorMsg);
-        await expectToThrowAsync(async () => objects.createCounter(), errorMsg);
+      const expectWriteApiToThrow = async ({ realtimeObject, map, counter, errorMsg }) => {
+        await expectToThrowAsync(async () => realtimeObject.batch(), errorMsg);
+        await expectToThrowAsync(async () => realtimeObject.createMap(), errorMsg);
+        await expectToThrowAsync(async () => realtimeObject.createCounter(), errorMsg);
 
         await expectToThrowAsync(async () => counter.increment(), errorMsg);
         await expectToThrowAsync(async () => counter.decrement(), errorMsg);
@@ -4947,7 +4965,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
       /** Make sure to call this inside the batch method as batch objects can't be interacted with outside the batch callback */
       const expectAccessBatchApiToThrow = ({ ctx, map, counter, errorMsg }) => {
-        expect(() => ctx.getRoot()).to.throw(errorMsg);
+        expect(() => ctx.get()).to.throw(errorMsg);
 
         expect(() => counter.value()).to.throw(errorMsg);
 
@@ -4971,12 +4989,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'public API throws missing object modes error when attached without correct modes',
           action: async (ctx) => {
-            const { objects, channel, map, counter } = ctx;
+            const { realtimeObject, channel, map, counter } = ctx;
 
             // obtain batch context with valid modes first
-            await objects.batch((ctx) => {
-              const map = ctx.getRoot().get('map');
-              const counter = ctx.getRoot().get('counter');
+            await realtimeObject.batch((ctx) => {
+              const map = ctx.get().get('map');
+              const counter = ctx.get().get('counter');
               // now simulate missing modes
               channel.modes = [];
 
@@ -4984,8 +5002,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_publish" channel mode' });
             });
 
-            await expectAccessApiToThrow({ objects, map, counter, errorMsg: '"object_subscribe" channel mode' });
-            await expectWriteApiToThrow({ objects, map, counter, errorMsg: '"object_publish" channel mode' });
+            await expectAccessApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_subscribe" channel mode' });
+            await expectWriteApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_publish" channel mode' });
           },
         },
 
@@ -4993,12 +5011,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'public API throws missing object modes error when not yet attached but client options are missing correct modes',
           action: async (ctx) => {
-            const { objects, channel, map, counter, helper } = ctx;
+            const { realtimeObject, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid modes first
-            await objects.batch((ctx) => {
-              const map = ctx.getRoot().get('map');
-              const counter = ctx.getRoot().get('counter');
+            await realtimeObject.batch((ctx) => {
+              const map = ctx.get().get('map');
+              const counter = ctx.get().get('counter');
               // now simulate a situation where we're not yet attached/modes are not received on ATTACHED event
               channel.modes = undefined;
               helper.recordPrivateApi('write.channel.channelOptions.modes');
@@ -5008,20 +5026,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"object_publish" channel mode' });
             });
 
-            await expectAccessApiToThrow({ objects, map, counter, errorMsg: '"object_subscribe" channel mode' });
-            await expectWriteApiToThrow({ objects, map, counter, errorMsg: '"object_publish" channel mode' });
+            await expectAccessApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_subscribe" channel mode' });
+            await expectWriteApiToThrow({ realtimeObject, map, counter, errorMsg: '"object_publish" channel mode' });
           },
         },
 
         {
           description: 'public API throws invalid channel state error when channel DETACHED',
           action: async (ctx) => {
-            const { objects, channel, map, counter, helper } = ctx;
+            const { realtimeObject, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await objects.batch((ctx) => {
-              const map = ctx.getRoot().get('map');
-              const counter = ctx.getRoot().get('counter');
+            await realtimeObject.batch((ctx) => {
+              const map = ctx.get().get('map');
+              const counter = ctx.get().get('counter');
               // now simulate channel state change
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('detached');
@@ -5031,24 +5049,29 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             await expectAccessApiToThrow({
-              objects,
+              realtimeObject,
               map,
               counter,
               errorMsg: 'failed as channel state is detached',
             });
-            await expectWriteApiToThrow({ objects, map, counter, errorMsg: 'failed as channel state is detached' });
+            await expectWriteApiToThrow({
+              realtimeObject,
+              map,
+              counter,
+              errorMsg: 'failed as channel state is detached',
+            });
           },
         },
 
         {
           description: 'public API throws invalid channel state error when channel FAILED',
           action: async (ctx) => {
-            const { objects, channel, map, counter, helper } = ctx;
+            const { realtimeObject, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await objects.batch((ctx) => {
-              const map = ctx.getRoot().get('map');
-              const counter = ctx.getRoot().get('counter');
+            await realtimeObject.batch((ctx) => {
+              const map = ctx.get().get('map');
+              const counter = ctx.get().get('counter');
               // now simulate channel state change
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('failed');
@@ -5058,24 +5081,29 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             await expectAccessApiToThrow({
-              objects,
+              realtimeObject,
               map,
               counter,
               errorMsg: 'failed as channel state is failed',
             });
-            await expectWriteApiToThrow({ objects, map, counter, errorMsg: 'failed as channel state is failed' });
+            await expectWriteApiToThrow({
+              realtimeObject,
+              map,
+              counter,
+              errorMsg: 'failed as channel state is failed',
+            });
           },
         },
 
         {
           description: 'public write API throws invalid channel state error when channel SUSPENDED',
           action: async (ctx) => {
-            const { objects, channel, map, counter, helper } = ctx;
+            const { realtimeObject, channel, map, counter, helper } = ctx;
 
             // obtain batch context with valid channel state first
-            await objects.batch((ctx) => {
-              const map = ctx.getRoot().get('map');
-              const counter = ctx.getRoot().get('counter');
+            await realtimeObject.batch((ctx) => {
+              const map = ctx.get().get('map');
+              const counter = ctx.get().get('counter');
               // now simulate channel state change
               helper.recordPrivateApi('call.channel.requestState');
               channel.requestState('suspended');
@@ -5084,7 +5112,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             await expectWriteApiToThrow({
-              objects,
+              realtimeObject,
               map,
               counter,
               errorMsg: 'failed as channel state is suspended',
@@ -5095,12 +5123,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'public write API throws invalid channel option when "echoMessages" is disabled',
           action: async (ctx) => {
-            const { objects, client, map, counter, helper } = ctx;
+            const { realtimeObject, client, map, counter, helper } = ctx;
 
             // obtain batch context with valid client options first
-            await objects.batch((ctx) => {
-              const map = ctx.getRoot().get('map');
-              const counter = ctx.getRoot().get('counter');
+            await realtimeObject.batch((ctx) => {
+              const map = ctx.get().get('map');
+              const counter = ctx.get().get('counter');
               // now simulate echoMessages was disabled
               helper.recordPrivateApi('write.realtime.options.echoMessages');
               client.options.echoMessages = false;
@@ -5108,7 +5136,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               expectWriteBatchApiToThrow({ ctx, map, counter, errorMsg: '"echoMessages" client option' });
             });
 
-            await expectWriteApiToThrow({ objects, map, counter, errorMsg: '"echoMessages" client option' });
+            await expectWriteApiToThrow({ realtimeObject, map, counter, errorMsg: '"echoMessages" client option' });
           },
         },
       ];
@@ -5122,22 +5150,32 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           // attach with correct channel modes so we can create Objects on the root for testing.
           // some scenarios will modify the underlying modes array to test specific behavior
           const channel = client.channels.get(channelName, channelOptionsWithObjects());
-          const objects = channel.objects;
+          const realtimeObject = channel.object;
 
           await channel.attach();
-          const root = await objects.getRoot();
+          const root = await channel.object.get();
 
           const objectsCreatedPromise = Promise.all([
             waitForMapKeyUpdate(root, 'map'),
             waitForMapKeyUpdate(root, 'counter'),
           ]);
-          const map = await objects.createMap();
-          const counter = await objects.createCounter();
+          const map = await realtimeObject.createMap();
+          const counter = await realtimeObject.createCounter();
           await root.set('map', map);
           await root.set('counter', counter);
           await objectsCreatedPromise;
 
-          await scenario.action({ objects, objectsHelper, channelName, channel, root, map, counter, helper, client });
+          await scenario.action({
+            realtimeObject,
+            objectsHelper,
+            channelName,
+            channel,
+            root,
+            map,
+            counter,
+            helper,
+            client,
+          });
         }, client);
       });
 
@@ -5174,10 +5212,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           await connectionDetailsPromise;
 
           const channel = client.channels.get('channel', channelOptionsWithObjects());
-          const objects = channel.objects;
 
           await channel.attach();
-          const root = await objects.getRoot();
+          const root = await channel.object.get();
 
           const data = new Array(100).fill('a').join('');
           const error = await expectToThrowAsync(

@@ -1,34 +1,34 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import { BatchContext } from './batchcontext';
 import { LiveCounter } from './livecounter';
-import { RealtimeObjects } from './realtimeobjects';
+import { RealtimeObject } from './realtimeobject';
 
 export class BatchContextLiveCounter {
   private _client: BaseClient;
 
   constructor(
     private _batchContext: BatchContext,
-    private _objects: RealtimeObjects,
+    private _realtimeObject: RealtimeObject,
     private _counter: LiveCounter,
   ) {
-    this._client = this._objects.getClient();
+    this._client = this._realtimeObject.getClient();
   }
 
   value(): number {
-    this._objects.throwIfInvalidAccessApiConfiguration();
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
     this._batchContext.throwIfClosed();
     return this._counter.value();
   }
 
   increment(amount: number): void {
-    this._objects.throwIfInvalidWriteApiConfiguration();
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     this._batchContext.throwIfClosed();
-    const msg = LiveCounter.createCounterIncMessage(this._objects, this._counter.getObjectId(), amount);
+    const msg = LiveCounter.createCounterIncMessage(this._realtimeObject, this._counter.getObjectId(), amount);
     this._batchContext.queueMessage(msg);
   }
 
   decrement(amount: number): void {
-    this._objects.throwIfInvalidWriteApiConfiguration();
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     this._batchContext.throwIfClosed();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user

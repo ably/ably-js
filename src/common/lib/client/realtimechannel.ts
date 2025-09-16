@@ -17,7 +17,7 @@ import { normaliseChannelOptions } from '../util/defaults';
 import { PaginatedResult } from './paginatedresource';
 import type { PushChannel } from 'plugins/push';
 import type { WirePresenceMessage } from '../types/presencemessage';
-import type { RealtimeObjects, WireObjectMessage } from 'plugins/objects';
+import type { RealtimeObject, WireObjectMessage } from 'plugins/objects';
 import type RealtimePresence from './realtimepresence';
 import type RealtimeAnnotations from './realtimeannotations';
 
@@ -96,7 +96,7 @@ class RealtimeChannel extends EventEmitter {
   retryTimer?: number | NodeJS.Timeout | null;
   retryCount: number = 0;
   _push?: PushChannel;
-  _objects?: RealtimeObjects;
+  _object?: RealtimeObject;
 
   constructor(client: BaseRealtime, name: string, options?: API.ChannelOptions) {
     super(client.logger);
@@ -138,7 +138,7 @@ class RealtimeChannel extends EventEmitter {
     }
 
     if (client.options.plugins?.Objects) {
-      this._objects = new client.options.plugins.Objects.RealtimeObjects(this);
+      this._object = new client.options.plugins.Objects.RealtimeObject(this);
     }
   }
 
@@ -150,11 +150,11 @@ class RealtimeChannel extends EventEmitter {
   }
 
   /** @spec RTL27 */
-  get objects() {
-    if (!this._objects) {
+  get object() {
+    if (!this._object) {
       Utils.throwMissingPluginError('Objects'); // RTL27b
     }
-    return this._objects; // RTL27a
+    return this._object; // RTL27a
   }
 
   invalidStateError(): ErrorInfo {
@@ -550,8 +550,8 @@ class RealtimeChannel extends EventEmitter {
               this._presence.onAttached(hasPresence);
             }
             // the Objects tree needs to be re-synced
-            if (this._objects) {
-              this._objects.onAttached(hasObjects);
+            if (this._object) {
+              this._object.onAttached(hasObjects);
             }
           }
           const change = new ChannelStateChange(this.state, this.state, resumed, hasBacklog, message.error);
@@ -618,7 +618,7 @@ class RealtimeChannel extends EventEmitter {
       // OBJECT and OBJECT_SYNC message processing share most of the logic, so group them together
       case actions.OBJECT:
       case actions.OBJECT_SYNC: {
-        if (!this._objects || !message.state) {
+        if (!this._object || !message.state) {
           return;
         }
 
@@ -631,9 +631,9 @@ class RealtimeChannel extends EventEmitter {
         const objectMessages = message.state.map((om) => om.decode(this.client, format));
 
         if (message.action === actions.OBJECT) {
-          this._objects.handleObjectMessages(objectMessages);
+          this._object.handleObjectMessages(objectMessages);
         } else {
-          this._objects.handleObjectSyncMessages(objectMessages, message.channelSerial);
+          this._object.handleObjectSyncMessages(objectMessages, message.channelSerial);
         }
 
         break;
@@ -798,8 +798,8 @@ class RealtimeChannel extends EventEmitter {
     if (this._presence) {
       this._presence.actOnChannelState(state, hasPresence, reason);
     }
-    if (this._objects) {
-      this._objects.actOnChannelState(state, hasObjects);
+    if (this._object) {
+      this._object.actOnChannelState(state, hasObjects);
     }
     if (state === 'suspended' && this.connectionManager.state.sendEvents) {
       this.startRetryTimer();
