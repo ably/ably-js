@@ -2,7 +2,9 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type * as API from '../../../ably';
 import type { AnyPathObject, PathObject, Primitive, Value } from '../../../ably';
 import { LiveCounter } from './livecounter';
+import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMap } from './livemap';
+import { LiveMapValueType } from './livemapvaluetype';
 import { LiveObject } from './liveobject';
 import { RealtimeObject } from './realtimeobject';
 
@@ -168,6 +170,10 @@ export class PathObjectImpl<T extends Value = Value> implements AnyPathObject<T>
         40000,
         400,
       );
+    }
+
+    if (LiveMapValueType.isLiveMapValueType(value) || LiveCounterValueType.isLiveCounterValueType(value)) {
+      return resolved.setValueType(key, value);
     }
 
     return resolved.set(key, value);

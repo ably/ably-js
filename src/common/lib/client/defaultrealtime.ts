@@ -21,6 +21,8 @@ import { Http } from 'common/types/http';
 import Defaults from '../util/defaults';
 import Logger from '../util/logger';
 import { MessageEncoding } from '../types/basemessage';
+import { LiveCounterValueType } from '../../../plugins/objects/livecountervaluetype';
+import { LiveMapValueType } from '../../../plugins/objects/livemapvaluetype';
 
 /**
  `DefaultRealtime` is the class that the non tree-shakable version of the SDK exports as `Realtime`. It ensures that this version of the SDK includes all of the functionality which is optionally available in the tree-shakable version.
@@ -74,6 +76,8 @@ export class DefaultRealtime extends BaseRealtime {
   static Message = DefaultMessage;
   static PresenceMessage = DefaultPresenceMessage;
   static Annotation = DefaultAnnotation;
+  static LiveMap = LiveMapValueType;
+  static LiveCounter = LiveCounterValueType;
 
   static _MsgPack: MsgPack | null = null;
 

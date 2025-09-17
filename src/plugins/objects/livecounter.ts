@@ -1,3 +1,4 @@
+import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectId } from './objectid';
 import {
@@ -117,6 +118,17 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     );
 
     return msg;
+  }
+
+  /**
+   * TODO: temporary method for a value type create object
+   * @internal
+   */
+  static async createCounterCreateMessageFromValueType(
+    realtimeObject: RealtimeObject,
+    value: LiveCounterValueType,
+  ): Promise<ObjectMessage> {
+    return LiveCounter.createCounterCreateMessage(realtimeObject, value.count);
   }
 
   /**
