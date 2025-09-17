@@ -1,6 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
+import { PathEvent } from './pathobjectsubscriptionregister';
 import { RealtimeObject } from './realtimeobject';
 
 export enum LiveObjectSubscriptionEvent {
@@ -36,6 +37,16 @@ export interface OnLiveObjectLifecycleEventResponse {
   off(): void;
 }
 
+/**
+ * Represents a parent reference for a LiveObject - tracks which LiveMap parent
+ * contains this object and at which key.
+ */
+// TODO: optimize this by using a Map of parent to Set of keys, to avoid needing to iterate through all references when removing a specific parent-key reference
+export interface ParentReference {
+  parent: LiveObject;
+  key: string;
+}
+
 export abstract class LiveObject<
   TData extends LiveObjectData = LiveObjectData,
   TUpdate extends LiveObjectUpdate = LiveObjectUpdate,
@@ -53,6 +64,11 @@ export abstract class LiveObject<
   protected _createOperationIsMerged: boolean;
   private _tombstone: boolean;
   private _tombstonedAt: number | undefined;
+  /**
+   * Track parent references - which LiveMap objects contain this object and at which keys.
+   * Multiple parents can reference the same object, so we use a Set to track all parent-key combinations.
+   */
+  private _parentReferences: Set<ParentReference>;
 
   protected constructor(
     protected _realtimeObject: RealtimeObject,
@@ -67,6 +83,7 @@ export abstract class LiveObject<
     this._siteTimeserials = {};
     this._createOperationIsMerged = false;
     this._tombstone = false;
+    this._parentReferences = new Set<ParentReference>();
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
@@ -135,16 +152,18 @@ export abstract class LiveObject<
 
   /**
    * Emits the {@link LiveObjectSubscriptionEvent.updated} event with provided update object if it isn't a noop.
+   * Also notifies the {@link PathObjectSubscriptionRegister} about path-based events.
    *
    * @internal
    */
-  notifyUpdated(update: TUpdate | LiveObjectUpdateNoop): void {
+  notifyUpdated(update: TUpdate | LiveObjectUpdateNoop, objectMessage?: ObjectMessage): void {
     // should not emit update event if update was noop
     if ((update as LiveObjectUpdateNoop).noop) {
       return;
     }
 
     this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, update);
+    this._notifyPathSubscriptions(update as TUpdate, objectMessage);
   }
 
   /**
@@ -196,6 +215,97 @@ export abstract class LiveObject<
   }
 
   /**
+   * Add a parent reference indicating that this object is referenced by the given parent LiveMap at the specified key.
+   *
+   * @internal
+   */
+  addParentReference(parent: LiveObject, key: string): void {
+    // Find existing reference for this parent-key combination
+    const existingRef = Array.from(this._parentReferences).find((ref) => ref.parent === parent && ref.key === key);
+
+    if (!existingRef) {
+      this._parentReferences.add({ parent, key });
+    }
+  }
+
+  /**
+   * Remove a parent reference indicating that this object is no longer referenced by the given parent LiveMap at the specified key.
+   *
+   * @internal
+   */
+  removeParentReference(parent: LiveObject, key: string): void {
+    // Find and remove the specific parent-key reference
+    const refToRemove = Array.from(this._parentReferences).find((ref) => ref.parent === parent && ref.key === key);
+
+    if (refToRemove) {
+      this._parentReferences.delete(refToRemove);
+    }
+  }
+
+  /**
+   * Remove all parent references for a specific parent (when parent is being deleted or cleared).
+   *
+   * @internal
+   */
+  removeParentReferenceAll(parent: LiveObject): void {
+    const refsToRemove = Array.from(this._parentReferences).filter((ref) => ref.parent === parent);
+    refsToRemove.forEach((ref) => this._parentReferences.delete(ref));
+  }
+
+  /**
+   * Clears all parent references for this object.
+   *
+   * @internal
+   */
+  clearParentReferences(): void {
+    this._parentReferences.clear();
+  }
+
+  /**
+   * Get all current parent references for this object.
+   *
+   * @internal
+   */
+  getParentReferences(): ReadonlySet<ParentReference> {
+    return this._parentReferences;
+  }
+
+  /**
+   * Calculates and returns all possible paths to this object by traversing up the parent hierarchy.
+   * Each path is represented as an array of keys from root to this object.
+   *
+   * @internal
+   */
+  getFullPaths(): string[][] {
+    const paths: string[][] = [];
+    const visited = new Set<LiveObject>(); // Prevent infinite loops
+
+    const calculatePathsRecursive = (obj: LiveObject, currentPath: string[]): void => {
+      if (visited.has(obj)) {
+        return; // Prevent infinite recursion
+      }
+      visited.add(obj);
+
+      const parentRefs = Array.from(obj.getParentReferences());
+
+      if (parentRefs.length === 0) {
+        // This is a root object, add the current path
+        paths.push([...currentPath]);
+      } else {
+        // Recursively calculate paths through each parent
+        parentRefs.forEach((ref) => {
+          calculatePathsRecursive(ref.parent, [ref.key, ...currentPath]);
+        });
+      }
+
+      visited.delete(obj);
+    };
+
+    calculatePathsRecursive(this, []);
+    return paths;
+  }
+
+  /**
    * Returns true if the given serial indicates that the operation to which it belongs should be applied to the object.
    *
    * An operation should be applied if its serial is strictly greater than the serial in the `siteTimeserials` map for the same site.
@@ -216,6 +326,26 @@ export abstract class LiveObject<
 
   protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
     return this.tombstone(objectMessage);
+  }
+
+  /**
+   * Notifies path-based subscriptions about changes to this object.
+   */
+  private _notifyPathSubscriptions(update: TUpdate, objectMessage?: ObjectMessage): void {
+    const paths = this.getFullPaths();
+
+    if (paths.length === 0) {
+      // No paths to this object, skip notification
+      return;
+    }
+
+    const pathEvents: PathEvent[] = paths.map((path) => ({
+      path,
+      message: objectMessage,
+      update,
+    }));
+
+    this._realtimeObject.getPathObjectSubscriptionRegister().notifyPathEvents(pathEvents);
   }
 
   /**

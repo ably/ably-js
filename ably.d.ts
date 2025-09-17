@@ -2446,7 +2446,7 @@ interface PathObjectCollectionMethods {
 // PathObjectBase defines the set of common methods on a PathObject
 // that are present regardless of the underlying type, which specified
 // in type parameter T.
-interface PathObjectBase<_T extends Value> {
+interface PathObjectBase<_T extends Value> extends Subscribable {
   // the fully-qualified string path that this PathObject represents
   path(): string;
   compact(): any;
@@ -2543,6 +2543,59 @@ export interface AnyOperations {
   // LiveCounter operations
   increment(amount: number): Promise<void>;
   decrement(amount: number): Promise<void>;
+}
+
+// --- SUBSCRIPTIONS
+
+export interface ObjectMessage {
+  id?: string;
+  timestamp: number;
+  clientId: string;
+  connectionId: string;
+  channel: string;
+  extras?: {
+    headers?: Record<string, string>;
+    [key: string]: any;
+  };
+  serial: number;
+  siteCode: string;
+  encoding?: string;
+
+  // payload provides a user-friendly representation
+  // of the raw operation payload
+  payload(): any;
+}
+
+// The type of the argument passed to the subscription callback.
+export type SubscriptionEvent = {
+  object: PathObject;
+  message: ObjectMessage;
+  // TODO: temporary update object until we have a proper conversion to user-facing ObjectMessage
+  update: LiveObjectUpdate;
+};
+
+// Options that can be provided to the subscribe and subscribeIterator methods.
+export interface SubscriptionOptions {
+  // Number of levels deep on which to listen for changes in nested children.
+  // If `undefined`, does not impose a depth limit (i.e. listens for changes
+  // to all nested children at any depth)
+  depth?: number;
+}
+
+export interface Subscribable {
+  // Subscribe to changes to the object.
+  //
+  // The callback receives a message describing each change operation.
+  //
+  // Subscriptions observe nested changes by default; configure depth via options.
+  //
+  // PathObject subscriptions observe whatever value exists at this path.
+  // The subscription remains active even when path does not resolve to any
+  // location with a value (e.g. if an entry was removed from map).
+  // If the object instance that exists at the path changes, the subscription
+  // automatically switches to observe changes to the new object instance (and
+  // stops observing the old one).
+  subscribe(callback: (event: SubscriptionEvent) => void, options?: SubscriptionOptions): () => void;
 }
 
 /**

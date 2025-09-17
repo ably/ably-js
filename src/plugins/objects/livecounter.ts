@@ -225,7 +225,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         );
     }
 
-    this.notifyUpdated(update);
+    this.notifyUpdated(update, msg);
   }
 
   /**

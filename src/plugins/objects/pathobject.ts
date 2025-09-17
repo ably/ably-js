@@ -13,7 +13,7 @@ import { RealtimeObject } from './realtimeobject';
  * Provides a generic implementation that can handle any type of PathObject operations.
  */
 export class PathObjectImpl<T extends Value = Value> implements AnyPathObject<T> {
-  protected _client: BaseClient;
+  private _client: BaseClient;
   private _path: string[];
 
   constructor(
@@ -216,6 +216,13 @@ export class PathObjectImpl<T extends Value = Value> implements AnyPathObject<T>
     }
 
     return resolved.decrement(amount);
+  }
+
+  subscribe(
+    callback: (event: API.SubscriptionEvent) => void,
+    options?: API.SubscriptionOptions | undefined,
+  ): () => void {
+    return this._realtimeObject.getPathObjectSubscriptionRegister().subscribe(this._path, callback, options ?? {});
   }
 
   private _resolvePath(path: string[]): Value {
