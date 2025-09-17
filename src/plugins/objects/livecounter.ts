@@ -16,6 +16,7 @@ export interface LiveCounterData extends LiveObjectData {
 
 export interface LiveCounterUpdate extends LiveObjectUpdate {
   update: { amount: number };
+  _type: 'LiveCounterUpdate';
 }
 
 /** @spec RTLC1, RTLC2 */
@@ -197,7 +198,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       return;
     }
 
-    let update: LiveCounterUpdate | LiveObjectUpdateNoop;
+    let update: LiveCounterUpdate | LiveObjectUpdateNoop = { noop: true };
     switch (op.action) {
       case ObjectOperationAction.COUNTER_CREATE:
         update = this._applyCounterCreate(op, msg);
@@ -214,7 +215,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        update = this._applyObjectDelete(msg);
+        this._applyObjectDelete(msg);
         break;
 
       default:
@@ -225,7 +226,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         );
     }
 
-    this.notifyUpdated(update);
+    this.notifyUpdated(update, msg);
   }
 
   /**
@@ -311,7 +312,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   protected _updateFromDataDiff(prevDataRef: LiveCounterData, newDataRef: LiveCounterData): LiveCounterUpdate {
     const counterDiff = newDataRef.data - prevDataRef.data;
-    return { update: { amount: counterDiff } };
+    return { update: { amount: counterDiff }, _type: 'LiveCounterUpdate' };
   }
 
   protected _mergeInitialDataFromCreateOperation(
@@ -329,6 +330,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       update: { amount: objectOperation.counter?.count ?? 0 },
       clientId: msg.clientId,
       connectionId: msg.connectionId,
+      _type: 'LiveCounterUpdate',
     };
   }
 
@@ -362,6 +364,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   private _applyCounterInc(op: ObjectsCounterOp, msg: ObjectMessage): LiveCounterUpdate {
     this._dataRef.data += op.amount;
-    return { update: { amount: op.amount }, clientId: msg.clientId, connectionId: msg.connectionId };
+    return {
+      update: { amount: op.amount },
+      clientId: msg.clientId,
+      connectionId: msg.connectionId,
+      _type: 'LiveCounterUpdate',
+    };
   }
 }
