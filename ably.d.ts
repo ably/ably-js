@@ -2400,10 +2400,10 @@ export type Primitive =
  * Unique symbol for nominal typing within TypeScript's structural type system.
  * This prevents structural compatibility between LiveObject types.
  */
-declare const __livetype: unique symbol;
+export declare const __livetype: unique symbol;
 
 // Branded interfaces that enables TypeScript to distinguish
-// between LiveObject types even when they have identical structure.
+// between LiveObject types even when they have identical structure (empty interfaces in this case).
 // Enables PathObject<T> to dispatch to correct method sets via conditional types.
 /**
  * A {@link LiveMap} is a collection type that maps string keys to values, which can be either primitive values or other LiveObjects.
