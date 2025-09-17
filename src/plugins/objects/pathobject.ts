@@ -1,10 +1,19 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type * as API from '../../../ably';
-import type { AnyInstance, AnyPathObject, PathObject, Primitive, Value } from '../../../ably';
+import type {
+  AnyPathObject,
+  EventCallback,
+  Instance,
+  PathObject,
+  PathObjectSubscriptionEvent,
+  PathObjectSubscriptionOptions,
+  Primitive,
+  Value,
+} from '../../../ably';
 import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { LiveObject } from './liveobject';
+import { LiveObject, SubscribeResponse } from './liveobject';
 import { RealtimeObject } from './realtimeobject';
 
 /**
@@ -12,7 +21,7 @@ import { RealtimeObject } from './realtimeobject';
  * Provides a generic implementation that can handle any type of PathObject operations.
  */
 export class DefaultPathObject<T extends Value = Value> implements AnyPathObject<T> {
-  protected _client: BaseClient;
+  private _client: BaseClient;
   private _path: string[];
 
   constructor(
@@ -145,13 +154,13 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
     }
   }
 
-  instance<T extends Value = Value>(): AnyInstance<T> | undefined {
+  instance<T extends Value = Value>(): Instance<T> | undefined {
     try {
       const value = this._resolvePath(this._path);
 
       if (value instanceof LiveObject) {
         // only return an Instance for LiveObject values
-        return new DefaultInstance(this._realtimeObject, value);
+        return new DefaultInstance(this._realtimeObject, value) as unknown as Instance<T>;
       }
 
       // return undefined for non live objects
@@ -286,6 +295,31 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
     }
 
     return resolved.decrement(amount ?? 1);
+  }
+
+  /**
+   * Subscribes to changes to the object (and, by default, its children) or to a primitive value at this path.
+   *
+   * PathObject subscriptions rely on LiveObject instances to broadcast updates through a subscription
+   * registry for the paths they occupy in the object graph. These updates are then routed to the appropriate
+   * PathObject subscriptions based on their paths.
+   *
+   * When the underlying object or primitive value at this path is changed via an update to its parent
+   * collection (for example, if a new LiveCounter instance is set at this path, or a key's value is
+   * changed in a parent LiveMap), a subscription to this path will receive a separate **non-bubbling**
+   * event indicating the change. This event is not propagated to parent path subscriptions, as they will
+   * receive their own event for changes made directly to the object at their respective paths.
+   *
+   * PathObject subscriptions observe nested changes by default. Optional `depth` parameter can be provided
+   * to control this behavior. A subscription depth of `1` means that only direct updates to the underlying
+   * object - and changes that overwrite the value at this path (via parent object updates) - will trigger events.
+   */
+
+  subscribe(
+    listener: EventCallback<PathObjectSubscriptionEvent>,
+    options?: PathObjectSubscriptionOptions,
+  ): SubscribeResponse {
+    return this._realtimeObject.getPathObjectSubscriptionRegister().subscribe(this._path, listener, options ?? {});
   }
 
   private _resolvePath(path: string[]): Value {

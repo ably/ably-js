@@ -4444,6 +4444,534 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
           },
         },
+
+        {
+          description: 'PathObject.subscribe() receives events for direct changes to the subscribed path',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              entryPathObject.subscribe((event) => {
+                try {
+                  expect(event.object, 'Check event object exists').to.exist;
+                  expect(event.object.path()).to.equal('', 'Check event object path is root');
+                  expect(event.message, 'Check event message exists').to.exist;
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            await root.set('testKey', 'testValue');
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() receives events for nested changes with unlimited depth by default',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let eventCount = 0;
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              entryPathObject.subscribe((event) => {
+                try {
+                  eventCount++;
+                  expect(event.object, 'Check event object exists').to.exist;
+                  if (eventCount === 1) {
+                    expect(event.object.path()).to.equal('', 'First event is at root path');
+                  } else if (eventCount === 2) {
+                    expect(event.object.path()).to.equal('nested', 'Second event is at nested path');
+                  } else if (eventCount === 3) {
+                    expect(event.object.path()).to.equal('nested.child', 'Third event is at nested.child path');
+                    resolve();
+                  }
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            // root level change
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            await entryPathObject.set('nested', LiveMap.create());
+            await keyUpdatedPromise;
+
+            // nested change
+            keyUpdatedPromise = waitForMapKeyUpdate(root.get('nested'), 'child');
+            await entryPathObject.get('nested').set('child', LiveMap.create());
+            await keyUpdatedPromise;
+
+            // nested child change
+            keyUpdatedPromise = waitForMapKeyUpdate(root.get('nested').get('child'), 'foo');
+            await entryPathObject.get('nested').get('child').set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() with depth parameter receives expected events',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            // Create nested structure
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            await entryPathObject.set('nested', LiveMap.create({ counter: LiveCounter.create() }));
+            await keyUpdatedPromise;
+
+            // Create two subscriptions to root, with depth=1 and depth=2
+            const subscriptionDepthOnePromise = new Promise((resolve, reject) => {
+              entryPathObject.subscribe(
+                (event) => {
+                  try {
+                    expect(event.object.path()).to.equal('', 'First event is at root path for depth=1 subscription');
+                    resolve();
+                  } catch (error) {
+                    reject(error);
+                  }
+                },
+                { depth: 1 },
+              );
+            });
+            let eventCount = 0;
+            const subscriptionDepthTwoPromise = new Promise((resolve, reject) => {
+              entryPathObject.subscribe(
+                (event) => {
+                  eventCount++;
+                  try {
+                    if (eventCount === 1) {
+                      expect(event.object.path()).to.equal(
+                        'nested',
+                        'First event is at nested path for depth=2 subscription',
+                      );
+                    } else if (eventCount === 2) {
+                      expect(event.object.path()).to.equal('', 'Second event is at root path for depth=2 subscription');
+                      resolve();
+                    }
+                  } catch (error) {
+                    reject(error);
+                  }
+                },
+                { depth: 2 },
+              );
+            });
+
+            // Make nested changes couple of levels deep, different subscriptions should get different events
+            const counterUpdatedPromise = waitForCounterUpdate(root.get('nested').get('counter'));
+            await entryPathObject.get('nested').get('counter').increment();
+            await counterUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(root.get('nested'), 'nestedKey');
+            await entryPathObject.get('nested').set('nestedKey', 'foo');
+            await keyUpdatedPromise;
+
+            // Now make a direct change to the root object, should trigger the callback
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'directKey');
+            await entryPathObject.set('directKey', 'bar');
+            await keyUpdatedPromise;
+
+            await Promise.all([subscriptionDepthOnePromise, subscriptionDepthTwoPromise]);
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() on nested path receives events for that path and its children',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            // Create nested structure
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            await entryPathObject.set('nested', LiveMap.create({ counter: LiveCounter.create() }));
+            await keyUpdatedPromise;
+
+            let eventCount = 0;
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              entryPathObject.get('nested').subscribe((event) => {
+                eventCount++;
+                try {
+                  if (eventCount === 1) {
+                    expect(event.object.path()).to.equal('nested', 'First event is at nested path');
+                  } else if (eventCount === 2) {
+                    expect(event.object.path()).to.equal(
+                      'nested.counter',
+                      'Second event is for a child of a nested path',
+                    );
+                  } else if (eventCount === 3) {
+                    expect(event.object.path()).to.equal('nested', 'Third event is at nested path');
+                    resolve();
+                  }
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            // root change should not trigger the subscription
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            await entryPathObject.set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            // Next changes should trigger the subscription
+            keyUpdatedPromise = waitForMapKeyUpdate(root.get('nested'), 'foo');
+            await entryPathObject.get('nested').set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            const counterUpdatedPromise = waitForCounterUpdate(root.get('nested').get('counter'));
+            await entryPathObject.get('nested').get('counter').increment();
+            await counterUpdatedPromise;
+
+            // If object at the subscribed path is replaced, that should also trigger the subscription
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            await entryPathObject.set('nested', LiveMap.create());
+            await keyUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() works with complex nested paths and escaped dots',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'escaped\\key');
+            await entryPathObject.set('escaped\\key', LiveMap.create({ 'key.with.dots': LiveCounter.create() }));
+            await keyUpdatedPromise;
+
+            const complexPathObject = entryPathObject.get('escaped\\key').get('key.with.dots');
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              complexPathObject.subscribe((event) => {
+                try {
+                  expect(event.object.path()).to.equal(
+                    'escaped\\key.key\\.with\\.dots',
+                    'Check complex subscription path',
+                  );
+                  expect(event.message, 'Check event message exists').to.exist;
+                  expect(event.object.value()).to.equal(1, 'Check correct counter value at complex path');
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            const counterUpdatedPromise = waitForCounterUpdate(root.get('escaped\\key').get('key.with.dots'), 'key1');
+            await complexPathObject.increment();
+            await counterUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          // TODO
+          description: 'PathObject.subscribe() keeps subscription after underlying object is replaced',
+          action: async (ctx) => {},
+        },
+
+        {
+          description: 'PathObject.subscribe() on LiveMap path receives set/remove events',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
+            await entryPathObject.set('map', LiveMap.create());
+            await keyUpdatedPromise;
+
+            let eventCount = 0;
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              entryPathObject.get('map').subscribe((event) => {
+                eventCount++;
+
+                try {
+                  expect(event.object.path()).to.equal('map', 'Check map subscription event path');
+                  expect(event.message, 'Check event message exists').to.exist;
+
+                  if (eventCount === 1) {
+                    expect(event.message.operation.action).to.equal('map.set', 'Check first event is MAP_SET');
+                  } else if (eventCount === 2) {
+                    expect(event.message.operation.action).to.equal('map.remove', 'Check second event is MAP_REMOVE');
+                    resolve();
+                  }
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            keyUpdatedPromise = waitForMapKeyUpdate(root.get('map'), 'foo');
+            await entryPathObject.get('map').set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(root.get('map'), 'foo');
+            await entryPathObject.get('map').remove('foo');
+            await keyUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() on LiveCounter path receives increment/decrement events',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            await entryPathObject.set('counter', LiveCounter.create());
+            await keyUpdatedPromise;
+
+            let eventCount = 0;
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              entryPathObject.get('counter').subscribe((event) => {
+                eventCount++;
+
+                try {
+                  expect(event.object.path()).to.equal('counter', 'Check counter subscription event path');
+                  expect(event.message, 'Check event message exists').to.exist;
+
+                  if (eventCount === 1) {
+                    expect(event.message.operation.action).to.equal(
+                      'counter.inc',
+                      'Check first event is COUNTER_INC with positive value',
+                    );
+                    expect(event.message.operation.counterOp.amount).to.equal(
+                      1,
+                      'Check first event is COUNTER_INC with positive value',
+                    );
+                  } else if (eventCount === 2) {
+                    expect(event.message.operation.action).to.equal(
+                      'counter.inc',
+                      'Check second event is COUNTER_INC with negative value',
+                    );
+                    expect(event.message.operation.counterOp.amount).to.equal(
+                      -1,
+                      'Check first event is COUNTER_INC with positive value',
+                    );
+
+                    resolve();
+                  }
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            let counterUpdatedPromise = waitForCounterUpdate(root.get('counter'));
+            await entryPathObject.get('counter').increment();
+            await counterUpdatedPromise;
+
+            counterUpdatedPromise = waitForCounterUpdate(root.get('counter'));
+            await entryPathObject.get('counter').decrement();
+            await counterUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() on Primitive path receives changes to the primitive value',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
+            await entryPathObject.set('primitive', 'foo');
+            await keyUpdatedPromise;
+
+            let eventCount = 0;
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              entryPathObject.get('primitive').subscribe((event) => {
+                eventCount++;
+
+                try {
+                  expect(event.object.path()).to.equal('primitive', 'Check primitive subscription event path');
+                  expect(event.message, 'Check event message exists').to.exist;
+
+                  if (eventCount === 1) {
+                    expect(event.object.value()).to.equal('baz', 'Check first event has correct value');
+                  } else if (eventCount === 2) {
+                    expect(event.object.value()).to.equal(42, 'Check second event has correct value');
+                  } else if (eventCount === 3) {
+                    expect(event.object.value()).to.equal(true, 'Check third event has correct value');
+                    resolve();
+                  }
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            // Update to other keys on root should not trigger the subscription
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'other');
+            await entryPathObject.set('other', 'bar');
+            await keyUpdatedPromise;
+
+            // Only changes to the primitive path should trigger the subscription
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
+            await entryPathObject.set('primitive', 'baz');
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
+            await entryPathObject.set('primitive', 42);
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
+            await entryPathObject.set('primitive', true);
+            await keyUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() returns "unsubscribe" function',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            const subscribeResponse = entryPathObject.subscribe(() => {});
+
+            expect(subscribeResponse, 'Check subscribe response exists').to.exist;
+            expect(subscribeResponse.unsubscribe).to.be.a('function', 'Check unsubscribe is a function');
+
+            // Should not throw when called
+            subscribeResponse.unsubscribe();
+          },
+        },
+
+        {
+          description: 'can unsubscribe from PathObject.subscribe() updates using returned "unsubscribe" function',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let eventCount = 0;
+            const { unsubscribe } = entryPathObject.subscribe(() => {
+              eventCount++;
+            });
+
+            // Make first change - should receive event
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'key1');
+            await entryPathObject.set('key1', 'value1');
+            await keyUpdatedPromise;
+
+            unsubscribe();
+
+            // Make second change - should NOT receive event
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'key2');
+            await entryPathObject.set('key2', 'value2');
+            await keyUpdatedPromise;
+
+            expect(eventCount).to.equal(1, 'Check only first event was received after unsubscribe');
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() handles multiple subscriptions independently',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let subscription1Events = 0;
+            let subscription2Events = 0;
+
+            const { unsubscribe: unsubscribe1 } = entryPathObject.subscribe(() => {
+              subscription1Events++;
+            });
+
+            entryPathObject.subscribe(() => {
+              subscription2Events++;
+            });
+
+            // Make change - both should receive event
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'key1');
+            await entryPathObject.set('key1', 'value1');
+            await keyUpdatedPromise;
+
+            // Unsubscribe first subscription
+            unsubscribe1();
+
+            // Make another change - only second should receive event
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'key2');
+            await entryPathObject.set('key2', 'value2');
+            await keyUpdatedPromise;
+
+            expect(subscription1Events).to.equal(1, 'Check first subscription received one event');
+            expect(subscription2Events).to.equal(2, 'Check second subscription received two events');
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() event object provides correct PathObject instance',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              entryPathObject.subscribe((event) => {
+                try {
+                  expect(event.object, 'Check event object exists').to.exist;
+                  expectInstanceOf(event.object, 'DefaultPathObject', 'Check event object is PathObject instance');
+                  expect(event.object.path()).to.equal('', 'Check event object has correct path');
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            await entryPathObject.set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() handles subscription listener errors gracefully',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let goodListenerCalled = false;
+
+            // Add a listener that throws an error
+            entryPathObject.subscribe(() => {
+              throw new Error('Test subscription error');
+            });
+
+            // Add a good listener to ensure other subscriptions still work
+            entryPathObject.subscribe(() => {
+              goodListenerCalled = true;
+            });
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            await entryPathObject.set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            // Wait for next tick to ensure both listeners had a change to process the event
+            await new Promise((res) => nextTick(res));
+
+            expect(goodListenerCalled, 'Check good listener was called').to.be.true;
+          },
+        },
+
+        {
+          description: 'PathObject.subscribe() throws error for invalid options',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            expect(() => {
+              entryPathObject.subscribe(() => {}, 'invalid');
+            }).to.throw('Subscription options must be an object');
+
+            expect(() => {
+              entryPathObject.subscribe(() => {}, { depth: 0 });
+            }).to.throw('Subscription depth must be greater than 0 or undefined for infinite depth');
+
+            expect(() => {
+              entryPathObject.subscribe(() => {}, { depth: -1 });
+            }).to.throw('Subscription depth must be greater than 0 or undefined for infinite depth');
+          },
+        },
       ];
 
       const instanceScenarios = [
@@ -4841,6 +5369,247 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 withCode: 92007,
               },
             );
+
+            // subscription mutation methods throw errors for non-LiveObjects
+            expect(() => {
+              primitiveInstance.subscribe(() => {});
+            })
+              .to.throw('Cannot subscribe to a non-LiveObject instance')
+              .with.property('code', 92007);
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribe() receives events for LiveMap set/remove operations',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
+            await entryPathObject.set('map', LiveMap.create());
+            await keyUpdatedPromise;
+
+            const mapInstance = entryPathObject.get('map').instance();
+            let eventCount = 0;
+
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              mapInstance.subscribe((event) => {
+                eventCount++;
+
+                try {
+                  expect(event.object).to.equal(mapInstance, 'Check event object is the same instance');
+                  expect(event.message, 'Check event message exists').to.exist;
+
+                  if (eventCount === 1) {
+                    expect(event.message.operation.action).to.equal('map.set', 'Check first event is MAP_SET');
+                  } else if (eventCount === 2) {
+                    expect(event.message.operation.action).to.equal('map.remove', 'Check second event is MAP_REMOVE');
+                    resolve();
+                  }
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            keyUpdatedPromise = waitForMapKeyUpdate(root.get('map'), 'foo');
+            await entryPathObject.get('map').set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(root.get('map'), 'foo');
+            await entryPathObject.get('map').remove('foo');
+            await keyUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribe() receives events for LiveCounter increment/decrement',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            await entryPathObject.set('counter', LiveCounter.create());
+            await keyUpdatedPromise;
+
+            const counterInstance = entryPathObject.get('counter').instance();
+            let eventCount = 0;
+
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              counterInstance.subscribe((event) => {
+                eventCount++;
+
+                try {
+                  expect(event.object).to.equal(counterInstance, 'Check event object is the same instance');
+                  expect(event.message, 'Check event message exists').to.exist;
+
+                  if (eventCount === 1) {
+                    expect(event.message.operation.action).to.equal(
+                      'counter.inc',
+                      'Check first event is COUNTER_INC with positive value',
+                    );
+                    expect(event.message.operation.counterOp.amount).to.equal(
+                      1,
+                      'Check first event is COUNTER_INC with positive value',
+                    );
+                  } else if (eventCount === 2) {
+                    expect(event.message.operation.action).to.equal(
+                      'counter.inc',
+                      'Check second event is COUNTER_INC with negative value',
+                    );
+                    expect(event.message.operation.counterOp.amount).to.equal(
+                      -1,
+                      'Check first event is COUNTER_INC with positive value',
+                    );
+
+                    resolve();
+                  }
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            let counterUpdatedPromise = waitForCounterUpdate(root.get('counter'));
+            await entryPathObject.get('counter').increment();
+            await counterUpdatedPromise;
+
+            counterUpdatedPromise = waitForCounterUpdate(root.get('counter'));
+            await entryPathObject.get('counter').decrement();
+            await counterUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribe() returns "unsubscribe" function',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            const subscribeResponse = entryPathObject.instance().subscribe(() => {});
+
+            expect(subscribeResponse, 'Check subscribe response exists').to.exist;
+            expect(subscribeResponse.unsubscribe).to.be.a('function', 'Check unsubscribe is a function');
+
+            // Should not throw when called
+            subscribeResponse.unsubscribe();
+          },
+        },
+
+        {
+          description: 'can unsubscribe from DefaultInstance.subscribe() updates using returned "unsubscribe" function',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let eventCount = 0;
+            const { unsubscribe } = entryPathObject.instance().subscribe(() => {
+              eventCount++;
+            });
+
+            // Make first change - should receive event
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'key1');
+            await entryPathObject.set('key1', 'value1');
+            await keyUpdatedPromise;
+
+            unsubscribe();
+
+            // Make second change - should NOT receive event
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'key2');
+            await entryPathObject.set('key2', 'value2');
+            await keyUpdatedPromise;
+
+            expect(eventCount).to.equal(1, 'Check only first event was received after unsubscribe');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribe() handles multiple subscriptions independently',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let subscription1Events = 0;
+            let subscription2Events = 0;
+
+            const { unsubscribe: unsubscribe1 } = entryPathObject.instance().subscribe(() => {
+              subscription1Events++;
+            });
+
+            entryPathObject.instance().subscribe(() => {
+              subscription2Events++;
+            });
+
+            // Make change - both should receive event
+            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'key1');
+            await entryPathObject.set('key1', 'value1');
+            await keyUpdatedPromise;
+
+            // Unsubscribe first subscription
+            unsubscribe1();
+
+            // Make another change - only second should receive event
+            keyUpdatedPromise = waitForMapKeyUpdate(root, 'key2');
+            await entryPathObject.set('key2', 'value2');
+            await keyUpdatedPromise;
+
+            expect(subscription1Events).to.equal(1, 'Check first subscription received one event');
+            expect(subscription2Events).to.equal(2, 'Check second subscription received two events');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribe() event object provides correct DefaultInstance reference',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            const instance = entryPathObject.instance();
+            const subscriptionPromise = new Promise((resolve, reject) => {
+              instance.subscribe((event) => {
+                try {
+                  expect(event.object, 'Check event object exists').to.exist;
+                  expectInstanceOf(event.object, 'DefaultInstance', 'Check event object is DefaultInstance');
+                  expect(event.object.id()).to.equal('root', 'Check event object has correct object ID');
+                  expect(event.object).to.equal(instance, 'Check event object is the same instance');
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            });
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            await entryPathObject.set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            await subscriptionPromise;
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribe() handles subscription listener errors gracefully',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            let goodListenerCalled = false;
+
+            // Add a listener that throws an error
+            entryPathObject.instance().subscribe(() => {
+              throw new Error('Test subscription error');
+            });
+
+            // Add a good listener to ensure other subscriptions still work
+            entryPathObject.instance().subscribe(() => {
+              goodListenerCalled = true;
+            });
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            await entryPathObject.set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            // Wait for next tick to ensure both listeners had a change to process the event
+            await new Promise((res) => nextTick(res));
+
+            expect(goodListenerCalled, 'Check good listener was called').to.be.true;
           },
         },
       ];

@@ -2,10 +2,10 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type * as API from '../../../ably';
 import { BatchContextLiveCounter } from './batchcontextlivecounter';
 import { BatchContextLiveMap } from './batchcontextlivemap';
+import { ROOT_OBJECT_ID } from './constants';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { ObjectMessage } from './objectmessage';
-import { ROOT_OBJECT_ID } from './objectspool';
 import { RealtimeObject } from './realtimeobject';
 
 export class BatchContext {
