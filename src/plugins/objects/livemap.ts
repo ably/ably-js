@@ -42,6 +42,7 @@ export interface LiveMapData extends LiveObjectData {
 
 export interface LiveMapUpdate<T extends API.LiveMapType> extends LiveObjectUpdate {
   update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
+  _type: 'LiveMapUpdate';
 }
 
 /** @spec RTLM1, RTLM2 */
@@ -379,7 +380,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return;
     }
 
-    let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
+    let update: LiveMapUpdate<T> | LiveObjectUpdateNoop = { noop: true };
     switch (op.action) {
       case ObjectOperationAction.MAP_CREATE:
         update = this._applyMapCreate(op, msg);
@@ -406,7 +407,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        update = this._applyObjectDelete(msg);
+        this._applyObjectDelete(msg);
         break;
 
       default:
@@ -417,7 +418,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         );
     }
 
-    this.notifyUpdated(update);
+    this.notifyUpdated(update, msg);
   }
 
   /**
@@ -501,6 +502,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
     update.clientId = objectMessage.clientId;
     update.connectionId = objectMessage.connectionId;
+
+    // Update parent references based on the calculated diff
+    this._updateParentReferencesFromUpdate(update, previousDataRef);
+
     return update;
   }
 
@@ -520,13 +525,33 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     keysToDelete.forEach((x) => this._dataRef.data.delete(x));
   }
 
+  /**
+   * Override clearData to handle parent reference cleanup when this LiveMap is tombstoned.
+   *
+   * @internal
+   */
+  clearData(): LiveMapUpdate<T> {
+    // Remove all parent references for objects this map was referencing
+    for (const [key, entry] of this._dataRef.data.entries()) {
+      if (entry.data && 'objectId' in entry.data) {
+        const referencedObject = this._realtimeObject.getPool().get(entry.data.objectId);
+        if (referencedObject) {
+          referencedObject.removeParentReference(this, key);
+        }
+      }
+    }
+
+    // Call the parent clearData method
+    return super.clearData();
+  }
+
   /** @spec RTLM4 */
   protected _getZeroValueData(): LiveMapData {
     return { data: new Map<string, LiveMapEntry>() };
   }
 
   protected _updateFromDataDiff(prevDataRef: LiveMapData, newDataRef: LiveMapData): LiveMapUpdate<T> {
-    const update: LiveMapUpdate<T> = { update: {} };
+    const update: LiveMapUpdate<T> = { update: {}, _type: 'LiveMapUpdate' };
 
     for (const [key, currentEntry] of prevDataRef.data.entries()) {
       const typedKey: keyof T & string = key;
@@ -588,10 +613,15 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (this._client.Utils.isNil(objectOperation.map)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
-      return { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
+      return { update: {}, clientId: msg.clientId, connectionId: msg.connectionId, _type: 'LiveMapUpdate' };
     }
 
-    const aggregatedUpdate: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
+    const aggregatedUpdate: LiveMapUpdate<T> = {
+      update: {},
+      clientId: msg.clientId,
+      connectionId: msg.connectionId,
+      _type: 'LiveMapUpdate',
+    };
     // RTLM6d1
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
@@ -700,6 +730,15 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     if (existingEntry) {
+      // If there was an existing entry, we need to handle parent reference changes
+      if (existingEntry.data && 'objectId' in existingEntry.data) {
+        // Remove parent reference from the old object
+        const oldReferencedObject = this._realtimeObject.getPool().get(existingEntry.data.objectId);
+        if (oldReferencedObject) {
+          oldReferencedObject.removeParentReference(this, op.key);
+        }
+      }
+
       // RTLM7a2
       existingEntry.tombstone = false; // RTLM7a2c
       existingEntry.tombstonedAt = undefined;
@@ -716,7 +755,20 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       this._dataRef.data.set(op.key, newEntry);
     }
 
-    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
+    // Add parent reference to the new object (if it's an object reference)
+    if ('objectId' in liveData) {
+      const newReferencedObject = this._realtimeObject.getPool().get(liveData.objectId);
+      if (newReferencedObject) {
+        newReferencedObject.addParentReference(this, op.key);
+      }
+    }
+
+    const update: LiveMapUpdate<T> = {
+      update: {},
+      clientId: msg.clientId,
+      connectionId: msg.connectionId,
+      _type: 'LiveMapUpdate',
+    };
     const typedKey: keyof T & string = op.key;
     update.update[typedKey] = 'updated';
 
@@ -757,6 +809,15 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     if (existingEntry) {
+      // Handle parent reference removal for object references
+      if (existingEntry.data && 'objectId' in existingEntry.data) {
+        // Remove parent reference from the object that was being referenced
+        const referencedObject = this._realtimeObject.getPool().get(existingEntry.data.objectId);
+        if (referencedObject) {
+          referencedObject.removeParentReference(this, op.key);
+        }
+      }
+
       // RTLM8a2
       existingEntry.tombstone = true; // RTLM8a2c
       existingEntry.tombstonedAt = tombstonedAt;
@@ -773,7 +834,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       this._dataRef.data.set(op.key, newEntry);
     }
 
-    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
+    const update: LiveMapUpdate<T> = {
+      update: {},
+      clientId: msg.clientId,
+      connectionId: msg.connectionId,
+      _type: 'LiveMapUpdate',
+    };
     const typedKey: keyof T & string = op.key;
     update.update[typedKey] = 'removed';
 
@@ -897,5 +963,45 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     return false;
+  }
+
+  /**
+   * Update parent references based on the calculated update diff.
+   */
+  private _updateParentReferencesFromUpdate(update: LiveMapUpdate<T>, previousDataRef: LiveMapData): void {
+    for (const [key, changeType] of Object.entries(update.update)) {
+      if (changeType === 'removed') {
+        // Key was removed - remove parent reference from the old object if it was referencing one
+        const previousEntry = previousDataRef.data.get(key);
+        if (previousEntry?.data && 'objectId' in previousEntry.data) {
+          const oldReferencedObject = this._realtimeObject.getPool().get(previousEntry.data.objectId);
+          if (oldReferencedObject) {
+            oldReferencedObject.removeParentReference(this, key);
+          }
+        }
+      }
+
+      if (changeType === 'updated') {
+        // Key was updated - need to handle both removal of old reference and addition of new reference
+        const previousEntry = previousDataRef.data.get(key);
+        const newEntry = this._dataRef.data.get(key);
+
+        // Remove old parent reference if there was one
+        if (previousEntry?.data && 'objectId' in previousEntry.data) {
+          const oldReferencedObject = this._realtimeObject.getPool().get(previousEntry.data.objectId);
+          if (oldReferencedObject) {
+            oldReferencedObject.removeParentReference(this, key);
+          }
+        }
+
+        // Add new parent reference if the new value references an object
+        if (newEntry?.data && 'objectId' in newEntry.data) {
+          const newReferencedObject = this._realtimeObject.getPool().get(newEntry.data.objectId);
+          if (newReferencedObject) {
+            newReferencedObject.addParentReference(this, key);
+          }
+        }
+      }
+    }
   }
 }

@@ -1,12 +1,12 @@
 import type BaseClient from 'common/lib/client/baseclient';
+import type * as API from '../../../ably';
+import { ROOT_OBJECT_ID } from './constants';
 import { DEFAULTS } from './defaults';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { ObjectId } from './objectid';
 import { RealtimeObject } from './realtimeobject';
-
-export const ROOT_OBJECT_ID = 'root';
 
 /**
  * @internal
@@ -31,6 +31,18 @@ export class ObjectsPool {
     return this._pool.get(objectId);
   }
 
+  getRoot<T extends API.LiveMapType = API.AblyDefaultObject>(): LiveMap<T> {
+    return this._pool.get(ROOT_OBJECT_ID) as LiveMap<T>;
+  }
+
+  /**
+   * Returns all objects in the pool as an iterable.
+   * Used internally for operations that need to process all objects.
+   */
+  getAll(): IterableIterator<LiveObject> {
+    return this._pool.values();
+  }
+
   /**
    * Deletes objects from the pool for which object ids are not found in the provided array of ids.
    */
@@ -51,7 +63,7 @@ export class ObjectsPool {
    */
   resetToInitialPool(emitUpdateEvents: boolean): void {
     // clear the pool first and keep the root object
-    const root = this._pool.get(ROOT_OBJECT_ID)!;
+    const root = this.getRoot();
     this._pool.clear();
     this._pool.set(root.getObjectId(), root);
 

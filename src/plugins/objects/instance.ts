@@ -1,9 +1,17 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type { AnyInstance, Instance, Primitive, Value } from '../../../ably';
+import type { AnyInstance, EventCallback, Instance, InstanceSubscriptionEvent, Primitive, Value } from '../../../ably';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { LiveObject } from './liveobject';
+import { LiveObject, LiveObjectUpdate, SubscribeResponse } from './liveobject';
+import { ObjectMessage } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
+
+export interface InstanceEvent {
+  /** Object message that caused this event */
+  message?: ObjectMessage;
+  /** Compact representation of an update to the object */
+  update: Omit<LiveObjectUpdate, '_type'>;
+}
 
 export class DefaultInstance<T extends Value> implements AnyInstance<T> {
   protected _client: BaseClient;
@@ -135,5 +143,17 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
       throw new this._client.ErrorInfo('Cannot decrement a non-LiveCounter instance', 92007, 400);
     }
     return this._value.decrement(amount ?? 1);
+  }
+
+  subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): SubscribeResponse {
+    if (!(this._value instanceof LiveObject)) {
+      throw new this._client.ErrorInfo('Cannot subscribe to a non-LiveObject instance', 92007, 400);
+    }
+    return this._value.instanceSubscribe((event: InstanceEvent) => {
+      listener({
+        object: this as unknown as Instance<T>,
+        message: event.message?.toUserFacingMessage(this._realtimeObject.getChannel(), event.update),
+      });
+    });
   }
 }
