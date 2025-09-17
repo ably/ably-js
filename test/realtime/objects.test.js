@@ -15,6 +15,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
   const objectsFixturesChannel = 'objects_fixtures';
   const nextTick = Ably.Realtime.Platform.Config.nextTick;
   const gcIntervalOriginal = ObjectsPlugin.RealtimeObject._DEFAULTS.gcInterval;
+  const LiveMap = ObjectsPlugin.LiveMap;
+  const LiveCounter = ObjectsPlugin.LiveCounter;
 
   function RealtimeWithObjects(helper, options) {
     return helper.AblyRealtime({ ...options, plugins: { Objects: ObjectsPlugin } });
@@ -594,19 +596,22 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'OBJECT_SYNC sequence builds object tree with all operations applied',
           action: async (ctx) => {
-            const { root, realtimeObject, helper, clientOptions, channelName } = ctx;
+            const { root, helper, clientOptions, channelName } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
+            await Promise.all([
+              // MAP_CREATE
+              root.set('map', LiveMap.create({ shouldStay: 'foo', shouldDelete: 'bar' })),
+              // COUNTER_CREATE
+              root.set('counter', LiveCounter.create(1)),
+              objectsCreatedPromise,
+            ]);
 
-            // MAP_CREATE
-            const map = await realtimeObject.createMap({ shouldStay: 'foo', shouldDelete: 'bar' });
-            // COUNTER_CREATE
-            const counter = await realtimeObject.createCounter(1);
-
-            await Promise.all([root.set('map', map), root.set('counter', counter), objectsCreatedPromise]);
+            const map = root.get('map');
+            const counter = root.get('counter');
 
             const operationsAppliedPromise = Promise.all([
               waitForMapKeyUpdate(map, 'anotherKey'),
@@ -654,16 +659,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_SYNC sequence does not change references to existing objects',
           action: async (ctx) => {
-            const { root, realtimeObject, helper, channel } = ctx;
+            const { root, helper, channel } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
+            await Promise.all([
+              root.set('map', LiveMap.create()),
+              root.set('counter', LiveCounter.create()),
+              objectsCreatedPromise,
+            ]);
+            const map = root.get('map');
+            const counter = root.get('counter');
 
-            const map = await realtimeObject.createMap();
-            const counter = await realtimeObject.createCounter();
-            await Promise.all([root.set('map', map), root.set('counter', counter), objectsCreatedPromise]);
             await channel.detach();
 
             // wait for the actual OBJECT_SYNC message to confirm it was received and processed
@@ -3111,39 +3120,24 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          allTransportsAndProtocols: true,
-          description: 'RealtimeObject.createCounter sends COUNTER_CREATE operation',
-          action: async (ctx) => {
-            const { realtimeObject } = ctx;
-
-            const counters = await Promise.all(
-              countersFixtures.map(async (x) => realtimeObject.createCounter(x.count)),
-            );
-
-            for (let i = 0; i < counters.length; i++) {
-              const counter = counters[i];
-              const fixture = countersFixtures[i];
-
-              expect(counter, `Check counter #${i + 1} exists`).to.exist;
-              expectInstanceOf(counter, 'LiveCounter', `Check counter instance #${i + 1} is of an expected class`);
-              expect(counter.value()).to.equal(
-                fixture.count ?? 0,
-                `Check counter #${i + 1} has expected initial value`,
-              );
-            }
+          description: 'LiveCounter.create() returns value type object',
+          action: async () => {
+            const valueType = LiveCounter.create();
+            expectInstanceOf(valueType, 'LiveCounterValueType', `Check LiveCounter.create() returns value type object`);
           },
         },
 
         {
           allTransportsAndProtocols: true,
-          description: 'LiveCounter created with RealtimeObject.createCounter can be assigned to the object tree',
+          description: 'Value type created with LiveCounter.create() can be assigned to the object tree',
           action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+            const { root } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const counter = await realtimeObject.createCounter(1);
-            await root.set('counter', counter);
+            await root.set('counter', LiveCounter.create(1));
             await counterCreatedPromise;
+
+            const counter = root.get('counter');
 
             expectInstanceOf(counter, 'LiveCounter', `Check counter instance is of an expected class`);
             expectInstanceOf(
@@ -3163,140 +3157,102 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description:
-            'RealtimeObject.createCounter can return LiveCounter with initial value without applying CREATE operation',
-          action: async (ctx) => {
-            const { realtimeObject, helper } = ctx;
-
-            // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
-            helper.recordPrivateApi('replace.RealtimeObject.publish');
-            realtimeObject.publish = () => {};
-
-            const counter = await realtimeObject.createCounter(1);
-            expect(counter.value()).to.equal(1, `Check counter has expected initial value`);
-          },
-        },
-
-        {
           allTransportsAndProtocols: true,
-          description:
-            'RealtimeObject.createCounter can return LiveCounter with initial value from applied CREATE operation',
+          description: 'LiveCounter.create() sends COUNTER_CREATE operation',
           action: async (ctx) => {
-            const { realtimeObject, objectsHelper, helper, channel } = ctx;
+            const { root } = ctx;
 
-            // instead of sending CREATE op to the realtime, echo it immediately to the client
-            // with forged initial value so we can check that counter gets initialized with a value from a CREATE op
-            helper.recordPrivateApi('replace.RealtimeObject.publish');
-            realtimeObject.publish = async (objectMessages) => {
-              const counterId = objectMessages[0].operation.objectId;
-              // this should result execute regular operation application procedure and create an object in the pool with forged initial value
-              await objectsHelper.processObjectOperationMessageOnChannel({
-                channel,
-                serial: lexicoTimeserial('aaa', 1, 1),
-                siteCode: 'aaa',
-                state: [objectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
-              });
-            };
+            const objectsCreatedPromise = Promise.all(countersFixtures.map((x) => waitForMapKeyUpdate(root, x.name)));
+            await Promise.all(countersFixtures.map(async (x) => root.set(x.name, LiveCounter.create(x.count))));
+            await objectsCreatedPromise;
 
-            const counter = await realtimeObject.createCounter(1);
+            for (let i = 0; i < countersFixtures.length; i++) {
+              const counter = root.get(countersFixtures[i].name);
+              const fixture = countersFixtures[i];
 
-            // counter should be created with forged initial value instead of the actual one
-            expect(counter.value()).to.equal(
-              10,
-              'Check counter value has the expected initial value from a CREATE operation',
-            );
+              expect(counter, `Check counter #${i + 1} exists`).to.exist;
+              expectInstanceOf(counter, 'LiveCounter', `Check counter instance #${i + 1} is of an expected class`);
+              expect(counter.value()).to.equal(
+                fixture.count ?? 0,
+                `Check counter #${i + 1} has expected initial value`,
+              );
+            }
           },
         },
 
         {
-          description:
-            'initial value is not double counted for LiveCounter from RealtimeObject.createCounter when CREATE op is received',
-          action: async (ctx) => {
-            const { realtimeObject, objectsHelper, helper, channel } = ctx;
-
-            // prevent publishing of ops to realtime so we can guarantee order of operations
-            helper.recordPrivateApi('replace.RealtimeObject.publish');
-            realtimeObject.publish = () => {};
-
-            // create counter locally, should have an initial value set
-            const counter = await realtimeObject.createCounter(1);
-            helper.recordPrivateApi('call.LiveObject.getObjectId');
-            const counterId = counter.getObjectId();
-
-            // now inject CREATE op for a counter with a forged value. it should not be applied
-            await objectsHelper.processObjectOperationMessageOnChannel({
-              channel,
-              serial: lexicoTimeserial('aaa', 1, 1),
-              siteCode: 'aaa',
-              state: [objectsHelper.counterCreateOp({ objectId: counterId, count: 10 })],
-            });
-
-            expect(counter.value()).to.equal(
-              1,
-              `Check counter initial value is not double counted after being created and receiving CREATE operation`,
-            );
-          },
-        },
-
-        {
-          description: 'RealtimeObject.createCounter throws on invalid input',
+          description: 'LiveCounter.create() throws on invalid input',
           action: async (ctx) => {
             const { root, realtimeObject } = ctx;
 
+            await expectToThrowAsync(async () => LiveCounter.create(null), 'Counter value should be a valid number');
             await expectToThrowAsync(
-              async () => realtimeObject.createCounter(null),
+              async () => LiveCounter.create(Number.NaN),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => realtimeObject.createCounter(Number.NaN),
+              async () => LiveCounter.create(Number.POSITIVE_INFINITY),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => realtimeObject.createCounter(Number.POSITIVE_INFINITY),
+              async () => LiveCounter.create(Number.NEGATIVE_INFINITY),
               'Counter value should be a valid number',
             );
+            await expectToThrowAsync(async () => LiveCounter.create('foo'), 'Counter value should be a valid number');
             await expectToThrowAsync(
-              async () => realtimeObject.createCounter(Number.NEGATIVE_INFINITY),
+              async () => LiveCounter.create(BigInt(1)),
               'Counter value should be a valid number',
             );
+            await expectToThrowAsync(async () => LiveCounter.create(true), 'Counter value should be a valid number');
             await expectToThrowAsync(
-              async () => realtimeObject.createCounter('foo'),
+              async () => LiveCounter.create(Symbol()),
               'Counter value should be a valid number',
             );
-            await expectToThrowAsync(
-              async () => realtimeObject.createCounter(BigInt(1)),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createCounter(true),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createCounter(Symbol()),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createCounter({}),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createCounter([]),
-              'Counter value should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createCounter(root),
-              'Counter value should be a valid number',
+            await expectToThrowAsync(async () => LiveCounter.create({}), 'Counter value should be a valid number');
+            await expectToThrowAsync(async () => LiveCounter.create([]), 'Counter value should be a valid number');
+            await expectToThrowAsync(async () => LiveCounter.create(root), 'Counter value should be a valid number');
+          },
+        },
+
+        {
+          description: 'LiveMap.create() returns value type object',
+          action: async () => {
+            const valueType = LiveMap.create();
+            expectInstanceOf(valueType, 'LiveMapValueType', `Check LiveMap.create() returns value type object`);
+          },
+        },
+
+        {
+          allTransportsAndProtocols: true,
+          description: 'Value type created with LiveMap.create() can be assigned to the object tree',
+          action: async (ctx) => {
+            const { root } = ctx;
+
+            const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
+            await root.set('map', LiveMap.create({ foo: 'bar' }));
+            await mapCreatedPromise;
+
+            const map = root.get('map');
+
+            expectInstanceOf(map, 'LiveMap', `Check map instance on root is of an expected class`);
+            expect(map.size()).to.equal(2, 'Check map assigned to the object tree has the expected number of keys');
+            expect(map.get('foo')).to.equal(
+              'bar',
+              'Check map assigned to the object tree has the expected value for its string key',
             );
           },
         },
 
         {
           allTransportsAndProtocols: true,
-          description: 'RealtimeObject.createMap sends MAP_CREATE operation with primitive values',
+          description: 'LiveMap.create() sends MAP_CREATE operation with primitive values',
           action: async (ctx) => {
-            const { realtimeObject, helper } = ctx;
+            const { root, helper } = ctx;
 
-            const maps = await Promise.all(
+            const objectsCreatedPromise = Promise.all(
+              primitiveMapsFixtures.map((x) => waitForMapKeyUpdate(root, x.name)),
+            );
+            await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
                 const entries = mapFixture.entries
                   ? Object.entries(mapFixture.entries).reduce((acc, [key, keyData]) => {
@@ -3315,12 +3271,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                     }, {})
                   : undefined;
 
-                return realtimeObject.createMap(entries);
+                return root.set(mapFixture.name, LiveMap.create(entries));
               }),
             );
+            await objectsCreatedPromise;
 
-            for (let i = 0; i < maps.length; i++) {
-              const map = maps[i];
+            for (let i = 0; i < primitiveMapsFixtures.length; i++) {
+              const map = root.get(primitiveMapsFixtures[i].name);
               const fixture = primitiveMapsFixtures[i];
 
               expect(map, `Check map #${i + 1} exists`).to.exist;
@@ -3346,210 +3303,56 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'RealtimeObject.createMap sends MAP_CREATE operation with reference to another LiveObject',
+          description: 'LiveMap.create() sends MAP_CREATE operation with reference to another LiveObject',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, realtimeObject } = ctx;
+            const { root } = ctx;
 
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
-            ]);
-            await objectsHelper.createAndSetOnMap(channelName, {
-              mapObjectId: 'root',
-              key: 'counter',
-              createOp: objectsHelper.counterCreateRestOp(),
-            });
-            await objectsHelper.createAndSetOnMap(channelName, {
-              mapObjectId: 'root',
-              key: 'map',
-              createOp: objectsHelper.mapCreateRestOp(),
-            });
-            await objectsCreatedPromise;
+            const objectCreatedPromise = waitForMapKeyUpdate(root, 'map');
+            await root.set(
+              'map',
+              LiveMap.create({
+                map: LiveMap.create(),
+                counter: LiveCounter.create(),
+              }),
+            );
+            await objectCreatedPromise;
 
-            const counter = root.get('counter');
             const map = root.get('map');
+            const nestedMap = map.get('map');
+            const nestedCounter = map.get('counter');
 
-            const newMap = await realtimeObject.createMap({ counter, map });
+            expect(map, 'Check map exists').to.exist;
+            expectInstanceOf(map, 'LiveMap', 'Check map instance is of an expected class');
 
-            expect(newMap, 'Check map exists').to.exist;
-            expectInstanceOf(newMap, 'LiveMap', 'Check map instance is of an expected class');
+            expect(nestedMap, 'Check nested map exists').to.exist;
+            expectInstanceOf(nestedMap, 'LiveMap', 'Check nested map instance is of an expected class');
 
-            expect(newMap.get('counter')).to.equal(
-              counter,
-              'Check can set a reference to a LiveCounter object on a new map via a MAP_CREATE operation',
-            );
-            expect(newMap.get('map')).to.equal(
-              map,
-              'Check can set a reference to a LiveMap object on a new map via a MAP_CREATE operation',
-            );
+            expect(nestedCounter, 'Check nested counter exists').to.exist;
+            expectInstanceOf(nestedCounter, 'LiveCounter', 'Check nested counter instance is of an expected class');
           },
         },
 
         {
-          allTransportsAndProtocols: true,
-          description: 'LiveMap created with RealtimeObject.createMap can be assigned to the object tree',
-          action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
-
-            const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
-            const counter = await realtimeObject.createCounter();
-            const map = await realtimeObject.createMap({ foo: 'bar', baz: counter });
-            await root.set('map', map);
-            await mapCreatedPromise;
-
-            expectInstanceOf(map, 'LiveMap', `Check map instance is of an expected class`);
-            expectInstanceOf(root.get('map'), 'LiveMap', `Check map instance on root is of an expected class`);
-            expect(root.get('map')).to.equal(map, 'Check map object on root is the same as from create method');
-            expect(root.get('map').size()).to.equal(
-              2,
-              'Check map assigned to the object tree has the expected number of keys',
-            );
-            expect(root.get('map').get('foo')).to.equal(
-              'bar',
-              'Check map assigned to the object tree has the expected value for its string key',
-            );
-            expect(root.get('map').get('baz')).to.equal(
-              counter,
-              'Check map assigned to the object tree has the expected value for its LiveCounter key',
-            );
-          },
-        },
-
-        {
-          description:
-            'RealtimeObject.createMap can return LiveMap with initial value without applying CREATE operation',
-          action: async (ctx) => {
-            const { realtimeObject, helper } = ctx;
-
-            // prevent publishing of ops to realtime so we guarantee that the initial value doesn't come from a CREATE op
-            helper.recordPrivateApi('replace.RealtimeObject.publish');
-            realtimeObject.publish = () => {};
-
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-            expect(map.get('foo')).to.equal('bar', `Check map has expected initial value`);
-          },
-        },
-
-        {
-          allTransportsAndProtocols: true,
-          description: 'RealtimeObject.createMap can return LiveMap with initial value from applied CREATE operation',
-          action: async (ctx) => {
-            const { realtimeObject, objectsHelper, helper, channel } = ctx;
-
-            // instead of sending CREATE op to the realtime, echo it immediately to the client
-            // with forged initial value so we can check that map gets initialized with a value from a CREATE op
-            helper.recordPrivateApi('replace.RealtimeObject.publish');
-            realtimeObject.publish = async (objectMessages) => {
-              const mapId = objectMessages[0].operation.objectId;
-              // this should result execute regular operation application procedure and create an object in the pool with forged initial value
-              await objectsHelper.processObjectOperationMessageOnChannel({
-                channel,
-                serial: lexicoTimeserial('aaa', 1, 1),
-                siteCode: 'aaa',
-                state: [
-                  objectsHelper.mapCreateOp({
-                    objectId: mapId,
-                    entries: { baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { string: 'qux' } } },
-                  }),
-                ],
-              });
-            };
-
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-
-            // map should be created with forged initial value instead of the actual one
-            expect(map.get('foo'), `Check key "foo" was not set on a map client-side`).to.not.exist;
-            expect(map.get('baz')).to.equal(
-              'qux',
-              `Check key "baz" was set on a map from a CREATE operation after object creation`,
-            );
-          },
-        },
-
-        {
-          description:
-            'initial value is not double counted for LiveMap from RealtimeObject.createMap when CREATE op is received',
-          action: async (ctx) => {
-            const { realtimeObject, objectsHelper, helper, channel } = ctx;
-
-            // prevent publishing of ops to realtime so we can guarantee order of operations
-            helper.recordPrivateApi('replace.RealtimeObject.publish');
-            realtimeObject.publish = () => {};
-
-            // create map locally, should have an initial value set
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-            helper.recordPrivateApi('call.LiveObject.getObjectId');
-            const mapId = map.getObjectId();
-
-            // now inject CREATE op for a map with a forged value. it should not be applied
-            await objectsHelper.processObjectOperationMessageOnChannel({
-              channel,
-              serial: lexicoTimeserial('aaa', 1, 1),
-              siteCode: 'aaa',
-              state: [
-                objectsHelper.mapCreateOp({
-                  objectId: mapId,
-                  entries: {
-                    foo: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { string: 'qux' } },
-                    baz: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { string: 'qux' } },
-                  },
-                }),
-              ],
-            });
-
-            expect(map.get('foo')).to.equal(
-              'bar',
-              `Check key "foo" was not overridden by a CREATE operation after creating a map locally`,
-            );
-            expect(map.get('baz'), `Check key "baz" was not set by a CREATE operation after creating a map locally`).to
-              .not.exist;
-          },
-        },
-
-        {
-          description: 'RealtimeObject.createMap throws on invalid input',
-          action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+          description: 'LiveMap.create() throws on invalid input',
+          action: async () => {
+            await expectToThrowAsync(async () => LiveMap.create(null), 'Map entries should be a key-value object');
+            await expectToThrowAsync(async () => LiveMap.create('foo'), 'Map entries should be a key-value object');
+            await expectToThrowAsync(async () => LiveMap.create(1), 'Map entries should be a key-value object');
+            await expectToThrowAsync(async () => LiveMap.create(BigInt(1)), 'Map entries should be a key-value object');
+            await expectToThrowAsync(async () => LiveMap.create(true), 'Map entries should be a key-value object');
+            await expectToThrowAsync(async () => LiveMap.create(Symbol()), 'Map entries should be a key-value object');
 
             await expectToThrowAsync(
-              async () => realtimeObject.createMap(null),
-              'Map entries should be a key-value object',
+              async () => LiveMap.create({ key: undefined }),
+              'Map value data type is unsupported',
             );
+            await expectToThrowAsync(async () => LiveMap.create({ key: null }), 'Map value data type is unsupported');
             await expectToThrowAsync(
-              async () => realtimeObject.createMap('foo'),
-              'Map entries should be a key-value object',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createMap(1),
-              'Map entries should be a key-value object',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createMap(BigInt(1)),
-              'Map entries should be a key-value object',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createMap(true),
-              'Map entries should be a key-value object',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createMap(Symbol()),
-              'Map entries should be a key-value object',
-            );
-
-            await expectToThrowAsync(
-              async () => realtimeObject.createMap({ key: undefined }),
+              async () => LiveMap.create({ key: BigInt(1) }),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => realtimeObject.createMap({ key: null }),
-              'Map value data type is unsupported',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createMap({ key: BigInt(1) }),
-              'Map value data type is unsupported',
-            );
-            await expectToThrowAsync(
-              async () => realtimeObject.createMap({ key: Symbol() }),
+              async () => LiveMap.create({ key: Symbol() }),
               'Map value data type is unsupported',
             );
           },
@@ -3577,10 +3380,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await realtimeObject.createCounter(1);
-            const map = await realtimeObject.createMap({ innerCounter: counter });
-            await root.set('counter', counter);
-            await root.set('map', map);
+            await root.set('counter', LiveCounter.create(1));
+            await root.set('map', LiveMap.create({ innerCounter: LiveCounter.create(1) }));
             await objectsCreatedPromise;
 
             await realtimeObject.batch((ctx) => {
@@ -3620,10 +3421,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await realtimeObject.createCounter(1);
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-            await root.set('counter', counter);
-            await root.set('map', map);
+            await root.set('counter', LiveCounter.create(1));
+            await root.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
 
             await realtimeObject.batch((ctx) => {
@@ -3662,10 +3461,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await realtimeObject.createCounter(1);
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-            await root.set('counter', counter);
-            await root.set('map', map);
+            await root.set('counter', LiveCounter.create(1));
+            await root.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
 
             await realtimeObject.batch((ctx) => {
@@ -3710,11 +3507,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await realtimeObject.createCounter(1);
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-            await root.set('counter', counter);
-            await root.set('map', map);
+            await root.set('counter', LiveCounter.create(1));
+            await root.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
+
+            const counter = root.get('counter');
+            const map = root.get('map');
 
             await realtimeObject.batch((ctx) => {
               const ctxRoot = ctx.get();
@@ -3761,11 +3559,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await realtimeObject.createCounter(1);
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-            await root.set('counter', counter);
-            await root.set('map', map);
+            await root.set('counter', LiveCounter.create(1));
+            await root.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
+
+            const counter = root.get('counter');
+            const map = root.get('map');
 
             const cancelError = new Error('cancel batch');
             let caughtError;
@@ -3806,10 +3605,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await realtimeObject.createCounter(1);
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-            await root.set('counter', counter);
-            await root.set('map', map);
+            await root.set('counter', LiveCounter.create(1));
+            await root.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
 
             let savedCtx;
@@ -3847,10 +3644,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'map'),
             ]);
-            const counter = await realtimeObject.createCounter(1);
-            const map = await realtimeObject.createMap({ foo: 'bar' });
-            await root.set('counter', counter);
-            await root.set('map', map);
+            await root.set('counter', LiveCounter.create(1));
+            await root.set('map', LiveMap.create({ foo: 'bar' }));
             await objectsCreatedPromise;
 
             let savedCtx;
@@ -4059,16 +3854,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.path() returns correct path strings',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(root, 'nested')]);
-            const nestedMap = await realtimeObject.createMap({
-              simple: 'value',
-              deep: await realtimeObject.createMap({ nested: 'deepValue' }),
-              'key.with.dots': 'dottedValue',
-              'key\\escaped': 'escapedValue',
-            });
-            await root.set('nested', nestedMap);
+            await root.set(
+              'nested',
+              LiveMap.create({
+                simple: 'value',
+                'key.with.dots': 'dottedValue',
+                'key\\escaped': 'escapedValue',
+                deep: LiveMap.create({ nested: 'deepValue' }),
+              }),
+            );
             await keysUpdatedPromise;
 
             // Test path with .get() method
@@ -4107,12 +3904,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.at() navigates using dot-separated paths',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             // Create nested structure
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
-            const nestedMap = await realtimeObject.createMap({ deepKey: 'deepValue', 'key.with.dots': 'dottedValue' });
-            await root.set('nested', nestedMap);
+            await root.set('nested', LiveMap.create({ deepKey: 'deepValue', 'key.with.dots': 'dottedValue' }));
             await keyUpdatedPromise;
 
             const nestedPathObj = entryPathObject.at('nested.deepKey');
@@ -4151,13 +3947,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject resolves complex path strings',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested.key');
-            const nestedMap = await realtimeObject.createMap({
-              'key.with.dots.and\\escaped\\characters': 'nestedValue',
-            });
-            await root.set('nested.key', nestedMap);
+            await root.set(
+              'nested.key',
+              LiveMap.create({
+                'key.with.dots.and\\escaped\\characters': 'nestedValue',
+              }),
+            );
             await keyUpdatedPromise;
 
             // Test complex path via chaining .get()
@@ -4224,11 +4022,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.value() returns LiveCounter values',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const counter = await realtimeObject.createCounter(10);
-            await root.set('counter', counter);
+            await root.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
 
             const counterPathObj = entryPathObject.get('counter');
@@ -4240,11 +4037,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.value() returns undefined for LiveMap objects',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
-            const map = await realtimeObject.createMap({ key: 'map' });
-            await root.set('map', map);
+            await root.set('map', LiveMap.create({ key: 'map' }));
             await keyUpdatedPromise;
 
             const mapPathObj = entryPathObject.get('map');
@@ -4366,14 +4162,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.set() works for LiveMap objects with LiveObject references',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counterKey');
-            const counter = await realtimeObject.createCounter(5);
-            await entryPathObject.set('counterKey', counter);
+            await entryPathObject.set('counterKey', LiveCounter.create(5));
             await keyUpdatedPromise;
 
-            expect(root.get('counterKey')).to.equal(counter, 'Check counter object was set via PathObject');
+            expect(root.get('counterKey'), 'Check counter object was set via PathObject').to.exist;
             expect(entryPathObject.get('counterKey').value()).to.equal(5, 'Check PathObject reflects counter value');
           },
         },
@@ -4404,14 +4199,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject map mutation methods throw errors for non-LiveMap objects',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'primitive'),
             ]);
-            const counter = await realtimeObject.createCounter(5);
-            await root.set('counter', counter);
+            await root.set('counter', LiveCounter.create(5));
             await root.set('primitive', 'value');
             await keysUpdatedPromise;
 
@@ -4440,12 +4234,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.increment() and PathObject.decrement() work for LiveCounter objects',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const counter = await realtimeObject.createCounter(10);
-            await root.set('counter', counter);
+            await root.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
+            const counter = root.get('counter');
 
             const counterPathObj = entryPathObject.get('counter');
 
@@ -4483,14 +4277,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject counter methods throw errors for non-LiveCounter objects',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'map'),
               waitForMapKeyUpdate(root, 'primitive'),
             ]);
-            const map = await realtimeObject.createMap();
-            await root.set('map', map);
+            await root.set('map', LiveMap.create());
             await root.set('primitive', 'value');
             await keysUpdatedPromise;
 
@@ -4538,14 +4331,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.instance() returns DefaultInstance for LiveMap and LiveCounter',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'map'),
               waitForMapKeyUpdate(root, 'counter'),
             ]);
-            await root.set('map', await realtimeObject.createMap());
-            await root.set('counter', await realtimeObject.createCounter());
+            await root.set('map', LiveMap.create());
+            await root.set('counter', LiveCounter.create());
             await keysUpdatedPromise;
 
             const counterInstance = entryPathObject.get('counter').instance();
@@ -4596,17 +4389,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.id() returns object ID of underlying LiveObject',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject, helper } = ctx;
+            const { root, entryPathObject, helper } = ctx;
 
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'map'),
               waitForMapKeyUpdate(root, 'counter'),
             ]);
-            const map = await realtimeObject.createMap();
-            const counter = await realtimeObject.createCounter();
-            await entryPathObject.set('map', map);
-            await entryPathObject.set('counter', counter);
+
+            await entryPathObject.set('map', LiveMap.create());
+            await entryPathObject.set('counter', LiveCounter.create());
             await keysUpdatedPromise;
+
+            const map = root.get('map');
+            const counter = root.get('counter');
 
             const mapInstance = entryPathObject.get('map').instance();
             const counterInstance = entryPathObject.get('counter').instance();
@@ -4625,14 +4420,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.get() returns child DefaultInstance instances',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'stringKey'),
               waitForMapKeyUpdate(root, 'counterKey'),
             ]);
             await entryPathObject.set('stringKey', 'value');
-            await entryPathObject.set('counterKey', await realtimeObject.createCounter(42));
+            await entryPathObject.set('counterKey', LiveCounter.create(42));
             await keysUpdatedPromise;
 
             const rootInstance = entryPathObject.instance();
@@ -4706,11 +4501,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.value() returns LiveCounter values',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const counter = await realtimeObject.createCounter(10);
-            await entryPathObject.set('counter', counter);
+            await entryPathObject.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
 
             const counterInstance = entryPathObject.get('counter').instance();
@@ -4722,11 +4516,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.value() returns undefined for LiveMap objects',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
-            const map = await realtimeObject.createMap({ key: 'map' });
-            await entryPathObject.set('map', map);
+            await entryPathObject.set('map', LiveMap.create());
             await keyUpdatedPromise;
 
             const mapInstance = entryPathObject.get('map').instance();
@@ -4840,16 +4633,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.set() works for LiveMap objects with LiveObject references',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counterKey');
-            const counter = await realtimeObject.createCounter(5);
-            await rootInstance.set('counterKey', counter);
+            await rootInstance.set('counterKey', LiveCounter.create(5));
             await keyUpdatedPromise;
 
-            expect(root.get('counterKey')).to.equal(counter, 'Check counter object was set via DefaultInstance');
+            expect(root.get('counterKey'), 'Check counter object was set via DefaultInstance').to.exist;
             expect(rootInstance.get('counterKey').value()).to.equal(5, 'Check DefaultInstance reflects counter value');
           },
         },
@@ -4883,7 +4675,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance map mutation methods throw errors for non-LiveMap objects',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
@@ -4891,8 +4683,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'primitive'),
             ]);
-            const counter = await realtimeObject.createCounter(5);
-            await entryPathObject.set('counter', counter);
+            await entryPathObject.set('counter', LiveCounter.create(5));
             await entryPathObject.set('primitive', 'value');
             await keysUpdatedPromise;
 
@@ -4921,14 +4712,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.increment() and DefaultInstance.decrement() work for LiveCounter objects',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
             const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
-            const counter = await realtimeObject.createCounter(10);
-            await entryPathObject.set('counter', counter);
+            await entryPathObject.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
+            const counter = root.get('counter');
 
             const counterInstance = rootInstance.get('counter');
 
@@ -4966,7 +4757,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance counter methods throw errors for non-LiveCounter objects',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { root, entryPathObject } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
@@ -4974,8 +4765,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               waitForMapKeyUpdate(root, 'map'),
               waitForMapKeyUpdate(root, 'primitive'),
             ]);
-            const map = await realtimeObject.createMap();
-            await entryPathObject.set('map', map);
+            await entryPathObject.set('map', LiveMap.create());
             await entryPathObject.set('primitive', 'value');
             await keysUpdatedPromise;
 
@@ -5987,8 +5777,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
       const expectWriteApiToThrow = async ({ realtimeObject, map, counter, errorMsg }) => {
         await expectToThrowAsync(async () => realtimeObject.batch(), errorMsg);
-        await expectToThrowAsync(async () => realtimeObject.createMap(), errorMsg);
-        await expectToThrowAsync(async () => realtimeObject.createCounter(), errorMsg);
 
         await expectToThrowAsync(async () => counter.increment(), errorMsg);
         await expectToThrowAsync(async () => counter.decrement(), errorMsg);
@@ -6198,11 +5986,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             waitForMapKeyUpdate(root, 'map'),
             waitForMapKeyUpdate(root, 'counter'),
           ]);
-          const map = await realtimeObject.createMap();
-          const counter = await realtimeObject.createCounter();
-          await root.set('map', map);
-          await root.set('counter', counter);
+          await root.set('map', LiveMap.create());
+          await root.set('counter', LiveCounter.create());
           await objectsCreatedPromise;
+
+          const map = root.get('map');
+          const counter = root.get('counter');
 
           await scenario.action({
             realtimeObject,
