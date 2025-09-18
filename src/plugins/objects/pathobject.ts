@@ -218,6 +218,7 @@ export class PathObjectImpl<T extends Value = Value> implements AnyPathObject<T>
     return resolved.decrement(amount);
   }
 
+  // TODO: explain the behavior of PathObject subscriptions - relies on LiveObject instances to broadcast their updates via registry
   subscribe(
     callback: (event: API.SubscriptionEvent) => void,
     options?: API.SubscriptionOptions | undefined,
