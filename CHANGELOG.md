@@ -2,6 +2,17 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.13.0](https://github.com/ably/ably-js/tree/2.13.0) (2025-09-18)
+
+- Introduce version 4 of the Ably protocol [#2076](https://github.com/ably/ably-js/pull/2076)
+- Changes to the structure of the experimental annotations and message fields [#2076](https://github.com/ably/ably-js/pull/2076)
+  - A new field `Message.annotations` to store annotation information for the message.
+  - `Message.version` is now an object, containing information about the latest message version.
+  - `Message.createdAt` has been removed, its purpose is now served by `Message.timestamp`.
+  - Per the above, `Message.timestamp` now refers to when a message was first created on the server. For the latest updated at time, see `Message.version.timestamp`.
+  - `Message.operation` has been removed. Its fields are now in `Message.version.*`
+  - `Message.summary` has been moved to `Message.annotations.summary`
+
 ## [2.12.0](https://github.com/ably/ably-js/tree/2.12.0) (2025-08-22)
 
 - Add `clientId` of the client who submitted the operation to the `LiveObjectUpdate` in subscription callbacks [\#2072](https://github.com/ably/ably-js/pull/2072)
