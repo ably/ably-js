@@ -14,6 +14,7 @@ export interface LiveObjectData {
 export interface LiveObjectUpdate {
   update: any;
   clientId?: string;
+  connectionId?: string;
 }
 
 export interface LiveObjectUpdateNoop {
@@ -167,6 +168,7 @@ export abstract class LiveObject<
     }
     const update = this.clearData();
     update.clientId = objectMessage.clientId;
+    update.connectionId = objectMessage.connectionId;
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
     return update;

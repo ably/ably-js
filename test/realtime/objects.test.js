@@ -4129,17 +4129,21 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'subscription update object contains the clientId of the client who made the update',
+          description: 'subscription update object contains the client metadata of the client who made the update',
           action: async (ctx) => {
             const { root, objectsHelper, channel, channelName, sampleMapKey, sampleCounterKey, helper } = ctx;
             const publishClientId = 'publish-clientId';
             const publishClient = RealtimeWithObjects(helper, { clientId: publishClientId });
 
-            const createCheckUpdateClientIdPromise = (subscribeFn, msg) => {
+            // get the connection ID from the publish client once connected
+            let publishConnectionId;
+
+            const createCheckUpdateClientMetadataPromise = (subscribeFn, msg) => {
               return new Promise((resolve, reject) =>
                 subscribeFn((update) => {
                   try {
                     expect(update.clientId).to.equal(publishClientId, msg);
+                    expect(update.connectionId).to.equal(publishConnectionId, msg);
                     resolve();
                   } catch (error) {
                     reject(error);
@@ -4148,29 +4152,29 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               );
             };
 
-            // check clientId is surfaced for mutation ops
+            // check client metadata is surfaced for mutation ops
             const mutationOpsPromises = Promise.all([
-              createCheckUpdateClientIdPromise(
+              createCheckUpdateClientMetadataPromise(
                 (cb) => root.get(sampleCounterKey).subscribe(cb),
-                'Check counter subscription callback has clientId for COUNTER_INC operation',
+                'Check counter subscription callback has client metadata for COUNTER_INC operation',
               ),
-              createCheckUpdateClientIdPromise(
+              createCheckUpdateClientMetadataPromise(
                 (cb) =>
                   root.get(sampleMapKey).subscribe((update) => {
                     if (update.update.foo === 'updated') {
                       cb(update);
                     }
                   }),
-                'Check map subscription callback has clientId for MAP_SET operation',
+                'Check map subscription callback has client metadata for MAP_SET operation',
               ),
-              createCheckUpdateClientIdPromise(
+              createCheckUpdateClientMetadataPromise(
                 (cb) =>
                   root.get(sampleMapKey).subscribe((update) => {
                     if (update.update.foo === 'removed') {
                       cb(update);
                     }
                   }),
-                'Check map subscription callback has clientId for MAP_REMOVE operation',
+                'Check map subscription callback has client metadata for MAP_REMOVE operation',
               ),
             ]);
 
@@ -4179,6 +4183,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               await publishChannel.attach();
               const publishRoot = await publishChannel.objects.getRoot();
 
+              // capture the connection ID once the client is connected
+              publishConnectionId = publishClient.connection.id;
+
               await publishRoot.get(sampleCounterKey).increment(1);
               await publishRoot.get(sampleMapKey).set('foo', 'bar');
               await publishRoot.get(sampleMapKey).remove('foo');
@@ -4186,8 +4193,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             await mutationOpsPromises;
 
-            // check clientId is surfaced for create ops.
-            // first need to create non-initialized objects first and then publish create op for them
+            // check client metadata is surfaced for create ops.
+            // first need to create non-initialized objects and then publish create ops for them
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'nonInitializedCounter'),
               waitForMapKeyUpdate(root, 'nonInitializedMap'),
@@ -4224,13 +4231,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsCreatedPromise;
 
             const createOpsPromises = Promise.all([
-              createCheckUpdateClientIdPromise(
+              createCheckUpdateClientMetadataPromise(
                 (cb) => root.get('nonInitializedCounter').subscribe(cb),
-                'Check counter subscription callback has clientId for COUNTER_CREATE operation',
+                'Check counter subscription callback has client metadata for COUNTER_CREATE operation',
               ),
-              createCheckUpdateClientIdPromise(
+              createCheckUpdateClientMetadataPromise(
                 (cb) => root.get('nonInitializedMap').subscribe(cb),
-                'Check map subscription callback has clientId for MAP_CREATE operation',
+                'Check map subscription callback has client metadata for MAP_CREATE operation',
               ),
             ]);
 
@@ -4240,6 +4247,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               serial: lexicoTimeserial('aaa', 1, 1),
               siteCode: 'aaa',
               clientId: publishClientId,
+              connectionId: publishConnectionId,
               state: [objectsHelper.counterCreateOp({ objectId: fakeCounterObjectId, count: 1 })],
             });
             await objectsHelper.processObjectOperationMessageOnChannel({
@@ -4247,6 +4255,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               serial: lexicoTimeserial('aaa', 1, 1),
               siteCode: 'aaa',
               clientId: publishClientId,
+              connectionId: publishConnectionId,
               state: [
                 objectsHelper.mapCreateOp({
                   objectId: fakeMapObjectId,
