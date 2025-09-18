@@ -105,21 +105,33 @@ class Message extends BaseMessage {
   connectionKey?: string;
   action?: API.MessageAction;
   serial?: string;
-  createdAt?: number;
-  version?: string;
-  operation?: API.Operation;
-  summary?: any; // TODO improve typings after summary structure is finalised
+  version?: API.MessageVersion;
+  annotations?: API.MessageAnnotations;
 
   expandFields() {
-    if (this.action === 'message.create') {
-      // TM2k
-      if (this.version && !this.serial) {
-        this.serial = this.version;
-      }
-      // TM2o
-      if (this.timestamp && !this.createdAt) {
-        this.createdAt = this.timestamp;
-      }
+    // TM2s
+    if (!this.version) {
+      this.version = {};
+    }
+
+    // TM2s1
+    if (!this.version.serial && this.serial) {
+      this.version.serial = this.serial;
+    }
+
+    // TM2s2
+    if (!this.version.timestamp && this.timestamp) {
+      this.version.timestamp = this.timestamp;
+    }
+
+    if (!this.annotations) {
+      // TM2u
+      this.annotations = {
+        summary: {},
+      };
+    } else if (!this.annotations.summary) {
+      // TM8a
+      this.annotations.summary = {};
     }
   }
 
@@ -148,10 +160,8 @@ export class WireMessage extends BaseMessage {
   connectionKey?: string;
   action?: number;
   serial?: string;
-  createdAt?: number;
-  version?: string;
-  operation?: API.Operation;
-  summary?: any;
+  version?: API.MessageVersion;
+  annotations?: API.MessageAnnotations;
 
   // Overload toJSON() to intercept JSON.stringify()
   toJSON(...args: any[]) {
