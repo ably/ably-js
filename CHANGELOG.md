@@ -4,6 +4,7 @@ This contains only the most important and/or user-facing changes; for a full cha
 
 ## [2.13.0](https://github.com/ably/ably-js/tree/2.13.0) (2025-09-18)
 
+- Surface the `connectionId` of the client that submitted a `LiveObject` operation in subscribe callbacks [#2084](https://github.com/ably/ably-js/pull/2084)
 - Introduce version 4 of the Ably protocol [#2076](https://github.com/ably/ably-js/pull/2076)
 - Changes to the structure of the experimental annotations and message fields [#2076](https://github.com/ably/ably-js/pull/2076)
   - A new field `Message.annotations` to store annotation information for the message.
