@@ -1,8 +1,21 @@
 // The ESLint warning is triggered because we only use these types in a documentation comment.
 /* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
-import { RealtimeClient } from './ably';
+import { LiveCounter as LiveCounterType, LiveMap as LiveMapType, RealtimeClient, Value } from './ably';
 import { BaseRealtime } from './modular';
 /* eslint-enable no-unused-vars, @typescript-eslint/no-unused-vars */
+
+// LiveObject static methods implementations.
+// Currently only defines the static method used to create branded value types
+// which can be provided as an argument to mutation methods.
+export class LiveMap {
+  static create<T extends Record<string, Value>>(
+    initialEntries?: T,
+  ): LiveMapType<T extends Record<string, Value> ? T : {}>;
+}
+
+export class LiveCounter {
+  static create(initialCount?: number): LiveCounterType;
+}
 
 /**
  * Provides a {@link RealtimeClient} instance with the ability to use Objects functionality.
@@ -26,3 +39,4 @@ import { BaseRealtime } from './modular';
 declare const Objects: any;
 
 export = Objects;
+// export default Objects;

@@ -1,4 +1,18 @@
 import type * as API from '../../../ably';
+import { LiveCounterValueType } from './livecountervaluetype';
+import { LiveMap, LiveMapObjectData, ObjectIdObjectData, ValueObjectData } from './livemap';
+import { ObjectId } from './objectid';
+import {
+  createInitialValueJSONString,
+  ObjectData,
+  ObjectMessage,
+  ObjectOperation,
+  ObjectOperationAction,
+  ObjectsMapEntry,
+  ObjectsMapSemantics,
+  PrimitiveObjectValue,
+} from './objectmessage';
+import { RealtimeObject } from './realtimeobject';
 
 /**
  * A value type class that serves as a simple container for LiveMap data.
@@ -21,11 +35,7 @@ export class LiveMapValueType<T extends Record<string, API.Value> = Record<strin
   implements API.LiveMap<T>
 {
   declare readonly [API.__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
-  /**
-   * This class is imported in both the main SDK and Objects plugin bundles, creating separate constructors.
-   * Since instanceof checks fail across bundles, this runtime property provides reliable cross-bundle type identification.
-   */
-  private readonly __livetype = 'LiveMap';
+  private readonly __livetype = 'LiveMap'; // use a runtime property to provide a reliable cross-bundle type identification instead of `instanceof` operator
   public readonly entries: T;
 
   private constructor(entries: T) {
@@ -34,18 +44,126 @@ export class LiveMapValueType<T extends Record<string, API.Value> = Record<strin
   }
 
   static create<T extends Record<string, API.Value>>(
-    entries?: T,
+    initialEntries?: T,
   ): API.LiveMap<T extends Record<string, API.Value> ? T : {}> {
     // We can't directly import the ErrorInfo class from the core library into the plugin (as this would bloat the plugin size),
     // and, since we're in a user-facing static method, we can't expect a user to pass a client library instance, as this would make the API ugly.
     // Since we can't use ErrorInfo here, we won't do any validation at this step; instead, validation will happen in the mutation methods
     // when we try to create this object.
 
-    const safeEntries = (entries ?? {}) as T extends Record<string, API.Value> ? T : {};
+    const safeEntries = (initialEntries ?? {}) as T extends Record<string, API.Value> ? T : {};
     return new LiveMapValueType(safeEntries);
   }
 
-  static isLiveMapValueType(value: unknown): value is LiveMapValueType {
+  /**
+   * @internal
+   */
+  static instanceof(value: unknown): value is LiveMapValueType {
     return typeof value === 'object' && value !== null && (value as LiveMapValueType).__livetype === 'LiveMap';
+  }
+
+  /**
+   * @internal
+   */
+  static async createMapCreateMessage(
+    realtimeObject: RealtimeObject,
+    value: LiveMapValueType,
+  ): Promise<ObjectMessage[]> {
+    const client = realtimeObject.getClient();
+    const entries = value.entries;
+
+    if (entries !== undefined && (entries === null || typeof entries !== 'object')) {
+      throw new client.ErrorInfo('Map entries should be a key-value object', 40003, 400);
+    }
+
+    // TODO: fix as any type assertion when LiveMap type is updated to support new path based types
+    Object.entries(entries ?? {}).forEach(([key, value]) =>
+      LiveMap.validateKeyValue(realtimeObject, key, value as any),
+    );
+
+    const { initialValueOperation, nestedMessages } = await LiveMapValueType._createInitialValueOperation(
+      realtimeObject,
+      entries,
+    );
+    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
+    const nonce = client.Utils.cheapRandStr();
+    const msTimestamp = await client.getTimestamp(true);
+
+    const objectId = ObjectId.fromInitialValue(
+      client.Platform,
+      'map',
+      initialValueJSONString,
+      nonce,
+      msTimestamp,
+    ).toString();
+
+    const mainMessage = ObjectMessage.fromValues(
+      {
+        operation: {
+          ...initialValueOperation,
+          action: ObjectOperationAction.MAP_CREATE,
+          objectId,
+          nonce,
+          initialValue: initialValueJSONString,
+        } as ObjectOperation<ObjectData>,
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    // Return all messages: nested messages first, then the main map message
+    return [...nestedMessages, mainMessage];
+  }
+
+  /**
+   * @internal
+   */
+  private static async _createInitialValueOperation(
+    realtimeObject: RealtimeObject,
+    entries?: Record<string, API.Value>,
+  ): Promise<{
+    initialValueOperation: Pick<ObjectOperation<ObjectData>, 'map'>;
+    nestedMessages: ObjectMessage[];
+  }> {
+    const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
+    const nestedMessages: ObjectMessage[] = [];
+
+    for (const [key, value] of Object.entries(entries ?? {})) {
+      let objectData: LiveMapObjectData;
+
+      if (LiveMapValueType.instanceof(value)) {
+        const nestedMapCreateMsgs = await LiveMapValueType.createMapCreateMessage(realtimeObject, value);
+        nestedMessages.push(...nestedMapCreateMsgs);
+        // Get the main message (last one) to extract the objectId
+        const mainMessage = nestedMapCreateMsgs[nestedMapCreateMsgs.length - 1];
+        const typedObjectData: ObjectIdObjectData = { objectId: mainMessage.operation?.objectId! };
+        objectData = typedObjectData;
+      } else if (LiveCounterValueType.instanceof(value)) {
+        const nestedCounterCreateMsg = await LiveCounterValueType.createCounterCreateMessage(realtimeObject, value);
+        nestedMessages.push(nestedCounterCreateMsg);
+        const typedObjectData: ObjectIdObjectData = { objectId: nestedCounterCreateMsg.operation?.objectId! };
+        objectData = typedObjectData;
+      } else {
+        // Handle primitive values
+        const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
+        objectData = typedObjectData;
+      }
+
+      mapEntries[key] = {
+        data: objectData,
+      };
+    }
+
+    const initialValueOperation = {
+      map: {
+        semantics: ObjectsMapSemantics.LWW,
+        entries: mapEntries,
+      },
+    };
+
+    return {
+      initialValueOperation,
+      nestedMessages,
+    };
   }
 }

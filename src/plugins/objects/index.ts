@@ -3,11 +3,17 @@ import { LiveMapValueType } from './livemapvaluetype';
 import { ObjectMessage, WireObjectMessage } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 
-export { LiveCounterValueType, LiveMapValueType, ObjectMessage, RealtimeObject, WireObjectMessage };
+export {
+  LiveCounterValueType as LiveCounter,
+  LiveMapValueType as LiveMap,
+  ObjectMessage,
+  RealtimeObject,
+  WireObjectMessage,
+};
 
 export default {
-  LiveCounterValueType,
-  LiveMapValueType,
+  LiveCounter: LiveCounterValueType,
+  LiveMap: LiveMapValueType,
   ObjectMessage,
   RealtimeObject,
   WireObjectMessage,

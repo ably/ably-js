@@ -143,6 +143,7 @@ module.exports = function (grunt) {
 
     Promise.all([
       esbuild.build(esbuildConfig.objectsPluginConfig),
+      esbuild.build(esbuildConfig.objectsPluginEsmConfig),
       esbuild.build(esbuildConfig.objectsPluginCdnConfig),
       esbuild.build(esbuildConfig.minifiedObjectsPluginCdnConfig),
     ])

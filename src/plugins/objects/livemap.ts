@@ -2,7 +2,6 @@ import { dequal } from 'dequal';
 
 import type { Bufferlike } from 'common/platform';
 import type * as API from '../../../ably';
-import { LiveCounter } from './livecounter';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMapValueType } from './livemapvaluetype';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
@@ -301,107 +300,6 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     };
   }
 
-  // TODO: temporary methods to handle value type object creation
-
-  static async createMapCreateMessageFromValueType(
-    realtimeObject: RealtimeObject,
-    value: LiveMapValueType,
-  ): Promise<ObjectMessage[]> {
-    const client = realtimeObject.getClient();
-    const entries = value.entries;
-
-    if (entries !== undefined && (entries === null || typeof entries !== 'object')) {
-      throw new client.ErrorInfo('Map entries should be a key-value object', 40003, 400);
-    }
-
-    // TODO: fix as any type assertion when LiveMap type is updated to support new path based types
-    Object.entries(entries ?? {}).forEach(([key, value]) =>
-      LiveMap.validateKeyValue(realtimeObject, key, value as any),
-    );
-
-    const { initialValueOperation, nestedMessages } = await LiveMap.createInitialValueOperationFromValueType(
-      realtimeObject,
-      entries,
-    );
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
-
-    const objectId = ObjectId.fromInitialValue(
-      client.Platform,
-      'map',
-      initialValueJSONString,
-      nonce,
-      msTimestamp,
-    ).toString();
-
-    const mainMessage = ObjectMessage.fromValues(
-      {
-        operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.MAP_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
-        } as ObjectOperation<ObjectData>,
-      },
-      client.Utils,
-      client.MessageEncoding,
-    );
-
-    // Return all messages: nested messages first, then the main map message
-    return [...nestedMessages, mainMessage];
-  }
-
-  static async createInitialValueOperationFromValueType(
-    realtimeObject: RealtimeObject,
-    entries?: Record<string, API.Value>,
-  ): Promise<{
-    initialValueOperation: Pick<ObjectOperation<ObjectData>, 'map'>;
-    nestedMessages: ObjectMessage[];
-  }> {
-    const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
-    const nestedMessages: ObjectMessage[] = [];
-
-    for (const [key, value] of Object.entries(entries ?? {})) {
-      let objectData: LiveMapObjectData;
-
-      if (LiveMapValueType.isLiveMapValueType(value)) {
-        const nestedMapCreateMsgs = await LiveMap.createMapCreateMessageFromValueType(realtimeObject, value);
-        nestedMessages.push(...nestedMapCreateMsgs);
-        // Get the main message (last one) to extract the objectId
-        const mainMessage = nestedMapCreateMsgs[nestedMapCreateMsgs.length - 1];
-        const typedObjectData: ObjectIdObjectData = { objectId: mainMessage.operation?.objectId! };
-        objectData = typedObjectData;
-      } else if (LiveCounterValueType.isLiveCounterValueType(value)) {
-        const nestedCounterCreateMsg = await LiveCounter.createCounterCreateMessageFromValueType(realtimeObject, value);
-        nestedMessages.push(nestedCounterCreateMsg);
-        const typedObjectData: ObjectIdObjectData = { objectId: nestedCounterCreateMsg.operation?.objectId! };
-        objectData = typedObjectData;
-      } else {
-        // Handle primitive values
-        const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
-        objectData = typedObjectData;
-      }
-
-      mapEntries[key] = {
-        data: objectData,
-      };
-    }
-
-    const initialValueOperation = {
-      map: {
-        semantics: ObjectsMapSemantics.LWW,
-        entries: mapEntries,
-      },
-    };
-
-    return {
-      initialValueOperation,
-      nestedMessages,
-    };
-  }
-
   /**
    * Returns the value associated with the specified key in the underlying Map object.
    *
@@ -507,12 +405,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     let valueTypeMessages: ObjectMessage[] = [];
     let valueTypeObjectId: string;
-    if (LiveCounterValueType.isLiveCounterValueType(value)) {
-      const objectCreateMsg = await LiveCounter.createCounterCreateMessageFromValueType(this._realtimeObject, value);
+    if (LiveCounterValueType.instanceof(value)) {
+      const objectCreateMsg = await LiveCounterValueType.createCounterCreateMessage(this._realtimeObject, value);
       valueTypeMessages = [objectCreateMsg];
       valueTypeObjectId = objectCreateMsg.operation?.objectId!;
     } else {
-      const objectCreateMessages = await LiveMap.createMapCreateMessageFromValueType(this._realtimeObject, value);
+      const objectCreateMessages = await LiveMapValueType.createMapCreateMessage(this._realtimeObject, value);
       // Get the main message (last one) to extract the objectId for the map set operation
       const mainMessage = objectCreateMessages[objectCreateMessages.length - 1];
       valueTypeMessages = objectCreateMessages;

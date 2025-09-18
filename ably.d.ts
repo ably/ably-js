@@ -2434,18 +2434,6 @@ export type LiveObject = LiveMap | LiveCounter;
 // This is the canonical union used when we cannot infer a narrower type.
 export type Value = LiveObject | Primitive;
 
-// LiveObject static methods implementations.
-// Currently only defines the static method used to create branded value types
-// which can be provided as an argument to mutation methods.
-
-export interface LiveMapStatic {
-  create<T extends Record<string, Value>>(initialData?: T): LiveMap<T extends Record<string, Value> ? T : {}>;
-}
-
-export interface LiveCounterStatic {
-  create(initialValue: number = 0): LiveCounter;
-}
-
 // --- PATH OBJECT
 
 // Collection types support obtaining a PathObject with a fully-qualified string path,
@@ -4074,14 +4062,6 @@ export declare class Rest implements RestClient {
    * Static utilities related to annotations.
    */
   static Annotation: AnnotationStatic;
-  /**
-   * Static utilities related to LiveMap.
-   */
-  static LiveMap: LiveMapStatic;
-  /**
-   * Static utilities related to LiveCounter.
-   */
-  static LiveCounter: LiveCounterStatic;
 
   // Requirements of RestClient
 
@@ -4138,14 +4118,6 @@ export declare class Realtime implements RealtimeClient {
    * Static utilities related to annotations.
    */
   static Annotation: AnnotationStatic;
-  /**
-   * Static utilities related to LiveMap.
-   */
-  static LiveMap: LiveMapStatic;
-  /**
-   * Static utilities related to LiveCounter.
-   */
-  static LiveCounter: LiveCounterStatic;
 
   // Requirements of RealtimeClient
 

@@ -32,7 +32,8 @@
     },
     "./objects": {
       "types": "./objects.d.ts",
-      "import": "./build/objects.js"
+      "import": "./build/objects.mjs",
+      "require": "./build/objects.js"
     }
   },
   "files": [

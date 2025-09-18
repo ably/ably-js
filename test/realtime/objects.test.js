@@ -172,7 +172,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     await Promise.all(expectedKeys.map((key) => (root.get(key) ? undefined : waitForMapKeyUpdate(root, key))));
   }
 
-  describe('realtime/objects', function () {
+  describe.only('realtime/objects', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {

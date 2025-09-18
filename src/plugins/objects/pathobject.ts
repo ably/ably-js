@@ -172,7 +172,7 @@ export class PathObjectImpl<T extends Value = Value> implements AnyPathObject<T>
       );
     }
 
-    if (LiveMapValueType.isLiveMapValueType(value) || LiveCounterValueType.isLiveCounterValueType(value)) {
+    if (LiveMapValueType.instanceof(value) || LiveCounterValueType.instanceof(value)) {
       return resolved.setValueType(key, value);
     }
 

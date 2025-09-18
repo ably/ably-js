@@ -85,6 +85,17 @@ const objectsPluginConfig = {
   external: ['dequal'],
 };
 
+const objectsPluginEsmConfig = {
+  bundle: true,
+  sourcemap: true,
+  format: 'esm',
+  banner: { js: '/*' + banner + '*/' },
+  entryPoints: ['src/plugins/objects/index.ts'],
+  outfile: 'build/objects.mjs',
+  target: 'es2017',
+  external: ['dequal'],
+};
+
 const objectsPluginCdnConfig = {
   ...createBaseConfig(),
   entryPoints: ['src/plugins/objects/index.ts'],
@@ -109,6 +120,7 @@ module.exports = {
   pushPluginCdnConfig,
   minifiedPushPluginCdnConfig,
   objectsPluginConfig,
+  objectsPluginEsmConfig,
   objectsPluginCdnConfig,
   minifiedObjectsPluginCdnConfig,
 };
