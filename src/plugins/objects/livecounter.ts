@@ -292,6 +292,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // otherwise it is a diff between previous value and new value from object state.
     const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
     update.clientId = objectMessage.clientId;
+    update.connectionId = objectMessage.connectionId;
     return update;
   }
 
@@ -324,7 +325,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC6d1
     this._createOperationIsMerged = true; // RTLC6d2
 
-    return { update: { amount: objectOperation.counter?.count ?? 0 }, clientId: msg.clientId };
+    return {
+      update: { amount: objectOperation.counter?.count ?? 0 },
+      clientId: msg.clientId,
+      connectionId: msg.connectionId,
+    };
   }
 
   private _throwNoPayloadError(op: ObjectOperation<ObjectData>): void {
@@ -357,6 +362,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   private _applyCounterInc(op: ObjectsCounterOp, msg: ObjectMessage): LiveCounterUpdate {
     this._dataRef.data += op.amount;
-    return { update: { amount: op.amount }, clientId: msg.clientId };
+    return { update: { amount: op.amount }, clientId: msg.clientId, connectionId: msg.connectionId };
   }
 }

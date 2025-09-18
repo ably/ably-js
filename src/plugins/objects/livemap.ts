@@ -515,6 +515,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // otherwise it is a diff between previous value and new value from object state.
     const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
     update.clientId = objectMessage.clientId;
+    update.connectionId = objectMessage.connectionId;
     return update;
   }
 
@@ -602,10 +603,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (this._client.Utils.isNil(objectOperation.map)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
-      return { update: {}, clientId: msg.clientId };
+      return { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
     }
 
-    const aggregatedUpdate: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId };
+    const aggregatedUpdate: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
     // RTLM6d1
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
@@ -730,7 +731,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       this._dataRef.data.set(op.key, newEntry);
     }
 
-    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId };
+    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
     const typedKey: keyof T & string = op.key;
     update.update[typedKey] = 'updated';
 
@@ -787,7 +788,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       this._dataRef.data.set(op.key, newEntry);
     }
 
-    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId };
+    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, connectionId: msg.connectionId };
     const typedKey: keyof T & string = op.key;
     update.update[typedKey] = 'removed';
 

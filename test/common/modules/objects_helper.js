@@ -241,7 +241,7 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
     }
 
     objectOperationMessage(opts) {
-      const { channelName, serial, serialTimestamp, siteCode, state, clientId } = opts;
+      const { channelName, serial, serialTimestamp, siteCode, state, clientId, connectionId } = opts;
 
       state?.forEach((objectMessage, i) => {
         objectMessage.serial = serial;
@@ -254,6 +254,7 @@ define(['ably', 'shared_helper', 'objects'], function (Ably, Helper, ObjectsPlug
         action: 19, // OBJECT
         channel: channelName,
         channelSerial: serial,
+        connectionId,
         state: state ?? [],
       };
     }

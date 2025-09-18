@@ -2738,6 +2738,8 @@ export declare interface LiveObjectUpdate {
   update: any;
   /** The client ID of the client that published this update. */
   clientId?: string;
+  /** The connection ID of the client that published this update. */
+  connectionId?: string;
 }
 
 /**
