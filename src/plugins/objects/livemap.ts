@@ -44,6 +44,7 @@ export interface LiveMapData extends LiveObjectData {
 
 export interface LiveMapUpdate<T extends API.LiveMapType> extends LiveObjectUpdate {
   update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
+  _type: 'LiveMapUpdate';
 }
 
 /** @spec RTLM1, RTLM2 */
@@ -643,7 +644,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   }
 
   protected _updateFromDataDiff(prevDataRef: LiveMapData, newDataRef: LiveMapData): LiveMapUpdate<T> {
-    const update: LiveMapUpdate<T> = { update: {} };
+    const update: LiveMapUpdate<T> = { update: {}, _type: 'LiveMapUpdate' };
 
     for (const [key, currentEntry] of prevDataRef.data.entries()) {
       const typedKey: keyof T & string = key;
@@ -705,10 +706,10 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (this._client.Utils.isNil(objectOperation.map)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
-      return { update: {}, clientId: msg.clientId };
+      return { update: {}, clientId: msg.clientId, _type: 'LiveMapUpdate' };
     }
 
-    const aggregatedUpdate: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId };
+    const aggregatedUpdate: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, _type: 'LiveMapUpdate' };
     // RTLM6d1
     // in order to apply MAP_CREATE op for an existing map, we should merge their underlying entries keys.
     // we can do this by iterating over entries from MAP_CREATE op and apply changes on per-key basis as if we had MAP_SET, MAP_REMOVE operations.
@@ -850,7 +851,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       }
     }
 
-    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId };
+    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, _type: 'LiveMapUpdate' };
     const typedKey: keyof T & string = op.key;
     update.update[typedKey] = 'updated';
 
@@ -916,7 +917,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       this._dataRef.data.set(op.key, newEntry);
     }
 
-    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId };
+    const update: LiveMapUpdate<T> = { update: {}, clientId: msg.clientId, _type: 'LiveMapUpdate' };
     const typedKey: keyof T & string = op.key;
     update.update[typedKey] = 'removed';
 

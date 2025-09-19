@@ -219,6 +219,12 @@ export class PathObjectImpl<T extends Value = Value> implements AnyPathObject<T>
   }
 
   // TODO: explain the behavior of PathObject subscriptions - relies on LiveObject instances to broadcast their updates via registry
+  // also explain that subscribing to a leaf value via the PathObject will only emit events when the leaf value itself is updated, not when its parent LiveMap is updated.
+  // however, when subscribed to a parent path, and key is updated, only one event will be emitted and it will be for the parent path subscription - not for the PathObject of the updated key.
+  // also, when subscribed to a path, changes happening "at the path" that are the result of parent collection object updates changing its key/index will produce an event at this path, but it will not bubble up to parent path subscriptions.
+  // these two cases can be combined into one statement regarding  how we handle changes "at the path" vs "in the path".
+  // depth 1 essentially means "me" and "my direct children".
+  // also, we need to think how ObjectMessage will look like for "at the path" updates, since the original ObjectMessage will have the full objectId of the parent object, not the child object, and also has the payload relevant for the parent
   subscribe(
     callback: (event: API.SubscriptionEvent) => void,
     options?: API.SubscriptionOptions | undefined,

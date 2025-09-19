@@ -1,5 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
+import type * as API from '../../../ably';
+import { LiveMapUpdate } from './livemap';
 import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
 import { PathEvent } from './pathobjectsubscriptionregister';
 import { RealtimeObject } from './realtimeobject';
@@ -13,6 +15,7 @@ export interface LiveObjectData {
 }
 
 export interface LiveObjectUpdate {
+  _type: 'LiveMapUpdate' | 'LiveCounterUpdate';
   update: any;
   clientId?: string;
 }
@@ -152,7 +155,7 @@ export abstract class LiveObject<
 
   /**
    * Emits the {@link LiveObjectSubscriptionEvent.updated} event with provided update object if it isn't a noop.
-   * Also notifies the {@link PathObjectSubscriptionRegister} about path-based events.
+   * Also notifies the path object subscriptions about path-based events.
    *
    * @internal
    */
@@ -162,7 +165,8 @@ export abstract class LiveObject<
       return;
     }
 
-    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, update);
+    const { _type, ...publicUpdate } = update as TUpdate;
+    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, publicUpdate);
     this._notifyPathSubscriptions(update as TUpdate, objectMessage);
   }
 
@@ -330,6 +334,7 @@ export abstract class LiveObject<
 
   /**
    * Notifies path-based subscriptions about changes to this object.
+   * For LiveMapUpdate events, also creates non-bubbling events for each updated key.
    */
   private _notifyPathSubscriptions(update: TUpdate, objectMessage?: ObjectMessage): void {
     const paths = this.getFullPaths();
@@ -343,7 +348,24 @@ export abstract class LiveObject<
       path,
       message: objectMessage,
       update,
+      bubbles: true,
     }));
+
+    // For LiveMapUpdate, also create non-bubbling events for each updated key
+    if (update._type === 'LiveMapUpdate') {
+      const updatedKeys = Object.keys((update as LiveMapUpdate<API.LiveMapType>).update);
+
+      for (const key of updatedKeys) {
+        for (const basePath of paths) {
+          pathEvents.push({
+            path: [...basePath, key],
+            message: objectMessage,
+            bubbles: false,
+            // don't include the full update for key-specific events, as it may contain other keys
+          });
+        }
+      }
+    }
 
     this._realtimeObject.getPathObjectSubscriptionRegister().notifyPathEvents(pathEvents);
   }

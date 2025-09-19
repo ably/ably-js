@@ -16,6 +16,7 @@ export interface LiveCounterData extends LiveObjectData {
 
 export interface LiveCounterUpdate extends LiveObjectUpdate {
   update: { amount: number };
+  _type: 'LiveCounterUpdate';
 }
 
 /** @spec RTLC1, RTLC2 */
@@ -310,7 +311,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   protected _updateFromDataDiff(prevDataRef: LiveCounterData, newDataRef: LiveCounterData): LiveCounterUpdate {
     const counterDiff = newDataRef.data - prevDataRef.data;
-    return { update: { amount: counterDiff } };
+    return { update: { amount: counterDiff }, _type: 'LiveCounterUpdate' };
   }
 
   protected _mergeInitialDataFromCreateOperation(
@@ -324,7 +325,11 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._dataRef.data += objectOperation.counter?.count ?? 0; // RTLC6d1
     this._createOperationIsMerged = true; // RTLC6d2
 
-    return { update: { amount: objectOperation.counter?.count ?? 0 }, clientId: msg.clientId };
+    return {
+      update: { amount: objectOperation.counter?.count ?? 0 },
+      clientId: msg.clientId,
+      _type: 'LiveCounterUpdate',
+    };
   }
 
   private _throwNoPayloadError(op: ObjectOperation<ObjectData>): void {
@@ -357,6 +362,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   private _applyCounterInc(op: ObjectsCounterOp, msg: ObjectMessage): LiveCounterUpdate {
     this._dataRef.data += op.amount;
-    return { update: { amount: op.amount }, clientId: msg.clientId };
+    return { update: { amount: op.amount }, clientId: msg.clientId, _type: 'LiveCounterUpdate' };
   }
 }

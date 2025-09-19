@@ -25,7 +25,10 @@ export interface PathEvent {
   path: string[];
   /** Object message that caused this event */
   message?: ObjectMessage;
-  update: LiveObjectUpdate;
+  /** TODO: Temporary update object from the previous subscription system. Replace when user-facing ObjectMessage is done */
+  update?: LiveObjectUpdate;
+  /** Whether this event should bubble up to parent paths. Defaults to true if not specified. */
+  bubbles?: boolean;
 }
 
 /**
@@ -95,7 +98,7 @@ export class PathObjectSubscriptionRegister {
    */
   private _processEvent(event: PathEvent): void {
     for (const subscription of this._subscriptions.values()) {
-      if (!this._shouldNotifySubscription(subscription, event.path)) {
+      if (!this._shouldNotifySubscription(subscription, event)) {
         continue;
       }
 
@@ -122,13 +125,18 @@ export class PathObjectSubscriptionRegister {
 
   /**
    * Determines if a subscription should be notified about an event at the given path.
-   * Implements depth-based filtering logic.
+   * Implements depth-based filtering logic and bubbling control.
    *
-   * Depth examples:
+   * Depth examples (when event.bubbles is true):
    * - subscription at ["users"] with depth=undefined: matches ["users"], ["users", "emma"], ["users", "emma", "visits"], etc.
    * - subscription at ["users"] with depth=1: matches ["users"] only
    * - subscription at ["users"] with depth=2: matches ["users"], ["users", "emma"] only
    * - subscription at ["users"] with depth=3: matches ["users"], ["users", "emma"], ["users", "emma", "visits"] only
+   *
+   * Non-bubbling examples (when event.bubbles is false):
+   * - Event at ["users", "emma"] with bubbles=false:
+   *   - subscription at ["users"]: NOT triggered (no bubbling to parent)
+   *   - subscription at ["users", "emma"]: triggered (exact path match)
    *
    * The depth calculation is: eventPath.length - subscriptionPath.length + 1
    * This means:
@@ -136,11 +144,18 @@ export class PathObjectSubscriptionRegister {
    * - One level deeper (["users"] -> ["users", "emma"]): 2 - 1 + 1 = 2 (depth=2)
    * - Two levels deeper (["users"] -> ["users", "emma", "visits"]): 3 - 1 + 1 = 3 (depth=3)
    */
-  private _shouldNotifySubscription(subscription: SubscriptionEntry, eventPath: string[]): boolean {
+  private _shouldNotifySubscription(subscription: SubscriptionEntry, event: PathEvent): boolean {
     const subPath = subscription.path;
+    const eventPath = event.path;
     const depth = subscription.options.depth;
+    const bubbles = event.bubbles !== false; // Default to true if not specified
 
-    // Check if the event path starts with the subscription path
+    // If event doesn't bubble, only match exact paths
+    if (!bubbles) {
+      return this._pathsAreEqual(eventPath, subPath);
+    }
+
+    // Otherwise check if the event path starts with the subscription path
     if (!this._pathStartsWith(eventPath, subPath)) {
       return false;
     }
@@ -150,7 +165,7 @@ export class PathObjectSubscriptionRegister {
       return true;
     }
 
-    // Calculate the relative depth from subscription path to event path
+    // Otherwise calculate the relative depth from subscription path to event path
     const relativeDepth = eventPath.length - subPath.length + 1;
 
     // Check if the event is within the allowed depth
@@ -176,5 +191,16 @@ export class PathObjectSubscriptionRegister {
     }
 
     return true;
+  }
+
+  /**
+   * Checks if two paths are exactly equal.
+   *
+   * @param path1 - First path to compare
+   * @param path2 - Second path to compare
+   * @returns true if paths are exactly equal
+   */
+  private _pathsAreEqual(path1: string[], path2: string[]): boolean {
+    return this._client.Utils.arrEquals(path1, path2);
   }
 }

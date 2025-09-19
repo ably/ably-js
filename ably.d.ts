@@ -2571,7 +2571,7 @@ export type SubscriptionEvent = {
   object: PathObject;
   message: ObjectMessage;
   // TODO: temporary update object until we have a proper conversion to user-facing ObjectMessage
-  update: LiveObjectUpdate;
+  update?: LiveObjectUpdate;
 };
 
 // Options that can be provided to the subscribe and subscribeIterator methods.
