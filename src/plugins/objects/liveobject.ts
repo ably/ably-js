@@ -225,7 +225,7 @@ export abstract class LiveObject<
    */
   addParentReference(parent: LiveObject, key: string): void {
     // Find existing reference for this parent-key combination
-    const existingRef = Array.from(this._parentReferences).find((ref) => ref.parent === parent && ref.key === key);
+    const existingRef = [...this._parentReferences].find((ref) => ref.parent === parent && ref.key === key);
 
     if (!existingRef) {
       this._parentReferences.add({ parent, key });
@@ -239,7 +239,7 @@ export abstract class LiveObject<
    */
   removeParentReference(parent: LiveObject, key: string): void {
     // Find and remove the specific parent-key reference
-    const refToRemove = Array.from(this._parentReferences).find((ref) => ref.parent === parent && ref.key === key);
+    const refToRemove = [...this._parentReferences].find((ref) => ref.parent === parent && ref.key === key);
 
     if (refToRemove) {
       this._parentReferences.delete(refToRemove);
@@ -252,7 +252,7 @@ export abstract class LiveObject<
    * @internal
    */
   removeParentReferenceAll(parent: LiveObject): void {
-    const refsToRemove = Array.from(this._parentReferences).filter((ref) => ref.parent === parent);
+    const refsToRemove = [...this._parentReferences].filter((ref) => ref.parent === parent);
     refsToRemove.forEach((ref) => this._parentReferences.delete(ref));
   }
 
@@ -275,37 +275,48 @@ export abstract class LiveObject<
   }
 
   /**
-   * Calculates and returns all possible paths to this object by traversing up the parent hierarchy.
-   * Each path is represented as an array of keys from root to this object.
+   * Calculates and returns all possible paths to this object from the root object by traversing up the parent hierarchy.
+   * Uses iterative DFS with an explicit stack. Each path is represented as an array of keys from root to this object.
    *
    * @internal
    */
   getFullPaths(): string[][] {
     const paths: string[][] = [];
-    const visited = new Set<LiveObject>(); // Prevent infinite loops
 
-    const calculatePathsRecursive = (obj: LiveObject, currentPath: string[]): void => {
+    const stack: { obj: LiveObject; currentPath: string[]; visited: Set<LiveObject> }[] = [
+      { obj: this, currentPath: [], visited: new Set() },
+    ];
+
+    while (stack.length > 0) {
+      const { obj, currentPath, visited } = stack.pop()!;
+
+      // Check for cyclic references
       if (visited.has(obj)) {
-        return; // Prevent infinite recursion
+        continue; // Skip this path to prevent infinite loops
       }
-      visited.add(obj);
 
-      const parentRefs = Array.from(obj.getParentReferences());
+      // Create new visited set for this path
+      const newVisited = new Set(visited);
+      newVisited.add(obj);
+
+      const parentRefs = [...obj.getParentReferences()];
 
       if (parentRefs.length === 0) {
         // This is a root object, add the current path
-        paths.push([...currentPath]);
-      } else {
-        // Recursively calculate paths through each parent
-        parentRefs.forEach((ref) => {
-          calculatePathsRecursive(ref.parent, [ref.key, ...currentPath]);
-        });
+        paths.push(currentPath);
+        continue;
       }
 
-      visited.delete(obj);
-    };
+      // Otherwise, add work items for each parent to the stack
+      parentRefs.forEach((ref) => {
+        stack.push({
+          obj: ref.parent,
+          currentPath: [ref.key, ...currentPath],
+          visited: newVisited,
+        });
+      });
+    }
 
-    calculatePathsRecursive(this, []);
     return paths;
   }
 
@@ -360,8 +371,8 @@ export abstract class LiveObject<
           pathEvents.push({
             path: [...basePath, key],
             message: objectMessage,
+            update,
             bubbles: false,
-            // don't include the full update for key-specific events, as it may contain other keys
           });
         }
       }
