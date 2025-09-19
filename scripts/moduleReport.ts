@@ -340,6 +340,7 @@ async function checkObjectsPluginFiles() {
     'src/plugins/objects/objectmessage.ts',
     'src/plugins/objects/objectspool.ts',
     'src/plugins/objects/pathobject.ts',
+    'src/plugins/objects/pathobjectsubscriptionregister.ts',
     'src/plugins/objects/realtimeobject.ts',
     'src/plugins/objects/syncobjectsdatapool.ts',
   ]);
