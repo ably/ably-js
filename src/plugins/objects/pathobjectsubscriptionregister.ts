@@ -26,7 +26,7 @@ export interface PathEvent {
   /** Object message that caused this event */
   message?: ObjectMessage;
   /** TODO: Temporary update object from the previous subscription system. Replace when user-facing ObjectMessage is done */
-  update?: LiveObjectUpdate;
+  update?: Omit<LiveObjectUpdate, '_type'>;
   /** Whether this event should bubble up to parent paths. Defaults to true if not specified. */
   bubbles?: boolean;
 }

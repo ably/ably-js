@@ -165,8 +165,7 @@ export abstract class LiveObject<
       return;
     }
 
-    const { _type, ...publicUpdate } = update as TUpdate;
-    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, publicUpdate);
+    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, this._updateWithoutType(update as TUpdate));
     this._notifyPathSubscriptions(update as TUpdate, objectMessage);
   }
 
@@ -343,6 +342,11 @@ export abstract class LiveObject<
     return this.tombstone(objectMessage);
   }
 
+  private _updateWithoutType(update: TUpdate): Omit<TUpdate, '_type'> {
+    const { _type, ...publicUpdate } = update as TUpdate;
+    return publicUpdate;
+  }
+
   /**
    * Notifies path-based subscriptions about changes to this object.
    * For LiveMapUpdate events, also creates non-bubbling events for each updated key.
@@ -358,7 +362,7 @@ export abstract class LiveObject<
     const pathEvents: PathEvent[] = paths.map((path) => ({
       path,
       message: objectMessage,
-      update,
+      update: this._updateWithoutType(update),
       bubbles: true,
     }));
 
@@ -371,8 +375,8 @@ export abstract class LiveObject<
           pathEvents.push({
             path: [...basePath, key],
             message: objectMessage,
-            update,
             bubbles: false,
+            // Don't include update object as it may include updates for other keys
           });
         }
       }
