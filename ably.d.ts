@@ -2825,6 +2825,42 @@ export declare interface Channel {
    * @returns A promise which, upon success, will be fulfilled a {@link ChannelDetails} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    */
   status(): Promise<ChannelDetails>;
+  /**
+   * Retrieves the latest version of a specific message by its serial identifier.
+   *
+   * @param serialOrMessage - Either the serial identifier string of the message to retrieve, or a {@link Message} object containing a populated `serial` field.
+   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object representing the latest version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  getMessage(serialOrMessage: string | Message): Promise<Message>;
+  /**
+   * Publishes an update to an existing message with patch semantics. Non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged.
+   *
+   * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
+   * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
+   * @param params - Optional parameters sent as part of the query string.
+   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object containing the updated message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  updateMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<Message>;
+  /**
+   * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object).
+   *
+   * @param message - A {@link Message} object containing a populated `serial` field.
+   * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
+   * @param params - Optional parameters sent as part of the query string.
+   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object containing the deleted message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  deleteMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<Message>;
+  /**
+   * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
+   *
+   * @param serialOrMessage - Either the serial identifier string of the message whose versions are to be retrieved, or a {@link Message} object containing a populated `serial` field.
+   * @param params - Optional parameters sent as part of the query string.
+   * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Message} objects representing all versions of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  getMessageVersions(
+    serialOrMessage: string | Message,
+    params?: Record<string, any>,
+  ): Promise<PaginatedResult<Message>>;
 }
 
 /**
@@ -3037,6 +3073,42 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * @param targetState - The channel state to wait for.
    */
   whenState(targetState: ChannelState): Promise<ChannelStateChange | null>;
+  /**
+   * Retrieves the latest version of a specific message by its serial identifier.
+   *
+   * @param serialOrMessage - Either the serial identifier string of the message to retrieve, or a {@link Message} object containing a populated `serial` field.
+   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object representing the latest version of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  getMessage(serialOrMessage: string | Message): Promise<Message>;
+  /**
+   * Publishes an update to an existing message with patch semantics. Non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged.
+   *
+   * @param message - A {@link Message} object containing a populated `serial` field and the fields to update.
+   * @param operation - An optional {@link MessageOperation} object containing metadata about the update operation.
+   * @param params - Optional parameters sent as part of the query string.
+   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object containing the updated message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  updateMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<Message>;
+  /**
+   * Marks a message as deleted by publishing an update with an action of `MESSAGE_DELETE`. This does not remove the message from the server, and the full message history remains accessible. Uses patch semantics: non-null `name`, `data`, and `extras` fields in the provided message will replace the corresponding fields in the existing message, while null fields will be left unchanged (meaning that if you for example want the `MESSAGE_DELETE` to have an empty data, you should explicitly set the `data` to an empty object).
+   *
+   * @param message - A {@link Message} object containing a populated `serial` field.
+   * @param operation - An optional {@link MessageOperation} object containing metadata about the delete operation.
+   * @param params - Optional parameters sent as part of the query string.
+   * @returns A promise which, upon success, will be fulfilled with a {@link Message} object containing the deleted message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  deleteMessage(message: Message, operation?: MessageOperation, params?: Record<string, any>): Promise<Message>;
+  /**
+   * Retrieves all historical versions of a specific message, ordered by version. This includes the original message and all subsequent updates or delete operations.
+   *
+   * @param serialOrMessage - Either the serial identifier string of the message whose versions are to be retrieved, or a {@link Message} object containing a populated `serial` field.
+   * @param params - Optional parameters sent as part of the query string.
+   * @returns A promise which, upon success, will be fulfilled with a {@link PaginatedResult} object containing an array of {@link Message} objects representing all versions of the message. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
+   */
+  getMessageVersions(
+    serialOrMessage: string | Message,
+    params?: Record<string, any>,
+  ): Promise<PaginatedResult<Message>>;
 }
 
 /**
@@ -3367,6 +3439,24 @@ export interface MessageAnnotations {
    * methods might be added serverside, hence the 'unknown' part of the sum type.
    */
   summary: Record<string, SummaryEntry>;
+}
+
+/**
+ * Contains metadata about a message update or delete operation.
+ */
+export interface MessageOperation {
+  /**
+   * Optional identifier of the client performing the operation.
+   */
+  clientId?: string;
+  /**
+   * Optional human-readable description of the operation.
+   */
+  description?: string;
+  /**
+   * Optional dictionary of key-value pairs containing additional metadata about the operation.
+   */
+  metadata?: Record<string, string>;
 }
 
 /**

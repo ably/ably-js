@@ -150,6 +150,37 @@ class RestChannel {
   async status(): Promise<API.ChannelDetails> {
     return this.client.rest.channelMixin.status(this);
   }
+
+  async getMessage(serialOrMessage: string | Message): Promise<Message> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.getMessage()', 'channel = ' + this.name);
+    return this.client.rest.channelMixin.getMessage(this, serialOrMessage);
+  }
+
+  async updateMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<Message> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.updateMessage()', 'channel = ' + this.name);
+    return this.client.rest.channelMixin.updateDeleteMessage(this, { isDelete: false }, message, operation, params);
+  }
+
+  async deleteMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<Message> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.deleteMessage()', 'channel = ' + this.name);
+    return this.client.rest.channelMixin.updateDeleteMessage(this, { isDelete: true }, message, operation, params);
+  }
+
+  async getMessageVersions(
+    serialOrMessage: string | Message,
+    params?: Record<string, any>,
+  ): Promise<PaginatedResult<Message>> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RestChannel.getMessageVersions()', 'channel = ' + this.name);
+    return this.client.rest.channelMixin.getMessageVersions(this, serialOrMessage, params);
+  }
 }
 
 export default RestChannel;

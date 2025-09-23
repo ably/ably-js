@@ -1016,6 +1016,41 @@ class RealtimeChannel extends EventEmitter {
   async status(): Promise<API.ChannelDetails> {
     return this.client.rest.channelMixin.status(this);
   }
+
+  async getMessage(serialOrMessage: string | Message): Promise<Message> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.getMessage()', 'channel = ' + this.name);
+    const restMixin = this.client.rest.channelMixin;
+    return restMixin.getMessage(this, serialOrMessage);
+  }
+
+  async updateMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<Message> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.updateMessage()', 'channel = ' + this.name);
+    const restMixin = this.client.rest.channelMixin;
+    return restMixin.updateDeleteMessage(this, { isDelete: false }, message, operation, params);
+  }
+
+  async deleteMessage(
+    message: Message,
+    operation?: API.MessageOperation,
+    params?: Record<string, any>,
+  ): Promise<Message> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.deleteMessage()', 'channel = ' + this.name);
+    const restMixin = this.client.rest.channelMixin;
+    return restMixin.updateDeleteMessage(this, { isDelete: true }, message, operation, params);
+  }
+
+  async getMessageVersions(
+    serialOrMessage: string | Message,
+    params?: Record<string, any>,
+  ): Promise<PaginatedResult<Message>> {
+    Logger.logAction(this.logger, Logger.LOG_MICRO, 'RealtimeChannel.getMessageVersions()', 'channel = ' + this.name);
+    const restMixin = this.client.rest.channelMixin;
+    return restMixin.getMessageVersions(this, serialOrMessage, params);
+  }
 }
 
 function omitAgent(channelParams?: API.ChannelParams) {
