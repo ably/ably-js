@@ -699,7 +699,7 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
             expect(message.clientId == clientId, 'Client ID was added implicitly').to.be.ok;
           } catch (err) {
             helper.closeAndFinish(done, realtime, err);
-            returnl;
+            return;
           }
           helper.closeAndFinish(done, realtime);
         });
@@ -1280,55 +1280,136 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
         {
           description: 'should stringify the numeric action',
           action: 0,
-          expectedString: '[Message; action=message.create]',
+          expectedString: '[Message; action=message.create; version={}; annotations={"summary":{}}]',
           expectedJSON: { action: 0 },
         },
         {
           description: 'should stringify the numeric action',
           action: 1,
-          expectedString: '[Message; action=message.update]',
+          expectedString: '[Message; action=message.update; version={}; annotations={"summary":{}}]',
           expectedJSON: { action: 1 },
         },
         {
           description: 'should handle no action provided',
           action: undefined,
-          expectedString: '[Message; action=message.create]',
+          expectedString: '[Message; action=message.create; version={}; annotations={"summary":{}}]',
           expectedJSON: { action: 0 },
         },
         {
           description: 'should handle unknown action provided',
           action: 10,
-          expectedString: '[Message; action=unknown]',
+          expectedString: '[Message; action=unknown; version={}; annotations={"summary":{}}]',
+        },
+        {
+          description: 'should set version from version',
+          action: 0,
+          version: {
+            serial: 'serial-abc',
+            timestamp: 123,
+          },
+          timestamp: 456,
+          serial: 'version-a',
+          expectedString:
+            '[Message; action=message.create; serial=version-a; timestamp=456; version={"serial":"serial-abc","timestamp":123}; annotations={"summary":{}}]',
+          expectedJSON: { action: 0, version: { serial: 'serial-abc', timestamp: 123 } },
+        },
+        {
+          description: 'should set version from serial',
+          action: 0,
+          serial: 'serial-abc',
+          timestamp: 123,
+          expectedString:
+            '[Message; action=message.create; serial=serial-abc; timestamp=123; version={"serial":"serial-abc","timestamp":123}; annotations={"summary":{}}]',
+          expectedJSON: { action: 0, version: { serial: 'serial-abc', timestamp: 123 } },
         },
       ];
-      testCases.forEach(({ description, action, options, expectedString, expectedJSON }) => {
-        it(description, async function () {
-          const values = { action };
-          const message = await Message.fromEncoded(values, {});
-          expect(message.toString()).to.equal(expectedString);
-          if (expectedJSON) {
-            expect((await message.encode({})).toJSON()).to.deep.contains(expectedJSON);
-          }
+      testCases.forEach(
+        ({ description, action, serial, timestamp, version, options, expectedString, expectedJSON }) => {
+          it(description, async function () {
+            const values = { action, serial, timestamp, version };
+            const message = await Message.fromEncoded(values, {});
+            expect(message.toString()).to.equal(expectedString);
+            if (expectedJSON) {
+              expect((await message.encode({})).toJSON()).to.deep.contains(expectedJSON);
+            }
+          });
+        },
+      );
+
+      /**
+       * @spec TM2s
+       * @spec TM2s1
+       * @spec TM2s2
+       */
+      it('should populate version from serial/timestamp when decoding message', async function () {
+        // Test with serial and timestamp at root level
+        const values = { action: 0, timestamp: 12345, serial: 'test-serial' };
+        const message = await Message.fromEncoded(values);
+        expect(message.timestamp).to.equal(12345);
+        expect(message.serial).to.equal('test-serial');
+        expect(message.version).to.deep.equal({
+          serial: 'test-serial',
+          timestamp: 12345,
         });
+
+        // Test with partial version object - should fill from root
+        const partialVersion = {
+          action: 0,
+          timestamp: 54321,
+          serial: 'another-serial',
+          version: { clientId: 'test-client' },
+        };
+        const message2 = await Message.fromEncoded(partialVersion);
+        expect(message2.version).to.deep.equal({
+          serial: 'another-serial',
+          timestamp: 54321,
+          clientId: 'test-client',
+        });
+
+        // Applying on non-creates
+        const update = { action: 1, timestamp: 12345, serial: 'update-serial' };
+        const updateMessage = await Message.fromEncoded(update);
+        expect(updateMessage.version).to.deep.equal({ serial: 'update-serial', timestamp: 12345 });
+
+        // Non-set
+        const empty = { action: 1 };
+        const emptyMessage = await Message.fromEncoded(empty);
+        expect(emptyMessage.version).to.deep.equal({});
       });
 
       /**
-       * @spec TM2k
-       * @spec TM2o
+       * @spec TM2u
+       * @spec TM8a
        */
-      it('create message should fill out serial and createdAt from version/timestamp', async function () {
-        const values = { action: 0, timestamp: 12345, version: 'foo' };
+      it('should populate annotations and summary when decoding message', async function () {
+        // Test with preset annotations and summary
+        const values = { action: 0, timestamp: 12345, serial: 'test-serial', annotations: { summary: { foo: 'bar' } } };
         const message = await Message.fromEncoded(values);
         expect(message.timestamp).to.equal(12345);
-        expect(message.createdAt).to.equal(12345);
-        expect(message.version).to.equal('foo');
-        expect(message.serial).to.equal('foo');
+        expect(message.serial).to.equal('test-serial');
+        expect(message.annotations).to.deep.equal({
+          summary: {
+            foo: 'bar',
+          },
+        });
 
-        // should only apply to creates
-        const update = { action: 1, timestamp: 12345, version: 'foo' };
-        const updateMessage = await Message.fromEncoded(update);
-        expect(updateMessage.createdAt).to.equal(undefined);
-        expect(updateMessage.serial).to.equal(undefined);
+        // Test with annotations set and no summary, should create summary
+        const withoutSummary = { action: 0, timestamp: 12345, serial: 'test-serial', annotations: {} };
+        const messageWithoutSummary = await Message.fromEncoded(withoutSummary);
+        expect(messageWithoutSummary.timestamp).to.equal(12345);
+        expect(messageWithoutSummary.serial).to.equal('test-serial');
+        expect(messageWithoutSummary.annotations).to.deep.equal({
+          summary: {},
+        });
+
+        // Test with neither set, should create both
+        const withoutSummaryAndAnnotations = { action: 0, timestamp: 12345, serial: 'test-serial' };
+        const messageWithoutSummaryAndAnnotations = await Message.fromEncoded(withoutSummaryAndAnnotations);
+        expect(messageWithoutSummaryAndAnnotations.timestamp).to.equal(12345);
+        expect(messageWithoutSummaryAndAnnotations.serial).to.equal('test-serial');
+        expect(messageWithoutSummaryAndAnnotations.annotations).to.deep.equal({
+          summary: {},
+        });
       });
     });
 
@@ -1461,8 +1542,8 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
                       'Unexpected header value received',
                     );
                     // Check that message with header that doesn't meet filtering condition is not received.
-                    for (msg of filteredMessages) {
-                      expect(msg.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
+                    for (const m of filteredMessages) {
+                      expect(m.extras.headers.number).to.equal(26095, 'Unexpected header filtering value received');
                     }
 
                     // Check that we receive expected messages on unfiltered channel, including the `end` event message

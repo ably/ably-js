@@ -1,6 +1,5 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type Platform from 'common/platform';
-import type { Bufferlike } from 'common/platform';
 
 export type LiveObjectType = 'map' | 'counter';
 
@@ -19,12 +18,12 @@ export class ObjectId {
   static fromInitialValue(
     platform: typeof Platform,
     objectType: LiveObjectType,
-    encodedInitialValue: Bufferlike,
+    initialValue: string,
     nonce: string,
     msTimestamp: number,
   ): ObjectId {
     const valueForHashBuffer = platform.BufferUtils.concat([
-      encodedInitialValue,
+      platform.BufferUtils.utf8Encode(initialValue),
       platform.BufferUtils.utf8Encode(':'),
       platform.BufferUtils.utf8Encode(nonce),
     ]);
