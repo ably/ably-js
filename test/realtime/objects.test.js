@@ -899,8 +899,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const counterSubPromise = new Promise((resolve, reject) =>
               root.get('counter').subscribe((update) => {
                 try {
-                  expect(update).to.deep.equal(
-                    { update: { amount: -1 } },
+                  expect(update?.update).to.deep.equal(
+                    { amount: -1 },
                     'Check counter subscription callback is called with an expected update object after OBJECT_SYNC sequence with "tombstone=true"',
                   );
                   resolve();
@@ -2087,8 +2087,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const mapSubPromise = new Promise((resolve, reject) =>
               root.get('map').subscribe((update) => {
                 try {
-                  expect(update).to.deep.equal(
-                    { update: { foo: 'removed', baz: 'removed' } },
+                  expect(update?.update).to.deep.equal(
+                    { foo: 'removed', baz: 'removed' },
                     'Check map subscription callback is called with an expected update object after OBJECT_DELETE operation',
                   );
                   resolve();
@@ -2100,8 +2100,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const counterSubPromise = new Promise((resolve, reject) =>
               root.get('counter').subscribe((update) => {
                 try {
-                  expect(update).to.deep.equal(
-                    { update: { amount: -1 } },
+                  expect(update?.update).to.deep.equal(
+                    { amount: -1 },
                     'Check counter subscription callback is called with an expected update object after OBJECT_DELETE operation',
                   );
                   resolve();
@@ -3995,8 +3995,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const subscriptionPromise = new Promise((resolve, reject) =>
               counter.subscribe((update) => {
                 try {
-                  expect(update).to.deep.equal(
-                    { update: { amount: 1 } },
+                  expect(update?.update).to.deep.equal(
+                    { amount: 1 },
                     'Check counter subscription callback is called with an expected update object for COUNTER_INC operation',
                   );
                   resolve();
@@ -4032,8 +4032,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               counter.subscribe((update) => {
                 try {
                   const expectedInc = expectedCounterIncrements[currentUpdateIndex];
-                  expect(update).to.deep.equal(
-                    { update: { amount: expectedInc } },
+                  expect(update?.update).to.deep.equal(
+                    { amount: expectedInc },
                     `Check counter subscription callback is called with an expected update object for ${currentUpdateIndex + 1} times`,
                   );
 
@@ -4072,8 +4072,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const subscriptionPromise = new Promise((resolve, reject) =>
               map.subscribe((update) => {
                 try {
-                  expect(update).to.deep.equal(
-                    { update: { stringKey: 'updated' } },
+                  expect(update?.update).to.deep.equal(
+                    { stringKey: 'updated' },
                     'Check map subscription callback is called with an expected update object for MAP_SET operation',
                   );
                   resolve();
@@ -4106,8 +4106,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const subscriptionPromise = new Promise((resolve, reject) =>
               map.subscribe((update) => {
                 try {
-                  expect(update).to.deep.equal(
-                    { update: { stringKey: 'removed' } },
+                  expect(update?.update).to.deep.equal(
+                    { stringKey: 'removed' },
                     'Check map subscription callback is called with an expected update object for MAP_REMOVE operation',
                   );
                   resolve();
@@ -4131,24 +4131,165 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
+          description: 'subscription update object contains the client metadata of the client who made the update',
+          action: async (ctx) => {
+            const { root, objectsHelper, channel, channelName, sampleMapKey, sampleCounterKey, helper } = ctx;
+            const publishClientId = 'publish-clientId';
+            const publishClient = RealtimeWithObjects(helper, { clientId: publishClientId });
+
+            // get the connection ID from the publish client once connected
+            let publishConnectionId;
+
+            const createCheckUpdateClientMetadataPromise = (subscribeFn, msg) => {
+              return new Promise((resolve, reject) =>
+                subscribeFn((update) => {
+                  try {
+                    expect(update.clientId).to.equal(publishClientId, msg);
+                    expect(update.connectionId).to.equal(publishConnectionId, msg);
+                    resolve();
+                  } catch (error) {
+                    reject(error);
+                  }
+                }),
+              );
+            };
+
+            // check client metadata is surfaced for mutation ops
+            const mutationOpsPromises = Promise.all([
+              createCheckUpdateClientMetadataPromise(
+                (cb) => root.get(sampleCounterKey).subscribe(cb),
+                'Check counter subscription callback has client metadata for COUNTER_INC operation',
+              ),
+              createCheckUpdateClientMetadataPromise(
+                (cb) =>
+                  root.get(sampleMapKey).subscribe((update) => {
+                    if (update.update.foo === 'updated') {
+                      cb(update);
+                    }
+                  }),
+                'Check map subscription callback has client metadata for MAP_SET operation',
+              ),
+              createCheckUpdateClientMetadataPromise(
+                (cb) =>
+                  root.get(sampleMapKey).subscribe((update) => {
+                    if (update.update.foo === 'removed') {
+                      cb(update);
+                    }
+                  }),
+                'Check map subscription callback has client metadata for MAP_REMOVE operation',
+              ),
+            ]);
+
+            await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+              const publishChannel = publishClient.channels.get(channelName, channelOptionsWithObjects());
+              await publishChannel.attach();
+              const publishRoot = await publishChannel.objects.getRoot();
+
+              // capture the connection ID once the client is connected
+              publishConnectionId = publishClient.connection.id;
+
+              await publishRoot.get(sampleCounterKey).increment(1);
+              await publishRoot.get(sampleMapKey).set('foo', 'bar');
+              await publishRoot.get(sampleMapKey).remove('foo');
+            }, publishClient);
+
+            await mutationOpsPromises;
+
+            // check client metadata is surfaced for create ops.
+            // first need to create non-initialized objects and then publish create ops for them
+            const objectsCreatedPromise = Promise.all([
+              waitForMapKeyUpdate(root, 'nonInitializedCounter'),
+              waitForMapKeyUpdate(root, 'nonInitializedMap'),
+            ]);
+
+            const fakeCounterObjectId = objectsHelper.fakeCounterObjectId();
+            const fakeMapObjectId = objectsHelper.fakeMapObjectId();
+
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 0, 0),
+              siteCode: 'aaa',
+              state: [
+                objectsHelper.mapSetOp({
+                  objectId: 'root',
+                  key: 'nonInitializedCounter',
+                  data: { objectId: fakeCounterObjectId },
+                }),
+              ],
+            });
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 0),
+              siteCode: 'aaa',
+              state: [
+                objectsHelper.mapSetOp({
+                  objectId: 'root',
+                  key: 'nonInitializedMap',
+                  data: { objectId: fakeMapObjectId },
+                }),
+              ],
+            });
+
+            await objectsCreatedPromise;
+
+            const createOpsPromises = Promise.all([
+              createCheckUpdateClientMetadataPromise(
+                (cb) => root.get('nonInitializedCounter').subscribe(cb),
+                'Check counter subscription callback has client metadata for COUNTER_CREATE operation',
+              ),
+              createCheckUpdateClientMetadataPromise(
+                (cb) => root.get('nonInitializedMap').subscribe(cb),
+                'Check map subscription callback has client metadata for MAP_CREATE operation',
+              ),
+            ]);
+
+            // and now post create operations which will trigger subscription callbacks
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 1),
+              siteCode: 'aaa',
+              clientId: publishClientId,
+              connectionId: publishConnectionId,
+              state: [objectsHelper.counterCreateOp({ objectId: fakeCounterObjectId, count: 1 })],
+            });
+            await objectsHelper.processObjectOperationMessageOnChannel({
+              channel,
+              serial: lexicoTimeserial('aaa', 1, 1),
+              siteCode: 'aaa',
+              clientId: publishClientId,
+              connectionId: publishConnectionId,
+              state: [
+                objectsHelper.mapCreateOp({
+                  objectId: fakeMapObjectId,
+                  entries: { foo: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { string: 'bar' } } },
+                }),
+              ],
+            });
+
+            await createOpsPromises;
+          },
+        },
+
+        {
+          allTransportsAndProtocols: true,
           description: 'can subscribe to multiple incoming operations on a LiveMap',
           action: async (ctx) => {
             const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
 
             const map = root.get(sampleMapKey);
             const expectedMapUpdates = [
-              { update: { foo: 'updated' } },
-              { update: { bar: 'updated' } },
-              { update: { foo: 'removed' } },
-              { update: { baz: 'updated' } },
-              { update: { bar: 'removed' } },
+              { foo: 'updated' },
+              { bar: 'updated' },
+              { foo: 'removed' },
+              { baz: 'updated' },
+              { bar: 'removed' },
             ];
             let currentUpdateIndex = 0;
 
             const subscriptionPromise = new Promise((resolve, reject) =>
               map.subscribe((update) => {
                 try {
-                  expect(update).to.deep.equal(
+                  expect(update?.update).to.deep.equal(
                     expectedMapUpdates[currentUpdateIndex],
                     `Check map subscription callback is called with an expected update object for ${currentUpdateIndex + 1} times`,
                   );
@@ -4509,6 +4650,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             sampleMapObjectId,
             sampleCounterKey,
             sampleCounterObjectId,
+            helper,
           });
         }, client);
       });
@@ -5080,10 +5222,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           {
             description: 'initial value',
             message: objectMessageFromValues({
-              operation: {
-                initialValue: BufferUtils.utf8Encode('{"counter":{"count":1}}'),
-                initialValueEncoding: 'json',
-              },
+              operation: { initialValue: JSON.stringify({ counter: { count: 1 } }) },
             }),
             expected: 0,
           },
