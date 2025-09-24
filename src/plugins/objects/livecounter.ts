@@ -8,7 +8,7 @@ import {
   ObjectOperationAction,
   ObjectsCounterOp,
 } from './objectmessage';
-import { RealtimeObjects } from './realtimeobjects';
+import { RealtimeObject } from './realtimeobject';
 
 export interface LiveCounterData extends LiveObjectData {
   data: number; // RTLC3
@@ -26,8 +26,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @internal
    * @spec RTLC4
    */
-  static zeroValue(objects: RealtimeObjects, objectId: string): LiveCounter {
-    return new LiveCounter(objects, objectId);
+  static zeroValue(realtimeObject: RealtimeObject, objectId: string): LiveCounter {
+    return new LiveCounter(realtimeObject, objectId);
   }
 
   /**
@@ -36,8 +36,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectState(objects: RealtimeObjects, objectMessage: ObjectMessage): LiveCounter {
-    const obj = new LiveCounter(objects, objectMessage.object!.objectId);
+  static fromObjectState(realtimeObject: RealtimeObject, objectMessage: ObjectMessage): LiveCounter {
+    const obj = new LiveCounter(realtimeObject, objectMessage.object!.objectId);
     obj.overrideWithObjectState(objectMessage);
     return obj;
   }
@@ -48,8 +48,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    *
    * @internal
    */
-  static fromObjectOperation(objects: RealtimeObjects, objectMessage: ObjectMessage): LiveCounter {
-    const obj = new LiveCounter(objects, objectMessage.operation!.objectId);
+  static fromObjectOperation(realtimeObject: RealtimeObject, objectMessage: ObjectMessage): LiveCounter {
+    const obj = new LiveCounter(realtimeObject, objectMessage.operation!.objectId);
     obj._mergeInitialDataFromCreateOperation(objectMessage.operation!, objectMessage);
     return obj;
   }
@@ -57,8 +57,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  static createCounterIncMessage(objects: RealtimeObjects, objectId: string, amount: number): ObjectMessage {
-    const client = objects.getClient();
+  static createCounterIncMessage(realtimeObject: RealtimeObject, objectId: string, amount: number): ObjectMessage {
+    const client = realtimeObject.getClient();
 
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {
       throw new client.ErrorInfo('Counter value increment should be a valid number', 40003, 400);
@@ -82,8 +82,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   /**
    * @internal
    */
-  static async createCounterCreateMessage(objects: RealtimeObjects, count?: number): Promise<ObjectMessage> {
-    const client = objects.getClient();
+  static async createCounterCreateMessage(realtimeObject: RealtimeObject, count?: number): Promise<ObjectMessage> {
+    const client = realtimeObject.getClient();
 
     if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
       throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
@@ -132,7 +132,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
   /** @spec RTLC5 */
   value(): number {
-    this._objects.throwIfInvalidAccessApiConfiguration(); // RTLC5a, RTLC5b
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration(); // RTLC5a, RTLC5b
     return this._dataRef.data; // RTLC5c
   }
 
@@ -146,16 +146,16 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
    * @returns A promise which resolves upon receiving the ACK message for the published operation message.
    */
   async increment(amount: number): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
-    const msg = LiveCounter.createCounterIncMessage(this._objects, this.getObjectId(), amount);
-    return this._objects.publish([msg]);
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+    const msg = LiveCounter.createCounterIncMessage(this._realtimeObject, this.getObjectId(), amount);
+    return this._realtimeObject.publish([msg]);
   }
 
   /**
    * An alias for calling {@link LiveCounter.increment | LiveCounter.increment(-amount)}
    */
   async decrement(amount: number): Promise<void> {
-    this._objects.throwIfInvalidWriteApiConfiguration();
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
     // do an explicit type safety check here before negating the amount value,
     // so we don't unintentionally change the type sent by a user
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {

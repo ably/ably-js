@@ -1,10 +1,10 @@
 import { ObjectMessage, WireObjectMessage } from './objectmessage';
-import { RealtimeObjects } from './realtimeobjects';
+import { RealtimeObject } from './realtimeobject';
 
-export { ObjectMessage, RealtimeObjects, WireObjectMessage };
+export { ObjectMessage, RealtimeObject, WireObjectMessage };
 
 export default {
   ObjectMessage,
-  RealtimeObjects,
+  RealtimeObject,
   WireObjectMessage,
 };
