@@ -23,7 +23,7 @@ export class BatchContext {
     this._wrappedObjects.set(this._root.getObjectId(), new BatchContextLiveMap(this, this._realtimeObject, this._root));
   }
 
-  get<T extends API.LiveMapType = API.DefaultRoot>(): BatchContextLiveMap<T> {
+  get<T extends API.LiveMapType = API.AblyDefaultObject>(): BatchContextLiveMap<T> {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
     this.throwIfClosed();
     return this.getWrappedObject(ROOT_OBJECT_ID) as BatchContextLiveMap<T>;

@@ -79,7 +79,7 @@ export class RealtimeObject {
    * This is useful when working with multiple channels with different underlying data structure.
    * @spec RTO1
    */
-  async get<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
+  async get<T extends API.LiveMapType = API.AblyDefaultObject>(): Promise<LiveMap<T>> {
     this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
 
     // if we're not synced yet, wait for sync sequence to finish before returning root
