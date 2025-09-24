@@ -588,7 +588,7 @@ class Auth {
           return client.baseUri(host) + path;
         };
 
-      const requestHeaders = Defaults.defaultPostHeaders(this.client.options);
+      const requestHeaders = Defaults.defaultPostHeaders(this.client.options, { format: Utils.Format.json });
       if (resolvedAuthOptions.requestHeaders) Utils.mixin(requestHeaders, resolvedAuthOptions.requestHeaders);
       Logger.logAction(
         this.logger,

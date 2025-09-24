@@ -38,7 +38,7 @@ export class RestChannelMixin {
     const client = channel.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = channel.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options);
 
     Utils.mixin(headers, client.options.headers);
 
@@ -57,7 +57,7 @@ export class RestChannelMixin {
 
   static async status(channel: RestChannel | RealtimeChannel): Promise<API.ChannelDetails> {
     const format = channel.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-    const headers = Defaults.defaultPostHeaders(channel.client.options, { format });
+    const headers = Defaults.defaultPostHeaders(channel.client.options);
 
     const response = await Resource.get<API.ChannelDetails>(
       channel.client,
@@ -81,9 +81,10 @@ export class RestChannelMixin {
       );
     }
 
-    const format = channel.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-    const headers = Defaults.defaultGetHeaders(channel.client.options, { format });
-    Utils.mixin(headers, channel.client.options.headers);
+    const client = channel.client;
+    const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
+    const headers = Defaults.defaultGetHeaders(client.options);
+    Utils.mixin(headers, client.options.headers);
 
     const { body, unpacked } = await Resource.get<WireMessage>(
       client,
@@ -115,7 +116,7 @@ export class RestChannelMixin {
 
     const client = channel.client;
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
-    const headers = Defaults.defaultPostHeaders(client.options, { format });
+    const headers = Defaults.defaultPostHeaders(client.options);
     Utils.mixin(headers, client.options.headers);
 
     let encoded: WireMessage | null = null;
@@ -167,7 +168,7 @@ export class RestChannelMixin {
     const client = channel.client;
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json;
     const envelope = channel.client.http.supportsLinkHeaders ? undefined : format;
-    const headers = Defaults.defaultGetHeaders(client.options, { format });
+    const headers = Defaults.defaultGetHeaders(client.options);
 
     Utils.mixin(headers, client.options.headers);
 
