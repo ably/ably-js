@@ -108,7 +108,7 @@ class RestChannel {
       options = client.options,
       format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       idempotentRestPublishing = client.options.idempotentRestPublishing,
-      headers = Defaults.defaultPostHeaders(client.options, { format });
+      headers = Defaults.defaultPostHeaders(client.options);
 
     Utils.mixin(headers, options.headers);
 
