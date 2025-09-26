@@ -1,6 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type * as API from '../../../ably';
-import type { AnyPathObject, PathObject, Primitive, Value } from '../../../ably';
+import type { AnyInstance, AnyPathObject, PathObject, Primitive, Value } from '../../../ably';
+import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
@@ -144,6 +145,27 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
     }
   }
 
+  instance<T extends Value = Value>(): AnyInstance<T> | undefined {
+    try {
+      const value = this._resolvePath(this._path);
+
+      if (value instanceof LiveObject) {
+        // only return an Instance for LiveObject values
+        return new DefaultInstance(this._realtimeObject, value);
+      }
+
+      // return undefined for primitive values
+      return undefined;
+    } catch (error) {
+      if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error)) {
+        // ignore ErrorInfos indicating path resolution failure and return undefined
+        return undefined;
+      }
+      // otherwise rethrow unexpected errors
+      throw error;
+    }
+  }
+
   /**
    * Returns an iterator of [key, value] pairs for LiveMap entries
    */
@@ -211,7 +233,7 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
     }
   }
 
-  set<T extends Record<string, API.Value> = Record<string, API.Value>>(
+  set<T extends Record<string, Value> = Record<string, Value>>(
     key: keyof T & string,
     value: T[keyof T],
   ): Promise<void> {
@@ -227,7 +249,7 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
     return resolved.set(key, value);
   }
 
-  remove<T extends Record<string, API.Value> = Record<string, API.Value>>(key: keyof T & string): Promise<void> {
+  remove<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string): Promise<void> {
     const resolved = this._resolvePath(this._path);
     if (!(resolved instanceof LiveMap)) {
       throw new this._client.ErrorInfo(
