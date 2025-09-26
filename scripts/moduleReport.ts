@@ -331,6 +331,7 @@ async function checkObjectsPluginFiles() {
     'src/plugins/objects/batchcontextlivecounter.ts',
     'src/plugins/objects/batchcontextlivemap.ts',
     'src/plugins/objects/index.ts',
+    'src/plugins/objects/instance.ts',
     'src/plugins/objects/livecounter.ts',
     'src/plugins/objects/livemap.ts',
     'src/plugins/objects/liveobject.ts',
