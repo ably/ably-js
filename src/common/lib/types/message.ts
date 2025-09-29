@@ -133,6 +133,24 @@ class Message extends BaseMessage {
       // TM8a
       this.annotations.summary = {};
     }
+    if (this.annotations && this.annotations.summary) {
+      // Ensure clipped field is set to false where not explicitly provided
+      for (const [type, summaryEntry] of Object.entries(this.annotations.summary)) {
+        if (type.endsWith(':distinct.v1') || type.endsWith(':unique.v1') || type.endsWith(':multiple.v1')) {
+          for (const [, entry] of Object.entries(summaryEntry)) {
+            // TM7c1c, TM7d1c
+            if (!entry.clipped) {
+              entry.clipped = false;
+            }
+          }
+        } else if (type.endsWith(':flag.v1')) {
+          // TM7c1c
+          if (!(summaryEntry as API.SummaryClientIdList).clipped) {
+            (summaryEntry as API.SummaryClientIdList).clipped = false;
+          }
+        }
+      }
+    }
   }
 
   async encode(options: CipherOptions): Promise<WireMessage> {
