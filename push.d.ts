@@ -25,4 +25,4 @@ import { BaseRest, BaseRealtime, Rest } from './modular';
  */
 declare const Push: any;
 
-export = Push;
+export default Push;

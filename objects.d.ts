@@ -25,4 +25,4 @@ import { BaseRealtime } from './modular';
  */
 declare const Objects: any;
 
-export = Objects;
+export default Objects;
