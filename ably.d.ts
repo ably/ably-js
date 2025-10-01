@@ -2417,7 +2417,7 @@ export type Primitive =
  * Unique symbol for nominal typing within TypeScript's structural type system.
  * This prevents structural compatibility between LiveObject types.
  */
-declare const __livetype: unique symbol;
+export declare const __livetype: unique symbol;
 
 // Branded interfaces that enables TypeScript to distinguish
 // between LiveObject types even when they have identical structure.
