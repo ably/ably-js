@@ -28,11 +28,13 @@
     },
     "./push": {
       "types": "./push.d.ts",
-      "import": "./build/push.js"
+      "import": "./build/push.mjs",
+      "require": "./build/push.js"
     },
     "./objects": {
       "types": "./objects.d.ts",
-      "import": "./build/objects.js"
+      "import": "./build/objects.mjs",
+      "require": "./build/objects.js"
     }
   },
   "files": [

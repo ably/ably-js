@@ -63,4 +63,4 @@ export class LiveCounter {
  */
 declare const Objects: any;
 
-export = Objects;
+export default Objects;
