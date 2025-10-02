@@ -38,8 +38,8 @@ define(['test/common/modules/testapp_manager', 'globals'], function (testAppMana
           console.info(
             'Test App ' +
               configuredTestApp().appId +
-              ' in environment ' +
-              (ablyGlobals.environment || 'production') +
+              ' at endpoint ' +
+              (ablyGlobals.endpoint || 'production:main') +
               ' has been set up',
           );
           done();
