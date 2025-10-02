@@ -2,6 +2,10 @@
 
 This contains only the most important and/or user-facing changes; for a full changelog, see the commit history.
 
+## [2.14.0](https://github.com/ably/ably-js/tree/2.14.0) (2025-09-29)
+
+- Add `clipped` field to annotation summary types [#2078](https://github.com/ably/ably-js/pull/2078)
+
 ## [2.13.0](https://github.com/ably/ably-js/tree/2.13.0) (2025-09-18)
 
 - Surface the `connectionId` of the client that submitted a `LiveObject` operation in subscribe callbacks [#2084](https://github.com/ably/ably-js/pull/2084)
