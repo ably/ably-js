@@ -2,6 +2,7 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type * as API from '../../../ably';
 import type {
   AnyPathObject,
+  CompactedValue,
   EventCallback,
   Instance,
   PathObject,
@@ -21,7 +22,7 @@ import { RealtimeObject } from './realtimeobject';
  * Implementation of AnyPathObject interface.
  * Provides a generic implementation that can handle any type of PathObject operations.
  */
-export class DefaultPathObject<T extends Value = Value> implements AnyPathObject<T> {
+export class DefaultPathObject implements AnyPathObject {
   private _client: BaseClient;
   private _path: string[];
 
@@ -29,7 +30,7 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
     private _realtimeObject: RealtimeObject,
     private _root: LiveMap<any>,
     path: string[],
-    parent?: DefaultPathObject<any>,
+    parent?: DefaultPathObject,
   ) {
     this._client = this._realtimeObject.getClient();
     // copy parent path array
@@ -47,10 +48,26 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
   }
 
   /**
-   * Returns a compact representation of the object at this path
+   * Returns a JavaScript object representation of the object at this path
+   * If the path does not resolve to any specific entry, returns `undefined`.
    */
-  compact(): any | undefined {
-    throw new Error('Not implemented');
+  compact<U extends Value = Value>(): CompactedValue<U> | undefined {
+    try {
+      const resolved = this._resolvePath(this._path);
+
+      if (resolved instanceof LiveMap) {
+        return resolved.compact() as CompactedValue<U>;
+      }
+
+      return this.value() as CompactedValue<U>;
+    } catch (error) {
+      if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 92005) {
+        // ignore path resolution errors and return undefined
+        return undefined;
+      }
+      // rethrow everything else
+      throw error;
+    }
   }
 
   /**
@@ -61,7 +78,7 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
     if (typeof key !== 'string') {
       throw new this._client.ErrorInfo(`Path key must be a string: ${key}`, 40003, 400);
     }
-    return new DefaultPathObject<U>(this._realtimeObject, this._root, [key], this) as unknown as PathObject<U>;
+    return new DefaultPathObject(this._realtimeObject, this._root, [key], this) as unknown as PathObject<U>;
   }
 
   /**
@@ -107,7 +124,7 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
     }
     pathAsArray.push(currentSegment);
 
-    return new DefaultPathObject<U>(this._realtimeObject, this._root, pathAsArray, this) as unknown as PathObject<U>;
+    return new DefaultPathObject(this._realtimeObject, this._root, pathAsArray, this) as unknown as PathObject<U>;
   }
 
   /**
