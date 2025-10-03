@@ -1,8 +1,11 @@
 import type BaseClient from 'common/lib/client/baseclient';
+import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
 import type { Bufferlike } from 'common/platform';
+import type * as API from '../../../ably';
 import type { JsonArray, JsonObject } from '../../../ably';
+import { LiveObjectUpdate } from './liveobject';
 
 export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
 
@@ -411,6 +414,22 @@ export class ObjectMessage {
 
   toString(): string {
     return strMsg(this, 'ObjectMessage');
+  }
+
+  toUserFacingMessage(channel: RealtimeChannel, update?: Omit<LiveObjectUpdate, '_type'>): API.ObjectMessage {
+    return {
+      id: this.id!,
+      clientId: this.clientId,
+      connectionId: this.connectionId,
+      timestamp: this.timestamp!,
+      channel: channel.name,
+      serial: this.serial,
+      serialTimestamp: this.serialTimestamp,
+      siteCode: this.siteCode,
+      extras: this.extras,
+      // TODO: provide REST API like type payload that describes the operation on an object
+      payload: update,
+    };
   }
 }
 
