@@ -76,7 +76,7 @@ export function localDeviceFactory(deviceDetails: typeof DeviceDetails) {
       const client = this.rest,
         format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
         envelope = client.http.supportsLinkHeaders ? undefined : format,
-        headers = client.Defaults.defaultGetHeaders(client.options, { format });
+        headers = client.Defaults.defaultGetHeaders(client.options);
 
       client.Utils.mixin(headers, client.options.headers, { 'X-Ably-DeviceToken': this.deviceIdentityToken });
 
@@ -301,7 +301,7 @@ export class ActivationStateMachine {
     } else {
       const rest = this.client;
       const format = rest.options.useBinaryProtocol ? this.client.Utils.Format.msgpack : this.client.Utils.Format.json,
-        headers = this.client.Defaults.defaultPostHeaders(rest.options, { format }),
+        headers = this.client.Defaults.defaultPostHeaders(rest.options),
         params = { deviceId: device.id };
 
       if (rest.options.headers) this.client.Utils.mixin(headers, rest.options.headers);

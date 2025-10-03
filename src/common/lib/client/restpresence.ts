@@ -21,7 +21,7 @@ class RestPresence {
     const client = this.channel.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.channel.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options);
 
     Utils.mixin(headers, client.options.headers);
 

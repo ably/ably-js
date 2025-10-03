@@ -410,12 +410,9 @@ const defaultHeadersOptions: Required<HeadersOptions> = {
 
 export function defaultGetHeaders(
   options: NormalisedClientOptions,
-  {
-    format = defaultHeadersOptions.format,
-    protocolVersion = defaultHeadersOptions.protocolVersion,
-  }: HeadersOptions = {},
+  { format, protocolVersion = defaultHeadersOptions.protocolVersion }: HeadersOptions = {},
 ): Record<string, string> {
-  const accept = contentTypes[format];
+  const accept = contentTypes[format ?? (options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json)];
   return {
     accept: accept,
     'X-Ably-Version': protocolVersion.toString(),
@@ -425,14 +422,10 @@ export function defaultGetHeaders(
 
 export function defaultPostHeaders(
   options: NormalisedClientOptions,
-  {
-    format = defaultHeadersOptions.format,
-    protocolVersion = defaultHeadersOptions.protocolVersion,
-  }: HeadersOptions = {},
+  { format, protocolVersion = defaultHeadersOptions.protocolVersion }: HeadersOptions = {},
 ): Record<string, string> {
-  let contentType;
-  const accept = (contentType = contentTypes[format]);
-
+  const accept = contentTypes[format ?? (options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json)];
+  const contentType = accept;
   return {
     accept: accept,
     'content-type': contentType,

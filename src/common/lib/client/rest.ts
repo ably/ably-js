@@ -70,7 +70,7 @@ export class Rest {
   }
 
   async time(params?: RequestParams): Promise<number> {
-    const headers = Defaults.defaultGetHeaders(this.client.options);
+    const headers = Defaults.defaultGetHeaders(this.client.options, { format: Utils.Format.json });
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
     const timeUri = (host: string) => {
       return this.client.baseUri(host) + '/time';
@@ -170,7 +170,7 @@ export class Rest {
     }
 
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+      headers = Defaults.defaultPostHeaders(this.client.options);
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
@@ -192,7 +192,7 @@ export class Rest {
 
   async batchPresence(channels: string[]): Promise<BatchPresenceResult> {
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+      headers = Defaults.defaultGetHeaders(this.client.options);
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
@@ -223,7 +223,7 @@ export class Rest {
     };
 
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+      headers = Defaults.defaultPostHeaders(this.client.options);
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
