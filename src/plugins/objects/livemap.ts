@@ -1,6 +1,7 @@
 import { dequal } from 'dequal';
 
 import type * as API from '../../../ably';
+import { LiveCounter } from './livecounter';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMapValueType } from './livemapvaluetype';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
@@ -541,6 +542,34 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     // Call the parent clearData method
     return super.clearData();
+  }
+
+  /**
+   * Returns a plain JavaScript object representation of this LiveMap.
+   * LiveMap values are recursively compacted using their own compact methods.
+   *
+   * @internal
+   */
+  compact(): { [K in keyof T]: any } {
+    const result: Record<keyof T, any> = {} as Record<keyof T, any>;
+
+    // Use public entries() method to ensure we only include publicly exposed properties
+    for (const [key, value] of this.entries()) {
+      if (value instanceof LiveMap) {
+        result[key] = value.compact();
+        continue;
+      }
+
+      if (value instanceof LiveCounter) {
+        result[key] = value.value();
+        continue;
+      }
+
+      // Other values return as is
+      result[key] = value;
+    }
+
+    return result;
   }
 
   /** @spec RTLM4 */

@@ -4293,6 +4293,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const errorMsg = 'Could not resolve value at path';
 
             // Next operations should not throw and silently handle non-existent path
+            expect(nonExistentPathObj.compact(), 'Check PathObject.compact() for non-existent path returns undefined')
+              .to.be.undefined;
             expect(nonExistentPathObj.value(), 'Check PathObject.value() for non-existent path returns undefined').to.be
               .undefined;
             expect(nonExistentPathObj.instance(), 'Check PathObject.instance() for non-existent path returns undefined')
@@ -4339,6 +4341,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const errorMsg = `Cannot resolve path segment 'nested' on non-collection type at path`;
 
             // Next operations should not throw and silently handle incorrect path
+            expect(wrongTypePathObj.compact(), 'Check PathObject.compact() for non-collection path returns undefined')
+              .to.be.undefined;
             expect(wrongTypePathObj.value(), 'Check PathObject.value() for non-collection path returns undefined').to.be
               .undefined;
             expect(wrongTypePathObj.instance(), 'Check PathObject.instance() for non-collection path returns undefined')
@@ -4988,6 +4992,129 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             }).to.throw('Subscription depth must be greater than 0 or undefined for infinite depth');
           },
         },
+
+        {
+          description: 'PathObject.compact() returns correct representation for primitive values',
+          action: async (ctx) => {
+            const { entryPathObject, entryInstance, helper } = ctx;
+
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
+            await Promise.all(
+              primitiveKeyData.map(async (keyData) => {
+                let value;
+                if (keyData.data.bytes != null) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  value = BufferUtils.base64Decode(keyData.data.bytes);
+                } else if (keyData.data.json != null) {
+                  value = JSON.parse(keyData.data.json);
+                } else {
+                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                }
+
+                await entryPathObject.set(keyData.key, value);
+              }),
+            );
+            await keysUpdatedPromise;
+
+            primitiveKeyData.forEach((keyData) => {
+              const pathObj = entryPathObject.get(keyData.key);
+              const compactValue = pathObj.compact();
+              const expectedValue = pathObj.value();
+
+              expect(compactValue).to.deep.equal(
+                expectedValue,
+                `Check PathObject.compact() returns correct value for primitive "${keyData.key}"`,
+              );
+            });
+          },
+        },
+
+        {
+          description: 'PathObject.compact() returns number for LiveCounter objects',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
+            await entryPathObject.set('counter', LiveCounter.create(42));
+            await keyUpdatedPromise;
+
+            const compactValue = entryPathObject.get('counter').compact();
+            expect(compactValue).to.equal(42, 'Check PathObject.compact() returns number for LiveCounter');
+          },
+        },
+
+        {
+          description: 'PathObject.compact() returns plain object for LiveMap objects',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            // Create nested structure with different value types
+            const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(entryInstance, 'nestedMap')]);
+            await entryPathObject.set(
+              'nestedMap',
+              LiveMap.create({
+                stringKey: 'stringValue',
+                numberKey: 123,
+                booleanKey: true,
+                counterKey: LiveCounter.create(99),
+                array: [1, 2, 3],
+                obj: { nested: 'value' },
+              }),
+            );
+            await keysUpdatedPromise;
+
+            const compactValue = entryPathObject.get('nestedMap').compact();
+            const expected = {
+              stringKey: 'stringValue',
+              numberKey: 123,
+              booleanKey: true,
+              counterKey: 99,
+              array: [1, 2, 3],
+              obj: { nested: 'value' },
+            };
+
+            expect(compactValue).to.deep.equal(expected, 'Check compact object has expected value');
+          },
+        },
+
+        {
+          description: 'PathObject.compact() handles complex nested structures',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'complex');
+            await entryPathObject.set(
+              'complex',
+              LiveMap.create({
+                level1: LiveMap.create({
+                  level2: LiveMap.create({
+                    counter: LiveCounter.create(10),
+                    primitive: 'deep value',
+                  }),
+                  directCounter: LiveCounter.create(20),
+                }),
+                topLevelCounter: LiveCounter.create(30),
+              }),
+            );
+            await keyUpdatedPromise;
+
+            const compactValue = entryPathObject.get('complex').compact();
+            const expected = {
+              level1: {
+                level2: {
+                  counter: 10,
+                  primitive: 'deep value',
+                },
+                directCounter: 20,
+              },
+              topLevelCounter: 30,
+            };
+
+            expect(compactValue).to.deep.equal(expected, 'Check complex nested structure is compacted correctly');
+          },
+        },
       ];
 
       const instanceScenarios = [
@@ -5629,6 +5756,158 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await new Promise((res) => nextTick(res));
 
             expect(goodListenerCalled, 'Check good listener was called').to.be.true;
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compact() returns correct representation for primitive values',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject, helper } = ctx;
+
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
+            await Promise.all(
+              primitiveKeyData.map(async (keyData) => {
+                let value;
+                if (keyData.data.bytes != null) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  value = BufferUtils.base64Decode(keyData.data.bytes);
+                } else if (keyData.data.json != null) {
+                  value = JSON.parse(keyData.data.json);
+                } else {
+                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                }
+
+                await entryPathObject.set(keyData.key, value);
+              }),
+            );
+            await keysUpdatedPromise;
+
+            primitiveKeyData.forEach((keyData) => {
+              const childInstance = entryInstance.get(keyData.key);
+              const compactValue = childInstance.compact();
+              const expectedValue = childInstance.value();
+
+              expect(compactValue).to.deep.equal(
+                expectedValue,
+                `Check DefaultInstance.compact() returns correct value for primitive "${keyData.key}"`,
+              );
+            });
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compact() returns number for LiveCounter objects',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
+            await entryPathObject.set('counter', LiveCounter.create(42));
+            await keyUpdatedPromise;
+
+            const compactValue = entryInstance.get('counter').compact();
+            expect(compactValue).to.equal(42, 'Check DefaultInstance.compact() returns number for LiveCounter');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compact() returns plain object for LiveMap objects',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            // Create nested structure with different value types
+            const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(entryInstance, 'nestedMap')]);
+            await entryPathObject.set(
+              'nestedMap',
+              LiveMap.create({
+                stringKey: 'stringValue',
+                numberKey: 456,
+                booleanKey: false,
+                counterKey: LiveCounter.create(111),
+                array: [1, 2, 3],
+                obj: { nested: 'value' },
+              }),
+            );
+            await keysUpdatedPromise;
+
+            const compactValue = entryInstance.get('nestedMap').compact();
+            const expected = {
+              stringKey: 'stringValue',
+              numberKey: 456,
+              booleanKey: false,
+              counterKey: 111,
+              array: [1, 2, 3],
+              obj: { nested: 'value' },
+            };
+
+            expect(compactValue).to.deep.equal(expected, 'Check compact object has expected value');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compact() handles complex nested structures',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'complex');
+            await entryPathObject.set(
+              'complex',
+              LiveMap.create({
+                level1: LiveMap.create({
+                  level2: LiveMap.create({
+                    counter: LiveCounter.create(100),
+                    primitive: 'instance deep value',
+                  }),
+                  directCounter: LiveCounter.create(200),
+                }),
+                topLevelCounter: LiveCounter.create(300),
+              }),
+            );
+            await keyUpdatedPromise;
+
+            const compactValue = entryInstance.get('complex').compact();
+            const expected = {
+              level1: {
+                level2: {
+                  counter: 100,
+                  primitive: 'instance deep value',
+                },
+                directCounter: 200,
+              },
+              topLevelCounter: 300,
+            };
+
+            expect(compactValue).to.deep.equal(expected, 'Check complex nested structure is compacted correctly');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.compact() and PathObject.compact() return equivalent results',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'comparison');
+            await entryPathObject.set(
+              'comparison',
+              LiveMap.create({
+                counter: LiveCounter.create(50),
+                nested: LiveMap.create({
+                  value: 'test',
+                  innerCounter: LiveCounter.create(25),
+                }),
+                primitive: 'comparison test',
+              }),
+            );
+            await keyUpdatedPromise;
+
+            const pathCompact = entryPathObject.get('comparison').compact();
+            const instanceCompact = entryInstance.get('comparison').compact();
+
+            expect(pathCompact).to.deep.equal(
+              instanceCompact,
+              'Check PathObject.compact() and DefaultInstance.compact() return equivalent results',
+            );
           },
         },
       ];
