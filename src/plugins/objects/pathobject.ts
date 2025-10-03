@@ -2,6 +2,7 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type * as API from '../../../ably';
 import type {
   AnyPathObject,
+  CompactedValue,
   EventCallback,
   Instance,
   PathObject,
@@ -44,10 +45,25 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
   }
 
   /**
-   * Returns a compact representation of the object at this path
+   * Returns a JavaScript object representation of the object at this path
    */
-  compact(): any {
-    throw new Error('Not implemented');
+  compact<U extends Value = Value>(): CompactedValue<U> | undefined {
+    try {
+      const resolved = this._resolvePath(this._path);
+
+      if (resolved instanceof LiveMap) {
+        return resolved.compact() as CompactedValue<U>;
+      }
+
+      return this.value() as CompactedValue<U>;
+    } catch (error) {
+      if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error)) {
+        // ignore ErrorInfos indicating path resolution failure and return undefined
+        return undefined;
+      }
+      // otherwise rethrow unexpected errors
+      throw error;
+    }
   }
 
   /**

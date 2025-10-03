@@ -1,5 +1,13 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type { AnyInstance, EventCallback, Instance, InstanceSubscriptionEvent, Primitive, Value } from '../../../ably';
+import type {
+  AnyInstance,
+  CompactedValue,
+  EventCallback,
+  Instance,
+  InstanceSubscriptionEvent,
+  Primitive,
+  Value,
+} from '../../../ably';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate, SubscribeResponse } from './liveobject';
@@ -30,8 +38,12 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     return this._value.getObjectId();
   }
 
-  compact(): any {
-    throw new Error('Not implemented');
+  compact<U extends Value = Value>(): CompactedValue<U> | undefined {
+    if (this._value instanceof LiveMap) {
+      return this._value.compact() as CompactedValue<U>;
+    }
+
+    return this.value() as CompactedValue<U>;
   }
 
   get<U extends Value = Value>(key: string): Instance<U> | undefined {
