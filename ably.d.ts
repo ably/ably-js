@@ -2484,6 +2484,19 @@ interface PathObjectBase {
     listener: EventCallback<PathObjectSubscriptionEvent>,
     options?: PathObjectSubscriptionOptions,
   ): SubscribeResponse;
+
+  /**
+   * Registers a subscription listener and returns an async iterator that yields
+   * subscription events each time the object or a primitive value at this path is updated.
+   *
+   * This method functions in the same way as the regular {@link PathObjectBase.subscribe | PathObject.subscribe()} method,
+   * but instead returns an async iterator that can be used in a `for await...of` loop for convenience.
+   *
+   * @param options - Optional subscription configuration.
+   * @returns An async iterator that yields {@link PathObjectSubscriptionEvent} objects.
+   * @experimental
+   */
+  subscribeIterator(options?: PathObjectSubscriptionOptions): AsyncIterableIterator<PathObjectSubscriptionEvent>;
 }
 
 /**
@@ -2948,6 +2961,18 @@ interface InstanceBase<T extends Value> {
    * @experimental
    */
   subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): SubscribeResponse;
+
+  /**
+   * Registers a subscription listener and returns an async iterator that yields
+   * subscription events each time this instance is updated.
+   *
+   * This method functions in the same way as the regular {@link InstanceBase.subscribe | Instance.subscribe()} method,
+   * but instead returns an async iterator that can be used in a `for await...of` loop for convenience.
+   *
+   * @returns An async iterator that yields {@link InstanceSubscriptionEvent} objects.
+   * @experimental
+   */
+  subscribeIterator(): AsyncIterableIterator<InstanceSubscriptionEvent<T>>;
 }
 
 /**
