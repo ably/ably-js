@@ -347,6 +347,13 @@ export class DefaultPathObject implements AnyPathObject {
     return this._realtimeObject.getPathObjectSubscriptionRegister().subscribe(this._path, listener, options ?? {});
   }
 
+  subscribeIterator(options?: PathObjectSubscriptionOptions): AsyncIterableIterator<PathObjectSubscriptionEvent> {
+    return this._client.Utils.listenerToAsyncIterator((listener) => {
+      const { unsubscribe } = this.subscribe(listener, options);
+      return unsubscribe;
+    });
+  }
+
   private _resolvePath(path: string[]): Value {
     // TODO: remove type assertion when internal LiveMap is updated to support new path based type system
     let current: Value = this._root as unknown as API.LiveMap;

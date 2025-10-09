@@ -4994,6 +4994,175 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
+          description: 'PathObject.subscribeIterator() yields events for changes to the subscribed path',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const iteratorPromise = (async () => {
+              const events = [];
+              for await (const event of entryPathObject.subscribeIterator()) {
+                expect(event.object, 'Check event object exists').to.exist;
+                expect(event.message, 'Check event message exists').to.exist;
+                events.push(event);
+                if (events.length >= 2) break;
+              }
+              return events;
+            })();
+
+            const keysUpdatedPromise = Promise.all([
+              waitForMapKeyUpdate(entryInstance, 'testKey1'),
+              waitForMapKeyUpdate(entryInstance, 'testKey2'),
+            ]);
+            await entryPathObject.set('testKey1', 'testValue1');
+            await entryPathObject.set('testKey2', 'testValue2');
+            await keysUpdatedPromise;
+
+            const events = await iteratorPromise;
+
+            expect(events).to.have.lengthOf(2, 'Check received expected number of events');
+          },
+        },
+
+        {
+          description: 'PathObject.subscribeIterator() with depth option works correctly',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
+            await entryPathObject.set('map', LiveMap.create({}));
+            await mapCreatedPromise;
+
+            const iteratorPromise = (async () => {
+              const events = [];
+              for await (const event of entryPathObject.get('map').subscribeIterator({ depth: 1 })) {
+                expect(event.object, 'Check event object exists').to.exist;
+                expect(event.message, 'Check event message exists').to.exist;
+                expect(event.message.operation).to.deep.include(
+                  {
+                    action: 'map.set',
+                    objectId: entryPathObject.get('map').instance().id(),
+                  },
+                  'Check event message operation',
+                );
+                // check mapOp separately so it doesn't break due to the additional data field with objectId in there
+                expect(event.message.operation.mapOp).to.deep.include(
+                  { key: 'directKey' },
+                  'Check event message operation mapOp',
+                );
+
+                events.push(event);
+                if (events.length >= 2) break;
+              }
+              return events;
+            })();
+
+            const map = entryInstance.get('map');
+            // direct change - should register
+            let keyUpdatedPromise = waitForMapKeyUpdate(map, 'directKey');
+            await map.set('directKey', LiveMap.create({}));
+            await keyUpdatedPromise;
+
+            // nested change - should not register
+            keyUpdatedPromise = waitForMapKeyUpdate(map.get('directKey'), 'nestedKey');
+            await map.get('directKey').set('nestedKey', 'nestedValue');
+            await keyUpdatedPromise;
+
+            // another direct change - should register
+            keyUpdatedPromise = waitForMapKeyUpdate(map, 'directKey');
+            await map.set('directKey', LiveMap.create({}));
+            await keyUpdatedPromise;
+
+            const events = await iteratorPromise;
+
+            expect(events).to.have.lengthOf(2, 'Check received expected number of events');
+          },
+        },
+
+        {
+          description: 'PathObject.subscribeIterator() can be broken out of and subscription is removed properly',
+          action: async (ctx) => {
+            const { entryInstance, realtimeObject, entryPathObject, helper } = ctx;
+
+            let eventCount = 0;
+
+            const iteratorPromise = (async () => {
+              for await (const _ of entryPathObject.subscribeIterator()) {
+                eventCount++;
+                if (eventCount >= 2) break;
+              }
+            })();
+
+            helper.recordPrivateApi('call.RealtimeObject.getPathObjectSubscriptionRegister');
+            helper.recordPrivateApi('read.PathObjectSubscriptionRegister._subscriptions');
+            expect(realtimeObject.getPathObjectSubscriptionRegister()._subscriptions.size).to.equal(
+              1,
+              'Check one active subscription',
+            );
+
+            const keysUpdatedPromise = Promise.all([
+              waitForMapKeyUpdate(entryInstance, 'testKey1'),
+              waitForMapKeyUpdate(entryInstance, 'testKey2'),
+              waitForMapKeyUpdate(entryInstance, 'testKey3'),
+            ]);
+            await entryPathObject.set('testKey1', 'testValue1');
+            await entryPathObject.set('testKey2', 'testValue2');
+            await entryPathObject.set('testKey3', 'testValue3'); // This shouldn't be processed
+            await keysUpdatedPromise;
+
+            await iteratorPromise;
+
+            helper.recordPrivateApi('call.RealtimeObject.getPathObjectSubscriptionRegister');
+            helper.recordPrivateApi('read.PathObjectSubscriptionRegister._subscriptions');
+            expect(realtimeObject.getPathObjectSubscriptionRegister()._subscriptions.size).to.equal(
+              0,
+              'Check no active subscriptions after breaking out of iterator',
+            );
+            expect(eventCount).to.equal(2, 'Check only expected number of events received');
+          },
+        },
+
+        {
+          description: 'PathObject.subscribeIterator() handles multiple concurrent iterators independently',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            let iterator1Events = 0;
+            let iterator2Events = 0;
+
+            const iterator1Promise = (async () => {
+              for await (const event of entryPathObject.subscribeIterator()) {
+                expect(event.object, 'Check event object exists').to.exist;
+                expect(event.message, 'Check event message exists').to.exist;
+                iterator1Events++;
+                if (iterator1Events >= 2) break;
+              }
+            })();
+
+            const iterator2Promise = (async () => {
+              for await (const event of entryPathObject.subscribeIterator()) {
+                expect(event.object, 'Check event object exists').to.exist;
+                expect(event.message, 'Check event message exists').to.exist;
+                iterator2Events++;
+                if (iterator2Events >= 1) break; // This iterator breaks after 1 event
+              }
+            })();
+
+            const keysUpdatedPromise = Promise.all([
+              waitForMapKeyUpdate(entryInstance, 'testKey1'),
+              waitForMapKeyUpdate(entryInstance, 'testKey2'),
+            ]);
+            await entryPathObject.set('testKey1', 'testValue1');
+            await entryPathObject.set('testKey2', 'testValue2');
+            await keysUpdatedPromise;
+
+            await Promise.all([iterator1Promise, iterator2Promise]);
+
+            expect(iterator1Events).to.equal(2, 'Check iterator1 received expected events');
+            expect(iterator2Events).to.equal(1, 'Check iterator2 received expected events');
+          },
+        },
+
+        {
           description: 'PathObject.compact() returns correct representation for primitive values',
           action: async (ctx) => {
             const { entryPathObject, entryInstance, helper } = ctx;
@@ -5533,6 +5702,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             })
               .to.throw('Cannot subscribe to a non-LiveObject instance')
               .with.property('code', 92007);
+            expect(() => {
+              primitiveInstance.subscribeIterator();
+            })
+              .to.throw('Cannot subscribe to a non-LiveObject instance')
+              .with.property('code', 92007);
           },
         },
 
@@ -5766,6 +5940,178 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await new Promise((res) => nextTick(res));
 
             expect(goodListenerCalled, 'Check good listener was called').to.be.true;
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribeIterator() yields events for LiveMap set/remove operations',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
+            await entryPathObject.set('map', LiveMap.create({}));
+            await keyUpdatedPromise;
+
+            const map = entryInstance.get('map');
+
+            const iteratorPromise = (async () => {
+              const events = [];
+              for await (const event of map.subscribeIterator()) {
+                expect(event.object, 'Check event object exists').to.exist;
+                expect(event.object).to.equal(map, 'Check event object is the same map instance');
+                expect(event.message, 'Check event message exists').to.exist;
+                expect(event.message.operation).to.deep.include(
+                  events.length === 0
+                    ? { action: 'map.set', objectId: map.id(), mapOp: { key: 'foo', data: { value: 'bar' } } }
+                    : { action: 'map.remove', objectId: map.id(), mapOp: { key: 'foo' } },
+                  'Check event message operation',
+                );
+                events.push(event);
+                if (events.length >= 2) break;
+              }
+              return events;
+            })();
+
+            keyUpdatedPromise = waitForMapKeyUpdate(map, 'foo');
+            await map.set('foo', 'bar');
+            await keyUpdatedPromise;
+
+            keyUpdatedPromise = waitForMapKeyUpdate(map, 'foo');
+            await map.remove('foo');
+            await keyUpdatedPromise;
+
+            const events = await iteratorPromise;
+            expect(events).to.have.lengthOf(2, 'Check received expected number of events');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribeIterator() yields events for LiveCounter increment/decrement',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
+            await entryPathObject.set('counter', LiveCounter.create());
+            await keyUpdatedPromise;
+
+            const counter = entryInstance.get('counter');
+
+            const iteratorPromise = (async () => {
+              const events = [];
+              for await (const event of counter.subscribeIterator()) {
+                expect(event.object, 'Check event object exists').to.exist;
+                expect(event.object).to.equal(counter, 'Check event object is the same counter instance');
+                expect(event.message, 'Check event message exists').to.exist;
+                expect(event.message.operation).to.deep.include(
+                  {
+                    action: 'counter.inc',
+                    objectId: counter.id(),
+                    counterOp: { amount: events.length === 0 ? 1 : -2 },
+                  },
+                  'Check event message operation',
+                );
+                events.push(event);
+                if (events.length >= 2) break;
+              }
+              return events;
+            })();
+
+            let counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counter.increment(1);
+            await counterUpdatedPromise;
+
+            counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counter.decrement(2);
+            await counterUpdatedPromise;
+
+            const events = await iteratorPromise;
+            expect(events).to.have.lengthOf(2, 'Check received expected number of events');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribeIterator() can be broken out of and subscription is removed properly',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject, helper } = ctx;
+
+            const registeredListeners = (instance) => {
+              helper.recordPrivateApi('read.DefaultInstance._value');
+              helper.recordPrivateApi('read.LiveObject._subscriptions');
+              helper.recordPrivateApi('call.EventEmitter.listeners');
+              return instance._value._subscriptions.listeners('updated');
+            };
+
+            const instance = entryPathObject.instance();
+            let eventCount = 0;
+
+            const iteratorPromise = (async () => {
+              for await (const _ of instance.subscribeIterator()) {
+                eventCount++;
+                if (eventCount >= 2) break;
+              }
+            })();
+
+            expect(registeredListeners(instance).length).to.equal(1, 'Check one active listener');
+
+            const keysUpdatedPromise = Promise.all([
+              waitForMapKeyUpdate(entryInstance, 'testKey1'),
+              waitForMapKeyUpdate(entryInstance, 'testKey2'),
+              waitForMapKeyUpdate(entryInstance, 'testKey3'),
+            ]);
+            await entryPathObject.set('testKey1', 'testValue1');
+            await entryPathObject.set('testKey2', 'testValue2');
+            await entryPathObject.set('testKey3', 'testValue3'); // This shouldn't be received
+            await keysUpdatedPromise;
+
+            await iteratorPromise;
+
+            expect(registeredListeners(instance)?.length ?? 0).to.equal(
+              0,
+              'Check no active listeners after breaking out of iterator',
+            );
+            expect(eventCount).to.equal(2, 'Check only expected number of events received');
+          },
+        },
+
+        {
+          description: 'DefaultInstance.subscribeIterator() handles multiple concurrent iterators independently',
+          action: async (ctx) => {
+            const { entryInstance, entryPathObject } = ctx;
+
+            const instance = entryPathObject.instance();
+            let iterator1Events = 0;
+            let iterator2Events = 0;
+
+            const iterator1Promise = (async () => {
+              for await (const event of instance.subscribeIterator()) {
+                expect(event.object, 'Check event object exists').to.exist;
+                expect(event.message, 'Check event message exists').to.exist;
+                iterator1Events++;
+                if (iterator1Events >= 2) break;
+              }
+            })();
+
+            const iterator2Promise = (async () => {
+              for await (const event of instance.subscribeIterator()) {
+                expect(event.object, 'Check event object exists').to.exist;
+                expect(event.message, 'Check event message exists').to.exist;
+                iterator2Events++;
+                if (iterator2Events >= 1) break; // This iterator breaks after 1 event
+              }
+            })();
+
+            const keysUpdatedPromise = Promise.all([
+              waitForMapKeyUpdate(entryInstance, 'testKey1'),
+              waitForMapKeyUpdate(entryInstance, 'testKey2'),
+            ]);
+            await entryPathObject.set('testKey1', 'testValue1');
+            await entryPathObject.set('testKey2', 'testValue2');
+            await keysUpdatedPromise;
+
+            await Promise.all([iterator1Promise, iterator2Promise]);
+
+            expect(iterator1Events).to.equal(2, 'Check iterator1 received expected events');
+            expect(iterator2Events).to.equal(1, 'Check iterator2 received expected events');
           },
         },
 
