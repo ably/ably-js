@@ -2288,24 +2288,24 @@ export type LiveObjectLifecycleEvent = LiveObjectLifecycleEvents.DELETED;
  */
 export declare interface RealtimeObject {
   /**
-   * Retrieves the root {@link LiveMap} object for Objects on a channel.
+   * Retrieves the {@link LiveMap} object - the entrypoint for Objects on a channel.
    *
    * A type parameter can be provided to describe the structure of the Objects on the channel. By default, it uses types from the globally defined `AblyObjectsTypes` interface.
    *
-   * You can specify custom types for Objects by defining a global `AblyObjectsTypes` interface with a `root` property that conforms to {@link LiveMapType}.
+   * You can specify custom types for Objects by defining a global `AblyObjectsTypes` interface with a `object` property that conforms to {@link LiveMapType}.
    *
    * Example:
    *
    * ```typescript
    * import { LiveCounter } from 'ably';
    *
-   * type MyRoot = {
+   * type MyObject = {
    *   myTypedKey: LiveCounter;
    * };
    *
    * declare global {
    *   export interface AblyObjectsTypes {
-   *     root: MyRoot;
+   *     object: MyObject;
    *   }
    * }
    * ```
@@ -2313,7 +2313,7 @@ export declare interface RealtimeObject {
    * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    * @experimental
    */
-  get<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>>;
+  get<T extends LiveMapType = AblyDefaultObject>(): Promise<LiveMap<T>>;
 
   /**
    * Creates a new {@link LiveMap} object instance with the provided entries.
@@ -2392,20 +2392,20 @@ declare global {
 export type LiveMapType = { [key: string]: PrimitiveObjectValue | LiveMap<LiveMapType> | LiveCounter | undefined };
 
 /**
- * The default type for the `root` object for Objects on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
+ * The default type for the entrypoint {@link LiveMap} object on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
  *
- * - If no custom types are provided in `AblyObjectsTypes`, defaults to an untyped root map representation using the {@link LiveMapType} interface.
- * - If a `root` type exists in `AblyObjectsTypes` and conforms to the {@link LiveMapType} interface, it is used as the type for the `root` object.
- * - If the provided `root` type does not match {@link LiveMapType}, a type error message is returned.
+ * - If no custom types are provided in `AblyObjectsTypes`, defaults to an untyped map representation using the {@link LiveMapType} interface.
+ * - If an `object` key exists in `AblyObjectsTypes` and its type conforms to the {@link LiveMapType} interface, it is used as the type for the entrypoint {@link LiveMap} object.
+ * - If the provided type in `object` key does not match {@link LiveMapType}, a type error message is returned.
  */
-export type DefaultRoot =
+export type AblyDefaultObject =
   // we need a way to know when no types were provided by the user.
-  // we expect a "root" property to be set on AblyObjectsTypes interface, e.g. it won't be "unknown" anymore
-  unknown extends AblyObjectsTypes['root']
-    ? LiveMapType // no custom types provided; use the default untyped map representation for the root
-    : AblyObjectsTypes['root'] extends LiveMapType
-      ? AblyObjectsTypes['root'] // "root" property exists, and it is of an expected type, we can use this interface for the root object in Objects.
-      : `Provided type definition for the "root" object in AblyObjectsTypes is not of an expected LiveMapType`;
+  // we expect an "object" property to be set on AblyObjectsTypes interface, e.g. it won't be "unknown" anymore
+  unknown extends AblyObjectsTypes['object']
+    ? LiveMapType // no custom types provided; use the default untyped map representation for the entrypoint map
+    : AblyObjectsTypes['object'] extends LiveMapType
+      ? AblyObjectsTypes['object'] // "object" property exists, and it is of an expected type, we can use this interface for the entrypoint map
+      : `Provided type definition for the channel \`object\` in AblyObjectsTypes is not of an expected LiveMapType`;
 
 /**
  * Object returned from an `on` call, allowing the listener provided in that call to be deregistered.
@@ -2424,12 +2424,12 @@ export declare interface OnObjectsEventResponse {
  */
 export declare interface BatchContext {
   /**
-   * Mirrors the {@link RealtimeObject.get} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
+   * Mirrors the {@link RealtimeObject.get} method and returns a {@link BatchContextLiveMap} wrapper for the entrypoint {@link LiveMap} object on a channel.
    *
    * @returns A {@link BatchContextLiveMap} object.
    * @experimental
    */
-  get<T extends LiveMapType = DefaultRoot>(): BatchContextLiveMap<T>;
+  get<T extends LiveMapType = AblyDefaultObject>(): BatchContextLiveMap<T>;
 }
 
 /**
