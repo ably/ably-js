@@ -83,6 +83,11 @@ class BaseRealtime extends BaseClient {
     return this._channels;
   }
 
+  get clientId() {
+    //RTC17
+    return this.auth.clientId;
+  }
+
   connect(): void {
     Logger.logAction(this.logger, Logger.LOG_MINOR, 'Realtime.connect()', '');
     this.connection.connect();

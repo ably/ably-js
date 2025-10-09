@@ -1315,6 +1315,40 @@ define(['ably', 'shared_helper', 'async', 'chai'], function (Ably, Helper, async
     });
 
     /**
+     * @spec RTC17
+     */
+    it('realtime client mirrors the auth clientId', function (done) {
+      const helper = this.test.helper;
+      var currentKey = helper.getTestApp().keys[0];
+      var keys = { keyName: currentKey.keyName, keySecret: currentKey.keySecret };
+      var clientId = 'rtc17-client-id';
+      helper.recordPrivateApi('call.Utils.mixin');
+      var params = helper.Utils.mixin(keys, { clientId: clientId });
+      var authCallback = function (tokenParams, callback) {
+        getJWT(params, helper, callback);
+      };
+
+      var realtime = helper.AblyRealtime({ authCallback: authCallback });
+
+      realtime.connection.on('connected', function () {
+        try {
+          expect(realtime.clientId).to.equal(clientId);
+          realtime.connection.close();
+          done();
+        } catch (err) {
+          done(err);
+        }
+        return;
+      });
+
+      realtime.connection.on('failed', function (err) {
+        realtime.close();
+        done(err);
+        return;
+      });
+    });
+
+    /**
      * Request a token with publish capabilities and verify that posting
      * to a channel succeeds.
      *
