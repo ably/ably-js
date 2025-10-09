@@ -626,7 +626,7 @@ export interface CorePlugins {
   Push?: unknown;
 
   /**
-   * A plugin which allows the client to use LiveObjects functionality at {@link RealtimeChannel.objects}.
+   * A plugin which allows the client to use LiveObjects functionality at {@link RealtimeChannel.object}.
    */
   Objects?: unknown;
 }
@@ -1653,7 +1653,7 @@ export type ErrorCallback = (error: ErrorInfo | null) => void;
 export type LiveObjectUpdateCallback<T> = (update: T) => void;
 
 /**
- * The callback used for the events emitted by {@link RealtimeObjects}.
+ * The callback used for the events emitted by {@link RealtimeObject}.
  */
 export type ObjectsEventCallback = () => void;
 
@@ -1663,7 +1663,7 @@ export type ObjectsEventCallback = () => void;
 export type LiveObjectLifecycleEventCallback = () => void;
 
 /**
- * A function passed to {@link RealtimeObjects.batch} to group multiple Objects operations into a single channel message.
+ * A function passed to {@link RealtimeObject.batch} to group multiple Objects operations into a single channel message.
  *
  * Must not be `async`.
  *
@@ -2264,7 +2264,7 @@ declare namespace ObjectsEvents {
 }
 
 /**
- * Describes the events emitted by a {@link RealtimeObjects} object.
+ * Describes the events emitted by a {@link RealtimeObject} object.
  */
 export type ObjectsEvent = ObjectsEvents.SYNCED | ObjectsEvents.SYNCING;
 
@@ -2286,7 +2286,7 @@ export type LiveObjectLifecycleEvent = LiveObjectLifecycleEvents.DELETED;
 /**
  * Enables the Objects to be read, modified and subscribed to for a channel.
  */
-export declare interface RealtimeObjects {
+export declare interface RealtimeObject {
   /**
    * Retrieves the root {@link LiveMap} object for Objects on a channel.
    *
@@ -2313,7 +2313,7 @@ export declare interface RealtimeObjects {
    * @returns A promise which, upon success, will be fulfilled with a {@link LiveMap} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
    * @experimental
    */
-  getRoot<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>>;
+  get<T extends LiveMapType = DefaultRoot>(): Promise<LiveMap<T>>;
 
   /**
    * Creates a new {@link LiveMap} object instance with the provided entries.
@@ -2424,12 +2424,12 @@ export declare interface OnObjectsEventResponse {
  */
 export declare interface BatchContext {
   /**
-   * Mirrors the {@link RealtimeObjects.getRoot} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
+   * Mirrors the {@link RealtimeObject.get} method and returns a {@link BatchContextLiveMap} wrapper for the root object on a channel.
    *
    * @returns A {@link BatchContextLiveMap} object.
    * @experimental
    */
-  getRoot<T extends LiveMapType = DefaultRoot>(): BatchContextLiveMap<T>;
+  get<T extends LiveMapType = DefaultRoot>(): BatchContextLiveMap<T>;
 }
 
 /**
@@ -2947,9 +2947,9 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    */
   annotations: RealtimeAnnotations;
   /**
-   * A {@link RealtimeObjects} object.
+   * A {@link RealtimeObject} object.
    */
-  objects: RealtimeObjects;
+  object: RealtimeObject;
   /**
    * Attach to this channel ensuring the channel is created in the Ably system and all messages published on the channel are received by any channel listeners registered using {@link RealtimeChannel.subscribe | `subscribe()`}. Any resulting channel state change will be emitted to any listeners registered using the {@link EventEmitter.on | `on()`} or {@link EventEmitter.once | `once()`} methods. As a convenience, `attach()` is called implicitly if {@link RealtimeChannel.subscribe | `subscribe()`} for the channel is called, or {@link RealtimePresence.enter | `enter()`} or {@link RealtimePresence.subscribe | `subscribe()`} are called on the {@link RealtimePresence} object for this channel.
    *
