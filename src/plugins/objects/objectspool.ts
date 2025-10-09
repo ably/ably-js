@@ -4,7 +4,7 @@ import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject } from './liveobject';
 import { ObjectId } from './objectid';
-import { RealtimeObjects } from './realtimeobjects';
+import { RealtimeObject } from './realtimeobject';
 
 export const ROOT_OBJECT_ID = 'root';
 
@@ -17,8 +17,8 @@ export class ObjectsPool {
   private _pool: Map<string, LiveObject>; // RTO3a
   private _gcInterval: ReturnType<typeof setInterval>;
 
-  constructor(private _objects: RealtimeObjects) {
-    this._client = this._objects.getClient();
+  constructor(private _realtimeObject: RealtimeObject) {
+    this._client = this._realtimeObject.getClient();
     this._pool = this._createInitialPool();
     this._gcInterval = setInterval(() => {
       this._onGCInterval();
@@ -82,12 +82,12 @@ export class ObjectsPool {
     let zeroValueObject: LiveObject;
     switch (parsedObjectId.type) {
       case 'map': {
-        zeroValueObject = LiveMap.zeroValue(this._objects, objectId); // RTO6b2
+        zeroValueObject = LiveMap.zeroValue(this._realtimeObject, objectId); // RTO6b2
         break;
       }
 
       case 'counter':
-        zeroValueObject = LiveCounter.zeroValue(this._objects, objectId); // RTO6b3
+        zeroValueObject = LiveCounter.zeroValue(this._realtimeObject, objectId); // RTO6b3
         break;
     }
 
@@ -98,7 +98,7 @@ export class ObjectsPool {
   private _createInitialPool(): Map<string, LiveObject> {
     const pool = new Map<string, LiveObject>();
     // RTO3b
-    const root = LiveMap.zeroValue(this._objects, ROOT_OBJECT_ID);
+    const root = LiveMap.zeroValue(this._realtimeObject, ROOT_OBJECT_ID);
     pool.set(root.getObjectId(), root);
     return pool;
   }
@@ -109,7 +109,7 @@ export class ObjectsPool {
       // tombstoned objects should be removed from the pool if they have been tombstoned for longer than grace period.
       // by removing them from the local pool, Objects plugin no longer keeps a reference to those objects, allowing JS's
       // Garbage Collection to eventually free the memory for those objects, provided the user no longer references them either.
-      if (obj.isTombstoned() && Date.now() - obj.tombstonedAt()! >= this._objects.gcGracePeriod) {
+      if (obj.isTombstoned() && Date.now() - obj.tombstonedAt()! >= this._realtimeObject.gcGracePeriod) {
         toDelete.push(objectId);
         continue;
       }

@@ -1,7 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
 import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
-import { RealtimeObjects } from './realtimeobjects';
+import { RealtimeObject } from './realtimeobject';
 
 export enum LiveObjectSubscriptionEvent {
   updated = 'updated',
@@ -56,10 +56,10 @@ export abstract class LiveObject<
   private _tombstonedAt: number | undefined;
 
   protected constructor(
-    protected _objects: RealtimeObjects,
+    protected _realtimeObject: RealtimeObject,
     objectId: string,
   ) {
-    this._client = this._objects.getClient();
+    this._client = this._realtimeObject.getClient();
     this._subscriptions = new this._client.EventEmitter(this._client.logger);
     this._lifecycleEvents = new this._client.EventEmitter(this._client.logger);
     this._objectId = objectId;
@@ -71,7 +71,7 @@ export abstract class LiveObject<
   }
 
   subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
-    this._objects.throwIfInvalidAccessApiConfiguration();
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
 
     this._subscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
 

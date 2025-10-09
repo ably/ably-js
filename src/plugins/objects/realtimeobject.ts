@@ -36,7 +36,7 @@ export interface OnObjectsEventResponse {
 
 export type BatchCallback = (batchContext: BatchContext) => void;
 
-export class RealtimeObjects {
+export class RealtimeObject {
   gcGracePeriod: number;
 
   private _client: BaseClient;
@@ -75,11 +75,11 @@ export class RealtimeObjects {
 
   /**
    * When called without a type variable, we return a default root type which is based on globally defined interface for Objects feature.
-   * A user can provide an explicit type for the getRoot method to explicitly set the type structure on this particular channel.
+   * A user can provide an explicit type for the this method to explicitly set the type structure on this particular channel.
    * This is useful when working with multiple channels with different underlying data structure.
    * @spec RTO1
    */
-  async getRoot<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
+  async get<T extends API.LiveMapType = API.DefaultRoot>(): Promise<LiveMap<T>> {
     this.throwIfInvalidAccessApiConfiguration(); // RTO1a, RTO1b
 
     // if we're not synced yet, wait for sync sequence to finish before returning root
@@ -96,7 +96,7 @@ export class RealtimeObjects {
   async batch(callback: BatchCallback): Promise<void> {
     this.throwIfInvalidWriteApiConfiguration();
 
-    const root = await this.getRoot();
+    const root = await this.get();
     const context = new BatchContext(this, root);
 
     try {
@@ -263,7 +263,7 @@ export class RealtimeObjects {
     this._client.Logger.logAction(
       this._client.logger,
       this._client.Logger.LOG_MINOR,
-      'RealtimeObjects.onAttached()',
+      'RealtimeObject.onAttached()',
       `channel=${this._channel.name}, hasObjects=${hasObjects}`,
     );
 
@@ -432,7 +432,7 @@ export class RealtimeObjects {
         this._client.Logger.logAction(
           this._client.logger,
           this._client.Logger.LOG_MAJOR,
-          'RealtimeObjects._applyObjectMessages()',
+          'RealtimeObject._applyObjectMessages()',
           `object operation message is received without 'operation' field, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
         );
         continue;
@@ -461,7 +461,7 @@ export class RealtimeObjects {
           this._client.Logger.logAction(
             this._client.logger,
             this._client.Logger.LOG_MAJOR,
-            'RealtimeObjects._applyObjectMessages()',
+            'RealtimeObject._applyObjectMessages()',
             `received unsupported action in object operation message: ${objectOperation.action}, skipping message; message id: ${objectMessage.id}, channel: ${this._channel.name}`,
           );
       }
