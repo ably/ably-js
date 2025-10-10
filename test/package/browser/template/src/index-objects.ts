@@ -1,4 +1,5 @@
 import * as Ably from 'ably';
+import { LiveCounterDeprecated, LiveMapDeprecated } from 'ably';
 import Objects from 'ably/objects';
 import { createSandboxAblyAPIKey } from './sandbox';
 
@@ -13,13 +14,13 @@ type MyCustomObject = {
   stringKey: string;
   booleanKey: boolean;
   couldBeUndefined?: string;
-  mapKey: Ably.LiveMap<{
+  mapKey: LiveMapDeprecated<{
     foo: 'bar';
-    nestedMap?: Ably.LiveMap<{
+    nestedMap?: LiveMapDeprecated<{
       baz: 'qux';
     }>;
   }>;
-  counterKey: Ably.LiveCounter;
+  counterKey: LiveCounterDeprecated;
 };
 
 declare global {
@@ -42,7 +43,7 @@ globalThis.testAblyPackage = async function () {
   await channel.attach();
   // expect entrypoint to be a LiveMap instance with Objects types defined via the global AblyObjectsTypes interface
   // also checks that we can refer to the Objects types exported from 'ably' by referencing a LiveMap interface
-  const myObject: Ably.LiveMap<MyCustomObject> = await channel.object.get();
+  const myObject: LiveMapDeprecated<MyCustomObject> = await channel.object.get();
 
   // check entrypoint has expected LiveMap TypeScript type methods
   const size: number = myObject.size();
@@ -56,7 +57,7 @@ globalThis.testAblyPackage = async function () {
   const aBoolean: boolean | undefined = myObject.get('booleanKey');
   const userProvidedUndefined: string | undefined = myObject.get('couldBeUndefined');
   // objects on the entrypoint:
-  const counter: Ably.LiveCounter | undefined = myObject.get('counterKey');
+  const counter: LiveCounterDeprecated | undefined = myObject.get('counterKey');
   const map: AblyObjectsTypes['object']['mapKey'] | undefined = myObject.get('mapKey');
   // check string literal types works
   // need to use nullish coalescing as we didn't actually create any data on the entrypoint object,
@@ -89,6 +90,6 @@ globalThis.testAblyPackage = async function () {
   counterSubscribeResponse?.unsubscribe();
 
   // check can provide custom types for the object.get() method, ignoring global AblyObjectsTypes interface
-  const explicitObjectType: Ably.LiveMap<ExplicitObjectType> = await channel.object.get<ExplicitObjectType>();
+  const explicitObjectType: LiveMapDeprecated<ExplicitObjectType> = await channel.object.get<ExplicitObjectType>();
   const someOtherKey: string | undefined = explicitObjectType.get('someOtherKey');
 };
