@@ -15,9 +15,10 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     this._client = this._realtimeObject.getClient();
   }
 
-  id(): string {
+  id(): string | undefined {
     if (!(this._value instanceof LiveObject)) {
-      throw new this._client.ErrorInfo('Cannot get object ID for a non-LiveObject instance', 40000, 400);
+      // no id exists for non-LiveObject types
+      return undefined;
     }
     return this._value.getObjectId();
   }
@@ -28,7 +29,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
 
   get<U extends Value = Value>(key: string): Instance<U> | undefined {
     if (!(this._value instanceof LiveMap)) {
-      throw new this._client.ErrorInfo('Cannot get value for a key from a non-LiveMap instance', 40000, 400);
+      // can't get a key from a non-LiveMap type
+      return undefined;
     }
 
     if (typeof key !== 'string') {
@@ -61,6 +63,12 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
       // primitive type - return it
       return this._value as unknown as U;
     } else {
+      this._client.Logger.logAction(
+        this._client.logger,
+        this._client.Logger.LOG_MAJOR,
+        'DefaultInstance.value()',
+        `unexpected value type for instance, resolving to undefined; value=${this._value}`,
+      );
       // unknown type - return undefined
       return undefined;
     }
@@ -68,7 +76,8 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
 
   *entries<U extends Record<string, Value>>(): IterableIterator<[keyof U, Instance<U[keyof U]>]> {
     if (!(this._value instanceof LiveMap)) {
-      throw new this._client.ErrorInfo('Cannot iterate entries on a non-LiveMap instance', 40000, 400);
+      // return empty iterator for non-LiveMap objects
+      return;
     }
 
     for (const [key, value] of this._value.entries()) {
@@ -89,9 +98,10 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     }
   }
 
-  size(): number {
+  size(): number | undefined {
     if (!(this._value instanceof LiveMap)) {
-      throw new this._client.ErrorInfo('Cannot get size of a non-LiveMap instance', 40000, 400);
+      // can't return size for non-LiveMap objects
+      return undefined;
     }
     return this._value.size();
   }
@@ -101,28 +111,28 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     value: U[keyof U],
   ): Promise<void> {
     if (!(this._value instanceof LiveMap)) {
-      throw new this._client.ErrorInfo('Cannot set a key on a non-LiveMap instance', 40000, 400);
+      throw new this._client.ErrorInfo('Cannot set a key on a non-LiveMap instance', 92007, 400);
     }
     return this._value.set(key, value);
   }
 
   remove<U extends Record<string, Value> = Record<string, Value>>(key: keyof U & string): Promise<void> {
     if (!(this._value instanceof LiveMap)) {
-      throw new this._client.ErrorInfo('Cannot remove a key from a non-LiveMap instance', 40000, 400);
+      throw new this._client.ErrorInfo('Cannot remove a key from a non-LiveMap instance', 92007, 400);
     }
     return this._value.remove(key);
   }
 
   increment(amount?: number | undefined): Promise<void> {
     if (!(this._value instanceof LiveCounter)) {
-      throw new this._client.ErrorInfo('Cannot increment a non-LiveCounter instance', 40000, 400);
+      throw new this._client.ErrorInfo('Cannot increment a non-LiveCounter instance', 92007, 400);
     }
     return this._value.increment(amount ?? 1);
   }
 
   decrement(amount?: number | undefined): Promise<void> {
     if (!(this._value instanceof LiveCounter)) {
-      throw new this._client.ErrorInfo('Cannot decrement a non-LiveCounter instance', 40000, 400);
+      throw new this._client.ErrorInfo('Cannot decrement a non-LiveCounter instance', 92007, 400);
     }
     return this._value.decrement(amount ?? 1);
   }

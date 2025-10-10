@@ -2690,8 +2690,9 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
    * Sends an operation to the Ably system to set a key to a specified value on a given {@link LiveMapInstance},
    * or on the map instance resolved from the path when using {@link LiveMapPathObject}.
    *
-   * If called via {@link LiveMapPathObject} and the map instance at the specified path cannot be resolved at the time of the call,
-   * this method will throw an error.
+   * If called via {@link LiveMapInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link LiveMapPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -2708,8 +2709,9 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
    * Sends an operation to the Ably system to remove a key from a given {@link LiveMapInstance},
    * or from the map instance resolved from the path when using {@link LiveMapPathObject}.
    *
-   * If called via {@link LiveMapPathObject} and the map instance at the specified path cannot be resolved at the time of the call,
-   * this method will throw an error.
+   * If called via {@link LiveMapInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link LiveMapPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -2730,8 +2732,9 @@ export interface LiveCounterOperations {
    * Sends an operation to the Ably system to increment the value of a given {@link LiveCounterInstance},
    * or of the counter instance resolved from the path when using {@link LiveCounterPathObject}.
    *
-   * If called via {@link LiveCounterPathObject} and the counter instance at the specified path cannot be resolved at the time of the call,
-   * this method will throw an error.
+   * If called via {@link LiveCounterInstance} and the underlying instance at runtime is not a counter,
+   * or if called via {@link LiveCounterPathObject} and the counter instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the counter. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -2763,8 +2766,9 @@ export interface AnyOperations {
    * Sends an operation to the Ably system to set a key to a specified value on the underlying map when using {@link AnyInstance},
    * or on the map instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If called via {@link AnyPathObject} and the map instance at the specified path cannot be resolved at the time of the call,
-   * this method will throw an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link AnyPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -2781,8 +2785,9 @@ export interface AnyOperations {
    * Sends an operation to the Ably system to remove a key from the underlying map when using {@link AnyInstance},
    * or from the map instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If called via {@link AnyPathObject} and the map instance at the specified path cannot be resolved at the time of the call,
-   * this method will throw an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link AnyPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -2800,8 +2805,9 @@ export interface AnyOperations {
    * Sends an operation to the Ably system to increment the value of the underlying counter when using {@link AnyInstance},
    * or of the counter instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If called via {@link AnyPathObject} and the counter instance at the specified path cannot be resolved at the time of the call,
-   * this method will throw an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a counter,
+   * or if called via {@link AnyPathObject} and the counter instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the counter. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -2848,12 +2854,14 @@ interface InstanceBase<_T extends Value> {
   /**
    * Get the object ID of this instance.
    *
+   * If the underlying instance at runtime is not a {@link LiveObject}, returns `undefined`.
+   *
    * @experimental
    */
-  id(): string;
+  id(): string | undefined;
 
   /**
-   * Get a JavaScript object representation of the instance.
+   * Get a JavaScript object representation of this instance.
    *
    * @experimental
    */
@@ -2868,12 +2876,16 @@ interface LiveMapInstanceCollectionMethods<T extends Record<string, Value> = Rec
    * Returns an iterable of key-value pairs for each entry in the map.
    * Each value is represented as an {@link Instance} corresponding to its key.
    *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
    * @experimental
    */
   entries(): IterableIterator<[keyof T, Instance<T[keyof T]>]>;
 
   /**
    * Returns an iterable of keys in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
    *
    * @experimental
    */
@@ -2883,6 +2895,8 @@ interface LiveMapInstanceCollectionMethods<T extends Record<string, Value> = Rec
    * Returns an iterable of values in the map.
    * Each value is represented as an {@link Instance}.
    *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
    * @experimental
    */
   values(): IterableIterator<Instance<T[keyof T]>>;
@@ -2890,9 +2904,11 @@ interface LiveMapInstanceCollectionMethods<T extends Record<string, Value> = Rec
   /**
    * Returns the number of entries in the map.
    *
+   * If the underlying instance at runtime is not a map, returns `undefined`.
+   *
    * @experimental
    */
-  size(): number;
+  size(): number | undefined;
 }
 
 /**
@@ -2926,10 +2942,11 @@ export interface LiveMapInstance<T extends Record<string, Value> = Record<string
 export interface LiveCounterInstance extends InstanceBase<LiveCounter>, LiveCounterOperations {
   /**
    * Get the current value of the counter instance.
+   * If the underlying instance at runtime is not a counter, returns `undefined`.
    *
    * @experimental
    */
-  value(): number;
+  value(): number | undefined;
 }
 
 /**
@@ -2941,9 +2958,11 @@ export interface PrimitiveInstance<T extends Primitive = Primitive> {
    * Get the primitive value represented by this instance.
    * This reflects the value at the corresponding key in the collection at the time this instance was obtained.
    *
+   * If the underlying instance at runtime is not a primitive value, returns `undefined`.
+   *
    * @experimental
    */
-  value(): T;
+  value(): T | undefined;
 }
 
 /**
@@ -2957,6 +2976,8 @@ interface AnyInstanceCollectionMethods {
    * Returns an iterable of key-value pairs for each entry in the map.
    * Each value is represented as an {@link Instance} corresponding to its key.
    *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
    * @experimental
    */
   entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, Instance<T[keyof T]>]>;
@@ -2964,13 +2985,17 @@ interface AnyInstanceCollectionMethods {
   /**
    * Returns an iterable of keys in the map.
    *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
    * @experimental
    */
   keys<T extends Record<string, Value>>(): IterableIterator<keyof T>;
 
   /**
-   * Returns an iterable of values in the map,.
+   * Returns an iterable of values in the map.
    * Each value is represented as a {@link Instance}.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
    *
    * @experimental
    */
@@ -2979,9 +3004,11 @@ interface AnyInstanceCollectionMethods {
   /**
    * Returns the number of entries in the map.
    *
+   * If the underlying instance at runtime is not a map, returns `undefined`.
+   *
    * @experimental
    */
-  size(): number;
+  size(): number | undefined;
 }
 
 /**
@@ -2996,21 +3023,26 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
    * Navigate to a child entry within the collection by obtaining the {@link Instance} at that entry.
    * The entry in a collection is identified with a string key.
    *
+   * Returns `undefined` if:
+   * - The underlying instance at runtime is not a collection object.
+   * - The specified key does not exist in the collection.
+   * - The referenced {@link LiveObject} has been deleted.
+   * - This collection object itself has been deleted.
+   *
    * @param key - The key to get the child entry for.
-   * @returns The {@link Instance} for the specified key, or `undefined` if no such entry exists.
+   * @returns An {@link Instance} representing either a {@link LiveObject} or a primitive value (string, number, boolean, JSON-serializable object or array, or binary data), or `undefined` if the underlying instance at runtime is not a collection object, the key does not exist, the referenced {@link LiveObject} has been deleted, or this collection object itself has been deleted.
    * @experimental
    */
   get<T extends Value = Value>(key: string): Instance<T> | undefined;
 
   /**
-   * Get the current value of the underlying LiveCounter or primitive.
+   * Get the current value of the underlying counter or primitive.
    *
    * If the underlying value is a primitive, this reflects the value at the corresponding key
    * in the collection at the time this instance was obtained.
    *
-   * Returns `undefined` if the underlying object is of a different type.
+   * If the underlying instance at runtime is neither a counter nor a primitive value, returns `undefined`.
    *
-   * @returns The current value or `undefined` if not applicable to the underlying object.
    * @experimental
    */
   value<T extends number | Primitive = number | Primitive>(): T | undefined;
