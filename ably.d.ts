@@ -2322,24 +2322,6 @@ export declare interface RealtimeObject {
   getPathObject<T extends Record<string, Value>>(): Promise<PathObject<LiveMap<T>>>;
 
   /**
-   * Creates a new {@link LiveMapDeprecated} object instance with the provided entries.
-   *
-   * @param entries - The initial entries for the new {@link LiveMapDeprecated} object.
-   * @returns A promise which, upon success, will be fulfilled with a {@link LiveMapDeprecated} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
-   * @experimental
-   */
-  createMap<T extends LiveMapType>(entries?: T): Promise<LiveMapDeprecated<T>>;
-
-  /**
-   * Creates a new {@link LiveCounterDeprecated} object instance with the provided `count` value.
-   *
-   * @param count - The initial value for the new {@link LiveCounterDeprecated} object.
-   * @returns A promise which, upon success, will be fulfilled with a {@link LiveCounterDeprecated} object. Upon failure, the promise will be rejected with an {@link ErrorInfo} object which explains the error.
-   * @experimental
-   */
-  createCounter(count?: number): Promise<LiveCounterDeprecated>;
-
-  /**
    * Allows you to group multiple operations together and send them to the Ably service in a single channel message.
    * As a result, other clients will receive the changes as a single channel message after the batch function has completed.
    *

@@ -116,9 +116,6 @@ export class LiveMapValueType<T extends Record<string, API.Value> = Record<strin
     };
   }
 
-  /**
-   * @internal
-   */
   private static async _createInitialValueOperation(
     realtimeObject: RealtimeObject,
     entries?: Record<string, API.Value>,

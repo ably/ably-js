@@ -1,6 +1,12 @@
 import type * as API from '../../../ably';
-import { LiveCounter } from './livecounter';
-import { ObjectMessage } from './objectmessage';
+import { ObjectId } from './objectid';
+import {
+  createInitialValueJSONString,
+  ObjectData,
+  ObjectMessage,
+  ObjectOperation,
+  ObjectOperationAction,
+} from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 
 /**
@@ -40,10 +46,52 @@ export class LiveCounterValueType implements API.LiveCounter {
   /**
    * @internal
    */
-  static createCounterCreateMessage(
+  static async createCounterCreateMessage(
     realtimeObject: RealtimeObject,
     value: LiveCounterValueType,
   ): Promise<ObjectMessage> {
-    return LiveCounter.createCounterCreateMessage(realtimeObject, value._count);
+    const client = realtimeObject.getClient();
+    const count = value._count;
+
+    if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
+      throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
+    }
+
+    const initialValueOperation = LiveCounterValueType.createInitialValueOperation(count);
+    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
+    const nonce = client.Utils.cheapRandStr();
+    const msTimestamp = await client.getTimestamp(true);
+
+    const objectId = ObjectId.fromInitialValue(
+      client.Platform,
+      'counter',
+      initialValueJSONString,
+      nonce,
+      msTimestamp,
+    ).toString();
+
+    const msg = ObjectMessage.fromValues(
+      {
+        operation: {
+          ...initialValueOperation,
+          action: ObjectOperationAction.COUNTER_CREATE,
+          objectId,
+          nonce,
+          initialValue: initialValueJSONString,
+        } as ObjectOperation<ObjectData>,
+      },
+      client.Utils,
+      client.MessageEncoding,
+    );
+
+    return msg;
+  }
+
+  private static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
+    return {
+      counter: {
+        count: count ?? 0,
+      },
+    };
   }
 }
