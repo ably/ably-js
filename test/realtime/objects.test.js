@@ -73,12 +73,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     return `${paddedTimestamp}-${paddedCounter}@${seriesId}` + (paddedIndex ? `:${paddedIndex}` : '');
   }
 
-  async function expectToThrowAsync(fn, errorStr) {
+  async function expectToThrowAsync(fn, errorStr, conditions) {
+    const { withCode } = conditions ?? {};
+
     let savedError;
     try {
       await fn();
     } catch (error) {
       expect(error.message).to.have.string(errorStr);
+      if (withCode != null) expect(error.code).to.equal(withCode);
       savedError = error;
     }
     expect(savedError, 'Expected async function to throw an error').to.exist;
@@ -446,6 +449,31 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         } else {
           const expectedValue = keyData.data.string ?? keyData.data.number ?? keyData.data.boolean;
           expect(mapObj.get(key)).to.equal(expectedValue, msg);
+        }
+      }
+
+      function checkKeyDataOnPathObject({ helper, key, keyData, mapObj, pathObject, msg }) {
+        // should check that both mapObj and pathObject return the same value for the key
+        // and it matches the expected value from keyData
+        const compareMsg = `Check PathObject and LiveMap have the same value for "${keyData.key}" key`;
+
+        if (keyData.data.bytes != null) {
+          helper.recordPrivateApi('call.BufferUtils.base64Decode');
+          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
+
+          expect(
+            BufferUtils.areBuffersEqual(pathObject.get(key).value(), BufferUtils.base64Decode(keyData.data.bytes)),
+            msg,
+          ).to.be.true;
+          expect(BufferUtils.areBuffersEqual(pathObject.get(key).value(), mapObj.get(key)), compareMsg).to.be.true;
+        } else if (keyData.data.json != null) {
+          const expectedObject = JSON.parse(keyData.data.json);
+          expect(pathObject.get(key).value()).to.deep.equal(expectedObject, msg);
+          expect(pathObject.get(key).value()).to.deep.equal(mapObj.get(key), compareMsg);
+        } else {
+          const expectedValue = keyData.data.string ?? keyData.data.number ?? keyData.data.boolean;
+          expect(pathObject.get(key).value()).to.equal(expectedValue, msg);
+          expect(pathObject.get(key).value()).to.equal(mapObj.get(key), compareMsg);
         }
       }
 
@@ -3967,6 +3995,575 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
       ];
 
+      const pathObjectScenarios = [
+        {
+          description: 'RealtimeObject.getPathObject() returns PathObject instance',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            expect(entryPathObject, 'Check entry path object exists').to.exist;
+            expectInstanceOf(entryPathObject, 'DefaultPathObject', 'entrypoint should be of DefaultPathObject type');
+          },
+        },
+
+        {
+          description: 'PathObject.get() returns child PathObject instances',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            const stringPathObj = entryPathObject.get('stringKey');
+            const numberPathObj = entryPathObject.get('numberKey');
+
+            expect(stringPathObj, 'Check string PathObject exists').to.exist;
+            expect(stringPathObj.path()).to.equal('stringKey', 'Check string PathObject has correct path');
+
+            expect(numberPathObj, 'Check number PathObject exists').to.exist;
+            expect(numberPathObj.path()).to.equal('numberKey', 'Check number PathObject has correct path');
+          },
+        },
+
+        {
+          description: 'PathObject.path() returns correct path strings',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(root, 'nested')]);
+            const nestedMap = await realtimeObject.createMap({
+              simple: 'value',
+              deep: await realtimeObject.createMap({ nested: 'deepValue' }),
+              'key.with.dots': 'dottedValue',
+              'key\\escaped': 'escapedValue',
+            });
+            await root.set('nested', nestedMap);
+            await keysUpdatedPromise;
+
+            // Test path with .get() method
+            expect(entryPathObject.path()).to.equal('', 'Check root PathObject has empty path');
+            expect(entryPathObject.get('nested').path()).to.equal('nested', 'Check simple child path');
+            expect(entryPathObject.get('nested').get('simple').path()).to.equal(
+              'nested.simple',
+              'Check nested path via get()',
+            );
+            expect(entryPathObject.get('nested').get('deep').get('nested').path()).to.equal(
+              'nested.deep.nested',
+              'Check complex nested path',
+            );
+            expect(entryPathObject.get('nested').get('key.with.dots').path()).to.equal(
+              'nested.key\\.with\\.dots',
+              'Check path with dots in key name is properly escaped',
+            );
+            expect(entryPathObject.get('nested').get('key\\escaped').path()).to.equal(
+              'nested.key\\escaped',
+              'Check path with escaped symbols',
+            );
+
+            // Test path with .at() method
+            expect(entryPathObject.at('nested.simple').path()).to.equal('nested.simple', 'Check nested path via at()');
+            expect(entryPathObject.at('nested.key\\.with\\.dots').path()).to.equal(
+              'nested.key\\.with\\.dots',
+              'Check path via at() method with dots in key name is properly escaped',
+            );
+            expect(entryPathObject.at('nested.key\\escaped').path()).to.equal(
+              'nested.key\\escaped',
+              'Check path via at() method with escaped symbols',
+            );
+          },
+        },
+
+        {
+          description: 'PathObject.at() navigates using dot-separated paths',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            // Create nested structure
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            const nestedMap = await realtimeObject.createMap({ deepKey: 'deepValue', 'key.with.dots': 'dottedValue' });
+            await root.set('nested', nestedMap);
+            await keyUpdatedPromise;
+
+            const nestedPathObj = entryPathObject.at('nested.deepKey');
+            expect(nestedPathObj, 'Check nested PathObject exists').to.exist;
+            expect(nestedPathObj.path()).to.equal('nested.deepKey', 'Check nested PathObject has correct path');
+            expect(nestedPathObj.value()).to.equal('deepValue', 'Check nested PathObject has correct value');
+
+            const nestedPathWithDotsObj = entryPathObject.at('nested.key\\.with\\.dots');
+            expect(nestedPathWithDotsObj, 'Check nested PathObject with dots in path exists').to.exist;
+            expect(nestedPathWithDotsObj.path()).to.equal(
+              'nested.key\\.with\\.dots',
+              'Check nested PathObject with dots in path has correct path',
+            );
+            expect(nestedPathWithDotsObj.value()).to.equal(
+              'dottedValue',
+              'Check nested PathObject with dots in path has correct value',
+            );
+          },
+        },
+
+        {
+          description: 'PathObject resolves complex path strings',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested.key');
+            const nestedMap = await realtimeObject.createMap({
+              'key.with.dots.and\\escaped\\characters': 'nestedValue',
+            });
+            await root.set('nested.key', nestedMap);
+            await keyUpdatedPromise;
+
+            // Test complex path via chaining .get()
+            const pathObjViaGetChain = entryPathObject.get('nested.key').get('key.with.dots.and\\escaped\\characters');
+            expect(pathObjViaGetChain.value()).to.equal(
+              'nestedValue',
+              'Check PathObject resolves value for a complex path via chain of get() calls',
+            );
+            expect(pathObjViaGetChain.path()).to.equal(
+              'nested\\.key.key\\.with\\.dots\\.and\\escaped\\characters',
+              'Check PathObject returns correct path for a complex path via chain of get() calls',
+            );
+
+            // Test complex path via .at()
+            const pathObjViaAt = entryPathObject.at('nested\\.key.key\\.with\\.dots\\.and\\escaped\\characters');
+            expect(pathObjViaAt.value()).to.equal(
+              'nestedValue',
+              'Check PathObject resolves value for a complex path via at() call',
+            );
+            expect(pathObjViaAt.path()).to.equal(
+              'nested\\.key.key\\.with\\.dots\\.and\\escaped\\characters',
+              'Check PathObject returns correct path for a complex path via at() call',
+            );
+          },
+        },
+
+        {
+          description: 'PathObject.value() returns primitive values correctly',
+          action: async (ctx) => {
+            const { root, entryPathObject, helper } = ctx;
+
+            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
+            await Promise.all(
+              primitiveKeyData.map(async (keyData) => {
+                let value;
+                if (keyData.data.bytes != null) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  value = BufferUtils.base64Decode(keyData.data.bytes);
+                } else if (keyData.data.json != null) {
+                  value = JSON.parse(keyData.data.json);
+                } else {
+                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                }
+
+                await root.set(keyData.key, value);
+              }),
+            );
+            await keysUpdatedPromise;
+
+            // check PathObject returns primitive values correctly
+            primitiveKeyData.forEach((keyData) => {
+              checkKeyDataOnPathObject({
+                helper,
+                key: keyData.key,
+                keyData,
+                mapObj: root,
+                pathObject: entryPathObject,
+                msg: `Check PathObject returns correct value for "${keyData.key}" key after LiveMap.set call`,
+              });
+            });
+          },
+        },
+
+        {
+          description: 'PathObject.value() returns LiveCounter values',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counter = await realtimeObject.createCounter(10);
+            await root.set('counter', counter);
+            await keyUpdatedPromise;
+
+            const counterPathObj = entryPathObject.get('counter');
+
+            expect(counterPathObj.value()).to.equal(10, 'Check counter value is returned correctly');
+          },
+        },
+
+        {
+          description: 'PathObject.value() returns undefined for LiveMap objects',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
+            const map = await realtimeObject.createMap({ key: 'map' });
+            await root.set('map', map);
+            await keyUpdatedPromise;
+
+            const mapPathObj = entryPathObject.get('map');
+
+            expect(mapPathObj.value(), 'Check PathObject.value() for a LiveMap object returns undefined').to.be
+              .undefined;
+          },
+        },
+
+        {
+          description: 'PathObject collection methods work for LiveMap objects',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            // Set up test data
+            const keysUpdatedPromise = Promise.all([
+              waitForMapKeyUpdate(root, 'key1'),
+              waitForMapKeyUpdate(root, 'key2'),
+              waitForMapKeyUpdate(root, 'key3'),
+            ]);
+            await root.set('key1', 'value1');
+            await root.set('key2', 'value2');
+            await root.set('key3', 'value3');
+            await keysUpdatedPromise;
+
+            // Test size
+            expect(entryPathObject.size()).to.equal(3, 'Check PathObject size');
+
+            // Test keys
+            const keys = [...entryPathObject.keys()];
+            expect(keys).to.have.members(['key1', 'key2', 'key3'], 'Check PathObject keys');
+
+            // Test entries
+            const entries = [...entryPathObject.entries()];
+            expect(entries).to.have.lengthOf(3, 'Check PathObject entries length');
+
+            const entryKeys = entries.map(([key]) => key);
+            expect(entryKeys).to.have.members(['key1', 'key2', 'key3'], 'Check entry keys');
+
+            const entryValues = entries.map(([key, pathObj]) => pathObj.value());
+            expect(entryValues).to.have.members(['value1', 'value2', 'value3'], 'Check PathObject entries values');
+
+            // Test values
+            const values = [...entryPathObject.values()];
+            expect(values).to.have.lengthOf(3, 'Check PathObject values length');
+
+            const valueValues = values.map((pathObj) => pathObj.value());
+            expect(valueValues).to.have.members(['value1', 'value2', 'value3'], 'Check PathObject values');
+          },
+        },
+
+        {
+          description: 'PathObject.set() works for LiveMap objects with primitive values',
+          action: async (ctx) => {
+            const { root, entryPathObject, helper } = ctx;
+
+            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
+            await Promise.all(
+              primitiveKeyData.map(async (keyData) => {
+                let value;
+                if (keyData.data.bytes != null) {
+                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
+                  value = BufferUtils.base64Decode(keyData.data.bytes);
+                } else if (keyData.data.json != null) {
+                  value = JSON.parse(keyData.data.json);
+                } else {
+                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
+                }
+
+                await entryPathObject.set(keyData.key, value);
+              }),
+            );
+            await keysUpdatedPromise;
+
+            // check primitive values were set correctly via PathObject
+            primitiveKeyData.forEach((keyData) => {
+              checkKeyDataOnPathObject({
+                helper,
+                key: keyData.key,
+                keyData,
+                mapObj: root,
+                pathObject: entryPathObject,
+                msg: `Check PathObject returns correct value for "${keyData.key}" key after PathObject.set call`,
+              });
+            });
+          },
+        },
+
+        {
+          description: 'PathObject.set() works for LiveMap objects with LiveObject references',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counterKey');
+            const counter = await realtimeObject.createCounter(5);
+            await entryPathObject.set('counterKey', counter);
+            await keyUpdatedPromise;
+
+            expect(root.get('counterKey')).to.equal(counter, 'Check counter object was set via PathObject');
+            expect(entryPathObject.get('counterKey').value()).to.equal(5, 'Check PathObject reflects counter value');
+          },
+        },
+
+        {
+          description: 'PathObject.remove() works for LiveMap objects',
+          action: async (ctx) => {
+            const { root, entryPathObject } = ctx;
+
+            const keyAddedPromise = waitForMapKeyUpdate(root, 'keyToRemove');
+            await root.set('keyToRemove', 'valueToRemove');
+            await keyAddedPromise;
+
+            expect(root.get('keyToRemove'), 'Check key exists on root').to.exist;
+
+            const keyRemovedPromise = waitForMapKeyUpdate(root, 'keyToRemove');
+            await entryPathObject.remove('keyToRemove');
+            await keyRemovedPromise;
+
+            expect(root.get('keyToRemove'), 'Check key on root is removed after PathObject.remove()').to.be.undefined;
+            expect(
+              entryPathObject.get('keyToRemove').value(),
+              'Check value for path is undefined after PathObject.remove()',
+            ).to.be.undefined;
+          },
+        },
+
+        {
+          description: 'PathObject.increment() and PathObject.decrement() work for LiveCounter objects',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counter = await realtimeObject.createCounter(10);
+            await root.set('counter', counter);
+            await keyUpdatedPromise;
+
+            const counterPathObj = entryPathObject.get('counter');
+
+            let counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counterPathObj.increment(5);
+            await counterUpdatedPromise;
+
+            expect(counter.value()).to.equal(15, 'Check counter incremented via PathObject');
+            expect(counterPathObj.value()).to.equal(15, 'Check PathObject reflects incremented value');
+
+            counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counterPathObj.decrement(3);
+            await counterUpdatedPromise;
+
+            expect(counter.value()).to.equal(12, 'Check counter decremented via PathObject');
+            expect(counterPathObj.value()).to.equal(12, 'Check PathObject reflects decremented value');
+
+            // test increment/decrement without argument (should increment/decrement by 1)
+            counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counterPathObj.increment();
+            await counterUpdatedPromise;
+
+            expect(counter.value()).to.equal(13, 'Check counter incremented via PathObject without argument');
+            expect(counterPathObj.value()).to.equal(13, 'Check PathObject reflects incremented value');
+
+            counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counterPathObj.decrement();
+            await counterUpdatedPromise;
+
+            expect(counter.value()).to.equal(12, 'Check counter decremented via PathObject without argument');
+            expect(counterPathObj.value()).to.equal(12, 'Check PathObject reflects decremented value');
+          },
+        },
+
+        {
+          description: 'PathObject.get() throws error for non-string keys',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            expect(() => entryPathObject.get()).to.throw('Path key must be a string');
+            expect(() => entryPathObject.get(null)).to.throw('Path key must be a string');
+            expect(() => entryPathObject.get(123)).to.throw('Path key must be a string');
+            expect(() => entryPathObject.get(BigInt(1))).to.throw('Path key must be a string');
+            expect(() => entryPathObject.get(true)).to.throw('Path key must be a string');
+            expect(() => entryPathObject.get({})).to.throw('Path key must be a string');
+            expect(() => entryPathObject.get([])).to.throw('Path key must be a string');
+          },
+        },
+
+        {
+          description: 'PathObject.at() throws error for non-string paths',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            expect(() => entryPathObject.at()).to.throw('Path must be a string');
+            expect(() => entryPathObject.at(null)).to.throw('Path must be a string');
+            expect(() => entryPathObject.at(123)).to.throw('Path must be a string');
+            expect(() => entryPathObject.at(BigInt(1))).to.throw('Path must be a string');
+            expect(() => entryPathObject.at(true)).to.throw('Path must be a string');
+            expect(() => entryPathObject.at({})).to.throw('Path must be a string');
+            expect(() => entryPathObject.at([])).to.throw('Path must be a string');
+          },
+        },
+
+        {
+          description: 'PathObject handling of operations on non-existent paths',
+          action: async (ctx) => {
+            const { entryPathObject } = ctx;
+
+            const nonExistentPathObj = entryPathObject.at('non.existent.path');
+            const errorMsg = 'Could not resolve value at path';
+
+            // Next operations should not throw and silently handle non-existent path
+            expect(nonExistentPathObj.value(), 'Check PathObject.value() for non-existent path returns undefined').to.be
+              .undefined;
+            expect([...nonExistentPathObj.entries()]).to.deep.equal(
+              [],
+              'Check PathObject.entries() for non-existent path returns empty iterator',
+            );
+            expect([...nonExistentPathObj.keys()]).to.deep.equal(
+              [],
+              'Check PathObject.keys() for non-existent path returns empty iterator',
+            );
+            expect([...nonExistentPathObj.values()]).to.deep.equal(
+              [],
+              'Check PathObject.values() for non-existent path returns empty iterator',
+            );
+            expect(nonExistentPathObj.size(), 'Check PathObject.size() for non-existent path returns undefined').to.be
+              .undefined;
+
+            // Next operations should throw due to path resolution failure
+            await expectToThrowAsync(async () => nonExistentPathObj.set('key', 'value'), errorMsg, { withCode: 92005 });
+            await expectToThrowAsync(async () => nonExistentPathObj.remove('key'), errorMsg, {
+              withCode: 92005,
+            });
+            await expectToThrowAsync(async () => nonExistentPathObj.increment(), errorMsg, {
+              withCode: 92005,
+            });
+            await expectToThrowAsync(async () => nonExistentPathObj.decrement(), errorMsg, {
+              withCode: 92005,
+            });
+          },
+        },
+
+        {
+          description: 'PathObject handling of operations for paths with non-collection intermediate segments',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counter = await realtimeObject.createCounter();
+            await root.set('counter', counter);
+            await keyUpdatedPromise;
+
+            const wrongTypePathObj = entryPathObject.at('counter.nested.path');
+            const errorMsg = `Cannot resolve path segment 'nested' on non-collection type at path`;
+
+            // Next operations should not throw and silently handle incorrect path
+            expect(wrongTypePathObj.value(), 'Check PathObject.value() for non-collection path returns undefined').to.be
+              .undefined;
+            expect([...wrongTypePathObj.entries()]).to.deep.equal(
+              [],
+              'Check PathObject.entries() for non-collection path returns empty iterator',
+            );
+            expect([...wrongTypePathObj.keys()]).to.deep.equal(
+              [],
+              'Check PathObject.keys() for non-collection path returns empty iterator',
+            );
+            expect([...wrongTypePathObj.values()]).to.deep.equal(
+              [],
+              'Check PathObject.values() for non-collection path returns empty iterator',
+            );
+            expect(wrongTypePathObj.size(), 'Check PathObject.size() for non-collection path returns undefined').to.be
+              .undefined;
+
+            // These should throw due to path resolution failure
+            await expectToThrowAsync(async () => wrongTypePathObj.set('key', 'value'), errorMsg, { withCode: 92005 });
+            await expectToThrowAsync(async () => wrongTypePathObj.remove('key'), errorMsg, {
+              withCode: 92005,
+            });
+            await expectToThrowAsync(async () => wrongTypePathObj.increment(), errorMsg, {
+              withCode: 92005,
+            });
+            await expectToThrowAsync(async () => wrongTypePathObj.decrement(), errorMsg, {
+              withCode: 92005,
+            });
+          },
+        },
+
+        {
+          description: 'PathObject handling of operations on wrong underlying object type',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
+            const keysUpdatedPromise = Promise.all([
+              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(root, 'counter'),
+              waitForMapKeyUpdate(root, 'primitive'),
+            ]);
+            const map = await realtimeObject.createMap();
+            const counter = await realtimeObject.createCounter(5);
+            await root.set('map', map);
+            await root.set('counter', counter);
+            await root.set('primitive', 'value');
+            await keysUpdatedPromise;
+
+            const mapPathObj = entryPathObject.get('map');
+            const counterPathObj = entryPathObject.get('counter');
+            const primitivePathObj = entryPathObject.get('primitive');
+
+            // collection methods silently handle incorrect underlying type
+            expect([...primitivePathObj.entries()]).to.deep.equal(
+              [],
+              'Check PathObject.entries() for wrong underlying object type returns empty iterator',
+            );
+            expect([...primitivePathObj.keys()]).to.deep.equal(
+              [],
+              'Check PathObject.keys() for wrong underlying object type returns empty iterator',
+            );
+            expect([...primitivePathObj.values()]).to.deep.equal(
+              [],
+              'Check PathObject.values() for wrong underlying object type returns empty iterator',
+            );
+            expect(
+              primitivePathObj.size(),
+              'Check PathObject.size() for wrong underlying object type returns undefined',
+            ).to.be.undefined;
+
+            // map mutation methods throw errors for non-LiveMap objects
+            await expectToThrowAsync(
+              async () => primitivePathObj.set('key', 'value'),
+              'Cannot set a key on a non-LiveMap object',
+              { withCode: 92007 },
+            );
+            await expectToThrowAsync(
+              async () => counterPathObj.set('key', 'value'),
+              'Cannot set a key on a non-LiveMap object',
+              { withCode: 92007 },
+            );
+
+            await expectToThrowAsync(
+              async () => primitivePathObj.remove('key'),
+              'Cannot remove a key from a non-LiveMap object',
+              { withCode: 92007 },
+            );
+            await expectToThrowAsync(
+              async () => counterPathObj.remove('key'),
+              'Cannot remove a key from a non-LiveMap object',
+              { withCode: 92007 },
+            );
+
+            // PathObject counter methods throw errors for non-LiveCounter objects
+            await expectToThrowAsync(
+              async () => primitivePathObj.increment(),
+              'Cannot increment a non-LiveCounter object',
+              { withCode: 92007 },
+            );
+            await expectToThrowAsync(async () => mapPathObj.increment(), 'Cannot increment a non-LiveCounter object', {
+              withCode: 92007,
+            });
+
+            await expectToThrowAsync(
+              async () => primitivePathObj.decrement(),
+              'Cannot decrement a non-LiveCounter object',
+              { withCode: 92007 },
+            );
+            await expectToThrowAsync(async () => mapPathObj.decrement(), 'Cannot decrement a non-LiveCounter object', {
+              withCode: 92007,
+            });
+          },
+        },
+      ];
+
       /** @nospec */
       forScenarios(
         this,
@@ -3976,6 +4573,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           ...applyOperationsDuringSyncScenarios,
           ...writeApiScenarios,
           ...liveMapEnumerationScenarios,
+          ...pathObjectScenarios,
         ],
         async function (helper, scenario, clientOptions, channelName) {
           const objectsHelper = new ObjectsHelper(helper);
@@ -3986,11 +4584,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const realtimeObject = channel.object;
 
             await channel.attach();
-            const root = await channel.object.get();
+            const root = await realtimeObject.get();
+            const entryPathObject = await realtimeObject.getPathObject();
 
             await scenario.action({
               realtimeObject,
               root,
+              entryPathObject,
               objectsHelper,
               channelName,
               channel,
