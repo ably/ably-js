@@ -2041,6 +2041,27 @@ export declare interface RealtimePresence {
   unsubscribe(): void;
 
   /**
+   * Returns all listeners currently registered on this presence object.
+   *
+   * @returns An array of listener functions for all events. Returns an empty array if no listeners are found.
+   */
+  listeners(): Function[];
+  /**
+   * Returns the listeners for a specified presence action on this presence object.
+   *
+   * @param event - The presence action name to retrieve the listeners for.
+   * @returns An array of listener functions for the specified event. Returns an empty array if no listeners are found.
+   */
+  listeners(event: string): Function[];
+  /**
+   * Returns the listeners for multiple specified presence actions on this presence object.
+   *
+   * @param events - An array of presence action names to retrieve the listeners for.
+   * @returns An array of listener functions for all the specified events combined. Returns an empty array if no listeners are found.
+   */
+  listeners(events: string[]): Function[];
+
+  /**
    * Retrieves the current members present on the channel and the metadata for each member, such as their {@link PresenceAction} and ID. Returns an array of {@link PresenceMessage} objects.
    *
    * @param params - A set of parameters which are used to specify which presence members should be retrieved.
@@ -2933,6 +2954,27 @@ export declare interface RealtimeChannel extends EventEmitter<channelEventCallba
    * Deregisters all listeners to messages on this channel. This removes all earlier subscriptions.
    */
   unsubscribe(): void;
+
+  /**
+   * Returns all listeners currently registered on this channel.
+   *
+   * @returns An array of listener functions for all events. Returns an empty array if no listeners are found.
+   */
+  listeners(): Function[];
+  /**
+   * Returns the listeners for a specified event name on this channel.
+   *
+   * @param event - The event name to retrieve the listeners for.
+   * @returns An array of listener functions for the specified event. Returns an empty array if no listeners are found.
+   */
+  listeners(event: string): Function[];
+  /**
+   * Returns the listeners for multiple specified event names on this channel.
+   *
+   * @param events - An array of event names to retrieve the listeners for.
+   * @returns An array of listener functions for all the specified events combined. Returns an empty array if no listeners are found.
+   */
+  listeners(events: string[]): Function[];
 
   /**
    * A {@link RealtimePresence} object.
