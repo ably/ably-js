@@ -5,9 +5,7 @@ import type * as API from '../../../ably';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMapValueType } from './livemapvaluetype';
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { ObjectId } from './objectid';
 import {
-  createInitialValueJSONString,
   ObjectData,
   ObjectMessage,
   ObjectOperation,
@@ -78,25 +76,6 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   ): LiveMap<T> {
     const obj = new LiveMap<T>(realtimeObject, objectMessage.object!.map!.semantics!, objectMessage.object!.objectId);
     obj.overrideWithObjectState(objectMessage);
-    return obj;
-  }
-
-  /**
-   * Returns a {@link LiveMap} instance based on the provided MAP_CREATE object operation.
-   * The provided object operation must hold a valid map object data.
-   *
-   * @internal
-   */
-  static fromObjectOperation<T extends API.LiveMapType>(
-    realtimeObject: RealtimeObject,
-    objectMessage: ObjectMessage,
-  ): LiveMap<T> {
-    const obj = new LiveMap<T>(
-      realtimeObject,
-      objectMessage.operation!.map?.semantics!,
-      objectMessage.operation!.objectId,
-    );
-    obj._mergeInitialDataFromCreateOperation(objectMessage.operation!, objectMessage);
     return obj;
   }
 
@@ -247,80 +226,6 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     ) {
       throw new client.ErrorInfo('Map value data type is unsupported', 40013, 400); // OD4a
     }
-  }
-
-  /**
-   * @internal
-   */
-  static async createMapCreateMessage(
-    realtimeObject: RealtimeObject,
-    entries?: API.LiveMapType,
-  ): Promise<ObjectMessage> {
-    const client = realtimeObject.getClient();
-
-    if (entries !== undefined && (entries === null || typeof entries !== 'object')) {
-      throw new client.ErrorInfo('Map entries should be a key-value object', 40003, 400);
-    }
-
-    Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(realtimeObject, key, value));
-
-    const initialValueOperation = LiveMap.createInitialValueOperation(entries);
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
-
-    const objectId = ObjectId.fromInitialValue(
-      client.Platform,
-      'map',
-      initialValueJSONString,
-      nonce,
-      msTimestamp,
-    ).toString();
-
-    const msg = ObjectMessage.fromValues(
-      {
-        operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.MAP_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
-        } as ObjectOperation<ObjectData>,
-      },
-      client.Utils,
-      client.MessageEncoding,
-    );
-
-    return msg;
-  }
-
-  /**
-   * @internal
-   */
-  static createInitialValueOperation(entries?: API.LiveMapType): Pick<ObjectOperation<ObjectData>, 'map'> {
-    const mapEntries: Record<string, ObjectsMapEntry<ObjectData>> = {};
-
-    Object.entries(entries ?? {}).forEach(([key, value]) => {
-      let objectData: LiveMapObjectData;
-      if (value instanceof LiveObject) {
-        const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
-        objectData = typedObjectData;
-      } else {
-        const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
-        objectData = typedObjectData;
-      }
-
-      mapEntries[key] = {
-        data: objectData,
-      };
-    });
-
-    return {
-      map: {
-        semantics: ObjectsMapSemantics.LWW,
-        entries: mapEntries,
-      },
-    };
   }
 
   /**
