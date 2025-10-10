@@ -154,14 +154,14 @@ export class DefaultPathObject<T extends Value = Value> implements AnyPathObject
         return new DefaultInstance(this._realtimeObject, value);
       }
 
-      // return undefined for primitive values
+      // return undefined for non live objects
       return undefined;
     } catch (error) {
-      if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error)) {
-        // ignore ErrorInfos indicating path resolution failure and return undefined
+      if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 92005) {
+        // ignore path resolution errors and return undefined
         return undefined;
       }
-      // otherwise rethrow unexpected errors
+      // rethrow everything else
       throw error;
     }
   }

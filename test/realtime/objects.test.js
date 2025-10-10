@@ -4211,19 +4211,25 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'PathObject.value() returns undefined for LiveMap objects',
+          description: 'PathObject.instance() returns DefaultInstance for LiveMap and LiveCounter',
           action: async (ctx) => {
             const { root, realtimeObject, entryPathObject } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
-            const map = await realtimeObject.createMap({ key: 'map' });
-            await root.set('map', map);
-            await keyUpdatedPromise;
+            const keysUpdatedPromise = Promise.all([
+              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(root, 'counter'),
+            ]);
+            await root.set('map', await realtimeObject.createMap());
+            await root.set('counter', await realtimeObject.createCounter());
+            await keysUpdatedPromise;
 
-            const mapPathObj = entryPathObject.get('map');
+            const counterInstance = entryPathObject.get('counter').instance();
+            expect(counterInstance, 'Check instance exists for counter path').to.exist;
+            expectInstanceOf(counterInstance, 'DefaultInstance', 'Check counter instance is DefaultInstance');
 
-            expect(mapPathObj.value(), 'Check PathObject.value() for a LiveMap object returns undefined').to.be
-              .undefined;
+            const mapInstance = entryPathObject.get('map').instance();
+            expect(mapInstance, 'Check instance exists for map path').to.exist;
+            expectInstanceOf(mapInstance, 'DefaultInstance', 'Check map instance is DefaultInstance');
           },
         },
 
@@ -4428,6 +4434,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // Next operations should not throw and silently handle non-existent path
             expect(nonExistentPathObj.value(), 'Check PathObject.value() for non-existent path returns undefined').to.be
               .undefined;
+            expect(nonExistentPathObj.instance(), 'Check PathObject.instance() for non-existent path returns undefined')
+              .to.be.undefined;
             expect([...nonExistentPathObj.entries()]).to.deep.equal(
               [],
               'Check PathObject.entries() for non-existent path returns empty iterator',
@@ -4473,6 +4481,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // Next operations should not throw and silently handle incorrect path
             expect(wrongTypePathObj.value(), 'Check PathObject.value() for non-collection path returns undefined').to.be
               .undefined;
+            expect(wrongTypePathObj.instance(), 'Check PathObject.instance() for non-collection path returns undefined')
+              .to.be.undefined;
             expect([...wrongTypePathObj.entries()]).to.deep.equal(
               [],
               'Check PathObject.entries() for non-collection path returns empty iterator',
@@ -4523,7 +4533,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const counterPathObj = entryPathObject.get('counter');
             const primitivePathObj = entryPathObject.get('primitive');
 
-            // collection methods silently handle incorrect underlying type
+            // next methods silently handle incorrect underlying type
+            expect(mapPathObj.value(), 'Check PathObject.value() for wrong underlying object type returns undefined').to
+              .be.undefined;
+            expect(
+              primitivePathObj.instance(),
+              'Check PathObject.instance() for wrong underlying object type returns undefined',
+            ).to.be.undefined;
             expect([...primitivePathObj.entries()]).to.deep.equal(
               [],
               'Check PathObject.entries() for wrong underlying object type returns empty iterator',
@@ -4544,100 +4560,52 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // map mutation methods throw errors for non-LiveMap objects
             await expectToThrowAsync(
               async () => primitivePathObj.set('key', 'value'),
-              'Cannot set a key on a non-LiveMap object',
+              'Cannot set a key on a non-LiveMap object at path',
               { withCode: 92007 },
             );
             await expectToThrowAsync(
               async () => counterPathObj.set('key', 'value'),
-              'Cannot set a key on a non-LiveMap object',
+              'Cannot set a key on a non-LiveMap object at path',
               { withCode: 92007 },
             );
 
             await expectToThrowAsync(
               async () => primitivePathObj.remove('key'),
-              'Cannot remove a key from a non-LiveMap object',
+              'Cannot remove a key from a non-LiveMap object at path',
               { withCode: 92007 },
             );
             await expectToThrowAsync(
               async () => counterPathObj.remove('key'),
-              'Cannot remove a key from a non-LiveMap object',
+              'Cannot remove a key from a non-LiveMap object at path',
               { withCode: 92007 },
             );
 
-            // PathObject counter methods throw errors for non-LiveCounter objects
+            // counter mutation methods throw errors for non-LiveCounter objects
             await expectToThrowAsync(
               async () => primitivePathObj.increment(),
-              'Cannot increment a non-LiveCounter object',
+              'Cannot increment a non-LiveCounter object at path',
               { withCode: 92007 },
             );
-            await expectToThrowAsync(async () => mapPathObj.increment(), 'Cannot increment a non-LiveCounter object', {
-              withCode: 92007,
-            });
+            await expectToThrowAsync(
+              async () => mapPathObj.increment(),
+              'Cannot increment a non-LiveCounter object at path',
+              {
+                withCode: 92007,
+              },
+            );
 
             await expectToThrowAsync(
               async () => primitivePathObj.decrement(),
-              'Cannot decrement a non-LiveCounter object',
+              'Cannot decrement a non-LiveCounter object at path',
               { withCode: 92007 },
             );
-            await expectToThrowAsync(async () => mapPathObj.decrement(), 'Cannot decrement a non-LiveCounter object', {
-              withCode: 92007,
-            });
-          },
-        },
-
-        {
-          description: 'PathObject.instance() returns DefaultInstance for LiveMap and LiveCounter',
-          action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
-
-            const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'map'),
-              waitForMapKeyUpdate(root, 'counter'),
-            ]);
-            await root.set('map', await realtimeObject.createMap());
-            await root.set('counter', await realtimeObject.createCounter());
-            await keysUpdatedPromise;
-
-            const counterInstance = entryPathObject.get('counter').instance();
-            expect(counterInstance, 'Check instance exists for counter path').to.exist;
-            expectInstanceOf(counterInstance, 'DefaultInstance', 'Check counter instance is DefaultInstance');
-
-            const mapInstance = entryPathObject.get('map').instance();
-            expect(mapInstance, 'Check instance exists for map path').to.exist;
-            expectInstanceOf(mapInstance, 'DefaultInstance', 'Check map instance is DefaultInstance');
-          },
-        },
-
-        {
-          description: 'PathObject.instance() returns undefined for primitive values and non-existent paths',
-          action: async (ctx) => {
-            const { root, helper, entryPathObject } = ctx;
-
-            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
-            await Promise.all(
-              primitiveKeyData.map(async (keyData) => {
-                let value;
-                if (keyData.data.bytes != null) {
-                  helper.recordPrivateApi('call.BufferUtils.base64Decode');
-                  value = BufferUtils.base64Decode(keyData.data.bytes);
-                } else if (keyData.data.json != null) {
-                  value = JSON.parse(keyData.data.json);
-                } else {
-                  value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
-                }
-
-                await entryPathObject.set(keyData.key, value);
-              }),
+            await expectToThrowAsync(
+              async () => mapPathObj.decrement(),
+              'Cannot decrement a non-LiveCounter object at path',
+              {
+                withCode: 92007,
+              },
             );
-            await keysUpdatedPromise;
-
-            primitiveKeyData.forEach((keyData) => {
-              const primitiveInstance = entryPathObject.get(keyData.key).instance();
-              expect(primitiveInstance, 'Check instance is undefined for primitive path').to.be.undefined;
-            });
-
-            expect(entryPathObject.at('non.existing.path').instance(), 'Check instance is undefined for primitive path')
-              .to.be.undefined;
           },
         },
       ];
@@ -4700,23 +4668,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'DefaultInstance.get() throws error for non-string keys',
-          action: async (ctx) => {
-            const { entryPathObject } = ctx;
-
-            const rootInstance = entryPathObject.instance();
-
-            expect(() => rootInstance.get()).to.throw('Key must be a string');
-            expect(() => rootInstance.get(null)).to.throw('Key must be a string');
-            expect(() => rootInstance.get(123)).to.throw('Key must be a string');
-            expect(() => rootInstance.get(BigInt(1))).to.throw('Key must be a string');
-            expect(() => rootInstance.get(true)).to.throw('Key must be a string');
-            expect(() => rootInstance.get({})).to.throw('Key must be a string');
-            expect(() => rootInstance.get([])).to.throw('Key must be a string');
-          },
-        },
-
-        {
           description: 'DefaultInstance.value() returns primitive values correctly',
           action: async (ctx) => {
             const { root, entryPathObject, helper } = ctx;
@@ -4770,23 +4721,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'DefaultInstance.value() returns undefined for LiveMap objects',
-          action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
-
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
-            const map = await realtimeObject.createMap({ key: 'map' });
-            await entryPathObject.set('map', map);
-            await keyUpdatedPromise;
-
-            const mapInstance = entryPathObject.get('map').instance();
-
-            expect(mapInstance.value(), 'Check DefaultInstance.value() for a LiveMap object returns undefined').to.be
-              .undefined;
-          },
-        },
-
-        {
           description: 'DefaultInstance collection methods work for LiveMap objects',
           action: async (ctx) => {
             const { root, entryPathObject } = ctx;
@@ -4827,25 +4761,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             const valueValues = values.map((instance) => instance.value());
             expect(valueValues).to.have.members(['value1', 'value2', 'value3'], 'Check DefaultInstance values');
-          },
-        },
-
-        {
-          description: 'DefaultInstance collection methods throw errors for non-LiveMap objects',
-          action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
-
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
-            await entryPathObject.set('primitive', 'value');
-            await keyUpdatedPromise;
-
-            const rootInstance = entryPathObject.instance();
-            const primitiveInstance = rootInstance.get('primitive');
-
-            expect(() => primitiveInstance.size()).to.throw('Cannot get size of a non-LiveMap instance');
-            expect(() => [...primitiveInstance.entries()]).to.throw('Cannot iterate entries on a non-LiveMap instance');
-            expect(() => [...primitiveInstance.values()]).to.throw('Cannot iterate entries on a non-LiveMap instance');
-            expect(() => [...primitiveInstance.keys()]).to.throw('Cannot iterate entries on a non-LiveMap instance');
           },
         },
 
@@ -4931,44 +4846,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'DefaultInstance map mutation methods throw errors for non-LiveMap objects',
-          action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
-
-            const rootInstance = entryPathObject.instance();
-
-            const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'primitive'),
-            ]);
-            const counter = await realtimeObject.createCounter(5);
-            await entryPathObject.set('counter', counter);
-            await entryPathObject.set('primitive', 'value');
-            await keysUpdatedPromise;
-
-            const primitiveInstance = rootInstance.get('primitive');
-            await expectToThrowAsync(
-              async () => primitiveInstance.set('key', 'value'),
-              'Cannot set a key on a non-LiveMap instance',
-            );
-            await expectToThrowAsync(
-              async () => primitiveInstance.remove('key'),
-              'Cannot remove a key from a non-LiveMap instance',
-            );
-
-            const counterInstance = rootInstance.get('counter');
-            await expectToThrowAsync(
-              async () => counterInstance.set('key', 'value'),
-              'Cannot set a key on a non-LiveMap instance',
-            );
-            await expectToThrowAsync(
-              async () => counterInstance.remove('key'),
-              'Cannot remove a key from a non-LiveMap instance',
-            );
-          },
-        },
-
-        {
           description: 'DefaultInstance.increment() and DefaultInstance.decrement() work for LiveCounter objects',
           action: async (ctx) => {
             const { root, realtimeObject, entryPathObject } = ctx;
@@ -5014,39 +4891,121 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'DefaultInstance counter methods throw errors for non-LiveCounter objects',
+          description: 'DefaultInstance.get() throws error for non-string keys',
           action: async (ctx) => {
-            const { root, realtimeObject, entryPathObject } = ctx;
+            const { entryPathObject } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
+            expect(() => rootInstance.get()).to.throw('Key must be a string');
+            expect(() => rootInstance.get(null)).to.throw('Key must be a string');
+            expect(() => rootInstance.get(123)).to.throw('Key must be a string');
+            expect(() => rootInstance.get(BigInt(1))).to.throw('Key must be a string');
+            expect(() => rootInstance.get(true)).to.throw('Key must be a string');
+            expect(() => rootInstance.get({})).to.throw('Key must be a string');
+            expect(() => rootInstance.get([])).to.throw('Key must be a string');
+          },
+        },
+
+        {
+          description: 'DefaultInstance handling of operations on wrong underlying object type',
+          action: async (ctx) => {
+            const { root, realtimeObject, entryPathObject } = ctx;
+
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(root, 'counter'),
               waitForMapKeyUpdate(root, 'primitive'),
             ]);
-            const map = await realtimeObject.createMap();
+            const map = await realtimeObject.createMap({ foo: 'bar' });
+            const counter = await realtimeObject.createCounter(5);
             await entryPathObject.set('map', map);
+            await entryPathObject.set('counter', counter);
             await entryPathObject.set('primitive', 'value');
             await keysUpdatedPromise;
 
-            const primitiveInstance = rootInstance.get('primitive');
+            const mapInstance = entryPathObject.get('map').instance();
+            const counterInstance = entryPathObject.get('counter').instance();
+            const primitiveInstance = mapInstance.get('foo');
+
+            // next methods silently handle incorrect underlying type
+            expect(
+              primitiveInstance.id(),
+              'Check DefaultInstance.id() for wrong underlying object type returns undefined',
+            ).to.be.undefined;
+            expect(
+              primitiveInstance.get('foo'),
+              'Check DefaultInstance.get() for wrong underlying object type returns undefined',
+            ).to.be.undefined;
+            expect(
+              mapInstance.value(),
+              'Check DefaultInstance.value() for wrong underlying object type returns undefined',
+            ).to.be.undefined;
+            expect([...primitiveInstance.entries()]).to.deep.equal(
+              [],
+              'Check DefaultInstance.entries() for wrong underlying object type returns empty iterator',
+            );
+            expect([...primitiveInstance.keys()]).to.deep.equal(
+              [],
+              'Check DefaultInstance.keys() for wrong underlying object type returns empty iterator',
+            );
+            expect([...primitiveInstance.values()]).to.deep.equal(
+              [],
+              'Check DefaultInstance.values() for wrong underlying object type returns empty iterator',
+            );
+            expect(
+              primitiveInstance.size(),
+              'Check DefaultInstance.size() for wrong underlying object type returns undefined',
+            ).to.be.undefined;
+
+            // map mutation methods throw errors for non-LiveMap objects
+            await expectToThrowAsync(
+              async () => primitiveInstance.set('key', 'value'),
+              'Cannot set a key on a non-LiveMap instance',
+              { withCode: 92007 },
+            );
+            await expectToThrowAsync(
+              async () => counterInstance.set('key', 'value'),
+              'Cannot set a key on a non-LiveMap instance',
+              { withCode: 92007 },
+            );
+
+            await expectToThrowAsync(
+              async () => primitiveInstance.remove('key'),
+              'Cannot remove a key from a non-LiveMap instance',
+              { withCode: 92007 },
+            );
+            await expectToThrowAsync(
+              async () => counterInstance.remove('key'),
+              'Cannot remove a key from a non-LiveMap instance',
+              { withCode: 92007 },
+            );
+
+            // counter mutation methods throw errors for non-LiveCounter objects
             await expectToThrowAsync(
               async () => primitiveInstance.increment(),
               'Cannot increment a non-LiveCounter instance',
+              { withCode: 92007 },
             );
-            await expectToThrowAsync(
-              async () => primitiveInstance.decrement(),
-              'Cannot decrement a non-LiveCounter instance',
-            );
-
-            const mapInstance = rootInstance.get('map');
             await expectToThrowAsync(
               async () => mapInstance.increment(),
               'Cannot increment a non-LiveCounter instance',
+              {
+                withCode: 92007,
+              },
+            );
+
+            await expectToThrowAsync(
+              async () => primitiveInstance.decrement(),
+              'Cannot decrement a non-LiveCounter instance',
+              { withCode: 92007 },
             );
             await expectToThrowAsync(
               async () => mapInstance.decrement(),
               'Cannot decrement a non-LiveCounter instance',
+              {
+                withCode: 92007,
+              },
             );
           },
         },
