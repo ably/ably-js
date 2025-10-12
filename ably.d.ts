@@ -1082,6 +1082,40 @@ export interface RealtimePresenceParams {
   connectionId?: string;
 }
 
+export interface PresenceSetChange {
+  /**
+   * An array containing the members of the current presence set.
+   *
+   * Each member is represented by their latest {@link PresenceMessage}.
+   */
+  members: PresenceMessage[],
+  /**
+   * The presence message that triggered the change.
+   *
+   * Represented as a {@link PresenceMessage} object.
+   */
+  current: PresenceMessage,
+  /**
+   * The previous presence member before the change, if any.
+   *
+   * Represented as a {@link PresenceMessage} object.
+   */
+  previous?: PresenceMessage,
+  /**
+   * Indicates if the presence members' synchronization is in progress.
+   *
+   * When `true`, the presence set is not fully synchronized, and the `members` list may not
+   * accurately reflect the current state of the channel. It often occurs when there is a
+   * disruption in the connection or during an initial presence sync.
+   *
+   * If the presence set was previously synchronized, but became desynchronized due to a
+   * connection issue, this value will remain `true` until re-synchronization completes.
+   *
+   * It is recommended to only rely on the `members` list when `syncInProgress` is `false`.
+   */
+  syncInProgress: boolean
+}
+
 /**
  * The `RealtimeHistoryParams` interface describes the parameters accepted by the following methods:
  *
@@ -1575,6 +1609,14 @@ export type messageCallback<T> = (message: T) => void;
  */
 export type channelEventCallback = (changeStateChange: ChannelStateChange) => void;
 /**
+ * A callback invoked whenever there is a change in the presence set of a channel.
+ * This is used to listen to changes in the members and their states within a channel's presence set.
+ *
+ * @param presenceSetChange - The details of the presence set change event that occurred.
+ */
+export type PresenceSetChangeListener = (presenceSetChange: PresenceSetChange) => void;
+
+/**
  * The callback used for the events emitted by {@link Connection}.
  *
  * @param connectionStateChange - The state change that occurred.
@@ -2003,6 +2045,23 @@ export declare interface RealtimePresence {
    * Indicates whether the presence set synchronization between Ably and the clients on the channel has been completed. Set to `true` when the sync is complete.
    */
   syncComplete: boolean;
+  /**
+   * Registers a listener that is called each time the presence state for the channel changes. This includes when members join or leave the set, or when their metadata changes.
+   * The listener is provided with the current set of members,
+   * the current presence message that triggered the set update, and the previous presence message if applicable.
+   * The listener is also provided with a flag that indicates whether the presence set is synchronized.
+   *
+   * @param listener - A function of type {@link PresenceSetChangeListener}, which is invoked with details of the presence set change.
+   * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
+   */
+  onPresenceSetChange(listener: PresenceSetChangeListener): Promise<void>
+  /**
+   * Deregisters a previously registered listener for presence state changes on the channel.
+   * This ensures that the provided listener will no longer be invoked when the presence state of the channel changes.
+   *
+   * @param listener - A function of type {@link PresenceSetChangeListener} that was previously registered using {@link onPresenceSetChange}.
+   */
+  offPresenceSetChange(listener: PresenceSetChangeListener): void;
   /**
    * Deregisters a specific listener that is registered to receive {@link PresenceMessage} on the channel for a given {@link PresenceAction}.
    *
