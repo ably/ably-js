@@ -347,7 +347,6 @@ export class RealtimeObject {
     const existingObjectUpdates: {
       object: LiveObject;
       update: LiveObjectUpdate | LiveObjectUpdateNoop;
-      message: ObjectMessage;
     }[] = [];
 
     // RTO5c1
@@ -360,7 +359,7 @@ export class RealtimeObject {
         const update = existingObject.overrideWithObjectState(entry.objectMessage); // RTO5c1a1
         // store updates to call subscription callbacks for all of them once the sync sequence is completed.
         // this will ensure that clients get notified about the changes only once everything has been applied.
-        existingObjectUpdates.push({ object: existingObject, update, message: entry.objectMessage });
+        existingObjectUpdates.push({ object: existingObject, update });
         continue;
       }
 
@@ -391,8 +390,9 @@ export class RealtimeObject {
     // This is necessary because objects may reference other objects that weren't in the pool when they were initially created
     this._rebuildAllParentReferences();
 
-    // call subscription callbacks for all updated existing objects
-    existingObjectUpdates.forEach(({ object, update, message }) => object.notifyUpdated(update, message));
+    // call subscription callbacks for all updated existing objects.
+    // do not expose the object message as part of the update, since this is an object sync message and does not represent a single operation.
+    existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
   }
 
   private _applyObjectMessages(objectMessages: ObjectMessage[]): void {

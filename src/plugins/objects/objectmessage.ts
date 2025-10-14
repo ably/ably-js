@@ -4,7 +4,17 @@ import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
 import type * as API from '../../../ably';
 import type { JsonArray, JsonObject } from '../../../ably';
-import { LiveObjectUpdate } from './liveobject';
+
+const operationActions: API.ObjectOperationAction[] = [
+  'map.create',
+  'map.set',
+  'map.remove',
+  'counter.create',
+  'counter.inc',
+  'object.delete',
+];
+
+const mapSemantics: API.ObjectsMapSemantics[] = ['lww'];
 
 export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
 
@@ -72,7 +82,7 @@ export interface ObjectsMapOp<TData> {
  * @spec OCO1
  */
 export interface ObjectsCounterOp {
-  /** The data value that should be added to the counter */
+  /** The data value that should be added to the counter. */
   amount: number; // OCO2a
 }
 
@@ -103,7 +113,7 @@ export interface ObjectsMapEntry<TData> {
 export interface ObjectsMap<TData> {
   /** The conflict-resolution semantics used by the map object. */
   semantics?: ObjectsMapSemantics; // OMP3a
-  // The map entries, indexed by key.
+  /** The map entries, indexed by key. */
   entries?: Record<string, ObjectsMapEntry<TData>>; // OMP3b
 }
 
@@ -329,6 +339,19 @@ function copyMsg(
   return result;
 }
 
+function stringifyOperation(operation: ObjectOperation<ObjectData>): API.ObjectOperation {
+  return {
+    ...operation,
+    action: operationActions[operation.action] || 'unknown',
+    map: operation.map
+      ? {
+          ...operation.map,
+          semantics: operation.map.semantics != null ? mapSemantics[operation.map.semantics] || 'unknown' : undefined,
+        }
+      : undefined,
+  };
+}
+
 /**
  * A decoded {@link WireObjectMessage} message
  * @spec OM1
@@ -415,19 +438,19 @@ export class ObjectMessage {
     return strMsg(this, 'ObjectMessage');
   }
 
-  toUserFacingMessage(channel: RealtimeChannel, update?: Omit<LiveObjectUpdate, '_type'>): API.ObjectMessage {
+  toUserFacingMessage(channel: RealtimeChannel): API.ObjectMessage {
     return {
       id: this.id!,
       clientId: this.clientId,
       connectionId: this.connectionId,
       timestamp: this.timestamp!,
       channel: channel.name,
+      // we expose only operation messages to users, so operation field is always present
+      operation: stringifyOperation(this.operation!),
       serial: this.serial,
       serialTimestamp: this.serialTimestamp,
       siteCode: this.siteCode,
       extras: this.extras,
-      // TODO: provide REST API like type payload that describes the operation on an object
-      payload: update,
     };
   }
 }

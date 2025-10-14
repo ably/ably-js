@@ -3134,6 +3134,62 @@ export type InstanceSubscriptionEvent<T extends Value> = {
 };
 
 /**
+ * The namespace containing the different types of object operation actions.
+ */
+declare namespace ObjectOperationActions {
+  /**
+   * Object operation action for a creating a map object.
+   */
+  type MAP_CREATE = 'map.create';
+  /**
+   * Object operation action for setting a key pair in a map object.
+   */
+  type MAP_SET = 'map.set';
+  /**
+   * Object operation action for removing a key from a map object.
+   */
+  type MAP_REMOVE = 'map.remove';
+  /**
+   * Object operation action for creating a counter object.
+   */
+  type COUNTER_CREATE = 'counter.create';
+  /**
+   * Object operation action for incrementing a counter object.
+   */
+  type COUNTER_INC = 'counter.inc';
+  /**
+   * Object operation action for deleting an object.
+   */
+  type OBJECT_DELETE = 'object.delete';
+}
+
+/**
+ * The possible values of the `action` field of an {@link ObjectOperation}.
+ */
+export type ObjectOperationAction =
+  | ObjectOperationActions.MAP_CREATE
+  | ObjectOperationActions.MAP_SET
+  | ObjectOperationActions.MAP_REMOVE
+  | ObjectOperationActions.COUNTER_CREATE
+  | ObjectOperationActions.COUNTER_INC
+  | ObjectOperationActions.OBJECT_DELETE;
+
+/**
+ * The namespace containing the different types of map object semantics.
+ */
+declare namespace ObjectsMapSemanticsNamespace {
+  /**
+   * Last-write-wins conflict-resolution semantics.
+   */
+  type LWW = 'lww';
+}
+
+/**
+ * The possible values of the `semantics` field of an {@link ObjectsMap}.
+ */
+export type ObjectsMapSemantics = ObjectsMapSemanticsNamespace.LWW;
+
+/**
  * An object message that carried an operation.
  */
 export interface ObjectMessage {
@@ -3158,6 +3214,10 @@ export interface ObjectMessage {
    */
   channel: string;
   /**
+   * Describes an operation that was applied to an object.
+   */
+  operation: ObjectOperation;
+  /**
    * An opaque string that uniquely identifies this object message.
    */
   serial?: string;
@@ -3179,10 +3239,90 @@ export interface ObjectMessage {
     headers?: Record<string, string>;
     [key: string]: any;
   };
+}
+
+/**
+ * An operation that was applied to an object on a channel.
+ */
+export interface ObjectOperation {
+  /** The operation action, one of the {@link ObjectOperationAction} enum values. */
+  action: ObjectOperationAction;
+  /** The ID of the object the operation was applied to. */
+  objectId: string;
+  /** The payload for the operation if it is a mutation operation on a map object. */
+  mapOp?: ObjectsMapOp;
+  /** The payload for the operation if it is a mutation operation on a counter object. */
+  counterOp?: ObjectsCounterOp;
   /**
-   * The operation payload of the object message.
+   * The payload for the operation if the action is {@link ObjectOperationActions.MAP_CREATE}.
+   * Defines the initial value of the map object.
    */
-  payload: any;
+  map?: ObjectsMap;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.COUNTER_CREATE}.
+   * Defines the initial value of the counter object.
+   */
+  counter?: ObjectsCounter;
+}
+
+/**
+ * Describes an operation that was applied to a map object.
+ */
+export interface ObjectsMapOp {
+  /** The key that the operation was applied to. */
+  key: string;
+  /** The data assigned to the key if the operation is {@link ObjectOperationActions.MAP_SET}. */
+  data?: ObjectData;
+}
+
+/**
+ * Describes an operation that was applied to a counter object.
+ */
+export interface ObjectsCounterOp {
+  /** The value added to the counter. */
+  amount: number;
+}
+
+/**
+ * Describes the initial value of a map object.
+ */
+export interface ObjectsMap {
+  /** The conflict-resolution semantics used by the map object, one of the {@link ObjectsMapSemantics} enum values. */
+  semantics?: ObjectsMapSemantics;
+  /** The map entries, indexed by key. */
+  entries?: Record<string, ObjectsMapEntry>;
+}
+
+/**
+ * Describes a value at a specific key in a map object.
+ */
+export interface ObjectsMapEntry {
+  /** Indicates whether the map entry has been removed. */
+  tombstone?: boolean;
+  /** The {@link ObjectMessage.serial} value of the last operation applied to the map entry. */
+  timeserial?: string;
+  /** A timestamp derived from the {@link timeserial} field. Present only if {@link tombstone} is `true`. */
+  serialTimestamp?: number;
+  /** The value associated with this map entry. */
+  data?: ObjectData;
+}
+
+/**
+ * Describes the initial value of a counter object.
+ */
+export interface ObjectsCounter {
+  /** The value of the counter. */
+  count?: number;
+}
+
+/**
+ * Represents a value in an object on a channel.
+ */
+export interface ObjectData {
+  /** A reference to another object. */
+  objectId?: string;
+  /** A decoded primitive value. */
+  value?: Primitive;
 }
 
 /**
