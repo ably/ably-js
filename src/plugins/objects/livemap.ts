@@ -1,6 +1,5 @@
 import { dequal } from 'dequal';
 
-import type { Bufferlike } from 'common/platform';
 import type * as API from '../../../ably';
 import { LiveCounterValueType } from './livecountervaluetype';
 import { LiveMapValueType } from './livemapvaluetype';
@@ -24,7 +23,7 @@ export interface ObjectIdObjectData {
 
 export interface ValueObjectData {
   /** A decoded leaf value from {@link WireObjectData}. */
-  value: string | number | boolean | Bufferlike | API.JsonArray | API.JsonObject;
+  value: string | number | boolean | Buffer | ArrayBuffer | API.JsonArray | API.JsonObject;
 }
 
 export type LiveMapObjectData = ObjectIdObjectData | ValueObjectData;

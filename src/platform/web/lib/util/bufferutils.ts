@@ -6,7 +6,7 @@ import { hmac as hmacSha256, sha256 } from './hmac-sha256';
  * The exception is toBuffer, which returns a Uint8Array */
 
 export type Bufferlike = BufferSource;
-export type Output = Bufferlike;
+export type Output = ArrayBuffer;
 export type ToBufferOutput = Uint8Array;
 
 class BufferUtils implements IBufferUtils<Bufferlike, Output, ToBufferOutput> {
