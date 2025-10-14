@@ -358,7 +358,6 @@ export abstract class LiveObject<
 
     const event: InstanceEvent = {
       message: objectMessage,
-      update: this._updateWithoutType(update),
     };
     this._instanceSubscriptions.emit(LiveObjectSubscriptionEvent.updated, event);
   }
@@ -378,7 +377,6 @@ export abstract class LiveObject<
     const pathEvents: PathEvent[] = paths.map((path) => ({
       path,
       message: objectMessage,
-      update: this._updateWithoutType(update),
       bubbles: true,
     }));
 
@@ -392,7 +390,6 @@ export abstract class LiveObject<
             path: [...basePath, key],
             message: objectMessage,
             bubbles: false,
-            // Don't include update object as it may include updates for other keys
           });
         }
       }

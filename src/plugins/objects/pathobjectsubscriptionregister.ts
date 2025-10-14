@@ -1,6 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type { EventCallback, PathObjectSubscriptionEvent, PathObjectSubscriptionOptions } from '../../../ably';
-import { LiveObjectUpdate, SubscribeResponse } from './liveobject';
+import { SubscribeResponse } from './liveobject';
 import { ObjectMessage } from './objectmessage';
 import { DefaultPathObject } from './pathobject';
 import { RealtimeObject } from './realtimeobject';
@@ -25,8 +25,6 @@ export interface PathEvent {
   path: string[];
   /** Object message that caused this event */
   message?: ObjectMessage;
-  /** Compact representation of an update to the object */
-  update?: Omit<LiveObjectUpdate, '_type'>;
   /** Whether this event should bubble up to parent paths. Defaults to true if not specified. */
   bubbles?: boolean;
 }
@@ -110,7 +108,7 @@ export class PathObjectSubscriptionRegister {
       try {
         const subscriptionEvent: PathObjectSubscriptionEvent = {
           object: new DefaultPathObject(this._realtimeObject, this._realtimeObject.getPool().getRoot(), event.path),
-          message: event.message?.toUserFacingMessage(this._realtimeObject.getChannel(), event.update),
+          message: event.message?.toUserFacingMessage(this._realtimeObject.getChannel()),
         };
 
         subscription.listener(subscriptionEvent);
