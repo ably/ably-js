@@ -2,7 +2,6 @@ import type BaseClient from 'common/lib/client/baseclient';
 import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
-import type { Bufferlike } from 'common/platform';
 import type * as API from '../../../ably';
 import type { JsonArray, JsonObject } from '../../../ably';
 import { LiveObjectUpdate } from './liveobject';
@@ -24,7 +23,7 @@ export enum ObjectsMapSemantics {
   LWW = 0,
 }
 
-export type PrimitiveObjectValue = string | number | boolean | Bufferlike | JsonArray | JsonObject;
+export type PrimitiveObjectValue = string | number | boolean | Buffer | ArrayBuffer | JsonArray | JsonObject;
 
 /**
  * An ObjectData represents a value in an object on a channel decoded from {@link WireObjectData}.
@@ -48,7 +47,7 @@ export interface WireObjectData {
   /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
   boolean?: boolean; // OD2c
   /** A primitive binary leaf value in the object graph. Only one value field can be set. Represented as a Base64-encoded string in JSON protocol */
-  bytes?: Bufferlike | string; // OD2d
+  bytes?: Buffer | ArrayBuffer | string; // OD2d
   /** A primitive number leaf value in the object graph. Only one value field can be set. */
   number?: number; // OD2e
   /** A primitive string leaf value in the object graph. Only one value field can be set. */
@@ -745,12 +744,12 @@ export class WireObjectMessage {
     format: Utils.Format | undefined,
   ): ObjectData {
     try {
-      let decodedBytes: Bufferlike | undefined;
+      let decodedBytes: Buffer | ArrayBuffer | undefined;
       if (objectData.bytes != null) {
         decodedBytes =
           format === 'msgpack'
             ? // OD5a1 - connection is using msgpack protocol, bytes are already a buffer
-              (objectData.bytes as Bufferlike)
+              (objectData.bytes as Buffer | ArrayBuffer)
             : // OD5b2 - connection is using JSON protocol, Base64-decode bytes value
               client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
       }
