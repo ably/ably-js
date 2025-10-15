@@ -8,12 +8,13 @@ import type {
   PathObjectSubscriptionEvent,
   PathObjectSubscriptionOptions,
   Primitive,
+  SubscribeResponse,
   Value,
 } from '../../../ably';
 import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { LiveObject, SubscribeResponse } from './liveobject';
+import { LiveObject } from './liveobject';
 import { RealtimeObject } from './realtimeobject';
 
 /**

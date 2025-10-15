@@ -1653,13 +1653,6 @@ export type ErrorCallback = (error: ErrorInfo | null) => void;
 export type EventCallback<T> = (event: T) => void;
 
 /**
- * A callback used in {@link LiveObjectDeprecated} to listen for updates to the object.
- *
- * @param update - The update object describing the changes made to the object.
- */
-export type LiveObjectUpdateCallback<T> = (update: T) => void;
-
-/**
  * The callback used for the events emitted by {@link RealtimeObject}.
  */
 export type ObjectsEventCallback = () => void;
@@ -3391,7 +3384,6 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -3404,7 +3396,6 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @experimental
@@ -3428,7 +3419,6 @@ export declare interface BatchContextLiveCounter {
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param amount - The amount by which to increase the counter value.
    * @experimental
@@ -3451,7 +3441,7 @@ export declare interface BatchContextLiveCounter {
  *
  * Keys must be strings. Values can be another {@link LiveObjectDeprecated}, or a primitive type, such as a string, number, boolean, JSON-serializable object or array, or binary data (see {@link PrimitiveObjectValue}).
  */
-export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveObjectDeprecated<LiveMapUpdate<T>> {
+export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveObjectDeprecated {
   /**
    * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map or if the associated {@link LiveObjectDeprecated} has been deleted.
    *
@@ -3496,7 +3486,6 @@ export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveOb
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -3510,25 +3499,12 @@ export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveOb
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
    * @experimental
    */
   remove<TKey extends keyof T & string>(key: TKey): Promise<void>;
-}
-
-/**
- * Represents an update to a {@link LiveMapDeprecated} object, describing the keys that were updated or removed.
- */
-export declare interface LiveMapUpdate<T extends LiveMapType> extends LiveObjectUpdate {
-  /**
-   * An object containing keys from a `LiveMap` that have changed, along with their change status:
-   * - `updated` - the value of a key in the map was updated.
-   * - `removed` - the key was removed from the map.
-   */
-  update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
 }
 
 /**
@@ -3561,7 +3537,7 @@ export type JsonObject = { [prop: string]: Json | undefined };
 /**
  * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.
  */
-export declare interface LiveCounterDeprecated extends LiveObjectDeprecated<LiveCounterUpdate> {
+export declare interface LiveCounterDeprecated extends LiveObjectDeprecated {
   /**
    * Returns the current value of the counter.
    *
@@ -3574,7 +3550,6 @@ export declare interface LiveCounterDeprecated extends LiveObjectDeprecated<Live
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param amount - The amount by which to increase the counter value.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -3593,48 +3568,9 @@ export declare interface LiveCounterDeprecated extends LiveObjectDeprecated<Live
 }
 
 /**
- * Represents an update to a {@link LiveCounterDeprecated} object.
- */
-export declare interface LiveCounterUpdate extends LiveObjectUpdate {
-  /**
-   * Holds the numerical change to the counter value.
-   */
-  update: {
-    /**
-     * The value by which the counter was incremented or decremented.
-     */
-    amount: number;
-  };
-}
-
-/**
  * Describes the common interface for all conflict-free data structures supported by the Objects.
  */
-export declare interface LiveObjectDeprecated<TUpdate extends LiveObjectUpdate = LiveObjectUpdate> {
-  /**
-   * Registers a listener that is called each time this LiveObject is updated.
-   *
-   * @param listener - An event listener function that is called with an update object whenever this LiveObject is updated.
-   * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
-   * @experimental
-   */
-  subscribe(listener: LiveObjectUpdateCallback<TUpdate>): SubscribeResponse;
-
-  /**
-   * Deregisters the given listener from updates for this LiveObject.
-   *
-   * @param listener - An event listener function.
-   * @experimental
-   */
-  unsubscribe(listener: LiveObjectUpdateCallback<TUpdate>): void;
-
-  /**
-   * Deregisters all listeners from updates for this LiveObject.
-   *
-   * @experimental
-   */
-  unsubscribeAll(): void;
-
+export declare interface LiveObjectDeprecated {
   /**
    * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
    *
@@ -3660,20 +3596,6 @@ export declare interface LiveObjectDeprecated<TUpdate extends LiveObjectUpdate =
    * @experimental
    */
   offAll(): void;
-}
-
-/**
- * Represents a generic update object describing the changes that occurred on a LiveObject.
- */
-export declare interface LiveObjectUpdate {
-  /**
-   * Holds an update object which describe changes applied to the object.
-   */
-  update: any;
-  /** The client ID of the client that published this update. */
-  clientId?: string;
-  /** The connection ID of the client that published this update. */
-  connectionId?: string;
 }
 
 /**

@@ -155,7 +155,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         );
     }
 
-    this.notifyUpdated(update, msg);
+    this.notifyUpdated(update);
   }
 
   /**
@@ -221,8 +221,8 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     // if object got tombstoned, the update object will include all data that got cleared.
     // otherwise it is a diff between previous value and new value from object state.
     const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
-    update.clientId = objectMessage.clientId;
-    update.connectionId = objectMessage.connectionId;
+    update.objectMessage = objectMessage;
+
     return update;
   }
 
@@ -257,8 +257,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
 
     return {
       update: { amount: objectOperation.counter?.count ?? 0 },
-      clientId: msg.clientId,
-      connectionId: msg.connectionId,
+      objectMessage: msg,
       _type: 'LiveCounterUpdate',
     };
   }
@@ -295,8 +294,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     this._dataRef.data += op.amount;
     return {
       update: { amount: op.amount },
-      clientId: msg.clientId,
-      connectionId: msg.connectionId,
+      objectMessage: msg,
       _type: 'LiveCounterUpdate',
     };
   }

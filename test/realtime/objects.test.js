@@ -95,10 +95,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     return ObjectsPlugin.ObjectMessage.fromValues(values, Utils, MessageEncoding);
   }
 
-  async function waitForMapKeyUpdate(map, key) {
+  async function waitForMapKeyUpdate(mapInstance, key) {
     return new Promise((resolve) => {
-      const { unsubscribe } = map.subscribe(({ update }) => {
-        if (update[key]) {
+      const { unsubscribe } = mapInstance.subscribe(({ message }) => {
+        if (message?.operation?.mapOp?.key === key) {
           unsubscribe();
           resolve();
         }
@@ -106,9 +106,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     });
   }
 
-  async function waitForCounterUpdate(counter) {
+  async function waitForCounterUpdate(counterInstance) {
     return new Promise((resolve) => {
-      const { unsubscribe } = counter.subscribe(() => {
+      const { unsubscribe } = counterInstance.subscribe(() => {
         unsubscribe();
         resolve();
       });
@@ -172,9 +172,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     const expectedKeys = ObjectsHelper.fixtureRootKeys();
 
     await channel.attach();
-    const root = await channel.object.get();
+    const entryPathObject = await channel.object.getPathObject();
+    const entryInstance = entryPathObject.instance();
 
-    await Promise.all(expectedKeys.map((key) => (root.get(key) ? undefined : waitForMapKeyUpdate(root, key))));
+    await Promise.all(
+      expectedKeys.map((key) => (entryInstance.get(key) ? undefined : waitForMapKeyUpdate(entryInstance, key))),
+    );
   }
 
   describe('realtime/objects', function () {
@@ -599,22 +602,22 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'OBJECT_SYNC sequence builds object tree with all operations applied',
           action: async (ctx) => {
-            const { root, helper, clientOptions, channelName } = ctx;
+            const { helper, clientOptions, channelName, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await Promise.all([
               // MAP_CREATE
-              root.set('map', LiveMap.create({ shouldStay: 'foo', shouldDelete: 'bar' })),
+              entryInstance.set('map', LiveMap.create({ shouldStay: 'foo', shouldDelete: 'bar' })),
               // COUNTER_CREATE
-              root.set('counter', LiveCounter.create(1)),
+              entryInstance.set('counter', LiveCounter.create(1)),
               objectsCreatedPromise,
             ]);
 
-            const map = root.get('map');
-            const counter = root.get('counter');
+            const map = entryInstance.get('map');
+            const counter = entryInstance.get('counter');
 
             const operationsAppliedPromise = Promise.all([
               waitForMapKeyUpdate(map, 'anotherKey'),
@@ -662,11 +665,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_SYNC sequence does not change references to existing objects',
           action: async (ctx) => {
-            const { root, helper, channel } = ctx;
+            const { root, helper, channel, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await Promise.all([
               root.set('map', LiveMap.create()),
@@ -881,9 +884,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'OBJECT_SYNC sequence with "tombstone=true" for an object deletes existing object',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
 
-            const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
@@ -934,9 +937,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'OBJECT_SYNC sequence with "tombstone=true" for an object triggers subscription callback for existing object',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
 
-            const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
@@ -944,12 +947,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await counterCreatedPromise;
 
+            const counter = entryInstance.get('counter');
+
             const counterSubPromise = new Promise((resolve, reject) =>
-              root.get('counter').subscribe((update) => {
+              counter.subscribe((event) => {
                 try {
-                  expect(update?.update).to.deep.equal(
-                    { amount: -1 },
-                    'Check counter subscription callback is called with an expected update object after OBJECT_SYNC sequence with "tombstone=true"',
+                  expect(event.object).to.equal(
+                    counter,
+                    'Check counter subscription callback is called with the correct object',
                   );
                   resolve();
                 } catch (error) {
@@ -958,7 +963,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               }),
             );
 
-            // inject an OBJECT_SYNC message where a counter is now tombstoned
+            // inject an OBJECT_SYNC message where counter is now tombstoned
             await objectsHelper.processObjectStateMessageOnChannel({
               channel,
               syncSerial: 'serial:', // empty serial so sync sequence ends immediately
@@ -1155,7 +1160,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_CREATE with primitives object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, helper } = ctx;
+            const { root, objectsHelper, channelName, helper, entryInstance } = ctx;
 
             // Objects public API allows us to check value of objects we've created based on MAP_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
@@ -1168,7 +1173,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 .exist;
             });
 
-            const mapsCreatedPromise = Promise.all(primitiveMapsFixtures.map((x) => waitForMapKeyUpdate(root, x.name)));
+            const mapsCreatedPromise = Promise.all(
+              primitiveMapsFixtures.map((x) => waitForMapKeyUpdate(entryInstance, x.name)),
+            );
             // create new maps and set on root
             await Promise.all(
               primitiveMapsFixtures.map((fixture) =>
@@ -1213,7 +1220,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_CREATE with object ids object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName, entryInstance } = ctx;
             const withReferencesMapKey = 'withReferencesMap';
 
             // Objects public API allows us to check value of objects we've created based on MAP_CREATE ops
@@ -1226,7 +1233,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               `Check "${withReferencesMapKey}" key doesn't exist on root before applying MAP_CREATE ops`,
             ).to.not.exist;
 
-            const mapCreatedPromise = waitForMapKeyUpdate(root, withReferencesMapKey);
+            const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, withReferencesMapKey);
             // create map with references. need to create referenced objects first to obtain their object ids
             const { objectId: referencedMapObjectId } = await objectsHelper.operationRequest(
               channelName,
@@ -1371,7 +1378,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_SET with primitives object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, helper } = ctx;
+            const { root, objectsHelper, channelName, helper, entryInstance } = ctx;
 
             // check root is empty before ops
             primitiveKeyData.forEach((keyData) => {
@@ -1381,7 +1388,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               ).to.not.exist;
             });
 
-            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
             // apply MAP_SET ops
             await Promise.all(
               primitiveKeyData.map((keyData) =>
@@ -1414,7 +1423,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_SET with object ids object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName, entryInstance } = ctx;
 
             // check no object ids are set on root
             expect(
@@ -1425,8 +1434,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               .not.exist;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'keyToCounter'),
-              waitForMapKeyUpdate(root, 'keyToMap'),
+              waitForMapKeyUpdate(entryInstance, 'keyToCounter'),
+              waitForMapKeyUpdate(entryInstance, 'keyToMap'),
             ]);
             // create new objects and set on root
             await objectsHelper.createAndSetOnMap(channelName, {
@@ -1541,10 +1550,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_REMOVE object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
             const mapKey = 'map';
 
-            const mapCreatedPromise = waitForMapKeyUpdate(root, mapKey);
+            const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, mapKey);
             // create new map and set on root
             const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
@@ -1558,17 +1567,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await mapCreatedPromise;
 
-            const map = root.get(mapKey);
+            const map = entryInstance.get(mapKey);
             // check map has expected keys before MAP_REMOVE ops
             expect(map.size()).to.equal(
               2,
               `Check map at "${mapKey}" key in root has correct number of keys before MAP_REMOVE`,
             );
-            expect(map.get('shouldStay')).to.equal(
+            expect(map.get('shouldStay').value()).to.equal(
               'foo',
               `Check map at "${mapKey}" key in root has correct "shouldStay" value before MAP_REMOVE`,
             );
-            expect(map.get('shouldDelete')).to.equal(
+            expect(map.get('shouldDelete').value()).to.equal(
               'bar',
               `Check map at "${mapKey}" key in root has correct "shouldDelete" value before MAP_REMOVE`,
             );
@@ -1589,7 +1598,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               1,
               `Check map at "${mapKey}" key in root has correct number of keys after MAP_REMOVE`,
             );
-            expect(map.get('shouldStay')).to.equal(
+            expect(map.get('shouldStay').value()).to.equal(
               'foo',
               `Check map at "${mapKey}" key in root has correct "shouldStay" value after MAP_REMOVE`,
             );
@@ -1727,7 +1736,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply COUNTER_CREATE object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName, entryInstance } = ctx;
 
             // Objects public API allows us to check value of objects we've created based on COUNTER_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
@@ -1740,7 +1749,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 .not.exist;
             });
 
-            const countersCreatedPromise = Promise.all(countersFixtures.map((x) => waitForMapKeyUpdate(root, x.name)));
+            const countersCreatedPromise = Promise.all(
+              countersFixtures.map((x) => waitForMapKeyUpdate(entryInstance, x.name)),
+            );
             // create new counters and set on root
             await Promise.all(
               countersFixtures.map((fixture) =>
@@ -1848,11 +1859,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply COUNTER_INC object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
             const counterKey = 'counter';
             let expectedCounterValue = 0;
 
-            const counterCreated = waitForMapKeyUpdate(root, counterKey);
+            const counterCreated = waitForMapKeyUpdate(entryInstance, counterKey);
             // create new counter and set on root
             const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
@@ -1861,7 +1872,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await counterCreated;
 
-            const counter = root.get(counterKey);
+            const counter = entryInstance.get(counterKey);
             // check counter has expected value before COUNTER_INC
             expect(counter.value()).to.equal(
               expectedCounterValue,
@@ -1957,11 +1968,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'can apply OBJECT_DELETE object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'map'),
-              waitForMapKeyUpdate(root, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
             ]);
             // create initial objects and set on root
             const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -2108,11 +2119,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_DELETE triggers subscription callback with deleted data',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel } = ctx;
+            const { objectsHelper, channelName, channel, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'map'),
-              waitForMapKeyUpdate(root, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
             ]);
             // create initial objects and set on root
             const { objectId: mapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -2132,12 +2143,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await objectsCreatedPromise;
 
+            const mapId = entryInstance.get('map').id();
+            const counterId = entryInstance.get('counter').id();
+
             const mapSubPromise = new Promise((resolve, reject) =>
-              root.get('map').subscribe((update) => {
+              entryInstance.get('map').subscribe((event) => {
                 try {
-                  expect(update?.update).to.deep.equal(
-                    { foo: 'removed', baz: 'removed' },
-                    'Check map subscription callback is called with an expected update object after OBJECT_DELETE operation',
+                  expect(event?.message?.operation).to.deep.include(
+                    { action: 'object.delete', objectId: mapId },
+                    'Check map subscription callback is called with an expected event message after OBJECT_DELETE operation',
                   );
                   resolve();
                 } catch (error) {
@@ -2146,11 +2160,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               }),
             );
             const counterSubPromise = new Promise((resolve, reject) =>
-              root.get('counter').subscribe((update) => {
+              entryInstance.get('counter').subscribe((event) => {
                 try {
-                  expect(update?.update).to.deep.equal(
-                    { amount: -1 },
-                    'Check counter subscription callback is called with an expected update object after OBJECT_DELETE operation',
+                  expect(event?.message?.operation).to.deep.include(
+                    { action: 'object.delete', objectId: counterId },
+                    'Check counter subscription callback is called with an expected event message after OBJECT_DELETE operation',
                   );
                   resolve();
                 } catch (error) {
@@ -2180,9 +2194,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_DELETE for an object sets "tombstoneAt" from "serialTimestamp"',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, helper, realtimeObject } = ctx;
+            const { root, objectsHelper, channelName, channel, helper, realtimeObject, entryInstance } = ctx;
 
-            const objectCreatedPromise = waitForMapKeyUpdate(root, 'object');
+            const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'object');
             const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'object',
@@ -2217,9 +2231,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_DELETE for an object sets "tombstoneAt" using local clock if missing "serialTimestamp"',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, helper, realtimeObject } = ctx;
+            const { root, objectsHelper, channelName, channel, helper, realtimeObject, entryInstance } = ctx;
 
-            const objectCreatedPromise = waitForMapKeyUpdate(root, 'object');
+            const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'object');
             const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'object',
@@ -2255,9 +2269,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'MAP_SET with reference to a tombstoned object results in undefined value on key',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
 
-            const objectCreatedPromise = waitForMapKeyUpdate(root, 'foo');
+            const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             // create initial objects and set on root
             const { objectId: counterObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
@@ -2292,12 +2306,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'object operation message on a tombstoned object does not revive it',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel } = ctx;
+            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'map1'),
-              waitForMapKeyUpdate(root, 'map2'),
-              waitForMapKeyUpdate(root, 'counter1'),
+              waitForMapKeyUpdate(entryInstance, 'map1'),
+              waitForMapKeyUpdate(entryInstance, 'map2'),
+              waitForMapKeyUpdate(entryInstance, 'counter1'),
             ]);
             // create initial objects and set on root
             const { objectId: mapId1 } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -2660,7 +2674,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'subsequent object operation messages are applied immediately after OBJECT_SYNC ended and buffers are applied',
           action: async (ctx) => {
-            const { root, objectsHelper, channel, channelName, helper, client } = ctx;
+            const { root, objectsHelper, channel, channelName, helper, client, entryInstance } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -2695,7 +2709,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               syncSerial: 'serial:',
             });
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             // send some more operations
             await objectsHelper.operationRequest(
               channelName,
@@ -2730,9 +2744,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveCounter.increment sends COUNTER_INC operation',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
 
-            const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
@@ -2740,7 +2754,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await counterCreatedPromise;
 
-            const counter = root.get('counter');
+            const counter = entryInstance.get('counter');
             const increments = [
               1, // value=1
               10, // value=11
@@ -2773,9 +2787,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'LiveCounter.increment throws on invalid input',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName, entryInstance } = ctx;
 
-            const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
@@ -2840,9 +2854,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveCounter.decrement sends COUNTER_INC operation',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
 
-            const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
@@ -2850,7 +2864,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await counterCreatedPromise;
 
-            const counter = root.get('counter');
+            const counter = entryInstance.get('counter');
             const decrements = [
               1, // value=-1
               10, // value=-11
@@ -2883,9 +2897,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'LiveCounter.decrement throws on invalid input',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName, entryInstance } = ctx;
 
-            const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'counter',
@@ -2950,9 +2964,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.set sends MAP_SET operation with primitive values',
           action: async (ctx) => {
-            const { root, helper } = ctx;
+            const { root, helper, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
@@ -2987,11 +3003,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.set sends MAP_SET operation with reference to another LiveObject',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
@@ -3009,8 +3025,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const map = root.get('map');
 
             const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter2'),
-              waitForMapKeyUpdate(root, 'map2'),
+              waitForMapKeyUpdate(entryInstance, 'counter2'),
+              waitForMapKeyUpdate(entryInstance, 'map2'),
             ]);
             await root.set('counter2', counter);
             await root.set('map2', map);
@@ -3030,9 +3046,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'LiveMap.set throws on invalid input',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName, entryInstance } = ctx;
 
-            const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
+            const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
@@ -3063,9 +3079,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.remove sends MAP_REMOVE operation',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
 
-            const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
+            const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
@@ -3079,7 +3095,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await mapCreatedPromise;
 
-            const map = root.get('map');
+            const map = entryInstance.get('map');
 
             const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(map, 'foo'), waitForMapKeyUpdate(map, 'bar')]);
             await map.remove('foo');
@@ -3089,7 +3105,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(map.get('foo'), 'Check can remove a key from a root via a LiveMap.remove call').to.not.exist;
             expect(map.get('bar'), 'Check can remove a key from a root via a LiveMap.remove call').to.not.exist;
             expect(
-              map.get('baz'),
+              map.get('baz').value(),
               'Check non-removed keys are still present on a root after LiveMap.remove call for another keys',
             ).to.equal(1);
           },
@@ -3098,9 +3114,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'LiveMap.remove throws on invalid input',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName } = ctx;
+            const { root, objectsHelper, channelName, entryInstance } = ctx;
 
-            const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
+            const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await objectsHelper.createAndSetOnMap(channelName, {
               mapObjectId: 'root',
               key: 'map',
@@ -3134,9 +3150,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'value type created with LiveCounter.create() can be assigned to the object tree',
           action: async (ctx) => {
-            const { root } = ctx;
+            const { root, entryInstance } = ctx;
 
-            const counterCreatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await root.set('counter', LiveCounter.create(1));
             await counterCreatedPromise;
 
@@ -3163,9 +3179,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveCounter.create() sends COUNTER_CREATE operation',
           action: async (ctx) => {
-            const { root } = ctx;
+            const { root, entryInstance } = ctx;
 
-            const objectsCreatedPromise = Promise.all(countersFixtures.map((x) => waitForMapKeyUpdate(root, x.name)));
+            const objectsCreatedPromise = Promise.all(
+              countersFixtures.map((x) => waitForMapKeyUpdate(entryInstance, x.name)),
+            );
             await Promise.all(countersFixtures.map(async (x) => root.set(x.name, LiveCounter.create(x.count))));
             await objectsCreatedPromise;
 
@@ -3248,9 +3266,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'value type created with LiveMap.create() can be assigned to the object tree',
           action: async (ctx) => {
-            const { root } = ctx;
+            const { root, entryInstance } = ctx;
 
-            const mapCreatedPromise = waitForMapKeyUpdate(root, 'map');
+            const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await root.set('map', LiveMap.create({ foo: 'bar' }));
             await mapCreatedPromise;
 
@@ -3269,10 +3287,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.create() sends MAP_CREATE operation with primitive values',
           action: async (ctx) => {
-            const { root, helper } = ctx;
+            const { root, helper, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all(
-              primitiveMapsFixtures.map((x) => waitForMapKeyUpdate(root, x.name)),
+              primitiveMapsFixtures.map((x) => waitForMapKeyUpdate(entryInstance, x.name)),
             );
             await Promise.all(
               primitiveMapsFixtures.map(async (mapFixture) => {
@@ -3327,9 +3345,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.create() sends MAP_CREATE operation with reference to another LiveObject',
           action: async (ctx) => {
-            const { root } = ctx;
+            const { root, entryInstance } = ctx;
 
-            const objectCreatedPromise = waitForMapKeyUpdate(root, 'map');
+            const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await root.set(
               'map',
               LiveMap.create({
@@ -3420,11 +3438,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API .get method on a map returns BatchContext* wrappers for objects',
           action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+            const { root, realtimeObject, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await root.set('counter', LiveCounter.create(1));
             await root.set('map', LiveMap.create({ innerCounter: LiveCounter.create(1) }));
@@ -3461,11 +3479,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API access API methods on objects work and are synchronous',
           action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+            const { root, realtimeObject, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await root.set('counter', LiveCounter.create(1));
             await root.set('map', LiveMap.create({ foo: 'bar' }));
@@ -3501,11 +3519,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API write API methods on objects do not mutate objects inside the batch callback',
           action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+            const { root, realtimeObject, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await root.set('counter', LiveCounter.create(1));
             await root.set('map', LiveMap.create({ foo: 'bar' }));
@@ -3547,11 +3565,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'batch API scheduled operations are applied when batch callback is finished',
           action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+            const { root, realtimeObject, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await root.set('counter', LiveCounter.create(1));
             await root.set('map', LiveMap.create({ foo: 'bar' }));
@@ -3599,11 +3617,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'batch API scheduled operations can be canceled by throwing an error in the batch callback',
           action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+            const { root, realtimeObject, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await root.set('counter', LiveCounter.create(1));
             await root.set('map', LiveMap.create({ foo: 'bar' }));
@@ -3645,11 +3663,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: `batch API batch context and derived objects can't be interacted with after the batch call`,
           action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+            const { root, realtimeObject, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await root.set('counter', LiveCounter.create(1));
             await root.set('map', LiveMap.create({ foo: 'bar' }));
@@ -3684,11 +3702,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: `batch API batch context and derived objects can't be interacted with after error was thrown from batch callback`,
           action: async (ctx) => {
-            const { root, realtimeObject } = ctx;
+            const { root, realtimeObject, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await root.set('counter', LiveCounter.create(1));
             await root.set('map', LiveMap.create({ foo: 'bar' }));
@@ -3885,10 +3903,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.path() returns correct path strings',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(root, 'nested')]);
-            await root.set(
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
+            await entryPathObject.set(
               'nested',
               LiveMap.create({
                 simple: 'value',
@@ -3897,7 +3915,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 deep: LiveMap.create({ nested: 'deepValue' }),
               }),
             );
-            await keysUpdatedPromise;
+            await keyUpdatedPromise;
 
             // Test path with .get() method
             expect(entryPathObject.path()).to.equal('', 'Check root PathObject has empty path');
@@ -3935,10 +3953,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.at() navigates using dot-separated paths',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
             // Create nested structure
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
             await root.set('nested', LiveMap.create({ deepKey: 'deepValue', 'key.with.dots': 'dottedValue' }));
             await keyUpdatedPromise;
 
@@ -3963,9 +3981,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject resolves complex path strings',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested.key');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested.key');
             await root.set(
               'nested.key',
               LiveMap.create({
@@ -4001,9 +4019,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.value() returns primitive values correctly',
           action: async (ctx) => {
-            const { root, entryPathObject, helper } = ctx;
+            const { root, entryPathObject, helper, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
@@ -4038,9 +4058,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.value() returns LiveCounter values',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await root.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
 
@@ -4053,11 +4073,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.instance() returns DefaultInstance for LiveMap and LiveCounter',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'map'),
-              waitForMapKeyUpdate(root, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
             ]);
             await root.set('map', LiveMap.create());
             await root.set('counter', LiveCounter.create());
@@ -4076,13 +4096,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject collection methods work for LiveMap objects',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
             // Set up test data
             const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'key1'),
-              waitForMapKeyUpdate(root, 'key2'),
-              waitForMapKeyUpdate(root, 'key3'),
+              waitForMapKeyUpdate(entryInstance, 'key1'),
+              waitForMapKeyUpdate(entryInstance, 'key2'),
+              waitForMapKeyUpdate(entryInstance, 'key3'),
             ]);
             await root.set('key1', 'value1');
             await root.set('key2', 'value2');
@@ -4118,9 +4138,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.set() works for LiveMap objects with primitive values',
           action: async (ctx) => {
-            const { root, entryPathObject, helper } = ctx;
+            const { root, entryPathObject, helper, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
@@ -4155,9 +4177,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.set() works for LiveMap objects with LiveObject references',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counterKey');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counterKey');
             await entryPathObject.set('counterKey', LiveCounter.create(5));
             await keyUpdatedPromise;
 
@@ -4169,15 +4191,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.remove() works for LiveMap objects',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
-            const keyAddedPromise = waitForMapKeyUpdate(root, 'keyToRemove');
+            const keyAddedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
             await root.set('keyToRemove', 'valueToRemove');
             await keyAddedPromise;
 
             expect(root.get('keyToRemove'), 'Check key exists on root').to.exist;
 
-            const keyRemovedPromise = waitForMapKeyUpdate(root, 'keyToRemove');
+            const keyRemovedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
             await entryPathObject.remove('keyToRemove');
             await keyRemovedPromise;
 
@@ -4192,13 +4214,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.increment() and PathObject.decrement() work for LiveCounter objects',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
-            await root.set('counter', LiveCounter.create(10));
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
+            await entryPathObject.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
-            const counter = root.get('counter');
 
+            const counter = entryInstance.get('counter');
             const counterPathObj = entryPathObject.get('counter');
 
             let counterUpdatedPromise = waitForCounterUpdate(counter);
@@ -4307,9 +4329,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject handling of operations for paths with non-collection intermediate segments',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await root.set('counter', LiveCounter.create());
             await keyUpdatedPromise;
 
@@ -4353,12 +4375,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject handling of operations on wrong underlying object type',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'map'),
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'primitive'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'primitive'),
             ]);
             await root.set('map', LiveMap.create());
             await root.set('counter', LiveCounter.create());
@@ -4471,7 +4493,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() receives events for nested changes with unlimited depth by default',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             let eventCount = 0;
             const subscriptionPromise = new Promise((resolve, reject) => {
@@ -4494,17 +4516,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // root level change
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
             await entryPathObject.set('nested', LiveMap.create());
             await keyUpdatedPromise;
 
             // nested change
-            keyUpdatedPromise = waitForMapKeyUpdate(root.get('nested'), 'child');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('nested'), 'child');
             await entryPathObject.get('nested').set('child', LiveMap.create());
             await keyUpdatedPromise;
 
             // nested child change
-            keyUpdatedPromise = waitForMapKeyUpdate(root.get('nested').get('child'), 'foo');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('nested').get('child'), 'foo');
             await entryPathObject.get('nested').get('child').set('foo', 'bar');
             await keyUpdatedPromise;
 
@@ -4515,10 +4537,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() with depth parameter receives expected events',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             // Create nested structure
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
             await entryPathObject.set('nested', LiveMap.create({ counter: LiveCounter.create() }));
             await keyUpdatedPromise;
 
@@ -4560,16 +4582,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // Make nested changes couple of levels deep, different subscriptions should get different events
-            const counterUpdatedPromise = waitForCounterUpdate(root.get('nested').get('counter'));
+            const counterUpdatedPromise = waitForCounterUpdate(entryInstance.get('nested').get('counter'));
             await entryPathObject.get('nested').get('counter').increment();
             await counterUpdatedPromise;
 
-            keyUpdatedPromise = waitForMapKeyUpdate(root.get('nested'), 'nestedKey');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('nested'), 'nestedKey');
             await entryPathObject.get('nested').set('nestedKey', 'foo');
             await keyUpdatedPromise;
 
             // Now make a direct change to the root object, should trigger the callback
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'directKey');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'directKey');
             await entryPathObject.set('directKey', 'bar');
             await keyUpdatedPromise;
 
@@ -4580,10 +4602,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() on nested path receives events for that path and its children',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             // Create nested structure
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
             await entryPathObject.set('nested', LiveMap.create({ counter: LiveCounter.create() }));
             await keyUpdatedPromise;
 
@@ -4610,21 +4632,21 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // root change should not trigger the subscription
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             await entryPathObject.set('foo', 'bar');
             await keyUpdatedPromise;
 
             // Next changes should trigger the subscription
-            keyUpdatedPromise = waitForMapKeyUpdate(root.get('nested'), 'foo');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('nested'), 'foo');
             await entryPathObject.get('nested').set('foo', 'bar');
             await keyUpdatedPromise;
 
-            const counterUpdatedPromise = waitForCounterUpdate(root.get('nested').get('counter'));
+            const counterUpdatedPromise = waitForCounterUpdate(entryInstance.get('nested').get('counter'));
             await entryPathObject.get('nested').get('counter').increment();
             await counterUpdatedPromise;
 
             // If object at the subscribed path is replaced, that should also trigger the subscription
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'nested');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
             await entryPathObject.set('nested', LiveMap.create());
             await keyUpdatedPromise;
 
@@ -4635,9 +4657,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() works with complex nested paths and escaped dots',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'escaped\\key');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'escaped\\key');
             await entryPathObject.set('escaped\\key', LiveMap.create({ 'key.with.dots': LiveCounter.create() }));
             await keyUpdatedPromise;
 
@@ -4658,7 +4680,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             });
 
-            const counterUpdatedPromise = waitForCounterUpdate(root.get('escaped\\key').get('key.with.dots'), 'key1');
+            const counterUpdatedPromise = waitForCounterUpdate(entryInstance.get('escaped\\key').get('key.with.dots'));
             await complexPathObject.increment();
             await counterUpdatedPromise;
 
@@ -4667,17 +4689,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          // TODO
-          description: 'PathObject.subscribe() keeps subscription after underlying object is replaced',
-          action: async (ctx) => {},
-        },
-
-        {
           description: 'PathObject.subscribe() on LiveMap path receives set/remove events',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await entryPathObject.set('map', LiveMap.create());
             await keyUpdatedPromise;
 
@@ -4702,11 +4718,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             });
 
-            keyUpdatedPromise = waitForMapKeyUpdate(root.get('map'), 'foo');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map'), 'foo');
             await entryPathObject.get('map').set('foo', 'bar');
             await keyUpdatedPromise;
 
-            keyUpdatedPromise = waitForMapKeyUpdate(root.get('map'), 'foo');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map'), 'foo');
             await entryPathObject.get('map').remove('foo');
             await keyUpdatedPromise;
 
@@ -4717,9 +4733,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() on LiveCounter path receives increment/decrement events',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await entryPathObject.set('counter', LiveCounter.create());
             await keyUpdatedPromise;
 
@@ -4759,11 +4775,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             });
 
-            let counterUpdatedPromise = waitForCounterUpdate(root.get('counter'));
+            let counterUpdatedPromise = waitForCounterUpdate(entryInstance.get('counter'));
             await entryPathObject.get('counter').increment();
             await counterUpdatedPromise;
 
-            counterUpdatedPromise = waitForCounterUpdate(root.get('counter'));
+            counterUpdatedPromise = waitForCounterUpdate(entryInstance.get('counter'));
             await entryPathObject.get('counter').decrement();
             await counterUpdatedPromise;
 
@@ -4774,9 +4790,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() on Primitive path receives changes to the primitive value',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'primitive');
             await entryPathObject.set('primitive', 'foo');
             await keyUpdatedPromise;
 
@@ -4804,20 +4820,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // Update to other keys on root should not trigger the subscription
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'other');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'other');
             await entryPathObject.set('other', 'bar');
             await keyUpdatedPromise;
 
             // Only changes to the primitive path should trigger the subscription
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'primitive');
             await entryPathObject.set('primitive', 'baz');
             await keyUpdatedPromise;
 
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'primitive');
             await entryPathObject.set('primitive', 42);
             await keyUpdatedPromise;
 
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'primitive');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'primitive');
             await entryPathObject.set('primitive', true);
             await keyUpdatedPromise;
 
@@ -4843,7 +4859,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'can unsubscribe from PathObject.subscribe() updates using returned "unsubscribe" function',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             let eventCount = 0;
             const { unsubscribe } = entryPathObject.subscribe(() => {
@@ -4851,14 +4867,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // Make first change - should receive event
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'key1');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'key1');
             await entryPathObject.set('key1', 'value1');
             await keyUpdatedPromise;
 
             unsubscribe();
 
             // Make second change - should NOT receive event
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'key2');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'key2');
             await entryPathObject.set('key2', 'value2');
             await keyUpdatedPromise;
 
@@ -4869,7 +4885,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() handles multiple subscriptions independently',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             let subscription1Events = 0;
             let subscription2Events = 0;
@@ -4883,7 +4899,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // Make change - both should receive event
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'key1');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'key1');
             await entryPathObject.set('key1', 'value1');
             await keyUpdatedPromise;
 
@@ -4891,7 +4907,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             unsubscribe1();
 
             // Make another change - only second should receive event
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'key2');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'key2');
             await entryPathObject.set('key2', 'value2');
             await keyUpdatedPromise;
 
@@ -4903,7 +4919,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() event object provides correct PathObject instance',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const subscriptionPromise = new Promise((resolve, reject) => {
               entryPathObject.subscribe((event) => {
@@ -4918,7 +4934,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             });
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             await entryPathObject.set('foo', 'bar');
             await keyUpdatedPromise;
 
@@ -4929,7 +4945,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() handles subscription listener errors gracefully',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             let goodListenerCalled = false;
 
@@ -4943,7 +4959,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               goodListenerCalled = true;
             });
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             await entryPathObject.set('foo', 'bar');
             await keyUpdatedPromise;
 
@@ -4978,11 +4994,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.id() returns object ID of underlying LiveObject',
           action: async (ctx) => {
-            const { root, entryPathObject, helper } = ctx;
+            const { root, entryPathObject, helper, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'map'),
-              waitForMapKeyUpdate(root, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
             ]);
 
             await entryPathObject.set('map', LiveMap.create());
@@ -5009,11 +5025,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.get() returns child DefaultInstance instances',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'stringKey'),
-              waitForMapKeyUpdate(root, 'counterKey'),
+              waitForMapKeyUpdate(entryInstance, 'stringKey'),
+              waitForMapKeyUpdate(entryInstance, 'counterKey'),
             ]);
             await entryPathObject.set('stringKey', 'value');
             await entryPathObject.set('counterKey', LiveCounter.create(42));
@@ -5036,9 +5052,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.value() returns primitive values correctly',
           action: async (ctx) => {
-            const { root, entryPathObject, helper } = ctx;
+            const { entryPathObject, helper, entryInstance } = ctx;
 
-            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
@@ -5073,9 +5091,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.value() returns LiveCounter values',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await entryPathObject.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
 
@@ -5088,13 +5106,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance collection methods work for LiveMap objects',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             // Set up test data
             const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'key1'),
-              waitForMapKeyUpdate(root, 'key2'),
-              waitForMapKeyUpdate(root, 'key3'),
+              waitForMapKeyUpdate(entryInstance, 'key1'),
+              waitForMapKeyUpdate(entryInstance, 'key2'),
+              waitForMapKeyUpdate(entryInstance, 'key3'),
             ]);
             await entryPathObject.set('key1', 'value1');
             await entryPathObject.set('key2', 'value2');
@@ -5132,11 +5150,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.set() works for LiveMap objects with primitive values',
           action: async (ctx) => {
-            const { root, entryPathObject, helper } = ctx;
+            const { entryPathObject, helper, entryInstance } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
-            const keysUpdatedPromise = Promise.all(primitiveKeyData.map((x) => waitForMapKeyUpdate(root, x.key)));
+            const keysUpdatedPromise = Promise.all(
+              primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
+            );
             await Promise.all(
               primitiveKeyData.map(async (keyData) => {
                 let value;
@@ -5170,11 +5190,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.set() works for LiveMap objects with LiveObject references',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counterKey');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counterKey');
             await rootInstance.set('counterKey', LiveCounter.create(5));
             await keyUpdatedPromise;
 
@@ -5186,17 +5206,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.remove() works for LiveMap objects',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
-            const keyAddedPromise = waitForMapKeyUpdate(root, 'keyToRemove');
+            const keyAddedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
             await entryPathObject.set('keyToRemove', 'valueToRemove');
             await keyAddedPromise;
 
             expect(entryPathObject.get('keyToRemove').value(), 'Check key exists on root').to.exist;
 
-            const keyRemovedPromise = waitForMapKeyUpdate(root, 'keyToRemove');
+            const keyRemovedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
             await rootInstance.remove('keyToRemove');
             await keyRemovedPromise;
 
@@ -5212,25 +5232,25 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.increment() and DefaultInstance.decrement() work for LiveCounter objects',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { root, entryPathObject, entryInstance } = ctx;
 
             const rootInstance = entryPathObject.instance();
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await entryPathObject.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
-            const counter = root.get('counter');
 
+            const counter = root.get('counter');
             const counterInstance = rootInstance.get('counter');
 
-            let counterUpdatedPromise = waitForCounterUpdate(counter);
+            let counterUpdatedPromise = waitForCounterUpdate(counterInstance);
             await counterInstance.increment(5);
             await counterUpdatedPromise;
 
             expect(counter.value()).to.equal(15, 'Check counter incremented via DefaultInstance');
             expect(counterInstance.value()).to.equal(15, 'Check DefaultInstance reflects incremented value');
 
-            counterUpdatedPromise = waitForCounterUpdate(counter);
+            counterUpdatedPromise = waitForCounterUpdate(counterInstance);
             await counterInstance.decrement(3);
             await counterUpdatedPromise;
 
@@ -5238,14 +5258,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(counterInstance.value()).to.equal(12, 'Check DefaultInstance reflects decremented value');
 
             // test increment/decrement without argument (should increment/decrement by 1)
-            counterUpdatedPromise = waitForCounterUpdate(counter);
+            counterUpdatedPromise = waitForCounterUpdate(counterInstance);
             await counterInstance.increment();
             await counterUpdatedPromise;
 
             expect(counter.value()).to.equal(13, 'Check counter incremented via DefaultInstance without argument');
             expect(counterInstance.value()).to.equal(13, 'Check DefaultInstance reflects incremented value');
 
-            counterUpdatedPromise = waitForCounterUpdate(counter);
+            counterUpdatedPromise = waitForCounterUpdate(counterInstance);
             await counterInstance.decrement();
             await counterUpdatedPromise;
 
@@ -5274,12 +5294,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance handling of operations on wrong underlying object type',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'map'),
-              waitForMapKeyUpdate(root, 'counter'),
-              waitForMapKeyUpdate(root, 'primitive'),
+              waitForMapKeyUpdate(entryInstance, 'map'),
+              waitForMapKeyUpdate(entryInstance, 'counter'),
+              waitForMapKeyUpdate(entryInstance, 'primitive'),
             ]);
             await entryPathObject.set('map', LiveMap.create({ foo: 'bar' }));
             await entryPathObject.set('counter', LiveCounter.create());
@@ -5382,9 +5402,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.subscribe() receives events for LiveMap set/remove operations',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'map');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await entryPathObject.set('map', LiveMap.create());
             await keyUpdatedPromise;
 
@@ -5411,11 +5431,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             });
 
-            keyUpdatedPromise = waitForMapKeyUpdate(root.get('map'), 'foo');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map'), 'foo');
             await entryPathObject.get('map').set('foo', 'bar');
             await keyUpdatedPromise;
 
-            keyUpdatedPromise = waitForMapKeyUpdate(root.get('map'), 'foo');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance.get('map'), 'foo');
             await entryPathObject.get('map').remove('foo');
             await keyUpdatedPromise;
 
@@ -5426,9 +5446,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.subscribe() receives events for LiveCounter increment/decrement',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'counter');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await entryPathObject.set('counter', LiveCounter.create());
             await keyUpdatedPromise;
 
@@ -5470,11 +5490,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             });
 
-            let counterUpdatedPromise = waitForCounterUpdate(root.get('counter'));
+            let counterUpdatedPromise = waitForCounterUpdate(entryInstance.get('counter'));
             await entryPathObject.get('counter').increment();
             await counterUpdatedPromise;
 
-            counterUpdatedPromise = waitForCounterUpdate(root.get('counter'));
+            counterUpdatedPromise = waitForCounterUpdate(entryInstance.get('counter'));
             await entryPathObject.get('counter').decrement();
             await counterUpdatedPromise;
 
@@ -5500,7 +5520,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'can unsubscribe from DefaultInstance.subscribe() updates using returned "unsubscribe" function',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             let eventCount = 0;
             const { unsubscribe } = entryPathObject.instance().subscribe(() => {
@@ -5508,14 +5528,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // Make first change - should receive event
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'key1');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'key1');
             await entryPathObject.set('key1', 'value1');
             await keyUpdatedPromise;
 
             unsubscribe();
 
             // Make second change - should NOT receive event
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'key2');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'key2');
             await entryPathObject.set('key2', 'value2');
             await keyUpdatedPromise;
 
@@ -5526,7 +5546,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.subscribe() handles multiple subscriptions independently',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             let subscription1Events = 0;
             let subscription2Events = 0;
@@ -5540,7 +5560,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // Make change - both should receive event
-            let keyUpdatedPromise = waitForMapKeyUpdate(root, 'key1');
+            let keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'key1');
             await entryPathObject.set('key1', 'value1');
             await keyUpdatedPromise;
 
@@ -5548,7 +5568,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             unsubscribe1();
 
             // Make another change - only second should receive event
-            keyUpdatedPromise = waitForMapKeyUpdate(root, 'key2');
+            keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'key2');
             await entryPathObject.set('key2', 'value2');
             await keyUpdatedPromise;
 
@@ -5560,16 +5580,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.subscribe() event object provides correct DefaultInstance reference',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            const instance = entryPathObject.instance();
             const subscriptionPromise = new Promise((resolve, reject) => {
-              instance.subscribe((event) => {
+              entryInstance.subscribe((event) => {
                 try {
                   expect(event.object, 'Check event object exists').to.exist;
                   expectInstanceOf(event.object, 'DefaultInstance', 'Check event object is DefaultInstance');
                   expect(event.object.id()).to.equal('root', 'Check event object has correct object ID');
-                  expect(event.object).to.equal(instance, 'Check event object is the same instance');
+                  expect(event.object).to.equal(entryInstance, 'Check event object is the same instance');
                   resolve();
                 } catch (error) {
                   reject(error);
@@ -5577,7 +5596,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             });
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             await entryPathObject.set('foo', 'bar');
             await keyUpdatedPromise;
 
@@ -5588,7 +5607,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.subscribe() handles subscription listener errors gracefully',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             let goodListenerCalled = false;
 
@@ -5602,7 +5621,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               goodListenerCalled = true;
             });
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             await entryPathObject.set('foo', 'bar');
             await keyUpdatedPromise;
 
@@ -5637,11 +5656,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await channel.attach();
             const root = await realtimeObject.get();
             const entryPathObject = await realtimeObject.getPathObject();
+            const entryInstance = entryPathObject.instance();
 
             await scenario.action({
               realtimeObject,
               root,
               entryPathObject,
+              entryInstance,
               objectsHelper,
               channelName,
               channel,
@@ -5658,15 +5679,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can subscribe to the incoming COUNTER_INC operation on a LiveCounter',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId, entryInstance } = ctx;
 
-            const counter = root.get(sampleCounterKey);
+            const counter = entryInstance.get(sampleCounterKey);
             const subscriptionPromise = new Promise((resolve, reject) =>
-              counter.subscribe((update) => {
+              counter.subscribe((event) => {
                 try {
-                  expect(update?.update).to.deep.equal(
-                    { amount: 1 },
-                    'Check counter subscription callback is called with an expected update object for COUNTER_INC operation',
+                  expect(event?.message?.operation).to.deep.include(
+                    {
+                      action: 'counter.inc',
+                      objectId: counter.id(),
+                      counterOp: { amount: 1 },
+                    },
+                    'Check counter subscription callback is called with an expected event message for COUNTER_INC operation',
                   );
                   resolve();
                 } catch (error) {
@@ -5691,19 +5716,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can subscribe to multiple incoming operations on a LiveCounter',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId, entryInstance } = ctx;
 
-            const counter = root.get(sampleCounterKey);
+            const counter = entryInstance.get(sampleCounterKey);
             const expectedCounterIncrements = [100, -100, Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER];
             let currentUpdateIndex = 0;
 
             const subscriptionPromise = new Promise((resolve, reject) =>
-              counter.subscribe((update) => {
+              counter.subscribe((event) => {
                 try {
                   const expectedInc = expectedCounterIncrements[currentUpdateIndex];
-                  expect(update?.update).to.deep.equal(
-                    { amount: expectedInc },
-                    `Check counter subscription callback is called with an expected update object for ${currentUpdateIndex + 1} times`,
+                  expect(event?.message?.operation).to.deep.include(
+                    {
+                      action: 'counter.inc',
+                      objectId: counter.id(),
+                      counterOp: { amount: expectedInc },
+                    },
+                    `Check counter subscription callback is called with an expected event message operation for ${currentUpdateIndex + 1} times`,
                   );
 
                   if (currentUpdateIndex === expectedCounterIncrements.length - 1) {
@@ -5735,15 +5764,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can subscribe to the incoming MAP_SET operation on a LiveMap',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { objectsHelper, channelName, sampleMapKey, sampleMapObjectId, entryInstance } = ctx;
 
-            const map = root.get(sampleMapKey);
+            const map = entryInstance.get(sampleMapKey);
             const subscriptionPromise = new Promise((resolve, reject) =>
-              map.subscribe((update) => {
+              map.subscribe((event) => {
                 try {
-                  expect(update?.update).to.deep.equal(
-                    { stringKey: 'updated' },
-                    'Check map subscription callback is called with an expected update object for MAP_SET operation',
+                  expect(event?.message?.operation).to.deep.include(
+                    {
+                      action: 'map.set',
+                      objectId: map.id(),
+                      mapOp: { key: 'stringKey', data: { value: 'stringValue' } },
+                    },
+                    'Check map subscription callback is called with an expected event message for MAP_SET operation',
                   );
                   resolve();
                 } catch (error) {
@@ -5769,15 +5802,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can subscribe to the incoming MAP_REMOVE operation on a LiveMap',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { objectsHelper, channelName, sampleMapKey, sampleMapObjectId, entryInstance } = ctx;
 
-            const map = root.get(sampleMapKey);
+            const map = entryInstance.get(sampleMapKey);
             const subscriptionPromise = new Promise((resolve, reject) =>
-              map.subscribe((update) => {
+              map.subscribe((event) => {
                 try {
-                  expect(update?.update).to.deep.equal(
-                    { stringKey: 'removed' },
-                    'Check map subscription callback is called with an expected update object for MAP_REMOVE operation',
+                  expect(event?.message?.operation).to.deep.include(
+                    { action: 'map.remove', objectId: map.id(), mapOp: { key: 'stringKey' } },
+                    'Check map subscription callback is called with an expected event message for MAP_REMOVE operation',
                   );
                   resolve();
                 } catch (error) {
@@ -5800,167 +5833,26 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         {
           allTransportsAndProtocols: true,
-          description: 'subscription update object contains the client metadata of the client who made the update',
-          action: async (ctx) => {
-            const { root, objectsHelper, channel, channelName, sampleMapKey, sampleCounterKey, helper } = ctx;
-            const publishClientId = 'publish-clientId';
-            const publishClient = RealtimeWithObjects(helper, { clientId: publishClientId });
-
-            // get the connection ID from the publish client once connected
-            let publishConnectionId;
-
-            const createCheckUpdateClientMetadataPromise = (subscribeFn, msg) => {
-              return new Promise((resolve, reject) =>
-                subscribeFn((update) => {
-                  try {
-                    expect(update.clientId).to.equal(publishClientId, msg);
-                    expect(update.connectionId).to.equal(publishConnectionId, msg);
-                    resolve();
-                  } catch (error) {
-                    reject(error);
-                  }
-                }),
-              );
-            };
-
-            // check client metadata is surfaced for mutation ops
-            const mutationOpsPromises = Promise.all([
-              createCheckUpdateClientMetadataPromise(
-                (cb) => root.get(sampleCounterKey).subscribe(cb),
-                'Check counter subscription callback has client metadata for COUNTER_INC operation',
-              ),
-              createCheckUpdateClientMetadataPromise(
-                (cb) =>
-                  root.get(sampleMapKey).subscribe((update) => {
-                    if (update.update.foo === 'updated') {
-                      cb(update);
-                    }
-                  }),
-                'Check map subscription callback has client metadata for MAP_SET operation',
-              ),
-              createCheckUpdateClientMetadataPromise(
-                (cb) =>
-                  root.get(sampleMapKey).subscribe((update) => {
-                    if (update.update.foo === 'removed') {
-                      cb(update);
-                    }
-                  }),
-                'Check map subscription callback has client metadata for MAP_REMOVE operation',
-              ),
-            ]);
-
-            await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-              const publishChannel = publishClient.channels.get(channelName, channelOptionsWithObjects());
-              await publishChannel.attach();
-              const publishRoot = await publishChannel.object.get();
-
-              // capture the connection ID once the client is connected
-              publishConnectionId = publishClient.connection.id;
-
-              await publishRoot.get(sampleCounterKey).increment(1);
-              await publishRoot.get(sampleMapKey).set('foo', 'bar');
-              await publishRoot.get(sampleMapKey).remove('foo');
-            }, publishClient);
-
-            await mutationOpsPromises;
-
-            // check client metadata is surfaced for create ops.
-            // first need to create non-initialized objects and then publish create ops for them
-            const objectsCreatedPromise = Promise.all([
-              waitForMapKeyUpdate(root, 'nonInitializedCounter'),
-              waitForMapKeyUpdate(root, 'nonInitializedMap'),
-            ]);
-
-            const fakeCounterObjectId = objectsHelper.fakeCounterObjectId();
-            const fakeMapObjectId = objectsHelper.fakeMapObjectId();
-
-            await objectsHelper.processObjectOperationMessageOnChannel({
-              channel,
-              serial: lexicoTimeserial('aaa', 0, 0),
-              siteCode: 'aaa',
-              state: [
-                objectsHelper.mapSetOp({
-                  objectId: 'root',
-                  key: 'nonInitializedCounter',
-                  data: { objectId: fakeCounterObjectId },
-                }),
-              ],
-            });
-            await objectsHelper.processObjectOperationMessageOnChannel({
-              channel,
-              serial: lexicoTimeserial('aaa', 1, 0),
-              siteCode: 'aaa',
-              state: [
-                objectsHelper.mapSetOp({
-                  objectId: 'root',
-                  key: 'nonInitializedMap',
-                  data: { objectId: fakeMapObjectId },
-                }),
-              ],
-            });
-
-            await objectsCreatedPromise;
-
-            const createOpsPromises = Promise.all([
-              createCheckUpdateClientMetadataPromise(
-                (cb) => root.get('nonInitializedCounter').subscribe(cb),
-                'Check counter subscription callback has client metadata for COUNTER_CREATE operation',
-              ),
-              createCheckUpdateClientMetadataPromise(
-                (cb) => root.get('nonInitializedMap').subscribe(cb),
-                'Check map subscription callback has client metadata for MAP_CREATE operation',
-              ),
-            ]);
-
-            // and now post create operations which will trigger subscription callbacks
-            await objectsHelper.processObjectOperationMessageOnChannel({
-              channel,
-              serial: lexicoTimeserial('aaa', 1, 1),
-              siteCode: 'aaa',
-              clientId: publishClientId,
-              connectionId: publishConnectionId,
-              state: [objectsHelper.counterCreateOp({ objectId: fakeCounterObjectId, count: 1 })],
-            });
-            await objectsHelper.processObjectOperationMessageOnChannel({
-              channel,
-              serial: lexicoTimeserial('aaa', 1, 1),
-              siteCode: 'aaa',
-              clientId: publishClientId,
-              connectionId: publishConnectionId,
-              state: [
-                objectsHelper.mapCreateOp({
-                  objectId: fakeMapObjectId,
-                  entries: { foo: { timeserial: lexicoTimeserial('aaa', 1, 1), data: { string: 'bar' } } },
-                }),
-              ],
-            });
-
-            await createOpsPromises;
-          },
-        },
-
-        {
-          allTransportsAndProtocols: true,
           description: 'can subscribe to multiple incoming operations on a LiveMap',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { objectsHelper, channelName, sampleMapKey, sampleMapObjectId, entryInstance } = ctx;
 
-            const map = root.get(sampleMapKey);
+            const map = entryInstance.get(sampleMapKey);
             const expectedMapUpdates = [
-              { foo: 'updated' },
-              { bar: 'updated' },
-              { foo: 'removed' },
-              { baz: 'updated' },
-              { bar: 'removed' },
+              { action: 'map.set', mapOp: { key: 'foo', data: { value: '1' } } },
+              { action: 'map.set', mapOp: { key: 'bar', data: { value: '2' } } },
+              { action: 'map.remove', mapOp: { key: 'foo' } },
+              { action: 'map.set', mapOp: { key: 'baz', data: { value: '3' } } },
+              { action: 'map.remove', mapOp: { key: 'bar' } },
             ];
             let currentUpdateIndex = 0;
 
             const subscriptionPromise = new Promise((resolve, reject) =>
-              map.subscribe((update) => {
+              map.subscribe(({ message }) => {
                 try {
-                  expect(update?.update).to.deep.equal(
+                  expect(message?.operation).to.deep.include(
                     expectedMapUpdates[currentUpdateIndex],
-                    `Check map subscription callback is called with an expected update object for ${currentUpdateIndex + 1} times`,
+                    `Check map subscription callback is called with an expected event message operation for ${currentUpdateIndex + 1} times`,
                   );
 
                   if (currentUpdateIndex === expectedMapUpdates.length - 1) {
@@ -5979,7 +5871,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               objectsHelper.mapSetRestOp({
                 objectId: sampleMapObjectId,
                 key: 'foo',
-                value: { string: 'something' },
+                value: { string: '1' },
               }),
             );
 
@@ -5988,7 +5880,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               objectsHelper.mapSetRestOp({
                 objectId: sampleMapObjectId,
                 key: 'bar',
-                value: { string: 'something' },
+                value: { string: '2' },
               }),
             );
 
@@ -6005,7 +5897,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               objectsHelper.mapSetRestOp({
                 objectId: sampleMapObjectId,
                 key: 'baz',
-                value: { string: 'something' },
+                value: { string: '3' },
               }),
             );
 
@@ -6022,11 +5914,114 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
+          description: 'subscription event message contains the metadata of the update',
+          action: async (ctx) => {
+            const { channelName, sampleMapKey, sampleCounterKey, helper, entryPathObject, entryInstance } = ctx;
+            const publishClientId = 'publish-clientId';
+            const publishClient = RealtimeWithObjects(helper, { clientId: publishClientId });
+
+            // get the connection ID from the publish client once connected
+            let publishConnectionId;
+
+            const createCheckMessageMetadataPromise = (subscribeFn, msg) => {
+              return new Promise((resolve, reject) =>
+                subscribeFn((event) => {
+                  try {
+                    expect(event.message, msg + 'object message exists').to.exist;
+                    expect(event.message.id, msg + 'message id exists').to.exist;
+                    expect(event.message.clientId).to.equal(publishClientId, msg + 'clientId matches expected');
+                    expect(event.message.connectionId).to.equal(
+                      publishConnectionId,
+                      msg + 'connectionId matches expected',
+                    );
+                    expect(event.message.timestamp, msg + 'timestamp exists').to.exist;
+                    expect(event.message.channel).to.equal(channelName, msg + 'channel name matches expected');
+                    expect(event.message.serial, msg + 'serial exists').to.exist;
+                    expect(event.message.serialTimestamp, msg + 'serialTimestamp exists').to.exist;
+                    expect(event.message.siteCode, msg + 'siteCode exists').to.exist;
+
+                    resolve();
+                  } catch (error) {
+                    reject(error);
+                  }
+                }),
+              );
+            };
+
+            // check message metadata is surfaced for mutation ops
+            const mutationOpsPromises = Promise.all([
+              // path object
+              createCheckMessageMetadataPromise(
+                (cb) => entryPathObject.get(sampleCounterKey).subscribe(cb),
+                'Check event message metadata for COUNTER_INC PathObject subscriptions: ',
+              ),
+              createCheckMessageMetadataPromise(
+                (cb) =>
+                  entryPathObject.get(sampleMapKey).subscribe((event) => {
+                    if (event.message.operation.action === 'map.set') {
+                      cb(event);
+                    }
+                  }),
+                'Check event message metadata for MAP_SET PathObject subscriptions: ',
+              ),
+              createCheckMessageMetadataPromise(
+                (cb) =>
+                  entryPathObject.get(sampleMapKey).subscribe((event) => {
+                    if (event.message.operation.action === 'map.remove') {
+                      cb(event);
+                    }
+                  }),
+                'Check event message metadata for MAP_REMOVE PathObject subscriptions: ',
+              ),
+
+              // instance
+              createCheckMessageMetadataPromise(
+                (cb) => entryInstance.get(sampleCounterKey).subscribe(cb),
+                'Check event message metadata for COUNTER_INC DefaultInstance subscriptions: ',
+              ),
+              createCheckMessageMetadataPromise(
+                (cb) =>
+                  entryInstance.get(sampleMapKey).subscribe((event) => {
+                    if (event.message.operation.action === 'map.set') {
+                      cb(event);
+                    }
+                  }),
+                'Check event message metadata for MAP_SET DefaultInstance subscriptions: ',
+              ),
+              createCheckMessageMetadataPromise(
+                (cb) =>
+                  entryInstance.get(sampleMapKey).subscribe((event) => {
+                    if (event.message.operation.action === 'map.remove') {
+                      cb(event);
+                    }
+                  }),
+                'Check event message metadata for MAP_REMOVE DefaultInstance subscriptions: ',
+              ),
+            ]);
+
+            await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
+              const publishChannel = publishClient.channels.get(channelName, channelOptionsWithObjects());
+              await publishChannel.attach();
+              const publishRoot = await publishChannel.object.get();
+
+              // capture the connection ID once the client is connected
+              publishConnectionId = publishClient.connection.id;
+
+              await publishRoot.get(sampleCounterKey).increment(1);
+              await publishRoot.get(sampleMapKey).set('foo', 'bar');
+              await publishRoot.get(sampleMapKey).remove('foo');
+            }, publishClient);
+
+            await mutationOpsPromises;
+          },
+        },
+
+        {
           description: 'can unsubscribe from LiveCounter updates via returned "unsubscribe" callback',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId, entryInstance } = ctx;
 
-            const counter = root.get(sampleCounterKey);
+            const counter = entryInstance.get(sampleCounterKey);
             let callbackCalled = 0;
             const subscriptionPromise = new Promise((resolve) => {
               const { unsubscribe } = counter.subscribe(() => {
@@ -6058,11 +6053,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
+          skip: true, // TODO: replace with instance/pathobject .unsubscribe() call
           description: 'can unsubscribe from LiveCounter updates via LiveCounter.unsubscribe() call',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
+            const { objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId, entryInstance } = ctx;
 
-            const counter = root.get(sampleCounterKey);
+            const counter = entryInstance.get(sampleCounterKey);
             let callbackCalled = 0;
             const subscriptionPromise = new Promise((resolve) => {
               const listener = () => {
@@ -6096,56 +6092,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          description: 'can remove all LiveCounter update listeners via LiveCounter.unsubscribeAll() call',
-          action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleCounterKey, sampleCounterObjectId } = ctx;
-
-            const counter = root.get(sampleCounterKey);
-            const callbacks = 3;
-            const callbacksCalled = new Array(callbacks).fill(0);
-            const subscriptionPromises = [];
-
-            for (let i = 0; i < callbacks; i++) {
-              const promise = new Promise((resolve) => {
-                counter.subscribe(() => {
-                  callbacksCalled[i]++;
-                  resolve();
-                });
-              });
-              subscriptionPromises.push(promise);
-            }
-
-            const increments = 3;
-            for (let i = 0; i < increments; i++) {
-              const counterUpdatedPromise = waitForCounterUpdate(counter);
-              await objectsHelper.operationRequest(
-                channelName,
-                objectsHelper.counterIncRestOp({
-                  objectId: sampleCounterObjectId,
-                  number: 1,
-                }),
-              );
-              await counterUpdatedPromise;
-
-              if (i === 0) {
-                // unsub all after first operation
-                counter.unsubscribeAll();
-              }
-            }
-
-            await Promise.all(subscriptionPromises);
-
-            expect(counter.value()).to.equal(3, 'Check counter has final expected value after all increments');
-            callbacksCalled.forEach((x) => expect(x).to.equal(1, 'Check subscription callbacks were called once each'));
-          },
-        },
-
-        {
           description: 'can unsubscribe from LiveMap updates via returned "unsubscribe" callback',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { objectsHelper, channelName, sampleMapKey, sampleMapObjectId, entryInstance } = ctx;
 
-            const map = root.get(sampleMapKey);
+            const map = entryInstance.get(sampleMapKey);
             let callbackCalled = 0;
             const subscriptionPromise = new Promise((resolve) => {
               const { unsubscribe } = map.subscribe(() => {
@@ -6173,7 +6124,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await subscriptionPromise;
 
             for (let i = 0; i < mapSets; i++) {
-              expect(map.get(`foo-${i}`)).to.equal(
+              expect(map.get(`foo-${i}`).value()).to.equal(
                 'exists',
                 `Check map has value for key "foo-${i}" after all map sets`,
               );
@@ -6183,11 +6134,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
+          skip: true, // TODO: replace with instance/pathobject .unsubscribe() call
           description: 'can unsubscribe from LiveMap updates via LiveMap.unsubscribe() call',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
+            const { objectsHelper, channelName, sampleMapKey, sampleMapObjectId, entryInstance } = ctx;
 
-            const map = root.get(sampleMapKey);
+            const map = entryInstance.get(sampleMapKey);
             let callbackCalled = 0;
             const subscriptionPromise = new Promise((resolve) => {
               const listener = () => {
@@ -6225,57 +6177,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(callbackCalled).to.equal(1, 'Check subscription callback was only called once');
           },
         },
-
-        {
-          description: 'can remove all LiveMap update listeners via LiveMap.unsubscribeAll() call',
-          action: async (ctx) => {
-            const { root, objectsHelper, channelName, sampleMapKey, sampleMapObjectId } = ctx;
-
-            const map = root.get(sampleMapKey);
-            const callbacks = 3;
-            const callbacksCalled = new Array(callbacks).fill(0);
-            const subscriptionPromises = [];
-
-            for (let i = 0; i < callbacks; i++) {
-              const promise = new Promise((resolve) => {
-                map.subscribe(() => {
-                  callbacksCalled[i]++;
-                  resolve();
-                });
-              });
-              subscriptionPromises.push(promise);
-            }
-
-            const mapSets = 3;
-            for (let i = 0; i < mapSets; i++) {
-              const mapUpdatedPromise = waitForMapKeyUpdate(map, `foo-${i}`);
-              await objectsHelper.operationRequest(
-                channelName,
-                objectsHelper.mapSetRestOp({
-                  objectId: sampleMapObjectId,
-                  key: `foo-${i}`,
-                  value: { string: 'exists' },
-                }),
-              );
-              await mapUpdatedPromise;
-
-              if (i === 0) {
-                // unsub all after first operation
-                map.unsubscribeAll();
-              }
-            }
-
-            await Promise.all(subscriptionPromises);
-
-            for (let i = 0; i < mapSets; i++) {
-              expect(map.get(`foo-${i}`)).to.equal(
-                'exists',
-                `Check map has value for key "foo-${i}" after all map sets`,
-              );
-            }
-            callbacksCalled.forEach((x) => expect(x).to.equal(1, 'Check subscription callbacks were called once each'));
-          },
-        },
       ];
 
       /** @nospec */
@@ -6288,13 +6189,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
           await channel.attach();
           const root = await channel.object.get();
+          const entryPathObject = await channel.object.getPathObject();
+          const entryInstance = entryPathObject.instance();
 
           const sampleMapKey = 'sampleMap';
           const sampleCounterKey = 'sampleCounter';
 
           const objectsCreatedPromise = Promise.all([
-            waitForMapKeyUpdate(root, sampleMapKey),
-            waitForMapKeyUpdate(root, sampleCounterKey),
+            waitForMapKeyUpdate(entryInstance, sampleMapKey),
+            waitForMapKeyUpdate(entryInstance, sampleCounterKey),
           ]);
           // prepare map and counter objects for use by the scenario
           const { objectId: sampleMapObjectId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -6311,6 +6214,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
           await scenario.action({
             root,
+            entryPathObject,
+            entryInstance,
             objectsHelper,
             channelName,
             channel,
@@ -6472,9 +6377,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'tombstoned map entry is removed from the LiveMap after the GC grace period',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, helper, waitForGCCycles } = ctx;
+            const { root, objectsHelper, channelName, helper, waitForGCCycles, entryInstance } = ctx;
 
-            const keyUpdatedPromise = waitForMapKeyUpdate(root, 'foo');
+            const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             // set a key on a root
             await objectsHelper.operationRequest(
               channelName,
@@ -6484,7 +6389,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             expect(root.get('foo')).to.equal('bar', 'Check key "foo" exists on root after MAP_SET');
 
-            const keyUpdatedPromise2 = waitForMapKeyUpdate(root, 'foo');
+            const keyUpdatedPromise2 = waitForMapKeyUpdate(entryInstance, 'foo');
             // remove the key from the root. this should tombstone the map entry and make it inaccessible to the end user, but still keep it in memory in the underlying map
             await objectsHelper.operationRequest(
               channelName,
@@ -6533,6 +6438,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             await channel.attach();
             const root = await channel.object.get();
+            const entryPathObject = await channel.object.getPathObject();
+            const entryInstance = entryPathObject.instance();
 
             helper.recordPrivateApi('read.RealtimeObject.gcGracePeriod');
             const gcGracePeriodOriginal = realtimeObject.gcGracePeriod;
@@ -6562,6 +6469,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await scenario.action({
               client,
               root,
+              entryPathObject,
+              entryInstance,
               objectsHelper,
               channelName,
               channel,
@@ -6584,7 +6493,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         expect(() => counter.value()).to.throw(errorMsg);
 
-        expect(() => map.get()).to.throw(errorMsg);
+        expect(() => map.get('key')).to.throw(errorMsg);
         expect(() => map.size()).to.throw(errorMsg);
         expect(() => [...map.entries()]).to.throw(errorMsg);
         expect(() => [...map.keys()]).to.throw(errorMsg);
@@ -6592,8 +6501,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
         for (const obj of [map, counter]) {
           expect(() => obj.subscribe()).to.throw(errorMsg);
-          expect(() => obj.unsubscribe(() => {})).not.to.throw(); // this should not throw
-          expect(() => obj.unsubscribeAll()).not.to.throw(); // this should not throw
+          // TODO: replace with instance/pathobject .unsubscribe() call
+          // expect(() => obj.unsubscribe(() => {})).not.to.throw(); // this should not throw
         }
       };
 
@@ -6607,8 +6516,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         await expectToThrowAsync(async () => map.remove(), errorMsg);
 
         for (const obj of [map, counter]) {
-          expect(() => obj.unsubscribe(() => {})).not.to.throw(); // this should not throw
-          expect(() => obj.unsubscribeAll()).not.to.throw(); // this should not throw
+          // TODO: replace with instance/pathobject .unsubscribe() call
+          // expect(() => obj.unsubscribe(() => {})).not.to.throw(); // this should not throw
         }
       };
 
@@ -6803,17 +6712,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
           await channel.attach();
           const root = await channel.object.get();
+          const entryPathObject = await channel.object.getPathObject();
+          const entryInstance = entryPathObject.instance();
 
           const objectsCreatedPromise = Promise.all([
-            waitForMapKeyUpdate(root, 'map'),
-            waitForMapKeyUpdate(root, 'counter'),
+            waitForMapKeyUpdate(entryInstance, 'map'),
+            waitForMapKeyUpdate(entryInstance, 'counter'),
           ]);
           await root.set('map', LiveMap.create());
           await root.set('counter', LiveCounter.create());
           await objectsCreatedPromise;
 
-          const map = root.get('map');
-          const counter = root.get('counter');
+          const map = entryInstance.get('map');
+          const counter = entryInstance.get('counter');
 
           await scenario.action({
             realtimeObject,

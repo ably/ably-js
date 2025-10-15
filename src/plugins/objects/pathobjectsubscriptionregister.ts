@@ -1,6 +1,10 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type { EventCallback, PathObjectSubscriptionEvent, PathObjectSubscriptionOptions } from '../../../ably';
-import { SubscribeResponse } from './liveobject';
+import type {
+  EventCallback,
+  PathObjectSubscriptionEvent,
+  PathObjectSubscriptionOptions,
+  SubscribeResponse,
+} from '../../../ably';
 import { ObjectMessage } from './objectmessage';
 import { DefaultPathObject } from './pathobject';
 import { RealtimeObject } from './realtimeobject';
