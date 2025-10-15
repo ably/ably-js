@@ -2535,6 +2535,15 @@ export interface LiveMapPathObject<T extends Record<string, Value> = Record<stri
    * @experimental
    */
   get<K extends keyof T & string>(key: K): PathObject<T[K]>;
+
+  /**
+   * Get the specific map instance currently at this path.
+   * If the path does not resolve to any specific instance, returns `undefined`.
+   *
+   * @returns The {@link LiveMapInstance} at this path, or `undefined` if none exists.
+   * @experimental
+   */
+  instance(): LiveMapInstance<T> | undefined;
 }
 
 /**
@@ -2548,6 +2557,15 @@ export interface LiveCounterPathObject extends PathObjectBase<LiveCounter>, Live
    * @experimental
    */
   value(): number | undefined;
+
+  /**
+   * Get the specific counter instance currently at this path.
+   * If the path does not resolve to any specific instance, returns `undefined`.
+   *
+   * @returns The {@link LiveCounterInstance} at this path, or `undefined` if none exists.
+   * @experimental
+   */
+  instance(): LiveCounterInstance | undefined;
 }
 
 /**
@@ -2638,12 +2656,23 @@ export interface AnyPathObject<T extends Value = Value>
    * @experimental
    */
   value<T extends number | Primitive = number | Primitive>(): T | undefined;
+
+  /**
+   * Get the specific object instance currently at this path.
+   * If the path does not resolve to any specific instance, returns `undefined`.
+   *
+   * @returns The object instance at this path, or `undefined` if none exists.
+   * @experimental
+   */
+  instance<T extends Value = Value>(): AnyInstance<T> | undefined;
 }
 
 /**
  * PathObject wraps a reference to a path starting from the entrypoint object on a channel.
  * The type parameter specifies the underlying type defined at that path,
  * and is used to infer the correct set of methods available for that type.
+ *
+ * @experimental
  */
 export type PathObject<T extends Value = Value> = [T] extends [LiveMap<infer T>]
   ? LiveMapPathObject<T>
@@ -2658,13 +2687,16 @@ export type PathObject<T extends Value = Value> = [T] extends [LiveMap<infer T>]
  */
 export interface LiveMapOperations<T extends Record<string, Value> = Record<string, Value>> {
   /**
-   * Sends an operation to the Ably system to set a key on a map at this path to a specified value.
+   * Sends an operation to the Ably system to set a key to a specified value on a given {@link LiveMapInstance},
+   * or on the map instance resolved from the path when using {@link LiveMapPathObject}.
    *
-   * If the underlying map instance at the path cannot be resolved when invoked, this will throw an error.
+   * If called via {@link LiveMapInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link LiveMapPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject subscribe method
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -2674,13 +2706,16 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
   set<K extends keyof T & string>(key: K, value: T[K]): Promise<void>;
 
   /**
-   * Sends an operation to the Ably system to remove a key from a map at this path.
+   * Sends an operation to the Ably system to remove a key from a given {@link LiveMapInstance},
+   * or from the map instance resolved from the path when using {@link LiveMapPathObject}.
    *
-   * If the underlying map instance at the path cannot be resolved when invoked, this will throw an error.
+   * If called via {@link LiveMapInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link LiveMapPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject subscribe method
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2694,13 +2729,16 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
  */
 export interface LiveCounterOperations {
   /**
-   * Sends an operation to the Ably system to increment the value of a counter at this path.
+   * Sends an operation to the Ably system to increment the value of a given {@link LiveCounterInstance},
+   * or of the counter instance resolved from the path when using {@link LiveCounterPathObject}.
    *
-   * If the underlying counter instance at the path cannot be resolved when invoked, this will throw an error.
+   * If called via {@link LiveCounterInstance} and the underlying instance at runtime is not a counter,
+   * or if called via {@link LiveCounterPathObject} and the counter instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the counter. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject subscribe method
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2725,13 +2763,16 @@ export interface AnyOperations {
   // LiveMap operations
 
   /**
-   * Sends an operation to the Ably system to set a key on a map at this path to a specified value.
+   * Sends an operation to the Ably system to set a key to a specified value on the underlying map when using {@link AnyInstance},
+   * or on the map instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If the underlying map instance at the path cannot be resolved when invoked, this will throw an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link AnyPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject subscribe method
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -2741,13 +2782,16 @@ export interface AnyOperations {
   set<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string, value: T[keyof T]): Promise<void>;
 
   /**
-   * Sends an operation to the Ably system to remove a key from a map at this path.
+   * Sends an operation to the Ably system to remove a key from the underlying map when using {@link AnyInstance},
+   * or from the map instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If the underlying map instance at the path cannot be resolved when invoked, this will throw an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link AnyPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject subscribe method
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2758,13 +2802,16 @@ export interface AnyOperations {
   // LiveCounter operations
 
   /**
-   * Sends an operation to the Ably system to increment the value of a counter at this path.
+   * Sends an operation to the Ably system to increment the value of the underlying counter when using {@link AnyInstance},
+   * or of the counter instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If the underlying counter instance at the path cannot be resolved when invoked, this will throw an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a counter,
+   * or if called via {@link AnyPathObject} and the counter instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the counter. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject subscribe method
+   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2773,7 +2820,7 @@ export interface AnyOperations {
   increment(amount?: number): Promise<void>;
 
   /**
-   * An alias for calling {@link LiveCounterOperations.increment | increment(-amount)}
+   * An alias for calling {@link AnyOperations.increment | increment(-amount)}
    *
    * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2798,6 +2845,223 @@ declare global {
 export type LiveMapType = {
   [key: string]: PrimitiveObjectValue | LiveMapDeprecated<LiveMapType> | LiveCounterDeprecated | undefined;
 };
+
+/**
+ * InstanceBase defines the set of common methods on an Instance
+ * that are present regardless of the underlying type specified in the type parameter T.
+ */
+interface InstanceBase<_T extends Value> {
+  /**
+   * Get the object ID of this instance.
+   *
+   * If the underlying instance at runtime is not a {@link LiveObject}, returns `undefined`.
+   *
+   * @experimental
+   */
+  id(): string | undefined;
+
+  /**
+   * Get a JavaScript object representation of this instance.
+   *
+   * @experimental
+   */
+  compact(): any;
+}
+
+/**
+ * Defines collection methods available on a {@link LiveMapInstance}.
+ */
+interface LiveMapInstanceCollectionMethods<T extends Record<string, Value> = Record<string, Value>> {
+  /**
+   * Returns an iterable of key-value pairs for each entry in the map.
+   * Each value is represented as an {@link Instance} corresponding to its key.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  entries(): IterableIterator<[keyof T, Instance<T[keyof T]>]>;
+
+  /**
+   * Returns an iterable of keys in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  keys(): IterableIterator<keyof T>;
+
+  /**
+   * Returns an iterable of values in the map.
+   * Each value is represented as an {@link Instance}.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  values(): IterableIterator<Instance<T[keyof T]>>;
+
+  /**
+   * Returns the number of entries in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns `undefined`.
+   *
+   * @experimental
+   */
+  size(): number | undefined;
+}
+
+/**
+ * LiveMapInstance represents an Instance of a LiveMap object.
+ * The type parameter T describes the expected structure of the map's entries.
+ */
+export interface LiveMapInstance<T extends Record<string, Value> = Record<string, Value>>
+  extends InstanceBase<LiveMap<T>>,
+    LiveMapInstanceCollectionMethods<T>,
+    LiveMapOperations<T> {
+  /**
+   * Returns the value associated with a given key as an {@link Instance}.
+   *
+   * If the associated value is a primitive, returns a {@link PrimitiveInstance}
+   * that serves as a snapshot of the primitive value and does not reflect subsequent
+   * changes to the value at that key.
+   *
+   * Returns `undefined` if the key doesn't exist in the map, if the referenced {@link LiveObject} has been deleted,
+   * or if this map object itself has been deleted.
+   *
+   * @param key - The key to retrieve the value for.
+   * @returns An {@link Instance} representing a {@link LiveObject}, a primitive type (string, number, boolean, JSON-serializable object or array, or binary data) or `undefined` if the key doesn't exist in a map or the referenced {@link LiveObject} has been deleted. Always `undefined` if this map object is deleted.
+   * @experimental
+   */
+  get<K extends keyof T & string>(key: K): Instance<T[K]> | undefined;
+}
+
+/**
+ * LiveCounterInstance represents an Instance of a LiveCounter object.
+ */
+export interface LiveCounterInstance extends InstanceBase<LiveCounter>, LiveCounterOperations {
+  /**
+   * Get the current value of the counter instance.
+   * If the underlying instance at runtime is not a counter, returns `undefined`.
+   *
+   * @experimental
+   */
+  value(): number | undefined;
+}
+
+/**
+ * PrimitiveInstance represents a snapshot of a primitive value (string, number, boolean, JSON-serializable object or array, or binary data)
+ * that was stored at a key within a collection type.
+ */
+export interface PrimitiveInstance<T extends Primitive = Primitive> {
+  /**
+   * Get the primitive value represented by this instance.
+   * This reflects the value at the corresponding key in the collection at the time this instance was obtained.
+   *
+   * If the underlying instance at runtime is not a primitive value, returns `undefined`.
+   *
+   * @experimental
+   */
+  value(): T | undefined;
+}
+
+/**
+ * AnyInstanceCollectionMethods defines all possible methods available on an Instance
+ * for the underlying collection types.
+ */
+interface AnyInstanceCollectionMethods {
+  // LiveMap collection methods
+
+  /**
+   * Returns an iterable of key-value pairs for each entry in the map.
+   * Each value is represented as an {@link Instance} corresponding to its key.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, Instance<T[keyof T]>]>;
+
+  /**
+   * Returns an iterable of keys in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  keys<T extends Record<string, Value>>(): IterableIterator<keyof T>;
+
+  /**
+   * Returns an iterable of values in the map.
+   * Each value is represented as a {@link Instance}.
+   *
+   * If the underlying instance at runtime is not a map, returns an empty iterator.
+   *
+   * @experimental
+   */
+  values<T extends Record<string, Value>>(): IterableIterator<Instance<T[keyof T]>>;
+
+  /**
+   * Returns the number of entries in the map.
+   *
+   * If the underlying instance at runtime is not a map, returns `undefined`.
+   *
+   * @experimental
+   */
+  size(): number | undefined;
+}
+
+/**
+ * Represents a AnyInstance when its underlying type is not known.
+ * Provides a unified interface that includes all possible methods.
+ *
+ * Each method supports type parameters to specify the expected
+ * underlying type when needed.
+ */
+export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstanceCollectionMethods, AnyOperations {
+  /**
+   * Navigate to a child entry within the collection by obtaining the {@link Instance} at that entry.
+   * The entry in a collection is identified with a string key.
+   *
+   * Returns `undefined` if:
+   * - The underlying instance at runtime is not a collection object.
+   * - The specified key does not exist in the collection.
+   * - The referenced {@link LiveObject} has been deleted.
+   * - This collection object itself has been deleted.
+   *
+   * @param key - The key to get the child entry for.
+   * @returns An {@link Instance} representing either a {@link LiveObject} or a primitive value (string, number, boolean, JSON-serializable object or array, or binary data), or `undefined` if the underlying instance at runtime is not a collection object, the key does not exist, the referenced {@link LiveObject} has been deleted, or this collection object itself has been deleted.
+   * @experimental
+   */
+  get<T extends Value = Value>(key: string): Instance<T> | undefined;
+
+  /**
+   * Get the current value of the underlying counter or primitive.
+   *
+   * If the underlying value is a primitive, this reflects the value at the corresponding key
+   * in the collection at the time this instance was obtained.
+   *
+   * If the underlying instance at runtime is neither a counter nor a primitive value, returns `undefined`.
+   *
+   * @experimental
+   */
+  value<T extends number | Primitive = number | Primitive>(): T | undefined;
+}
+
+/**
+ * Instance wraps a specific object instance or entry in a specific collection object instance.
+ * The type parameter specifies the underlying type of the instance,
+ * and is used to infer the correct set of methods available for that type.
+ *
+ * @experimental
+ */
+export type Instance<T extends Value> = [T] extends [LiveMap<infer T>]
+  ? LiveMapInstance<T>
+  : [T] extends [LiveCounter]
+    ? LiveCounterInstance
+    : [T] extends [Primitive]
+      ? PrimitiveInstance<T>
+      : AnyInstance<T>;
 
 /**
  * The default type for the entrypoint {@link LiveMapDeprecated} object on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
