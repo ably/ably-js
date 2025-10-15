@@ -1,8 +1,16 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type { AnyInstance, EventCallback, Instance, InstanceSubscriptionEvent, Primitive, Value } from '../../../ably';
+import type {
+  AnyInstance,
+  EventCallback,
+  Instance,
+  InstanceSubscriptionEvent,
+  Primitive,
+  SubscribeResponse,
+  Value,
+} from '../../../ably';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { LiveObject, SubscribeResponse } from './liveobject';
+import { LiveObject } from './liveobject';
 import { ObjectMessage } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 

@@ -438,6 +438,14 @@ export class ObjectMessage {
     return strMsg(this, 'ObjectMessage');
   }
 
+  isOperationMessage(): boolean {
+    return this.operation != null;
+  }
+
+  isSyncMessage(): boolean {
+    return this.object != null;
+  }
+
   toUserFacingMessage(channel: RealtimeChannel): API.ObjectMessage {
     return {
       id: this.id!,

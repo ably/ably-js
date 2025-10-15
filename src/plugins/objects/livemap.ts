@@ -417,7 +417,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         );
     }
 
-    this.notifyUpdated(update, msg);
+    this.notifyUpdated(update);
   }
 
   /**
@@ -499,8 +499,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     // if object got tombstoned, the update object will include all data that got cleared.
     // otherwise it is a diff between previous value and new value from object state.
     const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
-    update.clientId = objectMessage.clientId;
-    update.connectionId = objectMessage.connectionId;
+    update.objectMessage = objectMessage;
 
     // Update parent references based on the calculated diff
     this._updateParentReferencesFromUpdate(update, previousDataRef);
@@ -612,13 +611,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     if (this._client.Utils.isNil(objectOperation.map)) {
       // if a map object is missing for the MAP_CREATE op, the initial value is implicitly an empty map.
       // in this case there is nothing to merge into the current map, so we can just end processing the op.
-      return { update: {}, clientId: msg.clientId, connectionId: msg.connectionId, _type: 'LiveMapUpdate' };
+      return { update: {}, objectMessage: msg, _type: 'LiveMapUpdate' };
     }
 
     const aggregatedUpdate: LiveMapUpdate<T> = {
       update: {},
-      clientId: msg.clientId,
-      connectionId: msg.connectionId,
+      objectMessage: msg,
       _type: 'LiveMapUpdate',
     };
     // RTLM6d1
@@ -764,8 +762,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     const update: LiveMapUpdate<T> = {
       update: {},
-      clientId: msg.clientId,
-      connectionId: msg.connectionId,
+      objectMessage: msg,
       _type: 'LiveMapUpdate',
     };
     const typedKey: keyof T & string = op.key;
@@ -835,8 +832,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     const update: LiveMapUpdate<T> = {
       update: {},
-      clientId: msg.clientId,
-      connectionId: msg.connectionId,
+      objectMessage: msg,
       _type: 'LiveMapUpdate',
     };
     const typedKey: keyof T & string = op.key;

@@ -400,7 +400,6 @@ export class RealtimeObject {
     this._rebuildAllParentReferences();
 
     // call subscription callbacks for all updated existing objects.
-    // do not expose the object message as part of the update, since this is an object sync message and does not represent a single operation.
     existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
   }
 

@@ -1,6 +1,6 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
-import type { EventCallback, LiveMapType } from '../../../ably';
+import type { EventCallback, LiveMapType, SubscribeResponse } from '../../../ably';
 import { ROOT_OBJECT_ID } from './constants';
 import { InstanceEvent } from './instance';
 import { LiveMapUpdate } from './livemap';
@@ -18,19 +18,16 @@ export interface LiveObjectData {
 
 export interface LiveObjectUpdate {
   _type: 'LiveMapUpdate' | 'LiveCounterUpdate';
+  /** Delta of the change */
   update: any;
-  clientId?: string;
-  connectionId?: string;
+  /** Object message that caused an update to an object, if available */
+  objectMessage?: ObjectMessage;
 }
 
 export interface LiveObjectUpdateNoop {
   // have optional update field with undefined type so it's not possible to create a noop object with a meaningful update property.
   update?: undefined;
   noop: true;
-}
-
-export interface SubscribeResponse {
-  unsubscribe(): void;
 }
 
 export enum LiveObjectLifecycleEvent {
@@ -49,7 +46,6 @@ export abstract class LiveObject<
 > {
   protected _client: BaseClient;
   protected _subscriptions: EventEmitter;
-  protected _instanceSubscriptions: EventEmitter;
   protected _lifecycleEvents: EventEmitter;
   protected _objectId: string;
   /**
@@ -73,7 +69,6 @@ export abstract class LiveObject<
   ) {
     this._client = this._realtimeObject.getClient();
     this._subscriptions = new this._client.EventEmitter(this._client.logger);
-    this._instanceSubscriptions = new this._client.EventEmitter(this._client.logger);
     this._lifecycleEvents = new this._client.EventEmitter(this._client.logger);
     this._objectId = objectId;
     this._dataRef = this._getZeroValueData();
@@ -84,7 +79,7 @@ export abstract class LiveObject<
     this._parentReferences = new Map<LiveObject, Set<string>>();
   }
 
-  subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
+  instanceSubscribe(listener: EventCallback<InstanceEvent>): SubscribeResponse {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
 
     this._subscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
@@ -94,37 +89,6 @@ export abstract class LiveObject<
     };
 
     return { unsubscribe };
-  }
-
-  // TODO: replace obsolete .subscribe call with this one when we completely remove previous API and switch to path-based one
-  instanceSubscribe(listener: EventCallback<InstanceEvent>): SubscribeResponse {
-    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
-
-    this._instanceSubscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
-
-    const unsubscribe = () => {
-      this._instanceSubscriptions.off(LiveObjectSubscriptionEvent.updated, listener);
-    };
-
-    return { unsubscribe };
-  }
-
-  unsubscribe(listener: (update: TUpdate) => void): void {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-
-    // current implementation of the EventEmitter will remove all listeners if .off is called without arguments or with nullish arguments.
-    // or when called with just an event argument, it will remove all listeners for the event.
-    // thus we need to check that listener does actually exist before calling .off.
-    if (this._client.Utils.isNil(listener)) {
-      return;
-    }
-
-    this._subscriptions.off(LiveObjectSubscriptionEvent.updated, listener);
-  }
-
-  unsubscribeAll(): void {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-    this._subscriptions.off(LiveObjectSubscriptionEvent.updated);
   }
 
   on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse {
@@ -167,14 +131,14 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  notifyUpdated(update: TUpdate | LiveObjectUpdateNoop, objectMessage?: ObjectMessage): void {
-    // should not emit update event if update was noop
-    if ((update as LiveObjectUpdateNoop).noop) {
+  notifyUpdated(update: TUpdate | LiveObjectUpdateNoop): void {
+    if (this._isNoopUpdate(update)) {
+      // do not emit update events for noop updates
       return;
     }
 
-    this._notifyInstanceSubscriptions(update as TUpdate, objectMessage);
-    this._notifyPathSubscriptions(update as TUpdate, objectMessage);
+    this._notifyInstanceSubscriptions(update);
+    this._notifyPathSubscriptions(update);
   }
 
   /**
@@ -196,14 +160,13 @@ export abstract class LiveObject<
       this._tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
     }
     const update = this.clearData();
-    update.clientId = objectMessage.clientId;
-    update.connectionId = objectMessage.connectionId;
+    update.objectMessage = objectMessage;
+
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
     // notify subscribers about the delete operation and then deregister all listeners
-    this.notifyUpdated(update, objectMessage);
+    this.notifyUpdated(update);
     this._subscriptions.off();
-    this._instanceSubscriptions.off();
   }
 
   /**
@@ -348,25 +311,19 @@ export abstract class LiveObject<
     this.tombstone(objectMessage);
   }
 
-  private _updateWithoutType(update: TUpdate): Omit<TUpdate, '_type'> {
-    const { _type, ...publicUpdate } = update as TUpdate;
-    return publicUpdate;
-  }
-
-  private _notifyInstanceSubscriptions(update: TUpdate, objectMessage?: ObjectMessage): void {
-    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, this._updateWithoutType(update as TUpdate));
-
+  private _notifyInstanceSubscriptions(update: TUpdate): void {
     const event: InstanceEvent = {
-      message: objectMessage,
+      // Do not expose object sync messages as they do not represent a single operation on an object
+      message: update.objectMessage?.isOperationMessage() ? update.objectMessage : undefined,
     };
-    this._instanceSubscriptions.emit(LiveObjectSubscriptionEvent.updated, event);
+    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, event);
   }
 
   /**
    * Notifies path-based subscriptions about changes to this object.
    * For LiveMapUpdate events, also creates non-bubbling events for each updated key.
    */
-  private _notifyPathSubscriptions(update: TUpdate, objectMessage?: ObjectMessage): void {
+  private _notifyPathSubscriptions(update: TUpdate): void {
     const paths = this.getFullPaths();
 
     if (paths.length === 0) {
@@ -374,9 +331,11 @@ export abstract class LiveObject<
       return;
     }
 
+    // Do not expose object sync messages as they do not represent a single operation on an object
+    const operationObjectMessage = update.objectMessage?.isOperationMessage() ? update.objectMessage : undefined;
     const pathEvents: PathEvent[] = paths.map((path) => ({
       path,
-      message: objectMessage,
+      message: operationObjectMessage,
       bubbles: true,
     }));
 
@@ -388,7 +347,7 @@ export abstract class LiveObject<
         for (const basePath of paths) {
           pathEvents.push({
             path: [...basePath, key],
-            message: objectMessage,
+            message: operationObjectMessage,
             bubbles: false,
           });
         }
@@ -396,6 +355,10 @@ export abstract class LiveObject<
     }
 
     this._realtimeObject.getPathObjectSubscriptionRegister().notifyPathEvents(pathEvents);
+  }
+
+  private _isNoopUpdate(update: TUpdate | LiveObjectUpdateNoop): update is LiveObjectUpdateNoop {
+    return (update as LiveObjectUpdateNoop).noop === true;
   }
 
   /**
