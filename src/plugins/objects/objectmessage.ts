@@ -767,6 +767,12 @@ export class WireObjectMessage {
     format: Utils.Format | undefined,
   ): ObjectData {
     try {
+      if (objectData.objectId != null) {
+        return {
+          objectId: objectData.objectId,
+        };
+      }
+
       let decodedBytes: Buffer | ArrayBuffer | undefined;
       if (objectData.bytes != null) {
         decodedBytes =
@@ -783,7 +789,6 @@ export class WireObjectMessage {
       }
 
       return {
-        objectId: objectData.objectId,
         value: decodedBytes ?? decodedJson ?? objectData.boolean ?? objectData.number ?? objectData.string,
       };
     } catch (error) {
