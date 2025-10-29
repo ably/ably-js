@@ -1,13 +1,5 @@
 import { LiveObject, LiveObjectData, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
-import { ObjectId } from './objectid';
-import {
-  createInitialValueJSONString,
-  ObjectData,
-  ObjectMessage,
-  ObjectOperation,
-  ObjectOperationAction,
-  ObjectsCounterOp,
-} from './objectmessage';
+import { ObjectData, ObjectMessage, ObjectOperation, ObjectOperationAction, ObjectsCounterOp } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 
 export interface LiveCounterData extends LiveObjectData {
@@ -43,18 +35,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
   }
 
   /**
-   * Returns a {@link LiveCounter} instance based on the provided COUNTER_CREATE object operation.
-   * The provided object operation must hold a valid counter object data.
-   *
-   * @internal
-   */
-  static fromObjectOperation(realtimeObject: RealtimeObject, objectMessage: ObjectMessage): LiveCounter {
-    const obj = new LiveCounter(realtimeObject, objectMessage.operation!.objectId);
-    obj._mergeInitialDataFromCreateOperation(objectMessage.operation!, objectMessage);
-    return obj;
-  }
-
-  /**
    * @internal
    */
   static createCounterIncMessage(realtimeObject: RealtimeObject, objectId: string, amount: number): ObjectMessage {
@@ -77,57 +57,6 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     );
 
     return msg;
-  }
-
-  /**
-   * @internal
-   */
-  static async createCounterCreateMessage(realtimeObject: RealtimeObject, count?: number): Promise<ObjectMessage> {
-    const client = realtimeObject.getClient();
-
-    if (count !== undefined && (typeof count !== 'number' || !Number.isFinite(count))) {
-      throw new client.ErrorInfo('Counter value should be a valid number', 40003, 400);
-    }
-
-    const initialValueOperation = LiveCounter.createInitialValueOperation(count);
-    const initialValueJSONString = createInitialValueJSONString(initialValueOperation, client);
-    const nonce = client.Utils.cheapRandStr();
-    const msTimestamp = await client.getTimestamp(true);
-
-    const objectId = ObjectId.fromInitialValue(
-      client.Platform,
-      'counter',
-      initialValueJSONString,
-      nonce,
-      msTimestamp,
-    ).toString();
-
-    const msg = ObjectMessage.fromValues(
-      {
-        operation: {
-          ...initialValueOperation,
-          action: ObjectOperationAction.COUNTER_CREATE,
-          objectId,
-          nonce,
-          initialValue: initialValueJSONString,
-        } as ObjectOperation<ObjectData>,
-      },
-      client.Utils,
-      client.MessageEncoding,
-    );
-
-    return msg;
-  }
-
-  /**
-   * @internal
-   */
-  static createInitialValueOperation(count?: number): Pick<ObjectOperation<ObjectData>, 'counter'> {
-    return {
-      counter: {
-        count: count ?? 0,
-      },
-    };
   }
 
   /** @spec RTLC5 */

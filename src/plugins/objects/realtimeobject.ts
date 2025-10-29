@@ -126,69 +126,6 @@ export class RealtimeObject {
     }
   }
 
-  /**
-   * Send a MAP_CREATE operation to the realtime system to create a new map object in the pool.
-   *
-   * Once the ACK message is received, the method returns the object from the local pool if it got created due to
-   * the echoed MAP_CREATE operation, or if it wasn't received yet, the method creates a new object locally using the provided data and returns it.
-   *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
-   */
-  async createMap<T extends API.LiveMapType>(entries?: T): Promise<LiveMap<T>> {
-    this.throwIfInvalidWriteApiConfiguration();
-
-    const msg = await LiveMap.createMapCreateMessage(this, entries);
-    const objectId = msg.operation?.objectId!;
-
-    await this.publish([msg]);
-
-    // we may have already received the MAP_CREATE operation at this point, as it could arrive before the ACK for our publish message.
-    // this means the object might already exist in the local pool, having been added during the usual MAP_CREATE operation process.
-    // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
-    if (this._objectsPool.get(objectId)) {
-      return this._objectsPool.get(objectId) as LiveMap<T>;
-    }
-
-    // we haven't received the MAP_CREATE operation yet, so we can create a new map object using the locally constructed object operation.
-    // we don't know the serials for map entries, so we assign an "earliest possible" serial to each entry, so that any subsequent operation can be applied to them.
-    // we mark the MAP_CREATE operation as merged for the object, guaranteeing its idempotency and preventing it from being applied again when the operation arrives.
-    const map = LiveMap.fromObjectOperation<T>(this, msg);
-    this._objectsPool.set(objectId, map);
-
-    return map;
-  }
-
-  /**
-   * Send a COUNTER_CREATE operation to the realtime system to create a new counter object in the pool.
-   *
-   * Once the ACK message is received, the method returns the object from the local pool if it got created due to
-   * the echoed COUNTER_CREATE operation, or if it wasn't received yet, the method creates a new object locally using the provided data and returns it.
-   *
-   * @returns A promise which resolves upon receiving the ACK message for the published operation message. A promise is resolved with an object containing provided data.
-   */
-  async createCounter(count?: number): Promise<LiveCounter> {
-    this.throwIfInvalidWriteApiConfiguration();
-
-    const msg = await LiveCounter.createCounterCreateMessage(this, count);
-    const objectId = msg.operation?.objectId!;
-
-    await this.publish([msg]);
-
-    // we may have already received the COUNTER_CREATE operation at this point, as it could arrive before the ACK for our publish message.
-    // this means the object might already exist in the local pool, having been added during the usual COUNTER_CREATE operation process.
-    // here we check if the object is present, and return it if found; otherwise, create a new object on the client side.
-    if (this._objectsPool.get(objectId)) {
-      return this._objectsPool.get(objectId) as LiveCounter;
-    }
-
-    // we haven't received the COUNTER_CREATE operation yet, so we can create a new counter object using the locally constructed object operation.
-    // we mark the COUNTER_CREATE operation as merged for the object, guaranteeing its idempotency. this ensures we don't double count the initial counter value when the operation arrives.
-    const counter = LiveCounter.fromObjectOperation(this, msg);
-    this._objectsPool.set(objectId, counter);
-
-    return counter;
-  }
-
   on(event: ObjectsEvent, callback: ObjectsEventCallback): OnObjectsEventResponse {
     // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
     this._eventEmitterPublic.on(event, callback);
