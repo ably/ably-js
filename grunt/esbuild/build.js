@@ -62,6 +62,15 @@ const pushPluginConfig = {
   external: ['ulid'],
 };
 
+const pushPluginEsmConfig = {
+  ...createBaseConfig(),
+  format: 'esm',
+  plugins: [],
+  entryPoints: ['src/plugins/push/index.ts'],
+  outfile: 'build/push.mjs',
+  external: ['ulid'],
+};
+
 const pushPluginCdnConfig = {
   ...createBaseConfig(),
   entryPoints: ['src/plugins/push/index.ts'],
@@ -82,6 +91,15 @@ const objectsPluginConfig = {
   entryPoints: ['src/plugins/objects/index.ts'],
   plugins: [umdWrapper.default({ libraryName: 'AblyObjectsPlugin', amdNamedModule: false })],
   outfile: 'build/objects.js',
+  external: ['dequal'],
+};
+
+const objectsPluginEsmConfig = {
+  ...createBaseConfig(),
+  format: 'esm',
+  plugins: [],
+  entryPoints: ['src/plugins/objects/index.ts'],
+  outfile: 'build/objects.mjs',
   external: ['dequal'],
 };
 
@@ -106,9 +124,11 @@ module.exports = {
   modularConfig,
   nodeConfig,
   pushPluginConfig,
+  pushPluginEsmConfig,
   pushPluginCdnConfig,
   minifiedPushPluginCdnConfig,
   objectsPluginConfig,
+  objectsPluginEsmConfig,
   objectsPluginCdnConfig,
   minifiedObjectsPluginCdnConfig,
 };
