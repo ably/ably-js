@@ -62,15 +62,17 @@ export class Rest {
 
     Utils.mixin(headers, this.client.options.headers);
 
-    return new PaginatedResource(this.client, '/stats', headers, envelope, function (body, headers, unpacked) {
-      const statsValues = unpacked ? body : JSON.parse(body as string);
+    return new PaginatedResource(this.client, '/stats', headers, envelope, async (body, _, unpacked) => {
+      const statsValues: Stats[] = unpacked
+        ? (body as Stats[])
+        : Utils.decodeBody<Stats[]>(body, this.client._MsgPack, format);
       for (let i = 0; i < statsValues.length; i++) statsValues[i] = Stats.fromValues(statsValues[i]);
       return statsValues;
     }).get(params as Record<string, string>);
   }
 
   async time(params?: RequestParams): Promise<number> {
-    const headers = Defaults.defaultGetHeaders(this.client.options);
+    const headers = Defaults.defaultGetHeaders(this.client.options, { format: Utils.Format.json });
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
     const timeUri = (host: string) => {
       return this.client.baseUri(host) + '/time';
@@ -170,7 +172,7 @@ export class Rest {
     }
 
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+      headers = Defaults.defaultPostHeaders(this.client.options);
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
@@ -192,7 +194,7 @@ export class Rest {
 
   async batchPresence(channels: string[]): Promise<BatchPresenceResult> {
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+      headers = Defaults.defaultGetHeaders(this.client.options);
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 
@@ -223,7 +225,7 @@ export class Rest {
     };
 
     const format = this.client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(this.client.options, { format });
+      headers = Defaults.defaultPostHeaders(this.client.options);
 
     if (this.client.options.headers) Utils.mixin(headers, this.client.options.headers);
 

@@ -75,7 +75,7 @@ class RestAnnotations {
     const client = this.channel.client,
       options = client.options,
       format = options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(client.options, { format }),
+      headers = Defaults.defaultPostHeaders(client.options),
       params = {};
 
     Utils.mixin(headers, client.options.headers);
@@ -106,7 +106,7 @@ class RestAnnotations {
       messageSerial = serialFromMsgOrSerial(msgOrSerial),
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = client.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options);
 
     Utils.mixin(headers, client.options.headers);
 

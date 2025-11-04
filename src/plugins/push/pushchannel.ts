@@ -16,7 +16,7 @@ class PushChannel {
     const device = client.device();
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       body = { deviceId: device.id, channel: this.channel.name },
-      headers = client.Defaults.defaultPostHeaders(client.options, { format });
+      headers = client.Defaults.defaultPostHeaders(client.options);
 
     if (client.options.headers) client.Utils.mixin(headers, client.options.headers);
 
@@ -30,7 +30,7 @@ class PushChannel {
     const client = this.client;
     const device = client.device();
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
-      headers = client.Defaults.defaultPostHeaders(client.options, { format });
+      headers = client.Defaults.defaultPostHeaders(client.options);
 
     if (client.options.headers) client.Utils.mixin(headers, client.options.headers);
 
@@ -54,7 +54,7 @@ class PushChannel {
     }
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
       body = { clientId: clientId, channel: this.channel.name },
-      headers = client.Defaults.defaultPostHeaders(client.options, { format });
+      headers = client.Defaults.defaultPostHeaders(client.options);
 
     if (client.options.headers) client.Utils.mixin(headers, client.options.headers);
 
@@ -70,7 +70,7 @@ class PushChannel {
       throw new this.client.ErrorInfo('Cannot unsubscribe from client without client ID', 50000, 500);
     }
     const format = client.options.useBinaryProtocol ? client.Utils.Format.msgpack : client.Utils.Format.json,
-      headers = client.Defaults.defaultPostHeaders(client.options, { format });
+      headers = client.Defaults.defaultPostHeaders(client.options);
 
     if (client.options.headers) client.Utils.mixin(headers, client.options.headers);
 

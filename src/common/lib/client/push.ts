@@ -100,7 +100,7 @@ class Admin {
   async publish(recipient: any, payload: any): Promise<void> {
     const client = this.client;
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(client.options, { format }),
+      headers = Defaults.defaultPostHeaders(client.options),
       params = {};
     const body = Utils.mixin({ recipient: recipient }, payload);
 
@@ -124,7 +124,7 @@ class DeviceRegistrations {
     const client = this.client;
     const body = DeviceDetails.fromValues(device);
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(client.options, { format }),
+      headers = Defaults.defaultPostHeaders(client.options),
       params = {};
 
     Utils.mixin(headers, client.options.headers);
@@ -152,7 +152,7 @@ class DeviceRegistrations {
   async get(deviceIdOrDetails: any): Promise<DeviceDetails> {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultGetHeaders(client.options, { format }),
+      headers = Defaults.defaultGetHeaders(client.options),
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
     if (typeof deviceId !== 'string' || !deviceId.length) {
@@ -185,7 +185,7 @@ class DeviceRegistrations {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options);
 
     Utils.mixin(headers, client.options.headers);
 
@@ -204,8 +204,7 @@ class DeviceRegistrations {
 
   async remove(deviceIdOrDetails: any): Promise<void> {
     const client = this.client,
-      format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultGetHeaders(client.options, { format }),
+      headers = Defaults.defaultGetHeaders(client.options),
       params = {},
       deviceId = deviceIdOrDetails.id || deviceIdOrDetails;
 
@@ -255,7 +254,7 @@ class ChannelSubscriptions {
     const client = this.client;
     const body = PushChannelSubscription.fromValues(subscription);
     const format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
-      headers = Defaults.defaultPostHeaders(client.options, { format }),
+      headers = Defaults.defaultPostHeaders(client.options),
       params = {};
 
     Utils.mixin(headers, client.options.headers);
@@ -284,7 +283,7 @@ class ChannelSubscriptions {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options);
 
     Utils.mixin(headers, client.options.headers);
 
@@ -320,7 +319,7 @@ class ChannelSubscriptions {
     const client = this.client,
       format = client.options.useBinaryProtocol ? Utils.Format.msgpack : Utils.Format.json,
       envelope = this.client.http.supportsLinkHeaders ? undefined : format,
-      headers = Defaults.defaultGetHeaders(client.options, { format });
+      headers = Defaults.defaultGetHeaders(client.options);
 
     Utils.mixin(headers, client.options.headers);
 
