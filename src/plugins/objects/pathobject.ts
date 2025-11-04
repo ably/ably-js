@@ -50,6 +50,7 @@ export class DefaultPathObject implements AnyPathObject {
   /**
    * Returns a JavaScript object representation of the object at this path
    * If the path does not resolve to any specific entry, returns `undefined`.
+   * Buffers are converted to base64 strings.
    */
   compact<U extends Value = Value>(): CompactedValue<U> | undefined {
     try {
@@ -59,7 +60,13 @@ export class DefaultPathObject implements AnyPathObject {
         return resolved.compact() as CompactedValue<U>;
       }
 
-      return this.value() as CompactedValue<U>;
+      const value = this.value();
+
+      if (this._client.Platform.BufferUtils.isBuffer(value)) {
+        return this._client.Platform.BufferUtils.base64Encode(value) as CompactedValue<U>;
+      }
+
+      return value as CompactedValue<U>;
     } catch (error) {
       if (this._client.Utils.isErrorInfoOrPartialErrorInfo(error) && error.code === 92005) {
         // ignore path resolution errors and return undefined

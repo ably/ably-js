@@ -43,7 +43,13 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
       return this._value.compact() as CompactedValue<U>;
     }
 
-    return this.value() as CompactedValue<U>;
+    const value = this.value();
+
+    if (this._client.Platform.BufferUtils.isBuffer(value)) {
+      return this._client.Platform.BufferUtils.base64Encode(value) as CompactedValue<U>;
+    }
+
+    return value as CompactedValue<U>;
   }
 
   get<U extends Value = Value>(key: string): Instance<U> | undefined {
