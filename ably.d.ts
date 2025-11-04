@@ -1646,11 +1646,11 @@ export type DeregisterCallback = (device: DeviceDetails, callback: StandardCallb
 export type ErrorCallback = (error: ErrorInfo | null) => void;
 
 /**
- * A callback used in {@link LiveObjectDeprecated} to listen for updates to the object.
+ * A callback which returns only a single argument - an event object.
  *
- * @param update - The update object describing the changes made to the object.
+ * @param event - The event which triggered the callback.
  */
-export type LiveObjectUpdateCallback<T> = (update: T) => void;
+export type EventCallback<T> = (event: T) => void;
 
 /**
  * The callback used for the events emitted by {@link RealtimeObject}.
@@ -2436,7 +2436,31 @@ interface PathObjectBase<_T extends Value> {
    *
    * @experimental
    */
-  compact(): any | undefined;
+  compact(): any;
+
+  /**
+   * Registers a listener that is called each time the object or a primitive value at this path is updated.
+   *
+   * The provided listener receives a {@link PathObject} representing the updated path,
+   * and, if applicable, an {@link ObjectMessage} that carried the operation that led to the change.
+   *
+   * By default, subscriptions observe nested changes, but you can configure the observation depth
+   * using the `options` parameter.
+   *
+   * A PathObject subscription observes whichever value currently exists at this path.
+   * The subscription remains active even if the path temporarily does not resolve to any value
+   * (for example, if an entry is removed from a map). If the object instance at this path changes,
+   * the subscription automatically switches to observe the new instance and stops observing the old one.
+   *
+   * @param listener - An event listener function.
+   * @param options - Optional subscription configuration.
+   * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
+   * @experimental
+   */
+  subscribe(
+    listener: EventCallback<PathObjectSubscriptionEvent>,
+    options?: PathObjectSubscriptionOptions,
+  ): SubscribeResponse;
 }
 
 /**
@@ -2646,7 +2670,7 @@ export interface AnyPathObject<T extends Value = Value>
    * @returns The object instance at this path, or `undefined` if none exists.
    * @experimental
    */
-  instance<T extends Value = Value>(): AnyInstance<T> | undefined;
+  instance<T extends Value = Value>(): Instance<T> | undefined;
 }
 
 /**
@@ -2678,7 +2702,7 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -2697,7 +2721,7 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2720,7 +2744,7 @@ export interface LiveCounterOperations {
    *
    * This does not modify the underlying data of the counter. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2754,7 +2778,7 @@ export interface AnyOperations {
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -2773,7 +2797,7 @@ export interface AnyOperations {
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2793,7 +2817,7 @@ export interface AnyOperations {
    *
    * This does not modify the underlying data of the counter. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method. TODO: point to PathObject/Instance subscribe method
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
    *
    * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -2832,7 +2856,7 @@ export type LiveMapType = {
  * InstanceBase defines the set of common methods on an Instance
  * that are present regardless of the underlying type specified in the type parameter T.
  */
-interface InstanceBase<_T extends Value> {
+interface InstanceBase<T extends Value> {
   /**
    * Get the object ID of this instance.
    *
@@ -2848,6 +2872,28 @@ interface InstanceBase<_T extends Value> {
    * @experimental
    */
   compact(): any;
+
+  /**
+   * Registers a listener that is called each time this instance is updated.
+   *
+   * If the underlying instance at runtime is not a {@link LiveObject}, this method throws an error.
+   *
+   * The provided listener receives an {@link Instance} representing the updated object,
+   * and, if applicable, an {@link ObjectMessage} that carried the operation that led to the change.
+   *
+   * Instance subscriptions track a specific object instance regardless of its location.
+   * The subscription follows the instance if it is moved within the broader structure
+   * (for example, between map entries).
+   *
+   * If the instance is deleted from the channel object entirely (i.e., tombstoned),
+   * the listener is called with the corresponding delete operation before
+   * automatically deregistering.
+   *
+   * @param listener - An event listener function.
+   * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
+   * @experimental
+   */
+  subscribe(listener: EventCallback<InstanceSubscriptionEvent<T>>): SubscribeResponse;
 }
 
 /**
@@ -3046,6 +3092,233 @@ export type Instance<T extends Value> = [T] extends [LiveMap<infer T>]
       : AnyInstance<T>;
 
 /**
+ * The event object passed to a {@link PathObject} subscription listener.
+ */
+export type PathObjectSubscriptionEvent = {
+  /** The {@link PathObject} representing the updated path. */
+  object: PathObject;
+  /** The {@link ObjectMessage} that carried the operation that led to the change, if applicable. */
+  message?: ObjectMessage;
+};
+
+/**
+ * Options that can be provided to {@link PathObjectBase.subscribe | PathObject.subscribe}.
+ */
+export interface PathObjectSubscriptionOptions {
+  /**
+   * The number of levels deep to observe changes in nested children.
+   *
+   * - If `undefined` (default), there is no depth limit, and changes at any depth
+   * within nested children will be observed.
+   * - A depth of `1` (the minimum) means that only changes to the object at the subscribed path
+   * itself will be observed, not changes to its children.
+   */
+  depth?: number;
+}
+
+/**
+ * The event object passed to an {@link Instance} subscription listener.
+ */
+export type InstanceSubscriptionEvent<T extends Value> = {
+  /** The {@link Instance} representing the updated object. */
+  object: Instance<T>;
+  /** The {@link ObjectMessage} that carried the operation that led to the change, if applicable. */
+  message?: ObjectMessage;
+};
+
+/**
+ * The namespace containing the different types of object operation actions.
+ */
+declare namespace ObjectOperationActions {
+  /**
+   * Object operation action for a creating a map object.
+   */
+  type MAP_CREATE = 'map.create';
+  /**
+   * Object operation action for setting a key pair in a map object.
+   */
+  type MAP_SET = 'map.set';
+  /**
+   * Object operation action for removing a key from a map object.
+   */
+  type MAP_REMOVE = 'map.remove';
+  /**
+   * Object operation action for creating a counter object.
+   */
+  type COUNTER_CREATE = 'counter.create';
+  /**
+   * Object operation action for incrementing a counter object.
+   */
+  type COUNTER_INC = 'counter.inc';
+  /**
+   * Object operation action for deleting an object.
+   */
+  type OBJECT_DELETE = 'object.delete';
+}
+
+/**
+ * The possible values of the `action` field of an {@link ObjectOperation}.
+ */
+export type ObjectOperationAction =
+  | ObjectOperationActions.MAP_CREATE
+  | ObjectOperationActions.MAP_SET
+  | ObjectOperationActions.MAP_REMOVE
+  | ObjectOperationActions.COUNTER_CREATE
+  | ObjectOperationActions.COUNTER_INC
+  | ObjectOperationActions.OBJECT_DELETE;
+
+/**
+ * The namespace containing the different types of map object semantics.
+ */
+declare namespace ObjectsMapSemanticsNamespace {
+  /**
+   * Last-write-wins conflict-resolution semantics.
+   */
+  type LWW = 'lww';
+}
+
+/**
+ * The possible values of the `semantics` field of an {@link ObjectsMap}.
+ */
+export type ObjectsMapSemantics = ObjectsMapSemanticsNamespace.LWW;
+
+/**
+ * An object message that carried an operation.
+ */
+export interface ObjectMessage {
+  /**
+   * Unique ID assigned by Ably to this object message.
+   */
+  id: string;
+  /**
+   * The client ID of the publisher of this object message (if any).
+   */
+  clientId?: string;
+  /**
+   * The connection ID of the publisher of this object message (if any).
+   */
+  connectionId?: string;
+  /**
+   * Timestamp of when the object message was received by Ably, as milliseconds since the Unix epoch.
+   */
+  timestamp: number;
+  /**
+   * The name of the channel the object message was published to.
+   */
+  channel: string;
+  /**
+   * Describes an operation that was applied to an object.
+   */
+  operation: ObjectOperation;
+  /**
+   * An opaque string that uniquely identifies this object message.
+   */
+  serial?: string;
+  /**
+   * A timestamp from the {@link serial} field.
+   */
+  serialTimestamp?: number;
+  /**
+   * An opaque string that uniquely identifies the Ably site the object message was published to.
+   */
+  siteCode?: string;
+  /**
+   * A JSON object of arbitrary key-value pairs that may contain metadata, and/or ancillary payloads. Valid payloads include `headers`.
+   */
+  extras?: {
+    /**
+     * A set of key–value pair headers included with this object message.
+     */
+    headers?: Record<string, string>;
+    [key: string]: any;
+  };
+}
+
+/**
+ * An operation that was applied to an object on a channel.
+ */
+export interface ObjectOperation {
+  /** The operation action, one of the {@link ObjectOperationAction} enum values. */
+  action: ObjectOperationAction;
+  /** The ID of the object the operation was applied to. */
+  objectId: string;
+  /** The payload for the operation if it is a mutation operation on a map object. */
+  mapOp?: ObjectsMapOp;
+  /** The payload for the operation if it is a mutation operation on a counter object. */
+  counterOp?: ObjectsCounterOp;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.MAP_CREATE}.
+   * Defines the initial value of the map object.
+   */
+  map?: ObjectsMap;
+  /**
+   * The payload for the operation if the action is {@link ObjectOperationActions.COUNTER_CREATE}.
+   * Defines the initial value of the counter object.
+   */
+  counter?: ObjectsCounter;
+}
+
+/**
+ * Describes an operation that was applied to a map object.
+ */
+export interface ObjectsMapOp {
+  /** The key that the operation was applied to. */
+  key: string;
+  /** The data assigned to the key if the operation is {@link ObjectOperationActions.MAP_SET}. */
+  data?: ObjectData;
+}
+
+/**
+ * Describes an operation that was applied to a counter object.
+ */
+export interface ObjectsCounterOp {
+  /** The value added to the counter. */
+  amount: number;
+}
+
+/**
+ * Describes the initial value of a map object.
+ */
+export interface ObjectsMap {
+  /** The conflict-resolution semantics used by the map object, one of the {@link ObjectsMapSemantics} enum values. */
+  semantics?: ObjectsMapSemantics;
+  /** The map entries, indexed by key. */
+  entries?: Record<string, ObjectsMapEntry>;
+}
+
+/**
+ * Describes a value at a specific key in a map object.
+ */
+export interface ObjectsMapEntry {
+  /** Indicates whether the map entry has been removed. */
+  tombstone?: boolean;
+  /** The {@link ObjectMessage.serial} value of the last operation applied to the map entry. */
+  timeserial?: string;
+  /** A timestamp derived from the {@link timeserial} field. Present only if {@link tombstone} is `true`. */
+  serialTimestamp?: number;
+  /** The value associated with this map entry. */
+  data?: ObjectData;
+}
+
+/**
+ * Describes the initial value of a counter object.
+ */
+export interface ObjectsCounter {
+  /** The value of the counter. */
+  count?: number;
+}
+
+/**
+ * Represents a value in an object on a channel.
+ */
+export interface ObjectData {
+  /** A reference to another object. */
+  objectId?: string;
+  /** A decoded primitive value. */
+  value?: Primitive;
+}
+
+/**
  * The default type for the entrypoint {@link LiveMapDeprecated} object on a channel, based on the globally defined {@link AblyObjectsTypes} interface.
  *
  * - If no custom types are provided in `AblyObjectsTypes`, defaults to an untyped map representation using the {@link LiveMapType} interface.
@@ -3111,7 +3384,6 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -3124,7 +3396,6 @@ export declare interface BatchContextLiveMap<T extends LiveMapType> {
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @experimental
@@ -3148,7 +3419,6 @@ export declare interface BatchContextLiveCounter {
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param amount - The amount by which to increase the counter value.
    * @experimental
@@ -3171,7 +3441,7 @@ export declare interface BatchContextLiveCounter {
  *
  * Keys must be strings. Values can be another {@link LiveObjectDeprecated}, or a primitive type, such as a string, number, boolean, JSON-serializable object or array, or binary data (see {@link PrimitiveObjectValue}).
  */
-export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveObjectDeprecated<LiveMapUpdate<T>> {
+export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveObjectDeprecated {
   /**
    * Returns the value associated with a given key. Returns `undefined` if the key doesn't exist in a map or if the associated {@link LiveObjectDeprecated} has been deleted.
    *
@@ -3216,7 +3486,6 @@ export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveOb
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to set the value for.
    * @param value - The value to assign to the key.
@@ -3230,25 +3499,12 @@ export declare interface LiveMapDeprecated<T extends LiveMapType> extends LiveOb
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param key - The key to remove.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
    * @experimental
    */
   remove<TKey extends keyof T & string>(key: TKey): Promise<void>;
-}
-
-/**
- * Represents an update to a {@link LiveMapDeprecated} object, describing the keys that were updated or removed.
- */
-export declare interface LiveMapUpdate<T extends LiveMapType> extends LiveObjectUpdate {
-  /**
-   * An object containing keys from a `LiveMap` that have changed, along with their change status:
-   * - `updated` - the value of a key in the map was updated.
-   * - `removed` - the key was removed from the map.
-   */
-  update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
 }
 
 /**
@@ -3281,7 +3537,7 @@ export type JsonObject = { [prop: string]: Json | undefined };
 /**
  * The `LiveCounter` class represents a counter that can be incremented or decremented and is synchronized across clients in realtime.
  */
-export declare interface LiveCounterDeprecated extends LiveObjectDeprecated<LiveCounterUpdate> {
+export declare interface LiveCounterDeprecated extends LiveObjectDeprecated {
   /**
    * Returns the current value of the counter.
    *
@@ -3294,7 +3550,6 @@ export declare interface LiveCounterDeprecated extends LiveObjectDeprecated<Live
    *
    * This does not modify the underlying data of this object. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
-   * To get notified when object gets updated, use the {@link LiveObjectDeprecated.subscribe} method.
    *
    * @param amount - The amount by which to increase the counter value.
    * @returns A promise which resolves upon success of the operation and rejects with an {@link ErrorInfo} object upon its failure.
@@ -3313,48 +3568,9 @@ export declare interface LiveCounterDeprecated extends LiveObjectDeprecated<Live
 }
 
 /**
- * Represents an update to a {@link LiveCounterDeprecated} object.
- */
-export declare interface LiveCounterUpdate extends LiveObjectUpdate {
-  /**
-   * Holds the numerical change to the counter value.
-   */
-  update: {
-    /**
-     * The value by which the counter was incremented or decremented.
-     */
-    amount: number;
-  };
-}
-
-/**
  * Describes the common interface for all conflict-free data structures supported by the Objects.
  */
-export declare interface LiveObjectDeprecated<TUpdate extends LiveObjectUpdate = LiveObjectUpdate> {
-  /**
-   * Registers a listener that is called each time this LiveObject is updated.
-   *
-   * @param listener - An event listener function that is called with an update object whenever this LiveObject is updated.
-   * @returns A {@link SubscribeResponse} object that allows the provided listener to be deregistered from future updates.
-   * @experimental
-   */
-  subscribe(listener: LiveObjectUpdateCallback<TUpdate>): SubscribeResponse;
-
-  /**
-   * Deregisters the given listener from updates for this LiveObject.
-   *
-   * @param listener - An event listener function.
-   * @experimental
-   */
-  unsubscribe(listener: LiveObjectUpdateCallback<TUpdate>): void;
-
-  /**
-   * Deregisters all listeners from updates for this LiveObject.
-   *
-   * @experimental
-   */
-  unsubscribeAll(): void;
-
+export declare interface LiveObjectDeprecated {
   /**
    * Registers the provided listener for the specified event. If `on()` is called more than once with the same listener and event, the listener is added multiple times to its listener registry. Therefore, as an example, assuming the same listener is registered twice using `on()`, and an event is emitted once, the listener would be invoked twice.
    *
@@ -3380,20 +3596,6 @@ export declare interface LiveObjectDeprecated<TUpdate extends LiveObjectUpdate =
    * @experimental
    */
   offAll(): void;
-}
-
-/**
- * Represents a generic update object describing the changes that occurred on a LiveObject.
- */
-export declare interface LiveObjectUpdate {
-  /**
-   * Holds an update object which describe changes applied to the object.
-   */
-  update: any;
-  /** The client ID of the client that published this update. */
-  clientId?: string;
-  /** The connection ID of the client that published this update. */
-  connectionId?: string;
 }
 
 /**
