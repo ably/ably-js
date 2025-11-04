@@ -22,6 +22,8 @@ export interface LiveObjectUpdate {
   update: any;
   /** Object message that caused an update to an object, if available */
   objectMessage?: ObjectMessage;
+  /** Indicates whether this update is a result of a tombstone (delete) operation. */
+  tombstone?: boolean;
 }
 
 export interface LiveObjectUpdateNoop {
@@ -139,6 +141,11 @@ export abstract class LiveObject<
 
     this._notifyInstanceSubscriptions(update);
     this._notifyPathSubscriptions(update);
+
+    if (update.tombstone) {
+      // deregister all listeners if update was a result of a tombstone operation
+      this._subscriptions.off();
+    }
   }
 
   /**
@@ -146,7 +153,7 @@ export abstract class LiveObject<
    *
    * @internal
    */
-  tombstone(objectMessage: ObjectMessage): void {
+  tombstone(objectMessage: ObjectMessage): TUpdate {
     this._tombstone = true;
     if (objectMessage.serialTimestamp != null) {
       this._tombstonedAt = objectMessage.serialTimestamp;
@@ -161,12 +168,11 @@ export abstract class LiveObject<
     }
     const update = this.clearData();
     update.objectMessage = objectMessage;
+    update.tombstone = true;
 
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
-    // notify subscribers about the delete operation and then deregister all listeners
-    this.notifyUpdated(update);
-    this._subscriptions.off();
+    return update;
   }
 
   /**
@@ -307,8 +313,8 @@ export abstract class LiveObject<
     return !siteSerial || opSerial > siteSerial;
   }
 
-  protected _applyObjectDelete(objectMessage: ObjectMessage): void {
-    this.tombstone(objectMessage);
+  protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
+    return this.tombstone(objectMessage);
   }
 
   private _notifyInstanceSubscriptions(update: TUpdate): void {
