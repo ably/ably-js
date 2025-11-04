@@ -547,6 +547,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * Returns a plain JavaScript object representation of this LiveMap.
    * LiveMap values are recursively compacted using their own compact methods.
+   * Buffers are converted to base64 strings.
    *
    * @internal
    */
@@ -562,6 +563,12 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
       if (value instanceof LiveCounter) {
         result[key] = value.value();
+        continue;
+      }
+
+      // Convert buffers to base64 strings
+      if (this._client.Platform.BufferUtils.isBuffer(value)) {
+        result[key] = this._client.Platform.BufferUtils.base64Encode(value);
         continue;
       }
 

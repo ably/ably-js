@@ -2417,7 +2417,7 @@ export type Value = LiveObject | Primitive;
 
 /**
  * CompactedValue transforms LiveObject types into plain JavaScript equivalents.
- * LiveMap becomes an object, LiveCounter becomes a number, primitives remain unchanged.
+ * LiveMap becomes an object, LiveCounter becomes a number, binary values become base64-encoded strings, other primitives remain unchanged.
  */
 export type CompactedValue<T extends Value> =
   // LiveMap types
@@ -2430,12 +2430,21 @@ export type CompactedValue<T extends Value> =
         ? number
         : [T] extends [LiveCounter | undefined]
           ? number | undefined
-          : // Primitive types
-            [T] extends [Primitive]
-            ? T
-            : [T] extends [Primitive | undefined]
-              ? T
-              : any;
+          : // Binary types (converted to base64 strings)
+            [T] extends [Buffer]
+            ? string
+            : [T] extends [Buffer | undefined]
+              ? string | undefined
+              : [T] extends [ArrayBuffer]
+                ? string
+                : [T] extends [ArrayBuffer | undefined]
+                  ? string | undefined
+                  : // Other primitive types
+                    [T] extends [Primitive]
+                    ? T
+                    : [T] extends [Primitive | undefined]
+                      ? T
+                      : any;
 
 /**
  * PathObjectBase defines the set of common methods on a PathObject
@@ -2567,10 +2576,13 @@ export interface LiveMapPathObject<T extends Record<string, Value> = Record<stri
 
   /**
    * Get a JavaScript object representation of the map at this path.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the path does not resolve to any specific instance, returns `undefined`.
    *
    * @experimental
    */
-  compact(): CompactedValue<LiveMap<T>>;
+  compact(): CompactedValue<LiveMap<T>> | undefined;
 }
 
 /**
@@ -2596,10 +2608,11 @@ export interface LiveCounterPathObject extends PathObjectBase, LiveCounterOperat
 
   /**
    * Get a number representation of the counter at this path.
+   * If the path does not resolve to any specific instance, returns `undefined`.
    *
    * @experimental
    */
-  compact(): CompactedValue<LiveCounter>;
+  compact(): CompactedValue<LiveCounter> | undefined;
 }
 
 /**
@@ -2616,10 +2629,13 @@ export interface PrimitivePathObject<T extends Primitive = Primitive> extends Pa
 
   /**
    * Get a JavaScript object representation of the primitive value at this path.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the path does not resolve to any specific entry, returns `undefined`.
    *
    * @experimental
    */
-  compact(): CompactedValue<T>;
+  compact(): CompactedValue<T> | undefined;
 }
 
 /**
@@ -2709,6 +2725,9 @@ export interface AnyPathObject
 
   /**
    * Get a JavaScript object representation of the object at this path.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the path does not resolve to any specific entry, returns `undefined`.
    *
    * @experimental
    */
@@ -3000,10 +3019,13 @@ export interface LiveMapInstance<T extends Record<string, Value> = Record<string
 
   /**
    * Get a JavaScript object representation of the map instance.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * @experimental
    */
-  compact(): CompactedValue<LiveMap<T>>;
+  compact(): CompactedValue<LiveMap<T>> | undefined;
 }
 
 /**
@@ -3020,10 +3042,11 @@ export interface LiveCounterInstance extends InstanceBase<LiveCounter>, LiveCoun
 
   /**
    * Get a number representation of the counter instance.
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * @experimental
    */
-  compact(): CompactedValue<LiveCounter>;
+  compact(): CompactedValue<LiveCounter> | undefined;
 }
 
 /**
@@ -3043,10 +3066,13 @@ export interface PrimitiveInstance<T extends Primitive = Primitive> {
 
   /**
    * Get a JavaScript object representation of the primitive value.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * @experimental
    */
-  compact(): CompactedValue<T>;
+  compact(): CompactedValue<T> | undefined;
 }
 
 /**
@@ -3133,6 +3159,9 @@ export interface AnyInstance<T extends Value> extends InstanceBase<T>, AnyInstan
 
   /**
    * Get a JavaScript object representation of the object instance.
+   * Binary values are returned as base64-encoded strings.
+   *
+   * If the underlying instance's value is not of the expected type at runtime, returns `undefined`.
    *
    * @experimental
    */

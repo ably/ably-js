@@ -5021,7 +5021,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             primitiveKeyData.forEach((keyData) => {
               const pathObj = entryPathObject.get(keyData.key);
               const compactValue = pathObj.compact();
-              const expectedValue = pathObj.value();
+              // expect buffer values to be base64-encoded strings
+              helper.recordPrivateApi('call.BufferUtils.isBuffer');
+              helper.recordPrivateApi('call.BufferUtils.base64Encode');
+              const expectedValue = BufferUtils.isBuffer(pathObj.value())
+                ? BufferUtils.base64Encode(pathObj.value())
+                : pathObj.value();
 
               expect(compactValue).to.deep.equal(
                 expectedValue,
@@ -5048,10 +5053,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.compact() returns plain object for LiveMap objects',
           action: async (ctx) => {
-            const { entryInstance, entryPathObject } = ctx;
+            const { entryInstance, entryPathObject, helper } = ctx;
 
             // Create nested structure with different value types
             const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(entryInstance, 'nestedMap')]);
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
             await entryPathObject.set(
               'nestedMap',
               LiveMap.create({
@@ -5061,11 +5067,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 counterKey: LiveCounter.create(99),
                 array: [1, 2, 3],
                 obj: { nested: 'value' },
+                buffer: BufferUtils.utf8Encode('value'),
               }),
             );
             await keysUpdatedPromise;
 
             const compactValue = entryPathObject.get('nestedMap').compact();
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            helper.recordPrivateApi('call.BufferUtils.base64Encode');
             const expected = {
               stringKey: 'stringValue',
               numberKey: 123,
@@ -5073,6 +5082,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               counterKey: 99,
               array: [1, 2, 3],
               obj: { nested: 'value' },
+              buffer: BufferUtils.base64Encode(BufferUtils.utf8Encode('value')),
             };
 
             expect(compactValue).to.deep.equal(expected, 'Check compact object has expected value');
@@ -5785,9 +5795,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await keysUpdatedPromise;
 
             primitiveKeyData.forEach((keyData) => {
-              const childInstance = entryInstance.get(keyData.key);
-              const compactValue = childInstance.compact();
-              const expectedValue = childInstance.value();
+              const instance = entryInstance.get(keyData.key);
+              const compactValue = instance.compact();
+              // expect buffer values to be base64-encoded strings
+              helper.recordPrivateApi('call.BufferUtils.isBuffer');
+              helper.recordPrivateApi('call.BufferUtils.base64Encode');
+              const expectedValue = BufferUtils.isBuffer(instance.value())
+                ? BufferUtils.base64Encode(instance.value())
+                : instance.value();
 
               expect(compactValue).to.deep.equal(
                 expectedValue,
@@ -5814,10 +5829,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.compact() returns plain object for LiveMap objects',
           action: async (ctx) => {
-            const { entryInstance, entryPathObject } = ctx;
+            const { entryInstance, entryPathObject, helper } = ctx;
 
             // Create nested structure with different value types
             const keysUpdatedPromise = Promise.all([waitForMapKeyUpdate(entryInstance, 'nestedMap')]);
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
             await entryPathObject.set(
               'nestedMap',
               LiveMap.create({
@@ -5827,11 +5843,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 counterKey: LiveCounter.create(111),
                 array: [1, 2, 3],
                 obj: { nested: 'value' },
+                buffer: BufferUtils.utf8Encode('value'),
               }),
             );
             await keysUpdatedPromise;
 
             const compactValue = entryInstance.get('nestedMap').compact();
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
+            helper.recordPrivateApi('call.BufferUtils.base64Encode');
             const expected = {
               stringKey: 'stringValue',
               numberKey: 456,
@@ -5839,6 +5858,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               counterKey: 111,
               array: [1, 2, 3],
               obj: { nested: 'value' },
+              buffer: BufferUtils.base64Encode(BufferUtils.utf8Encode('value')),
             };
 
             expect(compactValue).to.deep.equal(expected, 'Check compact object has expected value');
@@ -5885,9 +5905,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.compact() and PathObject.compact() return equivalent results',
           action: async (ctx) => {
-            const { entryInstance, entryPathObject } = ctx;
+            const { entryInstance, entryPathObject, helper } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'comparison');
+            helper.recordPrivateApi('call.BufferUtils.utf8Encode');
             await entryPathObject.set(
               'comparison',
               LiveMap.create({
@@ -5897,6 +5918,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   innerCounter: LiveCounter.create(25),
                 }),
                 primitive: 'comparison test',
+                buffer: BufferUtils.utf8Encode('value'),
               }),
             );
             await keyUpdatedPromise;
