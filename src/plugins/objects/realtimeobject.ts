@@ -8,8 +8,9 @@ import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
 import { LiveObject, LiveObjectUpdate, LiveObjectUpdateNoop } from './liveobject';
 import { ObjectMessage, ObjectOperationAction } from './objectmessage';
-import { ObjectsPool, ROOT_OBJECT_ID } from './objectspool';
+import { ObjectsPool } from './objectspool';
 import { DefaultPathObject } from './pathobject';
+import { PathObjectSubscriptionRegister } from './pathobjectsubscriptionregister';
 import { SyncObjectsDataPool } from './syncobjectsdatapool';
 
 export enum ObjectsEvent {
@@ -53,6 +54,7 @@ export class RealtimeObject {
   private _currentSyncId: string | undefined;
   private _currentSyncCursor: string | undefined;
   private _bufferedObjectOperations: ObjectMessage[];
+  private _pathObjectSubscriptionRegister: PathObjectSubscriptionRegister;
 
   // Used by tests
   static _DEFAULTS = DEFAULTS;
@@ -66,6 +68,7 @@ export class RealtimeObject {
     this._objectsPool = new ObjectsPool(this);
     this._syncObjectsDataPool = new SyncObjectsDataPool(this);
     this._bufferedObjectOperations = [];
+    this._pathObjectSubscriptionRegister = new PathObjectSubscriptionRegister(this);
     // use server-provided objectsGCGracePeriod if available, and subscribe to new connectionDetails that can be emitted as part of the RTN24
     this.gcGracePeriod =
       this._channel.connectionManager.connectionDetails?.objectsGCGracePeriod ?? DEFAULTS.gcGracePeriod;
@@ -88,7 +91,7 @@ export class RealtimeObject {
       await this._eventEmitterInternal.once(ObjectsEvent.synced); // RTO1c
     }
 
-    return this._objectsPool.get(ROOT_OBJECT_ID) as LiveMap<T>; // RTO1d
+    return this._objectsPool.getRoot(); // RTO1d
   }
 
   // TODO: replace .get call with this one when we have full path object API support.
@@ -100,12 +103,7 @@ export class RealtimeObject {
       await this._eventEmitterInternal.once(ObjectsEvent.synced); // RTO1c
     }
 
-    const pathObject = new DefaultPathObject<API.LiveMap<T>>(
-      this,
-      // TODO: fix LiveMap<any> when internal LiveMap is updated to support new path based type system
-      this._objectsPool.get(ROOT_OBJECT_ID) as LiveMap<any>,
-      [],
-    );
+    const pathObject = new DefaultPathObject<API.LiveMap<T>>(this, this._objectsPool.getRoot(), []);
     return pathObject;
   }
 
@@ -172,6 +170,13 @@ export class RealtimeObject {
    */
   getClient(): BaseClient {
     return this._client;
+  }
+
+  /**
+   * @internal
+   */
+  getPathObjectSubscriptionRegister(): PathObjectSubscriptionRegister {
+    return this._pathObjectSubscriptionRegister;
   }
 
   /**
@@ -339,7 +344,10 @@ export class RealtimeObject {
     }
 
     const receivedObjectIds = new Set<string>();
-    const existingObjectUpdates: { object: LiveObject; update: LiveObjectUpdate | LiveObjectUpdateNoop }[] = [];
+    const existingObjectUpdates: {
+      object: LiveObject;
+      update: LiveObjectUpdate | LiveObjectUpdateNoop;
+    }[] = [];
 
     // RTO5c1
     for (const [objectId, entry] of this._syncObjectsDataPool.entries()) {
@@ -378,7 +386,11 @@ export class RealtimeObject {
     // RTO5c2 - need to remove LiveObject instances from the ObjectsPool for which objectIds were not received during the sync sequence
     this._objectsPool.deleteExtraObjectIds([...receivedObjectIds]);
 
-    // call subscription callbacks for all updated existing objects
+    // Rebuild all parent references after sync to ensure all object-to-object references are properly established
+    // This is necessary because objects may reference other objects that weren't in the pool when they were initially created
+    this._rebuildAllParentReferences();
+
+    // call subscription callbacks for all updated existing objects.
     existingObjectUpdates.forEach(({ object, update }) => object.notifyUpdated(update));
   }
 
@@ -449,6 +461,31 @@ export class RealtimeObject {
 
     this._eventEmitterInternal.emit(event);
     this._eventEmitterPublic.emit(event);
+  }
+
+  /**
+   * Rebuilds all parent references in the objects pool.
+   * This is necessary after sync operations where objects may reference other objects
+   * that weren't available when the initial parent references were established.
+   */
+  private _rebuildAllParentReferences(): void {
+    // First, clear all existing parent references
+    for (const object of this._objectsPool.getAll()) {
+      object.clearParentReferences();
+    }
+
+    // Then, rebuild parent references by examining all objects and their data
+    for (const object of this._objectsPool.getAll()) {
+      if (object instanceof LiveMap) {
+        // For LiveMaps, iterate through their entries and establish parent references
+        for (const [key, value] of object.entries()) {
+          if (value instanceof LiveObject) {
+            value.addParentReference(object, key);
+          }
+        }
+      }
+      // Note: LiveCounter doesn't reference other objects, so no special handling needed
+    }
   }
 
   private _throwIfInChannelState(channelState: API.ChannelState[]): void {

@@ -1,8 +1,20 @@
 import type BaseClient from 'common/lib/client/baseclient';
+import type RealtimeChannel from 'common/lib/client/realtimechannel';
 import type { MessageEncoding } from 'common/lib/types/basemessage';
 import type * as Utils from 'common/lib/util/utils';
-import type { Bufferlike } from 'common/platform';
+import type * as API from '../../../ably';
 import type { JsonArray, JsonObject } from '../../../ably';
+
+const operationActions: API.ObjectOperationAction[] = [
+  'map.create',
+  'map.set',
+  'map.remove',
+  'counter.create',
+  'counter.inc',
+  'object.delete',
+];
+
+const mapSemantics: API.ObjectsMapSemantics[] = ['lww'];
 
 export type EncodeObjectDataFunction = (data: ObjectData | WireObjectData) => WireObjectData;
 
@@ -21,7 +33,7 @@ export enum ObjectsMapSemantics {
   LWW = 0,
 }
 
-export type PrimitiveObjectValue = string | number | boolean | Bufferlike | JsonArray | JsonObject;
+export type PrimitiveObjectValue = string | number | boolean | Buffer | ArrayBuffer | JsonArray | JsonObject;
 
 /**
  * An ObjectData represents a value in an object on a channel decoded from {@link WireObjectData}.
@@ -45,7 +57,7 @@ export interface WireObjectData {
   /** A primitive boolean leaf value in the object graph. Only one value field can be set. */
   boolean?: boolean; // OD2c
   /** A primitive binary leaf value in the object graph. Only one value field can be set. Represented as a Base64-encoded string in JSON protocol */
-  bytes?: Bufferlike | string; // OD2d
+  bytes?: Buffer | ArrayBuffer | string; // OD2d
   /** A primitive number leaf value in the object graph. Only one value field can be set. */
   number?: number; // OD2e
   /** A primitive string leaf value in the object graph. Only one value field can be set. */
@@ -70,7 +82,7 @@ export interface ObjectsMapOp<TData> {
  * @spec OCO1
  */
 export interface ObjectsCounterOp {
-  /** The data value that should be added to the counter */
+  /** The data value that should be added to the counter. */
   amount: number; // OCO2a
 }
 
@@ -101,7 +113,7 @@ export interface ObjectsMapEntry<TData> {
 export interface ObjectsMap<TData> {
   /** The conflict-resolution semantics used by the map object. */
   semantics?: ObjectsMapSemantics; // OMP3a
-  // The map entries, indexed by key.
+  /** The map entries, indexed by key. */
   entries?: Record<string, ObjectsMapEntry<TData>>; // OMP3b
 }
 
@@ -327,6 +339,19 @@ function copyMsg(
   return result;
 }
 
+function stringifyOperation(operation: ObjectOperation<ObjectData>): API.ObjectOperation {
+  return {
+    ...operation,
+    action: operationActions[operation.action] || 'unknown',
+    map: operation.map
+      ? {
+          ...operation.map,
+          semantics: operation.map.semantics != null ? mapSemantics[operation.map.semantics] || 'unknown' : undefined,
+        }
+      : undefined,
+  };
+}
+
 /**
  * A decoded {@link WireObjectMessage} message
  * @spec OM1
@@ -411,6 +436,30 @@ export class ObjectMessage {
 
   toString(): string {
     return strMsg(this, 'ObjectMessage');
+  }
+
+  isOperationMessage(): boolean {
+    return this.operation != null;
+  }
+
+  isSyncMessage(): boolean {
+    return this.object != null;
+  }
+
+  toUserFacingMessage(channel: RealtimeChannel): API.ObjectMessage {
+    return {
+      id: this.id!,
+      clientId: this.clientId,
+      connectionId: this.connectionId,
+      timestamp: this.timestamp!,
+      channel: channel.name,
+      // we expose only operation messages to users, so operation field is always present
+      operation: stringifyOperation(this.operation!),
+      serial: this.serial,
+      serialTimestamp: this.serialTimestamp,
+      siteCode: this.siteCode,
+      extras: this.extras,
+    };
   }
 }
 
@@ -726,12 +775,18 @@ export class WireObjectMessage {
     format: Utils.Format | undefined,
   ): ObjectData {
     try {
-      let decodedBytes: Bufferlike | undefined;
+      if (objectData.objectId != null) {
+        return {
+          objectId: objectData.objectId,
+        };
+      }
+
+      let decodedBytes: Buffer | ArrayBuffer | undefined;
       if (objectData.bytes != null) {
         decodedBytes =
           format === 'msgpack'
             ? // OD5a1 - connection is using msgpack protocol, bytes are already a buffer
-              (objectData.bytes as Bufferlike)
+              (objectData.bytes as Buffer | ArrayBuffer)
             : // OD5b2 - connection is using JSON protocol, Base64-decode bytes value
               client.Platform.BufferUtils.base64Decode(String(objectData.bytes));
       }
@@ -742,7 +797,6 @@ export class WireObjectMessage {
       }
 
       return {
-        objectId: objectData.objectId,
         value: decodedBytes ?? decodedJson ?? objectData.boolean ?? objectData.number ?? objectData.string,
       };
     } catch (error) {

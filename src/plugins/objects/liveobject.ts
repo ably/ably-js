@@ -1,6 +1,11 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type EventEmitter from 'common/lib/util/eventemitter';
+import type { EventCallback, LiveMapType, SubscribeResponse } from '../../../ably';
+import { ROOT_OBJECT_ID } from './constants';
+import { InstanceEvent } from './instance';
+import { LiveMapUpdate } from './livemap';
 import { ObjectData, ObjectMessage, ObjectOperation } from './objectmessage';
+import { PathEvent } from './pathobjectsubscriptionregister';
 import { RealtimeObject } from './realtimeobject';
 
 export enum LiveObjectSubscriptionEvent {
@@ -12,19 +17,19 @@ export interface LiveObjectData {
 }
 
 export interface LiveObjectUpdate {
+  _type: 'LiveMapUpdate' | 'LiveCounterUpdate';
+  /** Delta of the change */
   update: any;
-  clientId?: string;
-  connectionId?: string;
+  /** Object message that caused an update to an object, if available */
+  objectMessage?: ObjectMessage;
+  /** Indicates whether this update is a result of a tombstone (delete) operation. */
+  tombstone?: boolean;
 }
 
 export interface LiveObjectUpdateNoop {
   // have optional update field with undefined type so it's not possible to create a noop object with a meaningful update property.
   update?: undefined;
   noop: true;
-}
-
-export interface SubscribeResponse {
-  unsubscribe(): void;
 }
 
 export enum LiveObjectLifecycleEvent {
@@ -54,6 +59,11 @@ export abstract class LiveObject<
   protected _createOperationIsMerged: boolean;
   private _tombstone: boolean;
   private _tombstonedAt: number | undefined;
+  /**
+   * Track parent references - which LiveMap objects contain this object and at which keys.
+   * Multiple parents can reference the same object, so we use a Map of parent to Set of keys for efficient lookups.
+   */
+  private _parentReferences: Map<LiveObject, Set<string>>;
 
   protected constructor(
     protected _realtimeObject: RealtimeObject,
@@ -68,9 +78,10 @@ export abstract class LiveObject<
     this._siteTimeserials = {};
     this._createOperationIsMerged = false;
     this._tombstone = false;
+    this._parentReferences = new Map<LiveObject, Set<string>>();
   }
 
-  subscribe(listener: (update: TUpdate) => void): SubscribeResponse {
+  instanceSubscribe(listener: EventCallback<InstanceEvent>): SubscribeResponse {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
 
     this._subscriptions.on(LiveObjectSubscriptionEvent.updated, listener);
@@ -80,24 +91,6 @@ export abstract class LiveObject<
     };
 
     return { unsubscribe };
-  }
-
-  unsubscribe(listener: (update: TUpdate) => void): void {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-
-    // current implementation of the EventEmitter will remove all listeners if .off is called without arguments or with nullish arguments.
-    // or when called with just an event argument, it will remove all listeners for the event.
-    // thus we need to check that listener does actually exist before calling .off.
-    if (this._client.Utils.isNil(listener)) {
-      return;
-    }
-
-    this._subscriptions.off(LiveObjectSubscriptionEvent.updated, listener);
-  }
-
-  unsubscribeAll(): void {
-    // this public API method can be called without specific configuration, so checking for invalid settings is unnecessary.
-    this._subscriptions.off(LiveObjectSubscriptionEvent.updated);
   }
 
   on(event: LiveObjectLifecycleEvent, callback: LiveObjectLifecycleEventCallback): OnLiveObjectLifecycleEventResponse {
@@ -136,16 +129,23 @@ export abstract class LiveObject<
 
   /**
    * Emits the {@link LiveObjectSubscriptionEvent.updated} event with provided update object if it isn't a noop.
+   * Also notifies the path object subscriptions about path-based events.
    *
    * @internal
    */
   notifyUpdated(update: TUpdate | LiveObjectUpdateNoop): void {
-    // should not emit update event if update was noop
-    if ((update as LiveObjectUpdateNoop).noop) {
+    if (this._isNoopUpdate(update)) {
+      // do not emit update events for noop updates
       return;
     }
 
-    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, update);
+    this._notifyInstanceSubscriptions(update);
+    this._notifyPathSubscriptions(update);
+
+    if (update.tombstone) {
+      // deregister all listeners if update was a result of a tombstone operation
+      this._subscriptions.off();
+    }
   }
 
   /**
@@ -167,8 +167,9 @@ export abstract class LiveObject<
       this._tombstonedAt = Date.now(); // best-effort estimate since no timestamp provided by the server
     }
     const update = this.clearData();
-    update.clientId = objectMessage.clientId;
-    update.connectionId = objectMessage.connectionId;
+    update.objectMessage = objectMessage;
+    update.tombstone = true;
+
     this._lifecycleEvents.emit(LiveObjectLifecycleEvent.deleted);
 
     return update;
@@ -198,6 +199,102 @@ export abstract class LiveObject<
   }
 
   /**
+   * Add a parent reference indicating that this object is referenced by the given parent LiveMap at the specified key.
+   *
+   * @internal
+   */
+  addParentReference(parent: LiveObject, key: string): void {
+    const keys = this._parentReferences.get(parent);
+
+    if (keys) {
+      keys.add(key);
+    } else {
+      this._parentReferences.set(parent, new Set([key]));
+    }
+  }
+
+  /**
+   * Remove a parent reference indicating that this object is no longer referenced by the given parent LiveMap at the specified key.
+   *
+   * @internal
+   */
+  removeParentReference(parent: LiveObject, key: string): void {
+    const keys = this._parentReferences.get(parent);
+
+    if (keys) {
+      keys.delete(key);
+      // If no more keys for this parent, remove the parent entry entirely
+      if (keys.size === 0) {
+        this._parentReferences.delete(parent);
+      }
+    }
+  }
+
+  /**
+   * Remove all parent references for a specific parent (when parent is being deleted or cleared).
+   *
+   * @internal
+   */
+  removeParentReferenceAll(parent: LiveObject): void {
+    this._parentReferences.delete(parent);
+  }
+
+  /**
+   * Clears all parent references for this object.
+   *
+   * @internal
+   */
+  clearParentReferences(): void {
+    this._parentReferences.clear();
+  }
+
+  /**
+   * Calculates and returns all possible paths to this object from the root object by traversing up the parent hierarchy.
+   * Uses iterative DFS with an explicit stack. Each path is represented as an array of keys from root to this object.
+   *
+   * @internal
+   */
+  getFullPaths(): string[][] {
+    const paths: string[][] = [];
+
+    const stack: { obj: LiveObject; currentPath: string[]; visited: Set<LiveObject> }[] = [
+      { obj: this, currentPath: [], visited: new Set() },
+    ];
+
+    while (stack.length > 0) {
+      const { obj, currentPath, visited } = stack.pop()!;
+
+      // Check for cyclic references
+      if (visited.has(obj)) {
+        continue; // Skip this path to prevent infinite loops
+      }
+
+      // Create new visited set for this path
+      const newVisited = new Set(visited);
+      newVisited.add(obj);
+
+      if (obj.getObjectId() === ROOT_OBJECT_ID) {
+        // Reached the root object, add the current path
+        paths.push(currentPath);
+        continue;
+      }
+
+      // Otherwise, add work items for each parent-key combination to the stack
+      for (const [parent, keys] of obj._parentReferences) {
+        for (const key of keys) {
+          stack.push({
+            obj: parent,
+            currentPath: [key, ...currentPath],
+            visited: newVisited,
+          });
+        }
+      }
+    }
+
+    return paths;
+  }
+
+  /**
    * Returns true if the given serial indicates that the operation to which it belongs should be applied to the object.
    *
    * An operation should be applied if its serial is strictly greater than the serial in the `siteTimeserials` map for the same site.
@@ -218,6 +315,56 @@ export abstract class LiveObject<
 
   protected _applyObjectDelete(objectMessage: ObjectMessage): TUpdate {
     return this.tombstone(objectMessage);
+  }
+
+  private _notifyInstanceSubscriptions(update: TUpdate): void {
+    const event: InstanceEvent = {
+      // Do not expose object sync messages as they do not represent a single operation on an object
+      message: update.objectMessage?.isOperationMessage() ? update.objectMessage : undefined,
+    };
+    this._subscriptions.emit(LiveObjectSubscriptionEvent.updated, event);
+  }
+
+  /**
+   * Notifies path-based subscriptions about changes to this object.
+   * For LiveMapUpdate events, also creates non-bubbling events for each updated key.
+   */
+  private _notifyPathSubscriptions(update: TUpdate): void {
+    const paths = this.getFullPaths();
+
+    if (paths.length === 0) {
+      // No paths to this object, skip notification
+      return;
+    }
+
+    // Do not expose object sync messages as they do not represent a single operation on an object
+    const operationObjectMessage = update.objectMessage?.isOperationMessage() ? update.objectMessage : undefined;
+    const pathEvents: PathEvent[] = paths.map((path) => ({
+      path,
+      message: operationObjectMessage,
+      bubbles: true,
+    }));
+
+    // For LiveMapUpdate, also create non-bubbling events for each updated key
+    if (update._type === 'LiveMapUpdate') {
+      const updatedKeys = Object.keys((update as LiveMapUpdate<LiveMapType>).update);
+
+      for (const key of updatedKeys) {
+        for (const basePath of paths) {
+          pathEvents.push({
+            path: [...basePath, key],
+            message: operationObjectMessage,
+            bubbles: false,
+          });
+        }
+      }
+    }
+
+    this._realtimeObject.getPathObjectSubscriptionRegister().notifyPathEvents(pathEvents);
+  }
+
+  private _isNoopUpdate(update: TUpdate | LiveObjectUpdateNoop): update is LiveObjectUpdateNoop {
+    return (update as LiveObjectUpdateNoop).noop === true;
   }
 
   /**
