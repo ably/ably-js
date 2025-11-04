@@ -379,7 +379,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return;
     }
 
-    let update: LiveMapUpdate<T> | LiveObjectUpdateNoop = { noop: true };
+    let update: LiveMapUpdate<T> | LiveObjectUpdateNoop;
     switch (op.action) {
       case ObjectOperationAction.MAP_CREATE:
         update = this._applyMapCreate(op, msg);
@@ -406,7 +406,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        this._applyObjectDelete(msg);
+        update = this._applyObjectDelete(msg);
         break;
 
       default:
@@ -483,23 +483,23 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     }
 
     const previousDataRef = this._dataRef;
+    let update: LiveMapUpdate<T>;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone(objectMessage);
+      update = this.tombstone(objectMessage);
     } else {
-      // override data for this object with data from the object state
+      // otherwise override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLM6b
       this._dataRef = this._liveMapDataFromMapEntries(objectState.map?.entries ?? {}); // RTLM6c
       // RTLM6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
         this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
       }
-    }
 
-    // if object got tombstoned, the update object will include all data that got cleared.
-    // otherwise it is a diff between previous value and new value from object state.
-    const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
-    update.objectMessage = objectMessage;
+      // update will contain the diff between previous value and new value from object state
+      update = this._updateFromDataDiff(previousDataRef, this._dataRef);
+      update.objectMessage = objectMessage;
+    }
 
     // Update parent references based on the calculated diff
     this._updateParentReferencesFromUpdate(update, previousDataRef);

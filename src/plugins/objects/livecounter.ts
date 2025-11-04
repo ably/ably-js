@@ -127,7 +127,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
       return;
     }
 
-    let update: LiveCounterUpdate | LiveObjectUpdateNoop = { noop: true };
+    let update: LiveCounterUpdate | LiveObjectUpdateNoop;
     switch (op.action) {
       case ObjectOperationAction.COUNTER_CREATE:
         update = this._applyCounterCreate(op, msg);
@@ -144,7 +144,7 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
         break;
 
       case ObjectOperationAction.OBJECT_DELETE:
-        this._applyObjectDelete(msg);
+        update = this._applyObjectDelete(msg);
         break;
 
       default:
@@ -205,23 +205,23 @@ export class LiveCounter extends LiveObject<LiveCounterData, LiveCounterUpdate> 
     }
 
     const previousDataRef = this._dataRef;
+    let update: LiveCounterUpdate;
     if (objectState.tombstone) {
       // tombstone this object and ignore the data from the object state message
-      this.tombstone(objectMessage);
+      update = this.tombstone(objectMessage);
     } else {
-      // override data for this object with data from the object state
+      // otherwise override data for this object with data from the object state
       this._createOperationIsMerged = false; // RTLC6b
       this._dataRef = { data: objectState.counter?.count ?? 0 }; // RTLC6c
       // RTLC6d
       if (!this._client.Utils.isNil(objectState.createOp)) {
         this._mergeInitialDataFromCreateOperation(objectState.createOp, objectMessage);
       }
-    }
 
-    // if object got tombstoned, the update object will include all data that got cleared.
-    // otherwise it is a diff between previous value and new value from object state.
-    const update = this._updateFromDataDiff(previousDataRef, this._dataRef);
-    update.objectMessage = objectMessage;
+      // update will contain the diff between previous value and new value from object state
+      update = this._updateFromDataDiff(previousDataRef, this._dataRef);
+      update.objectMessage = objectMessage;
+    }
 
     return update;
   }
