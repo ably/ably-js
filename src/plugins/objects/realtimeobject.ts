@@ -103,7 +103,7 @@ export class RealtimeObject {
       await this._eventEmitterInternal.once(ObjectsEvent.synced); // RTO1c
     }
 
-    const pathObject = new DefaultPathObject<API.LiveMap<T>>(this, this._objectsPool.getRoot(), []);
+    const pathObject = new DefaultPathObject(this, this._objectsPool.getRoot(), []);
     return pathObject;
   }
 
