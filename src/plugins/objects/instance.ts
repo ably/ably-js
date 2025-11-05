@@ -1,6 +1,7 @@
 import type BaseClient from 'common/lib/client/baseclient';
 import type {
   AnyInstance,
+  CompactedValue,
   EventCallback,
   Instance,
   InstanceSubscriptionEvent,
@@ -37,8 +38,18 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
     return this._value.getObjectId();
   }
 
-  compact(): any {
-    throw new Error('Not implemented');
+  compact<U extends Value = Value>(): CompactedValue<U> | undefined {
+    if (this._value instanceof LiveMap) {
+      return this._value.compact() as CompactedValue<U>;
+    }
+
+    const value = this.value();
+
+    if (this._client.Platform.BufferUtils.isBuffer(value)) {
+      return this._client.Platform.BufferUtils.base64Encode(value) as CompactedValue<U>;
+    }
+
+    return value as CompactedValue<U>;
   }
 
   get<U extends Value = Value>(key: string): Instance<U> | undefined {
@@ -81,7 +92,7 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
         this._client.logger,
         this._client.Logger.LOG_MAJOR,
         'DefaultInstance.value()',
-        `unexpected value type for instance, resolving to undefined; value=${this._value}`,
+        `unexpected value type for instance, resolving to undefined; value=${this._value}; type=${typeof this._value}`,
       );
       // unknown type - return undefined
       return undefined;
