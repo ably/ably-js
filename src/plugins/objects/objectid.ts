@@ -38,7 +38,8 @@ export class ObjectId {
    */
   static fromString(client: BaseClient, objectId: string | null | undefined): ObjectId {
     if (client.Utils.isNil(objectId)) {
-      throw new client.ErrorInfo('Invalid object id string', 92000, 500);
+      // ably-os:inline-error-update:92000:2025-08-22:e8u Original: "Invalid object id string"
+      throw new client.ErrorInfo(`Invalid object id string: ${objectId}`, 92000, 500);
     }
 
     // RTO6b1

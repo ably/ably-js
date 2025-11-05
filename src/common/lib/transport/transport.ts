@@ -318,9 +318,10 @@ abstract class Transport extends EventEmitter {
     transportAttemptTimer = setTimeout(() => {
       transport.off(['preconnect', 'disconnected', 'failed']);
       transport.dispose();
+      // ably-os:inline-error-update:50000:2025-08-22:e8u Original: "Timeout waiting for transport to indicate itself viable"
       errorCb.call(
         { event: 'disconnected' },
-        new ErrorInfo('Timeout waiting for transport to indicate itself viable', 50000, 500),
+        new ErrorInfo(`Timeout waiting for ${transport.toString()} transport to indicate itself viable (${realtimeRequestTimeout}ms)`, 50000, 500),
       );
     }, realtimeRequestTimeout);
 

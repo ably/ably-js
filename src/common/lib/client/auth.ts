@@ -261,7 +261,8 @@ class Auth {
     /* RSA10a: authorize() call implies token auth. If a key is passed it, we
      * just check if it doesn't clash and assume we're generating a token from it */
     if (authOptions && authOptions.key && this.authOptions.key !== authOptions.key) {
-      throw new ErrorInfo('Unable to update auth options with incompatible key', 40102, 401);
+      // ably-os:inline-error-update:40102:2025-08-22:e8u Original: "Unable to update auth options with incompatible key"
+      throw new ErrorInfo('Unable to update auth options with incompatible key. Cannot change from key "' + this.authOptions.key + '" to "' + authOptions.key + '"', 40102, 401);
     }
 
     try {
