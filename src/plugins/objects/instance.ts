@@ -173,4 +173,14 @@ export class DefaultInstance<T extends Value> implements AnyInstance<T> {
       });
     });
   }
+
+  subscribeIterator(): AsyncIterableIterator<InstanceSubscriptionEvent<T>> {
+    if (!(this._value instanceof LiveObject)) {
+      throw new this._client.ErrorInfo('Cannot subscribe to a non-LiveObject instance', 92007, 400);
+    }
+    return this._client.Utils.listenerToAsyncIterator((listener) => {
+      const { unsubscribe } = this.subscribe(listener);
+      return unsubscribe;
+    });
+  }
 }
