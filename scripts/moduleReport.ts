@@ -328,8 +328,6 @@ async function checkObjectsPluginFiles() {
   // These are the files that are allowed to contribute >= `threshold` bytes to the Objects bundle.
   const allowedFiles = new Set([
     'src/plugins/objects/batchcontext.ts',
-    'src/plugins/objects/batchcontextlivecounter.ts',
-    'src/plugins/objects/batchcontextlivemap.ts',
     'src/plugins/objects/index.ts',
     'src/plugins/objects/instance.ts',
     'src/plugins/objects/livecounter.ts',
@@ -343,6 +341,7 @@ async function checkObjectsPluginFiles() {
     'src/plugins/objects/pathobject.ts',
     'src/plugins/objects/pathobjectsubscriptionregister.ts',
     'src/plugins/objects/realtimeobject.ts',
+    'src/plugins/objects/rootbatchcontext.ts',
     'src/plugins/objects/syncobjectsdatapool.ts',
   ]);
 
