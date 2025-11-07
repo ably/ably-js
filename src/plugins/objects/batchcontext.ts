@@ -1,107 +1,124 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type * as API from '../../../ably';
-import { BatchContextLiveCounter } from './batchcontextlivecounter';
-import { BatchContextLiveMap } from './batchcontextlivemap';
-import { ROOT_OBJECT_ID } from './constants';
+import type { AnyBatchContext, BatchContext, CompactedValue, Instance, Primitive, Value } from '../../../ably';
+import { DefaultInstance } from './instance';
 import { LiveCounter } from './livecounter';
 import { LiveMap } from './livemap';
-import { ObjectMessage } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
+import { RootBatchContext } from './rootbatchcontext';
 
-export class BatchContext {
-  private _client: BaseClient;
-  /** Maps object ids to the corresponding batch context object wrappers  */
-  private _wrappedObjects: Map<string, BatchContextLiveCounter | BatchContextLiveMap<API.LiveMapType>> = new Map();
-  private _queuedMessages: ObjectMessage[] = [];
-  private _isClosed = false;
+export class DefaultBatchContext implements AnyBatchContext {
+  protected _client: BaseClient;
 
   constructor(
-    private _realtimeObject: RealtimeObject,
-    private _root: LiveMap<API.LiveMapType>,
+    protected _realtimeObject: RealtimeObject,
+    protected _instance: Instance<Value>,
+    protected _rootContext: RootBatchContext,
   ) {
-    this._client = _realtimeObject.getClient();
-    this._wrappedObjects.set(this._root.getObjectId(), new BatchContextLiveMap(this, this._realtimeObject, this._root));
+    this._client = this._realtimeObject.getClient();
   }
 
-  get<T extends API.LiveMapType = API.AblyDefaultObject>(): BatchContextLiveMap<T> {
+  get<T extends Value = Value>(key: string): BatchContext<T> | undefined {
     this._realtimeObject.throwIfInvalidAccessApiConfiguration();
-    this.throwIfClosed();
-    return this.getWrappedObject(ROOT_OBJECT_ID) as BatchContextLiveMap<T>;
-  }
-
-  /**
-   * @internal
-   */
-  getWrappedObject(objectId: string): BatchContextLiveCounter | BatchContextLiveMap<API.LiveMapType> | undefined {
-    if (this._wrappedObjects.has(objectId)) {
-      return this._wrappedObjects.get(objectId);
-    }
-
-    const originObject = this._realtimeObject.getPool().get(objectId);
-    if (!originObject) {
+    this._throwIfClosed();
+    const instance = this._instance.get(key);
+    if (!instance) {
       return undefined;
     }
-
-    let wrappedObject: BatchContextLiveCounter | BatchContextLiveMap<API.LiveMapType>;
-    if (originObject instanceof LiveMap) {
-      wrappedObject = new BatchContextLiveMap(this, this._realtimeObject, originObject);
-    } else if (originObject instanceof LiveCounter) {
-      wrappedObject = new BatchContextLiveCounter(this, this._realtimeObject, originObject);
-    } else {
-      throw new this._client.ErrorInfo(
-        `Unknown LiveObject instance type: objectId=${originObject.getObjectId()}`,
-        50000,
-        500,
-      );
-    }
-
-    this._wrappedObjects.set(objectId, wrappedObject);
-    return wrappedObject;
+    return this._rootContext.wrapInstance(instance) as unknown as BatchContext<T>;
   }
 
-  /**
-   * @internal
-   */
-  throwIfClosed(): void {
-    if (this.isClosed()) {
+  value<T extends Primitive = Primitive>(): T | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+    this._throwIfClosed();
+    return this._instance.value();
+  }
+
+  compact<T extends Value = Value>(): CompactedValue<T> | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+    this._throwIfClosed();
+    return this._instance.compact();
+  }
+
+  id(): string | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+    this._throwIfClosed();
+    return this._instance.id();
+  }
+
+  *entries<T extends Record<string, Value>>(): IterableIterator<[keyof T, BatchContext<T[keyof T]>]> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+    this._throwIfClosed();
+    for (const [key, value] of this._instance.entries()) {
+      const ctx = this._rootContext.wrapInstance(value) as unknown as BatchContext<T[keyof T]>;
+      yield [key, ctx];
+    }
+  }
+
+  *keys<T extends Record<string, Value>>(): IterableIterator<keyof T> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+    this._throwIfClosed();
+    yield* this._instance.keys();
+  }
+
+  *values<T extends Record<string, Value>>(): IterableIterator<BatchContext<T[keyof T]>> {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+    this._throwIfClosed();
+    for (const [_, value] of this.entries<T>()) {
+      yield value;
+    }
+  }
+
+  size(): number | undefined {
+    this._realtimeObject.throwIfInvalidAccessApiConfiguration();
+    this._throwIfClosed();
+    return this._instance.size();
+  }
+
+  set(key: string, value: Value): void {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+    this._throwIfClosed();
+    if (!(this._instance as DefaultInstance<Value>).isLiveMap()) {
+      throw new this._client.ErrorInfo('Cannot set a key on a non-LiveMap instance', 92007, 400);
+    }
+    this._rootContext.queueMessages(async () =>
+      LiveMap.createMapSetMessage(this._realtimeObject, this._instance.id()!, key, value as Primitive),
+    );
+  }
+
+  remove(key: string): void {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+    this._throwIfClosed();
+    if (!(this._instance as DefaultInstance<Value>).isLiveMap()) {
+      throw new this._client.ErrorInfo('Cannot remove a key from a non-LiveMap instance', 92007, 400);
+    }
+    this._rootContext.queueMessages(async () => [
+      LiveMap.createMapRemoveMessage(this._realtimeObject, this._instance.id()!, key),
+    ]);
+  }
+
+  increment(amount?: number): void {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+    this._throwIfClosed();
+    if (!(this._instance as DefaultInstance<Value>).isLiveCounter()) {
+      throw new this._client.ErrorInfo('Cannot increment a non-LiveCounter instance', 92007, 400);
+    }
+    this._rootContext.queueMessages(async () => [
+      LiveCounter.createCounterIncMessage(this._realtimeObject, this._instance.id()!, amount ?? 1),
+    ]);
+  }
+
+  decrement(amount?: number): void {
+    this._realtimeObject.throwIfInvalidWriteApiConfiguration();
+    this._throwIfClosed();
+    if (!(this._instance as DefaultInstance<Value>).isLiveCounter()) {
+      throw new this._client.ErrorInfo('Cannot decrement a non-LiveCounter instance', 92007, 400);
+    }
+    this.increment(-(amount ?? 1));
+  }
+
+  private _throwIfClosed(): void {
+    if (this._rootContext.isClosed()) {
       throw new this._client.ErrorInfo('Batch is closed', 40000, 400);
-    }
-  }
-
-  /**
-   * @internal
-   */
-  isClosed(): boolean {
-    return this._isClosed;
-  }
-
-  /**
-   * @internal
-   */
-  close(): void {
-    this._isClosed = true;
-  }
-
-  /**
-   * @internal
-   */
-  queueMessage(msg: ObjectMessage): void {
-    this._queuedMessages.push(msg);
-  }
-
-  /**
-   * @internal
-   */
-  async flush(): Promise<void> {
-    try {
-      this.close();
-
-      if (this._queuedMessages.length > 0) {
-        await this._realtimeObject.publish(this._queuedMessages);
-      }
-    } finally {
-      this._wrappedObjects.clear();
-      this._queuedMessages = [];
     }
   }
 }
