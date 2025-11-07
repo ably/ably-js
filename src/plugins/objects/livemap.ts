@@ -83,56 +83,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  static createMapSetMessage<TKey extends keyof API.LiveMapType & string>(
+  static async createMapSetMessage<TKey extends keyof API.LiveMapType & string>(
     realtimeObject: RealtimeObject,
     objectId: string,
     key: TKey,
-    value: API.LiveMapType[TKey],
-  ): ObjectMessage {
-    const client = realtimeObject.getClient();
-
-    LiveMap.validateKeyValue(realtimeObject, key, value);
-
-    let objectData: LiveMapObjectData;
-    if (value instanceof LiveObject) {
-      const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
-      objectData = typedObjectData;
-    } else {
-      const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
-      objectData = typedObjectData;
-    }
-
-    const msg = ObjectMessage.fromValues(
-      {
-        operation: {
-          action: ObjectOperationAction.MAP_SET,
-          objectId,
-          mapOp: {
-            key,
-            data: objectData,
-          },
-        } as ObjectOperation<ObjectData>,
-      },
-      client.Utils,
-      client.MessageEncoding,
-    );
-
-    return msg;
-  }
-
-  /**
-   * Temporary separate method to handle value types as the current Batch API relies on synchronous
-   * LiveMap.createMapSetMessage() method but object creation is async (need to query timestamp from server).
-   * TODO: Unify with createMapSetMessage() when Batch API updated to works with new path API and is able to
-   * defer object creation until batch is committed.
-   *
-   * @internal
-   */
-  static async createMapSetMessageForValueType<TKey extends keyof API.LiveMapType & string>(
-    realtimeObject: RealtimeObject,
-    objectId: string,
-    key: TKey,
-    value: LiveCounterValueType | LiveMapValueType,
+    value: API.LiveMapType[TKey] | LiveCounterValueType | LiveMapValueType,
   ): Promise<ObjectMessage[]> {
     const client = realtimeObject.getClient();
 
@@ -140,13 +95,14 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
     let objectData: LiveMapObjectData;
     let createValueTypesMessages: ObjectMessage[] = [];
+
     if (LiveCounterValueType.instanceof(value)) {
       const counterCreateMsg = await LiveCounterValueType.createCounterCreateMessage(realtimeObject, value);
       createValueTypesMessages = [counterCreateMsg];
 
       const typedObjectData: ObjectIdObjectData = { objectId: counterCreateMsg.operation?.objectId! };
       objectData = typedObjectData;
-    } else {
+    } else if (LiveMapValueType.instanceof(value)) {
       const { mapCreateMsg, nestedObjectsCreateMsgs } = await LiveMapValueType.createMapCreateMessage(
         realtimeObject,
         value,
@@ -154,6 +110,13 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       createValueTypesMessages = [...nestedObjectsCreateMsgs, mapCreateMsg];
 
       const typedObjectData: ObjectIdObjectData = { objectId: mapCreateMsg.operation?.objectId! };
+      objectData = typedObjectData;
+    } else if (value instanceof LiveObject) {
+      // TODO: remove this branch when LiveObject is no longer directly supported as a map value
+      const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
+      objectData = typedObjectData;
+    } else {
+      const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
       objectData = typedObjectData;
     }
 
@@ -322,14 +285,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     value: T[TKey] | LiveCounterValueType | LiveMapValueType,
   ): Promise<void> {
     this._realtimeObject.throwIfInvalidWriteApiConfiguration();
-
-    let msgs: ObjectMessage[] = [];
-    if (LiveCounterValueType.instanceof(value) || LiveMapValueType.instanceof(value)) {
-      msgs = await LiveMap.createMapSetMessageForValueType(this._realtimeObject, this.getObjectId(), key, value);
-    } else {
-      msgs = [LiveMap.createMapSetMessage(this._realtimeObject, this.getObjectId(), key, value)];
-    }
-
+    const msgs = await LiveMap.createMapSetMessage(this._realtimeObject, this.getObjectId(), key, value);
     return this._realtimeObject.publish(msgs);
   }
 
