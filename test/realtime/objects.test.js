@@ -172,7 +172,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     const expectedKeys = ObjectsHelper.fixtureRootKeys();
 
     await channel.attach();
-    const entryPathObject = await channel.object.getPathObject();
+    const entryPathObject = await channel.object.get();
     const entryInstance = entryPathObject.instance();
 
     await Promise.all(
@@ -180,7 +180,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
     );
   }
 
-  describe('realtime/objects', function () {
+  describe.only('realtime/objects', function () {
     this.timeout(60 * 1000);
 
     before(function (done) {
@@ -287,21 +287,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
       });
 
       /** @nospec */
-      it('RealtimeObject.get() returns LiveMap instance', async function () {
-        const helper = this.test.helper;
-        const client = RealtimeWithObjects(helper);
-
-        await helper.monitorConnectionThenCloseAndFinishAsync(async () => {
-          const channel = client.channels.get('channel', channelOptionsWithObjects());
-
-          await channel.attach();
-          const root = await channel.object.get();
-
-          expectInstanceOf(root, 'LiveMap', 'root object should be of LiveMap type');
-        }, client);
-      });
-
-      /** @nospec */
       it('RealtimeObject.get() returns LiveObject with id "root"', async function () {
         const helper = this.test.helper;
         const client = RealtimeWithObjects(helper);
@@ -310,10 +295,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const channel = client.channels.get('channel', channelOptionsWithObjects());
 
           await channel.attach();
-          const root = await channel.object.get();
+          const entryPathObject = await channel.object.get();
 
-          helper.recordPrivateApi('call.LiveObject.getObjectId');
-          expect(root.getObjectId()).to.equal('root', 'root object should have an object id "root"');
+          expect(entryPathObject.instance().id()).to.equal('root', 'root object should have an object id "root"');
         }, client);
       });
 
@@ -326,9 +310,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const channel = client.channels.get('channel', channelOptionsWithObjects());
 
           await channel.attach();
-          const root = await channel.object.get();
+          const entryPathObject = await channel.object.get();
 
-          expect(root.size()).to.equal(0, 'Check root has no keys');
+          expect(entryPathObject.size()).to.equal(0, 'Check root has no keys');
         }, client);
       });
 
@@ -406,10 +390,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           });
 
           let getResolved = false;
-          let root;
+          let entryInstance;
           channel.object.get().then((value) => {
             getResolved = true;
-            root = value;
+            entryInstance = value;
           });
 
           // wait for next tick to check that RealtimeObject.get() promise handler didn't proc
@@ -438,30 +422,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           await new Promise((res) => nextTick(res));
 
           expect(getResolved, 'Check RealtimeObject.get() is resolved when OBJECT_SYNC sequence has ended').to.be.true;
-          expect(root.get('key')).to.equal(1, 'Check new root after OBJECT_SYNC sequence has expected key');
+          expect(entryInstance.get('key').value()).to.equal(
+            1,
+            'Check new root after OBJECT_SYNC sequence has expected key',
+          );
         }, client);
       });
 
-      function checkKeyDataOnMap({ helper, key, keyData, mapObj, msg }) {
-        if (keyData.data.bytes != null) {
-          helper.recordPrivateApi('call.BufferUtils.base64Decode');
-          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-          expect(BufferUtils.areBuffersEqual(mapObj.get(key), BufferUtils.base64Decode(keyData.data.bytes)), msg).to.be
-            .true;
-        } else if (keyData.data.json != null) {
-          const expectedObject = JSON.parse(keyData.data.json);
-          expect(mapObj.get(key)).to.deep.equal(expectedObject, msg);
-        } else {
-          const expectedValue = keyData.data.string ?? keyData.data.number ?? keyData.data.boolean;
-          expect(mapObj.get(key)).to.equal(expectedValue, msg);
-        }
-      }
-
-      function checkKeyDataOnPathObject({ helper, key, keyData, mapObj, pathObject, msg }) {
-        // should check that both mapObj and pathObject return the same value for the key
-        // and it matches the expected value from keyData
-        const compareMsg = `Check PathObject and LiveMap have the same value for "${keyData.key}" key`;
-
+      function checkKeyDataOnPathObject({ helper, key, keyData, pathObject, msg }) {
         if (keyData.data.bytes != null) {
           helper.recordPrivateApi('call.BufferUtils.base64Decode');
           helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
@@ -469,18 +437,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             BufferUtils.areBuffersEqual(pathObject.get(key).value(), BufferUtils.base64Decode(keyData.data.bytes)),
             msg,
           ).to.be.true;
-
-          helper.recordPrivateApi('call.BufferUtils.base64Decode');
-          helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
-          expect(BufferUtils.areBuffersEqual(pathObject.get(key).value(), mapObj.get(key)), compareMsg).to.be.true;
         } else if (keyData.data.json != null) {
           const expectedObject = JSON.parse(keyData.data.json);
           expect(pathObject.get(key).value()).to.deep.equal(expectedObject, msg);
-          expect(pathObject.get(key).value()).to.deep.equal(mapObj.get(key), compareMsg);
         } else {
           const expectedValue = keyData.data.string ?? keyData.data.number ?? keyData.data.boolean;
           expect(pathObject.get(key).value()).to.equal(expectedValue, msg);
-          expect(pathObject.get(key).value()).to.equal(mapObj.get(key), compareMsg);
         }
       }
 
@@ -546,35 +508,42 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'OBJECT_SYNC sequence builds object tree on channel attachment',
           action: async (ctx) => {
-            const { client } = ctx;
+            const { client, helper } = ctx;
 
             await waitFixtureChannelIsReady(client);
 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
 
             await channel.attach();
-            const root = await channel.object.get();
+            const entryPathObject = await channel.object.get();
+            const entryInstance = entryPathObject.instance();
 
             const counterKeys = ['emptyCounter', 'initialValueCounter', 'referencedCounter'];
             const mapKeys = ['emptyMap', 'referencedMap', 'valuesMap'];
             const rootKeysCount = counterKeys.length + mapKeys.length;
 
-            expect(root, 'Check RealtimeObject.get() is resolved when OBJECT_SYNC sequence ends').to.exist;
-            expect(root.size()).to.equal(rootKeysCount, 'Check root has correct number of keys');
+            expect(entryInstance, 'Check RealtimeObject.get() is resolved when OBJECT_SYNC sequence ends').to.exist;
+            expect(entryInstance.size()).to.equal(rootKeysCount, 'Check root has correct number of keys');
 
             counterKeys.forEach((key) => {
-              const counter = root.get(key);
+              const counter = entryInstance.get(key);
               expect(counter, `Check counter at key="${key}" in root exists`).to.exist;
-              expectInstanceOf(counter, 'LiveCounter', `Check counter at key="${key}" in root is of type LiveCounter`);
+              helper.recordPrivateApi('read.DefaultInstance._value');
+              expectInstanceOf(
+                counter._value,
+                'LiveCounter',
+                `Check counter at key="${key}" in root is of type LiveCounter`,
+              );
             });
 
             mapKeys.forEach((key) => {
-              const map = root.get(key);
+              const map = entryInstance.get(key);
               expect(map, `Check map at key="${key}" in root exists`).to.exist;
-              expectInstanceOf(map, 'LiveMap', `Check map at key="${key}" in root is of type LiveMap`);
+              helper.recordPrivateApi('read.DefaultInstance._value');
+              expectInstanceOf(map._value, 'LiveMap', `Check map at key="${key}" in root is of type LiveMap`);
             });
 
-            const valuesMap = root.get('valuesMap');
+            const valuesMap = entryInstance.get('valuesMap');
             const valueMapKeys = [
               'stringKey',
               'emptyStringKey',
@@ -592,8 +561,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             ];
             expect(valuesMap.size()).to.equal(valueMapKeys.length, 'Check nested map has correct number of keys');
             valueMapKeys.forEach((key) => {
-              const value = valuesMap.get(key);
-              expect(value, `Check value at key="${key}" in nested map exists`).to.exist;
+              expect(valuesMap.get(key), `Check value at key="${key}" in nested map exists`).to.exist;
             });
           },
         },
@@ -642,22 +610,24 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               const channel2 = client2.channels.get(channelName, channelOptionsWithObjects());
 
               await channel2.attach();
-              const root2 = await channel2.object.get();
+              const pathObject2 = await channel2.object.get();
+              const entryInstance2 = pathObject2.instance();
 
-              expect(root2.get('counter'), 'Check counter exists').to.exist;
-              expect(root2.get('counter').value()).to.equal(11, 'Check counter has correct value');
+              expect(entryInstance2.get('counter'), 'Check counter exists').to.exist;
+              expect(entryInstance2.get('counter').value()).to.equal(11, 'Check counter has correct value');
 
-              expect(root2.get('map'), 'Check map exists').to.exist;
-              expect(root2.get('map').size()).to.equal(2, 'Check map has correct number of keys');
-              expect(root2.get('map').get('shouldStay')).to.equal(
+              expect(entryInstance2.get('map'), 'Check map exists').to.exist;
+              expect(entryInstance2.get('map').size()).to.equal(2, 'Check map has correct number of keys');
+              expect(entryInstance2.get('map').get('shouldStay').value()).to.equal(
                 'foo',
                 'Check map has correct value for "shouldStay" key',
               );
-              expect(root2.get('map').get('anotherKey')).to.equal(
+              expect(entryInstance2.get('map').get('anotherKey').value()).to.equal(
                 'baz',
                 'Check map has correct value for "anotherKey" key',
               );
-              expect(root2.get('map').get('shouldDelete'), 'Check map does not have "shouldDelete" key').to.not.exist;
+              expect(entryInstance2.get('map').get('shouldDelete'), 'Check map does not have "shouldDelete" key').to.not
+                .exist;
             }, client2);
           },
         },
@@ -665,19 +635,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_SYNC sequence does not change references to existing objects',
           action: async (ctx) => {
-            const { root, helper, channel, entryInstance } = ctx;
+            const { helper, channel, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'counter'),
               waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
             await Promise.all([
-              root.set('map', LiveMap.create()),
-              root.set('counter', LiveCounter.create()),
+              entryInstance.set('map', LiveMap.create()),
+              entryInstance.set('counter', LiveCounter.create()),
               objectsCreatedPromise,
             ]);
-            const map = root.get('map');
-            const counter = root.get('counter');
+            const map = entryInstance.get('map');
+            const counter = entryInstance.get('counter');
 
             await channel.detach();
 
@@ -686,13 +656,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await channel.attach();
             await objectSyncPromise;
 
-            const newRootRef = await channel.object.get();
-            const newMapRef = newRootRef.get('map');
-            const newCounterRef = newRootRef.get('counter');
+            const newEntryPathObject = await channel.object.get();
+            const newEntryInstance = newEntryPathObject.instance();
+            const newMapRef = newEntryInstance.get('map');
+            const newCounterRef = newEntryInstance.get('counter');
 
-            expect(newRootRef).to.equal(root, 'Check root reference is the same after OBJECT_SYNC sequence');
-            expect(newMapRef).to.equal(map, 'Check map reference is the same after OBJECT_SYNC sequence');
-            expect(newCounterRef).to.equal(counter, 'Check counter reference is the same after OBJECT_SYNC sequence');
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expect(newEntryInstance._value).to.equal(
+              entryInstance._value,
+              'Check root reference is the same after OBJECT_SYNC sequence',
+            );
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expect(newMapRef._value).to.equal(map._value, 'Check map reference is the same after OBJECT_SYNC sequence');
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expect(newCounterRef._value).to.equal(
+              counter._value,
+              'Check counter reference is the same after OBJECT_SYNC sequence',
+            );
           },
         },
 
@@ -707,7 +687,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
 
             await channel.attach();
-            const root = await channel.object.get();
+            const entryPathObject = await channel.object.get();
 
             const counters = [
               { key: 'emptyCounter', value: 0 },
@@ -716,7 +696,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             ];
 
             counters.forEach((x) => {
-              const counter = root.get(x.key);
+              const counter = entryPathObject.get(x.key);
               expect(counter.value()).to.equal(x.value, `Check counter at key="${x.key}" in root has correct value`);
             });
           },
@@ -733,27 +713,33 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
 
             await channel.attach();
-            const root = await channel.object.get();
+            const entryPathObject = await channel.object.get();
 
-            const emptyMap = root.get('emptyMap');
+            const emptyMap = entryPathObject.get('emptyMap');
             expect(emptyMap.size()).to.equal(0, 'Check empty map in root has no keys');
 
-            const referencedMap = root.get('referencedMap');
+            const referencedMap = entryPathObject.get('referencedMap');
             expect(referencedMap.size()).to.equal(1, 'Check referenced map in root has correct number of keys');
 
             const counterFromReferencedMap = referencedMap.get('counterKey');
             expect(counterFromReferencedMap.value()).to.equal(20, 'Check nested counter has correct value');
 
-            const valuesMap = root.get('valuesMap');
+            const valuesMap = entryPathObject.get('valuesMap');
             expect(valuesMap.size()).to.equal(13, 'Check values map in root has correct number of keys');
 
-            expect(valuesMap.get('stringKey')).to.equal('stringValue', 'Check values map has correct string value key');
-            expect(valuesMap.get('emptyStringKey')).to.equal('', 'Check values map has correct empty string value key');
+            expect(valuesMap.get('stringKey').value()).to.equal(
+              'stringValue',
+              'Check values map has correct string value key',
+            );
+            expect(valuesMap.get('emptyStringKey').value()).to.equal(
+              '',
+              'Check values map has correct empty string value key',
+            );
             helper.recordPrivateApi('call.BufferUtils.base64Decode');
             helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
             expect(
               BufferUtils.areBuffersEqual(
-                valuesMap.get('bytesKey'),
+                valuesMap.get('bytesKey').value(),
                 BufferUtils.base64Decode('eyJwcm9kdWN0SWQiOiAiMDAxIiwgInByb2R1Y3ROYW1lIjogImNhciJ9'),
               ),
               'Check values map has correct bytes value key',
@@ -761,26 +747,26 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             helper.recordPrivateApi('call.BufferUtils.base64Decode');
             helper.recordPrivateApi('call.BufferUtils.areBuffersEqual');
             expect(
-              BufferUtils.areBuffersEqual(valuesMap.get('emptyBytesKey'), BufferUtils.base64Decode('')),
+              BufferUtils.areBuffersEqual(valuesMap.get('emptyBytesKey').value(), BufferUtils.base64Decode('')),
               'Check values map has correct empty bytes value key',
             ).to.be.true;
-            expect(valuesMap.get('maxSafeIntegerKey')).to.equal(
+            expect(valuesMap.get('maxSafeIntegerKey').value()).to.equal(
               Number.MAX_SAFE_INTEGER,
               'Check values map has correct maxSafeIntegerKey value',
             );
-            expect(valuesMap.get('negativeMaxSafeIntegerKey')).to.equal(
+            expect(valuesMap.get('negativeMaxSafeIntegerKey').value()).to.equal(
               -Number.MAX_SAFE_INTEGER,
               'Check values map has correct negativeMaxSafeIntegerKey value',
             );
-            expect(valuesMap.get('numberKey')).to.equal(1, 'Check values map has correct number value key');
-            expect(valuesMap.get('zeroKey')).to.equal(0, 'Check values map has correct zero number value key');
-            expect(valuesMap.get('trueKey')).to.equal(true, `Check values map has correct 'true' value key`);
-            expect(valuesMap.get('falseKey')).to.equal(false, `Check values map has correct 'false' value key`);
-            expect(valuesMap.get('objectKey')).to.deep.equal(
+            expect(valuesMap.get('numberKey').value()).to.equal(1, 'Check values map has correct number value key');
+            expect(valuesMap.get('zeroKey').value()).to.equal(0, 'Check values map has correct zero number value key');
+            expect(valuesMap.get('trueKey').value()).to.equal(true, `Check values map has correct 'true' value key`);
+            expect(valuesMap.get('falseKey').value()).to.equal(false, `Check values map has correct 'false' value key`);
+            expect(valuesMap.get('objectKey').value()).to.deep.equal(
               { foo: 'bar' },
               `Check values map has correct objectKey value`,
             );
-            expect(valuesMap.get('arrayKey')).to.deep.equal(
+            expect(valuesMap.get('arrayKey').value()).to.deep.equal(
               ['foo', 'bar', 'baz'],
               `Check values map has correct arrayKey value`,
             );
@@ -791,46 +777,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
 
         {
-          allTransportsAndProtocols: true,
-          description: 'LiveMap can reference the same object in their keys',
-          action: async (ctx) => {
-            const { client } = ctx;
-
-            await waitFixtureChannelIsReady(client);
-
-            const channel = client.channels.get(objectsFixturesChannel, channelOptionsWithObjects());
-
-            await channel.attach();
-            const root = await channel.object.get();
-
-            const referencedCounter = root.get('referencedCounter');
-            const referencedMap = root.get('referencedMap');
-            const valuesMap = root.get('valuesMap');
-
-            const counterFromReferencedMap = referencedMap.get('counterKey');
-            expect(counterFromReferencedMap, 'Check nested counter exists at a key in a map').to.exist;
-            expectInstanceOf(counterFromReferencedMap, 'LiveCounter', 'Check nested counter is of type LiveCounter');
-            expect(counterFromReferencedMap).to.equal(
-              referencedCounter,
-              'Check nested counter is the same object instance as counter on the root',
-            );
-            expect(counterFromReferencedMap.value()).to.equal(20, 'Check nested counter has correct value');
-
-            const mapFromValuesMap = valuesMap.get('mapKey');
-            expect(mapFromValuesMap, 'Check nested map exists at a key in a map').to.exist;
-            expectInstanceOf(mapFromValuesMap, 'LiveMap', 'Check nested map is of type LiveMap');
-            expect(mapFromValuesMap.size()).to.equal(1, 'Check nested map has correct number of keys');
-            expect(mapFromValuesMap).to.equal(
-              referencedMap,
-              'Check nested map is the same object instance as map on the root',
-            );
-          },
-        },
-
-        {
           description: 'OBJECT_SYNC sequence with "tombstone=true" for an object creates tombstoned object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             const mapId = objectsHelper.fakeMapObjectId();
             const counterId = objectsHelper.fakeCounterObjectId();
@@ -868,15 +817,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             expect(
-              root.get('map'),
+              entryInstance.get('map'),
               'Check map does not exist on root after OBJECT_SYNC with "tombstone=true" for a map object',
             ).to.not.exist;
             expect(
-              root.get('counter'),
+              entryInstance.get('counter'),
               'Check counter does not exist on root after OBJECT_SYNC with "tombstone=true" for a counter object',
             ).to.not.exist;
             // control check that OBJECT_SYNC was applied at all
-            expect(root.get('foo'), 'Check property exists on root after OBJECT_SYNC').to.exist;
+            expect(entryInstance.get('foo'), 'Check property exists on root after OBJECT_SYNC').to.exist;
           },
         },
 
@@ -884,7 +833,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'OBJECT_SYNC sequence with "tombstone=true" for an object deletes existing object',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
+            const { objectsHelper, channelName, channel, entryInstance } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -895,7 +844,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await counterCreatedPromise;
 
             expect(
-              root.get('counter'),
+              entryInstance.get('counter'),
               'Check counter exists on root before OBJECT_SYNC sequence with "tombstone=true"',
             ).to.exist;
 
@@ -924,11 +873,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             expect(
-              root.get('counter'),
+              entryInstance.get('counter'),
               'Check counter does not exist on root after OBJECT_SYNC with "tombstone=true" for an existing counter object',
             ).to.not.exist;
             // control check that OBJECT_SYNC was applied at all
-            expect(root.get('foo'), 'Check property exists on root after OBJECT_SYNC').to.exist;
+            expect(entryInstance.get('foo'), 'Check property exists on root after OBJECT_SYNC').to.exist;
           },
         },
 
@@ -937,7 +886,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'OBJECT_SYNC sequence with "tombstone=true" for an object triggers subscription callback for existing object',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
+            const { objectsHelper, channelName, channel, entryInstance } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -1079,7 +1028,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'OBJECT_SYNC sequence with "tombstone=true" for a map entry sets "tombstoneAt" from "serialTimestamp"',
           action: async (ctx) => {
-            const { helper, root, objectsHelper, channel } = ctx;
+            const { helper, entryInstance, objectsHelper, channel } = ctx;
 
             const serialTimestamp = 1234567890;
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -1101,8 +1050,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               ],
             });
 
+            helper.recordPrivateApi('read.DefaultInstance._value');
             helper.recordPrivateApi('read.LiveMap._dataRef.data');
-            const mapEntry = root._dataRef.data.get('foo');
+            const mapEntry = entryInstance._value._dataRef.data.get('foo');
             expect(
               mapEntry,
               'Check map entry is added to root internal data after OBJECT_SYNC sequence with "tombstone=true" for a map entry',
@@ -1118,7 +1068,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'OBJECT_SYNC sequence with "tombstone=true" for a map entry sets "tombstoneAt" using local clock if missing "serialTimestamp"',
           action: async (ctx) => {
-            const { helper, root, objectsHelper, channel } = ctx;
+            const { helper, entryInstance, objectsHelper, channel } = ctx;
 
             const tsBeforeMsg = Date.now();
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -1141,8 +1091,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             const tsAfterMsg = Date.now();
 
+            helper.recordPrivateApi('read.DefaultInstance._value');
             helper.recordPrivateApi('read.LiveMap._dataRef.data');
-            const mapEntry = root._dataRef.data.get('foo');
+            const mapEntry = entryInstance._value._dataRef.data.get('foo');
             expect(
               mapEntry,
               'Check map entry is added to root internal data after OBJECT_SYNC sequence with "tombstone=true" for a map entry',
@@ -1160,7 +1111,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_CREATE with primitives object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, helper, entryInstance } = ctx;
+            const { objectsHelper, channelName, helper, entryInstance } = ctx;
 
             // Objects public API allows us to check value of objects we've created based on MAP_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
@@ -1169,8 +1120,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // check no maps exist on root
             primitiveMapsFixtures.forEach((fixture) => {
               const key = fixture.name;
-              expect(root.get(key), `Check "${key}" key doesn't exist on root before applying MAP_CREATE ops`).to.not
-                .exist;
+              expect(entryInstance.get(key), `Check "${key}" key doesn't exist on root before applying MAP_CREATE ops`)
+                .to.not.exist;
             });
 
             const mapsCreatedPromise = Promise.all(
@@ -1191,24 +1142,25 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // check created maps
             primitiveMapsFixtures.forEach((fixture) => {
               const mapKey = fixture.name;
-              const mapObj = root.get(mapKey);
+              const map = entryInstance.get(mapKey);
 
               // check all maps exist on root
-              expect(mapObj, `Check map at "${mapKey}" key in root exists`).to.exist;
-              expectInstanceOf(mapObj, 'LiveMap', `Check map at "${mapKey}" key in root is of type LiveMap`);
+              expect(map, `Check map at "${mapKey}" key in root exists`).to.exist;
+              helper.recordPrivateApi('read.DefaultInstance._value');
+              expectInstanceOf(map._value, 'LiveMap', `Check map at "${mapKey}" key in root is of type LiveMap`);
 
               // check primitive maps have correct values
-              expect(mapObj.size()).to.equal(
+              expect(map.size()).to.equal(
                 Object.keys(fixture.entries ?? {}).length,
                 `Check map "${mapKey}" has correct number of keys`,
               );
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
-                checkKeyDataOnMap({
+                checkKeyDataOnInstance({
                   helper,
                   key,
                   keyData,
-                  mapObj,
+                  instance: map,
                   msg: `Check map "${mapKey}" has correct value for "${key}" key`,
                 });
               });
@@ -1220,7 +1172,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_CREATE with object ids object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, entryInstance } = ctx;
+            const { objectsHelper, channelName, entryInstance, helper } = ctx;
             const withReferencesMapKey = 'withReferencesMap';
 
             // Objects public API allows us to check value of objects we've created based on MAP_CREATE ops
@@ -1229,7 +1181,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check map does not exist on root
             expect(
-              root.get(withReferencesMapKey),
+              entryInstance.get(withReferencesMapKey),
               `Check "${withReferencesMapKey}" key doesn't exist on root before applying MAP_CREATE ops`,
             ).to.not.exist;
 
@@ -1256,10 +1208,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await mapCreatedPromise;
 
             // check map with references exist on root
-            const withReferencesMap = root.get(withReferencesMapKey);
+            const withReferencesMap = entryInstance.get(withReferencesMapKey);
             expect(withReferencesMap, `Check map at "${withReferencesMapKey}" key in root exists`).to.exist;
+            helper.recordPrivateApi('read.DefaultInstance._value');
             expectInstanceOf(
-              withReferencesMap,
+              withReferencesMap._value,
               'LiveMap',
               `Check map at "${withReferencesMapKey}" key in root is of type LiveMap`,
             );
@@ -1274,18 +1227,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const referencedMap = withReferencesMap.get('mapReference');
 
             expect(referencedCounter, `Check counter at "counterReference" exists`).to.exist;
+            helper.recordPrivateApi('read.DefaultInstance._value');
             expectInstanceOf(
-              referencedCounter,
+              referencedCounter._value,
               'LiveCounter',
               `Check counter at "counterReference" key is of type LiveCounter`,
             );
             expect(referencedCounter.value()).to.equal(1, 'Check counter at "counterReference" key has correct value');
 
             expect(referencedMap, `Check map at "mapReference" key exists`).to.exist;
-            expectInstanceOf(referencedMap, 'LiveMap', `Check map at "mapReference" key is of type LiveMap`);
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(referencedMap._value, 'LiveMap', `Check map at "mapReference" key is of type LiveMap`);
 
             expect(referencedMap.size()).to.equal(1, 'Check map at "mapReference" key has correct number of keys');
-            expect(referencedMap.get('stringKey')).to.equal(
+            expect(referencedMap.get('stringKey').value()).to.equal(
               'stringValue',
               'Check map at "mapReference" key has correct "stringKey" value',
             );
@@ -1296,7 +1251,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'MAP_CREATE object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             // need to use multiple maps as MAP_CREATE op can only be applied once to a map object
             const mapIds = [
@@ -1360,12 +1315,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               const expectedMapValue = expectedMapValues[i];
               const expectedKeysCount = Object.keys(expectedMapValue).length;
 
-              expect(root.get(mapId).size()).to.equal(
+              expect(entryInstance.get(mapId).size()).to.equal(
                 expectedKeysCount,
                 `Check map #${i + 1} has expected number of keys after MAP_CREATE ops`,
               );
               Object.entries(expectedMapValue).forEach(([key, value]) => {
-                expect(root.get(mapId).get(key)).to.equal(
+                expect(entryInstance.get(mapId).get(key).value()).to.equal(
                   value,
                   `Check map #${i + 1} has expected value for "${key}" key after MAP_CREATE ops`,
                 );
@@ -1378,12 +1333,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_SET with primitives object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, helper, entryInstance } = ctx;
+            const { objectsHelper, channelName, helper, entryInstance } = ctx;
 
             // check root is empty before ops
             primitiveKeyData.forEach((keyData) => {
               expect(
-                root.get(keyData.key),
+                entryInstance.get(keyData.key),
                 `Check "${keyData.key}" key doesn't exist on root before applying MAP_SET ops`,
               ).to.not.exist;
             });
@@ -1408,11 +1363,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              checkKeyDataOnMap({
+              checkKeyDataOnInstance({
                 helper,
                 key: keyData.key,
                 keyData,
-                mapObj: root,
+                instance: entryInstance,
                 msg: `Check root has correct value for "${keyData.key}" key after MAP_SET op`,
               });
             });
@@ -1423,15 +1378,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply MAP_SET with object ids object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, entryInstance } = ctx;
+            const { objectsHelper, channelName, entryInstance, helper } = ctx;
 
             // check no object ids are set on root
             expect(
-              root.get('keyToCounter'),
+              entryInstance.get('keyToCounter'),
               `Check "keyToCounter" key doesn't exist on root before applying MAP_SET ops`,
             ).to.not.exist;
-            expect(root.get('keyToMap'), `Check "keyToMap" key doesn't exist on root before applying MAP_SET ops`).to
-              .not.exist;
+            expect(
+              entryInstance.get('keyToMap'),
+              `Check "keyToMap" key doesn't exist on root before applying MAP_SET ops`,
+            ).to.not.exist;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'keyToCounter'),
@@ -1456,21 +1413,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await objectsCreatedPromise;
 
             // check root has refs to new objects and they are not zero-value
-            const counter = root.get('keyToCounter');
-            const map = root.get('keyToMap');
+            const counter = entryInstance.get('keyToCounter');
+            const map = entryInstance.get('keyToMap');
 
             expect(counter, 'Check counter at "keyToCounter" key in root exists').to.exist;
+            helper.recordPrivateApi('read.DefaultInstance._value');
             expectInstanceOf(
-              counter,
+              counter._value,
               'LiveCounter',
               'Check counter at "keyToCounter" key in root is of type LiveCounter',
             );
             expect(counter.value()).to.equal(1, 'Check counter at "keyToCounter" key in root has correct value');
 
             expect(map, 'Check map at "keyToMap" key in root exists').to.exist;
-            expectInstanceOf(map, 'LiveMap', 'Check map at "keyToMap" key in root is of type LiveMap');
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(map._value, 'LiveMap', 'Check map at "keyToMap" key in root is of type LiveMap');
             expect(map.size()).to.equal(1, 'Check map at "keyToMap" key in root has correct number of keys');
-            expect(map.get('stringKey')).to.equal(
+            expect(map.get('stringKey').value()).to.equal(
               'stringValue',
               'Check map at "keyToMap" key in root has correct "stringKey" value',
             );
@@ -1481,7 +1440,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'MAP_SET object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             // create new map and set it on a root with forged timeserials
             const mapId = objectsHelper.fakeMapObjectId();
@@ -1538,7 +1497,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             ];
 
             expectedMapKeys.forEach(({ key, value }) => {
-              expect(root.get('map').get(key)).to.equal(
+              expect(entryInstance.get('map').get(key).value()).to.equal(
                 value,
                 `Check "${key}" key on map has expected value after MAP_SET ops`,
               );
@@ -1613,7 +1572,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'MAP_REMOVE object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             // create new map and set it on a root with forged timeserials
             const mapId = objectsHelper.fakeMapObjectId();
@@ -1671,11 +1630,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             expectedMapKeys.forEach(({ key, exists }) => {
               if (exists) {
-                expect(root.get('map').get(key), `Check "${key}" key on map still exists after MAP_REMOVE ops`).to
-                  .exist;
+                expect(entryInstance.get('map').get(key), `Check "${key}" key on map still exists after MAP_REMOVE ops`)
+                  .to.exist;
               } else {
-                expect(root.get('map').get(key), `Check "${key}" key on map does not exist after MAP_REMOVE ops`).to.not
-                  .exist;
+                expect(
+                  entryInstance.get('map').get(key),
+                  `Check "${key}" key on map does not exist after MAP_REMOVE ops`,
+                ).to.not.exist;
               }
             });
           },
@@ -1684,7 +1645,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'MAP_REMOVE for a map entry sets "tombstoneAt" from "serialTimestamp"',
           action: async (ctx) => {
-            const { helper, channel, root, objectsHelper } = ctx;
+            const { helper, channel, entryInstance, objectsHelper } = ctx;
 
             const serialTimestamp = 1234567890;
             await objectsHelper.processObjectOperationMessageOnChannel({
@@ -1695,8 +1656,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               state: [objectsHelper.mapRemoveOp({ objectId: 'root', key: 'foo' })],
             });
 
+            helper.recordPrivateApi('read.DefaultInstance._value');
             helper.recordPrivateApi('read.LiveMap._dataRef.data');
-            const mapEntry = root._dataRef.data.get('foo');
+            const mapEntry = entryInstance._value._dataRef.data.get('foo');
             expect(mapEntry, 'Check map entry is added to root internal data after MAP_REMOVE for a map entry').to
               .exist;
             expect(mapEntry.tombstonedAt).to.equal(
@@ -1709,7 +1671,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'MAP_REMOVE for a map entry sets "tombstoneAt" using local clock if missing "serialTimestamp"',
           action: async (ctx) => {
-            const { helper, channel, root, objectsHelper } = ctx;
+            const { helper, channel, entryInstance, objectsHelper } = ctx;
 
             const tsBeforeMsg = Date.now();
             await objectsHelper.processObjectOperationMessageOnChannel({
@@ -1721,8 +1683,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             const tsAfterMsg = Date.now();
 
+            helper.recordPrivateApi('read.DefaultInstance._value');
             helper.recordPrivateApi('read.LiveMap._dataRef.data');
-            const mapEntry = root._dataRef.data.get('foo');
+            const mapEntry = entryInstance._value._dataRef.data.get('foo');
             expect(mapEntry, 'Check map entry is added to root internal data after MAP_REMOVE for a map entry').to
               .exist;
             expect(
@@ -1736,7 +1699,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'can apply COUNTER_CREATE object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, entryInstance } = ctx;
+            const { objectsHelper, channelName, entryInstance, helper } = ctx;
 
             // Objects public API allows us to check value of objects we've created based on COUNTER_CREATE ops
             // if we assign those objects to another map (root for example), as there is no way to access those objects from the internal pool directly.
@@ -1745,8 +1708,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // check no counters exist on root
             countersFixtures.forEach((fixture) => {
               const key = fixture.name;
-              expect(root.get(key), `Check "${key}" key doesn't exist on root before applying COUNTER_CREATE ops`).to
-                .not.exist;
+              expect(
+                entryInstance.get(key),
+                `Check "${key}" key doesn't exist on root before applying COUNTER_CREATE ops`,
+              ).to.not.exist;
             });
 
             const countersCreatedPromise = Promise.all(
@@ -1767,18 +1732,19 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // check created counters
             countersFixtures.forEach((fixture) => {
               const key = fixture.name;
-              const counterObj = root.get(key);
+              const counter = entryInstance.get(key);
 
               // check all counters exist on root
-              expect(counterObj, `Check counter at "${key}" key in root exists`).to.exist;
+              expect(counter, `Check counter at "${key}" key in root exists`).to.exist;
+              helper.recordPrivateApi('read.DefaultInstance._value');
               expectInstanceOf(
-                counterObj,
+                counter._value,
                 'LiveCounter',
                 `Check counter at "${key}" key in root is of type LiveCounter`,
               );
 
               // check counters have correct values
-              expect(counterObj.value()).to.equal(
+              expect(counter.value()).to.equal(
                 // if count was not set, should default to 0
                 fixture.count ?? 0,
                 `Check counter at "${key}" key in root has correct value`,
@@ -1791,7 +1757,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'COUNTER_CREATE object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             // need to use multiple counters as COUNTER_CREATE op can only be applied once to a counter object
             const counterIds = [
@@ -1847,7 +1813,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             for (const [i, counterId] of counterIds.entries()) {
               const expectedValue = expectedCounterValues[i];
 
-              expect(root.get(counterId).value()).to.equal(
+              expect(entryInstance.get(counterId).value()).to.equal(
                 expectedValue,
                 `Check counter #${i + 1} has expected value after COUNTER_CREATE ops`,
               );
@@ -1923,7 +1889,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'COUNTER_INC object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             // create new counter and set it on a root with forged timeserials
             const counterId = objectsHelper.fakeCounterObjectId();
@@ -1958,7 +1924,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             }
 
             // check only operations with correct timeserials were applied
-            expect(root.get('counter').value()).to.equal(
+            expect(entryInstance.get('counter').value()).to.equal(
               1 + 1000 + 100000 + 1000000, // sum of passing operations and the initial value
               `Check counter has expected value after COUNTER_INC ops`,
             );
@@ -1968,7 +1934,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'can apply OBJECT_DELETE object operation messages',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
+            const { objectsHelper, channelName, channel, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'map'),
@@ -1987,8 +1953,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await objectsCreatedPromise;
 
-            expect(root.get('map'), 'Check map exists on root before OBJECT_DELETE').to.exist;
-            expect(root.get('counter'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
+            expect(entryInstance.get('map'), 'Check map exists on root before OBJECT_DELETE').to.exist;
+            expect(entryInstance.get('counter'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
             await objectsHelper.processObjectOperationMessageOnChannel({
@@ -2004,15 +1970,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               state: [objectsHelper.objectDeleteOp({ objectId: counterObjectId })],
             });
 
-            expect(root.get('map'), 'Check map is not accessible on root after OBJECT_DELETE').to.not.exist;
-            expect(root.get('counter'), 'Check counter is not accessible on root after OBJECT_DELETE').to.not.exist;
+            expect(entryInstance.get('map'), 'Check map is not accessible on root after OBJECT_DELETE').to.not.exist;
+            expect(entryInstance.get('counter'), 'Check counter is not accessible on root after OBJECT_DELETE').to.not
+              .exist;
           },
         },
 
         {
           description: 'OBJECT_DELETE for unknown object id creates zero-value tombstoned object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             const counterId = objectsHelper.fakeCounterObjectId();
             // inject OBJECT_DELETE. should create a zero-value tombstoned object which can't be modified
@@ -2037,7 +2004,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'counter', data: { objectId: counterId } })],
             });
 
-            expect(root.get('counter'), 'Check counter is not accessible on root').to.not.exist;
+            expect(entryInstance.get('counter'), 'Check counter is not accessible on root').to.not.exist;
           },
         },
 
@@ -2045,7 +2012,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'OBJECT_DELETE object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             // need to use multiple objects as OBJECT_DELETE op can only be applied once to an object
             const counterIds = [
@@ -2103,12 +2070,12 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
               if (exists) {
                 expect(
-                  root.get(counterId),
+                  entryInstance.get(counterId),
                   `Check counter #${i + 1} exists on root as OBJECT_DELETE op was not applied`,
                 ).to.exist;
               } else {
                 expect(
-                  root.get(counterId),
+                  entryInstance.get(counterId),
                   `Check counter #${i + 1} does not exist on root as OBJECT_DELETE op was applied`,
                 ).to.not.exist;
               }
@@ -2194,7 +2161,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_DELETE for an object sets "tombstoneAt" from "serialTimestamp"',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, helper, realtimeObject, entryInstance } = ctx;
+            const { objectsHelper, channelName, channel, helper, realtimeObject, entryInstance } = ctx;
 
             const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'object');
             const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -2204,7 +2171,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await objectCreatedPromise;
 
-            expect(root.get('object'), 'Check object exists on root before OBJECT_DELETE').to.exist;
+            expect(entryInstance.get('object'), 'Check object exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
             const serialTimestamp = 1234567890;
@@ -2231,7 +2198,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'OBJECT_DELETE for an object sets "tombstoneAt" using local clock if missing "serialTimestamp"',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, helper, realtimeObject, entryInstance } = ctx;
+            const { objectsHelper, channelName, channel, helper, realtimeObject, entryInstance } = ctx;
 
             const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'object');
             const { objectId } = await objectsHelper.createAndSetOnMap(channelName, {
@@ -2241,7 +2208,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await objectCreatedPromise;
 
-            expect(root.get('object'), 'Check object exists on root before OBJECT_DELETE').to.exist;
+            expect(entryInstance.get('object'), 'Check object exists on root before OBJECT_DELETE').to.exist;
 
             const tsBeforeMsg = Date.now();
             // inject OBJECT_DELETE
@@ -2269,7 +2236,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'MAP_SET with reference to a tombstoned object results in undefined value on key',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
+            const { objectsHelper, channelName, channel, entryInstance } = ctx;
 
             const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             // create initial objects and set on root
@@ -2280,7 +2247,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await objectCreatedPromise;
 
-            expect(root.get('foo'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
+            expect(entryInstance.get('foo'), 'Check counter exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
             await objectsHelper.processObjectOperationMessageOnChannel({
@@ -2298,15 +2265,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               state: [objectsHelper.mapSetOp({ objectId: 'root', key: 'bar', data: { objectId: counterObjectId } })],
             });
 
-            expect(root.get('bar'), 'Check counter is not accessible on new key in root after OBJECT_DELETE').to.not
-              .exist;
+            expect(entryInstance.get('bar'), 'Check counter is not accessible on new key in root after OBJECT_DELETE')
+              .to.not.exist;
           },
         },
 
         {
           description: 'object operation message on a tombstoned object does not revive it',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, channel, entryInstance } = ctx;
+            const { objectsHelper, channelName, channel, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'map1'),
@@ -2331,9 +2298,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await objectsCreatedPromise;
 
-            expect(root.get('map1'), 'Check map1 exists on root before OBJECT_DELETE').to.exist;
-            expect(root.get('map2'), 'Check map2 exists on root before OBJECT_DELETE').to.exist;
-            expect(root.get('counter1'), 'Check counter1 exists on root before OBJECT_DELETE').to.exist;
+            expect(entryInstance.get('map1'), 'Check map1 exists on root before OBJECT_DELETE').to.exist;
+            expect(entryInstance.get('map2'), 'Check map2 exists on root before OBJECT_DELETE').to.exist;
+            expect(entryInstance.get('counter1'), 'Check counter1 exists on root before OBJECT_DELETE').to.exist;
 
             // inject OBJECT_DELETE
             await objectsHelper.processObjectOperationMessageOnChannel({
@@ -2376,12 +2343,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
 
             // objects should still be deleted
-            expect(root.get('map1'), 'Check map1 does not exist on root after OBJECT_DELETE and another object op').to
-              .not.exist;
-            expect(root.get('map2'), 'Check map2 does not exist on root after OBJECT_DELETE and another object op').to
-              .not.exist;
             expect(
-              root.get('counter1'),
+              entryInstance.get('map1'),
+              'Check map1 does not exist on root after OBJECT_DELETE and another object op',
+            ).to.not.exist;
+            expect(
+              entryInstance.get('map2'),
+              'Check map2 does not exist on root after OBJECT_DELETE and another object op',
+            ).to.not.exist;
+            expect(
+              entryInstance.get('counter1'),
               'Check counter1 does not exist on root after OBJECT_DELETE and another object op',
             ).to.not.exist;
           },
@@ -2392,7 +2363,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'object operation messages are buffered during OBJECT_SYNC sequence',
           action: async (ctx) => {
-            const { root, objectsHelper, channel, client, helper } = ctx;
+            const { entryInstance, objectsHelper, channel, client, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -2423,8 +2394,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check root doesn't have data from operations
             primitiveKeyData.forEach((keyData) => {
-              expect(root.get(keyData.key), `Check "${keyData.key}" key doesn't exist on root during OBJECT_SYNC`).to
-                .not.exist;
+              expect(
+                entryInstance.get(keyData.key),
+                `Check "${keyData.key}" key doesn't exist on root during OBJECT_SYNC`,
+              ).to.not.exist;
             });
           },
         },
@@ -2432,7 +2405,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'buffered object operation messages are applied when OBJECT_SYNC sequence ends',
           action: async (ctx) => {
-            const { root, objectsHelper, channel, helper, client } = ctx;
+            const { entryInstance, objectsHelper, channel, helper, client } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -2469,11 +2442,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              checkKeyDataOnMap({
+              checkKeyDataOnInstance({
                 helper,
                 key: keyData.key,
                 keyData,
-                mapObj: root,
+                instance: entryInstance,
                 msg: `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
               });
             });
@@ -2483,7 +2456,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'buffered object operation messages are discarded when new OBJECT_SYNC sequence starts',
           action: async (ctx) => {
-            const { root, objectsHelper, channel, client, helper } = ctx;
+            const { entryInstance, objectsHelper, channel, client, helper } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -2535,13 +2508,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             // check root doesn't have data from operations received during first sync
             primitiveKeyData.forEach((keyData) => {
               expect(
-                root.get(keyData.key),
+                entryInstance.get(keyData.key),
                 `Check "${keyData.key}" key doesn't exist on root when OBJECT_SYNC has ended`,
               ).to.not.exist;
             });
 
             // check root has data from operations received during second sync
-            expect(root.get('foo')).to.equal(
+            expect(entryInstance.get('foo').value()).to.equal(
               'bar',
               'Check root has data from operations received during second OBJECT_SYNC sequence',
             );
@@ -2552,7 +2525,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'buffered object operation messages are applied based on the site timeserials vector of the object',
           action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
+            const { entryInstance, objectsHelper, channel } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             const mapId = objectsHelper.fakeMapObjectId();
@@ -2657,13 +2630,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             ];
 
             expectedMapKeys.forEach(({ key, value }) => {
-              expect(root.get('map').get(key)).to.equal(
+              expect(entryInstance.get('map').get(key).value()).to.equal(
                 value,
                 `Check "${key}" key on map has expected value after OBJECT_SYNC has ended`,
               );
             });
 
-            expect(root.get('counter').value()).to.equal(
+            expect(entryInstance.get('counter').value()).to.equal(
               1 + 1000 + 100000 + 1000000, // sum of passing operations and the initial value
               `Check counter has expected value after OBJECT_SYNC has ended`,
             );
@@ -2674,7 +2647,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'subsequent object operation messages are applied immediately after OBJECT_SYNC ended and buffers are applied',
           action: async (ctx) => {
-            const { root, objectsHelper, channel, channelName, helper, client, entryInstance } = ctx;
+            const { objectsHelper, channel, channelName, helper, client, entryInstance } = ctx;
 
             // start new sync sequence with a cursor so client will wait for the next OBJECT_SYNC messages
             await objectsHelper.processObjectStateMessageOnChannel({
@@ -2723,15 +2696,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             // check buffered operations are applied, as well as the most recent operation outside of the sync sequence is applied
             primitiveKeyData.forEach((keyData) => {
-              checkKeyDataOnMap({
+              checkKeyDataOnInstance({
                 helper,
                 key: keyData.key,
                 keyData,
-                mapObj: root,
+                instance: entryInstance,
                 msg: `Check root has correct value for "${keyData.key}" key after OBJECT_SYNC has ended and buffered operations are applied`,
               });
             });
-            expect(root.get('foo')).to.equal(
+            expect(entryInstance.get('foo').value()).to.equal(
               'bar',
               'Check root has correct value for "foo" key from operation received outside of OBJECT_SYNC after other buffered operations were applied',
             );
@@ -2787,7 +2760,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'LiveCounter.increment throws on invalid input',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, entryInstance } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await objectsHelper.createAndSetOnMap(channelName, {
@@ -2797,16 +2770,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await counterCreatedPromise;
 
-            const counter = root.get('counter');
+            const counter = entryInstance.get('counter');
 
-            await expectToThrowAsync(
-              async () => counter.increment(),
-              'Counter value increment should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => counter.increment(null),
-              'Counter value increment should be a valid number',
-            );
             await expectToThrowAsync(
               async () => counter.increment(Number.NaN),
               'Counter value increment should be a valid number',
@@ -2897,7 +2862,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'LiveCounter.decrement throws on invalid input',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, entryInstance } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await objectsHelper.createAndSetOnMap(channelName, {
@@ -2907,16 +2872,8 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await counterCreatedPromise;
 
-            const counter = root.get('counter');
+            const counter = entryInstance.get('counter');
 
-            await expectToThrowAsync(
-              async () => counter.decrement(),
-              'Counter value decrement should be a valid number',
-            );
-            await expectToThrowAsync(
-              async () => counter.decrement(null),
-              'Counter value decrement should be a valid number',
-            );
             await expectToThrowAsync(
               async () => counter.decrement(Number.NaN),
               'Counter value decrement should be a valid number',
@@ -2964,7 +2921,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.set sends MAP_SET operation with primitive values',
           action: async (ctx) => {
-            const { root, helper, entryInstance } = ctx;
+            const { helper, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all(
               primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
@@ -2981,18 +2938,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
                 }
 
-                await root.set(keyData.key, value);
+                await entryInstance.set(keyData.key, value);
               }),
             );
             await keysUpdatedPromise;
 
             // check everything is applied correctly
             primitiveKeyData.forEach((keyData) => {
-              checkKeyDataOnMap({
+              checkKeyDataOnInstance({
                 helper,
                 key: keyData.key,
                 keyData,
-                mapObj: root,
+                instance: entryInstance,
                 msg: `Check root has correct value for "${keyData.key}" key after LiveMap.set call`,
               });
             });
@@ -3003,50 +2960,32 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.set sends MAP_SET operation with reference to another LiveObject',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, entryInstance } = ctx;
+            const { entryInstance, helper } = ctx;
 
-            const objectsCreatedPromise = Promise.all([
+            const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'counter'),
               waitForMapKeyUpdate(entryInstance, 'map'),
             ]);
-            await objectsHelper.createAndSetOnMap(channelName, {
-              mapObjectId: 'root',
-              key: 'counter',
-              createOp: objectsHelper.counterCreateRestOp(),
-            });
-            await objectsHelper.createAndSetOnMap(channelName, {
-              mapObjectId: 'root',
-              key: 'map',
-              createOp: objectsHelper.mapCreateRestOp(),
-            });
-            await objectsCreatedPromise;
-
-            const counter = root.get('counter');
-            const map = root.get('map');
-
-            const keysUpdatedPromise = Promise.all([
-              waitForMapKeyUpdate(entryInstance, 'counter2'),
-              waitForMapKeyUpdate(entryInstance, 'map2'),
-            ]);
-            await root.set('counter2', counter);
-            await root.set('map2', map);
+            await entryInstance.set('counter', LiveCounter.create(1));
+            await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
             await keysUpdatedPromise;
 
-            expect(root.get('counter2')).to.equal(
-              counter,
-              'Check can set a reference to a LiveCounter object on a root via a LiveMap.set call',
-            );
-            expect(root.get('map2')).to.equal(
-              map,
-              'Check can set a reference to a LiveMap object on a root via a LiveMap.set call',
-            );
+            const counter = entryInstance.get('counter');
+            const map = entryInstance.get('map');
+
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(counter._value, 'LiveCounter', 'Check counter set on root is a LiveCounter object');
+            expect(counter.value()).to.equal(1, 'Check counter initial value is correct');
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(map._value, 'LiveMap', 'Check map set on root is a LiveMap object');
+            expect(map.get('foo').value()).to.equal('bar', 'Check map initial value is correct');
           },
         },
 
         {
           description: 'LiveMap.set throws on invalid input',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, entryInstance } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
 
             const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await objectsHelper.createAndSetOnMap(channelName, {
@@ -3056,7 +2995,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await mapCreatedPromise;
 
-            const map = root.get('map');
+            const map = entryInstance.get('map');
 
             await expectToThrowAsync(async () => map.set(), 'Map key should be string');
             await expectToThrowAsync(async () => map.set(null), 'Map key should be string');
@@ -3114,7 +3053,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'LiveMap.remove throws on invalid input',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, entryInstance } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
 
             const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
             await objectsHelper.createAndSetOnMap(channelName, {
@@ -3124,7 +3063,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             });
             await mapCreatedPromise;
 
-            const map = root.get('map');
+            const map = entryInstance.get('map');
 
             await expectToThrowAsync(async () => map.remove(), 'Map key should be string');
             await expectToThrowAsync(async () => map.remove(null), 'Map key should be string');
@@ -3150,28 +3089,17 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'value type created with LiveCounter.create() can be assigned to the object tree',
           action: async (ctx) => {
-            const { root, entryInstance } = ctx;
+            const { entryInstance, helper } = ctx;
 
             const counterCreatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
-            await root.set('counter', LiveCounter.create(1));
+            await entryInstance.set('counter', LiveCounter.create(1));
             await counterCreatedPromise;
 
-            const counter = root.get('counter');
+            const counter = entryInstance.get('counter');
 
-            expectInstanceOf(counter, 'LiveCounter', `Check counter instance is of an expected class`);
-            expectInstanceOf(
-              root.get('counter'),
-              'LiveCounter',
-              `Check counter instance on root is of an expected class`,
-            );
-            expect(root.get('counter')).to.equal(
-              counter,
-              'Check counter object on root is the same as from create method',
-            );
-            expect(root.get('counter').value()).to.equal(
-              1,
-              'Check counter assigned to the object tree has the expected value',
-            );
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(counter._value, 'LiveCounter', `Check counter instance on root is of an expected class`);
+            expect(counter.value()).to.equal(1, 'Check counter assigned to the object tree has the expected value');
           },
         },
 
@@ -3179,20 +3107,27 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveCounter.create() sends COUNTER_CREATE operation',
           action: async (ctx) => {
-            const { root, entryInstance } = ctx;
+            const { entryInstance, helper } = ctx;
 
             const objectsCreatedPromise = Promise.all(
               countersFixtures.map((x) => waitForMapKeyUpdate(entryInstance, x.name)),
             );
-            await Promise.all(countersFixtures.map(async (x) => root.set(x.name, LiveCounter.create(x.count))));
+            await Promise.all(
+              countersFixtures.map(async (x) => entryInstance.set(x.name, LiveCounter.create(x.count))),
+            );
             await objectsCreatedPromise;
 
             for (let i = 0; i < countersFixtures.length; i++) {
-              const counter = root.get(countersFixtures[i].name);
+              const counter = entryInstance.get(countersFixtures[i].name);
               const fixture = countersFixtures[i];
 
               expect(counter, `Check counter #${i + 1} exists`).to.exist;
-              expectInstanceOf(counter, 'LiveCounter', `Check counter instance #${i + 1} is of an expected class`);
+              helper.recordPrivateApi('read.DefaultInstance._value');
+              expectInstanceOf(
+                counter._value,
+                'LiveCounter',
+                `Check counter instance #${i + 1} is of an expected class`,
+              );
               expect(counter.value()).to.equal(
                 fixture.count ?? 0,
                 `Check counter #${i + 1} has expected initial value`,
@@ -3205,50 +3140,50 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'value type created with LiveCounter.create() with an invalid input throws when assigned to the object tree',
           action: async (ctx) => {
-            const { root } = ctx;
+            const { entryInstance } = ctx;
 
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create(null)),
+              async () => entryInstance.set('counter', LiveCounter.create(null)),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create(Number.NaN)),
+              async () => entryInstance.set('counter', LiveCounter.create(Number.NaN)),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create(Number.POSITIVE_INFINITY)),
+              async () => entryInstance.set('counter', LiveCounter.create(Number.POSITIVE_INFINITY)),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create(Number.NEGATIVE_INFINITY)),
+              async () => entryInstance.set('counter', LiveCounter.create(Number.NEGATIVE_INFINITY)),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create('foo')),
+              async () => entryInstance.set('counter', LiveCounter.create('foo')),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create(BigInt(1))),
+              async () => entryInstance.set('counter', LiveCounter.create(BigInt(1))),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create(true)),
+              async () => entryInstance.set('counter', LiveCounter.create(true)),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create(Symbol())),
+              async () => entryInstance.set('counter', LiveCounter.create(Symbol())),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create({})),
+              async () => entryInstance.set('counter', LiveCounter.create({})),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create([])),
+              async () => entryInstance.set('counter', LiveCounter.create([])),
               'Counter value should be a valid number',
             );
             await expectToThrowAsync(
-              async () => root.set('counter', LiveCounter.create(root)),
+              async () => entryInstance.set('counter', LiveCounter.create(entryInstance)),
               'Counter value should be a valid number',
             );
           },
@@ -3266,17 +3201,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'value type created with LiveMap.create() can be assigned to the object tree',
           action: async (ctx) => {
-            const { root, entryInstance } = ctx;
+            const { entryInstance, helper } = ctx;
 
             const mapCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
-            await root.set('map', LiveMap.create({ foo: 'bar' }));
+            await entryInstance.set('map', LiveMap.create({ foo: 'bar' }));
             await mapCreatedPromise;
 
-            const map = root.get('map');
+            const map = entryInstance.get('map');
 
-            expectInstanceOf(map, 'LiveMap', `Check map instance on root is of an expected class`);
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(map._value, 'LiveMap', `Check map instance on root is of an expected class`);
             expect(map.size()).to.equal(1, 'Check map assigned to the object tree has the expected number of keys');
-            expect(map.get('foo')).to.equal(
+            expect(map.get('foo').value()).to.equal(
               'bar',
               'Check map assigned to the object tree has the expected value for its string key',
             );
@@ -3287,7 +3223,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.create() sends MAP_CREATE operation with primitive values',
           action: async (ctx) => {
-            const { root, helper, entryInstance } = ctx;
+            const { helper, entryInstance } = ctx;
 
             const objectsCreatedPromise = Promise.all(
               primitiveMapsFixtures.map((x) => waitForMapKeyUpdate(entryInstance, x.name)),
@@ -3311,17 +3247,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                     }, {})
                   : undefined;
 
-                return root.set(mapFixture.name, LiveMap.create(entries));
+                return entryInstance.set(mapFixture.name, LiveMap.create(entries));
               }),
             );
             await objectsCreatedPromise;
 
             for (let i = 0; i < primitiveMapsFixtures.length; i++) {
-              const map = root.get(primitiveMapsFixtures[i].name);
+              const map = entryInstance.get(primitiveMapsFixtures[i].name);
               const fixture = primitiveMapsFixtures[i];
 
               expect(map, `Check map #${i + 1} exists`).to.exist;
-              expectInstanceOf(map, 'LiveMap', `Check map instance #${i + 1} is of an expected class`);
+              helper.recordPrivateApi('read.DefaultInstance._value');
+              expectInstanceOf(map._value, 'LiveMap', `Check map instance #${i + 1} is of an expected class`);
 
               expect(map.size()).to.equal(
                 Object.keys(fixture.entries ?? {}).length,
@@ -3329,11 +3266,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               );
 
               Object.entries(fixture.entries ?? {}).forEach(([key, keyData]) => {
-                checkKeyDataOnMap({
+                checkKeyDataOnInstance({
                   helper,
                   key,
                   keyData,
-                  mapObj: map,
+                  instance: map,
                   msg: `Check map #${i + 1} has correct value for "${key}" key`,
                 });
               });
@@ -3345,10 +3282,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'LiveMap.create() sends MAP_CREATE operation with reference to another LiveObject',
           action: async (ctx) => {
-            const { root, entryInstance } = ctx;
+            const { entryInstance, helper } = ctx;
 
             const objectCreatedPromise = waitForMapKeyUpdate(entryInstance, 'map');
-            await root.set(
+            await entryInstance.set(
               'map',
               LiveMap.create({
                 map: LiveMap.create(),
@@ -3357,18 +3294,25 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
             await objectCreatedPromise;
 
-            const map = root.get('map');
+            const map = entryInstance.get('map');
             const nestedMap = map.get('map');
             const nestedCounter = map.get('counter');
 
             expect(map, 'Check map exists').to.exist;
-            expectInstanceOf(map, 'LiveMap', 'Check map instance is of an expected class');
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(map._value, 'LiveMap', 'Check map instance is of an expected class');
 
             expect(nestedMap, 'Check nested map exists').to.exist;
-            expectInstanceOf(nestedMap, 'LiveMap', 'Check nested map instance is of an expected class');
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(nestedMap._value, 'LiveMap', 'Check nested map instance is of an expected class');
 
             expect(nestedCounter, 'Check nested counter exists').to.exist;
-            expectInstanceOf(nestedCounter, 'LiveCounter', 'Check nested counter instance is of an expected class');
+            helper.recordPrivateApi('read.DefaultInstance._value');
+            expectInstanceOf(
+              nestedCounter._value,
+              'LiveCounter',
+              'Check nested counter instance is of an expected class',
+            );
           },
         },
 
@@ -3376,47 +3320,47 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           description:
             'value type created with LiveMap.create() with an invalid input throws when assigned to the object tree',
           action: async (ctx) => {
-            const { root } = ctx;
+            const { entryInstance } = ctx;
 
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create(null)),
+              async () => entryInstance.set('map', LiveMap.create(null)),
               'Map entries should be a key-value object',
             );
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create('foo')),
+              async () => entryInstance.set('map', LiveMap.create('foo')),
               'Map entries should be a key-value object',
             );
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create(1)),
+              async () => entryInstance.set('map', LiveMap.create(1)),
               'Map entries should be a key-value object',
             );
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create(BigInt(1))),
+              async () => entryInstance.set('map', LiveMap.create(BigInt(1))),
               'Map entries should be a key-value object',
             );
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create(true)),
+              async () => entryInstance.set('map', LiveMap.create(true)),
               'Map entries should be a key-value object',
             );
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create(Symbol())),
+              async () => entryInstance.set('map', LiveMap.create(Symbol())),
               'Map entries should be a key-value object',
             );
 
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create({ key: undefined })),
+              async () => entryInstance.set('map', LiveMap.create({ key: undefined })),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create({ key: null })),
+              async () => entryInstance.set('map', LiveMap.create({ key: null })),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create({ key: BigInt(1) })),
+              async () => entryInstance.set('map', LiveMap.create({ key: BigInt(1) })),
               'Map value data type is unsupported',
             );
             await expectToThrowAsync(
-              async () => root.set('map', LiveMap.create({ key: Symbol() })),
+              async () => entryInstance.set('map', LiveMap.create({ key: Symbol() })),
               'Map value data type is unsupported',
             );
           },
@@ -3719,70 +3663,9 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         },
       ];
 
-      const liveMapEnumerationScenarios = [
-        {
-          description: `LiveMap enumeration`,
-          action: async (ctx) => {
-            const { root, objectsHelper, channel } = ctx;
-
-            const counterId1 = objectsHelper.fakeCounterObjectId();
-            const counterId2 = objectsHelper.fakeCounterObjectId();
-            await objectsHelper.processObjectStateMessageOnChannel({
-              channel,
-              syncSerial: 'serial:', // empty serial so sync sequence ends immediately
-              state: [
-                objectsHelper.counterObject({
-                  objectId: counterId1,
-                  siteTimeserials: {
-                    aaa: lexicoTimeserial('aaa', 0, 0),
-                  },
-                  tombstone: false,
-                  initialCount: 0,
-                }),
-                objectsHelper.counterObject({
-                  objectId: counterId2,
-                  siteTimeserials: {
-                    aaa: lexicoTimeserial('aaa', 0, 0),
-                  },
-                  tombstone: true,
-                  initialCount: 0,
-                }),
-                objectsHelper.mapObject({
-                  objectId: 'root',
-                  siteTimeserials: { aaa: lexicoTimeserial('aaa', 0, 0) },
-                  materialisedEntries: {
-                    counter1: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId1 } },
-                    counter2: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { objectId: counterId2 } },
-                    foo: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'bar' } },
-                    baz: { timeserial: lexicoTimeserial('aaa', 0, 0), data: { string: 'qux' }, tombstone: true },
-                  },
-                }),
-              ],
-            });
-
-            const counter1 = await root.get('counter1');
-
-            // enumeration methods should not count tombstoned entries
-            expect(root.size()).to.equal(2, 'Check LiveMap.size() returns expected number of keys');
-            expect([...root.entries()]).to.deep.equal(
-              [
-                ['counter1', counter1],
-                ['foo', 'bar'],
-              ],
-              'Check LiveMap.entries() returns expected entries',
-            );
-            expect([...root.keys()]).to.deep.equal(['counter1', 'foo'], 'Check LiveMap.keys() returns expected keys');
-            expect([...root.values()]).to.deep.equal(
-              [counter1, 'bar'],
-              'Check LiveMap.values() returns expected values',
-            );
-          },
-        },
-      ];
-
       const pathObjectScenarios = [
         {
-          description: 'RealtimeObject.getPathObject() returns PathObject instance',
+          description: 'RealtimeObject.get() returns PathObject instance',
           action: async (ctx) => {
             const { entryPathObject } = ctx;
 
@@ -3860,11 +3743,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.at() navigates using dot-separated paths',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             // Create nested structure
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested');
-            await root.set('nested', LiveMap.create({ deepKey: 'deepValue', 'key.with.dots': 'dottedValue' }));
+            await entryPathObject.set(
+              'nested',
+              LiveMap.create({ deepKey: 'deepValue', 'key.with.dots': 'dottedValue' }),
+            );
             await keyUpdatedPromise;
 
             const nestedPathObj = entryPathObject.at('nested.deepKey');
@@ -3888,10 +3774,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject resolves complex path strings',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'nested.key');
-            await root.set(
+            await entryPathObject.set(
               'nested.key',
               LiveMap.create({
                 'key.with.dots.and\\escaped\\characters': 'nestedValue',
@@ -3926,7 +3812,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.value() returns primitive values correctly',
           action: async (ctx) => {
-            const { root, entryPathObject, helper, entryInstance } = ctx;
+            const { entryPathObject, helper, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all(
               primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
@@ -3943,7 +3829,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                   value = keyData.data.number ?? keyData.data.string ?? keyData.data.boolean;
                 }
 
-                await root.set(keyData.key, value);
+                await entryPathObject.set(keyData.key, value);
               }),
             );
             await keysUpdatedPromise;
@@ -3954,7 +3840,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 helper,
                 key: keyData.key,
                 keyData,
-                mapObj: root,
                 pathObject: entryPathObject,
                 msg: `Check PathObject returns correct value for "${keyData.key}" key after LiveMap.set call`,
               });
@@ -3965,10 +3850,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.value() returns LiveCounter values',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
-            await root.set('counter', LiveCounter.create(10));
+            await entryPathObject.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
 
             const counterPathObj = entryPathObject.get('counter');
@@ -3980,14 +3865,14 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.instance() returns DefaultInstance for LiveMap and LiveCounter',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'map'),
               waitForMapKeyUpdate(entryInstance, 'counter'),
             ]);
-            await root.set('map', LiveMap.create());
-            await root.set('counter', LiveCounter.create());
+            await entryPathObject.set('map', LiveMap.create());
+            await entryPathObject.set('counter', LiveCounter.create());
             await keysUpdatedPromise;
 
             const counterInstance = entryPathObject.get('counter').instance();
@@ -4003,17 +3888,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject collection methods work for LiveMap objects',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
-            // Set up test data
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'key1'),
               waitForMapKeyUpdate(entryInstance, 'key2'),
               waitForMapKeyUpdate(entryInstance, 'key3'),
             ]);
-            await root.set('key1', 'value1');
-            await root.set('key2', 'value2');
-            await root.set('key3', 'value3');
+            await entryPathObject.set('key1', 'value1');
+            await entryPathObject.set('key2', 'value2');
+            await entryPathObject.set('key3', 'value3');
             await keysUpdatedPromise;
 
             // Test size
@@ -4033,19 +3917,23 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const entryValues = entries.map(([key, pathObj]) => pathObj.value());
             expect(entryValues).to.have.members(['value1', 'value2', 'value3'], 'Check PathObject entries values');
 
+            expectInstanceOf(entries[0][1], 'DefaultPathObject', 'Check entry value is DefaultPathObject');
+
             // Test values
             const values = [...entryPathObject.values()];
             expect(values).to.have.lengthOf(3, 'Check PathObject values length');
 
             const valueValues = values.map((pathObj) => pathObj.value());
             expect(valueValues).to.have.members(['value1', 'value2', 'value3'], 'Check PathObject values');
+
+            expectInstanceOf(values[0], 'DefaultPathObject', 'Check value is DefaultPathObject');
           },
         },
 
         {
           description: 'PathObject.set() works for LiveMap objects with primitive values',
           action: async (ctx) => {
-            const { root, entryPathObject, helper, entryInstance } = ctx;
+            const { entryPathObject, helper, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all(
               primitiveKeyData.map((x) => waitForMapKeyUpdate(entryInstance, x.key)),
@@ -4073,7 +3961,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
                 helper,
                 key: keyData.key,
                 keyData,
-                mapObj: root,
                 pathObject: entryPathObject,
                 msg: `Check PathObject returns correct value for "${keyData.key}" key after PathObject.set call`,
               });
@@ -4084,13 +3971,13 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.set() works for LiveMap objects with LiveObject references',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counterKey');
             await entryPathObject.set('counterKey', LiveCounter.create(5));
             await keyUpdatedPromise;
 
-            expect(root.get('counterKey'), 'Check counter object was set via PathObject').to.exist;
+            expect(entryInstance.get('counterKey'), 'Check counter object was set via PathObject').to.exist;
             expect(entryPathObject.get('counterKey').value()).to.equal(5, 'Check PathObject reflects counter value');
           },
         },
@@ -4098,19 +3985,20 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.remove() works for LiveMap objects',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keyAddedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
-            await root.set('keyToRemove', 'valueToRemove');
+            await entryPathObject.set('keyToRemove', 'valueToRemove');
             await keyAddedPromise;
 
-            expect(root.get('keyToRemove'), 'Check key exists on root').to.exist;
+            expect(entryPathObject.get('keyToRemove'), 'Check key exists on root').to.exist;
 
             const keyRemovedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
             await entryPathObject.remove('keyToRemove');
             await keyRemovedPromise;
 
-            expect(root.get('keyToRemove'), 'Check key on root is removed after PathObject.remove()').to.be.undefined;
+            expect(entryInstance.get('keyToRemove'), 'Check key on root is removed after PathObject.remove()').to.be
+              .undefined;
             expect(
               entryPathObject.get('keyToRemove').value(),
               'Check value for path is undefined after PathObject.remove()',
@@ -4241,10 +4129,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject handling of operations for paths with non-collection intermediate segments',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
-            await root.set('counter', LiveCounter.create());
+            await entryPathObject.set('counter', LiveCounter.create());
             await keyUpdatedPromise;
 
             const wrongTypePathObj = entryPathObject.at('counter.nested.path');
@@ -4292,16 +4180,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject handling of operations on wrong underlying object type',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
+            const { entryPathObject, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'map'),
               waitForMapKeyUpdate(entryInstance, 'counter'),
               waitForMapKeyUpdate(entryInstance, 'primitive'),
             ]);
-            await root.set('map', LiveMap.create());
-            await root.set('counter', LiveCounter.create());
-            await root.set('primitive', 'value');
+            await entryPathObject.set('map', LiveMap.create());
+            await entryPathObject.set('counter', LiveCounter.create());
+            await entryPathObject.set('primitive', 'value');
             await keysUpdatedPromise;
 
             const mapPathObj = entryPathObject.get('map');
@@ -4392,7 +4280,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'PathObject.subscribe() receives events for direct changes to the subscribed path',
           action: async (ctx) => {
-            const { root, entryPathObject } = ctx;
+            const { entryPathObject } = ctx;
 
             const subscriptionPromise = new Promise((resolve, reject) => {
               entryPathObject.subscribe((event) => {
@@ -4407,7 +4295,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
               });
             });
 
-            await root.set('testKey', 'testValue');
+            await entryPathObject.set('testKey', 'testValue');
             await subscriptionPromise;
           },
         },
@@ -5228,33 +5116,31 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
       const instanceScenarios = [
         {
-          description: 'DefaultInstance.id() returns object ID of underlying LiveObject',
+          description: 'DefaultInstance.id() returns object ID of the underlying LiveObject',
           action: async (ctx) => {
-            const { root, entryPathObject, helper, entryInstance } = ctx;
+            const { objectsHelper, channelName, entryInstance } = ctx;
 
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'map'),
               waitForMapKeyUpdate(entryInstance, 'counter'),
             ]);
-
-            await entryPathObject.set('map', LiveMap.create());
-            await entryPathObject.set('counter', LiveCounter.create());
+            const { objectId: mapId } = await objectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'map',
+              createOp: objectsHelper.mapCreateRestOp(),
+            });
+            const { objectId: counterId } = await objectsHelper.createAndSetOnMap(channelName, {
+              mapObjectId: 'root',
+              key: 'counter',
+              createOp: objectsHelper.counterCreateRestOp(),
+            });
             await keysUpdatedPromise;
 
-            const map = root.get('map');
-            const counter = root.get('counter');
+            const map = entryInstance.get('map');
+            const counter = entryInstance.get('counter');
 
-            const mapInstance = entryPathObject.get('map').instance();
-            const counterInstance = entryPathObject.get('counter').instance();
-
-            helper.recordPrivateApi('call.LiveObject.getObjectId');
-            expect(mapInstance.id()).to.equal(map.getObjectId(), 'Check map instance ID matches underlying LiveMap ID');
-
-            helper.recordPrivateApi('call.LiveObject.getObjectId');
-            expect(counterInstance.id()).to.equal(
-              counter.getObjectId(),
-              'Check counter instance ID matches underlying LiveCounter ID',
-            );
+            expect(map.id()).to.equal(mapId, 'Check DefaultInstance.id() for map matches expected value');
+            expect(counter.id()).to.equal(counterId, 'Check DefaultInstance.id() for counter matches expected value');
           },
         },
 
@@ -5344,7 +5230,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           action: async (ctx) => {
             const { entryPathObject, entryInstance } = ctx;
 
-            // Set up test data
             const keysUpdatedPromise = Promise.all([
               waitForMapKeyUpdate(entryInstance, 'key1'),
               waitForMapKeyUpdate(entryInstance, 'key2'),
@@ -5374,12 +5259,16 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const entryValues = entries.map(([key, instance]) => instance.value());
             expect(entryValues).to.have.members(['value1', 'value2', 'value3'], 'Check DefaultInstance entries values');
 
+            expectInstanceOf(entries[0][1], 'DefaultInstance', 'Check entry value is DefaultInstance');
+
             // Test values
             const values = [...rootInstance.values()];
             expect(values).to.have.lengthOf(3, 'Check DefaultInstance values length');
 
             const valueValues = values.map((instance) => instance.value());
             expect(valueValues).to.have.members(['value1', 'value2', 'value3'], 'Check DefaultInstance values');
+
+            expectInstanceOf(values[0], 'DefaultInstance', 'Check value is DefaultInstance');
           },
         },
 
@@ -5426,25 +5315,21 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.set() works for LiveMap objects with LiveObject references',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
-
-            const rootInstance = entryPathObject.instance();
+            const { entryInstance } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counterKey');
-            await rootInstance.set('counterKey', LiveCounter.create(5));
+            await entryInstance.set('counterKey', LiveCounter.create(5));
             await keyUpdatedPromise;
 
-            expect(root.get('counterKey'), 'Check counter object was set via DefaultInstance').to.exist;
-            expect(rootInstance.get('counterKey').value()).to.equal(5, 'Check DefaultInstance reflects counter value');
+            expect(entryInstance.get('counterKey'), 'Check counter object was set via DefaultInstance').to.exist;
+            expect(entryInstance.get('counterKey').value()).to.equal(5, 'Check DefaultInstance reflects counter value');
           },
         },
 
         {
           description: 'DefaultInstance.remove() works for LiveMap objects',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
-
-            const rootInstance = entryPathObject.instance();
+            const { entryPathObject, entryInstance } = ctx;
 
             const keyAddedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
             await entryPathObject.set('keyToRemove', 'valueToRemove');
@@ -5453,13 +5338,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             expect(entryPathObject.get('keyToRemove').value(), 'Check key exists on root').to.exist;
 
             const keyRemovedPromise = waitForMapKeyUpdate(entryInstance, 'keyToRemove');
-            await rootInstance.remove('keyToRemove');
+            await entryInstance.remove('keyToRemove');
             await keyRemovedPromise;
 
-            expect(root.get('keyToRemove'), 'Check key on root is removed after DefaultInstance.remove()').to.be
-              .undefined;
             expect(
-              rootInstance.get('keyToRemove'),
+              entryInstance.get('keyToRemove'),
               'Check value for instance is undefined after DefaultInstance.remove()',
             ).to.be.undefined;
           },
@@ -5468,45 +5351,38 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
         {
           description: 'DefaultInstance.increment() and DefaultInstance.decrement() work for LiveCounter objects',
           action: async (ctx) => {
-            const { root, entryPathObject, entryInstance } = ctx;
-
-            const rootInstance = entryPathObject.instance();
+            const { entryPathObject, entryInstance } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'counter');
             await entryPathObject.set('counter', LiveCounter.create(10));
             await keyUpdatedPromise;
 
-            const counter = root.get('counter');
-            const counterInstance = rootInstance.get('counter');
+            const counter = entryInstance.get('counter');
 
-            let counterUpdatedPromise = waitForCounterUpdate(counterInstance);
-            await counterInstance.increment(5);
+            let counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counter.increment(5);
             await counterUpdatedPromise;
 
-            expect(counter.value()).to.equal(15, 'Check counter incremented via DefaultInstance');
-            expect(counterInstance.value()).to.equal(15, 'Check DefaultInstance reflects incremented value');
+            expect(counter.value()).to.equal(15, 'Check DefaultInstance reflects incremented value');
 
-            counterUpdatedPromise = waitForCounterUpdate(counterInstance);
-            await counterInstance.decrement(3);
+            counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counter.decrement(3);
             await counterUpdatedPromise;
 
-            expect(counter.value()).to.equal(12, 'Check counter decremented via DefaultInstance');
-            expect(counterInstance.value()).to.equal(12, 'Check DefaultInstance reflects decremented value');
+            expect(counter.value()).to.equal(12, 'Check DefaultInstance reflects decremented value');
 
             // test increment/decrement without argument (should increment/decrement by 1)
-            counterUpdatedPromise = waitForCounterUpdate(counterInstance);
-            await counterInstance.increment();
+            counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counter.increment();
             await counterUpdatedPromise;
 
-            expect(counter.value()).to.equal(13, 'Check counter incremented via DefaultInstance without argument');
-            expect(counterInstance.value()).to.equal(13, 'Check DefaultInstance reflects incremented value');
+            expect(counter.value()).to.equal(13, 'Check DefaultInstance reflects incremented value');
 
-            counterUpdatedPromise = waitForCounterUpdate(counterInstance);
-            await counterInstance.decrement();
+            counterUpdatedPromise = waitForCounterUpdate(counter);
+            await counter.decrement();
             await counterUpdatedPromise;
 
-            expect(counter.value()).to.equal(12, 'Check counter decremented via DefaultInstance without argument');
-            expect(counterInstance.value()).to.equal(12, 'Check DefaultInstance reflects decremented value');
+            expect(counter.value()).to.equal(12, 'Check DefaultInstance reflects decremented value');
           },
         },
 
@@ -6233,7 +6109,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           ...applyOperationsScenarios,
           ...applyOperationsDuringSyncScenarios,
           ...writeApiScenarios,
-          ...liveMapEnumerationScenarios,
           ...pathObjectScenarios,
           ...instanceScenarios,
         ],
@@ -6246,13 +6121,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const realtimeObject = channel.object;
 
             await channel.attach();
-            const root = await realtimeObject.get();
-            const entryPathObject = await realtimeObject.getPathObject();
+            const entryPathObject = await realtimeObject.get();
             const entryInstance = entryPathObject.instance();
 
             await scenario.action({
               realtimeObject,
-              root,
               entryPathObject,
               entryInstance,
               objectsHelper,
@@ -6780,8 +6653,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const channel = client.channels.get(channelName, channelOptionsWithObjects());
 
           await channel.attach();
-          const root = await channel.object.get();
-          const entryPathObject = await channel.object.getPathObject();
+          const entryPathObject = await channel.object.get();
           const entryInstance = entryPathObject.instance();
 
           const sampleMapKey = 'sampleMap';
@@ -6805,7 +6677,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           await objectsCreatedPromise;
 
           await scenario.action({
-            root,
             entryPathObject,
             entryInstance,
             objectsHelper,
@@ -6969,7 +6840,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           allTransportsAndProtocols: true,
           description: 'tombstoned map entry is removed from the LiveMap after the GC grace period',
           action: async (ctx) => {
-            const { root, objectsHelper, channelName, helper, waitForGCCycles, entryInstance } = ctx;
+            const { entryInstance, objectsHelper, channelName, helper, waitForGCCycles } = ctx;
 
             const keyUpdatedPromise = waitForMapKeyUpdate(entryInstance, 'foo');
             // set a key on a root
@@ -6979,7 +6850,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
             await keyUpdatedPromise;
 
-            expect(root.get('foo')).to.equal('bar', 'Check key "foo" exists on root after MAP_SET');
+            expect(entryInstance.get('foo').value()).to.equal('bar', 'Check key "foo" exists on root after MAP_SET');
 
             const keyUpdatedPromise2 = waitForMapKeyUpdate(entryInstance, 'foo');
             // remove the key from the root. this should tombstone the map entry and make it inaccessible to the end user, but still keep it in memory in the underlying map
@@ -6989,16 +6860,18 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             );
             await keyUpdatedPromise2;
 
-            expect(root.get('foo'), 'Check key "foo" is inaccessible via public API on root after MAP_REMOVE').to.not
-              .exist;
+            expect(entryInstance.get('foo'), 'Check key "foo" is inaccessible via public API on root after MAP_REMOVE')
+              .to.not.exist;
+            helper.recordPrivateApi('read.DefaultInstance._value');
             helper.recordPrivateApi('read.LiveMap._dataRef.data');
             expect(
-              root._dataRef.data.get('foo'),
+              entryInstance._value._dataRef.data.get('foo'),
               'Check map entry for "foo" exists on root in the underlying data immediately after MAP_REMOVE',
             ).to.exist;
+            helper.recordPrivateApi('read.DefaultInstance._value');
             helper.recordPrivateApi('read.LiveMap._dataRef.data');
             expect(
-              root._dataRef.data.get('foo').tombstone,
+              entryInstance._value._dataRef.data.get('foo').tombstone,
               'Check map entry for "foo" on root has "tombstone" flag set to "true" after MAP_REMOVE',
             ).to.exist;
 
@@ -7006,9 +6879,10 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             await waitForGCCycles(2);
 
             // the entry should be removed from the underlying map now
+            helper.recordPrivateApi('read.DefaultInstance._value');
             helper.recordPrivateApi('read.LiveMap._dataRef.data');
             expect(
-              root._dataRef.data.get('foo'),
+              entryInstance._value._dataRef.data.get('foo'),
               'Check map entry for "foo" does not exist on root in the underlying data after the GC grace period expiration',
             ).to.not.exist;
           },
@@ -7029,8 +6903,7 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             const realtimeObject = channel.object;
 
             await channel.attach();
-            const root = await channel.object.get();
-            const entryPathObject = await channel.object.getPathObject();
+            const entryPathObject = await channel.object.get();
             const entryInstance = entryPathObject.instance();
 
             helper.recordPrivateApi('read.RealtimeObject.gcGracePeriod');
@@ -7060,7 +6933,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
 
             await scenario.action({
               client,
-              root,
               entryPathObject,
               entryInstance,
               objectsHelper,
@@ -7289,16 +7161,15 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const realtimeObject = channel.object;
 
           await channel.attach();
-          const root = await channel.object.get();
-          const entryPathObject = await channel.object.getPathObject();
+          const entryPathObject = await channel.object.get();
           const entryInstance = entryPathObject.instance();
 
           const objectsCreatedPromise = Promise.all([
             waitForMapKeyUpdate(entryInstance, 'map'),
             waitForMapKeyUpdate(entryInstance, 'counter'),
           ]);
-          await root.set('map', LiveMap.create());
-          await root.set('counter', LiveCounter.create());
+          await entryInstance.set('map', LiveMap.create());
+          await entryInstance.set('counter', LiveCounter.create());
           await objectsCreatedPromise;
 
           const map = entryInstance.get('map');
@@ -7309,7 +7180,6 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
             objectsHelper,
             channelName,
             channel,
-            root,
             entryPathObject,
             entryInstance,
             map,
@@ -7355,11 +7225,11 @@ define(['ably', 'shared_helper', 'chai', 'objects', 'objects_helper'], function 
           const channel = client.channels.get('channel', channelOptionsWithObjects());
 
           await channel.attach();
-          const root = await channel.object.get();
+          const entryPathObject = await channel.object.get();
 
           const data = new Array(100).fill('a').join('');
           const error = await expectToThrowAsync(
-            async () => root.set('key', data),
+            async () => entryPathObject.set('key', data),
             'Maximum size of object messages that can be published at once exceeded',
           );
 

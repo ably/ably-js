@@ -1,5 +1,4 @@
 import type BaseClient from 'common/lib/client/baseclient';
-import type * as API from '../../../ably';
 import type {
   AnyPathObject,
   BatchContext,
@@ -12,7 +11,7 @@ import type {
   PathObjectSubscriptionEvent,
   PathObjectSubscriptionOptions,
   Primitive,
-  SubscribeResponse,
+  Subscription,
   Value,
 } from '../../../ably';
 import { DefaultInstance } from './instance';
@@ -32,7 +31,7 @@ export class DefaultPathObject implements AnyPathObject {
 
   constructor(
     private _realtimeObject: RealtimeObject,
-    private _root: LiveMap<any>,
+    private _root: LiveMap,
     path: string[],
     parent?: DefaultPathObject,
   ) {
@@ -352,7 +351,7 @@ export class DefaultPathObject implements AnyPathObject {
   subscribe(
     listener: EventCallback<PathObjectSubscriptionEvent>,
     options?: PathObjectSubscriptionOptions,
-  ): SubscribeResponse {
+  ): Subscription {
     return this._realtimeObject.getPathObjectSubscriptionRegister().subscribe(this._path, listener, options ?? {});
   }
 
@@ -383,8 +382,7 @@ export class DefaultPathObject implements AnyPathObject {
   }
 
   private _resolvePath(path: string[]): Value {
-    // TODO: remove type assertion when internal LiveMap is updated to support new path based type system
-    let current: Value = this._root as unknown as API.LiveMap;
+    let current: Value = this._root;
 
     for (let i = 0; i < path.length; i++) {
       const segment = path[i];
