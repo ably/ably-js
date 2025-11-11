@@ -3,7 +3,7 @@ import type {
   EventCallback,
   PathObjectSubscriptionEvent,
   PathObjectSubscriptionOptions,
-  SubscribeResponse,
+  Subscription,
 } from '../../../ably';
 import { ObjectMessage } from './objectmessage';
 import { DefaultPathObject } from './pathobject';
@@ -60,7 +60,7 @@ export class PathObjectSubscriptionRegister {
     path: string[],
     listener: EventCallback<PathObjectSubscriptionEvent>,
     options: PathObjectSubscriptionOptions,
-  ): SubscribeResponse {
+  ): Subscription {
     if (options != null && typeof options !== 'object') {
       throw new this._client.ErrorInfo('Subscription options must be an object', 40000, 400);
     }
