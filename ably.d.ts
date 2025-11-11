@@ -2810,7 +2810,7 @@ interface LiveMapBatchContextCollectionMethods<T extends Record<string, Value> =
  */
 export interface LiveMapBatchContext<T extends Record<string, Value> = Record<string, Value>>
   extends BatchContextBase,
-    BatchContextOperations<LiveMapOperations<T>>,
+    BatchContextLiveMapOperations<T>,
     LiveMapBatchContextCollectionMethods<T> {
   /**
    * Returns the value associated with a given key as a {@link BatchContext}.
@@ -2838,7 +2838,7 @@ export interface LiveMapBatchContext<T extends Record<string, Value> = Record<st
 /**
  * LiveCounterBatchContext is a batch context wrapper for a LiveCounter object.
  */
-export interface LiveCounterBatchContext extends BatchContextBase, BatchContextOperations<LiveCounterOperations> {
+export interface LiveCounterBatchContext extends BatchContextBase, BatchContextLiveCounterOperations {
   /**
    * Get the current value of the counter instance.
    * If the underlying instance at runtime is not a counter, returns `undefined`.
@@ -2932,10 +2932,7 @@ interface AnyBatchContextCollectionMethods {
  * Each method supports type parameters to specify the expected
  * underlying type when needed.
  */
-export interface AnyBatchContext
-  extends BatchContextBase,
-    AnyBatchContextCollectionMethods,
-    BatchContextOperations<AnyOperations> {
+export interface AnyBatchContext extends BatchContextBase, AnyBatchContextCollectionMethods, BatchContextAnyOperations {
   /**
    * Navigate to a child entry within the collection by obtaining the {@link BatchContext} at that entry.
    * The entry in a collection is identified with a string key.
@@ -2974,20 +2971,6 @@ export interface AnyBatchContext
 }
 
 /**
- * BatchContextOperations transforms LiveObject operation methods to be synchronous and removes the `batch` method.
- */
-type BatchContextOperations<T> = {
-  [K in keyof T as K extends 'batch' ? never : K]: T[K] extends (
-    this: infer This,
-    ...args: infer A
-  ) => PromiseLike<infer R>
-    ? (this: This, ...args: A) => R
-    : T[K] extends (this: infer This, ...args: infer A) => infer R
-      ? (this: This, ...args: A) => R
-      : T[K];
-};
-
-/**
  * BatchContext wraps a specific object instance or entry in a specific collection
  * object instance and provides synchronous operation methods that can be aggregated
  * and applied as a single batch operation.
@@ -3004,6 +2987,139 @@ export type BatchContext<T extends Value> = [T] extends [LiveMap<infer U>]
     : [T] extends [Primitive]
       ? PrimitiveBatchContext<T>
       : AnyBatchContext;
+
+/**
+ * Defines operations available on {@link LiveMapBatchContext}.
+ */
+export interface BatchContextLiveMapOperations<T extends Record<string, Value> = Record<string, Value>> {
+  /**
+   * Adds an operation to the current batch to set a key to a specified value on the underlying
+   * {@link LiveMapInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a map, this method throws an error.
+   *
+   * This does not modify the underlying data of the map. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param key - The key to set the value for.
+   * @param value - The value to assign to the key.
+   * @experimental
+   */
+  set<K extends keyof T & string>(key: K, value: T[K]): void;
+
+  /**
+   * Adds an operation to the current batch to remove a key from the underlying
+   * {@link LiveMapInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a map, this method throws an error.
+   *
+   * This does not modify the underlying data of the map. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param key - The key to remove.
+   * @experimental
+   */
+  remove(key: keyof T & string): void;
+}
+
+/**
+ * Defines operations available on {@link LiveCounterBatchContext}.
+ */
+export interface BatchContextLiveCounterOperations {
+  /**
+   * Adds an operation to the current batch to increment the value of the underlying
+   * {@link LiveCounterInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a counter, this method throws an error.
+   *
+   * This does not modify the underlying data of the counter. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
+   * @experimental
+   */
+  increment(amount?: number): void;
+
+  /**
+   * An alias for calling {@link BatchContextLiveCounterOperations.increment | increment(-amount)}
+   *
+   * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
+   * @experimental
+   */
+  decrement(amount?: number): void;
+}
+
+/**
+ * Defines all possible operations available on {@link BatchContext} objects.
+ */
+export interface BatchContextAnyOperations {
+  // LiveMap operations
+
+  /**
+   * Adds an operation to the current batch to set a key to a specified value on the underlying
+   * {@link LiveMapInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a map, this method throws an error.
+   *
+   * This does not modify the underlying data of the map. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param key - The key to set the value for.
+   * @param value - The value to assign to the key.
+   * @experimental
+   */
+  set<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string, value: T[keyof T]): void;
+
+  /**
+   * Adds an operation to the current batch to remove a key from the underlying
+   * {@link LiveMapInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a map, this method throws an error.
+   *
+   * This does not modify the underlying data of the map. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param key - The key to remove.
+   * @experimental
+   */
+  remove<T extends Record<string, Value> = Record<string, Value>>(key: keyof T & string): void;
+
+  // LiveCounter operations
+
+  /**
+   * Adds an operation to the current batch to increment the value of the underlying
+   * {@link LiveCounterInstance}. All queued operations are sent together in a single message once the
+   * batch function completes.
+   *
+   * If the underlying instance at runtime is not a counter, this method throws an error.
+   *
+   * This does not modify the underlying data of the counter. Instead, the change is applied when
+   * the published operation is echoed back to the client and applied to the object.
+   * To get notified when object gets updated, use {@link PathObjectBase.subscribe | PathObject.subscribe} or {@link InstanceBase.subscribe | Instance.subscribe}, as appropriate.
+   *
+   * @param amount - The amount by which to increase the counter value. If not provided, defaults to 1.
+   * @experimental
+   */
+  increment(amount?: number): void;
+
+  /**
+   * An alias for calling {@link BatchContextAnyOperations.increment | increment(-amount)}
+   *
+   * @param amount - The amount by which to decrease the counter value. If not provided, defaults to 1.
+   * @experimental
+   */
+  decrement(amount?: number): void;
+}
 
 /**
  * Defines batch operations available on {@link LiveObject | LiveObjects}.
@@ -3038,12 +3154,9 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
    * Sends an operation to the Ably system to set a key to a specified value on a given {@link LiveMapInstance},
    * or on the map instance resolved from the path when using {@link LiveMapPathObject}.
    *
-   * If called from within the {@link BatchOperations.batch | batch} method, the operation is instead
-   * added to the current batch and sent once the batch function completes.
-   *
-   * If called via {@link LiveMapInstance} or {@link LiveMapBatchContext} and the underlying instance
-   * at runtime is not a map, or if called via {@link LiveMapPathObject} and the map instance
-   * at the specified path cannot be resolved at the time of the call, this method throws an error.
+   * If called via {@link LiveMapInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link LiveMapPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -3060,12 +3173,9 @@ export interface LiveMapOperations<T extends Record<string, Value> = Record<stri
    * Sends an operation to the Ably system to remove a key from a given {@link LiveMapInstance},
    * or from the map instance resolved from the path when using {@link LiveMapPathObject}.
    *
-   * If called from within the {@link BatchOperations.batch | batch} method, the operation is instead
-   * added to the current batch and sent once the batch function completes.
-   *
-   * If called via {@link LiveMapInstance} or {@link LiveMapBatchContext} and the underlying instance
-   * at runtime is not a map, or if called via {@link LiveMapPathObject} and the map instance
-   * at the specified path cannot be resolved at the time of the call, this method throws an error.
+   * If called via {@link LiveMapInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link LiveMapPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -3086,12 +3196,9 @@ export interface LiveCounterOperations extends BatchOperations<LiveCounter> {
    * Sends an operation to the Ably system to increment the value of a given {@link LiveCounterInstance},
    * or of the counter instance resolved from the path when using {@link LiveCounterPathObject}.
    *
-   * If called from within the {@link BatchOperations.batch | batch} method, the operation is instead
-   * added to the current batch and sent once the batch function completes.
-   *
-   * If called via {@link LiveCounterInstance} or {@link LiveCounterBatchContext} and the underlying instance
-   * at runtime is not a counter, or if called via {@link LiveCounterPathObject} and the counter instance
-   * at the specified path cannot be resolved at the time of the call, this method throws an error.
+   * If called via {@link LiveCounterInstance} and the underlying instance at runtime is not a counter,
+   * or if called via {@link LiveCounterPathObject} and the counter instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the counter. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -3114,7 +3221,7 @@ export interface LiveCounterOperations extends BatchOperations<LiveCounter> {
 }
 
 /**
- * Defines all possible operations available on an {@link AnyPathObject}.
+ * Defines all possible operations available on {@link LiveObject | LiveObjects}.
  */
 export interface AnyOperations {
   /**
@@ -3142,12 +3249,9 @@ export interface AnyOperations {
    * Sends an operation to the Ably system to set a key to a specified value on the underlying map when using {@link AnyInstance},
    * or on the map instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If called from within the {@link BatchOperations.batch | batch} method, the operation is instead
-   * added to the current batch and sent once the batch function completes.
-   *
-   * If called via {@link AnyInstance} or {@link AnyBatchContext} and the underlying instance
-   * at runtime is not a map, or if called via {@link AnyPathObject} and the map instance
-   * at the specified path cannot be resolved at the time of the call, this method throws an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link AnyPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -3164,12 +3268,9 @@ export interface AnyOperations {
    * Sends an operation to the Ably system to remove a key from the underlying map when using {@link AnyInstance},
    * or from the map instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If called from within the {@link BatchOperations.batch | batch} method, the operation is instead
-   * added to the current batch and sent once the batch function completes.
-   *
-   * If called via {@link AnyInstance} or {@link AnyBatchContext} and the underlying instance
-   * at runtime is not a map, or if called via {@link AnyPathObject} and the map instance
-   * at the specified path cannot be resolved at the time of the call, this method throws an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a map,
+   * or if called via {@link AnyPathObject} and the map instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the map. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
@@ -3187,12 +3288,9 @@ export interface AnyOperations {
    * Sends an operation to the Ably system to increment the value of the underlying counter when using {@link AnyInstance},
    * or of the counter instance resolved from the path when using {@link AnyPathObject}.
    *
-   * If called from within the {@link BatchOperations.batch | batch} method, the operation is instead
-   * added to the current batch and sent once the batch function completes.
-   *
-   * If called via {@link AnyInstance} or {@link AnyBatchContext} and the underlying instance
-   * at runtime is not a counter, or if called via {@link AnyPathObject} and the counter instance
-   * at the specified path cannot be resolved at the time of the call, this method throws an error.
+   * If called via {@link AnyInstance} and the underlying instance at runtime is not a counter,
+   * or if called via {@link AnyPathObject} and the counter instance at the specified path cannot
+   * be resolved at the time of the call, this method throws an error.
    *
    * This does not modify the underlying data of the counter. Instead, the change is applied when
    * the published operation is echoed back to the client and applied to the object.
