@@ -10,7 +10,6 @@ import {
   ObjectOperationAction,
   ObjectsMapEntry,
   ObjectsMapSemantics,
-  PrimitiveObjectValue,
 } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 
@@ -75,10 +74,7 @@ export class LiveMapValueType<T extends Record<string, API.Value> = Record<strin
       throw new client.ErrorInfo('Map entries should be a key-value object', 40003, 400);
     }
 
-    // TODO: fix as any type assertion when LiveMap type is updated to support new path based types
-    Object.entries(entries ?? {}).forEach(([key, value]) =>
-      LiveMap.validateKeyValue(realtimeObject, key, value as any),
-    );
+    Object.entries(entries ?? {}).forEach(([key, value]) => LiveMap.validateKeyValue(realtimeObject, key, value));
 
     const { initialValueOperation, nestedObjectsCreateMsgs } = await LiveMapValueType._createInitialValueOperation(
       realtimeObject,
@@ -142,7 +138,7 @@ export class LiveMapValueType<T extends Record<string, API.Value> = Record<strin
         objectData = typedObjectData;
       } else {
         // Handle primitive values
-        const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
+        const typedObjectData: ValueObjectData = { value: value as API.Primitive };
         objectData = typedObjectData;
       }
 

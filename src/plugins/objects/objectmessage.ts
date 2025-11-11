@@ -33,8 +33,6 @@ export enum ObjectsMapSemantics {
   LWW = 0,
 }
 
-export type PrimitiveObjectValue = string | number | boolean | Buffer | ArrayBuffer | JsonArray | JsonObject;
-
 /**
  * An ObjectData represents a value in an object on a channel decoded from {@link WireObjectData}.
  * @spec OD1
@@ -43,7 +41,7 @@ export interface ObjectData {
   /** A reference to another object, used to support composable object structures. */
   objectId?: string; // OD2a
   /** A decoded leaf value from {@link WireObjectData}. */
-  value?: PrimitiveObjectValue;
+  value?: API.Primitive;
 }
 
 /**
