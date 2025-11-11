@@ -13,7 +13,6 @@ import {
   ObjectsMapEntry,
   ObjectsMapOp,
   ObjectsMapSemantics,
-  PrimitiveObjectValue,
 } from './objectmessage';
 import { RealtimeObject } from './realtimeobject';
 
@@ -24,7 +23,7 @@ export interface ObjectIdObjectData {
 
 export interface ValueObjectData {
   /** A decoded leaf value from {@link WireObjectData}. */
-  value: string | number | boolean | Buffer | ArrayBuffer | API.JsonArray | API.JsonObject;
+  value: API.Primitive;
 }
 
 export type LiveMapObjectData = ObjectIdObjectData | ValueObjectData;
@@ -40,13 +39,18 @@ export interface LiveMapData extends LiveObjectData {
   data: Map<string, LiveMapEntry>; // RTLM3
 }
 
-export interface LiveMapUpdate<T extends API.LiveMapType> extends LiveObjectUpdate {
+export interface LiveMapUpdate<T extends Record<string, API.Value>> extends LiveObjectUpdate {
   update: { [keyName in keyof T & string]?: 'updated' | 'removed' };
   _type: 'LiveMapUpdate';
 }
 
 /** @spec RTLM1, RTLM2 */
-export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, LiveMapUpdate<T>> {
+export class LiveMap<T extends Record<string, API.Value> = Record<string, API.Value>>
+  extends LiveObject<LiveMapData, LiveMapUpdate<T>>
+  implements API.LiveMap<T>
+{
+  declare readonly [API.__livetype]: 'LiveMap'; // type-only, unique symbol to satisfy branded interfaces, no JS emitted
+
   constructor(
     realtimeObject: RealtimeObject,
     private _semantics: ObjectsMapSemantics,
@@ -61,8 +65,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    * @internal
    * @spec RTLM4
    */
-  static zeroValue<T extends API.LiveMapType>(realtimeObject: RealtimeObject, objectId: string): LiveMap<T> {
-    return new LiveMap<T>(realtimeObject, ObjectsMapSemantics.LWW, objectId);
+  static zeroValue(realtimeObject: RealtimeObject, objectId: string): LiveMap {
+    return new LiveMap(realtimeObject, ObjectsMapSemantics.LWW, objectId);
   }
 
   /**
@@ -71,11 +75,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  static fromObjectState<T extends API.LiveMapType>(
-    realtimeObject: RealtimeObject,
-    objectMessage: ObjectMessage,
-  ): LiveMap<T> {
-    const obj = new LiveMap<T>(realtimeObject, objectMessage.object!.map!.semantics!, objectMessage.object!.objectId);
+  static fromObjectState(realtimeObject: RealtimeObject, objectMessage: ObjectMessage): LiveMap {
+    const obj = new LiveMap(realtimeObject, objectMessage.object!.map!.semantics!, objectMessage.object!.objectId);
     obj.overrideWithObjectState(objectMessage);
     return obj;
   }
@@ -83,11 +84,11 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  static async createMapSetMessage<TKey extends keyof API.LiveMapType & string>(
+  static async createMapSetMessage(
     realtimeObject: RealtimeObject,
     objectId: string,
-    key: TKey,
-    value: API.LiveMapType[TKey] | LiveCounterValueType | LiveMapValueType,
+    key: string,
+    value: API.Value,
   ): Promise<ObjectMessage[]> {
     const client = realtimeObject.getClient();
 
@@ -111,12 +112,8 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
 
       const typedObjectData: ObjectIdObjectData = { objectId: mapCreateMsg.operation?.objectId! };
       objectData = typedObjectData;
-    } else if (value instanceof LiveObject) {
-      // TODO: remove this branch when LiveObject is no longer directly supported as a map value
-      const typedObjectData: ObjectIdObjectData = { objectId: value.getObjectId() };
-      objectData = typedObjectData;
     } else {
-      const typedObjectData: ValueObjectData = { value: value as PrimitiveObjectValue };
+      const typedObjectData: ValueObjectData = { value: value as API.Primitive };
       objectData = typedObjectData;
     }
 
@@ -141,11 +138,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  static createMapRemoveMessage<TKey extends keyof API.LiveMapType & string>(
-    realtimeObject: RealtimeObject,
-    objectId: string,
-    key: TKey,
-  ): ObjectMessage {
+  static createMapRemoveMessage(realtimeObject: RealtimeObject, objectId: string, key: string): ObjectMessage {
     const client = realtimeObject.getClient();
 
     if (typeof key !== 'string') {
@@ -170,11 +163,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * @internal
    */
-  static validateKeyValue<TKey extends keyof API.LiveMapType & string>(
-    realtimeObject: RealtimeObject,
-    key: TKey,
-    value: API.LiveMapType[TKey] | LiveCounterValueType | LiveMapValueType,
-  ): void {
+  static validateKeyValue(realtimeObject: RealtimeObject, key: string, value: API.Value): void {
     const client = realtimeObject.getClient();
 
     if (typeof key !== 'string') {
@@ -209,19 +198,19 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
     this._realtimeObject.throwIfInvalidAccessApiConfiguration(); // RTLM5b, RTLM5c
 
     if (this.isTombstoned()) {
-      return undefined as T[TKey];
+      return undefined;
     }
 
     const element = this._dataRef.data.get(key);
 
     // RTLM5d1
     if (element === undefined) {
-      return undefined as T[TKey];
+      return undefined;
     }
 
     // RTLM5d2a
     if (element.tombstone === true) {
-      return undefined as T[TKey];
+      return undefined;
     }
 
     // data always exists for non-tombstoned elements
@@ -507,7 +496,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
    *
    * @internal
    */
-  compact(): { [K in keyof T]: any } {
+  compact(): API.CompactedValue<API.LiveMap<T>> {
     const result: Record<keyof T, any> = {} as Record<keyof T, any>;
 
     // Use public entries() method to ensure we only include publicly exposed properties
@@ -911,7 +900,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
   /**
    * Returns value as is if object data stores a primitive type, or a reference to another LiveObject from the pool if it stores an objectId.
    */
-  private _getResolvedValueFromObjectData(data: LiveMapObjectData): PrimitiveObjectValue | LiveObject | undefined {
+  private _getResolvedValueFromObjectData(data: LiveMapObjectData): API.Value | undefined {
     // if object data stores primitive value, just return it as is.
     const primitiveValue = (data as ValueObjectData).value;
     if (primitiveValue != null) {
@@ -930,7 +919,7 @@ export class LiveMap<T extends API.LiveMapType> extends LiveObject<LiveMapData, 
       return undefined;
     }
 
-    return refObject; // RTLM5d2f2
+    return refObject as unknown as API.LiveObject; // RTLM5d2f2
   }
 
   private _isMapEntryTombstoned(entry: LiveMapEntry): boolean {
